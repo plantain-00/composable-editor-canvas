@@ -1,4 +1,5 @@
 import React from "react"
+import { RotationBar } from "../src"
 import { CanvasSelection, StyleGuide } from "./model"
 
 export function SelectionRenderer(props: {
@@ -6,9 +7,11 @@ export function SelectionRenderer(props: {
   scale: number
   selected: CanvasSelection
   offset: { x: number, y: number }
-  onMouseDown?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  rotate?: number
+  onStartMove?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  onStartRotate: (center: { x: number, y: number }) => void
 }) {
-  const { styleGuide, scale, selected, onMouseDown, offset } = props
+  const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate } = props
   const template = styleGuide.templates[selected.templateIndex]
   if (selected.kind === 'template') {
     return (
@@ -23,7 +26,7 @@ export function SelectionRenderer(props: {
           cursor: 'grab',
           pointerEvents: 'auto',
         }}
-        onMouseDown={onMouseDown}
+        onMouseDown={onStartMove}
       />
     )
   }
@@ -45,18 +48,41 @@ export function SelectionRenderer(props: {
     height = content.height
   }
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: template.x + content.x + offset.x,
-        top: template.y + content.y + offset.y,
-        width,
-        height,
-        border: `${1 / scale}px solid green`,
-        cursor: 'grab',
-        pointerEvents: 'auto',
-      }}
-      onMouseDown={onMouseDown}
-    />
+    <>
+      <div
+        style={{
+          position: 'absolute',
+          left: template.x + content.x + offset.x,
+          top: template.y + content.y + offset.y,
+          width,
+          height,
+          border: `${1 / scale}px solid green`,
+          cursor: 'grab',
+          pointerEvents: 'auto',
+          transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
+        }}
+        onMouseDown={onStartMove}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: template.x + content.x + offset.x,
+          top: template.y + content.y + offset.y,
+          width,
+          height,
+          transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
+        }}
+      >
+        <RotationBar
+          scale={scale}
+          onMouseDown={() => {
+            onStartRotate({
+              x: template.x + content.x + width / 2,
+              y: template.y + content.y + height / 2,
+            })
+          }}
+        />
+      </div>
+    </>
   )
 }

@@ -26,6 +26,14 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 };
 
 // @public (undocumented)
+export function RotationBar(props: {
+    scale: number;
+    rotateStickLength?: number;
+    rotateCircleSize?: number;
+    onMouseDown: React_2.MouseEventHandler<HTMLDivElement>;
+}): JSX.Element;
+
+// @public (undocumented)
 export function Scrollbar(props: {
     value: number;
     type: 'horizontal' | 'vertical';
@@ -40,15 +48,32 @@ export function useDragMove(setOffset: (offset: {
     x: number;
     y: number;
 }) => void, scale?: number, onDragEnd?: () => void): {
-    dragStartPosition: {
-        x: number;
-        y: number;
-    } | undefined;
-    onMouseDown(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
+    onStartMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
         x: number;
         y: number;
     }> | undefined): void;
-    dragMask: JSX.Element | undefined;
+    dragMoveMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, transform?: Partial<{
+    containerSize: {
+        width: number;
+        height: number;
+    };
+    targetSize: {
+        width: number;
+        height: number;
+    };
+    x: number;
+    y: number;
+    scale: number;
+}>): {
+    onStartRotate: React_2.Dispatch<React_2.SetStateAction<{
+        x: number;
+        y: number;
+    } | undefined>>;
+    dragRotateMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)

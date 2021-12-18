@@ -12,7 +12,7 @@ export function Scrollbar(props: {
 }) {
   const { type, containerSize, contentSize } = props
 
-  const { onMouseDown, dragMask } = useDragMove(({ x, y }) => {
+  const { onStartMove, dragMoveMask } = useDragMove(({ x, y }) => {
     const newOffset = Math.max(Math.min(type === 'vertical' ? y : x, containerSize - scrollbarSize), 0)
     if (newOffset !== offset) {
       props.onChange((newOffset + scrollbarSize / 2 - containerSize / 2) * scale)
@@ -65,10 +65,10 @@ export function Scrollbar(props: {
     <div style={containerStyle} >
       <div
         style={barStyle}
-        onMouseDown={(e) => onMouseDown(e, { [type === 'vertical' ? 'y' : 'x']: offset })}
+        onMouseDown={(e) => onStartMove(e, { [type === 'vertical' ? 'y' : 'x']: offset })}
       >
       </div>
-      {dragMask}
+      {dragMoveMask}
     </div>
   )
 }

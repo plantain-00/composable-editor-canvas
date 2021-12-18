@@ -96,7 +96,7 @@ import { Scrollbar } from "composable-editor-canvas"
 ```ts
 const [offset, setOffset] = React.useState({ x: 0, y: 0 })
 const [selected, setSelected] = React.useState<CanvasSelection>()
-const { onMouseDown, dragMask } = useDragMove(setOffset, scale, () => {
+const { onStartMove, dragMoveMask } = useDragMove(setOffset, scale, () => {
   setState((draft) => {
     if (selected) {
       const template = draft.templates[selected.templateIndex]
@@ -111,4 +111,38 @@ const { onMouseDown, dragMask } = useDragMove(setOffset, scale, () => {
   })
   setOffset({ x: 0, y: 0 })
 })
+```
+
+### drag selected rotate
+
+```tsx
+const [rotate, setRotate] = React.useState<number>()
+const { onStartRotate, dragRotateMask } = useDragRotate(
+  setRotate,
+  () => {
+    setState((draft) => {
+      if (selected && selected.kind === 'content') {
+        draft.templates[selected.templateIndex].contents[selected.contentIndex].rotate = rotate
+      }
+    })
+    setRotate(undefined)
+  },
+  {
+    containerSize,
+    targetSize,
+    x,
+    y,
+    scale,
+  }
+)
+
+<RotationBar
+  scale={scale}
+  onMouseDown={() => {
+    onStartRotate({
+      x: template.x + content.x + width / 2,
+      y: template.y + content.y + height / 2,
+    })
+  }}
+/>
 ```
