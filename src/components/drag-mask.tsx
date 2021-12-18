@@ -1,0 +1,21 @@
+import * as React from "react"
+
+export function DragMask(props: {
+  onDragEnd: () => void
+  onDragging: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  style?: React.CSSProperties
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: '0px',
+        cursor: 'grabbing',
+        ...props.style,
+      }}
+      onMouseUp={props.onDragEnd}
+      onMouseMove={props.onDragging}
+      onMouseLeave={props.onDragEnd}
+    />
+  )
+}
