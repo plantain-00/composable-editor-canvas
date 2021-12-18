@@ -1,7 +1,7 @@
 import React from 'react'
 import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate } from '../src'
 import { styleGuide } from './data'
 import { CanvasSelection } from './model'
 import { StyleGuideRenderer } from './renderer'
@@ -48,9 +48,10 @@ function App() {
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
 
-  const [offset, setOffset] = React.useState({ x: 0, y: 0 })
   const [selected, setSelected] = React.useState<CanvasSelection>()
-  const { onMouseDown, dragMask } = useDragMove(setOffset, scale, () => {
+
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 })
+  const { onStartMove, dragMoveMask } = useDragMove(setOffset, scale, () => {
     setState((draft) => {
       if (selected) {
         const template = draft.templates[selected.templateIndex]
@@ -65,6 +66,26 @@ function App() {
     })
     setOffset({ x: 0, y: 0 })
   })
+
+  const [rotate, setRotate] = React.useState<number>()
+  const { onStartRotate, dragRotateMask } = useDragRotate(
+    setRotate,
+    () => {
+      setState((draft) => {
+        if (selected && selected.kind === 'content') {
+          draft.templates[selected.templateIndex].contents[selected.contentIndex].rotate = rotate
+        }
+      })
+      setRotate(undefined)
+    },
+    {
+      containerSize,
+      targetSize,
+      x,
+      y,
+      scale,
+    }
+  )
 
   return (
     <div
@@ -87,6 +108,7 @@ function App() {
         scale={scale}
         setSelected={setSelected}
         offset={offset}
+        rotate={rotate}
         selected={selected}
       />
       {selected && <div
@@ -102,8 +124,10 @@ function App() {
           styleGuide={state}
           scale={scale}
           selected={selected}
-          onMouseDown={onMouseDown}
+          onStartMove={onStartMove}
           offset={offset}
+          rotate={rotate}
+          onStartRotate={onStartRotate}
         />
       </div>}
       <Scrollbar
@@ -120,7 +144,8 @@ function App() {
         contentSize={contentSize.height}
         onChange={setY}
       />
-      {dragMask}
+      {dragMoveMask}
+      {dragRotateMask}
     </div>
   )
 }

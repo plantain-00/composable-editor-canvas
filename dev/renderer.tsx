@@ -10,9 +10,10 @@ export function StyleGuideRenderer(props: {
   targetSize: Size
   setSelected: React.Dispatch<React.SetStateAction<CanvasSelection | undefined>>
   offset: { x: number, y: number }
+  rotate?: number
   selected?: CanvasSelection
 }) {
-  const { x, y, scale, styleGuide, targetSize, setSelected, selected, offset } = props
+  const { x, y, scale, styleGuide, targetSize, setSelected, selected, offset, rotate } = props
   return (
     <div
       style={{
@@ -30,6 +31,7 @@ export function StyleGuideRenderer(props: {
           setSelected={setSelected}
           selected={selected}
           offset={offset}
+          rotate={rotate}
           scale={scale}
         />
       ))}
@@ -42,10 +44,11 @@ function TemplateRenderer(props: {
   index: number
   setSelected: React.Dispatch<React.SetStateAction<CanvasSelection | undefined>>
   offset: { x: number, y: number }
+  rotate?: number
   selected?: CanvasSelection
   scale: number
 }) {
-  const { template, index, selected, offset, setSelected, scale } = props
+  const { template, index, selected, offset, rotate, setSelected, scale } = props
   return (
     <div
       style={{
@@ -56,6 +59,7 @@ function TemplateRenderer(props: {
         height: template.height,
         clipPath: 'inset(0)',
         border: `${1 / scale}px solid rgb(160, 160, 160)`,
+        backgroundColor: 'white',
       }}
       onClick={() => {
         setSelected({
@@ -69,6 +73,7 @@ function TemplateRenderer(props: {
           key={i}
           content={content}
           offset={selected?.kind === 'content' && selected.templateIndex === index && selected.contentIndex === i ? offset : undefined}
+          rotate={selected?.kind === 'content' && selected.templateIndex === index && selected.contentIndex === i ? rotate : undefined}
           onClick={(e) => {
             e.stopPropagation()
             setSelected({
@@ -87,14 +92,16 @@ function TemplateContentRenderer(props: {
   content: TemplateContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number }
+  rotate?: number
 }) {
-  const { content, onClick, offset } = props
+  const { content, onClick, offset, rotate } = props
   if (content.kind === 'text') {
     return (
       <TemplateTextContentRenderer
         content={content}
         onClick={onClick}
         offset={offset}
+        rotate={rotate}
       />
     )
   }
@@ -104,6 +111,7 @@ function TemplateContentRenderer(props: {
         content={content}
         onClick={onClick}
         offset={offset}
+        rotate={rotate}
       />
     )
   }
@@ -113,6 +121,7 @@ function TemplateContentRenderer(props: {
         content={content}
         onClick={onClick}
         offset={offset}
+        rotate={rotate}
       />
     )
   }
@@ -123,8 +132,9 @@ function TemplateTextContentRenderer(props: {
   content: TemplateTextContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number }
+  rotate?: number
 }) {
-  const { content, offset } = props
+  const { content, offset, rotate } = props
   return (
     <div
       style={{
@@ -136,6 +146,7 @@ function TemplateTextContentRenderer(props: {
         color: content.color,
         fontSize: content.fontSize,
         fontFamily: content.fontFamily,
+        transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
       onClick={props.onClick}
     >
@@ -148,8 +159,9 @@ function TemplateImageContentRenderer(props: {
   content: TemplateImageContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number }
+  rotate?: number
 }) {
-  const { content, offset } = props
+  const { content, offset, rotate } = props
   return (
     <img
       src={content.url}
@@ -159,6 +171,7 @@ function TemplateImageContentRenderer(props: {
         top: content.y + (offset?.y ?? 0),
         width: content.width,
         height: content.height,
+        transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
       onClick={props.onClick}
     />
@@ -169,8 +182,9 @@ function TemplateColorContentRenderer(props: {
   content: TemplateColorContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number }
+  rotate?: number
 }) {
-  const { content, offset } = props
+  const { content, offset, rotate } = props
   return (
     <div
       style={{
@@ -180,6 +194,7 @@ function TemplateColorContentRenderer(props: {
         width: content.width,
         height: content.height,
         backgroundColor: content.color,
+        transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
       onClick={props.onClick}
     />
