@@ -119,3 +119,4 @@ service-worker.js
 #index.html
 *.data
 temp
+!main.bundle.js
