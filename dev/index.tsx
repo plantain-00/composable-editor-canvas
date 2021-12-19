@@ -2,11 +2,12 @@ import { WritableDraft } from 'immer/dist/types/types-external'
 import React from 'react'
 import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition } from '../src'
 import { styleGuide } from './data'
 import { CanvasSelection, Region } from './model'
 import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
+import { selectContentOrTemplateByPosition } from './utils'
 
 function App() {
   const [relativeScale, setRelativeScale] = React.useState(1)
@@ -50,9 +51,35 @@ function App() {
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
 
   const [selected, setSelected] = React.useState<CanvasSelection>()
+  const transform = {
+    containerSize,
+    targetSize,
+    x,
+    y,
+    scale,
+  }
 
   const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, scale, () => {
+  const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(setMoveOffset, scale, () => {
+    if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
+      const region = selectContentOrTemplateByPosition(state, transformPosition(dragMoveStartPosition, transform))
+      if (region) {
+        const templateIndex = state.templates.findIndex((t) => t === region.region.template)
+        if (region.kind === 'template') {
+          setSelected({
+            kind: 'template',
+            templateIndex,
+          })
+        } else {
+          setSelected({
+            kind: 'content',
+            templateIndex,
+            contentIndex: region.region.index,
+          })
+        }
+      }
+      return
+    }
     setState((draft) => {
       if (selected) {
         const template = draft.templates[selected.templateIndex]
@@ -79,13 +106,7 @@ function App() {
       })
       setRotate(undefined)
     },
-    {
-      containerSize,
-      targetSize,
-      x,
-      y,
-      scale,
-    },
+    transform,
   )
 
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
@@ -116,13 +137,7 @@ function App() {
       })
       setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
     },
-    {
-      containerSize,
-      targetSize,
-      x,
-      y,
-      scale,
-    },
+    transform,
   )
 
   const offset = {
