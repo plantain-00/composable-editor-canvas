@@ -4,6 +4,7 @@ import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
 import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition } from '../src'
 import { styleGuide } from './data'
+import { HoverRenderer } from './hover'
 import { CanvasSelection, Region } from './model'
 import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
@@ -51,6 +52,7 @@ function App() {
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
 
   const [selected, setSelected] = React.useState<CanvasSelection>()
+  const [hovered, setHovered] = React.useState<CanvasSelection>()
   const transform = {
     containerSize,
     targetSize,
@@ -59,25 +61,30 @@ function App() {
     scale,
   }
 
+  const selectByPosition = (position: { x: number, y: number }): CanvasSelection | undefined => {
+    const region = selectContentOrTemplateByPosition(state, transformPosition(position, transform))
+    if (region) {
+      const templateIndex = state.templates.findIndex((t) => t === region.region.template)
+      if (region.kind === 'template') {
+        return {
+          kind: 'template',
+          templateIndex,
+        }
+      } else {
+        return {
+          kind: 'content',
+          templateIndex,
+          contentIndex: region.region.index,
+        }
+      }
+    }
+    return undefined
+  }
+
   const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
   const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(setMoveOffset, scale, () => {
     if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
-      const region = selectContentOrTemplateByPosition(state, transformPosition(dragMoveStartPosition, transform))
-      if (region) {
-        const templateIndex = state.templates.findIndex((t) => t === region.region.template)
-        if (region.kind === 'template') {
-          setSelected({
-            kind: 'template',
-            templateIndex,
-          })
-        } else {
-          setSelected({
-            kind: 'content',
-            templateIndex,
-            contentIndex: region.region.index,
-          })
-        }
-      }
+      setSelected(selectByPosition(dragMoveStartPosition))
       return
     }
     setState((draft) => {
@@ -96,7 +103,7 @@ function App() {
   })
 
   const [rotate, setRotate] = React.useState<number>()
-  const { onStartRotate, dragRotateMask } = useDragRotate(
+  const { onStartRotate, dragRotateMask, dragRotateCenter } = useDragRotate(
     setRotate,
     () => {
       setState((draft) => {
@@ -110,7 +117,7 @@ function App() {
   )
 
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
-  const { onStartResize, dragResizeMask } = useDragResize(
+  const { onStartResize, dragResizeMask, dragResizeStartPosition } = useDragResize(
     setResizeOffset,
     () => {
       setState((draft) => {
@@ -146,6 +153,7 @@ function App() {
     width: resizeOffset.width,
     height: resizeOffset.height,
   }
+  const dragging = dragMoveStartPosition || dragRotateCenter || dragResizeStartPosition
 
   return (
     <div
@@ -159,6 +167,9 @@ function App() {
         overflow: 'hidden',
       }}
       ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
+      onMouseMove={(e) => {
+        setHovered(dragging ? undefined : selectByPosition({ x: e.clientX, y: e.clientY }))
+      }}
     >
       <StyleGuideRenderer
         styleGuide={state}
@@ -189,6 +200,20 @@ function App() {
           rotate={rotate}
           onStartRotate={onStartRotate}
           onStartResize={onStartResize}
+        />
+      </div>}
+      {hovered && <div
+        style={{
+          position: 'absolute',
+          transform: `translate(${x}px, ${y}px) scale(${scale})`,
+          width: targetSize.width,
+          height: targetSize.height,
+          pointerEvents: 'none',
+        }}
+      >
+        <HoverRenderer
+          styleGuide={state}
+          hovered={hovered}
         />
       </div>}
       <Scrollbar

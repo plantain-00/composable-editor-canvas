@@ -110,6 +110,11 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     scale: number;
 }>): {
+    dragResizeStartPosition: {
+        x: number;
+        y: number;
+        direction: ResizeDirection;
+    } | undefined;
     onStartResize(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection): void;
     dragResizeMask: JSX.Element | undefined;
 };
@@ -128,6 +133,10 @@ export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: ()
     y: number;
     scale: number;
 }>): {
+    dragRotateCenter: {
+        x: number;
+        y: number;
+    } | undefined;
     onStartRotate: React_2.Dispatch<React_2.SetStateAction<{
         x: number;
         y: number;
