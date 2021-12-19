@@ -55,7 +55,10 @@ export function Scrollbar(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
-export function transformPosition(x: number, y: number, transform?: Partial<{
+export function transformPosition({ x, y }: {
+    x: number;
+    y: number;
+}, transform?: Partial<{
     containerSize: {
         width: number;
         height: number;
@@ -77,6 +80,10 @@ export function useDragMove(setMoveOffset: (offset: {
     x: number;
     y: number;
 }) => void, scale?: number, onDragEnd?: () => void): {
+    dragMoveStartPosition: {
+        x: number;
+        y: number;
+    } | undefined;
     onStartMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
         x: number;
         y: number;

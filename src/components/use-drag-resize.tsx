@@ -1,6 +1,7 @@
 import * as React from "react"
 
-import { DragMask, ResizeDirection, transformPosition } from "."
+import { DragMask, ResizeDirection } from "."
+import { transformPosition } from ".."
 
 export function useDragResize(
   setResizeOffset: (offset: { x: number, y: number, width: number, height: number }) => void,
@@ -17,7 +18,7 @@ export function useDragResize(
 
   return {
     onStartResize(e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) {
-      const { x, y } = transformPosition(e.clientX, e.clientY, transform)
+      const { x, y } = transformPosition({ x: e.clientX, y: e.clientY }, transform)
       setDragStartPosition({
         x,
         y,
@@ -26,7 +27,7 @@ export function useDragResize(
     },
     dragResizeMask: dragStartPosition && <DragMask
       onDragging={(e) => {
-        const { x: positionX, y: positionY } = transformPosition(e.clientX, e.clientY, transform)
+        const { x: positionX, y: positionY } = transformPosition({ x: e.clientX, y: e.clientY }, transform)
         const offsetX = positionX - dragStartPosition.x
         const offsetY = positionY - dragStartPosition.y
         const offset = {

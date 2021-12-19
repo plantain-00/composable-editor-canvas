@@ -102,7 +102,7 @@ export interface Position {
   z?: integer
 }
 
-interface PositionExpression {
+export interface PositionExpression {
   xExpression?: string
   yExpression?: string
   zExpression?: string
@@ -116,21 +116,21 @@ export interface Size {
   height: number
 }
 
-interface SizeExpression {
+export interface SizeExpression {
   widthExpression?: string
   heightExpression?: string
   widthExpressionId?: string
   heightExpressionId?: string
 }
 
-interface Rotate {
+export interface Rotate {
   /**
    * @default 0
    */
   rotate?: number
 }
 
-interface RotateExpression {
+export interface RotateExpression {
   rotateExpression?: string
   rotateExpressionId?: string
 }

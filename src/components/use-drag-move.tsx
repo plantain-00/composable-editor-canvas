@@ -10,6 +10,7 @@ export function useDragMove(
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number }>()
 
   return {
+    dragMoveStartPosition: dragStartPosition,
     onStartMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{ x: number, y: number }>) {
       setDragStartPosition({
         x: e.clientX - (startPosition?.x ?? 0),
