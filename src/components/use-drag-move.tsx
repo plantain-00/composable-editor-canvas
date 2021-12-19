@@ -3,7 +3,7 @@ import * as React from "react"
 import { DragMask } from "."
 
 export function useDragMove(
-  setOffset: (offset: { x: number, y: number }) => void,
+  setMoveOffset: (offset: { x: number, y: number }) => void,
   scale = 1,
   onDragEnd?: () => void,
 ) {
@@ -18,7 +18,7 @@ export function useDragMove(
     },
     dragMoveMask: dragStartPosition && <DragMask
       onDragging={(e) => {
-        setOffset({
+        setMoveOffset({
           x: (e.clientX - dragStartPosition.x) / scale,
           y: (e.clientY - dragStartPosition.y) / scale,
         })

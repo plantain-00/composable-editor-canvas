@@ -18,6 +18,7 @@ export function RotationBar(props: {
           width: Math.max(border, 1) + 'px',
           height: length + 'px',
           position: 'absolute',
+          boxSizing: 'border-box',
           backgroundColor: 'green',
         }}
       />

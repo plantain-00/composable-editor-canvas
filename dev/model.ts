@@ -96,7 +96,7 @@ export interface TemplateSnapshotContent extends Position, PositionExpression, H
   snapshot: Template
 }
 
-interface Position {
+export interface Position {
   x: number
   y: number
   z?: integer
@@ -135,7 +135,7 @@ interface RotateExpression {
   rotateExpressionId?: string
 }
 
-interface Region extends Position, Size { }
+export interface Region extends Position, Size { }
 
 interface RegionExpression extends PositionExpression, SizeExpression { }
 

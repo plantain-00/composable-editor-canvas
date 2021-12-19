@@ -1,33 +1,52 @@
 import React from "react"
-import { RotationBar } from "../src"
+import { ResizeBar, ResizeDirection, RotationBar } from "../src"
 import { CanvasSelection, StyleGuide } from "./model"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
   scale: number
   selected: CanvasSelection
-  offset: { x: number, y: number }
+  offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   onStartMove?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
   onStartRotate: (center: { x: number, y: number }) => void
+  onStartResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
-  const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate } = props
+  const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
   const template = styleGuide.templates[selected.templateIndex]
   if (selected.kind === 'template') {
     return (
-      <div
-        style={{
-          position: 'absolute',
-          left: template.x + offset.x,
-          top: template.y + offset.y,
-          width: template.width,
-          height: template.height,
-          border: `${1 / scale}px solid green`,
-          cursor: 'grab',
-          pointerEvents: 'auto',
-        }}
-        onMouseDown={onStartMove}
-      />
+      <>
+        <div
+          style={{
+            position: 'absolute',
+            boxSizing: 'border-box',
+            left: template.x + offset.x,
+            top: template.y + offset.y,
+            width: template.width + offset.width,
+            height: template.height + offset.height,
+            border: `${1 / scale}px solid green`,
+            cursor: 'move',
+            pointerEvents: 'auto',
+          }}
+          onMouseDown={onStartMove}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            boxSizing: 'border-box',
+            left: template.x + offset.x,
+            top: template.y + offset.y,
+            width: template.width + offset.width,
+            height: template.height + offset.height,
+          }}
+        >
+          <ResizeBar
+            scale={scale}
+            onMouseDown={onStartResize}
+          />
+        </div>
+      </>
     )
   }
   const content = template.contents[selected.contentIndex]
@@ -52,12 +71,13 @@ export function SelectionRenderer(props: {
       <div
         style={{
           position: 'absolute',
+          boxSizing: 'border-box',
           left: template.x + content.x + offset.x,
           top: template.y + content.y + offset.y,
-          width,
-          height,
+          width: width + offset.width,
+          height: height + offset.height,
           border: `${1 / scale}px solid green`,
-          cursor: 'grab',
+          cursor: 'move',
           pointerEvents: 'auto',
           transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
         }}
@@ -66,13 +86,18 @@ export function SelectionRenderer(props: {
       <div
         style={{
           position: 'absolute',
+          boxSizing: 'border-box',
           left: template.x + content.x + offset.x,
           top: template.y + content.y + offset.y,
-          width,
-          height,
+          width: width + offset.width,
+          height: height + offset.height,
           transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
         }}
       >
+        <ResizeBar
+          scale={scale}
+          onMouseDown={onStartResize}
+        />
         <RotationBar
           scale={scale}
           onMouseDown={() => {

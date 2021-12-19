@@ -94,35 +94,33 @@ import { Scrollbar } from "composable-editor-canvas"
 ### drag selected move
 
 ```ts
-const [offset, setOffset] = React.useState({ x: 0, y: 0 })
+import { useDragMove } from "composable-editor-canvas"
+
+const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
 const [selected, setSelected] = React.useState<CanvasSelection>()
-const { onStartMove, dragMoveMask } = useDragMove(setOffset, scale, () => {
+const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, scale, () => {
   setState((draft) => {
     if (selected) {
-      const template = draft.templates[selected.templateIndex]
-      if (selected.kind === 'content') {
-        template.contents[selected.contentIndex].x += offset.x
-        template.contents[selected.contentIndex].y += offset.y
-      } else {
-        template.x += offset.x
-        template.y += offset.y
-      }
+      target.x += moveOffset.x
+      target.y += moveOffset.y
     }
   })
-  setOffset({ x: 0, y: 0 })
+  setMoveOffset({ x: 0, y: 0 })
 })
 ```
 
 ### drag selected rotate
 
 ```tsx
+import { useDragRotate, RotationBar } from "composable-editor-canvas"
+
 const [rotate, setRotate] = React.useState<number>()
 const { onStartRotate, dragRotateMask } = useDragRotate(
   setRotate,
   () => {
     setState((draft) => {
-      if (selected && selected.kind === 'content') {
-        draft.templates[selected.templateIndex].contents[selected.contentIndex].rotate = rotate
+      if (selected) {
+        target.rotate = rotate
       }
     })
     setRotate(undefined)
@@ -144,5 +142,39 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
       y: template.y + content.y + height / 2,
     })
   }}
+/>
+```
+
+### drag selected resize
+
+```tsx
+import { useDragResize, ResizeBar } from "composable-editor-canvas"
+
+const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
+const { onStartResize, dragResizeMask } = useDragResize(
+  setResizeOffset,
+  () => {
+    setState((draft) => {
+      if (selected) {
+        target.width += resizeOffset.width
+        target.height += resizeOffset.height
+        target.x += resizeOffset.x
+        target.y += resizeOffset.y
+      }
+    })
+    setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
+  },
+  {
+    containerSize,
+    targetSize,
+    x,
+    y,
+    scale,
+  },
+)
+
+<ResizeBar
+  scale={scale}
+  onMouseDown={onStartResize}
 />
 ```

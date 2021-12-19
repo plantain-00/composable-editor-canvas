@@ -26,6 +26,17 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 };
 
 // @public (undocumented)
+export function ResizeBar(props: {
+    scale: number;
+    resizeSize?: number;
+    directions?: ResizeDirection[];
+    onMouseDown: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom";
+
+// @public (undocumented)
 export function RotationBar(props: {
     scale: number;
     rotateStickLength?: number;
@@ -44,7 +55,25 @@ export function Scrollbar(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
-export function useDragMove(setOffset: (offset: {
+export function transformPosition(x: number, y: number, transform?: Partial<{
+    containerSize: {
+        width: number;
+        height: number;
+    };
+    targetSize: {
+        width: number;
+        height: number;
+    };
+    x: number;
+    y: number;
+    scale: number;
+}>): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
+export function useDragMove(setMoveOffset: (offset: {
     x: number;
     y: number;
 }) => void, scale?: number, onDragEnd?: () => void): {
@@ -53,6 +82,29 @@ export function useDragMove(setOffset: (offset: {
         y: number;
     }> | undefined): void;
     dragMoveMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragResize(setResizeOffset: (offset: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}) => void, onDragEnd: () => void, transform?: Partial<{
+    containerSize: {
+        width: number;
+        height: number;
+    };
+    targetSize: {
+        width: number;
+        height: number;
+    };
+    x: number;
+    y: number;
+    scale: number;
+}>): {
+    onStartResize(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection): void;
+    dragResizeMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
