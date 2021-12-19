@@ -17,6 +17,7 @@ export function useDragRotate(
   const [center, setCenter] = React.useState<{ x: number, y: number }>()
 
   return {
+    dragRotateCenter: center,
     onStartRotate: setCenter,
     dragRotateMask: center && <DragMask
       onDragging={(e) => {

@@ -94,10 +94,6 @@ export function SelectionRenderer(props: {
           transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
         }}
       >
-        <ResizeBar
-          scale={scale}
-          onMouseDown={onStartResize}
-        />
         <RotationBar
           scale={scale}
           onMouseDown={() => {
@@ -106,6 +102,10 @@ export function SelectionRenderer(props: {
               y: template.y + content.y + height / 2,
             })
           }}
+        />
+        <ResizeBar
+          scale={scale}
+          onMouseDown={onStartResize}
         />
       </div>
     </>
