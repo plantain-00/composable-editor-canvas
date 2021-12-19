@@ -9,7 +9,7 @@ export function StyleGuideRenderer(props: {
   scale: number
   targetSize: Size
   setSelected: React.Dispatch<React.SetStateAction<CanvasSelection | undefined>>
-  offset: { x: number, y: number }
+  offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: CanvasSelection
 }) {
@@ -18,6 +18,7 @@ export function StyleGuideRenderer(props: {
     <div
       style={{
         position: 'absolute',
+        boxSizing: 'border-box',
         transform: `translate(${x}px, ${y}px) scale(${scale})`,
         width: targetSize.width,
         height: targetSize.height,
@@ -43,7 +44,7 @@ function TemplateRenderer(props: {
   template: Template
   index: number
   setSelected: React.Dispatch<React.SetStateAction<CanvasSelection | undefined>>
-  offset: { x: number, y: number }
+  offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: CanvasSelection
   scale: number
@@ -53,10 +54,11 @@ function TemplateRenderer(props: {
     <div
       style={{
         position: 'absolute',
+        boxSizing: 'border-box',
         left: template.x + (selected?.kind === 'template' && selected.templateIndex === index ? offset.x : 0),
         top: template.y + (selected?.kind === 'template' && selected.templateIndex === index ? offset.y : 0),
-        width: template.width,
-        height: template.height,
+        width: template.width + (selected?.kind === 'template' && selected.templateIndex === index ? offset.width : 0),
+        height: template.height + (selected?.kind === 'template' && selected.templateIndex === index ? offset.height : 0),
         clipPath: 'inset(0)',
         border: `${1 / scale}px solid rgb(160, 160, 160)`,
         backgroundColor: 'white',
@@ -91,7 +93,7 @@ function TemplateRenderer(props: {
 function TemplateContentRenderer(props: {
   content: TemplateContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
-  offset?: { x: number, y: number }
+  offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
   const { content, onClick, offset, rotate } = props
@@ -131,7 +133,7 @@ function TemplateContentRenderer(props: {
 function TemplateTextContentRenderer(props: {
   content: TemplateTextContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
-  offset?: { x: number, y: number }
+  offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
   const { content, offset, rotate } = props
@@ -139,10 +141,11 @@ function TemplateTextContentRenderer(props: {
     <div
       style={{
         position: 'absolute',
+        boxSizing: 'border-box',
         left: content.x + (offset?.x ?? 0),
         top: content.y + (offset?.y ?? 0),
-        width: content.width,
-        height: content.height,
+        width: content.width + (offset?.width ?? 0),
+        height: content.height + (offset?.height ?? 0),
         color: content.color,
         fontSize: content.fontSize,
         fontFamily: content.fontFamily,
@@ -158,7 +161,7 @@ function TemplateTextContentRenderer(props: {
 function TemplateImageContentRenderer(props: {
   content: TemplateImageContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
-  offset?: { x: number, y: number }
+  offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
   const { content, offset, rotate } = props
@@ -167,10 +170,11 @@ function TemplateImageContentRenderer(props: {
       src={content.url}
       style={{
         position: 'absolute',
+        boxSizing: 'border-box',
         left: content.x + (offset?.x ?? 0),
         top: content.y + (offset?.y ?? 0),
-        width: content.width,
-        height: content.height,
+        width: content.width + (offset?.width ?? 0),
+        height: content.height + (offset?.height ?? 0),
         transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
       onClick={props.onClick}
@@ -181,7 +185,7 @@ function TemplateImageContentRenderer(props: {
 function TemplateColorContentRenderer(props: {
   content: TemplateColorContent
   onClick?: React.MouseEventHandler<HTMLDivElement>
-  offset?: { x: number, y: number }
+  offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
   const { content, offset, rotate } = props
@@ -189,10 +193,11 @@ function TemplateColorContentRenderer(props: {
     <div
       style={{
         position: 'absolute',
+        boxSizing: 'border-box',
         left: content.x + (offset?.x ?? 0),
         top: content.y + (offset?.y ?? 0),
-        width: content.width,
-        height: content.height,
+        width: content.width + (offset?.width ?? 0),
+        height: content.height + (offset?.height ?? 0),
         backgroundColor: content.color,
         transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}

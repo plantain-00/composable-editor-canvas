@@ -1,9 +1,10 @@
+import { WritableDraft } from 'immer/dist/types/types-external'
 import React from 'react'
 import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize } from '../src'
 import { styleGuide } from './data'
-import { CanvasSelection } from './model'
+import { CanvasSelection, Region } from './model'
 import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
 
@@ -50,21 +51,21 @@ function App() {
 
   const [selected, setSelected] = React.useState<CanvasSelection>()
 
-  const [offset, setOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask } = useDragMove(setOffset, scale, () => {
+  const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
+  const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, scale, () => {
     setState((draft) => {
       if (selected) {
         const template = draft.templates[selected.templateIndex]
         if (selected.kind === 'content') {
-          template.contents[selected.contentIndex].x += offset.x
-          template.contents[selected.contentIndex].y += offset.y
+          template.contents[selected.contentIndex].x += moveOffset.x
+          template.contents[selected.contentIndex].y += moveOffset.y
         } else {
-          template.x += offset.x
-          template.y += offset.y
+          template.x += moveOffset.x
+          template.y += moveOffset.y
         }
       }
     })
-    setOffset({ x: 0, y: 0 })
+    setMoveOffset({ x: 0, y: 0 })
   })
 
   const [rotate, setRotate] = React.useState<number>()
@@ -84,8 +85,52 @@ function App() {
       x,
       y,
       scale,
-    }
+    },
   )
+
+  const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
+  const { onStartResize, dragResizeMask } = useDragResize(
+    setResizeOffset,
+    () => {
+      setState((draft) => {
+        if (selected) {
+          const template = draft.templates[selected.templateIndex]
+          let target: WritableDraft<Region> | undefined
+          if (selected.kind === 'content') {
+            const content = template.contents[selected.contentIndex]
+            if (content.kind === 'snapshot') {
+              target = content.snapshot
+            } else if (content.kind !== 'reference') {
+              target = content
+            }
+          } else {
+            target = template
+          }
+          if (target) {
+            target.width += resizeOffset.width
+            target.height += resizeOffset.height
+            target.x += resizeOffset.x
+            target.y += resizeOffset.y
+          }
+        }
+      })
+      setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
+    },
+    {
+      containerSize,
+      targetSize,
+      x,
+      y,
+      scale,
+    },
+  )
+
+  const offset = {
+    x: moveOffset.x + resizeOffset.x,
+    y: moveOffset.y + resizeOffset.y,
+    width: resizeOffset.width,
+    height: resizeOffset.height,
+  }
 
   return (
     <div
@@ -128,6 +173,7 @@ function App() {
           offset={offset}
           rotate={rotate}
           onStartRotate={onStartRotate}
+          onStartResize={onStartResize}
         />
       </div>}
       <Scrollbar
@@ -146,6 +192,7 @@ function App() {
       />
       {dragMoveMask}
       {dragRotateMask}
+      {dragResizeMask}
     </div>
   )
 }
