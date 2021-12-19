@@ -12,6 +12,7 @@ export function useDragMove(
   return {
     dragMoveStartPosition: dragStartPosition,
     onStartMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{ x: number, y: number }>) {
+      e.stopPropagation()
       setDragStartPosition({
         x: e.clientX - (startPosition?.x ?? 0),
         y: e.clientY - (startPosition?.y ?? 0),

@@ -19,6 +19,7 @@ export function useDragResize(
   return {
     dragResizeStartPosition: dragStartPosition,
     onStartResize(e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) {
+      e.stopPropagation()
       const { x, y } = transformPosition({ x: e.clientX, y: e.clientY }, transform)
       setDragStartPosition({
         x,

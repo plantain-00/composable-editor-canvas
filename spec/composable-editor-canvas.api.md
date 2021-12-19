@@ -17,6 +17,7 @@ export function DragMask(props: {
     onDragEnd: () => void;
     onDragging: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     style?: React_2.CSSProperties;
+    children?: React_2.ReactNode;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -142,6 +143,24 @@ export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: ()
         y: number;
     } | undefined>>;
     dragRotateMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
+    x: number;
+    y: number;
+    data: T;
+}, dragSelectEndPosition?: {
+    x: number;
+    y: number;
+}) => void): {
+    dragSelectStartPosition: {
+        x: number;
+        y: number;
+        data: T;
+    } | undefined;
+    onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data: T): void;
+    dragSelectMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)

@@ -110,9 +110,12 @@ function* iterateAllContent(
   }
 }
 
+function getTargetTemplateRegions(styleGuide: StyleGuide) {
+  return sortByZ(Array.from(iterateAllTemplateRegions(undefined, styleGuide)))
+}
+
 function* iterateTemplateRegionByPosition(styleGuide: StyleGuide, position: Position) {
-  const targetTemplateRegions = sortByZ(Array.from(iterateAllTemplateRegions(undefined, styleGuide)))
-  for (const templateRegion of targetTemplateRegions) {
+  for (const templateRegion of getTargetTemplateRegions(styleGuide)) {
     if (isInRegion(position, templateRegion)) {
       yield templateRegion
     }
@@ -502,4 +505,33 @@ function evaluateRotateExpression(content: Rotate & RotateExpression, model: { [
     }
   }
   return content.rotate || 0
+}
+
+export function selectTemplateByArea(styleGuide: StyleGuide, position1: Position, position2: Position) {
+  const region: Region = {
+    x: Math.min(position1.x, position2.x),
+    y: Math.min(position1.y, position2.y),
+    width: Math.abs(position1.x - position2.x),
+    height: Math.abs(position1.y - position2.y),
+  }
+  let potentialTemplateRegion: Required<Region> & { parent?: { content: TemplateReferenceContent, template: Template, index: number }, template: Template } | undefined
+  for (const templateRegion of getTargetTemplateRegions(styleGuide)) {
+    const positions: Position[] = [
+      {
+        x: templateRegion.x,
+        y: templateRegion.y,
+      },
+      {
+        x: templateRegion.x + templateRegion.width,
+        y: templateRegion.y + templateRegion.height,
+      },
+    ]
+    if ((!potentialTemplateRegion || templateRegion.z >= potentialTemplateRegion.z) && isInRegion(positions, region)) {
+      potentialTemplateRegion = templateRegion
+    }
+  }
+  if (potentialTemplateRegion) {
+    return potentialTemplateRegion.template
+  }
+  return null
 }

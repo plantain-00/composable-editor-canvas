@@ -178,3 +178,20 @@ const { onStartResize, dragResizeMask } = useDragResize(
   onMouseDown={onStartResize}
 />
 ```
+
+### drag select
+
+```tsx
+import { useDragSelect } from "composable-editor-canvas"
+
+const { onStartSelect, dragSelectMask } = useDragSelect<CanvasSelection | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
+  if (!dragSelectEndPosition) {
+    setSelected(dragSelectStartPosition.data)
+  } else {
+    const template = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
+    if (template) {
+      setSelected({ kind: 'template', templateIndex: state.templates.findIndex((t) => t === template) })
+    }
+  }
+})
+```

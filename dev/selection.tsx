@@ -96,7 +96,8 @@ export function SelectionRenderer(props: {
       >
         <RotationBar
           scale={scale}
-          onMouseDown={() => {
+          onMouseDown={(e) => {
+            e.stopPropagation()
             onStartRotate({
               x: template.x + content.x + width / 2,
               y: template.y + content.y + height / 2,

@@ -4,6 +4,7 @@ export function DragMask(props: {
   onDragEnd: () => void
   onDragging: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
   style?: React.CSSProperties
+  children?: React.ReactNode
 }) {
   return (
     <div
@@ -16,6 +17,8 @@ export function DragMask(props: {
       onMouseUp={props.onDragEnd}
       onMouseMove={props.onDragging}
       onMouseLeave={props.onDragEnd}
-    />
+    >
+      {props.children}
+    </div>
   )
 }
