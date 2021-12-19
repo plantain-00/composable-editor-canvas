@@ -2,13 +2,13 @@ import { WritableDraft } from 'immer/dist/types/types-external'
 import React from 'react'
 import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { CanvasSelection, Region } from './model'
 import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
-import { selectContentOrTemplateByPosition } from './utils'
+import { selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
 
 function App() {
   const [relativeScale, setRelativeScale] = React.useState(1)
@@ -147,13 +147,24 @@ function App() {
     transform,
   )
 
+  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<CanvasSelection | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
+    if (!dragSelectEndPosition) {
+      setSelected(dragSelectStartPosition.data)
+    } else {
+      const template = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
+      if (template) {
+        setSelected({ kind: 'template', templateIndex: state.templates.findIndex((t) => t === template) })
+      }
+    }
+  })
+
   const offset = {
     x: moveOffset.x + resizeOffset.x,
     y: moveOffset.y + resizeOffset.y,
     width: resizeOffset.width,
     height: resizeOffset.height,
   }
-  const dragging = dragMoveStartPosition || dragRotateCenter || dragResizeStartPosition
+  const dragging = dragMoveStartPosition || dragRotateCenter || dragResizeStartPosition || dragSelectStartPosition
 
   return (
     <div
@@ -170,6 +181,10 @@ function App() {
       onMouseMove={(e) => {
         setHovered(dragging ? undefined : selectByPosition({ x: e.clientX, y: e.clientY }))
       }}
+      onMouseDown={(e) => {
+        console.info(e.target)
+        onStartSelect(e, undefined)
+      }}
     >
       <StyleGuideRenderer
         styleGuide={state}
@@ -177,7 +192,7 @@ function App() {
         x={x}
         y={y}
         scale={scale}
-        setSelected={setSelected}
+        onStartSelect={onStartSelect}
         offset={offset}
         rotate={rotate}
         selected={selected}
@@ -233,6 +248,7 @@ function App() {
       {dragMoveMask}
       {dragRotateMask}
       {dragResizeMask}
+      {dragSelectMask}
     </div>
   )
 }
