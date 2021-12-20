@@ -5,6 +5,8 @@ import { transformPosition } from ".."
 
 export function useDragResize(
   setResizeOffset: (offset: { x: number, y: number, width: number, height: number }) => void,
+  centeredScaling: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean),
+  rotate: number,
   onDragEnd: () => void,
   transform?: Partial<{
     containerSize: { width: number, height: number }
@@ -15,6 +17,7 @@ export function useDragResize(
   }>,
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, direction: ResizeDirection }>()
+  rotate = -rotate * Math.PI / 180
 
   return {
     dragResizeStartPosition: dragStartPosition,
@@ -30,8 +33,13 @@ export function useDragResize(
     dragResizeMask: dragStartPosition && <DragMask
       onDragging={(e) => {
         const { x: positionX, y: positionY } = transformPosition({ x: e.clientX, y: e.clientY }, transform)
-        const offsetX = positionX - dragStartPosition.x
-        const offsetY = positionY - dragStartPosition.y
+        const originalOffsetX = positionX - dragStartPosition.x
+        const originalOffsetY = positionY - dragStartPosition.y
+        const sin = Math.sin(rotate)
+        const cos = Math.cos(rotate)
+        const offsetX = cos * originalOffsetX - sin * originalOffsetY
+        const offsetY = sin * originalOffsetX + cos * originalOffsetY
+        const isCenteredScaling = typeof centeredScaling === 'boolean' ? centeredScaling : centeredScaling(e)
         const offset = {
           x: 0,
           y: 0,
@@ -39,18 +47,40 @@ export function useDragResize(
           height: 0,
         }
         if (dragStartPosition.direction.includes('left')) {
-          offset.width = -offsetX
-          offset.x = offsetX
+          offset.width = -offsetX * (isCenteredScaling ? 2 : 1)
+          if (isCenteredScaling) {
+            offset.x += offsetX
+          } else {
+            offset.x += (cos + 1) * offsetX / 2
+            offset.y -= sin * offsetX / 2
+          }
         }
         if (dragStartPosition.direction.includes('right')) {
-          offset.width = offsetX
+          offset.width = offsetX * (isCenteredScaling ? 2 : 1)
+          if (isCenteredScaling) {
+            offset.x += -offsetX
+          } else {
+            offset.x += (cos - 1) * offsetX / 2
+            offset.y -= sin * offsetX / 2
+          }
         }
         if (dragStartPosition.direction.includes('top')) {
-          offset.height = -offsetY
-          offset.y = offsetY
+          offset.height = -offsetY * (isCenteredScaling ? 2 : 1)
+          if (isCenteredScaling) {
+            offset.y += offsetY
+          } else {
+            offset.x += sin * offsetY / 2
+            offset.y += (cos + 1) * offsetY / 2
+          }
         }
         if (dragStartPosition.direction.includes('bottom')) {
-          offset.height = offsetY
+          offset.height = offsetY * (isCenteredScaling ? 2 : 1)
+          if (isCenteredScaling) {
+            offset.y -= offsetY
+          } else {
+            offset.x += sin * offsetY / 2
+            offset.y += (cos - 1) * offsetY / 2
+          }
         }
         setResizeOffset(offset)
       }}

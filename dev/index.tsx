@@ -119,6 +119,8 @@ function App() {
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const { onStartResize, dragResizeMask, dragResizeStartPosition } = useDragResize(
     setResizeOffset,
+    (e) => e.shiftKey,
+    selected?.kind === 'content' ? state.templates[selected.templateIndex].contents[selected.contentIndex].rotate ?? 0 : 0,
     () => {
       setState((draft) => {
         if (selected) {
@@ -182,7 +184,6 @@ function App() {
         setHovered(dragging ? undefined : selectByPosition({ x: e.clientX, y: e.clientY }))
       }}
       onMouseDown={(e) => {
-        console.info(e.target)
         onStartSelect(e, undefined)
       }}
     >

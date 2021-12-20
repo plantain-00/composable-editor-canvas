@@ -98,7 +98,7 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     width: number;
     height: number;
-}) => void, onDragEnd: () => void, transform?: Partial<{
+}) => void, centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean), rotate: number, onDragEnd: () => void, transform?: Partial<{
     containerSize: {
         width: number;
         height: number;
