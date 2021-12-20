@@ -4,6 +4,7 @@ import { DragMask } from "."
 
 export function useDragSelect<T>(
   onDragEnd: (dragSelectStartPosition: { x: number, y: number, data: T }, dragSelectEndPosition?: { x: number, y: number }) => void,
+  square?: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean),
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data: T }>()
   const [dragEndPosition, setDragEndPosition] = React.useState<{ x: number, y: number }>()
@@ -19,6 +20,17 @@ export function useDragSelect<T>(
     },
     dragSelectMask: dragStartPosition && <DragMask
       onDragging={(e) => {
+        const isSquare = typeof square === 'boolean' ? square : square ? square(e) : undefined
+        if (isSquare) {
+          const offsetX = e.clientX - dragStartPosition.x
+          const offsetY = e.clientY - dragStartPosition.y
+          const offset = Math.min(Math.abs(offsetX), Math.abs(offsetY))
+          setDragEndPosition({
+            x: offsetX > 0 ? dragStartPosition.x + offset : dragStartPosition.x - offset,
+            y: offsetY > 0 ? dragStartPosition.y + offset : dragStartPosition.y - offset,
+          })
+          return
+        }
         setDragEndPosition({
           x: e.clientX,
           y: e.clientY,

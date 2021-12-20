@@ -195,5 +195,5 @@ const { onStartSelect, dragSelectMask } = useDragSelect<CanvasSelection | undefi
       setSelected({ kind: 'template', templateIndex: state.templates.findIndex((t) => t === template) })
     }
   }
-})
+}, (e) => e.shiftKey)
 ```
