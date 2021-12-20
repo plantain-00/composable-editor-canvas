@@ -158,7 +158,7 @@ function App() {
         setSelected({ kind: 'template', templateIndex: state.templates.findIndex((t) => t === template) })
       }
     }
-  })
+  }, (e) => e.shiftKey)
 
   const offset = {
     x: moveOffset.x + resizeOffset.x,

@@ -153,7 +153,7 @@ export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
 }, dragSelectEndPosition?: {
     x: number;
     y: number;
-}) => void): {
+}) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)): {
     dragSelectStartPosition: {
         x: number;
         y: number;
