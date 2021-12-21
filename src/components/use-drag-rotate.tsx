@@ -1,18 +1,12 @@
 import * as React from "react"
 
 import { DragMask } from "."
-import { transformPosition } from ".."
+import { Transform, transformPosition } from ".."
 
 export function useDragRotate(
   setRotate: (rotate: number) => void,
   onDragEnd: () => void,
-  transform?: Partial<{
-    containerSize: { width: number, height: number }
-    targetSize: { width: number, height: number }
-    x: number
-    y: number
-    scale: number
-  }>,
+  transform?: Partial<Transform>,
 ) {
   const [center, setCenter] = React.useState<{ x: number, y: number }>()
 

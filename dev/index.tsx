@@ -7,7 +7,7 @@ import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { CanvasSelection, Region } from './model'
 import { StyleGuideRenderer } from './renderer'
-import { SelectionRenderer } from './selection'
+import { getTemplateContentSize, SelectionRenderer } from './selection'
 import { selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
 
 function App() {
@@ -119,8 +119,6 @@ function App() {
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const { onStartResize, dragResizeMask, dragResizeStartPosition } = useDragResize(
     setResizeOffset,
-    (e) => e.shiftKey,
-    selected?.kind === 'content' ? state.templates[selected.templateIndex].contents[selected.contentIndex].rotate ?? 0 : 0,
     () => {
       setState((draft) => {
         if (selected) {
@@ -146,7 +144,25 @@ function App() {
       })
       setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
     },
-    transform,
+    {
+      centeredScaling: (e) => e.shiftKey,
+      keepRatio: (e) => {
+        if (e.metaKey && selected) {
+          const template = state.templates[selected.templateIndex]
+          if (selected.kind === 'content') {
+            const size = getTemplateContentSize(template.contents[selected.contentIndex], state)
+            if (size) {
+              return size.width / size.height
+            }
+          } else {
+            return template.width / template.height
+          }
+        }
+        return undefined
+      },
+      rotate: selected?.kind === 'content' ? state.templates[selected.templateIndex].contents[selected.contentIndex].rotate ?? 0 : 0,
+      transform,
+    },
   )
 
   const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<CanvasSelection | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {

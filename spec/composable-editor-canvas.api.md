@@ -4,14 +4,20 @@
 
 ```ts
 
-import { default as React_2 } from 'react';
+/// <reference types="react" />
+
+import * as React_2 from 'react';
 import { WritableDraft } from 'immer/dist/types/types-external';
+
+// @public (undocumented)
+export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
     onDragging: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     style?: React_2.CSSProperties;
+    children?: React_2.ReactNode;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -19,6 +25,25 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
     min: number;
     max: number;
 };
+
+// @public (undocumented)
+export function ResizeBar(props: {
+    scale: number;
+    resizeSize?: number;
+    directions?: ResizeDirection[];
+    onMouseDown: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom";
+
+// @public (undocumented)
+export function RotationBar(props: {
+    scale: number;
+    rotateStickLength?: number;
+    rotateCircleSize?: number;
+    onMouseDown: React_2.MouseEventHandler<HTMLDivElement>;
+}): JSX.Element;
 
 // @public (undocumented)
 export function Scrollbar(props: {
@@ -31,19 +56,100 @@ export function Scrollbar(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
-export function useDragMove(setOffset: (offset: {
+export interface Transform {
+    // (undocumented)
+    containerSize: {
+        width: number;
+        height: number;
+    };
+    // (undocumented)
+    scale: number;
+    // (undocumented)
+    targetSize: {
+        width: number;
+        height: number;
+    };
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export function transformPosition({ x, y }: {
+    x: number;
+    y: number;
+}, transform?: Partial<Transform>): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
+export function useDragMove(setMoveOffset: (offset: {
     x: number;
     y: number;
 }) => void, scale?: number, onDragEnd?: () => void): {
-    dragStartPosition: {
+    dragMoveStartPosition: {
         x: number;
         y: number;
     } | undefined;
-    onMouseDown(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
+    onStartMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
         x: number;
         y: number;
     }> | undefined): void;
-    dragMask: JSX.Element | undefined;
+    dragMoveMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragResize(setResizeOffset: (offset: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}) => void, onDragEnd: () => void, options?: Partial<{
+    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
+    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
+    rotate: number;
+    transform: Partial<Transform>;
+}>): {
+    dragResizeStartPosition: {
+        x: number;
+        y: number;
+        direction: ResizeDirection;
+    } | undefined;
+    onStartResize(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection): void;
+    dragResizeMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, transform?: Partial<Transform>): {
+    dragRotateCenter: {
+        x: number;
+        y: number;
+    } | undefined;
+    onStartRotate: React_2.Dispatch<React_2.SetStateAction<{
+        x: number;
+        y: number;
+    } | undefined>>;
+    dragRotateMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
+    x: number;
+    y: number;
+    data: T;
+}, dragSelectEndPosition?: {
+    x: number;
+    y: number;
+}) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)): {
+    dragSelectStartPosition: {
+        x: number;
+        y: number;
+        data: T;
+    } | undefined;
+    onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data: T): void;
+    dragSelectMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -65,6 +171,22 @@ export function useWheelScroll<T extends HTMLElement>(setX: React_2.Dispatch<Rea
 
 // @public (undocumented)
 export function useWheelZoom<T extends HTMLElement>(setScale: React_2.Dispatch<React_2.SetStateAction<number>>, options?: Partial<ZoomOptions>): React_2.MutableRefObject<T | null>;
+
+// @public (undocumented)
+export function useZoom(value: number, onChange: (value: number) => void, options?: Partial<{
+    min: number;
+    max: number;
+    step: number;
+}>): {
+    canZoomIn: boolean;
+    canZoomOut: boolean;
+    zoomIn: (e?: {
+        preventDefault(): void;
+    } | undefined) => void;
+    zoomOut: (e?: {
+        preventDefault(): void;
+    } | undefined) => void;
+};
 
 // @public (undocumented)
 export interface ZoomOptions {
