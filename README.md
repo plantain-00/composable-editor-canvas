@@ -153,8 +153,6 @@ import { useDragResize, ResizeBar } from "composable-editor-canvas"
 const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
 const { onStartResize, dragResizeMask } = useDragResize(
   setResizeOffset,
-  (e) => e.shiftKey,
-  0,
   () => {
     setState((draft) => {
       if (selected) {
@@ -167,11 +165,16 @@ const { onStartResize, dragResizeMask } = useDragResize(
     setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
   },
   {
-    containerSize,
-    targetSize,
-    x,
-    y,
-    scale,
+    centeredScaling: (e) => e.shiftKey,
+    keepRatio: (e) => e.metaKey ? 1 : undefined,
+    rotate: 0,
+    transform: {
+      containerSize,
+      targetSize,
+      x,
+      y,
+      scale,
+    },
   },
 )
 

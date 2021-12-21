@@ -13,6 +13,13 @@ export function useUndoRedo<T>(defaultState: T) {
   const canRedo = stateIndex < states.length - 1
   const state = states[stateIndex]
 
+  React.useEffect(() => {
+    setHistory({
+      states: [defaultState] as readonly T[],
+      stateIndex: 0,
+    })
+  }, [defaultState])
+
   return {
     state,
     setState: (recipe: (draft: WritableDraft<T>) => void) => {

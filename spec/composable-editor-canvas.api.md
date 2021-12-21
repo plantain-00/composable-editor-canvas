@@ -56,22 +56,30 @@ export function Scrollbar(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
-export function transformPosition({ x, y }: {
-    x: number;
-    y: number;
-}, transform?: Partial<{
+export interface Transform {
+    // (undocumented)
     containerSize: {
         width: number;
         height: number;
     };
+    // (undocumented)
+    scale: number;
+    // (undocumented)
     targetSize: {
         width: number;
         height: number;
     };
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export function transformPosition({ x, y }: {
     x: number;
     y: number;
-    scale: number;
-}>): {
+}, transform?: Partial<Transform>): {
     x: number;
     y: number;
 };
@@ -98,18 +106,11 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     width: number;
     height: number;
-}) => void, centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean), rotate: number, onDragEnd: () => void, transform?: Partial<{
-    containerSize: {
-        width: number;
-        height: number;
-    };
-    targetSize: {
-        width: number;
-        height: number;
-    };
-    x: number;
-    y: number;
-    scale: number;
+}) => void, onDragEnd: () => void, options?: Partial<{
+    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
+    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
+    rotate: number;
+    transform: Partial<Transform>;
 }>): {
     dragResizeStartPosition: {
         x: number;
@@ -121,19 +122,7 @@ export function useDragResize(setResizeOffset: (offset: {
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, transform?: Partial<{
-    containerSize: {
-        width: number;
-        height: number;
-    };
-    targetSize: {
-        width: number;
-        height: number;
-    };
-    x: number;
-    y: number;
-    scale: number;
-}>): {
+export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, transform?: Partial<Transform>): {
     dragRotateCenter: {
         x: number;
         y: number;

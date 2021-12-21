@@ -1,6 +1,6 @@
 import React from "react"
 import { ResizeBar, ResizeDirection, RotationBar } from "../src"
-import { CanvasSelection, StyleGuide } from "./model"
+import { CanvasSelection, StyleGuide, TemplateContent } from "./model"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
@@ -50,22 +50,11 @@ export function SelectionRenderer(props: {
     )
   }
   const content = template.contents[selected.contentIndex]
-  let width: number
-  let height: number
-  if (content.kind === 'snapshot') {
-    width = content.snapshot.width
-    height = content.snapshot.height
-  } else if (content.kind === 'reference') {
-    const reference = styleGuide.templates.find((t) => t.id === content.id)
-    if (!reference) {
-      return null
-    }
-    width = reference.width
-    height = reference.height
-  } else {
-    width = content.width
-    height = content.height
+  const size = getTemplateContentSize(content, styleGuide)
+  if (!size) {
+    return null
   }
+  const { width, height } = size
   return (
     <>
       <div
@@ -111,4 +100,27 @@ export function SelectionRenderer(props: {
       </div>
     </>
   )
+}
+
+export function getTemplateContentSize(content: TemplateContent, styleGuide: StyleGuide) {
+  let width: number
+  let height: number
+  if (content.kind === 'snapshot') {
+    width = content.snapshot.width
+    height = content.snapshot.height
+  } else if (content.kind === 'reference') {
+    const reference = styleGuide.templates.find((t) => t.id === content.id)
+    if (!reference) {
+      return undefined
+    }
+    width = reference.width
+    height = reference.height
+  } else {
+    width = content.width
+    height = content.height
+  }
+  return {
+    width,
+    height,
+  }
 }
