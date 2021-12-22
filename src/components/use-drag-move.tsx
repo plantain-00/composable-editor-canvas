@@ -3,11 +3,14 @@ import * as React from "react"
 import { DragMask } from "."
 
 export function useDragMove(
-  setMoveOffset: (offset: { x: number, y: number }) => void,
-  scale = 1,
+  setMoveOffset: (offset: { x: number, y: number }, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void,
   onDragEnd?: () => void,
+  options?: Partial<{
+    scale: number
+  }>
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number }>()
+  const scale = options?.scale ?? 1
 
   return {
     dragMoveStartPosition: dragStartPosition,
@@ -23,7 +26,7 @@ export function useDragMove(
         setMoveOffset({
           x: (e.clientX - dragStartPosition.x) / scale,
           y: (e.clientY - dragStartPosition.y) / scale,
-        })
+        }, e)
       }}
       onDragEnd={() => {
         onDragEnd?.()

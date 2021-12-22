@@ -50,11 +50,11 @@ export function SelectionRenderer(props: {
     )
   }
   const content = template.contents[selected.contentIndex]
-  const size = getTemplateContentSize(content, styleGuide)
-  if (!size) {
+  const target = getTemplateContentTarget(content, styleGuide)
+  if (!target) {
     return null
   }
-  const { width, height } = size
+  const { width, height } = target
   return (
     <>
       <div
@@ -96,31 +96,34 @@ export function SelectionRenderer(props: {
         <ResizeBar
           scale={scale}
           onMouseDown={onStartResize}
+          rotate={content.rotate}
         />
       </div>
     </>
   )
 }
 
-export function getTemplateContentSize(content: TemplateContent, styleGuide: StyleGuide) {
-  let width: number
-  let height: number
+export function getSelectedTarget(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
+  if (!selected) {
+    return undefined
+  }
+  const template = styleGuide.templates[selected.templateIndex]
+  if (selected.kind === 'content') {
+    return getTemplateContentTarget(template.contents[selected.contentIndex], styleGuide)
+  }
+  return template
+}
+
+export function getTemplateContentTarget(content: TemplateContent, styleGuide: StyleGuide) {
   if (content.kind === 'snapshot') {
-    width = content.snapshot.width
-    height = content.snapshot.height
-  } else if (content.kind === 'reference') {
+    return content.snapshot
+  }
+  if (content.kind === 'reference') {
     const reference = styleGuide.templates.find((t) => t.id === content.id)
     if (!reference) {
       return undefined
     }
-    width = reference.width
-    height = reference.height
-  } else {
-    width = content.width
-    height = content.height
+    return reference
   }
-  return {
-    width,
-    height,
-  }
+  return content
 }

@@ -110,7 +110,7 @@ function* iterateAllContent(
   }
 }
 
-function getTargetTemplateRegions(styleGuide: StyleGuide) {
+export function getTargetTemplateRegions(styleGuide: StyleGuide) {
   return sortByZ(Array.from(iterateAllTemplateRegions(undefined, styleGuide)))
 }
 

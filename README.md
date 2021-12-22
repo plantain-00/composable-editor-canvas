@@ -98,15 +98,21 @@ import { useDragMove } from "composable-editor-canvas"
 
 const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
 const [selected, setSelected] = React.useState<CanvasSelection>()
-const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, scale, () => {
-  setState((draft) => {
-    if (selected) {
-      target.x += moveOffset.x
-      target.y += moveOffset.y
-    }
-  })
-  setMoveOffset({ x: 0, y: 0 })
-})
+const { onStartMove, dragMoveMask } = useDragMove(
+  setMoveOffset,
+  () => {
+    setState((draft) => {
+      if (target) {
+        target.x += moveOffset.x
+        target.y += moveOffset.y
+      }
+    })
+    setMoveOffset({ x: 0, y: 0 })
+  },
+  {
+    scale,
+  },
+)
 ```
 
 ### drag selected rotate
@@ -119,7 +125,7 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
   setRotate,
   () => {
     setState((draft) => {
-      if (selected) {
+      if (target) {
         target.rotate = rotate
       }
     })
@@ -155,7 +161,7 @@ const { onStartResize, dragResizeMask } = useDragResize(
   setResizeOffset,
   () => {
     setState((draft) => {
-      if (selected) {
+      if (target) {
         target.width += resizeOffset.width
         target.height += resizeOffset.height
         target.x += resizeOffset.x
@@ -199,4 +205,24 @@ const { onStartSelect, dragSelectMask } = useDragSelect<CanvasSelection | undefi
     }
   }
 }, (e) => e.shiftKey)
+```
+
+### alignment line
+
+```tsx
+import { useRegionAlignment } from "composable-editor-canvas"
+
+const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = useRegionAlignment(6 / scale)
+
+(f, e) => {
+  if (!e.shiftKey) {
+    changeOffsetByAlignment(f, target, regions)
+  } else {
+    clearAlignments()
+  }
+  setMoveOffset(f)
+}
+
+<AlignmentLine type='x' value={alignmentX} transform={transform} />
+<AlignmentLine type='y' value={alignmentY} transform={transform} />
 ```

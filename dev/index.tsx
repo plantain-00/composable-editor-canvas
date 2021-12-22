@@ -1,14 +1,13 @@
-import { WritableDraft } from 'immer/dist/types/types-external'
 import React from 'react'
 import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect, AlignmentLine, useRegionAlignment } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
-import { CanvasSelection, Region } from './model'
+import { CanvasSelection } from './model'
 import { StyleGuideRenderer } from './renderer'
-import { getTemplateContentSize, SelectionRenderer } from './selection'
-import { selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
+import { getSelectedTarget, SelectionRenderer } from './selection'
+import { getTargetTemplateRegions, selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
 
 function App() {
   const [relativeScale, setRelativeScale] = React.useState(1)
@@ -61,6 +60,9 @@ function App() {
     scale,
   }
 
+  const target = getSelectedTarget(selected, state)
+  const targetTemplateRegions = getTargetTemplateRegions(state)
+
   const selectByPosition = (position: { x: number, y: number }): CanvasSelection | undefined => {
     const region = selectContentOrTemplateByPosition(state, transformPosition(position, transform))
     if (region) {
@@ -81,26 +83,38 @@ function App() {
     return undefined
   }
 
+  const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = useRegionAlignment(6 / scale)
+
   const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(setMoveOffset, scale, () => {
-    if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
-      setSelected(selectByPosition(dragMoveStartPosition))
-      return
-    }
-    setState((draft) => {
-      if (selected) {
-        const template = draft.templates[selected.templateIndex]
-        if (selected.kind === 'content') {
-          template.contents[selected.contentIndex].x += moveOffset.x
-          template.contents[selected.contentIndex].y += moveOffset.y
-        } else {
-          template.x += moveOffset.x
-          template.y += moveOffset.y
-        }
+  const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(
+    (f, e) => {
+      if (!e.shiftKey && selected?.kind === 'template') {
+        const template = state.templates[selected.templateIndex]
+        changeOffsetByAlignment(f, template, targetTemplateRegions.filter((t) => t.template !== template))
+      } else {
+        clearAlignments()
       }
-    })
-    setMoveOffset({ x: 0, y: 0 })
-  })
+      setMoveOffset(f)
+    },
+    () => {
+      clearAlignments()
+      if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
+        setSelected(selectByPosition(dragMoveStartPosition))
+        return
+      }
+      setState((draft) => {
+        const target = getSelectedTarget(selected, draft)
+        if (target) {
+          target.x += moveOffset.x
+          target.y += moveOffset.y
+        }
+      })
+      setMoveOffset({ x: 0, y: 0 })
+    },
+    {
+      scale,
+    },
+  )
 
   const [rotate, setRotate] = React.useState<number>()
   const { onStartRotate, dragRotateMask, dragRotateCenter } = useDragRotate(
@@ -121,25 +135,12 @@ function App() {
     setResizeOffset,
     () => {
       setState((draft) => {
-        if (selected) {
-          const template = draft.templates[selected.templateIndex]
-          let target: WritableDraft<Region> | undefined
-          if (selected.kind === 'content') {
-            const content = template.contents[selected.contentIndex]
-            if (content.kind === 'snapshot') {
-              target = content.snapshot
-            } else if (content.kind !== 'reference') {
-              target = content
-            }
-          } else {
-            target = template
-          }
-          if (target) {
-            target.width += resizeOffset.width
-            target.height += resizeOffset.height
-            target.x += resizeOffset.x
-            target.y += resizeOffset.y
-          }
+        const target = getSelectedTarget(selected, draft)
+        if (target) {
+          target.width += resizeOffset.width
+          target.height += resizeOffset.height
+          target.x += resizeOffset.x
+          target.y += resizeOffset.y
         }
       })
       setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
@@ -147,16 +148,8 @@ function App() {
     {
       centeredScaling: (e) => e.shiftKey,
       keepRatio: (e) => {
-        if (e.metaKey && selected) {
-          const template = state.templates[selected.templateIndex]
-          if (selected.kind === 'content') {
-            const size = getTemplateContentSize(template.contents[selected.contentIndex], state)
-            if (size) {
-              return size.width / size.height
-            }
-          } else {
-            return template.width / template.height
-          }
+        if (e.metaKey && target) {
+          return target.width / target.height
         }
         return undefined
       },
@@ -262,6 +255,8 @@ function App() {
         contentSize={contentSize.height}
         onChange={setY}
       />
+      <AlignmentLine type='x' value={alignmentX} transform={transform} />
+      <AlignmentLine type='y' value={alignmentY} transform={transform} />
       {dragMoveMask}
       {dragRotateMask}
       {dragResizeMask}

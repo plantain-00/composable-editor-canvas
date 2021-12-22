@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { DragMask, ResizeDirection } from "."
-import { Transform, transformPosition } from ".."
+import { DragMask } from "."
+import { getResizeCursor, ResizeDirection, Transform, transformPosition } from ".."
 
 export function useDragResize(
   setResizeOffset: (offset: { x: number, y: number, width: number, height: number }) => void,
@@ -12,7 +12,6 @@ export function useDragResize(
     rotate: number
     transform: Partial<Transform>
   }>,
-
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, direction: ResizeDirection }>()
   const rotate = -(options?.rotate ?? 0) * Math.PI / 180
@@ -81,6 +80,9 @@ export function useDragResize(
       onDragEnd={() => {
         onDragEnd()
         setDragStartPosition(undefined)
+      }}
+      style={{
+        cursor: getResizeCursor(options?.rotate ?? 0, dragStartPosition.direction),
       }}
     />,
   }
