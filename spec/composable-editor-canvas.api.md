@@ -10,6 +10,14 @@ import * as React_2 from 'react';
 import { WritableDraft } from 'immer/dist/types/types-external';
 
 // @public (undocumented)
+export function AlignmentLine(props: {
+    value?: number;
+    type: 'x' | 'y';
+    transform?: Transform;
+    style?: React_2.CSSProperties;
+}): JSX.Element | null;
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
@@ -27,15 +35,25 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 };
 
 // @public (undocumented)
+export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
+
+// @public (undocumented)
 export function ResizeBar(props: {
     scale: number;
     resizeSize?: number;
     directions?: ResizeDirection[];
+    rotate?: number;
     onMouseDown: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void;
 }): JSX.Element;
 
 // @public (undocumented)
 export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom";
+
+// @public (undocumented)
+export function reverseTransformX(x: number, transform?: Partial<Transform>): number;
+
+// @public (undocumented)
+export function reverseTransformY(y: number, transform?: Partial<Transform>): number;
 
 // @public (undocumented)
 export function RotationBar(props: {
@@ -88,7 +106,9 @@ export function transformPosition({ x, y }: {
 export function useDragMove(setMoveOffset: (offset: {
     x: number;
     y: number;
-}) => void, scale?: number, onDragEnd?: () => void): {
+}, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+    scale: number;
+}>): {
     dragMoveStartPosition: {
         x: number;
         y: number;
@@ -150,6 +170,27 @@ export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
     } | undefined;
     onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data: T): void;
     dragSelectMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useRegionAlignment(delta: number): {
+    alignmentX: number | undefined;
+    alignmentY: number | undefined;
+    changeOffsetByAlignment(offset: {
+        x: number;
+        y: number;
+    }, target: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }, regions: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }[]): void;
+    clearAlignments(): void;
 };
 
 // @public (undocumented)

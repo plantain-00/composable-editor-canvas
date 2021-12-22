@@ -64,8 +64,37 @@ export const styleGuide: StyleGuide = {
           props: '{ width: 400 }'
         },
         {
-          kind: 'reference',
-          id: '1',
+          kind: 'snapshot',
+          snapshot: {
+            id: '1',
+            name: '组件',
+            x: 0,
+            y: 0,
+            width: 500,
+            height: 300,
+            contents: [
+              {
+                kind: 'text',
+                text: 'test',
+                fontFamily: 'serif',
+                fontSize: 50,
+                color: '',
+                width: 100,
+                height: 100,
+                x: 10,
+                y: 10,
+              },
+              {
+                kind: 'image',
+                url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg',
+                width: 100,
+                height: 100,
+                x: 210,
+                y: 10,
+              }
+            ],
+            parameters: ['width', 'color'],
+          },
           x: 550,
           y: 10
         }
