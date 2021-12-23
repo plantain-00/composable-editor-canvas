@@ -6,7 +6,7 @@ import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { CanvasSelection } from './model'
 import { StyleGuideRenderer } from './renderer'
-import { getSelectedTarget, SelectionRenderer } from './selection'
+import { getSelectedPosition, getSelectedSize, SelectionRenderer } from './selection'
 import { getTargetTemplateRegions, selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
 
 function App() {
@@ -19,10 +19,10 @@ function App() {
     x: Math.min(...state.templates.map((t) => t.x)),
     y: Math.min(...state.templates.map((t) => t.y)),
   }
-  const targetSize = {
+  const [targetSize] = React.useState({
     width: Math.max(...state.templates.map((t) => t.x + t.width)) - targetPosition.x,
     height: Math.max(...state.templates.map((t) => t.y + t.height)) - targetPosition.y,
-  }
+  })
   const containerSize = {
     width: window.innerWidth,
     height: window.innerHeight,
@@ -60,7 +60,7 @@ function App() {
     scale,
   }
 
-  const target = getSelectedTarget(selected, state)
+  const target = getSelectedSize(selected, state)
   const targetTemplateRegions = getTargetTemplateRegions(state)
 
   const selectByPosition = (position: { x: number, y: number }): CanvasSelection | undefined => {
@@ -103,10 +103,10 @@ function App() {
         return
       }
       setState((draft) => {
-        const target = getSelectedTarget(selected, draft)
-        if (target) {
-          target.x += moveOffset.x
-          target.y += moveOffset.y
+        const position = getSelectedPosition(selected, draft)
+        if (position) {
+          position.x += moveOffset.x
+          position.y += moveOffset.y
         }
       })
       setMoveOffset({ x: 0, y: 0 })
@@ -135,12 +135,15 @@ function App() {
     setResizeOffset,
     () => {
       setState((draft) => {
-        const target = getSelectedTarget(selected, draft)
-        if (target) {
-          target.width += resizeOffset.width
-          target.height += resizeOffset.height
-          target.x += resizeOffset.x
-          target.y += resizeOffset.y
+        const size = getSelectedSize(selected, draft)
+        const position = getSelectedPosition(selected, draft)
+        if (size) {
+          size.width += resizeOffset.width
+          size.height += resizeOffset.height
+        }
+        if (position) {
+          position.x += resizeOffset.x
+          position.y += resizeOffset.y
         }
       })
       setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })

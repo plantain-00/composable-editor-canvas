@@ -50,7 +50,7 @@ export function SelectionRenderer(props: {
     )
   }
   const content = template.contents[selected.contentIndex]
-  const target = getTemplateContentTarget(content, styleGuide)
+  const target = getTemplateContentSize(content, styleGuide)
   if (!target) {
     return null
   }
@@ -103,18 +103,29 @@ export function SelectionRenderer(props: {
   )
 }
 
-export function getSelectedTarget(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
+export function getSelectedSize(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
   if (!selected) {
     return undefined
   }
   const template = styleGuide.templates[selected.templateIndex]
   if (selected.kind === 'content') {
-    return getTemplateContentTarget(template.contents[selected.contentIndex], styleGuide)
+    return getTemplateContentSize(template.contents[selected.contentIndex], styleGuide)
   }
   return template
 }
 
-export function getTemplateContentTarget(content: TemplateContent, styleGuide: StyleGuide) {
+export function getSelectedPosition(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
+  if (!selected) {
+    return undefined
+  }
+  const template = styleGuide.templates[selected.templateIndex]
+  if (selected.kind === 'content') {
+    return template.contents[selected.contentIndex]
+  }
+  return template
+}
+
+export function getTemplateContentSize(content: TemplateContent, styleGuide: StyleGuide) {
   if (content.kind === 'snapshot') {
     return content.snapshot
   }
