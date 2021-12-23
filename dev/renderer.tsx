@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, Size, CanvasSelection } from './model'
+import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, Size, CanvasSelection, TemplateReferenceContent, TemplateSnapshotContent } from './model'
 
 export function StyleGuideRenderer(props: {
   styleGuide: StyleGuide
@@ -28,6 +28,7 @@ export function StyleGuideRenderer(props: {
         <TemplateRenderer
           key={template.id}
           template={template}
+          styleGuide={styleGuide}
           index={i}
           onStartSelect={onStartSelect}
           selected={selected}
@@ -48,6 +49,7 @@ function TemplateRenderer(props: {
   rotate?: number
   selected?: CanvasSelection
   scale: number
+  styleGuide: StyleGuide
 }) {
   const { template, index, selected, offset, rotate, onStartSelect, scale } = props
   return (
@@ -75,6 +77,7 @@ function TemplateRenderer(props: {
         <TemplateContentRenderer
           key={i}
           content={content}
+          styleGuide={props.styleGuide}
           offset={selected?.kind === 'content' && selected.templateIndex === index && selected.contentIndex === i ? offset : undefined}
           rotate={selected?.kind === 'content' && selected.templateIndex === index && selected.contentIndex === i ? rotate : undefined}
           onMouseDown={(e) => {
@@ -91,13 +94,50 @@ function TemplateRenderer(props: {
   )
 }
 
+function SymbolRenderer(props: {
+  template: Template
+  styleGuide: StyleGuide
+  offset?: { x: number, y: number, width: number, height: number }
+  rotate?: number
+  content: TemplateReferenceContent | TemplateSnapshotContent
+}) {
+  const { template, styleGuide, content, offset, rotate } = props
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        boxSizing: 'border-box',
+        left: content.x + (offset?.x ?? 0),
+        top: content.y + (offset?.y ?? 0),
+        width: template.width + (offset?.width ?? 0),
+        height: template.height + (offset?.height ?? 0),
+        clipPath: 'inset(0)',
+        backgroundColor: 'white',
+        transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
+      }}
+    >
+      {template.contents.map((content, i) => (
+        <TemplateContentRenderer
+          key={i}
+          content={content}
+          styleGuide={styleGuide}
+        />
+      ))}
+    </div>
+  )
+}
+
 function TemplateContentRenderer(props: {
   content: TemplateContent
   onMouseDown?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
+  styleGuide: StyleGuide
 }) {
   const { content, onMouseDown, offset, rotate } = props
+  if (content.hidden) {
+    return null
+  }
   if (content.kind === 'text') {
     return (
       <TemplateTextContentRenderer
@@ -123,6 +163,31 @@ function TemplateContentRenderer(props: {
       <TemplateColorContentRenderer
         content={content}
         onMouseDown={onMouseDown}
+        offset={offset}
+        rotate={rotate}
+      />
+    )
+  }
+  if (content.kind === 'reference') {
+    const reference = props.styleGuide.templates.find((t) => t.id === content.id)
+    if (reference) {
+      return (
+        <SymbolRenderer
+          template={reference}
+          styleGuide={props.styleGuide}
+          content={content}
+          offset={offset}
+          rotate={rotate}
+        />
+      )
+    }
+  }
+  if (content.kind === 'snapshot') {
+    return (
+      <SymbolRenderer
+        template={content.snapshot}
+        styleGuide={props.styleGuide}
+        content={content}
         offset={offset}
         rotate={rotate}
       />
