@@ -97,7 +97,6 @@ import { Scrollbar } from "composable-editor-canvas"
 import { useDragMove } from "composable-editor-canvas"
 
 const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-const [selected, setSelected] = React.useState<CanvasSelection>()
 const { onStartMove, dragMoveMask } = useDragMove(
   setMoveOffset,
   () => {
@@ -195,13 +194,13 @@ const { onStartResize, dragResizeMask } = useDragResize(
 ```tsx
 import { useDragSelect } from "composable-editor-canvas"
 
-const { onStartSelect, dragSelectMask } = useDragSelect<CanvasSelection | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
+const { onStartSelect, dragSelectMask } = useDragSelect<number[] | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
   if (!dragSelectEndPosition) {
     setSelected(dragSelectStartPosition.data)
   } else {
     const template = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
     if (template) {
-      setSelected({ kind: 'template', templateIndex: state.templates.findIndex((t) => t === template) })
+      setSelected([state.templates.findIndex((t) => t === template)])
     }
   }
 }, (e) => e.shiftKey)
