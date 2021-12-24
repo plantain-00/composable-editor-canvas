@@ -1,13 +1,18 @@
 import React from "react"
-import { CanvasSelection, StyleGuide } from "./model"
+import { StyleGuide } from "./model"
+import { getTargetByPath } from "./selection"
 
 export function HoverRenderer(props: {
   styleGuide: StyleGuide
-  hovered: CanvasSelection
+  hovered: number[]
 }) {
   const { styleGuide, hovered } = props
-  const template = styleGuide.templates[hovered.templateIndex]
-  if (hovered.kind === 'template') {
+  const target = getTargetByPath(hovered, styleGuide)
+  if (!target) {
+    return null
+  }
+  const template = target.template
+  if (target.kind === 'template') {
     return (
       <>
         <div
@@ -25,7 +30,7 @@ export function HoverRenderer(props: {
       </>
     )
   }
-  const content = template.contents[hovered.contentIndex]
+  const content = target.content
   let width: number
   let height: number
   if (content.kind === 'snapshot') {

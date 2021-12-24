@@ -1,11 +1,11 @@
 import React from "react"
 import { ResizeBar, ResizeDirection, RotationBar } from "../src"
-import { CanvasSelection, StyleGuide, TemplateContent } from "./model"
+import { StyleGuide, Template, TemplateContent, TemplateReferenceContent, TemplateSnapshotContent } from "./model"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
   scale: number
-  selected: CanvasSelection
+  selected: number[] | undefined
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   onStartMove?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
@@ -13,8 +13,12 @@ export function SelectionRenderer(props: {
   onStartResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
   const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
-  const template = styleGuide.templates[selected.templateIndex]
-  if (selected.kind === 'template') {
+  const selectedTarget = getTargetByPath(selected, styleGuide)
+  if (!selectedTarget) {
+    return null
+  }
+  const template = selectedTarget.template
+  if (selectedTarget.kind === 'template') {
     return (
       <>
         <div
@@ -49,20 +53,22 @@ export function SelectionRenderer(props: {
       </>
     )
   }
-  const content = template.contents[selected.contentIndex]
+  const content = selectedTarget.content
   const target = getTemplateContentSize(content, styleGuide)
   if (!target) {
     return null
   }
   const { width, height } = target
+  const x = template.x + selectedTarget.parents.reduce((p, c) => p + c.x, 0) + content.x + offset.x
+  const y = template.y + selectedTarget.parents.reduce((p, c) => p + c.y, 0) + content.y + offset.y
   return (
     <>
       <div
         style={{
           position: 'absolute',
           boxSizing: 'border-box',
-          left: template.x + content.x + offset.x,
-          top: template.y + content.y + offset.y,
+          left: x,
+          top: y,
           width: width + offset.width,
           height: height + offset.height,
           border: `${1 / scale}px solid green`,
@@ -76,8 +82,8 @@ export function SelectionRenderer(props: {
         style={{
           position: 'absolute',
           boxSizing: 'border-box',
-          left: template.x + content.x + offset.x,
-          top: template.y + content.y + offset.y,
+          left: x,
+          top: y,
           width: width + offset.width,
           height: height + offset.height,
           transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
@@ -103,26 +109,77 @@ export function SelectionRenderer(props: {
   )
 }
 
-export function getSelectedSize(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
-  if (!selected) {
+export function getSelectedSize(selected: number[] | undefined, styleGuide: StyleGuide) {
+  const target = getTargetByPath(selected, styleGuide)
+  if (!target) {
     return undefined
   }
-  const template = styleGuide.templates[selected.templateIndex]
-  if (selected.kind === 'content') {
-    return getTemplateContentSize(template.contents[selected.contentIndex], styleGuide)
+  const template = target.template
+  if (target.kind === 'content') {
+    return getTemplateContentSize(target.content, styleGuide)
   }
   return template
 }
 
-export function getSelectedPosition(selected: CanvasSelection | undefined, styleGuide: StyleGuide) {
-  if (!selected) {
+export function getSelectedPosition(selected: number[] | undefined, styleGuide: StyleGuide) {
+  const target = getTargetByPath(selected, styleGuide)
+  if (!target) {
     return undefined
   }
-  const template = styleGuide.templates[selected.templateIndex]
-  if (selected.kind === 'content') {
-    return template.contents[selected.contentIndex]
+  return target.kind === 'template' ? target.template : target.content
+}
+
+export function getTargetByPath(path: number[] | undefined, styleGuide: StyleGuide) {
+  if (!path) {
+    return undefined
   }
-  return template
+  const [index, ...indexes] = path
+  const template = styleGuide.templates[index]
+  if (indexes.length === 0) {
+    return {
+      kind: 'template' as const,
+      template,
+    }
+  }
+  const content = getTargetContentByPath(indexes, template, styleGuide, [])
+  if (content) {
+    return {
+      kind: 'content' as const,
+      template,
+      content: content.content,
+      parents: content.parents,
+    }
+  }
+  return undefined
+}
+
+function getTargetContentByPath(
+  [index, ...indexes]: number[],
+  template: Template,
+  styleGuide: StyleGuide,
+  parents: (TemplateSnapshotContent | TemplateReferenceContent)[],
+): {
+  content: TemplateContent
+  parents: (TemplateSnapshotContent | TemplateReferenceContent)[]
+} | undefined {
+  const content = template.contents[index]
+  if (indexes.length === 0) {
+    return {
+      content,
+      parents,
+    }
+  }
+  if (content.kind === 'snapshot') {
+    return getTargetContentByPath(indexes, content.snapshot, styleGuide, [...parents, content])
+  }
+  if (content.kind === 'reference') {
+    const reference = styleGuide.templates.find((t) => t.id === content.id)
+    if (!reference) {
+      return undefined
+    }
+    return getTargetContentByPath(indexes, reference, styleGuide, [...parents, content])
+  }
+  return undefined
 }
 
 export function getTemplateContentSize(content: TemplateContent, styleGuide: StyleGuide) {
@@ -137,4 +194,19 @@ export function getTemplateContentSize(content: TemplateContent, styleGuide: Sty
     return reference
   }
   return content
+}
+
+export function isSamePath(path1: number[] | undefined, path2: number[] | undefined) {
+  if (path1 && path2) {
+    if (path1.length !== path2.length) {
+      return false
+    }
+    for (let i = 0; i < path1.length; i++) {
+      if (path1[i] !== path2[i]) {
+        return false
+      }
+    }
+    return true
+  }
+  return path1 === undefined && path2 === undefined
 }

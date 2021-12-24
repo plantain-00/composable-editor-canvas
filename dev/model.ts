@@ -165,14 +165,3 @@ interface MarginField {
 }
 
 type integer = number
-
-export type CanvasSelection =
-  | {
-    kind: 'template'
-    templateIndex: number
-  }
-  | {
-    kind: 'content'
-    templateIndex: number
-    contentIndex: number
-  }
