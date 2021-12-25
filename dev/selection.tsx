@@ -1,7 +1,7 @@
 import React from "react"
 import { ResizeBar, ResizeDirection, RotationBar } from "../src"
 import { Position, StyleGuide } from "./model"
-import { getTargetByPath, getTemplateContentSize } from "./util"
+import { getTargetByPath, getTemplateContentSize, nameSize, rotatePositionByCenter } from "./util"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
@@ -14,12 +14,12 @@ export function SelectionRenderer(props: {
   onStartResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
   const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
-  const selectedTarget = getTargetByPath(selected, styleGuide)
-  if (!selectedTarget) {
+  const target = getTargetByPath(selected, styleGuide)
+  if (!target) {
     return null
   }
-  const template = selectedTarget.template
-  if (selectedTarget.kind === 'template') {
+  const template = target.template
+  if (target.kind === 'template') {
     return (
       <>
         <div
@@ -51,25 +51,38 @@ export function SelectionRenderer(props: {
             onMouseDown={onStartResize}
           />
         </div>
+        {template.name && <div
+          style={{
+            position: 'absolute',
+            left: template.x + offset.x,
+            top: template.y + offset.y - nameSize,
+            height: nameSize,
+            fontSize: '12px',
+            width: template.name.length * nameSize,
+            transform: `scale(${1 / scale})`,
+            transformOrigin: 'left bottom',
+            cursor: 'move',
+            pointerEvents: 'auto',
+          }}
+          onMouseDown={onStartMove}
+        />}
       </>
     )
   }
-  const content = selectedTarget.content
-  const target = getTemplateContentSize(content, styleGuide)
-  if (!target) {
+  const content = target.content
+  const size = getTemplateContentSize(content, styleGuide)
+  if (!size) {
     return null
   }
-  const { width, height } = target
-  const x = template.x + selectedTarget.parents.reduce((p, c) => p + c.x, 0) + content.x + offset.x
-  const y = template.y + selectedTarget.parents.reduce((p, c) => p + c.y, 0) + content.y + offset.y
-  return (
+  const { width, height } = size
+  let result = (
     <>
       <div
         style={{
           position: 'absolute',
           boxSizing: 'border-box',
-          left: x,
-          top: y,
+          left: content.x + offset.x,
+          top: content.y + offset.y,
           width: width + offset.width,
           height: height + offset.height,
           border: `${1 / scale}px solid green`,
@@ -83,8 +96,8 @@ export function SelectionRenderer(props: {
         style={{
           position: 'absolute',
           boxSizing: 'border-box',
-          left: x,
-          top: y,
+          left: content.x + offset.x,
+          top: content.y + offset.y,
           width: width + offset.width,
           height: height + offset.height,
           transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
@@ -94,10 +107,28 @@ export function SelectionRenderer(props: {
           scale={scale}
           onMouseDown={(e) => {
             e.stopPropagation()
-            onStartRotate({
-              x: template.x + content.x + width / 2,
-              y: template.y + content.y + height / 2,
-            })
+            let center: Position = {
+              x: template.x,
+              y: template.y,
+            }
+            const rotates: { x: number, y: number, rotate: number }[] = []
+            for (const parent of target.parents) {
+              if (parent.kind === 'snapshot') {
+                center.x += parent.x
+                center.y += parent.y
+                rotates.unshift({
+                  rotate: parent.rotate ?? 0,
+                  x: center.x + parent.snapshot.width / 2,
+                  y: center.y + parent.snapshot.height / 2,
+                })
+              }
+            }
+            center.x += content.x + width / 2
+            center.y += content.y + height / 2
+            for (const r of rotates) {
+              center = rotatePositionByCenter(center, r, -r.rotate)
+            }
+            onStartRotate(center)
           }}
         />
         <ResizeBar
@@ -107,5 +138,36 @@ export function SelectionRenderer(props: {
         />
       </div>
     </>
+  )
+  for (const parent of target.parents) {
+    if (parent.kind === 'snapshot') {
+      result = (
+        <div
+          style={{
+            position: 'absolute',
+            left: parent.x,
+            top: parent.y,
+            width: parent.snapshot.width,
+            height: parent.snapshot.height,
+            transform: `rotate(${parent.rotate ?? 0}deg)`,
+          }}
+        >
+          {result}
+        </div>
+      )
+    }
+  }
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: template.x,
+        top: template.y,
+        width: template.width,
+        height: template.height,
+      }}
+    >
+      {result}
+    </div>
   )
 }

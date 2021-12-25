@@ -56,6 +56,7 @@ export const styleGuide: StyleGuide = {
         },
         {
           kind: 'snapshot',
+          rotate: 30,
           snapshot: {
             id: '1',
             name: '组件',
