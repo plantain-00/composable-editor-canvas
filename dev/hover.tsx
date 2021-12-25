@@ -1,6 +1,6 @@
 import React from "react"
 import { StyleGuide } from "./model"
-import { getTargetByPath } from "./util"
+import { getTargetByPath, getTemplateContentSize } from "./util"
 
 export function HoverRenderer(props: {
   styleGuide: StyleGuide
@@ -31,37 +31,55 @@ export function HoverRenderer(props: {
     )
   }
   const content = target.content
-  let width: number
-  let height: number
-  if (content.kind === 'snapshot') {
-    width = content.snapshot.width
-    height = content.snapshot.height
-  } else if (content.kind === 'reference') {
-    const reference = styleGuide.templates.find((t) => t.id === content.id)
-    if (!reference) {
-      return null
+  const size = getTemplateContentSize(content, styleGuide)
+  if (!size) {
+    return null
+  }
+  const { width, height } = size
+  let result = (
+    <div
+      style={{
+        position: 'absolute',
+        boxSizing: 'border-box',
+        left: content.x,
+        top: content.y,
+        width: width,
+        height: height,
+        backgroundColor: 'green',
+        opacity: 0.1,
+        transform: `rotate(${content.rotate ?? 0}deg)`,
+      }}
+    />
+  )
+  for (const parent of target.parents) {
+    if (parent.kind === 'snapshot') {
+      result = (
+        <div
+          style={{
+            position: 'absolute',
+            left: parent.x,
+            top: parent.y,
+            width: parent.snapshot.width,
+            height: parent.snapshot.height,
+            transform: `rotate(${parent.rotate ?? 0}deg)`,
+          }}
+        >
+          {result}
+        </div>
+      )
     }
-    width = reference.width
-    height = reference.height
-  } else {
-    width = content.width
-    height = content.height
   }
   return (
-    <>
-      <div
-        style={{
-          position: 'absolute',
-          boxSizing: 'border-box',
-          left: template.x + content.x,
-          top: template.y + content.y,
-          width: width,
-          height: height,
-          backgroundColor: 'green',
-          opacity: 0.1,
-          transform: `rotate(${content.rotate ?? 0}deg)`,
-        }}
-      />
-    </>
+    <div
+      style={{
+        position: 'absolute',
+        left: template.x,
+        top: template.y,
+        width: template.width,
+        height: template.height,
+      }}
+    >
+      {result}
+    </div>
   )
 }

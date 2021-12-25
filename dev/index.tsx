@@ -61,6 +61,7 @@ function App() {
 
   const target = getSelectedSize(selected, state)
   const selectedTarget = getTargetByPath(selected, state)
+  const parentRotate = selectedTarget?.kind === 'content' ? selectedTarget.parents.reduce((p, c) => p + (c.rotate ?? 0), 0) : undefined
 
   const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = useRegionAlignment(6 / scale)
 
@@ -78,7 +79,7 @@ function App() {
     () => {
       clearAlignments()
       if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
-        setSelected(selectByPosition(state, transformPosition(dragMoveStartPosition, transform)))
+        setSelected(selectByPosition(state, transformPosition(dragMoveStartPosition, transform), scale))
         return
       }
       setState((draft) => {
@@ -92,6 +93,7 @@ function App() {
     },
     {
       scale,
+      parentRotate,
     },
   )
 
@@ -107,7 +109,10 @@ function App() {
       })
       setRotate(undefined)
     },
-    transform,
+    {
+      transform,
+      parentRotate,
+    },
   )
 
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
@@ -137,13 +142,14 @@ function App() {
         return undefined
       },
       rotate: selectedTarget?.kind === 'content' ? selectedTarget.content.rotate ?? 0 : 0,
+      parentRotate,
       transform,
     },
   )
 
   const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<void>((dragSelectStartPosition, dragSelectEndPosition) => {
     if (!dragSelectEndPosition) {
-      setSelected(selectByPosition(state, transformPosition(dragSelectStartPosition, transform)))
+      setSelected(selectByPosition(state, transformPosition(dragSelectStartPosition, transform), scale))
     } else {
       const index = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
       if (index !== undefined) {
@@ -176,7 +182,7 @@ function App() {
         if (dragging) {
           setHovered(undefined)
         } else {
-          const path = selectByPosition(state, transformPosition({ x: e.clientX, y: e.clientY }, transform))
+          const path = selectByPosition(state, transformPosition({ x: e.clientX, y: e.clientY }, transform), scale)
           if (!isSamePath(path, hovered)) {
             setHovered(path)
           }

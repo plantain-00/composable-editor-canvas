@@ -10,11 +10,13 @@ export function useDragResize(
     centeredScaling: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)
     keepRatio: number | undefined | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined)
     rotate: number
+    parentRotate: number
     transform: Partial<Transform>
   }>,
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, direction: ResizeDirection }>()
   const rotate = -(options?.rotate ?? 0) * Math.PI / 180
+  const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
 
   return {
     dragResizeStartPosition: dragStartPosition,
@@ -32,10 +34,16 @@ export function useDragResize(
         const { x: positionX, y: positionY } = transformPosition({ x: e.clientX, y: e.clientY }, options?.transform)
         const originalOffsetX = positionX - dragStartPosition.x
         const originalOffsetY = positionY - dragStartPosition.y
+
+        const parentSin = Math.sin(parentRotate)
+        const parentCos = Math.cos(parentRotate)
+        const parentOffsetX = parentCos * originalOffsetX - parentSin * originalOffsetY
+        const parentOffsetY = parentSin * originalOffsetX + parentCos * originalOffsetY
+
         const sin = Math.sin(rotate)
         const cos = Math.cos(rotate)
-        let offsetX = cos * originalOffsetX - sin * originalOffsetY
-        let offsetY = sin * originalOffsetX + cos * originalOffsetY
+        let offsetX = cos * parentOffsetX - sin * parentOffsetY
+        let offsetY = sin * parentOffsetX + cos * parentOffsetY
         const scaleX = dragStartPosition.direction.includes('right') ? 1 : dragStartPosition.direction.includes('left') ? -1 : 0
         const scaleY = dragStartPosition.direction.includes('bottom') ? 1 : dragStartPosition.direction.includes('top') ? -1 : 0
         const isCenteredScaling = typeof options?.centeredScaling === 'boolean' ? options.centeredScaling : options?.centeredScaling?.(e)

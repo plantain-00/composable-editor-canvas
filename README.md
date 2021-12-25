@@ -131,12 +131,14 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
     setRotate(undefined)
   },
   {
-    containerSize,
-    targetSize,
-    x,
-    y,
-    scale,
-  }
+    transform: {
+      containerSize,
+      targetSize,
+      x,
+      y,
+      scale,
+    },
+  },
 )
 
 <RotationBar

@@ -108,6 +108,7 @@ export function useDragMove(setMoveOffset: (offset: {
     y: number;
 }, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
+    parentRotate: number;
 }>): {
     dragMoveStartPosition: {
         x: number;
@@ -130,6 +131,7 @@ export function useDragResize(setResizeOffset: (offset: {
     centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
     keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
     rotate: number;
+    parentRotate: number;
     transform: Partial<Transform>;
 }>): {
     dragResizeStartPosition: {
@@ -142,7 +144,10 @@ export function useDragResize(setResizeOffset: (offset: {
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, transform?: Partial<Transform>): {
+export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, options?: Partial<{
+    transform?: Partial<Transform>;
+    parentRotate: number;
+}>): {
     dragRotateCenter: {
         x: number;
         y: number;

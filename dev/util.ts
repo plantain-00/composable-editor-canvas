@@ -145,7 +145,7 @@ function rotatePosition(position: Position, region: Region & Rotate) {
   return rotatePositionByCenter(position, { x: centerX, y: centerY }, region.rotate)
 }
 
-function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
+export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
   if (!rotate) {
     return position
   }
@@ -160,9 +160,20 @@ function rotatePositionByCenter(position: Position, center: Position, rotate: nu
   }
 }
 
-export function selectByPosition(styleGuide: StyleGuide, position: Position) {
+export const nameSize = 14
+
+export function selectByPosition(styleGuide: StyleGuide, position: Position, scale: number) {
+  const realNameSize = nameSize / scale
   for (let i = styleGuide.templates.length - 1; i >= 0; i--) {
     const template = styleGuide.templates[i]
+    if (template.name && isInRegion(position, {
+      x: template.x,
+      y: template.y - realNameSize,
+      width: realNameSize * template.name.length,
+      height: realNameSize,
+    })) {
+      return [i]
+    }
     for (const content of iterateAllContent(template, template, styleGuide, [], [])) {
       if (isInRegion(position, content)) {
         return [i, ...content.path]

@@ -7,10 +7,12 @@ export function useDragMove(
   onDragEnd?: () => void,
   options?: Partial<{
     scale: number
+    parentRotate: number
   }>
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number }>()
   const scale = options?.scale ?? 1
+  const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
 
   return {
     dragMoveStartPosition: dragStartPosition,
@@ -23,9 +25,13 @@ export function useDragMove(
     },
     dragMoveMask: dragStartPosition && <DragMask
       onDragging={(e) => {
+        const x = (e.clientX - dragStartPosition.x) / scale
+        const y = (e.clientY - dragStartPosition.y) / scale
+        const sin = Math.sin(parentRotate)
+        const cos = Math.cos(parentRotate)
         setMoveOffset({
-          x: (e.clientX - dragStartPosition.x) / scale,
-          y: (e.clientY - dragStartPosition.y) / scale,
+          x: cos * x - sin * y,
+          y: sin * x + cos * y,
         }, e)
       }}
       onDragEnd={() => {
