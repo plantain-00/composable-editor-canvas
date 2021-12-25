@@ -16,9 +16,7 @@ export const styleGuide: StyleGuide = {
           text: 'test',
           fontFamily: 'serif',
           fontSize: 50,
-          color: '',
-          colorExpression: 'variable.textColor',
-          colorExpressionId: '6',
+          color: '#ff0000',
           width: 100,
           height: 100,
           x: 10,
@@ -31,12 +29,8 @@ export const styleGuide: StyleGuide = {
           height: 100,
           x: 210,
           y: 10,
-          xExpression: 'props.width - 300',
         }
       ],
-      parameters: ['width', 'color'],
-      widthExpression: 'props.width',
-      widthExpressionId: '4'
     },
     {
       id: '2',
@@ -52,16 +46,13 @@ export const styleGuide: StyleGuide = {
           y: 0,
           width: 1100,
           height: 400,
-          color: '',
-          colorExpression: 'variable.backgroundColor',
-          colorExpressionId: '6',
+          color: '#cccccc',
         },
         {
           kind: 'reference',
           id: '1',
           x: 10,
           y: 10,
-          props: '{ width: 400 }'
         },
         {
           kind: 'snapshot',
@@ -78,7 +69,7 @@ export const styleGuide: StyleGuide = {
                 text: 'test',
                 fontFamily: 'serif',
                 fontSize: 50,
-                color: '',
+                color: '#ff0000',
                 width: 100,
                 height: 100,
                 x: 10,
@@ -93,7 +84,6 @@ export const styleGuide: StyleGuide = {
                 y: 10,
               }
             ],
-            parameters: ['width', 'color'],
           },
           x: 550,
           y: 10
@@ -101,33 +91,4 @@ export const styleGuide: StyleGuide = {
       ]
     }
   ],
-  variables: [
-    [
-      {
-        kind: 'color',
-        name: 'backgroundColor',
-        displayName: 'background color',
-        value: '#cccccc'
-      },
-      {
-        kind: 'color',
-        name: 'textColor',
-        displayName: 'text color',
-        value: '#ff0000'
-      },
-    ]
-  ],
-  collections: [
-    {
-      kind: 'color',
-      color: '#000000'
-    },
-    {
-      kind: 'color',
-      color: '#ffffff'
-    }
-  ],
-  constrains: [
-    'variable.backgroundColor !== variable.textColor'
-  ]
 }

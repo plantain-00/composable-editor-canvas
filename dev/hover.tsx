@@ -1,6 +1,6 @@
 import React from "react"
 import { StyleGuide } from "./model"
-import { getTargetByPath } from "./selection"
+import { getTargetByPath } from "./util"
 
 export function HoverRenderer(props: {
   styleGuide: StyleGuide

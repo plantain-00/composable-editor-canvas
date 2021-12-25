@@ -5,8 +5,8 @@ import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs,
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuideRenderer } from './renderer'
-import { getTargetByPath, getSelectedPosition, getSelectedSize, SelectionRenderer, isSamePath } from './selection'
-import { getTargetTemplateRegions, selectContentOrTemplateByPosition, selectTemplateByArea } from './utils'
+import { SelectionRenderer } from './selection'
+import { getSelectedSize, getTargetByPath, selectByPosition, getSelectedPosition, selectTemplateByArea, isSamePath } from './util'
 
 function App() {
   const [relativeScale, setRelativeScale] = React.useState(1)
@@ -60,21 +60,7 @@ function App() {
   }
 
   const target = getSelectedSize(selected, state)
-  const targetTemplateRegions = getTargetTemplateRegions(state)
   const selectedTarget = getTargetByPath(selected, state)
-
-  const selectByPosition = (position: { x: number, y: number }): number[] | undefined => {
-    const region = selectContentOrTemplateByPosition(state, transformPosition(position, transform))
-    if (region) {
-      const templateIndex = state.templates.findIndex((t) => t === region.region.template)
-      if (region.kind === 'template') {
-        return [templateIndex]
-      } else {
-        return [templateIndex, region.region.index]
-      }
-    }
-    return undefined
-  }
 
   const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = useRegionAlignment(6 / scale)
 
@@ -83,7 +69,7 @@ function App() {
     (f, e) => {
       if (!e.shiftKey && selectedTarget?.kind === 'template') {
         const template = selectedTarget.template
-        changeOffsetByAlignment(f, template, targetTemplateRegions.filter((t) => t.template !== template))
+        changeOffsetByAlignment(f, template, state.templates.filter((t) => t !== template))
       } else {
         clearAlignments()
       }
@@ -92,7 +78,7 @@ function App() {
     () => {
       clearAlignments()
       if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
-        setSelected(selectByPosition(dragMoveStartPosition))
+        setSelected(selectByPosition(state, transformPosition(dragMoveStartPosition, transform)))
         return
       }
       setState((draft) => {
@@ -155,13 +141,13 @@ function App() {
     },
   )
 
-  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<number[] | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
+  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<void>((dragSelectStartPosition, dragSelectEndPosition) => {
     if (!dragSelectEndPosition) {
-      setSelected(dragSelectStartPosition.data)
+      setSelected(selectByPosition(state, transformPosition(dragSelectStartPosition, transform)))
     } else {
-      const template = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
-      if (template) {
-        setSelected([state.templates.findIndex((t) => t === template)])
+      const index = selectTemplateByArea(state, transformPosition(dragSelectStartPosition, transform), transformPosition(dragSelectEndPosition, transform))
+      if (index !== undefined) {
+        setSelected([index])
       }
     }
   }, (e) => e.shiftKey)
@@ -190,7 +176,7 @@ function App() {
         if (dragging) {
           setHovered(undefined)
         } else {
-          const path = selectByPosition({ x: e.clientX, y: e.clientY })
+          const path = selectByPosition(state, transformPosition({ x: e.clientX, y: e.clientY }, transform))
           if (!isSamePath(path, hovered)) {
             setHovered(path)
           }

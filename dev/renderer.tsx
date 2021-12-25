@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, Size, TemplateReferenceContent, TemplateSnapshotContent } from './model'
-import { getTargetByPath } from './selection'
+import { getTargetByPath } from './util'
 
 export function StyleGuideRenderer(props: {
   styleGuide: StyleGuide
@@ -9,7 +9,7 @@ export function StyleGuideRenderer(props: {
   y: number
   scale: number
   targetSize: Size
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: number[]
@@ -45,7 +45,7 @@ export function StyleGuideRenderer(props: {
 function TemplateRenderer(props: {
   template: Template
   index: number
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: number[]
@@ -69,7 +69,7 @@ function TemplateRenderer(props: {
       }}
       onMouseDown={(e) => {
         e.stopPropagation()
-        onStartSelect(e, [index])
+        onStartSelect(e)
       }}
     >
       {template.contents.map((content, i) => (
@@ -91,7 +91,7 @@ function SymbolRenderer(props: {
   template: Template
   styleGuide: StyleGuide
   path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onStartSelect?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
   content: TemplateReferenceContent | TemplateSnapshotContent
@@ -127,7 +127,7 @@ function SymbolRenderer(props: {
 function TemplateContentRenderer(props: {
   content: TemplateContent
   path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onStartSelect?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
   styleGuide: StyleGuide
@@ -136,12 +136,17 @@ function TemplateContentRenderer(props: {
   if (content.hidden) {
     return null
   }
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (props.onStartSelect) {
+      e.stopPropagation()
+      props.onStartSelect(e, props.path)
+    }
+  }
   if (content.kind === 'text') {
     return (
       <TemplateTextContentRenderer
         content={content}
-        onStartSelect={props.onStartSelect}
-        path={props.path}
+        onMouseDown={onMouseDown}
         offset={offset}
         rotate={rotate}
       />
@@ -151,8 +156,7 @@ function TemplateContentRenderer(props: {
     return (
       <TemplateImageContentRenderer
         content={content}
-        onStartSelect={props.onStartSelect}
-        path={props.path}
+        onMouseDown={onMouseDown}
         offset={offset}
         rotate={rotate}
       />
@@ -162,8 +166,7 @@ function TemplateContentRenderer(props: {
     return (
       <TemplateColorContentRenderer
         content={content}
-        onStartSelect={props.onStartSelect}
-        path={props.path}
+        onMouseDown={onMouseDown}
         offset={offset}
         rotate={rotate}
       />
@@ -177,7 +180,6 @@ function TemplateContentRenderer(props: {
           template={reference}
           styleGuide={props.styleGuide}
           content={content}
-          onStartSelect={props.onStartSelect}
           path={props.path}
           offset={offset}
           rotate={rotate}
@@ -203,8 +205,7 @@ function TemplateContentRenderer(props: {
 
 function TemplateTextContentRenderer(props: {
   content: TemplateTextContent
-  path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onMouseDown?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
@@ -223,10 +224,7 @@ function TemplateTextContentRenderer(props: {
         fontFamily: content.fontFamily,
         transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
-      onMouseDown={(e) => {
-        e.stopPropagation()
-        props.onStartSelect(e, props.path)
-      }}
+      onMouseDown={props.onMouseDown}
     >
       {content.text}
     </div>
@@ -235,8 +233,7 @@ function TemplateTextContentRenderer(props: {
 
 function TemplateImageContentRenderer(props: {
   content: TemplateImageContent
-  path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onMouseDown?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
@@ -253,18 +250,14 @@ function TemplateImageContentRenderer(props: {
         height: content.height + (offset?.height ?? 0),
         transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
-      onMouseDown={(e) => {
-        e.stopPropagation()
-        props.onStartSelect(e, props.path)
-      }}
+      onMouseDown={props.onMouseDown}
     />
   )
 }
 
 function TemplateColorContentRenderer(props: {
   content: TemplateColorContent
-  path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: number[]) => void
+  onMouseDown?: React.MouseEventHandler<HTMLDivElement>
   offset?: { x: number, y: number, width: number, height: number }
   rotate?: number
 }) {
@@ -281,10 +274,7 @@ function TemplateColorContentRenderer(props: {
         backgroundColor: content.color,
         transform: `rotate(${rotate ?? content.rotate ?? 0}deg)`,
       }}
-      onMouseDown={(e) => {
-        e.stopPropagation()
-        props.onStartSelect(e, props.path)
-      }}
+      onMouseDown={props.onMouseDown}
     />
   )
 }
