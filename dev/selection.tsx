@@ -1,6 +1,7 @@
 import React from "react"
 import { ResizeBar, ResizeDirection, RotationBar } from "../src"
-import { StyleGuide, Template, TemplateContent, TemplateReferenceContent, TemplateSnapshotContent } from "./model"
+import { Position, StyleGuide } from "./model"
+import { getTargetByPath, getTemplateContentSize } from "./util"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
@@ -9,7 +10,7 @@ export function SelectionRenderer(props: {
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   onStartMove?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
-  onStartRotate: (center: { x: number, y: number }) => void
+  onStartRotate: (center: Position) => void
   onStartResize: (e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
   const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
@@ -107,106 +108,4 @@ export function SelectionRenderer(props: {
       </div>
     </>
   )
-}
-
-export function getSelectedSize(selected: number[] | undefined, styleGuide: StyleGuide) {
-  const target = getTargetByPath(selected, styleGuide)
-  if (!target) {
-    return undefined
-  }
-  const template = target.template
-  if (target.kind === 'content') {
-    return getTemplateContentSize(target.content, styleGuide)
-  }
-  return template
-}
-
-export function getSelectedPosition(selected: number[] | undefined, styleGuide: StyleGuide) {
-  const target = getTargetByPath(selected, styleGuide)
-  if (!target) {
-    return undefined
-  }
-  return target.kind === 'template' ? target.template : target.content
-}
-
-export function getTargetByPath(path: number[] | undefined, styleGuide: StyleGuide) {
-  if (!path) {
-    return undefined
-  }
-  const [index, ...indexes] = path
-  const template = styleGuide.templates[index]
-  if (indexes.length === 0) {
-    return {
-      kind: 'template' as const,
-      template,
-    }
-  }
-  const content = getTargetContentByPath(indexes, template, styleGuide, [])
-  if (content) {
-    return {
-      kind: 'content' as const,
-      template,
-      content: content.content,
-      parents: content.parents,
-    }
-  }
-  return undefined
-}
-
-function getTargetContentByPath(
-  [index, ...indexes]: number[],
-  template: Template,
-  styleGuide: StyleGuide,
-  parents: (TemplateSnapshotContent | TemplateReferenceContent)[],
-): {
-  content: TemplateContent
-  parents: (TemplateSnapshotContent | TemplateReferenceContent)[]
-} | undefined {
-  const content = template.contents[index]
-  if (indexes.length === 0) {
-    return {
-      content,
-      parents,
-    }
-  }
-  if (content.kind === 'snapshot') {
-    return getTargetContentByPath(indexes, content.snapshot, styleGuide, [...parents, content])
-  }
-  if (content.kind === 'reference') {
-    const reference = styleGuide.templates.find((t) => t.id === content.id)
-    if (!reference) {
-      return undefined
-    }
-    return getTargetContentByPath(indexes, reference, styleGuide, [...parents, content])
-  }
-  return undefined
-}
-
-export function getTemplateContentSize(content: TemplateContent, styleGuide: StyleGuide) {
-  if (content.kind === 'snapshot') {
-    return content.snapshot
-  }
-  if (content.kind === 'reference') {
-    const reference = styleGuide.templates.find((t) => t.id === content.id)
-    if (!reference) {
-      return undefined
-    }
-    return reference
-  }
-  return content
-}
-
-export function isSamePath(path1: number[] | undefined, path2: number[] | undefined) {
-  if (path1 && path2) {
-    if (path1.length !== path2.length) {
-      return false
-    }
-    for (let i = 0; i < path1.length; i++) {
-      if (path1[i] !== path2[i]) {
-        return false
-      }
-    }
-    return true
-  }
-  return path1 === undefined && path2 === undefined
 }
