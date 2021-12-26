@@ -1,7 +1,7 @@
 import React from "react"
 import { ResizeBar, ResizeDirection, RotationBar } from "../src"
 import { Position, StyleGuide } from "./model"
-import { getTargetByPath, getTemplateContentSize, nameSize, rotatePositionByCenter } from "./util"
+import { getRotatedCenter, getTargetByPath, getTemplateContentSize, nameSize } from "./util"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
@@ -107,34 +107,13 @@ export function SelectionRenderer(props: {
           scale={scale}
           onMouseDown={(e) => {
             e.stopPropagation()
-            let center: Position = {
-              x: template.x,
-              y: template.y,
-            }
-            const rotates: { x: number, y: number, rotate: number }[] = []
-            for (const parent of target.parents) {
-              if (parent.kind === 'snapshot') {
-                center.x += parent.x
-                center.y += parent.y
-                rotates.unshift({
-                  rotate: parent.rotate ?? 0,
-                  x: center.x + parent.snapshot.width / 2,
-                  y: center.y + parent.snapshot.height / 2,
-                })
-              }
-            }
-            center.x += content.x + width / 2
-            center.y += content.y + height / 2
-            for (const r of rotates) {
-              center = rotatePositionByCenter(center, r, -r.rotate)
-            }
-            onStartRotate(center)
+            onStartRotate(getRotatedCenter(target, styleGuide))
           }}
         />
         <ResizeBar
           scale={scale}
           onMouseDown={onStartResize}
-          rotate={content.rotate}
+          rotate={(content.rotate ?? 0) + target.parents.reduce((p, c) => p + (c.rotate ?? 0), 0)}
         />
       </div>
     </>
