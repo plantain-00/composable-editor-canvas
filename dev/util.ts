@@ -145,7 +145,7 @@ function rotatePosition(position: Position, region: Region & Rotate) {
   return rotatePositionByCenter(position, { x: centerX, y: centerY }, region.rotate)
 }
 
-export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
+function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
   if (!rotate) {
     return position
   }
@@ -188,9 +188,6 @@ export function selectByPosition(styleGuide: StyleGuide, position: Position, sca
 
 type ContentRegion = Region & Rotate & {
   path: number[]
-  content: TemplateContent
-  parent: Template
-  rotates: Array<Required<Rotate> & Position>
 }
 
 function* iterateAllContent(
@@ -202,57 +199,82 @@ function* iterateAllContent(
 ): Generator<ContentRegion, void, unknown> {
   for (let i = parent.contents.length - 1; i >= 0; i--) {
     const content = parent.contents[i]
+    const newPath = [...path, i]
+    let newX = position.x + content.x
+    let newY = position.y + content.y
     if (content.kind === 'snapshot') {
       const newRotates: Array<Required<Rotate> & Position> = [
-        ...rotates,
         {
-          rotate: content.rotate || 0,
-          x: position.x + content.x + content.snapshot.width / 2,
-          y: position.y + content.y + content.snapshot.height / 2,
-        }
+          rotate: content.rotate ?? 0,
+          x: newX + content.snapshot.width / 2,
+          y: newY + content.snapshot.height / 2,
+        },
+        ...rotates,
       ]
       yield* iterateAllContent(
         content.snapshot,
         {
-          x: position.x + content.x,
-          y: position.y + content.y,
+          x: newX,
+          y: newY,
         },
         styleGuide,
         newRotates,
-        [...path, i],
+        newPath,
       )
     }
-    const x = content.x
-    const y = content.y
-    const size = getTemplateContentSize(content, styleGuide)
-    const width = size?.width ?? 0
-    const height = size?.height ?? 0
-    let rotate = content.rotate || 0
-    let newX = position.x + x
-    let newY = position.y + y
-    if (rotates.length > 0) {
-      rotate += rotates.reduce((p, c) => p + c.rotate, 0)
-      let center: Position = {
-        x: newX + width / 2,
-        y: newY + height / 2
-      }
-      for (let i = rotates.length - 1; i >= 0; i--) {
-        const r = rotates[i]
-        center = rotatePositionByCenter(center, r, -r.rotate)
-      }
-      newX = center.x - width / 2
-      newY = center.y - height / 2
+    const { width, height } = getTemplateContentSize(content, styleGuide) ?? { width: 0, height: 0 }
+    let center: Position = {
+      x: newX + width / 2,
+      y: newY + height / 2
     }
+    let newRotate = content.rotate ?? 0
+    for (const r of rotates) {
+      newRotate += r.rotate
+      center = rotatePositionByCenter(center, r, -r.rotate)
+    }
+    newX = center.x - width / 2
+    newY = center.y - height / 2
     yield {
       x: newX,
       y: newY,
-      rotate,
+      rotate: newRotate,
       width,
       height,
-      path: [...path, i],
-      content,
-      parent,
-      rotates,
+      path: newPath,
     }
   }
+}
+
+export function getRotatedCenter(
+  target: {
+    kind: "content";
+    template: Template;
+    content: TemplateContent;
+    parents: (TemplateReferenceContent | TemplateSnapshotContent)[];
+  },
+  styleGuide: StyleGuide,
+) {
+  let center: Position = {
+    x: target.template.x,
+    y: target.template.y,
+  }
+  const rotates: { x: number, y: number, rotate: number }[] = []
+  for (const parent of target.parents) {
+    if (parent.kind === 'snapshot') {
+      center.x += parent.x
+      center.y += parent.y
+      rotates.unshift({
+        rotate: parent.rotate ?? 0,
+        x: center.x + parent.snapshot.width / 2,
+        y: center.y + parent.snapshot.height / 2,
+      })
+    }
+  }
+  const { width, height } = getTemplateContentSize(target.content, styleGuide) ?? { width: 0, height: 0 }
+  center.x += target.content.x + width / 2
+  center.y += target.content.y + height / 2
+  for (const r of rotates) {
+    center = rotatePositionByCenter(center, r, -r.rotate)
+  }
+  return center
 }

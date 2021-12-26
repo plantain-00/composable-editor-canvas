@@ -90,7 +90,7 @@ export function useDragResize(
         setDragStartPosition(undefined)
       }}
       style={{
-        cursor: getResizeCursor(options?.rotate ?? 0, dragStartPosition.direction),
+        cursor: getResizeCursor((options?.rotate ?? 0) + (options?.parentRotate ?? 0), dragStartPosition.direction),
       }}
     />,
   }
