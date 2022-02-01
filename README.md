@@ -24,9 +24,11 @@ import { useUndoRedo } from "composable-editor-canvas"
 import { useKey } from 'react-use'
 
 const { state, setState, undo, redo } = useUndoRedo(initialState)
-useKey((k) => k.code === 'KeyZ' && k.metaKey, undo)
+useKey((k) => k.code === 'KeyZ' && !k.shiftKey && k.metaKey, undo)
 useKey((k) => k.code === 'KeyZ' && k.shiftKey && k.metaKey, redo)
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=undo-redo.story>
 
 ### wheel scroll canvas
 
@@ -49,6 +51,8 @@ const wheelScrollRef = useWheelScroll<HTMLDivElement>(
 )
 ```
 
+<https://plantain-00.github.io/composable-editor-canvas/?p=wheel-scroll.story>
+
 ### wheel zoom canvas
 
 ```ts
@@ -57,6 +61,8 @@ import { useWheelZoom } from "composable-editor-canvas"
 const [relativeScale, setRelativeScale] = React.useState(1)
 const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=wheel-zoom.story>
 
 ### keyboard zoom canvas
 
@@ -69,6 +75,8 @@ const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)
 useKey((k) => k.code === 'Minus' && k.metaKey, zoomOut)
 useKey((k) => k.code === 'Equal' && k.metaKey, zoomIn)
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=keyboard-zoom.story>
 
 ### scrollbar scroll canvas
 
@@ -90,6 +98,8 @@ import { Scrollbar } from "composable-editor-canvas"
   onChange={setY}
 />
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=scrollbar.story>
 
 ### drag selected move
 

@@ -1,5 +1,4 @@
 import React from 'react'
-import * as ReactDOM from 'react-dom'
 import { useKey } from 'react-use'
 import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect, AlignmentLine, useRegionAlignment } from '../src'
 import { styleGuide } from './data'
@@ -8,7 +7,7 @@ import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
 import { getSelectedSize, getTargetByPath, selectByPosition, getSelectedPosition, selectTemplateByArea, isSamePath } from './util'
 
-function App() {
+export function App() {
   const [relativeScale, setRelativeScale] = React.useState(1)
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
@@ -42,7 +41,7 @@ function App() {
   )
   const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
   const isMacKeyboard = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
-  useKey((k) => k.code === 'KeyZ' && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
+  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
 
   const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)
@@ -260,5 +259,3 @@ function App() {
     </div>
   )
 }
-
-ReactDOM.render(<App />, document.getElementById('container'))
