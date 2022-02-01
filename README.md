@@ -124,6 +124,8 @@ const { onStartMove, dragMoveMask } = useDragMove(
 )
 ```
 
+<https://plantain-00.github.io/composable-editor-canvas/?p=drag-move.story>
+
 ### drag selected rotate
 
 ```tsx
@@ -161,6 +163,8 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
   }}
 />
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=drag-rotate.story>
 
 ### drag selected resize
 
@@ -201,6 +205,8 @@ const { onStartResize, dragResizeMask } = useDragResize(
 />
 ```
 
+<https://plantain-00.github.io/composable-editor-canvas/?p=drag-resize.story>
+
 ### drag select
 
 ```tsx
@@ -217,6 +223,8 @@ const { onStartSelect, dragSelectMask } = useDragSelect<number[] | undefined>((d
   }
 }, (e) => e.shiftKey)
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=drag-select.story>
 
 ### alignment line
 
@@ -237,3 +245,5 @@ const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = use
 <AlignmentLine type='x' value={alignmentX} transform={transform} />
 <AlignmentLine type='y' value={alignmentY} transform={transform} />
 ```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=alignment-line.story>

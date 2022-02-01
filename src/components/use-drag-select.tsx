@@ -2,16 +2,16 @@ import * as React from "react"
 
 import { DragMask } from "."
 
-export function useDragSelect<T>(
-  onDragEnd: (dragSelectStartPosition: { x: number, y: number, data: T }, dragSelectEndPosition?: { x: number, y: number }) => void,
+export function useDragSelect<T = void>(
+  onDragEnd: (dragSelectStartPosition: { x: number, y: number, data?: T }, dragSelectEndPosition?: { x: number, y: number }) => void,
   square?: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean),
 ) {
-  const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data: T }>()
+  const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data?: T }>()
   const [dragEndPosition, setDragEndPosition] = React.useState<{ x: number, y: number }>()
 
   return {
     dragSelectStartPosition: dragStartPosition,
-    onStartSelect(e: React.MouseEvent<HTMLDivElement, MouseEvent>, data: T) {
+    onStartSelect(e: React.MouseEvent<HTMLDivElement, MouseEvent>, data?: T) {
       setDragStartPosition({
         x: e.clientX,
         y: e.clientY,
