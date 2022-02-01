@@ -48,8 +48,8 @@ function HighlightCode(props: { code: string }) {
     }
   }, [props.code, ref.current])
   return (
-    <pre>
-      <code ref={ref} className="language-typescript">
+    <pre className="line-numbers">
+      <code ref={ref} className="language-tsx">
         {props.code}
       </code>
     </pre>

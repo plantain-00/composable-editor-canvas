@@ -103,7 +103,7 @@ export function transformPosition({ x, y }: {
 };
 
 // @public (undocumented)
-export function useDragMove(setMoveOffset: (offset: {
+export function useDragMove<T = void>(setMoveOffset: (offset: {
     x: number;
     y: number;
 }, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
@@ -113,10 +113,12 @@ export function useDragMove(setMoveOffset: (offset: {
     dragMoveStartPosition: {
         x: number;
         y: number;
+        data?: T | undefined;
     } | undefined;
     onStartMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
         x: number;
         y: number;
+        data: T;
     }> | undefined): void;
     dragMoveMask: JSX.Element | undefined;
 };
@@ -160,10 +162,10 @@ export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: ()
 };
 
 // @public (undocumented)
-export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
+export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: {
     x: number;
     y: number;
-    data: T;
+    data?: T;
 }, dragSelectEndPosition?: {
     x: number;
     y: number;
@@ -171,9 +173,9 @@ export function useDragSelect<T>(onDragEnd: (dragSelectStartPosition: {
     dragSelectStartPosition: {
         x: number;
         y: number;
-        data: T;
+        data?: T | undefined;
     } | undefined;
-    onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data: T): void;
+    onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data?: T | undefined): void;
     dragSelectMask: JSX.Element | undefined;
 };
 

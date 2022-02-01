@@ -146,7 +146,7 @@ export function App() {
     },
   )
 
-  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect<void>((dragSelectStartPosition, dragSelectEndPosition) => {
+  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect((dragSelectStartPosition, dragSelectEndPosition) => {
     if (!dragSelectEndPosition) {
       setSelected(selectByPosition(state, transformPosition(dragSelectStartPosition, transform), scale))
     } else {
