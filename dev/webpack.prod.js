@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
   mode: 'production',
   context: __dirname,
-  entry: './index',
+  entry: './story-app',
   output: {
     path: process.cwd(),
     filename: '[name].bundle.js'
@@ -13,10 +13,13 @@ module.exports = {
   },
   module: {
     rules: [
+      { test: /\.css$/i, use: ["style-loader", "css-loader"] },
       {
-        test: /\.(ts|tsx)$/,
-        exclude: /node_modules/,
-        use: 'ts-loader'
+        test: /\.tsx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+        },
       },
     ],
   },

@@ -120,3 +120,6 @@ service-worker.js
 *.data
 temp
 !main.bundle.js
+!**/vender/*.js
+!**/vender/*.css
+import-stories.ts
