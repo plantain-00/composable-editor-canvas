@@ -226,24 +226,46 @@ const { onStartSelect, dragSelectMask } = useDragSelect<number[] | undefined>((d
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=drag-select.story>
 
-### alignment line
+### region alignment line
 
 ```tsx
 import { useRegionAlignment } from "composable-editor-canvas"
 
-const { alignmentX, alignmentY, changeOffsetByAlignment, clearAlignments } = useRegionAlignment(6 / scale)
+const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clearRegionAlignments } = useRegionAlignment(6 / scale)
 
 (f, e) => {
   if (!e.shiftKey) {
-    changeOffsetByAlignment(f, target, regions)
+    changeOffsetByRegionAlignment(f, target, regions)
   } else {
-    clearAlignments()
+    clearRegionAlignments()
   }
   setMoveOffset(f)
 }
 
-<AlignmentLine type='x' value={alignmentX} transform={transform} />
-<AlignmentLine type='y' value={alignmentY} transform={transform} />
+<AlignmentLine type='x' value={regionAlignmentX} transform={transform} />
+<AlignmentLine type='y' value={regionAlignmentY} transform={transform} />
 ```
 
-<https://plantain-00.github.io/composable-editor-canvas/?p=alignment-line.story>
+<https://plantain-00.github.io/composable-editor-canvas/?p=region-alignment-line.story>
+
+### line alignment line
+
+```tsx
+import { useLineAlignment } from "composable-editor-canvas"
+
+const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAlignments } = useLineAlignment(6 / scale)
+
+(f, e, direction) => {
+  if (!e.shiftKey) {
+    changeOffsetByLineAlignment(f, direction, template, xLines, yLines)
+  } else {
+    clearRegionAlignments()
+  }
+  setResizeOffset(f)
+}
+
+<AlignmentLine type='x' value={lineAlignmentX} transform={transform} />
+<AlignmentLine type='y' value={lineAlignmentY} transform={transform} />
+```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=line-alignment-line.story>

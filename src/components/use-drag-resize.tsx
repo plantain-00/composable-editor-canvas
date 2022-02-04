@@ -4,7 +4,7 @@ import { DragMask } from "."
 import { getResizeCursor, ResizeDirection, Transform, transformPosition } from ".."
 
 export function useDragResize(
-  setResizeOffset: (offset: { x: number, y: number, width: number, height: number }) => void,
+  setResizeOffset: (offset: { x: number, y: number, width: number, height: number }, e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void,
   onDragEnd: () => void,
   options?: Partial<{
     centeredScaling: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)
@@ -49,6 +49,9 @@ export function useDragResize(
         const isCenteredScaling = typeof options?.centeredScaling === 'boolean' ? options.centeredScaling : options?.centeredScaling?.(e)
         const ratio = typeof options?.keepRatio === 'number' ? options.keepRatio : options?.keepRatio?.(e)
         if (ratio) {
+          if (dragStartPosition.direction === 'left' || dragStartPosition.direction === 'right' || dragStartPosition.direction === 'top' || dragStartPosition.direction === 'bottom') {
+            return
+          }
           const x = offsetX * scaleX
           const y = offsetY * scaleY
           offsetX = Math.min(y * ratio, x) * scaleX
@@ -83,7 +86,7 @@ export function useDragResize(
             offset.y += (cos - 1) * offsetY / 2
           }
         }
-        setResizeOffset(offset)
+        setResizeOffset(offset, e, dragStartPosition.direction)
       }}
       onDragEnd={() => {
         onDragEnd()
