@@ -22,6 +22,7 @@ export function useUndoRedo<T>(defaultState: T) {
 
   return {
     state,
+    stateIndex,
     setState: (recipe: (draft: WritableDraft<T>) => void) => {
       const s = produce(state, recipe)
       const newStateIndex = stateIndex + 1

@@ -1,13 +1,13 @@
 import * as React from "react"
 
 export function useRegionAlignment(delta: number) {
-  const [alignmentX, setAlignmentX] = React.useState<number>()
-  const [alignmentY, setAlignmentY] = React.useState<number>()
+  const [regionAlignmentX, setRegionAlignmentX] = React.useState<number>()
+  const [regionAlignmentY, setRegionAlignmentY] = React.useState<number>()
 
   return {
-    alignmentX,
-    alignmentY,
-    changeOffsetByAlignment(
+    regionAlignmentX,
+    regionAlignmentY,
+    changeOffsetByRegionAlignment(
       offset: { x: number, y: number },
       target: { x: number, y: number, width: number, height: number },
       regions: { x: number, y: number, width: number, height: number }[]
@@ -15,20 +15,20 @@ export function useRegionAlignment(delta: number) {
       const region = getRegionAlignment(offset, delta, target, regions)
       if (region.x !== undefined) {
         offset.x = region.x.target
-        setAlignmentX(region.x.alignment)
+        setRegionAlignmentX(region.x.alignment)
       } else {
-        setAlignmentX(undefined)
+        setRegionAlignmentX(undefined)
       }
       if (region.y !== undefined) {
         offset.y = region.y.target
-        setAlignmentY(region.y.alignment)
+        setRegionAlignmentY(region.y.alignment)
       } else {
-        setAlignmentY(undefined)
+        setRegionAlignmentY(undefined)
       }
     },
-    clearAlignments() {
-      setAlignmentX(undefined)
-      setAlignmentY(undefined)
+    clearRegionAlignments() {
+      setRegionAlignmentX(undefined)
+      setRegionAlignmentY(undefined)
     },
   }
 }
@@ -59,16 +59,16 @@ function getRegionAlignment(
         alignment: region[field],
       }
     } else {
-      const newX = value + target[sizeField] / 2
-      region = regions.find((r) => Math.abs(r[field] + r[sizeField] / 2 - newX) < delta)
+      const newValue = value + target[sizeField] / 2
+      region = regions.find((r) => Math.abs(r[field] + r[sizeField] / 2 - newValue) < delta)
       if (region) {
         result[field] = {
           target: region[field] + (region[sizeField] - target[sizeField]) / 2 - target[field],
           alignment: region[field] + region[sizeField] / 2,
         }
       } else {
-        const newX = value + target[sizeField]
-        region = regions.find((r) => Math.abs(r[field] + r[sizeField] - newX) < delta)
+        const newValue = value + target[sizeField]
+        region = regions.find((r) => Math.abs(r[field] + r[sizeField] - newValue) < delta)
         if (region) {
           result[field] = {
             target: region[field] + region[sizeField] - target[sizeField] - target[field],

@@ -129,7 +129,7 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     width: number;
     height: number;
-}) => void, onDragEnd: () => void, options?: Partial<{
+}, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
     centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
     keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
     rotate: number;
@@ -146,7 +146,7 @@ export function useDragResize(setResizeOffset: (offset: {
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
 }>): {
@@ -180,10 +180,28 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: {
 };
 
 // @public (undocumented)
+export function useLineAlignment(delta: number): {
+    lineAlignmentX: number | undefined;
+    lineAlignmentY: number | undefined;
+    changeOffsetByLineAlignment(offset: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }, direction: ResizeDirection, target: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    }, xlines: number[], yLines: number[]): void;
+    clearLineAlignments(): void;
+};
+
+// @public (undocumented)
 export function useRegionAlignment(delta: number): {
-    alignmentX: number | undefined;
-    alignmentY: number | undefined;
-    changeOffsetByAlignment(offset: {
+    regionAlignmentX: number | undefined;
+    regionAlignmentY: number | undefined;
+    changeOffsetByRegionAlignment(offset: {
         x: number;
         y: number;
     }, target: {
@@ -197,12 +215,13 @@ export function useRegionAlignment(delta: number): {
         width: number;
         height: number;
     }[]): void;
-    clearAlignments(): void;
+    clearRegionAlignments(): void;
 };
 
 // @public (undocumented)
 export function useUndoRedo<T>(defaultState: T): {
     state: T;
+    stateIndex: number;
     setState: (recipe: (draft: WritableDraft<T>) => void) => T;
     canUndo: boolean;
     canRedo: boolean;

@@ -4,7 +4,7 @@ import { DragMask } from "."
 import { Transform, transformPosition } from ".."
 
 export function useDragRotate(
-  setRotate: (rotate: number) => void,
+  setRotate: (rotate: number, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void,
   onDragEnd: () => void,
   options?: Partial<{
     transform?: Partial<Transform>
@@ -20,7 +20,8 @@ export function useDragRotate(
     dragRotateMask: center && <DragMask
       onDragging={(e) => {
         const { x, y } = transformPosition({ x: e.clientX, y: e.clientY }, options?.transform)
-        setRotate(Math.round((Math.atan2(y - center.y, x - center.x) / Math.PI * 180 + 450 - parentRotate) % 360))
+        const rotate = (Math.atan2(y - center.y, x - center.x) / Math.PI * 180 + 450 - parentRotate) % 360
+        setRotate(rotate, e)
       }}
       onDragEnd={() => {
         onDragEnd?.()
