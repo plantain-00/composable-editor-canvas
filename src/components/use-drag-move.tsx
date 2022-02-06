@@ -1,9 +1,9 @@
 import * as React from "react"
 
-import { DragMask } from "."
+import { DragMask, useKey } from "."
 
 export function useDragMove<T = void>(
-  setMoveOffset: (offset: { x: number, y: number }, e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void,
+  setMoveOffset: (offset: { x: number, y: number }, e?: React.MouseEvent<HTMLDivElement, MouseEvent>) => void,
   onDragEnd?: () => void,
   options?: Partial<{
     scale: number
@@ -13,6 +13,11 @@ export function useDragMove<T = void>(
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data?: T }>()
   const scale = options?.scale ?? 1
   const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
+
+  useKey((e) => e.key === 'Escape', () => {
+    setMoveOffset({ x: 0, y: 0 })
+    setDragStartPosition(undefined)
+  })
 
   return {
     dragMoveStartPosition: dragStartPosition,

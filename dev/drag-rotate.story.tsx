@@ -14,7 +14,7 @@ export default () => {
   const [rotate, setRotate] = React.useState<number>()
   const { onStartRotate, dragRotateMask } = useDragRotate(
     (r, e) => {
-      if (!e.shiftKey) {
+      if (e && r !== undefined && !e.shiftKey) {
         const snap = Math.round(r / 45) * 45
         if (Math.abs(snap - r) < 5) {
           r = snap
