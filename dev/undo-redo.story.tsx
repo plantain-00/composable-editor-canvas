@@ -1,6 +1,5 @@
 import React from 'react'
-import { useKey } from 'react-use'
-import { useUndoRedo } from '../src'
+import { useUndoRedo, useKey } from '../src'
 
 const initialState = { count: 0 }
 

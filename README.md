@@ -20,8 +20,7 @@ A composable editor canvas library.
 ### undo/redo
 
 ```ts
-import { useUndoRedo } from "composable-editor-canvas"
-import { useKey } from 'react-use'
+import { useUndoRedo, useKey } from "composable-editor-canvas"
 
 const { state, setState, undo, redo } = useUndoRedo(initialState)
 useKey((k) => k.code === 'KeyZ' && !k.shiftKey && k.metaKey, undo)
@@ -67,8 +66,7 @@ const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
 ### keyboard zoom canvas
 
 ```ts
-import { useZoom } from "composable-editor-canvas"
-import { useKey } from 'react-use'
+import { useZoom, useKey } from "composable-editor-canvas"
 
 const [relativeScale, setRelativeScale] = React.useState(1)
 const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)

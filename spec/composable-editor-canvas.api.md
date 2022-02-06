@@ -106,7 +106,7 @@ export function transformPosition({ x, y }: {
 export function useDragMove<T = void>(setMoveOffset: (offset: {
     x: number;
     y: number;
-}, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+}, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
 }>): {
@@ -129,7 +129,7 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     width: number;
     height: number;
-}, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
+}, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
     centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
     keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
     rotate: number;
@@ -146,7 +146,7 @@ export function useDragResize(setResizeOffset: (offset: {
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number, e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
 }>): {
@@ -178,6 +178,9 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: {
     onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data?: T | undefined): void;
     dragSelectMask: JSX.Element | undefined;
 };
+
+// @public (undocumented)
+export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void): void;
 
 // @public (undocumented)
 export function useLineAlignment(delta: number): {

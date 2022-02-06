@@ -1,6 +1,5 @@
 import React from 'react'
-import { useKey } from 'react-use'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuide } from './model'
@@ -77,7 +76,7 @@ export function App() {
   const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
   const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(
     (f, e) => {
-      if (!e.shiftKey && selectedTarget?.kind === 'template') {
+      if (e && !e.shiftKey && selectedTarget?.kind === 'template') {
         const template = selectedTarget.template
         changeOffsetByRegionAlignment(f, template, state.templates.filter((t) => t !== template))
       } else {
@@ -109,7 +108,7 @@ export function App() {
   const [rotate, setRotate] = React.useState<number>()
   const { onStartRotate, dragRotateMask, dragRotateCenter } = useDragRotate(
     (r, e) => {
-      if (!e.shiftKey) {
+      if (e && r !== undefined && !e.shiftKey) {
         const snap = Math.round(r / 45) * 45
         if (Math.abs(snap - r) < 5) {
           r = snap
@@ -136,7 +135,7 @@ export function App() {
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const { onStartResize, dragResizeMask, dragResizeStartPosition } = useDragResize(
     (f, e, direction) => {
-      if (!e.altKey && selectedTarget?.kind === 'template') {
+      if (e && direction && !e.altKey && selectedTarget?.kind === 'template') {
         const template = selectedTarget.template
         const xLines = state.templates.filter((t) => t !== template).map((t) => [t.x, t.x + t.width]).flat()
         const yLines = state.templates.filter((t) => t !== template).map((t) => [t.y, t.y + t.height]).flat()

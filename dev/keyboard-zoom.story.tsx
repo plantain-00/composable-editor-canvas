@@ -1,6 +1,5 @@
 import React from "react"
-import { useKey } from 'react-use'
-import { useZoom } from "../src"
+import { useZoom, useKey } from "../src"
 
 export default () => {
   const [scale, setScale] = React.useState(1)
