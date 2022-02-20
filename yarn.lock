@@ -336,12 +336,7 @@
   resolved "https://registry.yarnpkg.com/@types/mime/-/mime-1.3.2.tgz#93e25bf9ee75fe0fd80b594bc4feb0e862111b5a"
   integrity sha512-YATxVxgRqNH6nHEIsvg6k2Boc1JHI9ZbH5iWFFv/MTkchz3b1ieGDa5T0a9RznNdI0KhVbdbWSN+KWWrQZRxTw==
 
-"@types/node@*":
-  version "17.0.17"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.17.tgz#a8ddf6e0c2341718d74ee3dc413a13a042c45a0c"
-  integrity sha512-e8PUNQy1HgJGV3iU/Bp2+D/DXh3PYeyli8LgIwsQcs1Ar1LoaWHSIT6Rw+H2rNJmiq6SNWiDytfx8+gYj7wDHw==
-
-"@types/node@12.20.24":
+"@types/node@*", "@types/node@12.20.24":
   version "12.20.24"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.24.tgz#c37ac69cb2948afb4cef95f424fa0037971a9a5c"
   integrity sha512-yxDeaQIAJlMav7fH5AQqPH1u8YIuhYJXYBzxaQ4PifsU0GDO38MSdmEDeRlIxrKbC6NbEaaEHDanWb+y30U8SQ==
@@ -3953,10 +3948,10 @@ process-nextick-args@~2.0.0:
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.1.tgz#7820d9b16120cc55ca9ae7792680ae7dba6d7fe2"
   integrity sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==
 
-protocol-based-web-framework@4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/protocol-based-web-framework/-/protocol-based-web-framework-4.5.0.tgz#258bb6ccdf7d99865382f2e2c9b62b0e7a46a71b"
-  integrity sha512-KzPVYaUEM4VsExY+4MhsfhD1IPSgdlMnuBd7OKypcReSQsYAeKK68TeL2U3cL+hT3/kEw/z/8mNiOmC2U1hVnQ==
+protocol-based-web-framework@4.7.1:
+  version "4.7.1"
+  resolved "https://registry.yarnpkg.com/protocol-based-web-framework/-/protocol-based-web-framework-4.7.1.tgz#189be6ae042e7f2efc7d8d3a68bda64f52c80ea1"
+  integrity sha512-NKo62UHZbf3VR4RHjsaoiMWUcTrVBbDU3BBpYXbDOz3QBjIWJ19Rupf8m4X1Cy05Fecv8QGlCw93a9SP9cvn+w==
   dependencies:
     path-to-regexp "6"
     tslib "1 || 2"
@@ -4876,9 +4871,9 @@ typedarray-to-buffer@^3.1.5:
     is-typedarray "^1.0.0"
 
 types-as-schema@2:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/types-as-schema/-/types-as-schema-2.0.0.tgz#3352758a06a5b7440280c262d909d78e8ced5ace"
-  integrity sha512-ex89f+GnNxy32kEE6ftuZvFtgyuTeGi6SJz3aYWpzOlA41UB56NCRxtLijauC1laZ4vpC6gsEUi2p4sKGpiFvg==
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/types-as-schema/-/types-as-schema-2.1.1.tgz#6c9037d15c5246db268efc0f7993586db334db4c"
+  integrity sha512-EpDy/597Mnn/XWztsHtTfFBZTAY4BUVC9k5Wjz5Fh4gAQ4TyJw1prceeORZ9/XFr0B68j4N1Gw1GCGG9dICCyg==
   dependencies:
     chokidar "3"
     fast-glob "3"
