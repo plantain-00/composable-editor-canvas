@@ -1,6 +1,6 @@
 const tsFiles = `"src/**/*.ts" "spec/**/*.ts"`
 
-const importStories = 'IMPORT_STORY_OUTPUT_PATH=./dev/import-stories.ts types-as-schema "./dev/*.story.tsx" --config protocol-based-web-framework/import-stories'
+const importStories = 'types-as-schema -p ./types-as-schema.config.ts'
 
 export default {
   build: [
