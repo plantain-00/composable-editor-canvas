@@ -267,3 +267,23 @@ const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAl
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=line-alignment-line.story>
+
+### circle click create
+
+```ts
+import { useCircleClickCreate } from "composable-editor-canvas"
+
+const [circle, setCircle] = React.useState<{ x: number, y: number, r: number }>()
+const [contents, setContents] = React.useState<{ x: number, y: number, r: number }[]>([])
+const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('2 points', setCircle, () => {
+  if (circle) {
+    setContents(produce(contents, (draft) => {
+      draft.push(circle)
+    }))
+  }
+})
+```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-2-points-create.story>
+<https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-3-points-create.story>
+<https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-center-radius-create.story>

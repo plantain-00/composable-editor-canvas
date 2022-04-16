@@ -103,6 +103,16 @@ export function transformPosition({ x, y }: {
 };
 
 // @public (undocumented)
+export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius', setCircle: (circle?: {
+    x: number;
+    y: number;
+    r: number;
+}) => void, onEnd: () => void): {
+    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
+    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
+};
+
+// @public (undocumented)
 export function useDragMove<T = void>(setMoveOffset: (offset: {
     x: number;
     y: number;
