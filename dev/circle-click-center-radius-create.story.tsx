@@ -5,10 +5,11 @@ import { useCircleClickCreate } from "../src"
 export default () => {
   const [circle, setCircle] = React.useState<{ x: number, y: number, r: number }>()
   const [contents, setContents] = React.useState<{ x: number, y: number, r: number }[]>([])
-  const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('center radius', setCircle, () => {
-    if (circle) {
+  const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate('center radius', setCircle, (c) => {
+    const data = c || circle
+    if (data) {
       setContents(produce(contents, (draft) => {
-        draft.push(circle)
+        draft.push(data)
       }))
     }
   })
@@ -34,6 +35,7 @@ export default () => {
         >
         </div>
       ))}
+      {circleClickCreateInput}
     </div>
   )
 }
