@@ -103,13 +103,18 @@ export function transformPosition({ x, y }: {
 };
 
 // @public (undocumented)
-export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius', setCircle: (circle?: {
+export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter', setCircle: (circle?: {
     x: number;
     y: number;
     r: number;
-}) => void, onEnd: () => void): {
+}) => void, onEnd: (circle?: {
+    x: number;
+    y: number;
+    r: number;
+}) => void): {
     onCircleClickCreateClick(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
     onCircleClickCreateMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
+    circleClickCreateInput: false | JSX.Element | undefined;
 };
 
 // @public (undocumented)
