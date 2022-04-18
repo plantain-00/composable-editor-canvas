@@ -2,7 +2,7 @@ import * as React from "react"
 
 export function DragMask(props: {
   onDragEnd: () => void
-  onDragging: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  onDragging: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
   style?: React.CSSProperties
   children?: React.ReactNode
 }) {

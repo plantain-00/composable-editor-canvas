@@ -23,7 +23,7 @@ export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.Muta
 // @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
-    onDragging: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+    onDragging: (e: React_2.MouseEvent<HTMLElement, MouseEvent>) => void;
     style?: React_2.CSSProperties;
     children?: React_2.ReactNode;
 }): JSX.Element;
@@ -43,7 +43,7 @@ export function ResizeBar(props: {
     resizeSize?: number;
     directions?: ResizeDirection[];
     rotate?: number;
-    onMouseDown: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) => void;
+    onMouseDown: (e: React_2.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection) => void;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -60,7 +60,7 @@ export function RotationBar(props: {
     scale: number;
     rotateStickLength?: number;
     rotateCircleSize?: number;
-    onMouseDown: React_2.MouseEventHandler<HTMLDivElement>;
+    onMouseDown: React_2.MouseEventHandler<HTMLElement>;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -112,8 +112,8 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
     y: number;
     r: number;
 }) => void): {
-    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
-    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>): void;
+    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
+    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
     circleClickCreateInput: false | JSX.Element | undefined;
 };
 
@@ -121,7 +121,7 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
 export function useDragMove<T = void>(setMoveOffset: (offset: {
     x: number;
     y: number;
-}, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+}, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
 }>): {
@@ -130,7 +130,7 @@ export function useDragMove<T = void>(setMoveOffset: (offset: {
         y: number;
         data?: T | undefined;
     } | undefined;
-    onStartMove(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, startPosition?: Partial<{
+    onStartMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>, startPosition?: Partial<{
         x: number;
         y: number;
         data: T;
@@ -144,9 +144,9 @@ export function useDragResize(setResizeOffset: (offset: {
     y: number;
     width: number;
     height: number;
-}, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
-    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean);
-    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined);
+}, e?: React_2.MouseEvent<HTMLElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
+    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean);
+    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => number | undefined);
     rotate: number;
     parentRotate: number;
     transform: Partial<Transform>;
@@ -156,12 +156,12 @@ export function useDragResize(setResizeOffset: (offset: {
         y: number;
         direction: ResizeDirection;
     } | undefined;
-    onStartResize(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection): void;
+    onStartResize(e: React_2.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection): void;
     dragResizeMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
 }>): {
@@ -184,13 +184,13 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: {
 }, dragSelectEndPosition?: {
     x: number;
     y: number;
-}) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)): {
+}) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean)): {
     dragSelectStartPosition: {
         x: number;
         y: number;
         data?: T | undefined;
     } | undefined;
-    onStartSelect(e: React_2.MouseEvent<HTMLDivElement, MouseEvent>, data?: T | undefined): void;
+    onStartSelect(e: React_2.MouseEvent<HTMLElement, MouseEvent>, data?: T | undefined): void;
     dragSelectMask: JSX.Element | undefined;
 };
 

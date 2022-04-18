@@ -4,11 +4,11 @@ import { DragMask, useKey } from "."
 import { getResizeCursor, ResizeDirection, Transform, transformPosition } from ".."
 
 export function useDragResize(
-  setResizeOffset: (offset: { x: number, y: number, width: number, height: number }, e?: React.MouseEvent<HTMLDivElement, MouseEvent>, direction?: ResizeDirection) => void,
+  setResizeOffset: (offset: { x: number, y: number, width: number, height: number }, e?: React.MouseEvent<HTMLElement, MouseEvent>, direction?: ResizeDirection) => void,
   onDragEnd: () => void,
   options?: Partial<{
-    centeredScaling: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean)
-    keepRatio: number | undefined | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => number | undefined)
+    centeredScaling: boolean | ((e: React.MouseEvent<HTMLElement, MouseEvent>) => boolean)
+    keepRatio: number | undefined | ((e: React.MouseEvent<HTMLElement, MouseEvent>) => number | undefined)
     rotate: number
     parentRotate: number
     transform: Partial<Transform>
@@ -24,7 +24,7 @@ export function useDragResize(
 
   return {
     dragResizeStartPosition: dragStartPosition,
-    onStartResize(e: React.MouseEvent<HTMLDivElement, MouseEvent>, direction: ResizeDirection) {
+    onStartResize(e: React.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection) {
       e.stopPropagation()
       const { x, y } = transformPosition({ x: e.clientX, y: e.clientY }, options?.transform)
       setDragStartPosition({
