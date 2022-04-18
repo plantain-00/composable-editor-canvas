@@ -4,7 +4,7 @@ import { DragMask, useKey } from "."
 
 export function useDragSelect<T = void>(
   onDragEnd: (dragSelectStartPosition: { x: number, y: number, data?: T }, dragSelectEndPosition?: { x: number, y: number }) => void,
-  square?: boolean | ((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => boolean),
+  square?: boolean | ((e: React.MouseEvent<HTMLElement, MouseEvent>) => boolean),
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data?: T }>()
   const [dragEndPosition, setDragEndPosition] = React.useState<{ x: number, y: number }>()
@@ -14,7 +14,7 @@ export function useDragSelect<T = void>(
   })
   return {
     dragSelectStartPosition: dragStartPosition,
-    onStartSelect(e: React.MouseEvent<HTMLDivElement, MouseEvent>, data?: T) {
+    onStartSelect(e: React.MouseEvent<HTMLElement, MouseEvent>, data?: T) {
       setDragStartPosition({
         x: e.clientX,
         y: e.clientY,

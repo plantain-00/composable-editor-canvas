@@ -23,7 +23,7 @@ export function useCircleClickCreate(
   })
 
   return {
-    onCircleClickCreateClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    onCircleClickCreateClick(e: React.MouseEvent<HTMLElement, MouseEvent>) {
       setCursorPosition({ x: e.clientX, y: e.clientY })
       if (!startPosition) {
         setStartPosition({ x: e.clientX, y: e.clientY })
@@ -36,7 +36,7 @@ export function useCircleClickCreate(
         setCircle(undefined)
       }
     },
-    onCircleClickCreateMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    onCircleClickCreateMove(e: React.MouseEvent<HTMLElement, MouseEvent>) {
       setCursorPosition({ x: e.clientX, y: e.clientY })
       if (startPosition) {
         if (type === '2 points') {

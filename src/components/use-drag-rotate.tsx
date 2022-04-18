@@ -4,7 +4,7 @@ import { DragMask, useKey } from "."
 import { Transform, transformPosition } from ".."
 
 export function useDragRotate(
-  setRotate: (rotate: number | undefined, e?: React.MouseEvent<HTMLDivElement, MouseEvent>) => void,
+  setRotate: (rotate: number | undefined, e?: React.MouseEvent<HTMLElement, MouseEvent>) => void,
   onDragEnd: () => void,
   options?: Partial<{
     transform?: Partial<Transform>

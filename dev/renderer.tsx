@@ -9,7 +9,7 @@ export function StyleGuideRenderer(props: {
   y: number
   scale: number
   targetSize: Size
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  onStartSelect: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: number[]
@@ -47,7 +47,7 @@ function TemplateRenderer(props: {
   template: Template
   styleGuide: StyleGuide
   path: number[]
-  onStartSelect: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void
+  onStartSelect: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
   offset: { x: number, y: number, width: number, height: number }
   rotate?: number
   selected?: number[]

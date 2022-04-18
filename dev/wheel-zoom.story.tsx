@@ -3,7 +3,7 @@ import { useWheelZoom } from "../src"
 
 export default () => {
   const [scale, setScale] = React.useState(1)
-  const wheelZoomRef = useWheelZoom<HTMLDivElement>(setScale)
+  const wheelZoomRef = useWheelZoom<HTMLElement>(setScale)
   return (
     <div
       style={{

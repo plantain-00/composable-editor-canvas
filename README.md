@@ -42,7 +42,7 @@ const contentSize = {
   width: targetSize.width * scale + padding,
   height: targetSize.height * scale + padding,
 }
-const wheelScrollRef = useWheelScroll<HTMLDivElement>(
+const wheelScrollRef = useWheelScroll<HTMLElement>(
   setX,
   setY,
   (contentSize.width - containerSize.width) / 2,
@@ -58,7 +58,7 @@ const wheelScrollRef = useWheelScroll<HTMLDivElement>(
 import { useWheelZoom } from "composable-editor-canvas"
 
 const [relativeScale, setRelativeScale] = React.useState(1)
-const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
+const wheelZoomRef = useWheelZoom<HTMLElement>(setRelativeScale)
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=wheel-zoom.story>

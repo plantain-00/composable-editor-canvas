@@ -43,13 +43,13 @@ export function App() {
     height: targetSize.height * scale + padding,
   }
 
-  const wheelScrollRef = useWheelScroll<HTMLDivElement>(
+  const wheelScrollRef = useWheelScroll<HTMLElement>(
     setX,
     setY,
     (contentSize.width - containerSize.width) / 2,
     (contentSize.height - containerSize.height) / 2,
   )
-  const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
+  const wheelZoomRef = useWheelZoom<HTMLElement>(setRelativeScale)
   const isMacKeyboard = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
