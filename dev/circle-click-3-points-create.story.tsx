@@ -29,7 +29,7 @@ export default () => {
             top: `${content.y - content.r}px`,
             borderRadius: `${content.r}px`,
             position: 'absolute',
-            border: '1px solid green',
+            border: '1px solid #00ff00',
           }}
         >
         </div>
