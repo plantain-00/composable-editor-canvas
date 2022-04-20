@@ -27,14 +27,14 @@ export default () => {
   }, [contents, circle])
 
   return (
-    <div>
+    <div style={{ height: '100%' }}>
       <Stage
         onClick={onCircleClickCreateClick}
         onMouseMove={onCircleClickCreateMove}
         options={{
           backgroundColor: 0xffffff,
         }}
-        style={{ height: '100%' }}
+        style={{ position: 'absolute', }}
       >
         <Graphics draw={draw} />
       </Stage>
