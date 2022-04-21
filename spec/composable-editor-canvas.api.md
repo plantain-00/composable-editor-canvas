@@ -103,7 +103,7 @@ export function transformPosition({ x, y }: {
 };
 
 // @public (undocumented)
-export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter', setCircle: (circle?: {
+export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: {
     x: number;
     y: number;
     r: number;
