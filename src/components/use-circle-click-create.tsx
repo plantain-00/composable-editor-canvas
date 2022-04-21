@@ -3,7 +3,7 @@ import * as React from "react"
 import { useKey } from "."
 
 export function useCircleClickCreate(
-  type: '2 points' | '3 points' | 'center radius' | 'center diameter',
+  type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
   setCircle: (circle?: { x: number, y: number, r: number }) => void,
   onEnd: (circle?: { x: number, y: number, r: number }) => void,
 ) {
@@ -22,8 +22,19 @@ export function useCircleClickCreate(
     inputRef.current?.focus()
   })
 
+  const reset = () => {
+    setStartPosition(undefined)
+    setMiddlePosition(undefined)
+    setCircle(undefined)
+    setText('')
+    setCursorPosition(undefined)
+  }
+
   return {
     onCircleClickCreateClick(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+      if (!type) {
+        return
+      }
       setCursorPosition({ x: e.clientX, y: e.clientY })
       if (!startPosition) {
         setStartPosition({ x: e.clientX, y: e.clientY })
@@ -31,12 +42,13 @@ export function useCircleClickCreate(
         setMiddlePosition({ x: e.clientX, y: e.clientY })
       } else {
         onEnd()
-        setStartPosition(undefined)
-        setMiddlePosition(undefined)
-        setCircle(undefined)
+        reset()
       }
     },
     onCircleClickCreateMove(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+      if (!type) {
+        return
+      }
       setCursorPosition({ x: e.clientX, y: e.clientY })
       if (startPosition) {
         if (type === '2 points') {
@@ -95,10 +107,7 @@ export function useCircleClickCreate(
                     y,
                     r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
                   })
-                  setStartPosition(undefined)
-                  setMiddlePosition(undefined)
-                  setCircle(undefined)
-                  setText('')
+                  reset()
                 }
                 return
               }
@@ -118,10 +127,7 @@ export function useCircleClickCreate(
                   y,
                   r: type === 'center diameter' || type === '2 points' ? r / 2 : r,
                 })
-                setStartPosition(undefined)
-                setMiddlePosition(undefined)
-                setCircle(undefined)
-                setText('')
+                reset()
               }
             } else {
               if (position.length === 2) {

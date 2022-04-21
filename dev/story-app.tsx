@@ -12,7 +12,7 @@ function StoryApp() {
   if (!search) {
     return (
       <ul style={{ margin: '20px 50px' }}>
-        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>all in one</li>
+        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>combination 1</li>
         {stories.map((s) => <li style={{ cursor: 'pointer' }} key={s.path} onClick={() => navigateTo(location.pathname + '?p=' + s.path)}>{s.name} {s.path}</li>)}
       </ul>
     )

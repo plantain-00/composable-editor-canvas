@@ -21,7 +21,7 @@ export default () => {
     g.lineStyle(1, 0x00ff00, 1)
     for (const content of [...contents, circle]) {
       if (content) {
-        g.drawCircle(content.x - 20, content.y - 20, content.r)
+        g.drawCircle(content.x, content.y, content.r)
       }
     }
   }, [contents, circle])
@@ -34,7 +34,7 @@ export default () => {
         options={{
           backgroundColor: 0xffffff,
         }}
-        style={{ position: 'absolute', }}
+        style={{ position: 'absolute', left: 0, top: 0 }}
       >
         <Graphics draw={draw} />
       </Stage>
