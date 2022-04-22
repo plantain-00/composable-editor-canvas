@@ -1,13 +1,13 @@
 import React from "react"
-import { ResizeBar, ResizeDirection, RotationBar } from "../src"
-import { Position, StyleGuide } from "./model"
+import { Position, Region, ResizeBar, ResizeDirection, RotationBar } from "../src"
+import { StyleGuide } from "./model"
 import { getRotatedCenter, getTargetByPath, getTemplateContentSize, nameSize } from "./util"
 
 export function SelectionRenderer(props: {
   styleGuide: StyleGuide
   scale: number
   selected: number[] | undefined
-  offset: { x: number, y: number, width: number, height: number }
+  offset: Region
   rotate?: number
   onStartMove?: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
   onStartRotate: (center: Position) => void

@@ -1,9 +1,9 @@
 import produce from "immer"
 import React from "react"
-import { useDragSelect } from "../src"
+import { Region, useDragSelect } from "../src"
 
 export default () => {
-  const [contents, setContents] = React.useState<{ x: number, y: number, width: number, height: number }[]>([])
+  const [contents, setContents] = React.useState<Region[]>([])
   const { onStartSelect, dragSelectMask } = useDragSelect<number[] | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
     if (dragSelectEndPosition) {
       setContents(produce(contents, (draft) => {

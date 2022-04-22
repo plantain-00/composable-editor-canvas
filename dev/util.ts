@@ -1,4 +1,5 @@
-import { Position, Region, Rotate, StyleGuide, Template, TemplateContent, TemplateReferenceContent, TemplateSnapshotContent } from "./model"
+import { Position, Region } from "../src"
+import { Rotate, StyleGuide, Template, TemplateContent, TemplateReferenceContent, TemplateSnapshotContent } from "./model"
 
 export function getSelectedSize(selected: number[] | undefined, styleGuide: StyleGuide) {
   const target = getTargetByPath(selected, styleGuide)
@@ -258,7 +259,7 @@ export function getRotatedCenter(
     x: target.template.x,
     y: target.template.y,
   }
-  const rotates: { x: number, y: number, rotate: number }[] = []
+  const rotates: (Position & { rotate: number })[] = []
   for (const parent of target.parents) {
     if (parent.kind === 'snapshot') {
       center.x += parent.x

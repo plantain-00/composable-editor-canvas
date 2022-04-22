@@ -21,6 +21,12 @@ export function AlignmentLine(props: {
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
+export interface Circle extends Position {
+    // (undocumented)
+    r: number;
+}
+
+// @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
     onDragging: (e: React_2.MouseEvent<HTMLElement, MouseEvent>) => void;
@@ -35,7 +41,25 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 };
 
 // @public (undocumented)
+export function getPointByLengthAndDirection(startPoint: Position, length: number, directionPoint: Position): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
 export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
+
+// @public (undocumented)
+export interface Position {
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
+export interface Region extends Position, Size {
+}
 
 // @public (undocumented)
 export function ResizeBar(props: {
@@ -74,88 +98,68 @@ export function Scrollbar(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
-export interface Transform {
+export interface Size {
     // (undocumented)
-    containerSize: {
-        width: number;
-        height: number;
-    };
+    height: number;
     // (undocumented)
-    scale: number;
-    // (undocumented)
-    targetSize: {
-        width: number;
-        height: number;
-    };
-    // (undocumented)
-    x: number;
-    // (undocumented)
-    y: number;
+    width: number;
 }
 
 // @public (undocumented)
-export function transformPosition({ x, y }: {
-    x: number;
-    y: number;
-}, transform?: Partial<Transform>): {
+export interface Transform extends Position {
+    // (undocumented)
+    containerSize: Size;
+    // (undocumented)
+    scale: number;
+    // (undocumented)
+    targetSize: Size;
+}
+
+// @public (undocumented)
+export function transformPosition({ x, y }: Position, transform?: Partial<Transform>): {
     x: number;
     y: number;
 };
 
 // @public (undocumented)
-export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: {
-    x: number;
-    y: number;
-    r: number;
-}) => void, onEnd: (circle?: {
-    x: number;
-    y: number;
-    r: number;
-}) => void): {
+export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
     onCircleClickCreateClick(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
     onCircleClickCreateMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
     circleClickCreateInput: false | JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragMove<T = void>(setMoveOffset: (offset: {
-    x: number;
-    y: number;
-}, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
+    setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    clearText(): void;
+    input: false | JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
 }>): {
-    dragMoveStartPosition: {
-        x: number;
-        y: number;
+    dragMoveStartPosition: (Position & {
         data?: T | undefined;
-    } | undefined;
-    onStartMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>, startPosition?: Partial<{
-        x: number;
-        y: number;
+    }) | undefined;
+    onStartMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>, startPosition?: Partial<Position & {
         data: T;
     }> | undefined): void;
     dragMoveMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragResize(setResizeOffset: (offset: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}, e?: React_2.MouseEvent<HTMLElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.MouseEvent<HTMLElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
     centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean);
     keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => number | undefined);
     rotate: number;
     parentRotate: number;
     transform: Partial<Transform>;
 }>): {
-    dragResizeStartPosition: {
-        x: number;
-        y: number;
+    dragResizeStartPosition: (Position & {
         direction: ResizeDirection;
-    } | undefined;
+    }) | undefined;
     onStartResize(e: React_2.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection): void;
     dragResizeMask: JSX.Element | undefined;
 };
@@ -165,74 +169,45 @@ export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_
     transform?: Partial<Transform>;
     parentRotate: number;
 }>): {
-    dragRotateCenter: {
-        x: number;
-        y: number;
-    } | undefined;
-    onStartRotate: React_2.Dispatch<React_2.SetStateAction<{
-        x: number;
-        y: number;
-    } | undefined>>;
+    dragRotateCenter: Position | undefined;
+    onStartRotate: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     dragRotateMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: {
-    x: number;
-    y: number;
+export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Position & {
     data?: T;
-}, dragSelectEndPosition?: {
-    x: number;
-    y: number;
-}) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean)): {
-    dragSelectStartPosition: {
-        x: number;
-        y: number;
+}, dragSelectEndPosition?: Position) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean)): {
+    dragSelectStartPosition: (Position & {
         data?: T | undefined;
-    } | undefined;
+    }) | undefined;
     onStartSelect(e: React_2.MouseEvent<HTMLElement, MouseEvent>, data?: T | undefined): void;
     dragSelectMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void): void;
+export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
 
 // @public (undocumented)
 export function useLineAlignment(delta: number): {
     lineAlignmentX: number | undefined;
     lineAlignmentY: number | undefined;
-    changeOffsetByLineAlignment(offset: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    }, direction: ResizeDirection, target: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    }, xlines: number[], yLines: number[]): void;
+    changeOffsetByLineAlignment(offset: Region, direction: ResizeDirection, target: Region, xlines: number[], yLines: number[]): void;
     clearLineAlignments(): void;
+};
+
+// @public (undocumented)
+export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void): {
+    onLineClickCreateClick(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
+    onLineClickCreateMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
+    lineClickCreateInput: false | JSX.Element | undefined;
 };
 
 // @public (undocumented)
 export function useRegionAlignment(delta: number): {
     regionAlignmentX: number | undefined;
     regionAlignmentY: number | undefined;
-    changeOffsetByRegionAlignment(offset: {
-        x: number;
-        y: number;
-    }, target: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    }, regions: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    }[]): void;
+    changeOffsetByRegionAlignment(offset: Position, target: Region, regions: Region[]): void;
     clearRegionAlignments(): void;
 };
 

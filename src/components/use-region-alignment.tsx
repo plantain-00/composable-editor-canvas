@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Position, Region } from "../utils"
 
 export function useRegionAlignment(delta: number) {
   const [regionAlignmentX, setRegionAlignmentX] = React.useState<number>()
@@ -8,9 +9,9 @@ export function useRegionAlignment(delta: number) {
     regionAlignmentX,
     regionAlignmentY,
     changeOffsetByRegionAlignment(
-      offset: { x: number, y: number },
-      target: { x: number, y: number, width: number, height: number },
-      regions: { x: number, y: number, width: number, height: number }[]
+      offset: Position,
+      target: Region,
+      regions: Region[]
     ) {
       const region = getRegionAlignment(offset, delta, target, regions)
       if (region.x !== undefined) {
@@ -34,10 +35,10 @@ export function useRegionAlignment(delta: number) {
 }
 
 function getRegionAlignment(
-  offset: { x: number, y: number },
+  offset: Position,
   delta: number,
-  target: { x: number, y: number, width: number, height: number },
-  regions: { x: number, y: number, width: number, height: number }[]
+  target: Region,
+  regions: Region[]
 ) {
   const x = target.x + offset.x
   const y = target.y + offset.y

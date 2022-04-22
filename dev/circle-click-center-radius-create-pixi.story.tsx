@@ -2,18 +2,15 @@ import produce from "immer"
 import React from "react"
 import { Stage, Graphics } from '@inlet/react-pixi'
 import * as PIXI from 'pixi.js'
-import { useCircleClickCreate } from "../src"
+import { Circle, useCircleClickCreate } from "../src"
 
 export default () => {
-  const [circle, setCircle] = React.useState<{ x: number, y: number, r: number }>()
-  const [contents, setContents] = React.useState<{ x: number, y: number, r: number }[]>([])
+  const [circle, setCircle] = React.useState<Circle>()
+  const [contents, setContents] = React.useState<Circle[]>([])
   const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate('center radius', setCircle, (c) => {
-    const data = c || circle
-    if (data) {
-      setContents(produce(contents, (draft) => {
-        draft.push(data)
-      }))
-    }
+    setContents(produce(contents, (draft) => {
+      draft.push(c)
+    }))
   })
 
   const draw = React.useCallback((g: PIXI.Graphics) => {

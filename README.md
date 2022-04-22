@@ -273,17 +273,31 @@ const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAl
 ```ts
 import { useCircleClickCreate } from "composable-editor-canvas"
 
-const [circle, setCircle] = React.useState<{ x: number, y: number, r: number }>()
-const [contents, setContents] = React.useState<{ x: number, y: number, r: number }[]>([])
-const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('2 points', setCircle, () => {
-  if (circle) {
-    setContents(produce(contents, (draft) => {
-      draft.push(circle)
-    }))
-  }
+const [circle, setCircle] = React.useState<Circle>()
+const [contents, setContents] = React.useState<Circle[]>([])
+const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('2 points', setCircle, (c) => {
+  setContents(produce(contents, (draft) => {
+    draft.push(c)
+  }))
 })
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-2-points-create.story>
 <https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-3-points-create.story>
 <https://plantain-00.github.io/composable-editor-canvas/?p=circle-click-center-radius-create.story>
+
+### line click create
+
+```ts
+import { useLineClickCreate } from "composable-editor-canvas"
+
+const [line, setLine] = React.useState<Position[]>()
+const [contents, setContents] = React.useState<Position[][]>([])
+const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate('2 points', setLine, (n) => 
+  setContents(produce(contents, (draft) => {
+    draft.push(n)
+  }))
+})
+```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=line-click-create-pixi.story>

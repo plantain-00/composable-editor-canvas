@@ -1,16 +1,15 @@
 import React from 'react'
+import { Position, Region, Size } from '../src'
 
-import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, Size, TemplateReferenceContent, TemplateSnapshotContent } from './model'
+import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, TemplateReferenceContent, TemplateSnapshotContent } from './model'
 import { isSamePath, nameSize } from './util'
 
-export function StyleGuideRenderer(props: {
+export function StyleGuideRenderer(props: Position & {
   styleGuide: StyleGuide
-  x: number
-  y: number
   scale: number
   targetSize: Size
   onStartSelect: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
-  offset: { x: number, y: number, width: number, height: number }
+  offset: Region
   rotate?: number
   selected?: number[]
 }) {
@@ -48,7 +47,7 @@ function TemplateRenderer(props: {
   styleGuide: StyleGuide
   path: number[]
   onStartSelect: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
-  offset: { x: number, y: number, width: number, height: number }
+  offset: Region
   rotate?: number
   selected?: number[]
   scale: number
@@ -105,7 +104,7 @@ function SymbolRenderer(props: {
   template: Template
   styleGuide: StyleGuide
   path: number[]
-  offset?: { x: number, y: number, width: number, height: number }
+  offset?: Region
   rotate?: number
   content: TemplateReferenceContent | TemplateSnapshotContent
   selected?: number[]
@@ -144,7 +143,7 @@ function SymbolRenderer(props: {
 function TemplateContentRenderer(props: {
   content: TemplateContent
   path: number[]
-  offset?: { x: number, y: number, width: number, height: number }
+  offset?: Region
   rotate?: number
   styleGuide: StyleGuide
   selected?: number[]
@@ -217,7 +216,7 @@ function TemplateContentRenderer(props: {
 
 function TemplateTextContentRenderer(props: {
   content: TemplateTextContent
-  offset?: { x: number, y: number, width: number, height: number }
+  offset?: Region
   rotate?: number
 }) {
   const { content, offset, rotate } = props
@@ -243,7 +242,7 @@ function TemplateTextContentRenderer(props: {
 
 function TemplateImageContentRenderer(props: {
   content: TemplateImageContent
-  offset?: { x: number, y: number, width: number, height: number }
+  offset?: Region
   rotate?: number
 }) {
   const { content, offset, rotate } = props
@@ -265,7 +264,7 @@ function TemplateImageContentRenderer(props: {
 
 function TemplateColorContentRenderer(props: {
   content: TemplateColorContent
-  offset?: { x: number, y: number, width: number, height: number }
+  offset?: Region
   rotate?: number
 }) {
   const { content, offset, rotate } = props
