@@ -1,13 +1,14 @@
 import * as React from "react"
 
 import { DragMask, useKey } from "."
+import { Position } from "../utils"
 
 export function useDragSelect<T = void>(
-  onDragEnd: (dragSelectStartPosition: { x: number, y: number, data?: T }, dragSelectEndPosition?: { x: number, y: number }) => void,
+  onDragEnd: (dragSelectStartPosition: Position & { data?: T }, dragSelectEndPosition?: Position) => void,
   square?: boolean | ((e: React.MouseEvent<HTMLElement, MouseEvent>) => boolean),
 ) {
-  const [dragStartPosition, setDragStartPosition] = React.useState<{ x: number, y: number, data?: T }>()
-  const [dragEndPosition, setDragEndPosition] = React.useState<{ x: number, y: number }>()
+  const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
+  const [dragEndPosition, setDragEndPosition] = React.useState<Position>()
   useKey((e) => e.key === 'Escape', () => {
     setDragStartPosition(undefined)
     setDragEndPosition(undefined)

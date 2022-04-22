@@ -1,3 +1,5 @@
+import { Position, Region } from "../src"
+
 export interface StyleGuide {
   name: string
   templates: Template[]
@@ -43,18 +45,6 @@ export interface TemplateSnapshotContent extends Position, Hidden, Rotate {
   snapshot: Template
 }
 
-export interface Position {
-  x: number
-  y: number
-}
-
-export interface Size {
-  width: number
-  height: number
-}
-
 export interface Rotate {
   rotate?: number
 }
-
-export interface Region extends Position, Size { }

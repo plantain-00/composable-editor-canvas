@@ -1,34 +1,79 @@
 import * as React from "react"
 
-import { useKey } from "."
+import { useCursorInput, useKey } from "."
+import { Circle, getPointByLengthAndDirection, Position } from "../utils"
 
 export function useCircleClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
-  setCircle: (circle?: { x: number, y: number, r: number }) => void,
-  onEnd: (circle?: { x: number, y: number, r: number }) => void,
+  setCircle: (circle?: Circle) => void,
+  onEnd: (circle: Circle) => void,
 ) {
-  const [startPosition, setStartPosition] = React.useState<{ x: number, y: number }>()
-  const [middlePosition, setMiddlePosition] = React.useState<{ x: number, y: number }>()
-  useKey((e) => e.key === 'Escape', () => {
-    setStartPosition(undefined)
-    setMiddlePosition(undefined)
-    setCircle(undefined)
-  })
+  const [startPosition, setStartPosition] = React.useState<Position>()
+  const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const [text, setText] = React.useState('')
-  const [cursorPosition, setCursorPosition] = React.useState<{ x: number, y: number }>()
-  const inputRef = React.useRef<HTMLInputElement | null>(null)
-  React.useEffect(() => {
-    inputRef.current?.focus()
+  const { input, setCursorPosition, clearText } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
+    if (e.key === 'Enter') {
+      const position = text.split(',')
+      if (startPosition) {
+        if (type === '2 points' && position.length === 2) {
+          const offsetX = +position[0]
+          const offsetY = +position[1]
+          if (!isNaN(offsetX) && !isNaN(offsetY)) {
+            const x = startPosition.x + offsetX / 2
+            const y = startPosition.y + offsetY / 2
+            onEnd({
+              x,
+              y,
+              r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
+            })
+            reset()
+          }
+          return
+        }
+        const r = +text
+        if (!isNaN(r) && r > 0) {
+          let x = startPosition.x
+          let y = startPosition.y
+          if (type === '2 points') {
+            const point = getPointByLengthAndDirection(startPosition, r / 2, cursorPosition)
+            x = point.x
+            y = point.y
+          }
+          onEnd({
+            x,
+            y,
+            r: type === 'center diameter' || type === '2 points' ? r / 2 : r,
+          })
+          reset()
+        }
+      } else {
+        if (position.length === 2) {
+          const x = +position[0]
+          const y = +position[1]
+          if (!isNaN(x) && !isNaN(y)) {
+            setStartPosition({ x, y })
+            if (type) {
+              const circle = getCircle(type, { x, y }, undefined, cursorPosition)
+              if (circle) {
+                setCircle(circle)
+              }
+            }
+            clearText()
+          }
+        }
+      }
+    }
   })
 
   const reset = () => {
     setStartPosition(undefined)
     setMiddlePosition(undefined)
     setCircle(undefined)
-    setText('')
+    clearText()
     setCursorPosition(undefined)
   }
+
+  useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
   return {
     onCircleClickCreateClick(e: React.MouseEvent<HTMLElement, MouseEvent>) {
@@ -41,7 +86,10 @@ export function useCircleClickCreate(
       } else if (type === '3 points' && !middlePosition) {
         setMiddlePosition({ x: e.clientX, y: e.clientY })
       } else {
-        onEnd()
+        const circle = getCircle(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY })
+        if (circle) {
+          onEnd(circle)
+        }
         reset()
       }
     },
@@ -51,97 +99,52 @@ export function useCircleClickCreate(
       }
       setCursorPosition({ x: e.clientX, y: e.clientY })
       if (startPosition) {
-        if (type === '2 points') {
-          const x = (startPosition.x + e.clientX) / 2
-          const y = (startPosition.y + e.clientY) / 2
-          setCircle({
-            x,
-            y,
-            r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
-          })
-        } else if (type === 'center radius' || type === 'center diameter') {
-          setCircle({
-            x: startPosition.x,
-            y: startPosition.y,
-            r: Math.sqrt((e.clientX - startPosition.x) ** 2 + (e.clientY - startPosition.y) ** 2),
-          })
-        } else if (middlePosition) {
-          const x1 = middlePosition.x - startPosition.x
-          const y1 = middlePosition.y - startPosition.y
-          const x2 = e.clientX - middlePosition.x
-          const y2 = e.clientY - middlePosition.y
-          const t1 = middlePosition.x ** 2 - startPosition.x ** 2 + middlePosition.y ** 2 - startPosition.y ** 2
-          const t2 = e.clientX ** 2 - middlePosition.x ** 2 + e.clientY ** 2 - middlePosition.y ** 2
-          const x = (t1 * y2 - t2 * y1) / (x1 * y2 - x2 * y1) / 2
-          const y = (x2 * t1 - t2 * x1) / (x2 * y1 - y2 * x1) / 2
-          setCircle({
-            x,
-            y,
-            r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
-          })
+        const circle = getCircle(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY })
+        if (circle) {
+          setCircle(circle)
         }
       }
     },
-    circleClickCreateInput: (type === 'center radius' || type === 'center diameter' || type === '2 points') && cursorPosition && (
-      <input
-        ref={inputRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        style={{
-          position: 'absolute',
-          left: `${cursorPosition.x + 10}px`,
-          top: `${cursorPosition.y - 5}px`,
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            const position = text.split(',')
-            if (startPosition) {
-              if (type === '2 points' && position.length === 2) {
-                const offsetX = +position[0]
-                const offsetY = +position[1]
-                if (!isNaN(offsetX) && !isNaN(offsetY)) {
-                  const x = startPosition.x + offsetX / 2
-                  const y = startPosition.y + offsetY / 2
-                  onEnd({
-                    x,
-                    y,
-                    r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
-                  })
-                  reset()
-                }
-                return
-              }
-              const r = +text
-              if (!isNaN(r) && r > 0) {
-                let x = startPosition.x
-                let y = startPosition.y
-                if (type === '2 points') {
-                  const dx = cursorPosition.x - startPosition.x
-                  const dy = cursorPosition.y - startPosition.y
-                  const offsetX = Math.sqrt((r / 2) ** 2 * dx ** 2 / (dx ** 2 + dy ** 2)) * (dx > 0 ? 1 : -1)
-                  x += offsetX
-                  y += dy / dx * offsetX
-                }
-                onEnd({
-                  x,
-                  y,
-                  r: type === 'center diameter' || type === '2 points' ? r / 2 : r,
-                })
-                reset()
-              }
-            } else {
-              if (position.length === 2) {
-                const x = +position[0]
-                const y = +position[1]
-                if (!isNaN(x) && !isNaN(y)) {
-                  setStartPosition({ x, y })
-                  setText('')
-                }
-              }
-            }
-          }
-        }}
-      />
-    ),
+    circleClickCreateInput: input,
   }
+}
+
+function getCircle(
+  type: '2 points' | '3 points' | 'center radius' | 'center diameter',
+  startPosition: Position,
+  middlePosition: Position | undefined,
+  endPosition: Position,
+) {
+  if (type === '2 points') {
+    const x = (startPosition.x + endPosition.x) / 2
+    const y = (startPosition.y + endPosition.y) / 2
+    return {
+      x,
+      y,
+      r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
+    }
+  }
+  if (type === 'center radius' || type === 'center diameter') {
+    return {
+      x: startPosition.x,
+      y: startPosition.y,
+      r: Math.sqrt((endPosition.x - startPosition.x) ** 2 + (endPosition.y - startPosition.y) ** 2),
+    }
+  }
+  if (middlePosition) {
+    const x1 = middlePosition.x - startPosition.x
+    const y1 = middlePosition.y - startPosition.y
+    const x2 = endPosition.x - middlePosition.x
+    const y2 = endPosition.y - middlePosition.y
+    const t1 = middlePosition.x ** 2 - startPosition.x ** 2 + middlePosition.y ** 2 - startPosition.y ** 2
+    const t2 = endPosition.x ** 2 - middlePosition.x ** 2 + endPosition.y ** 2 - middlePosition.y ** 2
+    const x = (t1 * y2 - t2 * y1) / (x1 * y2 - x2 * y1) / 2
+    const y = (x2 * t1 - t2 * x1) / (x2 * y1 - y2 * x1) / 2
+    return {
+      x,
+      y,
+      r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
+    }
+  }
+  return undefined
 }

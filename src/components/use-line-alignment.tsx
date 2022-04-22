@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ResizeDirection } from ".."
+import { Region, ResizeDirection } from ".."
 
 export function useLineAlignment(delta: number) {
   const [lineAlignmentX, setLineAlignmentX] = React.useState<number>()
@@ -9,9 +9,9 @@ export function useLineAlignment(delta: number) {
     lineAlignmentX,
     lineAlignmentY,
     changeOffsetByLineAlignment(
-      offset: { x: number, y: number, width: number, height: number },
+      offset: Region,
       direction: ResizeDirection,
-      target: { x: number, y: number, width: number, height: number },
+      target: Region,
       xlines: number[],
       yLines: number[],
     ) {

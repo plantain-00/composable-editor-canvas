@@ -1,6 +1,6 @@
 {
   "name": "composable-editor-canvas",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A composable editor canvas library.",
   "main": "nodejs/index.js",
   "scripts": {

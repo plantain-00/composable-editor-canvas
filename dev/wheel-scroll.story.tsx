@@ -4,7 +4,7 @@ import { useWheelScroll } from "../src"
 export default () => {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
-  const wheelScrollRef = useWheelScroll<HTMLElement>(setX, setY, 250, 250)
+  const wheelScrollRef = useWheelScroll<HTMLDivElement>(setX, setY, 250, 250)
   return (
     <div
       style={{

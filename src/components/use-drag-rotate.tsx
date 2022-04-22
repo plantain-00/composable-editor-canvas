@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { DragMask, useKey } from "."
-import { Transform, transformPosition } from ".."
+import { Position, Transform, transformPosition } from ".."
 
 export function useDragRotate(
   setRotate: (rotate: number | undefined, e?: React.MouseEvent<HTMLElement, MouseEvent>) => void,
@@ -11,7 +11,7 @@ export function useDragRotate(
     parentRotate: number
   }>,
 ) {
-  const [center, setCenter] = React.useState<{ x: number, y: number }>()
+  const [center, setCenter] = React.useState<Position>()
   const parentRotate = options?.parentRotate ?? 0
   useKey((e) => e.key === 'Escape', () => {
     setRotate(undefined)
