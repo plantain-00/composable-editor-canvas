@@ -1,4 +1,4 @@
-import * as ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import React from "react"
 import './vender/prism'
 import './vender/prism.css'
@@ -56,7 +56,7 @@ function HighlightCode(props: { code: string }) {
   )
 }
 
-ReactDOM.render(<StoryApp />, document.querySelector('#container'))
+createRoot(document.querySelector('#container')!).render(<StoryApp />)
 
 declare global {
   const Prism: {

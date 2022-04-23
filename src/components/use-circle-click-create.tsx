@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { useCursorInput, useKey } from "."
-import { Circle, getPointByLengthAndDirection, Position } from "../utils"
+import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position } from "../utils"
 
 export function useCircleClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
@@ -19,12 +19,13 @@ export function useCircleClickCreate(
           const offsetX = +position[0]
           const offsetY = +position[1]
           if (!isNaN(offsetX) && !isNaN(offsetY)) {
-            const x = startPosition.x + offsetX / 2
-            const y = startPosition.y + offsetY / 2
+            const center = {
+              x: startPosition.x + offsetX / 2,
+              y: startPosition.y + offsetY / 2,
+            }
             onEnd({
-              x,
-              y,
-              r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
+              ...center,
+              r: getTwoPointsDistance(center, startPosition),
             })
             reset()
           }
@@ -116,35 +117,23 @@ function getCircle(
   endPosition: Position,
 ) {
   if (type === '2 points') {
-    const x = (startPosition.x + endPosition.x) / 2
-    const y = (startPosition.y + endPosition.y) / 2
+    const center = {
+      x: (startPosition.x + endPosition.x) / 2,
+      y: (startPosition.y + endPosition.y) / 2,
+    }
     return {
-      x,
-      y,
-      r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
+      ...center,
+      r: getTwoPointsDistance(center, startPosition),
     }
   }
   if (type === 'center radius' || type === 'center diameter') {
     return {
-      x: startPosition.x,
-      y: startPosition.y,
-      r: Math.sqrt((endPosition.x - startPosition.x) ** 2 + (endPosition.y - startPosition.y) ** 2),
+      ...startPosition,
+      r: getTwoPointsDistance(endPosition, startPosition),
     }
   }
   if (middlePosition) {
-    const x1 = middlePosition.x - startPosition.x
-    const y1 = middlePosition.y - startPosition.y
-    const x2 = endPosition.x - middlePosition.x
-    const y2 = endPosition.y - middlePosition.y
-    const t1 = middlePosition.x ** 2 - startPosition.x ** 2 + middlePosition.y ** 2 - startPosition.y ** 2
-    const t2 = endPosition.x ** 2 - middlePosition.x ** 2 + endPosition.y ** 2 - middlePosition.y ** 2
-    const x = (t1 * y2 - t2 * y1) / (x1 * y2 - x2 * y1) / 2
-    const y = (x2 * t1 - t2 * x1) / (x2 * y1 - y2 * x1) / 2
-    return {
-      x,
-      y,
-      r: Math.sqrt((x - startPosition.x) ** 2 + (y - startPosition.y) ** 2),
-    }
+    return getThreePointsCircle(startPosition, middlePosition, endPosition)
   }
   return undefined
 }

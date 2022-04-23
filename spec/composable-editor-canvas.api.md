@@ -35,10 +35,23 @@ export function DragMask(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export interface GeneralFormLine {
+    // (undocumented)
+    a: number;
+    // (undocumented)
+    b: number;
+    // (undocumented)
+    c: number;
+}
+
+// @public (undocumented)
 export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
     min: number;
     max: number;
 };
+
+// @public (undocumented)
+export function getFootPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
 export function getPointByLengthAndDirection(startPoint: Position, length: number, directionPoint: Position): {
@@ -48,6 +61,22 @@ export function getPointByLengthAndDirection(startPoint: Position, length: numbe
 
 // @public (undocumented)
 export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
+
+// @public (undocumented)
+export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position): {
+    r: number;
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
+export function getTwoNumbersDistance(n1: number, n2: number): number;
+
+// @public (undocumented)
+export function getTwoPointsDistance(point1: Position, point2: Position): number;
+
+// @public (undocumented)
+export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
 export interface Position {
@@ -120,6 +149,9 @@ export function transformPosition({ x, y }: Position, transform?: Partial<Transf
     x: number;
     y: number;
 };
+
+// @public (undocumented)
+export function TwoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine;
 
 // @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
