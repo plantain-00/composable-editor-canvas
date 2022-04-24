@@ -29,7 +29,7 @@ export interface Circle extends Position {
 // @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
-    onDragging: (e: React_2.MouseEvent<HTMLElement, MouseEvent>) => void;
+    onDragging: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void;
     style?: React_2.CSSProperties;
     children?: React_2.ReactNode;
 }): JSX.Element;
@@ -54,10 +54,22 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
+export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position): number;
+
+// @public (undocumented)
+export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion): number;
+
+// @public (undocumented)
+export function getPointAndRegionMinimumDistance(position: Position, region: TwoPointsFormRegion): number;
+
+// @public (undocumented)
 export function getPointByLengthAndDirection(startPoint: Position, length: number, directionPoint: Position): {
     x: number;
     y: number;
 };
+
+// @public (undocumented)
+export function getRegion(p1: Position, p2: Position): Region;
 
 // @public (undocumented)
 export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
@@ -76,7 +88,16 @@ export function getTwoNumbersDistance(n1: number, n2: number): number;
 export function getTwoPointsDistance(point1: Position, point2: Position): number;
 
 // @public (undocumented)
+export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion;
+
+// @public (undocumented)
 export function isBetween(target: number, a: number, b: number): boolean;
+
+// @public (undocumented)
+export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
 export interface Position {
@@ -96,7 +117,7 @@ export function ResizeBar(props: {
     resizeSize?: number;
     directions?: ResizeDirection[];
     rotate?: number;
-    onMouseDown: (e: React_2.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection) => void;
+    onMouseDown: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -113,7 +134,7 @@ export function RotationBar(props: {
     scale: number;
     rotateStickLength?: number;
     rotateCircleSize?: number;
-    onMouseDown: React_2.MouseEventHandler<HTMLElement>;
+    onMouseDown: React_2.MouseEventHandler<HTMLOrSVGElement>;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -151,12 +172,20 @@ export function transformPosition({ x, y }: Position, transform?: Partial<Transf
 };
 
 // @public (undocumented)
-export function TwoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine;
+export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine;
+
+// @public (undocumented)
+export interface TwoPointsFormRegion {
+    // (undocumented)
+    end: Position;
+    // (undocumented)
+    start: Position;
+}
 
 // @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
-    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
-    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
+    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
+    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     circleClickCreateInput: false | JSX.Element | undefined;
 };
 
@@ -168,23 +197,23 @@ export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.Keyboard
 };
 
 // @public (undocumented)
-export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
 }>): {
     dragMoveStartPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
-    onStartMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>, startPosition?: Partial<Position & {
+    onStartMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, startPosition?: Partial<Position & {
         data: T;
     }> | undefined): void;
     dragMoveMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.MouseEvent<HTMLElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
-    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean);
-    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => number | undefined);
+export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
+    centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean);
+    keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number | undefined);
     rotate: number;
     parentRotate: number;
     transform: Partial<Transform>;
@@ -192,12 +221,12 @@ export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.Mous
     dragResizeStartPosition: (Position & {
         direction: ResizeDirection;
     }) | undefined;
-    onStartResize(e: React_2.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection): void;
+    onStartResize(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection): void;
     dragResizeMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
 }>): {
@@ -209,11 +238,11 @@ export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_
 // @public (undocumented)
 export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Position & {
     data?: T;
-}, dragSelectEndPosition?: Position) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLElement, MouseEvent>) => boolean)): {
+}, dragSelectEndPosition?: Position) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean)): {
     dragSelectStartPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
-    onStartSelect(e: React_2.MouseEvent<HTMLElement, MouseEvent>, data?: T | undefined): void;
+    onStartSelect(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T | undefined): void;
     dragSelectMask: JSX.Element | undefined;
 };
 
@@ -230,8 +259,8 @@ export function useLineAlignment(delta: number): {
 
 // @public (undocumented)
 export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void): {
-    onLineClickCreateClick(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
-    onLineClickCreateMove(e: React_2.MouseEvent<HTMLElement, MouseEvent>): void;
+    onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
+    onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     lineClickCreateInput: false | JSX.Element | undefined;
 };
 

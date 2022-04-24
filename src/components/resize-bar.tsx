@@ -6,7 +6,7 @@ export function ResizeBar(props: {
   resizeSize?: number
   directions?: ResizeDirection[]
   rotate?: number
-  onMouseDown: (e: React.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection) => void
+  onMouseDown: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
   const { scale, resizeSize } = props
   const width = (resizeSize ?? 5) / scale

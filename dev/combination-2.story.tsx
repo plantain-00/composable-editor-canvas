@@ -1,28 +1,25 @@
 import React from 'react'
-import { Stage, Graphics } from '@inlet/react-pixi'
-import * as PIXI from 'pixi.js'
-import { Circle, getFootPoint, getTwoNumbersDistance, getTwoPointsDistance, isBetween, Position, TwoPointLineToGeneralFormLine, useCircleClickCreate, useKey, useLineClickCreate, useUndoRedo } from '../src'
+import { useCircleClickCreate, useDragSelect, useKey, useLineClickCreate, useUndoRedo } from '../src'
+import { Content, getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
+import { PixiRenderer } from './pixi-renderer'
+import { SvgRenderer } from './svg-renderer'
 
-type Content =
-  | { type: 'circle' } & Circle
-  | { type: 'polyline', points: Position[] }
-  | { type: 'line', points: Position[] }
 const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline'] as const
-
-const initialState: Content[] = []
+const draftKey = 'composable-editor-canvas-draft-2'
+const draftState = localStorage.getItem(draftKey)
+const initialState = draftState ? JSON.parse(draftState) as Content[] : []
 
 export default () => {
   const [operation, setOperation] = React.useState<typeof operations[number]>()
   const [drawingContent, setDrawingContent] = React.useState<Content>()
-  const { state, setState, undo, redo, canRedo, canUndo } = useUndoRedo(initialState)
+  const { state, setState, undo, redo, canRedo, canUndo, stateIndex } = useUndoRedo(initialState)
   const [selectedContents, setSelectedContents] = React.useState<number[]>([])
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
+  const [renderTarget, setRenderTarget] = React.useState<'pixi' | 'svg'>('pixi')
 
   const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate(
     operation === '2 points' || operation === '3 points' || operation === 'center diameter' || operation === 'center radius' ? operation : undefined,
-    (c) => {
-      setDrawingContent(c ? { ...c, type: 'circle' } : undefined)
-    },
+    (c) => setDrawingContent(c ? { ...c, type: 'circle' } : undefined),
     (c) => {
       setState((draft) => {
         draft.push({ ...c, type: 'circle' })
@@ -33,9 +30,7 @@ export default () => {
 
   const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
     operation === 'polyline' || operation === 'line',
-    (c) => {
-      setDrawingContent(c ? { points: c, type: 'polyline' } : undefined)
-    },
+    (c) => setDrawingContent(c ? { points: c, type: 'polyline' } : undefined),
     (c) => {
       setState((draft) => {
         if (operation === 'polyline') {
@@ -50,123 +45,66 @@ export default () => {
     },
   )
 
+  const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
+    if (end) {
+      setSelectedContents([...selectedContents, ...getContentsByClickTwoPositions(state, start, end)])
+    }
+  })
+
   useKey((e) => e.key === 'Escape', () => {
     setOperation(undefined)
     setSelectedContents([])
   }, [setOperation])
 
-  const drawContent = (g: PIXI.Graphics, content: Content, index?: number) => {
-    let color = 0x00ff00
-    if (index !== undefined) {
-      if (selectedContents.includes(index)) {
-        color = 0xff0000
-      } else if (hoveringContent === index) {
-        color = 0x000000
+  React.useEffect(() => {
+    if (stateIndex > 0) {
+      localStorage.setItem(draftKey, JSON.stringify(state))
+    }
+  }, [state, stateIndex])
+
+  const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    onCircleClickCreateClick(e)
+    onLineClickCreateClick(e)
+    if (!operation) {
+      if (hoveringContent >= 0) {
+        setSelectedContents([...selectedContents, hoveringContent])
+      } else {
+        onStartSelect(e)
       }
     }
-    g.lineStyle(1, color, 1)
-    if (content.type === 'circle') {
-      g.drawCircle(content.x, content.y, content.r)
-    } else if (content.type === 'polyline' || content.type === 'line') {
-      content.points.forEach((p, i) => {
-        if (i === 0) {
-          g.moveTo(p.x, p.y)
-        } else {
-          g.lineTo(p.x, p.y)
-        }
-      })
+  }
+  const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    onCircleClickCreateMove(e)
+    onLineClickCreateMove(e)
+    if (!operation) {
+      setHoveringContent(getContentByClickPosition(state, { x: e.clientX, y: e.clientY }, selectedContents))
     }
   }
 
-  const draw = React.useCallback((g: PIXI.Graphics) => {
-    g.clear()
-    for (let i = 0; i < state.length; i++) {
-      drawContent(g, state[i], i)
-    }
-    if (drawingContent) {
-      drawContent(g, drawingContent)
-    }
-  }, [state, drawingContent, hoveringContent, selectedContents])
+  const Render = renderTarget === 'pixi' ? PixiRenderer : SvgRenderer
 
   return (
-    <div style={{ height: '100%' }}>
-      <Stage
-        onClick={(e) => {
-          onCircleClickCreateClick(e)
-          onLineClickCreateClick(e)
-          if (!operation) {
-            if (hoveringContent >= 0) {
-              setSelectedContents([...selectedContents, hoveringContent])
-            }
-          }
-        }}
-        onMouseMove={(e) => {
-          onCircleClickCreateMove(e)
-          onLineClickCreateMove(e)
-          if (!operation) {
-            const index = getContentByPosition(state, { x: e.clientX, y: e.clientY }, selectedContents)
-            setHoveringContent(index)
-          }
-        }}
-        options={{
-          backgroundColor: 0xffffff,
-        }}
-        style={{ position: 'absolute', left: 0, top: 0 }}
-      >
-        <Graphics draw={draw} />
-      </Stage>
+    <div style={{ height: '100%', cursor: 'crosshair' }} onMouseMove={onMouseMove}>
+      <Render
+        contents={state}
+        drawingContent={drawingContent}
+        selectedContents={selectedContents}
+        hoveringContent={hoveringContent}
+        onClick={onClick}
+      />
       {operations.map((p) => (
-        <button
-          key={p}
-          style={{ position: 'relative', borderColor: p === operation ? 'red' : undefined }}
-          onClick={() => setOperation(p)}
-        >
-          {p}
-        </button>
+        <button key={p} onClick={() => setOperation(p)} style={{ position: 'relative', borderColor: p === operation ? 'red' : undefined }}>{p}</button>
       ))}
       <button style={{ position: 'relative' }} disabled={!canUndo} onClick={() => undo()}>undo</button>
       <button style={{ position: 'relative' }} disabled={!canRedo} onClick={() => redo()}>redo</button>
       <button style={{ position: 'relative' }} disabled={selectedContents.length === 0} onClick={() => {
-        setState((draft) => {
-          return draft.filter((_, i) => !selectedContents.includes(i))
-        })
+        setState((draft) => draft.filter((_, i) => !selectedContents.includes(i)))
         setSelectedContents([])
       }}>delete</button>
+      <button style={{ position: 'relative' }} onClick={() => setRenderTarget(renderTarget === 'pixi' ? 'svg' : 'pixi')}>{renderTarget}</button>
       {circleClickCreateInput}
       {lineClickCreateInput}
+      {dragSelectMask}
     </div>
   )
-}
-
-function getContentByPosition(
-  contents: Content[],
-  position: Position,
-  selectedContents: number[],
-  delta = 3,
-) {
-  for (let i = 0; i < contents.length; i++) {
-    if (selectedContents.includes(i)) {
-      continue
-    }
-    const content = contents[i]
-    if (content.type === 'circle') {
-      if (getTwoNumbersDistance(getTwoPointsDistance(content, position), content.r) <= delta) {
-        return i
-      }
-    } else if (content.type === 'polyline' || content.type === 'line') {
-      for (let j = 1; j < content.points.length; j++) {
-        const footPoint = getFootPoint(position, TwoPointLineToGeneralFormLine(content.points[j - 1], content.points[j]))
-        let minDistance: number
-        if (isBetween(footPoint.x, content.points[j - 1].x, content.points[j].x)) {
-          minDistance = getTwoPointsDistance(position, footPoint)
-        } else {
-          minDistance = Math.min(getTwoPointsDistance(position, content.points[j - 1]), getTwoPointsDistance(position, content.points[j]))
-        }
-        if (minDistance <= delta) {
-          return i
-        }
-      }
-    }
-  }
-  return -1
 }

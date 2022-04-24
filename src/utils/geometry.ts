@@ -15,6 +15,37 @@ export function getPointByLengthAndDirection(
 /**
  * @public
  */
+export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position) {
+  const footPoint = getFootPoint(position, twoPointLineToGeneralFormLine(point1, point2))
+  if (point1.x !== point2.x && isBetween(footPoint.x, point1.x, point2.x)) {
+    return getTwoPointsDistance(position, footPoint)
+  }
+  if (point1.y !== point2.y && isBetween(footPoint.y, point1.y, point2.y)) {
+    return getTwoPointsDistance(position, footPoint)
+  }
+  return Math.min(getTwoPointsDistance(position, point1), getTwoPointsDistance(position, point2))
+}
+
+/**
+ * @public
+ */
+export function getPointAndRegionMinimumDistance(position: Position, region: TwoPointsFormRegion) {
+  const polygon = getPolygonFromTwoPointsFormRegion(region)
+  const polygonLine = Array.from(getPolygonLine(polygon))
+  return Math.min(...polygonLine.map((r) => getPointAndLineMinimumDistance(position, ...r)))
+}
+
+/**
+ * @public
+ */
+export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion) {
+  const polygon = getPolygonFromTwoPointsFormRegion(region)
+  return Math.max(...polygon.map((r) => getTwoPointsDistance(position, r)))
+}
+
+/**
+ * @public
+ */
 export function getFootPoint(point: Position, line: GeneralFormLine): Position {
   const d = line.a ** 2 + line.b ** 2
   const e = line.a * line.b
@@ -48,7 +79,7 @@ export function isBetween(target: number, a: number, b: number) {
 /**
  * @public
  */
-export function TwoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine {
+export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine {
   const dx = point2.x - point1.x
   const dy = point2.y - point1.y
   return {
@@ -75,6 +106,83 @@ export function getThreePointsCircle(startPosition: Position, middlePosition: Po
   }
 }
 
+/**
+ * @public
+ */
+export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion {
+  return {
+    start: {
+      x: Math.min(p1.x, p2.x),
+      y: Math.min(p1.y, p2.y),
+    },
+    end: {
+      x: Math.max(p1.x, p2.x),
+      y: Math.max(p1.y, p2.y),
+    },
+  }
+}
+
+/**
+ * @public
+ */
+export function getRegion(p1: Position, p2: Position): Region {
+  return {
+    x: Math.min(p1.x, p2.x),
+    y: Math.min(p1.y, p2.y),
+    width: getTwoNumbersDistance(p1.x, p2.x),
+    height: getTwoNumbersDistance(p1.y, p2.y),
+  }
+}
+
+/**
+ * @public
+ */
+export function pointIsInRegion(point: Position, region: TwoPointsFormRegion) {
+  return point.x >= region.start.x && point.y >= region.start.y && point.x <= region.end.x && point.y <= region.end.y
+}
+
+/**
+ * @public
+ */
+export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion) {
+  return lineIntersectWithPolygon(p1, p2, getPolygonFromTwoPointsFormRegion(region))
+}
+
+function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
+  return [
+    region.start,
+    { x: region.start.x, y: region.end.y },
+    region.end,
+    { x: region.end.x, y: region.start.y },
+  ]
+}
+
+function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Position[]) {
+  for (const line of getPolygonLine(polygon)) {
+    if (lineIntersectWithLine(p1, p2, ...line)) {
+      return true
+    }
+  }
+  return false
+}
+
+function* getPolygonLine(polygon: Position[]): Generator<[Position, Position], void, unknown> {
+  for (let i = 0; i < polygon.length; i++) {
+    yield [polygon[i], polygon[i + 1 < polygon.length ? i + 1 : 0]]
+  }
+}
+
+function lineIntersectWithLine(a: Position, b: Position, c: Position, d: Position) {
+  if (!(Math.min(a.x, b.x) <= Math.max(c.x, d.x) && Math.min(c.y, d.y) <= Math.max(a.y, b.y) && Math.min(c.x, d.x) <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= Math.max(c.y, d.y))) {
+    return false
+  }
+  const u = (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y)
+  const v = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y)
+  const w = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y)
+  const z = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y)
+  return (u * v <= 0.00000001 && w * z <= 0.00000001);
+}
+
 export interface Position {
   x: number
   y: number
@@ -95,6 +203,14 @@ export interface GeneralFormLine {
 }
 
 export interface Region extends Position, Size { }
+
+/**
+ * @public
+ */
+export interface TwoPointsFormRegion {
+  start: Position
+  end: Position
+}
 
 export interface Circle extends Position {
   r: number

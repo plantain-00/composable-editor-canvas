@@ -4,7 +4,7 @@ export function RotationBar(props: {
   scale: number
   rotateStickLength?: number
   rotateCircleSize?: number
-  onMouseDown: React.MouseEventHandler<HTMLElement>
+  onMouseDown: React.MouseEventHandler<HTMLOrSVGElement>
 }) {
   const length = (props.rotateStickLength ?? 40) / props.scale
   const border = 1 / props.scale

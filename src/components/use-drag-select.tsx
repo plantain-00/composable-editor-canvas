@@ -5,7 +5,7 @@ import { Position } from "../utils"
 
 export function useDragSelect<T = void>(
   onDragEnd: (dragSelectStartPosition: Position & { data?: T }, dragSelectEndPosition?: Position) => void,
-  square?: boolean | ((e: React.MouseEvent<HTMLElement, MouseEvent>) => boolean),
+  square?: boolean | ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean),
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
   const [dragEndPosition, setDragEndPosition] = React.useState<Position>()
@@ -15,7 +15,7 @@ export function useDragSelect<T = void>(
   })
   return {
     dragSelectStartPosition: dragStartPosition,
-    onStartSelect(e: React.MouseEvent<HTMLElement, MouseEvent>, data?: T) {
+    onStartSelect(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T) {
       setDragStartPosition({
         x: e.clientX,
         y: e.clientY,

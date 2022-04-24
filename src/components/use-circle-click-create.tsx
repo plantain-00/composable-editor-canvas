@@ -77,7 +77,7 @@ export function useCircleClickCreate(
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
   return {
-    onCircleClickCreateClick(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+    onCircleClickCreateClick(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
       if (!type) {
         return
       }
@@ -94,7 +94,7 @@ export function useCircleClickCreate(
         reset()
       }
     },
-    onCircleClickCreateMove(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+    onCircleClickCreateMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
       if (!type) {
         return
       }

@@ -9,9 +9,9 @@ export function SelectionRenderer(props: {
   selected: number[] | undefined
   offset: Region
   rotate?: number
-  onStartMove?: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void
+  onStartMove?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
   onStartRotate: (center: Position) => void
-  onStartResize: (e: React.MouseEvent<HTMLElement, MouseEvent>, direction: ResizeDirection) => void
+  onStartResize: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
   const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
   const target = getTargetByPath(selected, styleGuide)

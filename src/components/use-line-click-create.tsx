@@ -52,14 +52,14 @@ export function useLineClickCreate(
   }, [positions, setPositions])
 
   return {
-    onLineClickCreateClick(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+    onLineClickCreateClick(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
       if (!enabled) {
         return
       }
       setCursorPosition({ x: e.clientX, y: e.clientY })
       setPositions([...positions, { x: e.clientX, y: e.clientY }])
     },
-    onLineClickCreateMove(e: React.MouseEvent<HTMLElement, MouseEvent>) {
+    onLineClickCreateMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
       if (!enabled) {
         return
       }
