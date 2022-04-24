@@ -41,7 +41,7 @@ function StoryApp() {
 }
 
 function HighlightCode(props: { code: string }) {
-  const ref = React.useRef<HTMLElement | null>(null)
+  const ref = React.useRef<HTMLOrSVGElement | null>(null)
   React.useEffect(() => {
     if (ref.current) {
       Prism.highlightElement(ref.current)
@@ -60,6 +60,6 @@ createRoot(document.querySelector('#container')!).render(<StoryApp />)
 
 declare global {
   const Prism: {
-    highlightElement(element: HTMLElement): void
+    highlightElement(element: HTMLOrSVGElement): void
   }
 } 
