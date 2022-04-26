@@ -43,6 +43,7 @@ export function useDragMove<T = void>(
       }}
       onDragEnd={() => {
         onDragEnd?.()
+        setMoveOffset({ x: 0, y: 0 })
         setDragStartPosition(undefined)
       }}
     />

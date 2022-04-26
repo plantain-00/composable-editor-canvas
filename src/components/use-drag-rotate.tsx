@@ -28,6 +28,7 @@ export function useDragRotate(
       }}
       onDragEnd={() => {
         onDragEnd?.()
+        setRotate(undefined)
         setCenter(undefined)
       }}
     />

@@ -97,7 +97,6 @@ export function App() {
           position.y += moveOffset.y
         }
       })
-      setMoveOffset({ x: 0, y: 0 })
     },
     {
       scale,
@@ -123,7 +122,6 @@ export function App() {
           target.content.rotate = rotate
         }
       })
-      setRotate(undefined)
     },
     {
       transform,
@@ -159,7 +157,6 @@ export function App() {
           position.y += resizeOffset.y
         }
       })
-      setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
     },
     {
       centeredScaling: (e) => e.shiftKey,

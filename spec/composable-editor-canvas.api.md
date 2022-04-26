@@ -27,6 +27,33 @@ export interface Circle extends Position {
 }
 
 // @public (undocumented)
+export function CircleEditBar(props: {
+    x: number;
+    y: number;
+    radius: number;
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export interface CircleEditData<T = void> {
+    // (undocumented)
+    cursor: React_2.CSSProperties['cursor'];
+    // (undocumented)
+    data?: T;
+    // (undocumented)
+    r: number;
+    // (undocumented)
+    type: 'center' | 'edge';
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
+}
+
+// @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
     onDragging: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void;
@@ -98,6 +125,18 @@ export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position,
 
 // @public (undocumented)
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export function PolylineEditBar(props: {
+    points: Position[];
+    offset?: Position & {
+        pointIndexes: number[];
+    };
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
+}): JSX.Element;
 
 // @public (undocumented)
 export interface Position {
@@ -190,6 +229,14 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
 };
 
 // @public (undocumented)
+export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
+    data?: T;
+}) => void, onEditEnd: () => void): {
+    onStartEditCircle(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: CircleEditData<T>): void;
+    circleEditMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
 export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
@@ -262,6 +309,15 @@ export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]
     onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     lineClickCreateInput: false | JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function usePolylineEdit<T = void>(setPolylineOffset: (offset?: Position & {
+    pointIndexes: number[];
+    data?: T;
+}) => void, onEditEnd: () => void): {
+    onStartEditPolyline(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T | undefined): void;
+    polylineEditMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)

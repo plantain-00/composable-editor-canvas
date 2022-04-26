@@ -12,6 +12,11 @@ export default () => {
     url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg',
   })
   const [rotate, setRotate] = React.useState<number>()
+  const previewContent = produce(content, (draft) => {
+    if (rotate !== undefined) {
+      draft.rotate = rotate
+    }
+  })
   const { onStartRotate, dragRotateMask } = useDragRotate(
     (r, e) => {
       if (e && r !== undefined && !e.shiftKey) {
@@ -22,12 +27,7 @@ export default () => {
       }
       setRotate(r)
     },
-    () => {
-      setContent(produce(content, (draft) => {
-        draft.rotate = rotate ?? 0
-      }))
-      setRotate(undefined)
-    },
+    () => setContent(previewContent),
   )
 
   return (
@@ -40,7 +40,7 @@ export default () => {
           top: `${content.y}px`,
           boxSizing: 'border-box',
           position: 'absolute',
-          transform: `rotate(${rotate ?? content.rotate}deg)`,
+          transform: `rotate(${previewContent.rotate}deg)`,
           background: `url(${content.url})`,
           backgroundSize: 'contain',
         }}

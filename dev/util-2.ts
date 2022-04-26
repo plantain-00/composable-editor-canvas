@@ -69,3 +69,15 @@ export function getContentsByClickTwoPositions(
   })
   return result
 }
+
+export function moveContent(content: Content, offset: Position) {
+  if (content.type === 'circle') {
+    content.x += offset.x
+    content.y += offset.y
+  } else if (content.type === 'line' || content.type === 'polyline') {
+    for (const point of content.points) {
+      point.x += offset.x
+      point.y += offset.y
+    }
+  }
+}

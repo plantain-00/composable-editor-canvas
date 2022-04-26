@@ -10,7 +10,6 @@ export default () => {
     () => {
       setX((v) => v + moveOffset.x)
       setY((v) => v + moveOffset.y)
-      setMoveOffset({ x: 0, y: 0 })
     },
   )
 
