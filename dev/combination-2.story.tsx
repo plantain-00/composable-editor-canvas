@@ -1,11 +1,11 @@
 import React from 'react'
-import { Circle, CircleEditBar, PolylineEditBar, Position, useCircleClickCreate, useCircleEdit, useDragMove, useDragSelect, useKey, useLineClickCreate, usePolylineEdit, useUndoRedo } from '../src'
-import { Content, getContentByClickPosition, getContentsByClickTwoPositions, moveContent } from './util-2'
+import { Circle, CircleEditBar, PolylineEditBar, Position, useCircleClickCreate, useCircleEdit, useDragMove, useDragRotate, useDragSelect, useKey, useLineClickCreate, usePolylineEdit, useUndoRedo } from '../src'
+import { Content, getContentByClickPosition, getContentsByClickTwoPositions, moveContent, rotateContent } from './util-2'
 import { PixiRenderer } from './pixi-renderer'
 import { SvgRenderer } from './svg-renderer'
 import produce from 'immer'
 
-const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'move', 'delete'] as const
+const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'move', 'delete', 'rotate', 'clone'] as const
 type Operation = typeof operations[number]
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -19,34 +19,8 @@ export default () => {
   const [selectedContents, setSelectedContents] = React.useState<number[]>([])
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
   const [renderTarget, setRenderTarget] = React.useState<'pixi' | 'svg'>('pixi')
-  const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
-  const [polyineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-  const [moveOffset, setMoveOffset] = React.useState<Position>({ x: 0, y: 0 })
 
-  const previewContents = produce(state, (draft) => {
-    if (circleEditOffset.data !== undefined) {
-      const content = draft[circleEditOffset.data]
-      if (content.type === 'circle') {
-        content.x += circleEditOffset.x
-        content.y += circleEditOffset.y
-        content.r += circleEditOffset.r
-      }
-    }
-    if (polyineEditOffset?.data !== undefined) {
-      const content = draft[polyineEditOffset.data]
-      if (content.type === 'line' || content.type === 'polyline') {
-        for (const pointIndex of polyineEditOffset.pointIndexes) {
-          content.points[pointIndex].x += polyineEditOffset.x
-          content.points[pointIndex].y += polyineEditOffset.y
-        }
-      }
-    }
-    draft.forEach((content, i) => {
-      if (selectedContents.includes(i)) {
-        moveContent(content, moveOffset)
-      }
-    })
-  })
+  const { setCircleEditOffset, setPolylineEditOffset, setMoveOffset, setCloneOffset, setRotateOffset, previewContents, rotateOffset } = usePreview(state, selectedContents)
 
   const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate(
     operation === '2 points' || operation === '3 points' || operation === 'center diameter' || operation === 'center radius' ? operation : undefined,
@@ -85,6 +59,8 @@ export default () => {
   const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, () => setState(() => previewContents))
   const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, () => setState(() => previewContents))
   const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, () => setState(() => previewContents))
+  const { onStartMove: onStartClone, dragMoveMask: dragCloneMask } = useDragMove(setCloneOffset, () => setState(() => previewContents), { clone: true })
+  const { onStartRotate, dragRotateMask } = useDragRotate((f) => setRotateOffset({ ...rotateOffset, angle: f ? f - 90 : undefined }), () => setState(() => previewContents))
 
   useKey((e) => e.key === 'Escape', () => {
     setOperation(undefined)
@@ -117,6 +93,13 @@ export default () => {
     if (operation === 'move') {
       onStartMove(e)
       setOperation(undefined)
+    } else if (operation === 'clone') {
+      onStartClone(e)
+      setOperation(undefined)
+    } else if (operation === 'rotate') {
+      onStartRotate({ x: e.clientX, y: e.clientY })
+      setRotateOffset({ x: e.clientX, y: e.clientY })
+      setOperation(undefined)
     }
     if (!operation) {
       if (hoveringContent >= 0) {
@@ -134,7 +117,7 @@ export default () => {
     }
   }
   const onStartOperation = (p: Operation) => {
-    if ((p === 'move' || p === 'delete') && selectedContents.length === 0) {
+    if ((p === 'move' || p === 'rotate' || p === 'delete') && selectedContents.length === 0) {
       setOperation(undefined)
       setNextOperation(p)
       return
@@ -179,6 +162,63 @@ export default () => {
       {circleEditMask}
       {polylineEditMask}
       {dragMoveMask}
+      {dragRotateMask}
+      {dragCloneMask}
     </div>
   )
+}
+
+function usePreview(state: Content[], selectedContents: number[]) {
+  const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
+  const [polyineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
+  const [moveOffset, setMoveOffset] = React.useState<Position>({ x: 0, y: 0 })
+  const [cloneOffset, setCloneOffset] = React.useState<Position>()
+  const [rotateOffset, setRotateOffset] = React.useState<Position & { angle?: number }>({ x: 0, y: 0 })
+
+  const previewContents = produce(state, (draft) => {
+    if (circleEditOffset.data !== undefined) {
+      const content = draft[circleEditOffset.data]
+      if (content.type === 'circle') {
+        content.x += circleEditOffset.x
+        content.y += circleEditOffset.y
+        content.r += circleEditOffset.r
+      }
+    }
+    if (polyineEditOffset?.data !== undefined) {
+      const content = draft[polyineEditOffset.data]
+      if (content.type === 'line' || content.type === 'polyline') {
+        for (const pointIndex of polyineEditOffset.pointIndexes) {
+          content.points[pointIndex].x += polyineEditOffset.x
+          content.points[pointIndex].y += polyineEditOffset.y
+        }
+      }
+    }
+    const clonedContents: Content[] = []
+    draft.forEach((content, i) => {
+      if (selectedContents.includes(i)) {
+        if (moveOffset.x !== 0 || moveOffset.y !== 0) {
+          moveContent(content, moveOffset)
+        }
+        if (rotateOffset.angle) {
+          rotateContent(content, rotateOffset, -rotateOffset.angle)
+        }
+        if (cloneOffset) {
+          clonedContents.push(produce(content, (d) => {
+            moveContent(d, cloneOffset)
+          }))
+        }
+      }
+    })
+    draft.push(...clonedContents)
+  })
+
+  return {
+    rotateOffset,
+    setCircleEditOffset,
+    setPolylineEditOffset,
+    setMoveOffset,
+    setCloneOffset,
+    setRotateOffset,
+    previewContents,
+  }
 }

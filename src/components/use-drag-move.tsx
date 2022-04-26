@@ -9,6 +9,7 @@ export function useDragMove<T = void>(
   options?: Partial<{
     scale: number
     parentRotate: number
+    clone: boolean
   }>
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
@@ -18,7 +19,7 @@ export function useDragMove<T = void>(
   useKey((e) => e.key === 'Escape', () => {
     setMoveOffset({ x: 0, y: 0 })
     setDragStartPosition(undefined)
-  })
+  }, [setDragStartPosition, setMoveOffset])
 
   return {
     dragMoveStartPosition: dragStartPosition,
@@ -43,6 +44,7 @@ export function useDragMove<T = void>(
       }}
       onDragEnd={() => {
         onDragEnd?.()
+        if (options?.clone) return
         setMoveOffset({ x: 0, y: 0 })
         setDragStartPosition(undefined)
       }}
