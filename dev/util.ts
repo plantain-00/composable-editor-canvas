@@ -146,7 +146,7 @@ function rotatePosition(position: Position, region: Region & Rotate) {
   return rotatePositionByCenter(position, { x: centerX, y: centerY }, region.rotate)
 }
 
-function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
+export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
   if (!rotate) {
     return position
   }

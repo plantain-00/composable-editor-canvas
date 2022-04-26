@@ -247,6 +247,7 @@ export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.Keyboard
 export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
+    clone: boolean;
 }>): {
     dragMoveStartPosition: (Position & {
         data?: T | undefined;

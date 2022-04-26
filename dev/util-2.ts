@@ -1,4 +1,5 @@
 import { Circle, getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from '../src'
+import { rotatePositionByCenter } from './util'
 
 export type Content =
   | { type: 'circle' } & Circle
@@ -79,5 +80,15 @@ export function moveContent(content: Content, offset: Position) {
       point.x += offset.x
       point.y += offset.y
     }
+  }
+}
+
+export function rotateContent(content: Content, center: Position, angle: number) {
+  if (content.type === 'circle') {
+    const p = rotatePositionByCenter(content, center, angle)
+    content.x = p.x
+    content.y = p.y
+  } else if (content.type === 'line' || content.type === 'polyline') {
+    content.points = content.points.map((p) => rotatePositionByCenter(p, center, angle))
   }
 }
