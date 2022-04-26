@@ -114,7 +114,6 @@ const { onStartMove, dragMoveMask } = useDragMove(
         target.y += moveOffset.y
       }
     })
-    setMoveOffset({ x: 0, y: 0 })
   },
   {
     scale,
@@ -138,7 +137,6 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
         target.rotate = rotate
       }
     })
-    setRotate(undefined)
   },
   {
     transform: {
@@ -181,7 +179,6 @@ const { onStartResize, dragResizeMask } = useDragResize(
         target.y += resizeOffset.y
       }
     })
-    setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
   },
   {
     centeredScaling: (e) => e.shiftKey,
@@ -301,3 +298,50 @@ const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = 
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=line-click-create-pixi.story>
+
+### circle edit
+
+```tsx
+import { useCircleEdit } from "composable-editor-canvas"
+
+const [circleEditOffset, setCircleEditOffset] = React.useState<Circle>({ x: 0, y: 0, r: 0 })
+const circle = produce(content, (draft) => {
+  draft.x += circleEditOffset.x
+  draft.y += circleEditOffset.y
+  draft.r += circleEditOffset.r
+})
+const { onStartEditCircle, circleEditMask } = useCircleEdit(setCircleEditOffset, () => setContent(circle))
+
+<CircleEditBar
+  x={circle.x}
+  y={circle.y}
+  radius={circle.r}
+  onMouseDown={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor })}
+/>
+```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=circle-edit.story>
+
+### polyline edit
+
+```tsx
+import { usePolylineEdit } from "composable-editor-canvas"
+
+const [polyineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[] }>()
+const points = produce(content, (draft) => {
+  if (polyineEditOffset) {
+    for (const pointIndex of polyineEditOffset.pointIndexes) {
+      draft[pointIndex].x += polyineEditOffset.x
+      draft[pointIndex].y += polyineEditOffset.y
+    }
+  }
+})
+const { onStartEditPolyline, polylineEditMask } = usePolylineEdit(setPolylineEditOffset, () => setContent(points))
+
+<PolylineEditBar
+  points={points}
+  onMouseDown={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes)}
+/>
+```
+
+<https://plantain-00.github.io/composable-editor-canvas/?p=polyline-edit.story>

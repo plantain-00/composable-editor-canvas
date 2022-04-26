@@ -11,7 +11,7 @@ export default () => {
   const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
   const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove<number>(
     (f, e) => {
-      if (!e.shiftKey) {
+      if (!e?.shiftKey) {
         changeOffsetByRegionAlignment(f, contents[selectedIndex], contents.filter((_, i) => i !== selectedIndex))
       } else {
         clearRegionAlignments()
@@ -28,7 +28,6 @@ export default () => {
         draft[selectedIndex].x += moveOffset.x
         draft[selectedIndex].y += moveOffset.y
       }))
-      setMoveOffset({ x: 0, y: 0 })
     },
   )
   return (

@@ -11,7 +11,7 @@ export default () => {
   const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const { onStartResize, dragResizeMask } = useDragResize(
     (f, e, direction) => {
-      if (!e.metaKey) {
+      if (!e?.metaKey && direction) {
         const target = contents[selectedIndex]
         const xLines = contents.filter((t) => t !== target).map((t) => [t.x, t.x + t.width]).flat()
         const yLines = contents.filter((t) => t !== target).map((t) => [t.y, t.y + t.height]).flat()
@@ -29,7 +29,6 @@ export default () => {
         draft[selectedIndex].width += resizeOffset.width
         draft[selectedIndex].height += resizeOffset.height
       }))
-      setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
     },
     {
       centeredScaling: (e) => e.shiftKey,
