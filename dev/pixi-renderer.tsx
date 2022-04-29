@@ -1,10 +1,10 @@
 import React from 'react'
 import { Stage, Graphics } from '@inlet/react-pixi'
 import * as PIXI from 'pixi.js'
-import { Content, getModel } from './model-2'
+import { BaseContent, getModel } from './model-2'
 
 export function PixiRenderer(props: {
-  contents: Content[]
+  contents: BaseContent[]
   selectedContents: number[]
   hoveringContent: number
   onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
@@ -20,7 +20,7 @@ export function PixiRenderer(props: {
         color = 0x000000
       }
       g.lineStyle(1, color)
-      getModel(content.type).renderPixi(content, g)
+      getModel(content.type)?.renderPixi(content, g)
     }
   }, [props.contents, props.hoveringContent, props.selectedContents])
 

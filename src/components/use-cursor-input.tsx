@@ -17,7 +17,7 @@ export function useCursorInput(
     clearText() {
       setText('')
     },
-    input: enabled && cursorPosition && (
+    input: enabled && cursorPosition ? (
       <input
         ref={inputRef}
         value={text}
@@ -29,6 +29,6 @@ export function useCursorInput(
         }}
         onKeyDown={(e) => onKeyDown(e, text, cursorPosition)}
       />
-    ),
+    ) : undefined,
   }
 }

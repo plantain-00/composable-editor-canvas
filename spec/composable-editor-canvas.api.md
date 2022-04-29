@@ -225,7 +225,7 @@ export interface TwoPointsFormRegion {
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
     onCircleClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onCircleClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    circleClickCreateInput: false | JSX.Element | undefined;
+    circleClickCreateInput: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -240,7 +240,7 @@ export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
 export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
-    input: false | JSX.Element | undefined;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -309,7 +309,7 @@ export function useLineAlignment(delta: number): {
 export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void): {
     onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    lineClickCreateInput: false | JSX.Element | undefined;
+    lineClickCreateInput: JSX.Element | undefined;
 };
 
 // @public (undocumented)

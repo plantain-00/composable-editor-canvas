@@ -1,114 +1,100 @@
 import React from 'react'
 import * as PIXI from 'pixi.js'
-import { Circle, getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position, TwoPointsFormRegion } from '../src'
-import { rotatePositionByCenter } from './util'
+import { Position, TwoPointsFormRegion } from '../src'
 
-export type Content =
-  | { type: 'circle' } & Circle
-  | { type: 'polyline', points: Position[] }
-  | { type: 'line', points: Position[] }
-
-interface Model<T> {
-  move(content: T, offset: Position): void
-  rotate(content: T, center: Position, angle: number): void
-  canSelectByPosition(content: T, position: Position, delta: number): boolean
-  canSelectByTwoPositions(content: T, region: TwoPointsFormRegion, partial: boolean): boolean
-  renderSvg(props: { content: T, stroke: string }): JSX.Element
-  renderPixi(content: T, g: PIXI.Graphics): void
+export interface BaseContent<T extends string = string> {
+  type: T
 }
 
-const modelCenter: Record<string, Model<Content>> = {}
+export interface Model<T> {
+  move(content: Omit<T, 'type'>, offset: Position): void
+  rotate(content: Omit<T, 'type'>, center: Position, angle: number): void
+  canSelectByPosition(content: Omit<T, 'type'>, position: Position, delta: number): boolean
+  canSelectByTwoPositions(content: Omit<T, 'type'>, region: TwoPointsFormRegion, partial: boolean): boolean
+  renderSvg(props: { content: Omit<T, 'type'>, stroke: string }): JSX.Element
+  renderPixi(content: Omit<T, 'type'>, g: PIXI.Graphics): void
+  useEdit?(onEnd: () => void): {
+    mask?: JSX.Element
+    updatePreview(contents: T[]): void
+    editBar(props: { content: T, index: number }): JSX.Element
+  }
+  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void): {
+    input?: JSX.Element
+    updatePreview(contents: T[]): void
+    onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+    onMove: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+  }
+}
 
-export function getModel(type: Content['type']) {
+const modelCenter: Record<string, Model<BaseContent>> = {}
+
+export function getModel(type: string): Model<BaseContent<string>> | undefined {
   return modelCenter[type]
 }
 
-function registerModel<T extends Content>(type: T['type'], model: Model<T>) {
+export function useModelsEdit(onEnd: () => void) {
+  const editMasks: JSX.Element[] = []
+  const updateEditPreviews: ((contents: BaseContent[]) => void)[] = []
+  const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
+  Object.entries(modelCenter).forEach(([type, model]) => {
+    if (!model.useEdit) {
+      return
+    }
+    const { mask, updatePreview, editBar } = model.useEdit(onEnd)
+    if (mask) {
+      editMasks.push(React.cloneElement(mask, { key: type }))
+    }
+    updateEditPreviews.push(updatePreview)
+    editBarMap[type] = editBar
+  })
+  return {
+    editMasks,
+    updateEditPreview(contents: BaseContent[]) {
+      for (const updateEditPreview of updateEditPreviews) {
+        updateEditPreview(contents)
+      }
+    },
+    editBarMap,
+  }
+}
+
+export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void) {
+  const createInputs: JSX.Element[] = []
+  const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
+  const onClicks: ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void)[] = []
+  const onMoves: ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void)[] = []
+  Object.entries(modelCenter).forEach(([type, model]) => {
+    if (!model.useCreate) {
+      return
+    }
+    const { input, updatePreview, onClick, onMove } = model.useCreate(operation, onEnd)
+    if (input) {
+      createInputs.push(React.cloneElement(input, { key: type }))
+    }
+    updateCreatePreviews.push(updatePreview)
+    onClicks.push(onClick)
+    onMoves.push(onMove)
+  })
+  return {
+    createInputs,
+    updateCreatePreview(contents: BaseContent[]) {
+      for (const updateCreatePreview of updateCreatePreviews) {
+        updateCreatePreview(contents)
+      }
+    },
+    onStartCreate(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+      for (const onClick of onClicks) {
+        onClick(e)
+      }
+    },
+    onCreatingMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+      for (const onMove of onMoves) {
+        onMove(e)
+      }
+    },
+  }
+}
+
+export function registerModel<T extends BaseContent<string>>(type: string, model: Model<T>) {
   modelCenter[type] = model
 }
-
-registerModel<{ type: 'circle' } & Circle>('circle', {
-  move(content, offset) {
-    content.x += offset.x
-    content.y += offset.y
-  },
-  rotate(content, center, angle) {
-    const p = rotatePositionByCenter(content, center, angle)
-    content.x = p.x
-    content.y = p.y
-  },
-  canSelectByPosition(content, position, delta) {
-    return getTwoNumbersDistance(getTwoPointsDistance(content, position), content.r) <= delta
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    if ([
-      { x: content.x - content.r, y: content.y - content.r },
-      { x: content.x + content.r, y: content.y + content.r },
-    ].every((p) => pointIsInRegion(p, region))) {
-      return true
-    }
-    if (partial) {
-      const minDistance = getPointAndRegionMinimumDistance(content, region)
-      const maxDistance = getPointAndRegionMaximumDistance(content, region)
-      if (minDistance <= content.r && maxDistance >= content.r) {
-        return true
-      }
-    }
-    return false
-  },
-  renderSvg({ content, stroke }) {
-    return <circle stroke={stroke} cx={content.x} cy={content.y} r={content.r} />
-  },
-  renderPixi(content, g) {
-    g.drawCircle(content.x, content.y, content.r)
-  },
-})
-
-const lineModel: Model<{ points: Position[] }> = {
-  move(content, offset) {
-    for (const point of content.points) {
-      point.x += offset.x
-      point.y += offset.y
-    }
-  },
-  rotate(content, center, angle) {
-    content.points = content.points.map((p) => rotatePositionByCenter(p, center, angle))
-  },
-  canSelectByPosition(content, position, delta) {
-    for (let j = 1; j < content.points.length; j++) {
-      const minDistance = getPointAndLineMinimumDistance(position, content.points[j - 1], content.points[j])
-      if (minDistance <= delta) {
-        return true
-      }
-    }
-    return false
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    if (content.points.every((p) => pointIsInRegion(p, region))) {
-      return true
-    }
-    if (partial) {
-      for (let j = 1; j < content.points.length; j++) {
-        if (lineIntersectWithTwoPointsFormRegion(content.points[j - 1], content.points[j], region)) {
-          return true
-        }
-      }
-    }
-    return false
-  },
-  renderSvg({ content, stroke }) {
-    return <polyline stroke={stroke} points={content.points.map((p) => `${p.x},${p.y}`).join(' ')} />
-  },
-  renderPixi(content, g) {
-    content.points.forEach((p, i) => {
-      if (i === 0) {
-        g.moveTo(p.x, p.y)
-      } else {
-        g.lineTo(p.x, p.y)
-      }
-    })
-  },
-}
-
-registerModel<{ type: 'polyline', points: Position[] }>('polyline', lineModel)
-registerModel<{ type: 'line', points: Position[] }>('line', lineModel)
