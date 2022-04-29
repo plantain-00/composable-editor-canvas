@@ -8,8 +8,9 @@ import { BaseContent, registerModel, useModelsCreate, useModelsEdit } from './mo
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
+import { rectModel } from './models/rect-model'
 
-const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'move', 'delete', 'rotate', 'clone'] as const
+const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'move', 'delete', 'rotate', 'clone'] as const
 type Operation = typeof operations[number]
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -18,6 +19,7 @@ const initialState = draftState ? JSON.parse(draftState) as BaseContent[] : []
 registerModel('line', lineModel)
 registerModel('circle', circleModel)
 registerModel('polyline', polylineModel)
+registerModel('rect', rectModel)
 
 export default () => {
   const [operation, setOperation] = React.useState<Operation>()

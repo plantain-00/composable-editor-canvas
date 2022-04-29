@@ -18,6 +18,9 @@ export function AlignmentLine(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
+export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
@@ -152,15 +155,16 @@ export interface Region extends Position, Size {
 
 // @public (undocumented)
 export function ResizeBar(props: {
-    scale: number;
+    scale?: number;
     resizeSize?: number;
     directions?: ResizeDirection[];
     rotate?: number;
-    onMouseDown: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
 }): JSX.Element;
 
 // @public (undocumented)
-export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom";
+export type ResizeDirection = typeof allDirections[number];
 
 // @public (undocumented)
 export function reverseTransformX(x: number, transform?: Partial<Transform>): number;
@@ -225,7 +229,7 @@ export interface TwoPointsFormRegion {
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
     onCircleClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onCircleClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    circleClickCreateInput: false | JSX.Element | undefined;
+    circleClickCreateInput: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -240,13 +244,14 @@ export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
 export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
-    input: false | JSX.Element | undefined;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
 export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
+    clone: boolean;
 }>): {
     dragMoveStartPosition: (Position & {
         data?: T | undefined;
@@ -305,10 +310,10 @@ export function useLineAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void): {
+export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, once?: boolean): {
     onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    lineClickCreateInput: false | JSX.Element | undefined;
+    lineClickCreateInput: JSX.Element | undefined;
 };
 
 // @public (undocumented)

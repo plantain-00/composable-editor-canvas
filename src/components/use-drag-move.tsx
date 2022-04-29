@@ -19,7 +19,7 @@ export function useDragMove<T = void>(
   useKey((e) => e.key === 'Escape', () => {
     setMoveOffset({ x: 0, y: 0 })
     setDragStartPosition(undefined)
-  }, [setDragStartPosition, setMoveOffset])
+  }, [setDragStartPosition])
 
   return {
     dragMoveStartPosition: dragStartPosition,

@@ -12,7 +12,7 @@ export function usePolylineEdit<T = void>(
   useKey((e) => e.key === 'Escape', () => {
     setPolylineOffset(undefined)
     setDragStartPosition(undefined)
-  }, [setPolylineOffset])
+  }, [setDragStartPosition])
 
   return {
     onStartEditPolyline(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>,  pointIndexes: number[], data?: T) {

@@ -7,6 +7,7 @@ export function useLineClickCreate(
   enabled: boolean,
   setLine: (line?: Position[]) => void,
   onEnd: (line: Position[]) => void,
+  once?: boolean,
 ) {
   const [positions, setPositions] = React.useState<Position[]>([])
   const { input, setCursorPosition, clearText } = useCursorInput(enabled, (e, text, cursorPosition) => {
@@ -19,6 +20,11 @@ export function useLineClickCreate(
           const lastPosition = positions[positions.length - 1] || { x: 0, y: 0 }
           const x = lastPosition.x + offsetX
           const y = lastPosition.y + offsetY
+          if (once && positions.length > 0) {
+            onEnd([positions[0], { x, y }])
+            reset()
+            return
+          }
           setPositions([...positions, { x, y }])
           setLine([...positions, { x, y }, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
@@ -29,6 +35,11 @@ export function useLineClickCreate(
         const length = +text
         if (!isNaN(length) && length > 0) {
           const point = getPointByLengthAndDirection(positions[positions.length - 1], length, cursorPosition)
+          if (once && positions.length > 0) {
+            onEnd([positions[0], point])
+            reset()
+            return
+          }
           setPositions([...positions, point])
           setLine([...positions, point, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
@@ -57,6 +68,11 @@ export function useLineClickCreate(
         return
       }
       setCursorPosition({ x: e.clientX, y: e.clientY })
+      if (once && positions.length > 0) {
+        onEnd([positions[0], { x: e.clientX, y: e.clientY }])
+        reset()
+        return
+      }
       setPositions([...positions, { x: e.clientX, y: e.clientY }])
     },
     onLineClickCreateMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
@@ -64,6 +80,9 @@ export function useLineClickCreate(
         return
       }
       setCursorPosition({ x: e.clientX, y: e.clientY })
+      if (once && positions.length === 0) {
+        return
+      }
       setLine([...positions, { x: e.clientX, y: e.clientY }])
     },
     lineClickCreateInput: input,

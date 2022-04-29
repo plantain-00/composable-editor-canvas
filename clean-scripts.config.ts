@@ -1,4 +1,4 @@
-const tsFiles = `"src/**/*.ts" "spec/**/*.ts"`
+const tsFiles = `"src/**/*.ts" "src/**/*.tsx" "dev/**/*.ts" "dev/**/*.tsx"`
 
 const importStories = 'types-as-schema -p ./types-as-schema.config.ts'
 

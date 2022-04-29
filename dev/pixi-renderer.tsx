@@ -9,21 +9,6 @@ export function PixiRenderer(props: {
   hoveringContent: number
   onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
 }) {
-  const draw = React.useCallback((g: PIXI.Graphics) => {
-    g.clear()
-    for (let i = 0; i < props.contents.length; i++) {
-      const content = props.contents[i]
-      let color = 0x00ff00
-      if (props.selectedContents.includes(i)) {
-        color = 0xff0000
-      } else if (props.hoveringContent === i) {
-        color = 0x000000
-      }
-      g.lineStyle(1, color)
-      getModel(content.type)?.renderPixi(content, g)
-    }
-  }, [props.contents, props.hoveringContent, props.selectedContents])
-
   return (
     <Stage
       onClick={props.onClick}
@@ -32,7 +17,28 @@ export function PixiRenderer(props: {
       }}
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
-      <Graphics draw={draw} />
+      {props.contents.map((content, i) => {
+        let color = 0x00ff00
+        if (props.selectedContents.includes(i)) {
+          color = 0xff0000
+        } else if (props.hoveringContent === i) {
+          color = 0x000000
+        }
+        return <ContentRenderer key={i} content={content} color={color} />
+      })}
     </Stage>
   )
+}
+
+function ContentRenderer(props: {
+  content: BaseContent
+  color: number
+}) {
+  const draw = React.useCallback((g: PIXI.Graphics) => {
+    g.clear()
+    g.lineStyle(1, props.color)
+    getModel(props.content.type)?.renderPixi(props.content, g)
+  }, [props.content, props.color])
+
+  return <Graphics draw={draw} />
 }

@@ -13,7 +13,7 @@ export function useCircleEdit<T = void>(
   useKey((e) => e.key === 'Escape', () => {
     setCircleOffset({ x: 0, y: 0, r: 0 })
     setDragStartPosition(undefined)
-  }, [setCircleOffset])
+  }, [setDragStartPosition])
 
   return {
     onStartEditCircle(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: CircleEditData<T>) {

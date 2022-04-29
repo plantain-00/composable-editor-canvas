@@ -12,7 +12,7 @@ export function useDragSelect<T = void>(
   useKey((e) => e.key === 'Escape', () => {
     setDragStartPosition(undefined)
     setDragEndPosition(undefined)
-  })
+  }, [setDragStartPosition, setDragEndPosition])
   return {
     dragSelectStartPosition: dragStartPosition,
     onStartSelect(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T) {
