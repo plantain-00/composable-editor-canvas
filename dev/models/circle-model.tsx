@@ -1,0 +1,81 @@
+import React from 'react'
+import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, useCircleClickCreate, useCircleEdit } from '../../src'
+import { rotatePositionByCenter } from '../util'
+import { BaseContent, Model } from '../model-2'
+
+export type CircleContent = BaseContent<'circle'> & Circle
+
+export const circleModel: Model<CircleContent> = {
+  move(content, offset) {
+    content.x += offset.x
+    content.y += offset.y
+  },
+  rotate(content, center, angle) {
+    const p = rotatePositionByCenter(content, center, angle)
+    content.x = p.x
+    content.y = p.y
+  },
+  canSelectByPosition(content, position, delta) {
+    return getTwoNumbersDistance(getTwoPointsDistance(content, position), content.r) <= delta
+  },
+  canSelectByTwoPositions(content, region, partial) {
+    if ([
+      { x: content.x - content.r, y: content.y - content.r },
+      { x: content.x + content.r, y: content.y + content.r },
+    ].every((p) => pointIsInRegion(p, region))) {
+      return true
+    }
+    if (partial) {
+      const minDistance = getPointAndRegionMinimumDistance(content, region)
+      const maxDistance = getPointAndRegionMaximumDistance(content, region)
+      if (minDistance <= content.r && maxDistance >= content.r) {
+        return true
+      }
+    }
+    return false
+  },
+  renderSvg({ content, stroke }) {
+    return <circle stroke={stroke} cx={content.x} cy={content.y} r={content.r} />
+  },
+  renderPixi(content, g) {
+    g.drawCircle(content.x, content.y, content.r)
+  },
+  useEdit(onEnd) {
+    const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
+    const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, onEnd)
+    return {
+      mask: circleEditMask,
+      updatePreview(contents) {
+        if (circleEditOffset.data !== undefined) {
+          const content = contents[circleEditOffset.data]
+          if (content.type === 'circle') {
+            content.x += circleEditOffset.x
+            content.y += circleEditOffset.y
+            content.r += circleEditOffset.r
+          }
+        }
+      },
+      editBar({ content, index }) {
+        return <CircleEditBar x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+      },
+    }
+  },
+  useCreate(type, onEnd) {
+    const [circleCreate, setCircleCreate] = React.useState<Circle>()
+    const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate(
+      type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
+      setCircleCreate,
+      (c) => onEnd([{ ...c, type: 'circle' }]),
+    )
+    return {
+      input: circleClickCreateInput,
+      onClick: onCircleClickCreateClick,
+      onMove: onCircleClickCreateMove,
+      updatePreview(contents) {
+        if (circleCreate) {
+          contents.push({ type: 'circle', ...circleCreate })
+        }
+      },
+    }
+  },
+}

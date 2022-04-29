@@ -1,8 +1,8 @@
 import React from 'react'
-import { Content, getModel } from './model-2'
+import { BaseContent, getModel } from './model-2'
 
 export function SvgRenderer(props: {
-  contents: Content[]
+  contents: BaseContent[]
   selectedContents: number[]
   hoveringContent: number
   onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
@@ -17,14 +17,17 @@ export function SvgRenderer(props: {
       fill='none'
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
-      {props.contents.map((content: Content, i: number) => {
+      {props.contents.map((content, i) => {
         let color = '#00ff00'
         if (props.selectedContents.includes(i)) {
           color = '#ff0000'
         } else if (props.hoveringContent === i) {
           color = '#000000'
         }
-        const ContentRender = getModel(content.type).renderSvg
+        const ContentRender = getModel(content.type)?.renderSvg
+        if (!ContentRender) {
+          return null
+        }
         return <ContentRender key={i} content={content} stroke={color} />
       })}
     </svg>

@@ -1,8 +1,8 @@
 import { getTwoPointsFormRegion, Position } from '../src'
-import { Content, getModel } from './model-2'
+import { BaseContent, getModel } from './model-2'
 
 export function getContentByClickPosition(
-  contents: Content[],
+  contents: BaseContent[],
   position: Position,
   selectedContents: number[],
   delta = 3,
@@ -12,7 +12,7 @@ export function getContentByClickPosition(
       continue
     }
     const content = contents[i]
-    if (getModel(content.type).canSelectByPosition(content, position, delta)) {
+    if (getModel(content.type)?.canSelectByPosition(content, position, delta)) {
       return i
     }
   }
@@ -20,7 +20,7 @@ export function getContentByClickPosition(
 }
 
 export function getContentsByClickTwoPositions(
-  contents: Content[],
+  contents: BaseContent[],
   startPosition: Position,
   endPosition: Position,
 ) {
@@ -28,17 +28,17 @@ export function getContentsByClickTwoPositions(
   const region = getTwoPointsFormRegion(startPosition, endPosition)
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
-    if (getModel(content.type).canSelectByTwoPositions(content, region, partial)) {
+    if (getModel(content.type)?.canSelectByTwoPositions(content, region, partial)) {
       result.push(i)
     }
   })
   return result
 }
 
-export function moveContent(content: Content, offset: Position) {
-  getModel(content.type).move(content, offset)
+export function moveContent(content: BaseContent, offset: Position) {
+  getModel(content.type)?.move(content, offset)
 }
 
-export function rotateContent(content: Content, center: Position, angle: number) {
-  getModel(content.type).rotate(content, center, angle)
+export function rotateContent(content: BaseContent, center: Position, angle: number) {
+  getModel(content.type)?.rotate(content, center, angle)
 }
