@@ -20,7 +20,7 @@ export function useDragResize(
   useKey((e) => e.key === 'Escape', () => {
     setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
     setDragStartPosition(undefined)
-  })
+  }, [setDragStartPosition])
 
   return {
     dragResizeStartPosition: dragStartPosition,
@@ -43,6 +43,11 @@ export function useDragResize(
         const parentCos = Math.cos(parentRotate)
         const parentOffsetX = parentCos * originalOffsetX - parentSin * originalOffsetY
         const parentOffsetY = parentSin * originalOffsetX + parentCos * originalOffsetY
+
+        if (dragStartPosition.direction === 'center') {
+          setResizeOffset({ x: parentOffsetX, y: parentOffsetY, width: 0, height: 0 }, e, dragStartPosition.direction)
+          return
+        }
 
         const sin = Math.sin(rotate)
         const cos = Math.cos(rotate)

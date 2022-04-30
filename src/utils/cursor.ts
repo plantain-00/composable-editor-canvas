@@ -1,4 +1,7 @@
 export function getResizeCursor(rotate: number, direction: ResizeDirection) {
+  if (direction === 'center') {
+    return 'move'
+  }
   rotate = rotate % 180
   let offset = 0
   if (rotate > 22.5) {
@@ -30,6 +33,8 @@ export function getResizeCursor(rotate: number, direction: ResizeDirection) {
   return cursors[(offset + 1) % 4]
 }
 
-export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom"
+export const allDirections = ['left', 'right', 'top', 'bottom', 'left-bottom', 'left-top', 'right-top', 'right-bottom', 'center'] as const
+
+export type ResizeDirection = typeof allDirections[number]
 
 const cursors = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize']

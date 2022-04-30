@@ -18,6 +18,9 @@ export function AlignmentLine(props: {
 }): JSX.Element | null;
 
 // @public (undocumented)
+export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
@@ -152,15 +155,16 @@ export interface Region extends Position, Size {
 
 // @public (undocumented)
 export function ResizeBar(props: {
-    scale: number;
+    scale?: number;
     resizeSize?: number;
     directions?: ResizeDirection[];
     rotate?: number;
-    onMouseDown: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void;
 }): JSX.Element;
 
 // @public (undocumented)
-export type ResizeDirection = `${'left' | 'right'}-${'top' | 'bottom'}` | "left" | "right" | "top" | "bottom";
+export type ResizeDirection = typeof allDirections[number];
 
 // @public (undocumented)
 export function reverseTransformX(x: number, transform?: Partial<Transform>): number;
@@ -306,7 +310,7 @@ export function useLineAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void): {
+export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, once?: boolean): {
     onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
     lineClickCreateInput: JSX.Element | undefined;

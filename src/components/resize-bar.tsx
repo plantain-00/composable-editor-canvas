@@ -1,14 +1,16 @@
 import * as React from "react"
-import { getResizeCursor, ResizeDirection } from ".."
+import { allDirections, getResizeCursor, ResizeDirection } from ".."
 
 export function ResizeBar(props: {
-  scale: number
+  scale?: number
   resizeSize?: number
   directions?: ResizeDirection[]
   rotate?: number
-  onMouseDown: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
+  onMouseDown?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
+  onClick?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
-  const { scale, resizeSize } = props
+  const { resizeSize } = props
+  const scale = props.scale ?? 1
   const width = (resizeSize ?? 5) / scale
   const border = 1 / scale
   const leftTop = width / 2
@@ -34,10 +36,10 @@ export function ResizeBar(props: {
       if (direction.includes('bottom')) {
         style.bottom = -rightBottom + 'px'
       }
-      if (direction === 'left' || direction === 'right') {
+      if (direction === 'left' || direction === 'right' || direction === 'center') {
         style.top = `calc(50% - ${leftTop}px)`
       }
-      if (direction === 'top' || direction === 'bottom') {
+      if (direction === 'top' || direction === 'bottom' || direction === 'center') {
         style.left = `calc(50% - ${leftTop}px)`
       }
       bars.push({
@@ -63,12 +65,13 @@ export function ResizeBar(props: {
             ...s.style,
           }}
           onMouseDown={(e) => {
-            props.onMouseDown(e, s.direction)
+            props.onMouseDown?.(e, s.direction)
+          }}
+          onClick={(e) => {
+            props.onClick?.(e, s.direction)
           }}
         />
       ))}
     </>
   )
 }
-
-const allDirections: ResizeDirection[] = ['left', 'right', 'top', 'bottom', 'left-bottom', 'left-top', 'right-top', 'right-bottom']

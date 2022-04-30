@@ -16,7 +16,7 @@ export function useDragRotate(
   useKey((e) => e.key === 'Escape', () => {
     setRotate(undefined)
     setCenter(undefined)
-  })
+  }, [setCenter])
   return {
     dragRotateCenter: center,
     onStartRotate: setCenter,
