@@ -1,65 +1,80 @@
 import React from 'react'
-import { Position, useDragMove, useDragRotate, useDragSelect, useKey, useUndoRedo } from '../src'
-import { getContentByClickPosition, getContentsByClickTwoPositions, moveContent, rotateContent } from './util-2'
-import { PixiRenderer } from './pixi-renderer'
-import { SvgRenderer } from './svg-renderer'
+import { useDragSelect, useKey, useUndoRedo } from '../src'
+import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
+import { PixiRenderer } from './renderers/pixi-renderer'
+import { SvgRenderer } from './renderers/svg-renderer'
 import produce from 'immer'
-import { BaseContent, registerModel, useModelsCreate, useModelsEdit } from './model-2'
+import { BaseContent, registerModel, useModelsCreate, useModelsEdit } from './models/model'
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
 import { rectModel } from './models/rect-model'
+import { registerCommand, useCommands } from './commands/command'
+import { moveCommand } from './commands/move'
+import { rotateCommand } from './commands/rotate'
+import { mirrorCommand } from './commands/mirror'
+import { cloneCommand } from './commands/clone'
+import { explodeCommand } from './commands/explode'
+import { deleteCommand } from './commands/delete'
 
-const operations = ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'move', 'delete', 'rotate', 'clone'] as const
-type Operation = typeof operations[number]
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
 const initialState = draftState ? JSON.parse(draftState) as BaseContent[] : []
 
-registerModel('line', lineModel)
-registerModel('circle', circleModel)
-registerModel('polyline', polylineModel)
-registerModel('rect', rectModel)
+registerModel(lineModel)
+registerModel(circleModel)
+registerModel(polylineModel)
+registerModel(rectModel)
+
+registerCommand(moveCommand)
+registerCommand(rotateCommand)
+registerCommand(mirrorCommand)
+registerCommand(cloneCommand)
+registerCommand(deleteCommand)
+registerCommand(explodeCommand)
 
 export default () => {
-  const [operation, setOperation] = React.useState<Operation>()
-  const [nextOperation, setNextOperation] = React.useState<Operation>()
+  // operation when no selection required or selected already
+  const [operation, setOperation] = React.useState<string>()
+  // next operation when selection finished by pressing 'Enter'
+  const [nextOperation, setNextOperation] = React.useState<string>()
+  // undo/redo
   const { state, setState, undo, redo, canRedo, canUndo, stateIndex } = useUndoRedo(initialState)
   const [selectedContents, setSelectedContents] = React.useState<number[]>([])
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
   const [renderTarget, setRenderTarget] = React.useState<'pixi' | 'svg'>('pixi')
 
-  const [moveOffset, setMoveOffset] = React.useState<Position>({ x: 0, y: 0 })
-  const [cloneOffset, setCloneOffset] = React.useState<Position>({ x: 0, y: 0 })
-  const [rotateOffset, setRotateOffset] = React.useState<Position & { angle?: number }>({ x: 0, y: 0 })
+  // commands
+  const { commandMasks, updateContent, startCommand } = useCommands(() => setState(() => previewContents))
 
+  // content data -> preview data / assistent data
+  const assistentContents: BaseContent[] = []
   let previewContents = produce(state, (draft) => {
-    const clonedContents: BaseContent[] = []
+    const newContents: BaseContent[] = []
     draft.forEach((content, i) => {
       if (selectedContents.includes(i)) {
-        if (moveOffset.x !== 0 || moveOffset.y !== 0) {
-          moveContent(content, moveOffset)
+        const result = updateContent(content)
+        if (result.assistentContents) {
+          assistentContents.push(...result.assistentContents)
         }
-        if (rotateOffset.angle) {
-          rotateContent(content, rotateOffset, -rotateOffset.angle)
-        }
-        if (cloneOffset.x !== 0 || cloneOffset.y !== 0) {
-          clonedContents.push(produce(content, (d) => {
-            moveContent(d, cloneOffset)
-          }))
+        if (result.newContents) {
+          newContents.push(...result.newContents)
         }
       }
     })
-    draft.push(...clonedContents)
+    draft.push(...newContents)
   })
 
+  // select by region
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
     if (end) {
-      setSelectedContents([...selectedContents, ...getContentsByClickTwoPositions(state, start, end)])
+      setSelectedContents([...selectedContents, ...getContentsByClickTwoPositions(state, start, end, contentSelectable)])
     }
   })
 
+  // edit model
   const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => setState(() => previewContents))
+  // create model
   const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove } = useModelsCreate(operation, (c) => {
     setState((draft) => {
       draft.push(...c)
@@ -72,9 +87,32 @@ export default () => {
     updateCreatePreview(draft)
   })
 
-  const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, () => setState(() => previewContents))
-  const { onStartMove: onStartClone, dragMoveMask: dragCloneMask } = useDragMove(setCloneOffset, () => setState(() => previewContents), { clone: true })
-  const { onStartRotate, dragRotateMask } = useDragRotate((f) => setRotateOffset({ ...rotateOffset, angle: f ? f - 90 : undefined }), () => setState(() => previewContents))
+  const executeCommandForSelectedContents = (name: string) => {
+    const removedContents: number[] = []
+    const newContents: BaseContent[] = []
+    state.forEach((c, i) => {
+      if (selectedContents.includes(i)) {
+        const result = executeCommand(name, c)
+        if (result?.newContents) {
+          newContents.push(...result.newContents)
+        }
+        if (result?.removed) {
+          removedContents.push(i)
+        }
+      }
+    })
+    if (removedContents.length + newContents.length > 0) {
+      setState((draft) => [...draft.filter((_, i) => !removedContents.includes(i)), ...newContents])
+    }
+    setSelectedContents([])
+  }
+  const contentSelectable = (content: BaseContent, index: number) => {
+    // ignore selected contents
+    if (selectedContents.includes(index)) {
+      return false
+    }
+    return nextOperation ? isContentSelectable(nextOperation, content) : true
+  }
 
   useKey((e) => e.key === 'Escape', () => {
     setOperation(undefined)
@@ -83,18 +121,20 @@ export default () => {
   }, [setOperation])
 
   useKey((e) => e.key === 'Enter', () => {
-    if (nextOperation === 'delete') {
-      setState((draft) => draft.filter((_, i) => !selectedContents.includes(i)))
-      setSelectedContents([])
+    // after selection, execute command immediately
+    if (nextOperation && isExecutableCommand(nextOperation)) {
+      executeCommandForSelectedContents(nextOperation)
       setNextOperation(undefined)
       return
     }
+    // after selection, continue operation
     if (nextOperation) {
       setOperation(nextOperation)
       setNextOperation(undefined)
     }
   })
 
+  // save contents if changed
   React.useEffect(() => {
     if (stateIndex > 0) {
       localStorage.setItem(draftKey, JSON.stringify(state))
@@ -102,22 +142,18 @@ export default () => {
   }, [state, stateIndex])
 
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    // if the operation is create model/command, start it
     onStartCreate(e)
-    if (operation === 'move') {
-      onStartMove(e)
-      setOperation(undefined)
-    } else if (operation === 'clone') {
-      onStartClone(e)
-      setOperation(undefined)
-    } else if (operation === 'rotate') {
-      onStartRotate({ x: e.clientX, y: e.clientY })
-      setRotateOffset({ x: e.clientX, y: e.clientY })
+    if (operation && isCommand(operation)) {
+      startCommand(operation, e)
       setOperation(undefined)
     }
     if (!operation) {
       if (hoveringContent >= 0) {
+        // if no operation and is hovering content, add it to selection
         setSelectedContents([...selectedContents, hoveringContent])
       } else {
+        // if no operation and is not hovering, start selection by region
         onStartSelect(e)
       }
     }
@@ -125,18 +161,20 @@ export default () => {
   const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     onCreatingMove(e)
     if (!operation) {
-      setHoveringContent(getContentByClickPosition(state, { x: e.clientX, y: e.clientY }, selectedContents))
+      // if no operation, hover by position
+      setHoveringContent(getContentByClickPosition(state, { x: e.clientX, y: e.clientY }, contentSelectable))
     }
   }
-  const onStartOperation = (p: Operation) => {
-    if ((p === 'move' || p === 'rotate' || p === 'delete' || p === 'clone') && selectedContents.length === 0) {
+  const onStartOperation = (p: string) => {
+    // for commands, but no content selected, start to select some
+    if (isCommand(p) && selectedContents.length === 0) {
       setOperation(undefined)
       setNextOperation(p)
       return
     }
-    if (p === 'delete') {
-      setState((draft) => draft.filter((_, i) => !selectedContents.includes(i)))
-      setSelectedContents([])
+    // for executable commands, if there are selections, do it
+    if (isExecutableCommand(p)) {
+      executeCommandForSelectedContents(p)
       return
     }
     setOperation(p)
@@ -148,7 +186,7 @@ export default () => {
     <div style={{ height: '100%' }}>
       <div style={{ cursor: 'crosshair' }} onMouseMove={onMouseMove}>
         <Render
-          contents={previewContents}
+          contents={[...previewContents, ...assistentContents]}
           selectedContents={selectedContents}
           hoveringContent={hoveringContent}
           onClick={onClick}
@@ -162,15 +200,13 @@ export default () => {
         })}
         {createInputs}
       </div>
-      {operations.map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
+      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
       <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>
       <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>
       <button onClick={() => setRenderTarget(renderTarget === 'pixi' ? 'svg' : 'pixi')} style={{ position: 'relative' }}>{renderTarget}</button>
       {editMasks}
       {dragSelectMask}
-      {dragMoveMask}
-      {dragRotateMask}
-      {dragCloneMask}
+      {commandMasks}
     </div>
   )
 }

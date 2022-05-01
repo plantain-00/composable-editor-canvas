@@ -1,5 +1,5 @@
 import React from 'react'
-import { BaseContent, getModel } from './model-2'
+import { BaseContent, getModel } from '../models/model'
 
 export function SvgRenderer(props: {
   contents: BaseContent[]

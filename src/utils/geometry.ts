@@ -183,6 +183,19 @@ function lineIntersectWithLine(a: Position, b: Position, c: Position, d: Positio
   return (u * v <= 0.00000001 && w * z <= 0.00000001);
 }
 
+/**
+ * @public
+ */
+export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine) {
+  const d = a ** 2
+  const e = b ** 2
+  const x = ((e - d) * p.x - 2 * a * b * p.y - 2 * a * c) / (d + e)
+  return {
+    x: x,
+    y: b * (x - p.x) / a + p.y,
+  }
+}
+
 export interface Position {
   x: number
   y: number

@@ -1,13 +1,14 @@
 import React from 'react'
-import { getPointAndLineMinimumDistance, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, PolylineEditBar, Position, useLineClickCreate, usePolylineEdit } from '../../src'
+import { getPointAndLineMinimumDistance, getSymmetryPoint, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, PolylineEditBar, Position, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { rotatePositionByCenter } from '../util'
-import { BaseContent, Model } from '../model-2'
+import { BaseContent, Model } from './model'
 
 export type LineContent = BaseContent<'line' | 'polyline'> & {
   points: Position[]
 }
 
 export const lineModel: Model<LineContent> = {
+  type: 'line',
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -15,7 +16,11 @@ export const lineModel: Model<LineContent> = {
     }
   },
   rotate(content, center, angle) {
-    content.points = content.points.map((p) => rotatePositionByCenter(p, center, angle))
+    content.points = content.points.map((p) => rotatePositionByCenter(p, center, -angle))
+  },
+  mirror(content, p1, p2) {
+    const line = twoPointLineToGeneralFormLine(p1, p2)
+    content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   canSelectByPosition(content, position, delta) {
     for (let j = 1; j < content.points.length; j++) {

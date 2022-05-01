@@ -1,14 +1,17 @@
 import React from 'react'
 import * as PIXI from 'pixi.js'
-import { Position, TwoPointsFormRegion } from '../src'
+import { Position, TwoPointsFormRegion } from '../../src'
 
 export interface BaseContent<T extends string = string> {
   type: T
 }
 
 export interface Model<T> {
+  type: string
   move(content: Omit<T, 'type'>, offset: Position): void
   rotate(content: Omit<T, 'type'>, center: Position, angle: number): void
+  explode?(content: Omit<T, 'type'>): BaseContent[]
+  mirror(content: Omit<T, 'type'>, p1: Position, p2: Position): void
   canSelectByPosition(content: Omit<T, 'type'>, position: Position, delta: number): boolean
   canSelectByTwoPositions(content: Omit<T, 'type'>, region: TwoPointsFormRegion, partial: boolean): boolean
   renderSvg(props: { content: Omit<T, 'type'>, stroke: string }): JSX.Element
@@ -28,7 +31,7 @@ export interface Model<T> {
 
 const modelCenter: Record<string, Model<BaseContent>> = {}
 
-export function getModel(type: string): Model<BaseContent<string>> | undefined {
+export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
 
@@ -36,16 +39,16 @@ export function useModelsEdit(onEnd: () => void) {
   const editMasks: JSX.Element[] = []
   const updateEditPreviews: ((contents: BaseContent[]) => void)[] = []
   const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
-  Object.entries(modelCenter).forEach(([type, model]) => {
+  Object.values(modelCenter).forEach((model) => {
     if (!model.useEdit) {
       return
     }
     const { mask, updatePreview, editBar } = model.useEdit(onEnd)
     if (mask) {
-      editMasks.push(React.cloneElement(mask, { key: type }))
+      editMasks.push(React.cloneElement(mask, { key: model.type }))
     }
     updateEditPreviews.push(updatePreview)
-    editBarMap[type] = editBar
+    editBarMap[model.type] = editBar
   })
   return {
     editMasks,
@@ -95,6 +98,6 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
   }
 }
 
-export function registerModel<T extends BaseContent<string>>(type: string, model: Model<T>) {
-  modelCenter[type] = model
+export function registerModel<T extends BaseContent>(model: Model<T>) {
+  modelCenter[model.type] = model
 }

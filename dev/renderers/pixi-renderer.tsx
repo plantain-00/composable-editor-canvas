@@ -1,7 +1,7 @@
 import React from 'react'
 import { Stage, Graphics } from '@inlet/react-pixi'
 import * as PIXI from 'pixi.js'
-import { BaseContent, getModel } from './model-2'
+import { BaseContent, getModel } from '../models/model'
 
 export function PixiRenderer(props: {
   contents: BaseContent[]

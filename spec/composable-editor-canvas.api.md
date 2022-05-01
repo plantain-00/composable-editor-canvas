@@ -105,6 +105,12 @@ export function getRegion(p1: Position, p2: Position): Region;
 export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
 
 // @public (undocumented)
+export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
 export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position): {
     r: number;
     x: number;
