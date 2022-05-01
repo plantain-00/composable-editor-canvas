@@ -1,23 +1,43 @@
 import React from 'react'
-import { Position, Region, ResizeBar, useDragResize, useLineClickCreate } from '../../src'
+import { getSymmetryPoint, Position, Region, ResizeBar, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
 import { rotatePositionByCenter } from '../util'
-import { BaseContent, Model } from '../model-2'
-import { lineModel } from './line-model'
+import { BaseContent, Model } from './model'
+import { LineContent, lineModel } from './line-model'
 
 export type RectContent = BaseContent<'rect'> & Region & {
   angle: number
 }
 
 export const rectModel: Model<RectContent> = {
+  type: 'rect',
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
   },
   rotate(content, center, angle) {
-    const p = rotatePositionByCenter(content, center, angle)
+    const p = rotatePositionByCenter(content, center, -angle)
     content.x = p.x
     content.y = p.y
-    content.angle -= angle
+    content.angle += angle
+  },
+  explode(content) {
+    const points = getRectPoints(content)
+    const result: LineContent[] = []
+    for (let i = 1; i < points.length; i++) {
+      result.push({
+        type: 'line',
+        points: [points[i - 1], points[i]],
+      })
+    }
+    return result
+  },
+  mirror(content, p1, p2) {
+    const line = twoPointLineToGeneralFormLine(p1, p2)
+    const p = getSymmetryPoint(content, line)
+    content.x = p.x
+    content.y = p.y
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
+    content.angle = 2 * angle - content.angle
   },
   canSelectByPosition(content, position, delta) {
     return lineModel.canSelectByPosition({

@@ -1,17 +1,24 @@
 import React from 'react'
-import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, useCircleClickCreate, useCircleEdit } from '../../src'
+import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getSymmetryPoint, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { rotatePositionByCenter } from '../util'
-import { BaseContent, Model } from '../model-2'
+import { BaseContent, Model } from './model'
 
 export type CircleContent = BaseContent<'circle'> & Circle
 
 export const circleModel: Model<CircleContent> = {
+  type: 'circle',
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
   },
   rotate(content, center, angle) {
-    const p = rotatePositionByCenter(content, center, angle)
+    const p = rotatePositionByCenter(content, center, -angle)
+    content.x = p.x
+    content.y = p.y
+  },
+  mirror(content, p1, p2) {
+    const line = twoPointLineToGeneralFormLine(p1, p2)
+    const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
   },
