@@ -1,8 +1,6 @@
 import React from 'react'
-import { useDragSelect, useKey, useUndoRedo } from '../src'
+import { reactSvgRenderTarget, useDragSelect, useKey, useUndoRedo } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
-import { PixiRenderer } from './renderers/pixi-renderer'
-import { SvgRenderer } from './renderers/svg-renderer'
 import produce from 'immer'
 import { BaseContent, registerModel, useModelsCreate, useModelsEdit } from './models/model'
 import { lineModel } from './models/line-model'
@@ -16,6 +14,8 @@ import { mirrorCommand } from './commands/mirror'
 import { cloneCommand } from './commands/clone'
 import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
+import { getAllRendererTypes, registerRenderer, Renderer } from './renderers/renderer'
+import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -33,6 +33,9 @@ registerCommand(cloneCommand)
 registerCommand(deleteCommand)
 registerCommand(explodeCommand)
 
+registerRenderer(reactSvgRenderTarget)
+registerRenderer(reactPixiRenderTarget)
+
 export default () => {
   // operation when no selection required or selected already
   const [operation, setOperation] = React.useState<string>()
@@ -42,7 +45,7 @@ export default () => {
   const { state, setState, undo, redo, canRedo, canUndo, stateIndex } = useUndoRedo(initialState)
   const [selectedContents, setSelectedContents] = React.useState<number[]>([])
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
-  const [renderTarget, setRenderTarget] = React.useState<'pixi' | 'svg'>('pixi')
+  const [renderTarget, setRenderTarget] = React.useState<string>()
 
   // commands
   const { commandMasks, updateContent, startCommand } = useCommands(() => setState(() => previewContents))
@@ -180,12 +183,11 @@ export default () => {
     setOperation(p)
   }
 
-  const Render = renderTarget === 'pixi' ? PixiRenderer : SvgRenderer
-
   return (
     <div style={{ height: '100%' }}>
       <div style={{ cursor: 'crosshair' }} onMouseMove={onMouseMove}>
-        <Render
+        <Renderer
+          type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
           selectedContents={selectedContents}
           hoveringContent={hoveringContent}
@@ -203,7 +205,9 @@ export default () => {
       {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
       <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>
       <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>
-      <button onClick={() => setRenderTarget(renderTarget === 'pixi' ? 'svg' : 'pixi')} style={{ position: 'relative' }}>{renderTarget}</button>
+      <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
+        {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
+      </select>
       {editMasks}
       {dragSelectMask}
       {commandMasks}

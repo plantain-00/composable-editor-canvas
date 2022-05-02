@@ -41,11 +41,8 @@ export const circleModel: Model<CircleContent> = {
     }
     return false
   },
-  renderSvg({ content, stroke }) {
-    return <circle stroke={stroke} cx={content.x} cy={content.y} r={content.r} />
-  },
-  renderPixi(content, g) {
-    g.drawCircle(content.x, content.y, content.r)
+  render({ content, stroke, target }) {
+    return target.strokeCircle(content.x, content.y, content.r, stroke)
   },
   useEdit(onEnd) {
     const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })

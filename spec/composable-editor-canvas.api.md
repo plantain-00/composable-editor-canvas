@@ -156,6 +156,25 @@ export interface Position {
 }
 
 // @public (undocumented)
+export interface ReactRenderTarget {
+    // (undocumented)
+    getResult(children: JSX.Element[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
+        style: React.CSSProperties;
+    }>): JSX.Element;
+    // (undocumented)
+    strokeCircle(cx: number, cy: number, r: number, color: number): JSX.Element;
+    // (undocumented)
+    strokePolyline(points: Position[], color: number): JSX.Element;
+    // (undocumented)
+    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): JSX.Element;
+    // (undocumented)
+    type: string;
+}
+
+// @public (undocumented)
+export const reactSvgRenderTarget: ReactRenderTarget;
+
+// @public (undocumented)
 export interface Region extends Position, Size {
 }
 

@@ -1,6 +1,5 @@
 import React from 'react'
-import * as PIXI from 'pixi.js'
-import { Position, TwoPointsFormRegion } from '../../src'
+import { Position, ReactRenderTarget, TwoPointsFormRegion } from '../../src'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -14,8 +13,7 @@ export interface Model<T> {
   mirror(content: Omit<T, 'type'>, p1: Position, p2: Position): void
   canSelectByPosition(content: Omit<T, 'type'>, position: Position, delta: number): boolean
   canSelectByTwoPositions(content: Omit<T, 'type'>, region: TwoPointsFormRegion, partial: boolean): boolean
-  renderSvg(props: { content: Omit<T, 'type'>, stroke: string }): JSX.Element
-  renderPixi(content: Omit<T, 'type'>, g: PIXI.Graphics): void
+  render?(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget }): JSX.Element
   useEdit?(onEnd: () => void): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void

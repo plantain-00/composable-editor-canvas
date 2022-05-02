@@ -44,17 +44,8 @@ export const lineModel: Model<LineContent> = {
     }
     return false
   },
-  renderSvg({ content, stroke }) {
-    return <polyline stroke={stroke} points={content.points.map((p) => `${p.x},${p.y}`).join(' ')} />
-  },
-  renderPixi(content, g) {
-    content.points.forEach((p, i) => {
-      if (i === 0) {
-        g.moveTo(p.x, p.y)
-      } else {
-        g.lineTo(p.x, p.y)
-      }
-    })
+  render({ content, stroke, target }) {
+    return target.strokePolyline(content.points, stroke)
   },
   useEdit(onEnd) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
