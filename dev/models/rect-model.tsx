@@ -49,14 +49,8 @@ export const rectModel: Model<RectContent> = {
       points: getRectPoints(content),
     }, region, partial)
   },
-  renderSvg({ content, stroke }) {
-    return <rect stroke={stroke} transform={`rotate(${content.angle},${content.x},${content.y})`} x={content.x - content.width / 2} y={content.y - content.height / 2} width={content.width} height={content.height} />
-  },
-  renderPixi(content, g) {
-    g.angle = content.angle
-    g.position.x = content.x
-    g.position.y = content.y
-    g.drawRect(-content.width / 2, -content.height / 2, content.width, content.height)
+  render({ content, stroke, target }) {
+    return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
   },
   useEdit(onEnd) {
     const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
