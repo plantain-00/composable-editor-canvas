@@ -82,4 +82,15 @@ export const circleModel: Model<CircleContent> = {
       },
     }
   },
+  *iterateSnapPoints(content, types) {
+    if (types.includes('center')) {
+      yield { x: content.x, y: content.y, type: 'center' }
+    }
+    if (types.includes('endpoint')) {
+      yield { x: content.x - content.r, y: content.y, type: 'endpoint' }
+      yield { x: content.x + content.r, y: content.y, type: 'endpoint' }
+      yield { x: content.x, y: content.y - content.r, type: 'endpoint' }
+      yield { x: content.x, y: content.y + content.r, type: 'endpoint' }
+    }
+  },
 }

@@ -63,7 +63,7 @@ export function useLineClickCreate(
   }, [positions, setPositions])
 
   return {
-    onLineClickCreateClick(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+    onLineClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!enabled) {
         return
       }
@@ -75,7 +75,7 @@ export function useLineClickCreate(
       }
       setPositions([...positions, { x: e.clientX, y: e.clientY }])
     },
-    onLineClickCreateMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+    onLineClickCreateMove(e: { clientX: number, clientY: number }) {
       if (!enabled) {
         return
       }

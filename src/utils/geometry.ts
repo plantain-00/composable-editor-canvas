@@ -17,13 +17,20 @@ export function getPointByLengthAndDirection(
  */
 export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position) {
   const footPoint = getFootPoint(position, twoPointLineToGeneralFormLine(point1, point2))
-  if (point1.x !== point2.x && isBetween(footPoint.x, point1.x, point2.x)) {
-    return getTwoPointsDistance(position, footPoint)
-  }
-  if (point1.y !== point2.y && isBetween(footPoint.y, point1.y, point2.y)) {
+  if (pointIsOnLineSegment(footPoint, point1, point2)) {
     return getTwoPointsDistance(position, footPoint)
   }
   return Math.min(getTwoPointsDistance(position, point1), getTwoPointsDistance(position, point2))
+}
+
+function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
+  if (point1.x !== point2.x && isBetween(p.x, point1.x, point2.x)) {
+    return true
+  }
+  if (point1.y !== point2.y && isBetween(p.y, point1.y, point2.y)) {
+    return true
+  }
+  return false
 }
 
 /**
@@ -194,6 +201,111 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine) {
     x: x,
     y: b * (x - p.x) / a + p.y,
   }
+}
+
+/**
+ * @public
+ */
+export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
+  const { a: a1, b: b1, c: c1 } = twoPointLineToGeneralFormLine(p1Start, p1End)
+  const { a: a2, b: b2, c: c2 } = twoPointLineToGeneralFormLine(p2Start, p2End)
+  const d = a2 * b1 - a1 * b2
+  if (d === 0) {
+    return undefined
+  }
+  const result = {
+    x: (c1 * b2 - b1 * c2) / d,
+    y: (c2 * a1 - c1 * a2) / d,
+  }
+  if (pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
+    return result
+  }
+  return undefined
+}
+
+/**
+ * @public
+ */
+export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { x: x2, y: y2, r: r2 }: Circle): Position[] {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const a = dx ** 2 + dy ** 2
+  const d = Math.sqrt(a)
+  const b = r1 ** 2
+  const l = (b - r2 ** 2 + a) / 2 / d
+  const f = b - l ** 2
+  if (f < 0) {
+    return []
+  }
+  const c = l / d
+  const g = c * dx + x1
+  const i = c * dy + y1
+  if (f === 0) {
+    return [
+      {
+        x: g,
+        y: i,
+      },
+    ]
+  }
+  const h = Math.sqrt(f)
+  const e = h / d
+  const j = e * dy
+  const k = e * dx
+  return [
+    {
+      x: g + j,
+      y: i - k,
+    },
+    {
+      x: g - j,
+      y: i + k,
+    },
+  ]
+}
+
+/**
+ * @public
+ */
+export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle) {
+  return getLineCircleIntersectionPoints(start, end, circle).filter((p) => pointIsOnLineSegment(p, start, end))
+}
+
+function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y, r }: Circle) {
+  const baX = end.x - start.x
+  const baY = end.y - start.y
+  const caX = x - start.x
+  const caY = y - start.y
+  const a = baX ** 2 + baY ** 2
+  const bBy2 = baX * caX + baY * caY
+  const c = caX * caX + caY * caY - r * r
+  const pBy2 = bBy2 / a
+  const q = c / a
+  const disc = pBy2 * pBy2 - q;
+  if (disc < 0) {
+    return []
+  }
+  if (disc == 0) {
+    return [
+      {
+        x: start.x + baX * pBy2,
+        y: start.y + baY * pBy2,
+      }
+    ]
+  }
+  const tmpSqrt = Math.sqrt(disc)
+  const abScalingFactor1 = -pBy2 + tmpSqrt
+  const abScalingFactor2 = -pBy2 - tmpSqrt
+  return [
+    {
+      x: start.x - baX * abScalingFactor1,
+      y: start.y - baY * abScalingFactor1,
+    },
+    {
+      x: start.x - baX * abScalingFactor2,
+      y: start.y - baY * abScalingFactor2,
+    },
+  ]
 }
 
 export interface Position {

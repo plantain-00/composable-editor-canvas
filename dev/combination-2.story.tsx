@@ -2,7 +2,7 @@ import React from 'react'
 import { reactSvgRenderTarget, useDragSelect, useKey, useUndoRedo } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce from 'immer'
-import { BaseContent, registerModel, useModelsCreate, useModelsEdit } from './models/model'
+import { BaseContent, registerModel, useModelsCreate, useModelsEdit, useSnap } from './models/model'
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
@@ -16,6 +16,13 @@ import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
 import { getAllRendererTypes, registerRenderer, Renderer } from './renderers/renderer'
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
+import { registerIntersection } from './models/intersection/intersection'
+import { iterateTwoPolylinesIntersectionPoints } from './models/intersection/polyline-polyline-intersection'
+import { iterateTwoRectsIntersectionPoints } from './models/intersection/rect-rect-intersection'
+import { iterateRectPolylineIntersectionPoints } from './models/intersection/rect-polyline-intersection'
+import { iterateTwoCirclesIntersectionPoints } from './models/intersection/circle-circle-intersection'
+import { iterateCirclePolylineIntersectionPoints } from './models/intersection/circle-polyline-intersection'
+import { iterateCircleRectIntersectionPoints } from './models/intersection/circle-rect-intersection'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -36,6 +43,20 @@ registerCommand(explodeCommand)
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
 
+registerIntersection('line', 'line', iterateTwoPolylinesIntersectionPoints)
+
+registerIntersection('polyline', 'polyline', iterateTwoPolylinesIntersectionPoints)
+registerIntersection('polyline', 'line', iterateTwoPolylinesIntersectionPoints)
+
+registerIntersection('rect', 'rect', iterateTwoRectsIntersectionPoints)
+registerIntersection('rect', 'polyline', iterateRectPolylineIntersectionPoints)
+registerIntersection('rect', 'line', iterateRectPolylineIntersectionPoints)
+
+registerIntersection('circle', 'circle', iterateTwoCirclesIntersectionPoints)
+registerIntersection('circle', 'polyline', iterateCirclePolylineIntersectionPoints)
+registerIntersection('circle', 'line', iterateCirclePolylineIntersectionPoints)
+registerIntersection('circle', 'rect', iterateCircleRectIntersectionPoints)
+
 export default () => {
   // operation when no selection required or selected already
   const [operation, setOperation] = React.useState<string>()
@@ -46,9 +67,16 @@ export default () => {
   const [selectedContents, setSelectedContents] = React.useState<number[]>([])
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
   const [renderTarget, setRenderTarget] = React.useState<string>()
+  const [snapTypes, setSnapTypes] = React.useState(['endpoint', 'midpoint', 'center', 'intersection'])
 
   // commands
-  const { commandMasks, updateContent, startCommand } = useCommands(() => setState(() => previewContents))
+  const { commandMasks, updateContent, startCommand } = useCommands(
+    () => {
+      setState(() => previewContents)
+      setOperation(undefined)
+    },
+    (e) => getSnapPoint(e, state, snapTypes),
+  )
 
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = []
@@ -84,6 +112,9 @@ export default () => {
     })
     setOperation(undefined)
   })
+  // snap point
+  const { snapAssistentContents, getSnapPoint } = useSnap(!!operation)
+  assistentContents.push(...snapAssistentContents)
 
   previewContents = produce(previewContents, (draft) => {
     updateEditPreview(draft)
@@ -145,11 +176,11 @@ export default () => {
   }, [state, stateIndex])
 
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    const p = getSnapPoint(e, state, snapTypes)
     // if the operation is create model/command, start it
-    onStartCreate(e)
+    onStartCreate(p)
     if (operation && isCommand(operation)) {
-      startCommand(operation, e)
-      setOperation(undefined)
+      startCommand(operation, p)
     }
     if (!operation) {
       if (hoveringContent >= 0) {
@@ -162,7 +193,7 @@ export default () => {
     }
   }
   const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    onCreatingMove(e)
+    onCreatingMove(getSnapPoint(e, state, snapTypes))
     if (!operation) {
       // if no operation, hover by position
       setHoveringContent(getContentByClickPosition(state, { x: e.clientX, y: e.clientY }, contentSelectable))
@@ -208,6 +239,12 @@ export default () => {
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
         {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
       </select>
+      {['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
+        <span key={type} style={{ position: 'relative' }}>
+          <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
+          <label htmlFor={type}>{type}</label>
+        </span>
+      ))}
       {editMasks}
       {dragSelectMask}
       {commandMasks}

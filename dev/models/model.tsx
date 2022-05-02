@@ -1,5 +1,9 @@
 import React from 'react'
-import { Position, ReactRenderTarget, TwoPointsFormRegion } from '../../src'
+import { getTwoNumbersDistance, Position, ReactRenderTarget, TwoPointsFormRegion } from '../../src'
+import { CircleContent } from './circle-model'
+import { iterateIntersectionPoints } from './intersection/intersection'
+import { LineContent } from './line-model'
+import { RectContent } from './rect-model'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -22,10 +26,13 @@ export interface Model<T> {
   useCreate?(type: string | undefined, onEnd: (contents: T[]) => void): {
     input?: JSX.Element
     updatePreview(contents: T[]): void
-    onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
-    onMove: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+    onClick: (e: { clientX: number, clientY: number }) => void
+    onMove: (e: { clientX: number, clientY: number }) => void
   }
+  iterateSnapPoints(content: Omit<T, 'type'>, types: string[]): Generator<SnapPoint, void, unknown>
 }
+
+type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
 
 const modelCenter: Record<string, Model<BaseContent>> = {}
 
@@ -62,8 +69,8 @@ export function useModelsEdit(onEnd: () => void) {
 export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void) {
   const createInputs: JSX.Element[] = []
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
-  const onClicks: ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void)[] = []
-  const onMoves: ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void)[] = []
+  const onClicks: ((e: { clientX: number, clientY: number }) => void)[] = []
+  const onMoves: ((e: { clientX: number, clientY: number }) => void)[] = []
   Object.entries(modelCenter).forEach(([type, model]) => {
     if (!model.useCreate) {
       return
@@ -83,16 +90,124 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
         updateCreatePreview(contents)
       }
     },
-    onStartCreate(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+    onStartCreate(e: { clientX: number, clientY: number }) {
       for (const onClick of onClicks) {
         onClick(e)
       }
     },
-    onCreatingMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+    onCreatingMove(e: { clientX: number, clientY: number }) {
       for (const onMove of onMoves) {
         onMove(e)
       }
     },
+  }
+}
+
+export function useSnap(enabled: boolean, delta = 5) {
+  const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
+
+  React.useEffect(() => {
+    if (enabled === false) {
+      setSnapPoint(undefined)
+    }
+  }, [enabled])
+
+  const assistentContents: BaseContent[] = []
+  if (snapPoint) {
+    const contents: (LineContent | CircleContent | RectContent)[] = []
+    if (snapPoint.type === 'center') {
+      contents.push({
+        type: 'circle',
+        x: snapPoint.x,
+        y: snapPoint.y,
+        r: delta * 2,
+      })
+    } else if (snapPoint.type === 'endpoint') {
+      contents.push({
+        type: 'rect',
+        x: snapPoint.x,
+        y: snapPoint.y,
+        width: delta * 4,
+        height: delta * 4,
+        angle: 0,
+      })
+    } else if (snapPoint.type === 'midpoint') {
+      contents.push({
+        type: 'polyline',
+        points: [
+          { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
+          { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
+          { x: snapPoint.x, y: snapPoint.y - delta * 2 },
+          { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
+        ],
+      })
+    } else if (snapPoint.type === 'intersection') {
+      contents.push(
+        {
+          type: 'polyline',
+          points: [
+            { x: snapPoint.x - delta * 2, y: snapPoint.y - delta * 2 },
+            { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
+          ],
+        },
+        {
+          type: 'polyline',
+          points: [
+            { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
+            { x: snapPoint.x + delta * 2, y: snapPoint.y - delta * 2 },
+          ],
+        },
+      )
+    }
+    assistentContents.push(...contents)
+  }
+
+  return {
+    snapAssistentContents: assistentContents,
+    getSnapPoint(p: { clientX: number, clientY: number }, contents: BaseContent[], types: string[]) {
+      if (!enabled) {
+        return p
+      }
+      for (const content of contents) {
+        const iterate = getModel(content.type)?.iterateSnapPoints
+        if (iterate) {
+          for (const point of iterate(content, types)) {
+            if (
+              getTwoNumbersDistance(p.clientX, point.x) <= delta &&
+              getTwoNumbersDistance(p.clientY, point.y) <= delta
+            ) {
+              setSnapPoint(point)
+              return {
+                clientX: point.x,
+                clientY: point.y,
+              }
+            }
+          }
+        }
+      }
+      if (types.includes('intersection')) {
+        for (let i = 0; i < contents.length; i++) {
+          const content1 = contents[i]
+          for (let j = i + 1; j < contents.length; j++) {
+            const content2 = contents[j]
+            for (const point of iterateIntersectionPoints(content1, content2)) {
+              if (
+                getTwoNumbersDistance(p.clientX, point.x) <= delta &&
+                getTwoNumbersDistance(p.clientY, point.y) <= delta
+              ) {
+                setSnapPoint(point)
+                return {
+                  clientX: point.x,
+                  clientY: point.y,
+                }
+              }
+            }
+          }
+        }
+      }
+      setSnapPoint(undefined)
+      return p
+    }
   }
 }
 

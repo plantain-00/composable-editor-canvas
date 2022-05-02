@@ -5,10 +5,13 @@ import { Command } from "./command"
 
 export const moveCommand: Command = {
   name: 'move',
-  useCommand(onEnd) {
+  useCommand(onEnd, getSnapPoint) {
     const [startPostion, setStartPosition] = React.useState<Position>()
     const [moveOffset, setMoveOffset] = React.useState<Position>({ x: 0, y: 0 })
-    const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, onEnd)
+    const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, onEnd, {
+      getSnapPoint,
+      propagation: true,
+    })
     return {
       start: onStartMove,
       mask: dragMoveMask,

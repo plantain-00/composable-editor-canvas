@@ -84,6 +84,12 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
+export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle): {
+    x: number;
+    y: number;
+}[];
+
+// @public (undocumented)
 export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position): number;
 
 // @public (undocumented)
@@ -116,6 +122,15 @@ export function getThreePointsCircle(startPosition: Position, middlePosition: Po
     x: number;
     y: number;
 };
+
+// @public (undocumented)
+export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { x: x2, y: y2, r: r2 }: Circle): Position[];
+
+// @public (undocumented)
+export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position): {
+    x: number;
+    y: number;
+} | undefined;
 
 // @public (undocumented)
 export function getTwoNumbersDistance(n1: number, n2: number): number;
@@ -252,8 +267,14 @@ export interface TwoPointsFormRegion {
 
 // @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
-    onCircleClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    onCircleClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
+    onCircleClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onCircleClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
     circleClickCreateInput: JSX.Element | undefined;
 };
 
@@ -277,6 +298,14 @@ export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: Reac
     scale: number;
     parentRotate: number;
     clone: boolean;
+    getSnapPoint: (p: {
+        clientX: number;
+        clientY: number;
+    }) => {
+        clientX: number;
+        clientY: number;
+    };
+    propagation: boolean;
 }>): {
     dragMoveStartPosition: (Position & {
         data?: T | undefined;
@@ -303,9 +332,19 @@ export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.Mous
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number | undefined, e?: {
+    clientX: number;
+    clientY: number;
+}) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
+    getSnapPoint: (p: {
+        clientX: number;
+        clientY: number;
+    }) => {
+        clientX: number;
+        clientY: number;
+    };
 }>): {
     dragRotateCenter: Position | undefined;
     onStartRotate: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
@@ -336,8 +375,14 @@ export function useLineAlignment(delta: number): {
 
 // @public (undocumented)
 export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, once?: boolean): {
-    onLineClickCreateClick(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
-    onLineClickCreateMove(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>): void;
+    onLineClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onLineClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
     lineClickCreateInput: JSX.Element | undefined;
 };
 
