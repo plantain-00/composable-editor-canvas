@@ -23,8 +23,8 @@ export const lineModel: Model<LineContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   canSelectByPosition(content, position, delta) {
-    for (let j = 1; j < content.points.length; j++) {
-      const minDistance = getPointAndLineMinimumDistance(position, content.points[j - 1], content.points[j])
+    for (const line of iteratePolylineLines(content.points)) {
+      const minDistance = getPointAndLineMinimumDistance(position, ...line)
       if (minDistance <= delta) {
         return true
       }
@@ -36,8 +36,8 @@ export const lineModel: Model<LineContent> = {
       return true
     }
     if (partial) {
-      for (let j = 1; j < content.points.length; j++) {
-        if (lineIntersectWithTwoPointsFormRegion(content.points[j - 1], content.points[j], region)) {
+      for (const line of iteratePolylineLines(content.points)) {
+        if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
           return true
         }
       }
@@ -73,8 +73,8 @@ export const lineModel: Model<LineContent> = {
       (c) => setLineCreate(c ? { points: c } : undefined),
       (c) => {
         const lines: LineContent[] = []
-        for (let i = 1; i < c.length; i++) {
-          lines.push({ points: [c[i - 1], c[i]], type: 'line' })
+        for (const line of iteratePolylineLines(c)) {
+          lines.push({ points: line, type: 'line' })
         }
         onEnd(lines)
       },
@@ -85,11 +85,31 @@ export const lineModel: Model<LineContent> = {
       onMove: onLineClickCreateMove,
       updatePreview(contents) {
         if (lineCreate) {
-          for (let i = 1; i < lineCreate.points.length; i++) {
-            contents.push({ points: [lineCreate.points[i - 1], lineCreate.points[i]], type: 'line' })
+          for (const line of iteratePolylineLines(lineCreate.points)) {
+            contents.push({ points: line, type: 'line' })
           }
         }
       },
     }
   },
+  *iterateSnapPoints({ points }, types) {
+    if (types.includes('endpoint')) {
+      yield* points.map((p) => ({ ...p, type: 'endpoint' as const }))
+    }
+    if (types.includes('midpoint')) {
+      for (const [start, end] of iteratePolylineLines(points)) {
+        yield {
+          x: (start.x + end.x) / 2,
+          y: (start.y + end.y) / 2,
+          type: 'midpoint',
+        }
+      }
+    }
+  },
+}
+
+export function* iteratePolylineLines(points: Position[]) {
+  for (let i = 1; i < points.length; i++) {
+    yield [points[i - 1], points[i]] as [Position, Position]
+  }
 }

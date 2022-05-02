@@ -132,14 +132,35 @@ export const rectModel: Model<RectContent> = {
       },
     }
   },
+  *iterateSnapPoints(content, types) {
+    if (types.includes('center')) {
+      yield { x: content.x, y: content.y, type: 'center' }
+    }
+    if (types.includes('endpoint')) {
+      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y - content.height / 2 }, content), type: 'endpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y + content.height / 2 }, content), type: 'endpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y - content.height / 2 }, content), type: 'endpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y + content.height / 2 }, content), type: 'endpoint' }
+    }
+    if (types.includes('midpoint')) {
+      yield { ...rotatePositionByRectCenter({ x: content.x, y: content.y - content.height / 2 }, content), type: 'midpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x, y: content.y + content.height / 2 }, content), type: 'midpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y }, content), type: 'midpoint' }
+      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y }, content), type: 'midpoint' }
+    }
+  },
 }
 
-function getRectPoints(content: Omit<RectContent, "type">) {
+export function getRectPoints(content: Omit<RectContent, "type">) {
   return [
     { x: content.x - content.width / 2, y: content.y - content.height / 2 },
     { x: content.x + content.width / 2, y: content.y - content.height / 2 },
     { x: content.x + content.width / 2, y: content.y + content.height / 2 },
     { x: content.x - content.width / 2, y: content.y + content.height / 2 },
     { x: content.x - content.width / 2, y: content.y - content.height / 2 },
-  ].map((p) => rotatePositionByCenter(p, content, -content.angle))
+  ].map((p) => rotatePositionByRectCenter(p, content))
+}
+
+function rotatePositionByRectCenter(p: Position, content: Omit<RectContent, "type">) {
+  return rotatePositionByCenter(p, content, -content.angle)
 }

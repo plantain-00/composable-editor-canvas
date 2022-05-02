@@ -6,10 +6,14 @@ import { Command } from "./command"
 
 export const cloneCommand: Command = {
   name: 'clone',
-  useCommand(onEnd) {
+  useCommand(onEnd, getSnapPoint) {
     const [startPostion, setStartPosition] = React.useState<Position>()
     const [cloneOffset, setCloneOffset] = React.useState<Position>({ x: 0, y: 0 })
-    const { onStartMove: onStartClone, dragMoveMask: dragCloneMask } = useDragMove(setCloneOffset, onEnd, { clone: true })
+    const { onStartMove: onStartClone, dragMoveMask: dragCloneMask } = useDragMove(setCloneOffset, onEnd, {
+      clone: true,
+      getSnapPoint,
+      propagation: true,
+    })
     return {
       start: onStartClone,
       mask: dragCloneMask,

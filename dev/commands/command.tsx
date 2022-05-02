@@ -4,8 +4,11 @@ import { BaseContent } from "../models/model"
 
 export interface Command {
   name: string
-  useCommand?(onEnd: () => void): {
-    start(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>): void
+  useCommand?(
+    onEnd: () => void,
+    getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+  ): {
+    start(e: { clientX: number, clientY: number }): void
     mask?: JSX.Element
     setStartPosition: React.Dispatch<React.SetStateAction<Position | undefined>>
     updateContent(content: BaseContent): {
@@ -26,17 +29,20 @@ export function getCommand(name: string): Command | undefined {
   return commandCenter[name]
 }
 
-export function useCommands(onEnd: () => void) {
+export function useCommands(
+  onEnd: () => void,
+  getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+) {
   const masks: JSX.Element[] = []
   const setStartPositions: React.Dispatch<React.SetStateAction<Position | undefined>>[] = []
   const updateContents: ((content: BaseContent) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
   })[] = []
-  const startMap: Record<string, ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void)> = {}
+  const startMap: Record<string, ((e: { clientX: number, clientY: number }) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd)
+      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint)
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
@@ -64,7 +70,7 @@ export function useCommands(onEnd: () => void) {
         newContents,
       }
     },
-    startCommand(name: string | undefined, e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
+    startCommand(name: string | undefined, e: { clientX: number, clientY: number }) {
       if (name && startMap[name]) {
         startMap[name](e)
         for (const setStartPosition of setStartPositions) {
