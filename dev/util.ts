@@ -1,4 +1,4 @@
-import { Position, Region } from "../src"
+import { Position, Region, rotatePositionByCenter } from "../src"
 import { Rotate, StyleGuide, Template, TemplateContent, TemplateReferenceContent, TemplateSnapshotContent } from "./model"
 
 export function getSelectedSize(selected: number[] | undefined, styleGuide: StyleGuide) {
@@ -144,21 +144,6 @@ function rotatePosition(position: Position, region: Region & Rotate) {
   const centerX = region.x + region.width / 2
   const centerY = region.y + region.height / 2
   return rotatePositionByCenter(position, { x: centerX, y: centerY }, region.rotate)
-}
-
-export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
-  if (!rotate) {
-    return position
-  }
-  rotate = -rotate * Math.PI / 180
-  const offsetX = position.x - center.x
-  const offsetY = position.y - center.y
-  const sin = Math.sin(rotate)
-  const cos = Math.cos(rotate)
-  return {
-    x: cos * offsetX - sin * offsetY + center.x,
-    y: sin * offsetX + cos * offsetY + center.y,
-  }
 }
 
 export const nameSize = 14

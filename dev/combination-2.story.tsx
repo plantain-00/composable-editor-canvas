@@ -23,6 +23,11 @@ import { iterateRectPolylineIntersectionPoints } from './models/intersection/rec
 import { iterateTwoCirclesIntersectionPoints } from './models/intersection/circle-circle-intersection'
 import { iterateCirclePolylineIntersectionPoints } from './models/intersection/circle-polyline-intersection'
 import { iterateCircleRectIntersectionPoints } from './models/intersection/circle-rect-intersection'
+import { polygonModel } from './models/polygon-model'
+import { iterateTwoPolygonsIntersectionPoints } from './models/intersection/polygon-polygon-intersection'
+import { iteratePolygonCircleIntersectionPoints } from './models/intersection/polygon-circle-intersection'
+import { iteratePolygonPolylineIntersectionPoints } from './models/intersection/polygon-polyline-intersection'
+import { iteratePolygonRectIntersectionPoints } from './models/intersection/polygon-rect-intersection'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -32,6 +37,7 @@ registerModel(lineModel)
 registerModel(circleModel)
 registerModel(polylineModel)
 registerModel(rectModel)
+registerModel(polygonModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -57,6 +63,12 @@ registerIntersection('circle', 'polyline', iterateCirclePolylineIntersectionPoin
 registerIntersection('circle', 'line', iterateCirclePolylineIntersectionPoints)
 registerIntersection('circle', 'rect', iterateCircleRectIntersectionPoints)
 
+registerIntersection('polygon', 'polygon', iterateTwoPolygonsIntersectionPoints)
+registerIntersection('polygon', 'circle', iteratePolygonCircleIntersectionPoints)
+registerIntersection('polygon', 'polyline', iteratePolygonPolylineIntersectionPoints)
+registerIntersection('polygon', 'line', iteratePolygonPolylineIntersectionPoints)
+registerIntersection('polygon', 'rect', iteratePolygonRectIntersectionPoints)
+
 export default () => {
   // operation when no selection required or selected already
   const [operation, setOperation] = React.useState<string>()
@@ -76,6 +88,7 @@ export default () => {
       setOperation(undefined)
     },
     (e) => getSnapPoint(e, state, snapTypes),
+    operation,
   )
 
   // content data -> preview data / assistent data
@@ -106,7 +119,7 @@ export default () => {
   // edit model
   const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => setState(() => previewContents))
   // create model
-  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove } = useModelsCreate(operation, (c) => {
+  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands } = useModelsCreate(operation, (c) => {
     setState((draft) => {
       draft.push(...c)
     })
@@ -233,12 +246,13 @@ export default () => {
         })}
         {createInputs}
       </div>
-      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
+      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
       <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>
       <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
         {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
       </select>
+      {createSubcommands}
       {['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
         <span key={type} style={{ position: 'relative' }}>
           <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />

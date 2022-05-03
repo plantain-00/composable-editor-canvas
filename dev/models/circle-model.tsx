@@ -1,6 +1,5 @@
 import React from 'react'
-import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getSymmetryPoint, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
-import { rotatePositionByCenter } from '../util'
+import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getSymmetryPoint, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { BaseContent, Model } from './model'
 
 export type CircleContent = BaseContent<'circle'> & Circle

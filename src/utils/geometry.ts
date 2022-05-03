@@ -308,6 +308,35 @@ function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y,
   ]
 }
 
+/**
+ * @public
+ */
+export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
+  if (!rotate) {
+    return position
+  }
+  rotate = -rotate * Math.PI / 180
+  const offsetX = position.x - center.x
+  const offsetY = position.y - center.y
+  const sin = Math.sin(rotate)
+  const cos = Math.cos(rotate)
+  return {
+    x: cos * offsetX - sin * offsetY + center.x,
+    y: sin * offsetX + cos * offsetY + center.y,
+  }
+}
+
+/**
+ * @public
+ */
+export function getPolygonPoints(point: Position, center: Position, sides: number) {
+  const points = [point]
+  for (let i = 1; i < sides; i++) {
+    points.push(rotatePositionByCenter(point, center, 360 / sides * i))
+  }
+  return points
+}
+
 export interface Position {
   x: number
   y: number

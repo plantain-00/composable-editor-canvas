@@ -105,6 +105,9 @@ export function getPointByLengthAndDirection(startPoint: Position, length: numbe
 };
 
 // @public (undocumented)
+export function getPolygonPoints(point: Position, center: Position, sides: number): Position[];
+
+// @public (undocumented)
 export function getRegion(p1: Position, p2: Position): Region;
 
 // @public (undocumented)
@@ -158,6 +161,7 @@ export function PolylineEditBar(props: {
     };
     scale?: number;
     resizeSize?: number;
+    isPolygon?: boolean;
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
 }): JSX.Element;
@@ -211,6 +215,9 @@ export function reverseTransformX(x: number, transform?: Partial<Transform>): nu
 
 // @public (undocumented)
 export function reverseTransformY(y: number, transform?: Partial<Transform>): number;
+
+// @public (undocumented)
+export function rotatePositionByCenter(position: Position, center: Position, rotate: number): Position;
 
 // @public (undocumented)
 export function RotationBar(props: {
@@ -384,6 +391,20 @@ export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]
         clientY: number;
     }): void;
     lineClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void): {
+    onPolygonClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onPolygonClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    polygonClickCreateInput: JSX.Element | undefined;
+    startSetSides(): void;
 };
 
 // @public (undocumented)

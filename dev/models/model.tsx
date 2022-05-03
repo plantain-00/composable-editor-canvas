@@ -25,6 +25,7 @@ export interface Model<T> {
   }
   useCreate?(type: string | undefined, onEnd: (contents: T[]) => void): {
     input?: JSX.Element
+    subcommand?: JSX.Element
     updatePreview(contents: T[]): void
     onClick: (e: { clientX: number, clientY: number }) => void
     onMove: (e: { clientX: number, clientY: number }) => void
@@ -68,6 +69,7 @@ export function useModelsEdit(onEnd: () => void) {
 
 export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void) {
   const createInputs: JSX.Element[] = []
+  const createSubcommands: JSX.Element[] = []
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
   const onClicks: ((e: { clientX: number, clientY: number }) => void)[] = []
   const onMoves: ((e: { clientX: number, clientY: number }) => void)[] = []
@@ -75,9 +77,12 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
     if (!model.useCreate) {
       return
     }
-    const { input, updatePreview, onClick, onMove } = model.useCreate(operation, onEnd)
+    const { input, updatePreview, onClick, onMove, subcommand } = model.useCreate(operation, onEnd)
     if (input) {
       createInputs.push(React.cloneElement(input, { key: type }))
+    }
+    if (subcommand) {
+      createSubcommands.push(React.cloneElement(subcommand, { key: type }))
     }
     updateCreatePreviews.push(updatePreview)
     onClicks.push(onClick)
@@ -85,6 +90,7 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
   })
   return {
     createInputs,
+    createSubcommands,
     updateCreatePreview(contents: BaseContent[]) {
       for (const updateCreatePreview of updateCreatePreviews) {
         updateCreatePreview(contents)

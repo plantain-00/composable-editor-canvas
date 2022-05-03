@@ -7,6 +7,7 @@ export interface Command {
   useCommand?(
     onEnd: () => void,
     getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+    enabled: boolean,
   ): {
     start(e: { clientX: number, clientY: number }): void
     mask?: JSX.Element
@@ -32,6 +33,7 @@ export function getCommand(name: string): Command | undefined {
 export function useCommands(
   onEnd: () => void,
   getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+  operation?: string,
 ) {
   const masks: JSX.Element[] = []
   const setStartPositions: React.Dispatch<React.SetStateAction<Position | undefined>>[] = []
@@ -42,7 +44,7 @@ export function useCommands(
   const startMap: Record<string, ((e: { clientX: number, clientY: number }) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint)
+      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint, operation === command.name)
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
