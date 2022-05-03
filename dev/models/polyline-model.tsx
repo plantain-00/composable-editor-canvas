@@ -1,17 +1,17 @@
 import React from 'react'
 import { Position, useLineClickCreate } from '../../src'
 import { Model } from './model'
-import { LineContent, lineModel } from './line-model'
+import { iteratePolylineLines, LineContent, lineModel } from './line-model'
 
 export const polylineModel: Model<LineContent> = {
   ...lineModel,
   type: 'polyline',
   explode(content) {
     const result: LineContent[] = []
-    for (let i = 1; i < content.points.length; i++) {
+    for (const line of iteratePolylineLines(content.points)) {
       result.push({
         type: 'line',
-        points: [content.points[i - 1], content.points[i]],
+        points: line,
       })
     }
     return result

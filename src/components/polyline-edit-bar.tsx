@@ -6,6 +6,7 @@ export function PolylineEditBar(props: {
   offset?: Position & { pointIndexes: number[] }
   scale?: number
   resizeSize?: number
+  isPolygon?: boolean
   onClick?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void
   onMouseDown?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void
 }) {
@@ -13,13 +14,14 @@ export function PolylineEditBar(props: {
   const width = (props.resizeSize ?? 5) / scale
   const border = 1 / scale
   const points = props.points
-  const isClosed = points.length > 2 &&
+  const isClosed = !props.isPolygon &&
+    points.length > 2 &&
     points[0].x === points[points.length - 1].x &&
     points[0].y === points[points.length - 1].y
 
   const bars: { style: React.CSSProperties, pointIndexes: number[] }[] = []
   points.forEach((point, i) => {
-    if (i !== points.length - 1 || !isClosed) {
+    if (props.isPolygon || i !== points.length - 1 || !isClosed) {
       bars.push({
         pointIndexes: [i],
         style: {
@@ -32,6 +34,16 @@ export function PolylineEditBar(props: {
       const nextPoint = points[i + 1]
       bars.push({
         pointIndexes: [i, i + 1],
+        style: {
+          left: (point.x + nextPoint.x - width / 2) / 2 + 'px',
+          top: (point.y + nextPoint.y - width / 2) / 2 + 'px',
+        },
+      })
+    }
+    if (props.isPolygon && i === points.length - 1) {
+      const nextPoint = points[0]
+      bars.push({
+        pointIndexes: [points.length - 1, 0],
         style: {
           left: (point.x + nextPoint.x - width / 2) / 2 + 'px',
           top: (point.y + nextPoint.y - width / 2) / 2 + 'px',

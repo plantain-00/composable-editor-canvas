@@ -36,6 +36,7 @@ export function useDragMove<T = void>(
       })
     },
     dragMoveMask: dragStartPosition && <DragMask
+      ignoreLeavingEvent={options?.propagation}
       onDragging={(e) => {
         const f = options?.getSnapPoint?.(e) ?? e
         const x = (f.clientX - dragStartPosition.x) / scale

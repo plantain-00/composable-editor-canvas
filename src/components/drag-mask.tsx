@@ -3,6 +3,7 @@ import * as React from "react"
 export function DragMask(props: {
   onDragEnd: () => void
   onDragging: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+  ignoreLeavingEvent?: boolean
   style?: React.CSSProperties
   children?: React.ReactNode
 }) {
@@ -16,7 +17,7 @@ export function DragMask(props: {
       }}
       onMouseUp={props.onDragEnd}
       onMouseMove={props.onDragging}
-      onMouseLeave={props.onDragEnd}
+      onMouseLeave={props.ignoreLeavingEvent ? undefined : props.onDragEnd}
     >
       {props.children}
     </div>

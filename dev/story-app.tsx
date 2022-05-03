@@ -12,8 +12,8 @@ function StoryApp() {
   if (!search) {
     return (
       <ul style={{ margin: '20px 50px' }}>
-        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>combination 1</li>
         {stories.map((s) => <li style={{ cursor: 'pointer' }} key={s.path} onClick={() => navigateTo(location.pathname + '?p=' + s.path)}>{s.name} {s.path}</li>)}
+        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>combination 1</li>
       </ul>
     )
   }
@@ -41,7 +41,7 @@ function StoryApp() {
 }
 
 function HighlightCode(props: { code: string }) {
-  const ref = React.useRef<HTMLOrSVGElement | null>(null)
+  const ref = React.useRef<HTMLElement | null>(null)
   React.useEffect(() => {
     if (ref.current) {
       Prism.highlightElement(ref.current)

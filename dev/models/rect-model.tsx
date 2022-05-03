@@ -1,6 +1,5 @@
 import React from 'react'
-import { getSymmetryPoint, Position, Region, ResizeBar, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
-import { rotatePositionByCenter } from '../util'
+import { getSymmetryPoint, Position, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
 import { BaseContent, Model } from './model'
 import { LineContent, lineModel } from './line-model'
 
