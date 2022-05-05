@@ -13,4 +13,5 @@ export interface ReactRenderTarget {
   strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): JSX.Element
   strokePolyline(points: Position[], color: number): JSX.Element
   strokeCircle(cx: number, cy: number, r: number, color: number): JSX.Element
+  strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): JSX.Element
 }

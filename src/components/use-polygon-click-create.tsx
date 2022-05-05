@@ -1,12 +1,15 @@
 import * as React from "react"
 
 import { useCursorInput, useKey } from "."
-import { getPointByLengthAndDirection, getPolygonPoints, Position } from "../utils"
+import { getPointByLengthAndDirection, getPolygonPoints, Position, rotatePositionByCenter } from "../utils"
 
 export function usePolygonClickCreate(
   enabled: boolean,
   setPolygon: (polygon?: Position[]) => void,
   onEnd: (polygon: Position[]) => void,
+  options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined
+  }>,
 ) {
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [inputType, setInputType] = React.useState<'radius' | 'sides'>('radius')
@@ -43,6 +46,17 @@ export function usePolygonClickCreate(
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition])
 
+  const getAngleSnapPosition = (newPosition: { x: number, y: number }) => {
+    if (options?.getAngleSnap && startPosition) {
+      const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI
+      const newAngle = options.getAngleSnap(angle)
+      if (newAngle !== undefined && newAngle !== angle) {
+        newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)
+      }
+    }
+    return newPosition
+  }
+
   return {
     onPolygonClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!enabled) {
@@ -60,9 +74,10 @@ export function usePolygonClickCreate(
       if (!enabled) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
+      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(newPosition)
       if (startPosition) {
-        setPolygon(getPolygonPoints({ x: e.clientX, y: e.clientY }, startPosition, sides))
+        setPolygon(getPolygonPoints(newPosition, startPosition, sides))
       }
     },
     polygonClickCreateInput: input,

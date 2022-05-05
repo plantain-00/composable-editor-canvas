@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, Position, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
-import { BaseContent, Model } from './model'
-import { LineContent, lineModel } from './line-model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { iteratePolygonLines } from './polygon-model'
 
 export type RectContent = BaseContent<'rect'> & Region & {
   angle: number
@@ -20,15 +20,8 @@ export const rectModel: Model<RectContent> = {
     content.angle += angle
   },
   explode(content) {
-    const points = getRectPoints(content)
-    const result: LineContent[] = []
-    for (let i = 1; i < points.length; i++) {
-      result.push({
-        type: 'line',
-        points: [points[i - 1], points[i]],
-      })
-    }
-    return result
+    const { lines } = getLinesAndPointsFromCache(content, getRectModelLines)
+    return lines.map((line) => ({ type: 'line', points: line }))
   },
   mirror(content, p1, p2) {
     const line = twoPointLineToGeneralFormLine(p1, p2)
@@ -37,16 +30,6 @@ export const rectModel: Model<RectContent> = {
     content.y = p.y
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - content.angle
-  },
-  canSelectByPosition(content, position, delta) {
-    return lineModel.canSelectByPosition({
-      points: getRectPoints(content),
-    }, position, delta)
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    return lineModel.canSelectByTwoPositions({
-      points: getRectPoints(content),
-    }, region, partial)
   },
   render({ content, stroke, target }) {
     return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
@@ -111,7 +94,9 @@ export const rectModel: Model<RectContent> = {
           },
         ])
       },
-      true,
+      {
+        once: true,
+      },
     )
     return {
       input: lineClickCreateInput,
@@ -131,35 +116,30 @@ export const rectModel: Model<RectContent> = {
       },
     }
   },
-  *iterateSnapPoints(content, types) {
-    if (types.includes('center')) {
-      yield { x: content.x, y: content.y, type: 'center' }
-    }
-    if (types.includes('endpoint')) {
-      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y - content.height / 2 }, content), type: 'endpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y + content.height / 2 }, content), type: 'endpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y - content.height / 2 }, content), type: 'endpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y + content.height / 2 }, content), type: 'endpoint' }
-    }
-    if (types.includes('midpoint')) {
-      yield { ...rotatePositionByRectCenter({ x: content.x, y: content.y - content.height / 2 }, content), type: 'midpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x, y: content.y + content.height / 2 }, content), type: 'midpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x + content.width / 2, y: content.y }, content), type: 'midpoint' }
-      yield { ...rotatePositionByRectCenter({ x: content.x - content.width / 2, y: content.y }, content), type: 'midpoint' }
-    }
+  getSnapPoints(content) {
+    const { points, lines } = getLinesAndPointsFromCache(content, getRectModelLines)
+    return [
+      { x: content.x, y: content.y, type: 'center' },
+      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+      ...lines.map(([start, end]) => ({
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2,
+        type: 'midpoint' as const,
+      })),
+    ]
   },
+  getLines: getRectModelLines,
 }
 
-export function getRectPoints(content: Omit<RectContent, "type">) {
-  return [
+function getRectModelLines(content: Omit<RectContent, "type">) {
+  const points = [
     { x: content.x - content.width / 2, y: content.y - content.height / 2 },
     { x: content.x + content.width / 2, y: content.y - content.height / 2 },
     { x: content.x + content.width / 2, y: content.y + content.height / 2 },
     { x: content.x - content.width / 2, y: content.y + content.height / 2 },
-    { x: content.x - content.width / 2, y: content.y - content.height / 2 },
-  ].map((p) => rotatePositionByRectCenter(p, content))
-}
-
-function rotatePositionByRectCenter(p: Position, content: Omit<RectContent, "type">) {
-  return rotatePositionByCenter(p, content, -content.angle)
+  ].map((p) => rotatePositionByCenter(p, content, -content.angle))
+  return {
+    lines: Array.from(iteratePolygonLines(points)),
+    points,
+  }
 }

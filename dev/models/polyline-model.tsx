@@ -1,20 +1,14 @@
 import React from 'react'
 import { Position, useLineClickCreate } from '../../src'
-import { Model } from './model'
-import { iteratePolylineLines, LineContent, lineModel } from './line-model'
+import { getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
+import { getLineModelLines, LineContent, lineModel } from './line-model'
 
 export const polylineModel: Model<LineContent> = {
   ...lineModel,
   type: 'polyline',
   explode(content) {
-    const result: LineContent[] = []
-    for (const line of iteratePolylineLines(content.points)) {
-      result.push({
-        type: 'line',
-        points: line,
-      })
-    }
-    return result
+    const { lines } = getLinesAndPointsFromCache(content, getLineModelLines)
+    return lines.map((line) => ({ type: 'line', points: line }))
   },
   useCreate(type, onEnd) {
     const [lineCreate, setLineCreate] = React.useState<{ points: Position[] }>()
@@ -22,6 +16,9 @@ export const polylineModel: Model<LineContent> = {
       type === 'polyline',
       (c) => setLineCreate(c ? { points: c } : undefined),
       (c) => onEnd([{ points: c, type: 'polyline' }]),
+      {
+        getAngleSnap,
+      },
     )
     return {
       input: lineClickCreateInput,

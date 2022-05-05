@@ -61,4 +61,17 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
     }, [cx, cy, r, color])
     return <Graphics draw={draw} />
   },
+  strokeEllipse(cx, cy, rx, ry, color, angle) {
+    const draw = React.useCallback((g: PIXI.Graphics) => {
+      g.clear()
+      g.lineStyle(1, color)
+      if (angle !== undefined) {
+        g.angle = angle
+      }
+      g.position.x = cx
+      g.position.y = cy
+      g.drawEllipse(0, 0, rx, ry)
+    }, [cx, cy, rx, ry, color, angle])
+    return <Graphics draw={draw} />
+  },
 }

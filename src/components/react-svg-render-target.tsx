@@ -49,6 +49,17 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
   strokeCircle(cx: number, cy: number, r: number, color: number) {
     return <circle stroke={getColorString(color)} cx={cx} cy={cy} r={r} fill="none" />
   },
+  strokeEllipse(cx, cy, rx, ry, color, angle) {
+    return <ellipse
+      stroke={getColorString(color)}
+      cx={cx}
+      cy={cy}
+      rx={rx}
+      ry={ry}
+      fill="none"
+      transform={angle ? `rotate(${angle},${cx},${cy})` : undefined}
+    />
+  },
 }
 
 function getColorString(color: number) {

@@ -66,6 +66,51 @@ export function DragMask(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export interface Ellipse {
+    // (undocumented)
+    angle?: number;
+    // (undocumented)
+    cx: number;
+    // (undocumented)
+    cy: number;
+    // (undocumented)
+    rx: number;
+    // (undocumented)
+    ry: number;
+}
+
+// @public (undocumented)
+export function EllipseEditBar(props: {
+    cx: number;
+    cy: number;
+    rx: number;
+    ry: number;
+    angle?: number;
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export interface EllipseEditData<T = void> {
+    // (undocumented)
+    cursor: React_2.CSSProperties['cursor'];
+    // (undocumented)
+    cx: number;
+    // (undocumented)
+    cy: number;
+    // (undocumented)
+    data?: T;
+    // (undocumented)
+    rx: number;
+    // (undocumented)
+    ry: number;
+    // (undocumented)
+    type: 'center' | 'major axis' | 'minor axis';
+}
+
+// @public (undocumented)
 export interface GeneralFormLine {
     // (undocumented)
     a: number;
@@ -80,6 +125,9 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
     min: number;
     max: number;
 };
+
+// @public (undocumented)
+export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
 
 // @public (undocumented)
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
@@ -183,6 +231,8 @@ export interface ReactRenderTarget {
     }>): JSX.Element;
     // (undocumented)
     strokeCircle(cx: number, cy: number, r: number, color: number): JSX.Element;
+    // (undocumented)
+    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): JSX.Element;
     // (undocumented)
     strokePolyline(points: Position[], color: number): JSX.Element;
     // (undocumented)
@@ -340,16 +390,13 @@ export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.Mous
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number | undefined, e?: {
-    clientX: number;
-    clientY: number;
-}) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
     transform?: Partial<Transform>;
     parentRotate: number;
-    getSnapPoint: (p: {
+    getSnapPoint(p: {
         clientX: number;
         clientY: number;
-    }) => {
+    }): {
         clientX: number;
         clientY: number;
     };
@@ -371,6 +418,29 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
+export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipse: (ellipse?: Ellipse) => void, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
+    onEllipseClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onEllipseClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    ellipseClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useEllipseEdit<T = void>(setEllipseOffset: (offset: Ellipse & {
+    data?: T;
+}) => void, onEditEnd: () => void): {
+    onStartEditEllipse(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EllipseEditData<T>): void;
+    ellipseEditMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
 
 // @public (undocumented)
@@ -382,7 +452,10 @@ export function useLineAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, once?: boolean): {
+export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, options?: Partial<{
+    once: boolean;
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
     onLineClickCreateClick(e: {
         clientX: number;
         clientY: number;
@@ -395,7 +468,9 @@ export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]
 };
 
 // @public (undocumented)
-export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void): {
+export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void, options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
     onPolygonClickCreateClick(e: {
         clientX: number;
         clientY: number;

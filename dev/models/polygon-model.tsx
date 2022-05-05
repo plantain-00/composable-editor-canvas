@@ -1,7 +1,7 @@
 import React from 'react'
-import { getPointAndLineMinimumDistance, getSymmetryPoint, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
-import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, Model } from './model'
+import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
+import { iteratePolylineLines } from './line-model'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
 
 export type PolygonContent = BaseContent<'polygon'> & {
   points: Position[]
@@ -23,36 +23,8 @@ export const polygonModel: Model<PolygonContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   explode(content) {
-    const result: LineContent[] = []
-    for (const line of iteratePolygonLines(content.points)) {
-      result.push({
-        type: 'line',
-        points: line,
-      })
-    }
-    return result
-  },
-  canSelectByPosition(content, position, delta) {
-    for (const line of iteratePolygonLines(content.points)) {
-      const minDistance = getPointAndLineMinimumDistance(position, ...line)
-      if (minDistance <= delta) {
-        return true
-      }
-    }
-    return false
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    if (content.points.every((p) => pointIsInRegion(p, region))) {
-      return true
-    }
-    if (partial) {
-      for (const line of iteratePolygonLines(content.points)) {
-        if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
-          return true
-        }
-      }
-    }
-    return false
+    const { lines } = getLinesAndPointsFromCache(content, getPolygonModelLines)
+    return lines.map((line) => ({ type: 'line', points: line }))
   },
   render({ content, stroke, target }) {
     return target.strokePolyline([...content.points, content.points[0]], stroke)
@@ -82,6 +54,9 @@ export const polygonModel: Model<PolygonContent> = {
       type === 'polygon',
       setPolygon,
       (c) => onEnd([{ points: c, type: 'polygon' }]),
+      {
+        getAngleSnap,
+      },
     )
     return {
       input: polygonClickCreateInput,
@@ -95,20 +70,25 @@ export const polygonModel: Model<PolygonContent> = {
       },
     }
   },
-  *iterateSnapPoints({ points }, types) {
-    if (types.includes('endpoint')) {
-      yield* points.map((p) => ({ ...p, type: 'endpoint' as const }))
-    }
-    if (types.includes('midpoint')) {
-      for (const [start, end] of iteratePolygonLines(points)) {
-        yield {
-          x: (start.x + end.x) / 2,
-          y: (start.y + end.y) / 2,
-          type: 'midpoint',
-        }
-      }
-    }
+  getSnapPoints(content) {
+    const { points, lines } = getLinesAndPointsFromCache(content, getPolygonModelLines)
+    return [
+      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+      ...lines.map(([start, end]) => ({
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2,
+        type: 'midpoint' as const,
+      })),
+    ]
   },
+  getLines: getPolygonModelLines,
+}
+
+function getPolygonModelLines(content: Omit<PolygonContent, "type">) {
+  return {
+    lines: Array.from(iteratePolygonLines(content.points)),
+    points: content.points,
+  }
 }
 
 export function* iteratePolygonLines(points: Position[]) {

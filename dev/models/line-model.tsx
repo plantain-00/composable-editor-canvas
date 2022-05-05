@@ -1,6 +1,6 @@
 import React from 'react'
-import { getPointAndLineMinimumDistance, getSymmetryPoint, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
-import { BaseContent, Model } from './model'
+import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
 
 export type LineContent = BaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -20,28 +20,6 @@ export const lineModel: Model<LineContent> = {
   mirror(content, p1, p2) {
     const line = twoPointLineToGeneralFormLine(p1, p2)
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
-  },
-  canSelectByPosition(content, position, delta) {
-    for (const line of iteratePolylineLines(content.points)) {
-      const minDistance = getPointAndLineMinimumDistance(position, ...line)
-      if (minDistance <= delta) {
-        return true
-      }
-    }
-    return false
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    if (content.points.every((p) => pointIsInRegion(p, region))) {
-      return true
-    }
-    if (partial) {
-      for (const line of iteratePolylineLines(content.points)) {
-        if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
-          return true
-        }
-      }
-    }
-    return false
   },
   render({ content, stroke, target }) {
     return target.strokePolyline(content.points, stroke)
@@ -70,12 +48,9 @@ export const lineModel: Model<LineContent> = {
     const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
       type === 'line',
       (c) => setLineCreate(c ? { points: c } : undefined),
-      (c) => {
-        const lines: LineContent[] = []
-        for (const line of iteratePolylineLines(c)) {
-          lines.push({ points: line, type: 'line' })
-        }
-        onEnd(lines)
+      (c) => onEnd(Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' }))),
+      {
+        getAngleSnap,
       },
     )
     return {
@@ -91,20 +66,25 @@ export const lineModel: Model<LineContent> = {
       },
     }
   },
-  *iterateSnapPoints({ points }, types) {
-    if (types.includes('endpoint')) {
-      yield* points.map((p) => ({ ...p, type: 'endpoint' as const }))
-    }
-    if (types.includes('midpoint')) {
-      for (const [start, end] of iteratePolylineLines(points)) {
-        yield {
-          x: (start.x + end.x) / 2,
-          y: (start.y + end.y) / 2,
-          type: 'midpoint',
-        }
-      }
-    }
+  getSnapPoints(content) {
+    const { points, lines } = getLinesAndPointsFromCache(content, getLineModelLines)
+    return [
+      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+      ...lines.map(([start, end]) => ({
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2,
+        type: 'midpoint' as const,
+      })),
+    ]
   },
+  getLines: getLineModelLines,
+}
+
+export function getLineModelLines(content: Omit<LineContent, "type">) {
+  return {
+    lines: Array.from(iteratePolylineLines(content.points)),
+    points: content.points,
+  }
 }
 
 export function* iteratePolylineLines(points: Position[]) {

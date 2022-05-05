@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, CircleEditBar, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getSymmetryPoint, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
+import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { BaseContent, Model } from './model'
 
 export type CircleContent = BaseContent<'circle'> & Circle
@@ -20,25 +20,6 @@ export const circleModel: Model<CircleContent> = {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
-  },
-  canSelectByPosition(content, position, delta) {
-    return getTwoNumbersDistance(getTwoPointsDistance(content, position), content.r) <= delta
-  },
-  canSelectByTwoPositions(content, region, partial) {
-    if ([
-      { x: content.x - content.r, y: content.y - content.r },
-      { x: content.x + content.r, y: content.y + content.r },
-    ].every((p) => pointIsInRegion(p, region))) {
-      return true
-    }
-    if (partial) {
-      const minDistance = getPointAndRegionMinimumDistance(content, region)
-      const maxDistance = getPointAndRegionMaximumDistance(content, region)
-      if (minDistance <= content.r && maxDistance >= content.r) {
-        return true
-      }
-    }
-    return false
   },
   render({ content, stroke, target }) {
     return target.strokeCircle(content.x, content.y, content.r, stroke)
@@ -81,15 +62,16 @@ export const circleModel: Model<CircleContent> = {
       },
     }
   },
-  *iterateSnapPoints(content, types) {
-    if (types.includes('center')) {
-      yield { x: content.x, y: content.y, type: 'center' }
-    }
-    if (types.includes('endpoint')) {
-      yield { x: content.x - content.r, y: content.y, type: 'endpoint' }
-      yield { x: content.x + content.r, y: content.y, type: 'endpoint' }
-      yield { x: content.x, y: content.y - content.r, type: 'endpoint' }
-      yield { x: content.x, y: content.y + content.r, type: 'endpoint' }
-    }
+  getSnapPoints(content) {
+    return [
+      { x: content.x, y: content.y, type: 'center' },
+      { x: content.x - content.r, y: content.y, type: 'endpoint' },
+      { x: content.x + content.r, y: content.y, type: 'endpoint' },
+      { x: content.x, y: content.y - content.r, type: 'endpoint' },
+      { x: content.x, y: content.y + content.r, type: 'endpoint' },
+    ]
+  },
+  getCircle(content) {
+    return content
   },
 }

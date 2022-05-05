@@ -1,7 +1,6 @@
 import React from 'react'
-import { getTwoNumbersDistance, Position, ReactRenderTarget, TwoPointsFormRegion } from '../../src'
+import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget } from '../../src'
 import { CircleContent } from './circle-model'
-import { iterateIntersectionPoints } from './intersection/intersection'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
 
@@ -11,12 +10,10 @@ export interface BaseContent<T extends string = string> {
 
 export interface Model<T> {
   type: string
-  move(content: Omit<T, 'type'>, offset: Position): void
-  rotate(content: Omit<T, 'type'>, center: Position, angle: number): void
+  move?(content: Omit<T, 'type'>, offset: Position): void
+  rotate?(content: Omit<T, 'type'>, center: Position, angle: number): void
   explode?(content: Omit<T, 'type'>): BaseContent[]
-  mirror(content: Omit<T, 'type'>, p1: Position, p2: Position): void
-  canSelectByPosition(content: Omit<T, 'type'>, position: Position, delta: number): boolean
-  canSelectByTwoPositions(content: Omit<T, 'type'>, region: TwoPointsFormRegion, partial: boolean): boolean
+  mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position): void
   render?(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget }): JSX.Element
   useEdit?(onEnd: () => void): {
     mask?: JSX.Element
@@ -30,7 +27,12 @@ export interface Model<T> {
     onClick: (e: { clientX: number, clientY: number }) => void
     onMove: (e: { clientX: number, clientY: number }) => void
   }
-  iterateSnapPoints(content: Omit<T, 'type'>, types: string[]): Generator<SnapPoint, void, unknown>
+  getSnapPoints?(content: Omit<T, 'type'>): SnapPoint[]
+  getLines?(content: Omit<T, 'type'>): {
+    lines: [Position, Position][]
+    points: Position[]
+  }
+  getCircle?(content: Omit<T, 'type'>): Circle
 }
 
 type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -175,10 +177,12 @@ export function useSnap(enabled: boolean, delta = 5) {
         return p
       }
       for (const content of contents) {
-        const iterate = getModel(content.type)?.iterateSnapPoints
+        const iterate = getModel(content.type)?.getSnapPoints
         if (iterate) {
-          for (const point of iterate(content, types)) {
+          const snapPoints = getSnapPointsFromCache(content, iterate)
+          for (const point of snapPoints) {
             if (
+              types.includes(point.type) &&
               getTwoNumbersDistance(p.clientX, point.x) <= delta &&
               getTwoNumbersDistance(p.clientY, point.y) <= delta
             ) {
@@ -201,7 +205,7 @@ export function useSnap(enabled: boolean, delta = 5) {
                 getTwoNumbersDistance(p.clientX, point.x) <= delta &&
                 getTwoNumbersDistance(p.clientY, point.y) <= delta
               ) {
-                setSnapPoint(point)
+                setSnapPoint({ ...point, type: 'intersection' })
                 return {
                   clientX: point.x,
                   clientY: point.y,
@@ -219,4 +223,60 @@ export function useSnap(enabled: boolean, delta = 5) {
 
 export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
+}
+
+const linesCache = new WeakMap<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[] }>()
+const snapPointsCache = new WeakMap<Omit<BaseContent, 'type'>, SnapPoint[]>()
+
+export function getLinesAndPointsFromCache<T>(content: Omit<T, 'type'>, func: (content: Omit<T, 'type'>) => { lines: [Position, Position][], points: Position[] }) {
+  let result = linesCache.get(content)
+  if (!result) {
+    result = func(content)
+    linesCache.set(content, result)
+  }
+  return result
+}
+
+export function getSnapPointsFromCache<T>(content: Omit<T, 'type'>, func: (content: Omit<T, 'type'>) => SnapPoint[]) {
+  let result = snapPointsCache.get(content)
+  if (!result) {
+    result = func(content)
+    snapPointsCache.set(content, result)
+  }
+  return result
+}
+
+function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent) {
+  const model1 = getModel(content1.type)
+  const model2 = getModel(content2.type)
+  if (model1 && model2) {
+    if (model1.getCircle && model2.getCircle) {
+      yield* getTwoCircleIntersectionPoints(model1.getCircle(content1), model1.getCircle(content2))
+    } else if (model1.getCircle && model2.getLines) {
+      for (const line of getLinesAndPointsFromCache(content2, model2.getLines).lines) {
+        yield* getLineSegmentCircleIntersectionPoints(...line, model1.getCircle(content1))
+      }
+    } else if (model1.getLines && model2.getCircle) {
+      for (const line of getLinesAndPointsFromCache(content1, model1.getLines).lines) {
+        yield* getLineSegmentCircleIntersectionPoints(...line, model2.getCircle(content2))
+      }
+    } else if (model1.getLines && model2.getLines) {
+      for (const line1 of getLinesAndPointsFromCache(content1, model1.getLines).lines) {
+        for (const line2 of getLinesAndPointsFromCache(content2, model2.getLines).lines) {
+          const point = getTwoLinesIntersectionPoint(...line1, ...line2)
+          if (point) {
+            yield point
+          }
+        }
+      }
+    }
+  }
+}
+
+export function getAngleSnap(angle: number) {
+  const snap = Math.round(angle / 90) * 90
+  if (snap !== angle && Math.abs(snap - angle) < 5) {
+    return snap
+  }
+  return undefined
 }

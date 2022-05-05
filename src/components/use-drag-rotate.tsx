@@ -4,12 +4,12 @@ import { DragMask, useKey } from "."
 import { Position, Transform, transformPosition } from ".."
 
 export function useDragRotate(
-  setRotate: (rotate: number | undefined, e?: { clientX: number, clientY: number }) => void,
+  setRotate: (rotate: number | undefined, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void,
   onDragEnd: () => void,
   options?: Partial<{
     transform?: Partial<Transform>
     parentRotate: number
-    getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number }
+    getSnapPoint(p: { clientX: number, clientY: number }): { clientX: number, clientY: number }
   }>,
 ) {
   const [center, setCenter] = React.useState<Position>()
@@ -26,7 +26,7 @@ export function useDragRotate(
         const f = options?.getSnapPoint?.(e) ?? e
         const { x, y } = transformPosition({ x: f.clientX, y: f.clientY }, options?.transform)
         const rotate = (Math.atan2(y - center.y, x - center.x) / Math.PI * 180 + 450 - parentRotate) % 360
-        setRotate(rotate, f)
+        setRotate(rotate, e)
       }}
       onDragEnd={() => {
         onDragEnd?.()
