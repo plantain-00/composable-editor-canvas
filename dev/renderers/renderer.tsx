@@ -13,7 +13,7 @@ export function Renderer(props: {
   if (!target) {
     return null
   }
-  const children: JSX.Element[] = []
+  const children: unknown[] = []
   props.contents.forEach((content, i) => {
     let color = 0x00ff00
     if (props.selectedContents.includes(i)) {
@@ -23,7 +23,7 @@ export function Renderer(props: {
     }
     const ContentRender = getModel(content.type)?.render
     if (ContentRender) {
-      children.push(<ContentRender key={i} content={content} stroke={color} target={target} />)
+      children.push(ContentRender({ content, stroke: color, target }))
     }
   })
   return target.getResult(children, 800, 600, {
@@ -32,9 +32,9 @@ export function Renderer(props: {
   })
 }
 
-const rendererCenter: Record<string, ReactRenderTarget> = {}
+const rendererCenter: Record<string, ReactRenderTarget<unknown>> = {}
 
-export function registerRenderer(renderer: ReactRenderTarget) {
+export function registerRenderer<T>(renderer: ReactRenderTarget<T>) {
   rendererCenter[renderer.type] = renderer
 }
 

@@ -21,6 +21,14 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
+export interface Arc extends Circle {
+    // (undocumented)
+    endAngle: number;
+    // (undocumented)
+    startAngle: number;
+}
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
@@ -119,6 +127,9 @@ export interface GeneralFormLine {
     // (undocumented)
     c: number;
 }
+
+// @public (undocumented)
+export function getColorString(color: number): string;
 
 // @public (undocumented)
 export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
@@ -224,19 +235,24 @@ export interface Position {
 }
 
 // @public (undocumented)
-export interface ReactRenderTarget {
+export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void>;
+
+// @public (undocumented)
+export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
-    getResult(children: JSX.Element[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
+    getResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
         style: React.CSSProperties;
     }>): JSX.Element;
     // (undocumented)
-    strokeCircle(cx: number, cy: number, r: number, color: number): JSX.Element;
+    strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number): T;
     // (undocumented)
-    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): JSX.Element;
+    strokeCircle(cx: number, cy: number, r: number, color: number): T;
     // (undocumented)
-    strokePolyline(points: Position[], color: number): JSX.Element;
+    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): T;
     // (undocumented)
-    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): JSX.Element;
+    strokePolyline(points: Position[], color: number): T;
+    // (undocumented)
+    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): T;
     // (undocumented)
     type: string;
 }

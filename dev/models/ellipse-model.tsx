@@ -28,14 +28,14 @@ export const ellipseModel: Model<EllipseContent> = {
   render({ content, stroke, target }) {
     return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, stroke, content.angle)
   },
-  useCreate(type, onEnd) {
+  useCreate(type, onEnd, angleSnapEnabled) {
     const [ellipseCreate, setEllipseCreate] = React.useState<Ellipse>()
     const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
       setEllipseCreate,
       (c) => onEnd([{ ...c, type: 'ellipse' }]),
       {
-        getAngleSnap,
+        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
     return {

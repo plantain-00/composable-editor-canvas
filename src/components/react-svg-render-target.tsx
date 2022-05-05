@@ -1,17 +1,10 @@
 import * as React from "react"
 import { ReactRenderTarget } from "."
-import { Position } from "../utils"
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
-  getResult(
-    children: JSX.Element[],
-    width: number,
-    height: number,
-    attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
-      style: React.CSSProperties
-    }>,
-  ) {
+  getResult(children, width, height, attributes) {
+    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     return (
       <svg
         version="1.1"
@@ -27,7 +20,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       </svg>
     )
   },
-  strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number) {
+  strokeRect(x, y, width, height, color, angle) {
     return <rect
       x={x}
       y={y}
@@ -38,7 +31,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
     />
   },
-  strokePolyline(points: Position[], color: number) {
+  strokePolyline(points, color) {
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}
@@ -46,7 +39,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       fill="none"
     />
   },
-  strokeCircle(cx: number, cy: number, r: number, color: number) {
+  strokeCircle(cx, cy, r, color) {
     return <circle stroke={getColorString(color)} cx={cx} cy={cy} r={r} fill="none" />
   },
   strokeEllipse(cx, cy, rx, ry, color, angle) {
@@ -60,9 +53,27 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${cx},${cy})` : undefined}
     />
   },
+  strokeArc(cx, cy, r, startAngle, endAngle, color) {
+    const start = polarToCartesian(cx, cy, r, endAngle)
+    const end = polarToCartesian(cx, cy, r, startAngle)
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+    return <path
+      d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
+      stroke={getColorString(color)}
+      fill="none"
+    />
+  },
 }
 
-function getColorString(color: number) {
+function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = angleInDegrees * Math.PI / 180
+  return {
+    x: cx + (radius * Math.cos(angleInRadians)),
+    y: cy + (radius * Math.sin(angleInRadians))
+  }
+}
+
+export function getColorString(color: number) {
   const s = color.toString(16)
   return `#${'0'.repeat(6 - s.length)}${s}`
 }

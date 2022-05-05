@@ -387,3 +387,11 @@ export interface TwoPointsFormRegion {
 export interface Circle extends Position {
   r: number
 }
+
+/**
+ * @public
+ */
+export interface Arc extends Circle {
+  startAngle: number
+  endAngle: number
+}

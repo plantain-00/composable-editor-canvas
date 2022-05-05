@@ -14,13 +14,13 @@ export interface Model<T> {
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number): void
   explode?(content: Omit<T, 'type'>): BaseContent[]
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position): void
-  render?(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget }): JSX.Element
+  render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   useEdit?(onEnd: () => void): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void
     editBar(props: { content: T, index: number }): JSX.Element
   }
-  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void): {
+  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, angleSnapEnabled: boolean): {
     input?: JSX.Element
     subcommand?: JSX.Element
     updatePreview(contents: T[]): void
@@ -69,7 +69,7 @@ export function useModelsEdit(onEnd: () => void) {
   }
 }
 
-export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void) {
+export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void, angleSnapEnabled: boolean) {
   const createInputs: JSX.Element[] = []
   const createSubcommands: JSX.Element[] = []
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
@@ -79,7 +79,7 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
     if (!model.useCreate) {
       return
     }
-    const { input, updatePreview, onClick, onMove, subcommand } = model.useCreate(operation, onEnd)
+    const { input, updatePreview, onClick, onMove, subcommand } = model.useCreate(operation, onEnd, angleSnapEnabled)
     if (input) {
       createInputs.push(React.cloneElement(input, { key: type }))
     }
