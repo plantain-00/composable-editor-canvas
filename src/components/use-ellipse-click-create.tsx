@@ -95,8 +95,7 @@ export function useEllipseClickCreate(
         const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
         setMiddlePosition(newPosition)
       } else {
-        const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
-        onEnd(getEllipse(type, startPosition, middlePosition, newPosition))
+        onEnd(getEllipse(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY }))
         reset()
       }
     },

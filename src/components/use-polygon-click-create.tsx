@@ -66,7 +66,8 @@ export function usePolygonClickCreate(
       if (!startPosition) {
         setStartPosition({ x: e.clientX, y: e.clientY })
       } else {
-        onEnd(getPolygonPoints({ x: e.clientX, y: e.clientY }, startPosition, sides))
+        const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+        onEnd(getPolygonPoints(newPosition, startPosition, sides))
         reset()
       }
     },
