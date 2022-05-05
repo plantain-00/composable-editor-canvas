@@ -16,18 +16,8 @@ import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
 import { getAllRendererTypes, registerRenderer, Renderer } from './renderers/renderer'
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
-import { registerIntersection } from './models/intersection/intersection'
-import { iterateTwoPolylinesIntersectionPoints } from './models/intersection/polyline-polyline-intersection'
-import { iterateTwoRectsIntersectionPoints } from './models/intersection/rect-rect-intersection'
-import { iterateRectPolylineIntersectionPoints } from './models/intersection/rect-polyline-intersection'
-import { iterateTwoCirclesIntersectionPoints } from './models/intersection/circle-circle-intersection'
-import { iterateCirclePolylineIntersectionPoints } from './models/intersection/circle-polyline-intersection'
-import { iterateCircleRectIntersectionPoints } from './models/intersection/circle-rect-intersection'
 import { polygonModel } from './models/polygon-model'
-import { iterateTwoPolygonsIntersectionPoints } from './models/intersection/polygon-polygon-intersection'
-import { iteratePolygonCircleIntersectionPoints } from './models/intersection/polygon-circle-intersection'
-import { iteratePolygonPolylineIntersectionPoints } from './models/intersection/polygon-polyline-intersection'
-import { iteratePolygonRectIntersectionPoints } from './models/intersection/polygon-rect-intersection'
+import { ellipseModel } from './models/ellipse-model'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -38,6 +28,7 @@ registerModel(circleModel)
 registerModel(polylineModel)
 registerModel(rectModel)
 registerModel(polygonModel)
+registerModel(ellipseModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -48,26 +39,6 @@ registerCommand(explodeCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
-
-registerIntersection('line', 'line', iterateTwoPolylinesIntersectionPoints)
-
-registerIntersection('polyline', 'polyline', iterateTwoPolylinesIntersectionPoints)
-registerIntersection('polyline', 'line', iterateTwoPolylinesIntersectionPoints)
-
-registerIntersection('rect', 'rect', iterateTwoRectsIntersectionPoints)
-registerIntersection('rect', 'polyline', iterateRectPolylineIntersectionPoints)
-registerIntersection('rect', 'line', iterateRectPolylineIntersectionPoints)
-
-registerIntersection('circle', 'circle', iterateTwoCirclesIntersectionPoints)
-registerIntersection('circle', 'polyline', iterateCirclePolylineIntersectionPoints)
-registerIntersection('circle', 'line', iterateCirclePolylineIntersectionPoints)
-registerIntersection('circle', 'rect', iterateCircleRectIntersectionPoints)
-
-registerIntersection('polygon', 'polygon', iterateTwoPolygonsIntersectionPoints)
-registerIntersection('polygon', 'circle', iteratePolygonCircleIntersectionPoints)
-registerIntersection('polygon', 'polyline', iteratePolygonPolylineIntersectionPoints)
-registerIntersection('polygon', 'line', iteratePolygonPolylineIntersectionPoints)
-registerIntersection('polygon', 'rect', iteratePolygonRectIntersectionPoints)
 
 export default () => {
   // operation when no selection required or selected already
@@ -240,13 +211,15 @@ export default () => {
         {previewContents.map((s, i) => {
           if (selectedContents.includes(i)) {
             const EditBar = editBarMap[s.type]
-            return <EditBar key={i} content={s} index={i} />
+            if (EditBar) {
+              return <EditBar key={i} content={s} index={i} />
+            }
           }
           return null
         })}
         {createInputs}
       </div>
-      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
+      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
       <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>
       <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>

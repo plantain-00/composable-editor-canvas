@@ -1,13 +1,16 @@
 import * as React from "react"
 
 import { useCursorInput, useKey } from "."
-import { getPointByLengthAndDirection, Position } from "../utils"
+import { getPointByLengthAndDirection, Position, rotatePositionByCenter } from "../utils"
 
 export function useLineClickCreate(
   enabled: boolean,
   setLine: (line?: Position[]) => void,
   onEnd: (line: Position[]) => void,
-  once?: boolean,
+  options?: Partial<{
+    once: boolean
+    getAngleSnap: (angle: number) => number | undefined
+  }>,
 ) {
   const [positions, setPositions] = React.useState<Position[]>([])
   const { input, setCursorPosition, clearText } = useCursorInput(enabled, (e, text, cursorPosition) => {
@@ -20,7 +23,7 @@ export function useLineClickCreate(
           const lastPosition = positions[positions.length - 1] || { x: 0, y: 0 }
           const x = lastPosition.x + offsetX
           const y = lastPosition.y + offsetY
-          if (once && positions.length > 0) {
+          if (options?.once && positions.length > 0) {
             onEnd([positions[0], { x, y }])
             reset()
             return
@@ -35,7 +38,7 @@ export function useLineClickCreate(
         const length = +text
         if (!isNaN(length) && length > 0) {
           const point = getPointByLengthAndDirection(positions[positions.length - 1], length, cursorPosition)
-          if (once && positions.length > 0) {
+          if (options?.once && positions.length > 0) {
             onEnd([positions[0], point])
             reset()
             return
@@ -62,28 +65,42 @@ export function useLineClickCreate(
     reset()
   }, [positions, setPositions])
 
+  const getAngleSnapPosition = (newPosition: { x: number, y: number }) => {
+    if (options?.getAngleSnap && positions.length > 0) {
+      const lastPoint = positions[positions.length - 1]
+      const angle = Math.atan2(newPosition.y - lastPoint.y, newPosition.x - lastPoint.x) * 180 / Math.PI
+      const newAngle = options.getAngleSnap(angle)
+      if (newAngle !== undefined && newAngle !== angle) {
+        newPosition = rotatePositionByCenter(newPosition, lastPoint, angle - newAngle)
+      }
+    }
+    return newPosition
+  }
+
   return {
     onLineClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!enabled) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
-      if (once && positions.length > 0) {
-        onEnd([positions[0], { x: e.clientX, y: e.clientY }])
+      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(newPosition)
+      if (options?.once && positions.length > 0) {
+        onEnd([positions[0], newPosition])
         reset()
         return
       }
-      setPositions([...positions, { x: e.clientX, y: e.clientY }])
+      setPositions([...positions, newPosition])
     },
     onLineClickCreateMove(e: { clientX: number, clientY: number }) {
       if (!enabled) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
-      if (once && positions.length === 0) {
+      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(newPosition)
+      if (options?.once && positions.length === 0) {
         return
       }
-      setLine([...positions, { x: e.clientX, y: e.clientY }])
+      setLine([...positions, newPosition])
     },
     lineClickCreateInput: input,
   }

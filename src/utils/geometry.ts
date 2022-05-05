@@ -337,6 +337,16 @@ export function getPolygonPoints(point: Position, center: Position, sides: numbe
   return points
 }
 
+/**
+ * @public
+ */
+export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number) {
+  if (ellipse.angle) {
+    angle -= (ellipse.angle / 180) * Math.PI
+  }
+  return ellipse.rx * ellipse.ry / Math.sqrt((ellipse.rx * Math.sin(angle)) ** 2 + (ellipse.ry * Math.cos(angle)) ** 2)
+}
+
 export interface Position {
   x: number
   y: number
@@ -357,6 +367,14 @@ export interface GeneralFormLine {
 }
 
 export interface Region extends Position, Size { }
+
+export interface Ellipse {
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  angle?: number
+}
 
 /**
  * @public

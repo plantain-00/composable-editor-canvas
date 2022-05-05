@@ -14,7 +14,10 @@ export default {
         'tsc -p src/tsconfig.browser.json',
         'rollup --config rollup.config.js'
       ],
-      importStories,
+      dev: [
+        importStories,
+        `tsc -p dev --noEmit`,
+      ],
     },
     'webpack --config dev/webpack.prod.js'
   ],
