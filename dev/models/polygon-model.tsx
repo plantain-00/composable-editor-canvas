@@ -48,14 +48,14 @@ export const polygonModel: Model<PolygonContent> = {
       },
     }
   },
-  useCreate(type, onEnd) {
+  useCreate(type, onEnd, angleSnapEnabled) {
     const [polygon, setPolygon] = React.useState<Position[]>()
     const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput, startSetSides } = usePolygonClickCreate(
       type === 'polygon',
       setPolygon,
       (c) => onEnd([{ points: c, type: 'polygon' }]),
       {
-        getAngleSnap,
+        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
     return {

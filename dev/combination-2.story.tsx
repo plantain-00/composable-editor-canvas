@@ -1,5 +1,5 @@
 import React from 'react'
-import { reactSvgRenderTarget, useDragSelect, useKey, useUndoRedo } from '../src'
+import { reactCanvasRenderTarget, reactSvgRenderTarget, useDragSelect, useKey, useUndoRedo } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce from 'immer'
 import { BaseContent, registerModel, useModelsCreate, useModelsEdit, useSnap } from './models/model'
@@ -18,6 +18,7 @@ import { getAllRendererTypes, registerRenderer, Renderer } from './renderers/ren
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
+import { arcModel } from './models/arc-model'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -29,6 +30,7 @@ registerModel(polylineModel)
 registerModel(rectModel)
 registerModel(polygonModel)
 registerModel(ellipseModel)
+registerModel(arcModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -39,6 +41,7 @@ registerCommand(explodeCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
+registerRenderer(reactCanvasRenderTarget)
 
 export default () => {
   // operation when no selection required or selected already
@@ -51,6 +54,7 @@ export default () => {
   const [hoveringContent, setHoveringContent] = React.useState<number>(-1)
   const [renderTarget, setRenderTarget] = React.useState<string>()
   const [snapTypes, setSnapTypes] = React.useState(['endpoint', 'midpoint', 'center', 'intersection'])
+  const [angleSnapEnabled, setAngleSnapEnabled] = React.useState(true)
 
   // commands
   const { commandMasks, updateContent, startCommand } = useCommands(
@@ -95,7 +99,7 @@ export default () => {
       draft.push(...c)
     })
     setOperation(undefined)
-  })
+  }, angleSnapEnabled)
   // snap point
   const { snapAssistentContents, getSnapPoint } = useSnap(!!operation)
   assistentContents.push(...snapAssistentContents)
@@ -232,6 +236,10 @@ export default () => {
           <label htmlFor={type}>{type}</label>
         </span>
       ))}
+      <span style={{ position: 'relative' }}>
+        <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
+        <label htmlFor='angle snap'>angle snap</label>
+      </span>
       {editMasks}
       {dragSelectMask}
       {commandMasks}

@@ -43,14 +43,14 @@ export const lineModel: Model<LineContent> = {
       },
     }
   },
-  useCreate(type, onEnd) {
+  useCreate(type, onEnd, angleSnapEnabled) {
     const [lineCreate, setLineCreate] = React.useState<{ points: Position[] }>()
     const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
       type === 'line',
       (c) => setLineCreate(c ? { points: c } : undefined),
       (c) => onEnd(Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' }))),
       {
-        getAngleSnap,
+        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
     return {

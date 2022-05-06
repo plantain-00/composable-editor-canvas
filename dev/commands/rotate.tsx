@@ -8,7 +8,7 @@ export const rotateCommand: Command = {
   useCommand(onEnd, getSnapPoint) {
     const [startPostion, setStartPosition] = React.useState<Position>()
     const [rotateOffset, setRotateOffset] = React.useState<Position & { angle?: number }>()
-    const { onStartRotate, dragRotateMask } = useDragRotate((f, e) => setRotateOffset(e ? { x: e.clientX, y: e.clientY, angle: f ? f - 90 : undefined } : undefined), onEnd, {
+    const { onStartRotate, dragRotateMask } = useDragRotate((f, e) => setRotateOffset(e ? { x: e.clientX, y: e.clientY, angle: f !== undefined ? f - 90 : undefined } : undefined), onEnd, {
       getSnapPoint,
     })
     return {
@@ -24,6 +24,14 @@ export const rotateCommand: Command = {
               {
                 type: 'line',
                 points: [startPostion, rotateOffset]
+              },
+              {
+                type: 'arc',
+                x: startPostion.x,
+                y: startPostion.y,
+                r,
+                startAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? rotateOffset.angle : 0,
+                endAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? 0 : rotateOffset.angle,
               },
               {
                 type: 'line',

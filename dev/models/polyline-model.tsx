@@ -10,14 +10,14 @@ export const polylineModel: Model<LineContent> = {
     const { lines } = getLinesAndPointsFromCache(content, getLineModelLines)
     return lines.map((line) => ({ type: 'line', points: line }))
   },
-  useCreate(type, onEnd) {
+  useCreate(type, onEnd, angleSnapEnabled) {
     const [lineCreate, setLineCreate] = React.useState<{ points: Position[] }>()
     const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
       type === 'polyline',
       (c) => setLineCreate(c ? { points: c } : undefined),
       (c) => onEnd([{ points: c, type: 'polyline' }]),
       {
-        getAngleSnap,
+        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
     return {
