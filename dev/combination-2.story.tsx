@@ -19,6 +19,7 @@ import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
+import { splineModel } from './models/spline-model'
 
 const draftKey = 'composable-editor-canvas-draft-2'
 const draftState = localStorage.getItem(draftKey)
@@ -31,6 +32,7 @@ registerModel(rectModel)
 registerModel(polygonModel)
 registerModel(ellipseModel)
 registerModel(arcModel)
+registerModel(splineModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -55,6 +57,7 @@ export default () => {
   const [renderTarget, setRenderTarget] = React.useState<string>()
   const [snapTypes, setSnapTypes] = React.useState(['endpoint', 'midpoint', 'center', 'intersection'])
   const [angleSnapEnabled, setAngleSnapEnabled] = React.useState(true)
+  const [readOnly, setReadOnly] = React.useState(false)
 
   // commands
   const { commandMasks, updateContent, startCommand } = useCommands(
@@ -212,7 +215,7 @@ export default () => {
           hoveringContent={hoveringContent}
           onClick={onClick}
         />
-        {previewContents.map((s, i) => {
+        {!readOnly && previewContents.map((s, i) => {
           if (selectedContents.includes(i)) {
             const EditBar = editBarMap[s.type]
             if (EditBar) {
@@ -221,24 +224,28 @@ export default () => {
           }
           return null
         })}
-        {createInputs}
+        {!readOnly && createInputs}
       </div>
-      {['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
-      <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>
-      <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>
+      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: p === operation || p === nextOperation ? 'red' : undefined }}>{p}</button>)}
+      {!readOnly && <button disabled={!canUndo} onClick={() => undo()} style={{ position: 'relative' }}>undo</button>}
+      {!readOnly && <button disabled={!canRedo} onClick={() => redo()} style={{ position: 'relative' }}>redo</button>}
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
         {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
       </select>
-      {createSubcommands}
-      {['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
+      {!readOnly && createSubcommands}
+      {!readOnly && ['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
         <span key={type} style={{ position: 'relative' }}>
           <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
           <label htmlFor={type}>{type}</label>
         </span>
       ))}
-      <span style={{ position: 'relative' }}>
+      {!readOnly && <span style={{ position: 'relative' }}>
         <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
         <label htmlFor='angle snap'>angle snap</label>
+      </span>}
+      <span style={{ position: 'relative' }}>
+        <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
+        <label htmlFor='read only'>read only</label>
       </span>
       {editMasks}
       {dragSelectMask}
