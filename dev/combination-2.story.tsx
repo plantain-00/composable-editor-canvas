@@ -97,7 +97,7 @@ export default () => {
   // edit model
   const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => setState(() => previewContents))
   // create model
-  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands } = useModelsCreate(operation, (c) => {
+  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands, createAssistentContents } = useModelsCreate(operation, (c) => {
     setState((draft) => {
       draft.push(...c)
     })
@@ -105,7 +105,10 @@ export default () => {
   }, angleSnapEnabled)
   // snap point
   const { snapAssistentContents, getSnapPoint } = useSnap(!!operation)
-  assistentContents.push(...snapAssistentContents)
+  assistentContents.push(
+    ...snapAssistentContents,
+    ...createAssistentContents,
+  )
 
   previewContents = produce(previewContents, (draft) => {
     updateEditPreview(draft)

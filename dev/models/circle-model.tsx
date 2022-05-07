@@ -1,6 +1,9 @@
 import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
-import { BaseContent, Model } from './model'
+import { getArcLines } from './arc-model'
+import { LineContent } from './line-model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { PolygonContent } from './polygon-model'
 
 export type CircleContent = BaseContent<'circle'> & Circle
 
@@ -22,6 +25,10 @@ export const circleModel: Model<CircleContent> = {
     content.y = p.y
   },
   render({ content, stroke, target }) {
+    if (content.dashArray) {
+      const { points } = getLinesAndPointsFromCache(content, getLines)
+      return target.strokePolyline(points, stroke, content.dashArray)
+    }
     return target.strokeCircle(content.x, content.y, content.r, stroke)
   },
   useEdit(onEnd) {
@@ -46,11 +53,19 @@ export const circleModel: Model<CircleContent> = {
   },
   useCreate(type, onEnd) {
     const [circleCreate, setCircleCreate] = React.useState<Circle>()
-    const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate(
+    const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
       setCircleCreate,
       (c) => onEnd([{ ...c, type: 'circle' }]),
     )
+    let assistentContents: (LineContent | PolygonContent)[] | undefined
+    if (startPosition && cursorPosition) {
+      if (middlePosition) {
+        assistentContents = [{ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] }]
+      } else {
+        assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
+      }
+    }
     return {
       input: circleClickCreateInput,
       onClick: onCircleClickCreateClick,
@@ -60,6 +75,7 @@ export const circleModel: Model<CircleContent> = {
           contents.push({ type: 'circle', ...circleCreate })
         }
       },
+      assistentContents,
     }
   },
   getSnapPoints(content) {
@@ -74,4 +90,8 @@ export const circleModel: Model<CircleContent> = {
   getCircle(content) {
     return content
   },
+}
+
+function getLines(content: Omit<CircleContent, "type">) {
+  return getArcLines({ ...content, startAngle: 0, endAngle: 360 })
 }

@@ -27,11 +27,14 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokePolyline(points, color) {
+  strokePolyline(points, color, dashArray) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
       ctx.strokeStyle = getColorString(color)
+      if (dashArray) {
+        ctx.setLineDash(dashArray)
+      }
       for (let i = 0; i < points.length; i++) {
         if (i === 0) {
           ctx.moveTo(points[i].x, points[i].y)

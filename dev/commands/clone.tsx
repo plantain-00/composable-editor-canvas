@@ -29,6 +29,7 @@ export const cloneCommand: Command = {
             assistentContents: [
               {
                 type: 'line',
+                dashArray: [4],
                 points: [startPostion, { x: startPostion.x + cloneOffset.x, y: startPostion.y + cloneOffset.y }]
               },
             ]

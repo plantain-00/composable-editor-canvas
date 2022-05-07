@@ -6,6 +6,7 @@ import { RectContent } from './rect-model'
 
 export interface BaseContent<T extends string = string> {
   type: T
+  dashArray?: number[]
 }
 
 export interface Model<T> {
@@ -15,6 +16,7 @@ export interface Model<T> {
   explode?(content: Omit<T, 'type'>): BaseContent[]
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position): void
   render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   useEdit?(onEnd: () => void): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void
@@ -24,6 +26,7 @@ export interface Model<T> {
     input?: JSX.Element
     subcommand?: JSX.Element
     updatePreview(contents: T[]): void
+    assistentContents?: BaseContent[]
     onClick: (e: { clientX: number, clientY: number }) => void
     onMove: (e: { clientX: number, clientY: number }) => void
   }
@@ -75,11 +78,12 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
   const onClicks: ((e: { clientX: number, clientY: number }) => void)[] = []
   const onMoves: ((e: { clientX: number, clientY: number }) => void)[] = []
+  const createAssistentContents: BaseContent[] = []
   Object.entries(modelCenter).forEach(([type, model]) => {
     if (!model.useCreate) {
       return
     }
-    const { input, updatePreview, onClick, onMove, subcommand } = model.useCreate(operation, onEnd, angleSnapEnabled)
+    const { input, updatePreview, onClick, onMove, subcommand, assistentContents } = model.useCreate(operation, onEnd, angleSnapEnabled)
     if (input) {
       createInputs.push(React.cloneElement(input, { key: type }))
     }
@@ -89,6 +93,9 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
     updateCreatePreviews.push(updatePreview)
     onClicks.push(onClick)
     onMoves.push(onMove)
+    if (assistentContents) {
+      createAssistentContents.push(...assistentContents)
+    }
   })
   return {
     createInputs,
@@ -108,6 +115,7 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
         onMove(e)
       }
     },
+    createAssistentContents,
   }
 }
 

@@ -23,6 +23,7 @@ export const rotateCommand: Command = {
             assistentContents: [
               {
                 type: 'line',
+                dashArray: [4],
                 points: [startPostion, rotateOffset]
               },
               {
@@ -30,11 +31,13 @@ export const rotateCommand: Command = {
                 x: startPostion.x,
                 y: startPostion.y,
                 r,
+                dashArray: [4],
                 startAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? rotateOffset.angle : 0,
                 endAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? 0 : rotateOffset.angle,
               },
               {
                 type: 'line',
+                dashArray: [4],
                 points: [startPostion, { x: startPostion.x + r, y: startPostion.y }]
               }
             ]

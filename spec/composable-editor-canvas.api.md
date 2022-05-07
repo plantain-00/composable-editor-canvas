@@ -74,6 +74,18 @@ export function DragMask(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export function drawDashedLine(g: {
+    moveTo: (x: number, y: number) => void;
+    lineTo: (x: number, y: number) => void;
+}, p1: Position, p2: Position, dashArray: number[], startDistance?: number): number;
+
+// @public (undocumented)
+export function drawDashedPolyline(g: {
+    moveTo: (x: number, y: number) => void;
+    lineTo: (x: number, y: number) => void;
+}, points: Position[], dashArray: number[]): void;
+
+// @public (undocumented)
 export interface Ellipse {
     // (undocumented)
     angle?: number;
@@ -251,7 +263,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
     strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): T;
     // (undocumented)
-    strokePolyline(points: Position[], color: number): T;
+    strokePolyline(points: Position[], color: number, dashArray?: number[]): T;
     // (undocumented)
     strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): T;
     // (undocumented)
@@ -342,6 +354,9 @@ export interface TwoPointsFormRegion {
 
 // @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
+    startPosition: Position | undefined;
+    middlePosition: Position | undefined;
+    cursorPosition: Position | undefined;
     onCircleClickCreateClick(e: {
         clientX: number;
         clientY: number;
@@ -363,6 +378,7 @@ export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
 
 // @public (undocumented)
 export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
+    cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
     input: JSX.Element | undefined;
@@ -438,6 +454,9 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipse: (ellipse?: Ellipse) => void, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
+    startPosition: Position | undefined;
+    middlePosition: Position | undefined;
+    cursorPosition: Position | undefined;
     onEllipseClickCreateClick(e: {
         clientX: number;
         clientY: number;
@@ -488,6 +507,8 @@ export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]
 export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
+    startPosition: Position | undefined;
+    cursorPosition: Position | undefined;
     onPolygonClickCreateClick(e: {
         clientX: number;
         clientY: number;

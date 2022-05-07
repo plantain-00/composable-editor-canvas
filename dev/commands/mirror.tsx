@@ -38,6 +38,7 @@ export const mirrorCommand: Command = {
             assistentContents: [
               {
                 type: 'line',
+                dashArray: [4],
                 points: [startPostion, end]
               },
             ]

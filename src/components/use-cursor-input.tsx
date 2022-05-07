@@ -13,6 +13,7 @@ export function useCursorInput(
   })
 
   return {
+    cursorPosition,
     setCursorPosition,
     clearText() {
       setText('')

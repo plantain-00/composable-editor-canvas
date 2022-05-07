@@ -11,7 +11,7 @@ export function useCircleClickCreate(
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const { input, setCursorPosition, clearText } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (startPosition) {
@@ -77,6 +77,9 @@ export function useCircleClickCreate(
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
   return {
+    startPosition,
+    middlePosition,
+    cursorPosition,
     onCircleClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!type) {
         return

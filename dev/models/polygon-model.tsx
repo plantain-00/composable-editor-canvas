@@ -1,6 +1,6 @@
 import React from 'react'
-import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
-import { iteratePolylineLines } from './line-model'
+import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
+import { iteratePolylineLines, LineContent } from './line-model'
 import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
 
 export type PolygonContent = BaseContent<'polygon'> & {
@@ -27,7 +27,7 @@ export const polygonModel: Model<PolygonContent> = {
     return lines.map((line) => ({ type: 'line', points: line }))
   },
   render({ content, stroke, target }) {
-    return target.strokePolyline([...content.points, content.points[0]], stroke)
+    return strokePolygon(target, content.points, stroke, content.dashArray)
   },
   useEdit(onEnd) {
     const [polygonEditOffset, setPolygonEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
@@ -50,7 +50,7 @@ export const polygonModel: Model<PolygonContent> = {
   },
   useCreate(type, onEnd, angleSnapEnabled) {
     const [polygon, setPolygon] = React.useState<Position[]>()
-    const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput, startSetSides } = usePolygonClickCreate(
+    const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
       type === 'polygon',
       setPolygon,
       (c) => onEnd([{ points: c, type: 'polygon' }]),
@@ -58,6 +58,10 @@ export const polygonModel: Model<PolygonContent> = {
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
+    let assistentContents: LineContent[] | undefined
+    if (startPosition && cursorPosition) {
+      assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
+    }
     return {
       input: polygonClickCreateInput,
       subcommand: type === 'polygon' ? <button onClick={startSetSides} style={{ position: 'relative' }}>set sides</button> : undefined,
@@ -68,6 +72,7 @@ export const polygonModel: Model<PolygonContent> = {
           contents.push({ points: polygon, type: 'polygon' })
         }
       },
+      assistentContents,
     }
   },
   getSnapPoints(content) {
@@ -94,4 +99,13 @@ function getPolygonModelLines(content: Omit<PolygonContent, "type">) {
 export function* iteratePolygonLines(points: Position[]) {
   yield* iteratePolylineLines(points)
   yield [points[points.length - 1], points[0]] as [Position, Position]
+}
+
+export function strokePolygon<T>(
+  target: ReactRenderTarget<T>,
+  points: Position[],
+  stroke: number,
+  dashArray?: number[],
+) {
+  return target.strokePolyline([...points, points[0]], stroke, dashArray)
 }

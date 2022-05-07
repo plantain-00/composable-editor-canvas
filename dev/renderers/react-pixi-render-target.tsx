@@ -1,7 +1,7 @@
 import { Graphics, Stage } from "@inlet/react-pixi"
 import * as PIXI from "pixi.js"
 import React from "react"
-import { Position, ReactRenderTarget } from "../../src"
+import { drawDashedPolyline, Position, ReactRenderTarget } from "../../src"
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: 'pixi',
@@ -23,8 +23,8 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   strokeRect(x, y, width, height, color, angle) {
     return <RectGraphic x={x} y={y} width={width} height={height} color={color} angle={angle} />
   },
-  strokePolyline(points, color) {
-    return <PolylineGraphic points={points} color={color} />
+  strokePolyline(points, color, dashArray) {
+    return <PolylineGraphic points={points} color={color} dashArray={dashArray} />
   },
   strokeCircle(cx, cy, r, color) {
     return <CircleGraphic cx={cx} cy={cy} r={r} color={color} />
@@ -61,18 +61,23 @@ function RectGraphic(props: {
 function PolylineGraphic(props: {
   points: Position[]
   color: number
+  dashArray?: number[]
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(1, props.color)
-    props.points.forEach((p, i) => {
-      if (i === 0) {
-        g.moveTo(p.x, p.y)
-      } else {
-        g.lineTo(p.x, p.y)
-      }
-    })
-  }, [props.points, props.color])
+    if (props.dashArray) {
+      drawDashedPolyline(g, props.points, props.dashArray)
+    } else {
+      props.points.forEach((p, i) => {
+        if (i === 0) {
+          g.moveTo(p.x, p.y)
+        } else {
+          g.lineTo(p.x, p.y)
+        }
+      })
+    }
+  }, [props.points, props.color, props.dashArray])
   return <Graphics draw={draw} />
 }
 

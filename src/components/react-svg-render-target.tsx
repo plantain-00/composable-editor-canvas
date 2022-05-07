@@ -31,11 +31,12 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
     />
   },
-  strokePolyline(points, color) {
+  strokePolyline(points, color, dashArray) {
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}
       stroke={getColorString(color)}
+      strokeDasharray={dashArray?.join(' ')}
       fill="none"
     />
   },
