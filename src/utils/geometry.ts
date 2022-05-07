@@ -347,6 +347,66 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number) {
   return ellipse.rx * ellipse.ry / Math.sqrt((ellipse.rx * Math.sin(angle)) ** 2 + (ellipse.ry * Math.cos(angle)) ** 2)
 }
 
+/**
+ * @public
+ */
+export function drawDashedPolyline(
+  g: { moveTo: (x: number, y: number) => void, lineTo: (x: number, y: number) => void },
+  points: Position[],
+  dashArray: number[],
+) {
+  let startDistance = 0
+  points.forEach((p, i) => {
+    if (i === 0) {
+      g.moveTo(p.x, p.y)
+    } else {
+      startDistance = drawDashedLine(g, points[i - 1], p, dashArray, startDistance)
+    }
+  })
+}
+
+/**
+ * @public
+ */
+export function drawDashedLine(
+  g: { moveTo: (x: number, y: number) => void, lineTo: (x: number, y: number) => void },
+  p1: Position,
+  p2: Position,
+  dashArray: number[],
+  startDistance = 0,
+) {
+  if (dashArray.length % 2 === 1) {
+    dashArray = [...dashArray, ...dashArray]
+  }
+  let distance = getTwoPointsDistance(p1, p2)
+  let p = p1
+  while (distance > 0) {
+    let offset = 0
+    for (let i = 0; i < dashArray.length; i++) {
+      let length = dashArray[i]
+      if (startDistance > 0) {
+        if (length <= startDistance) {
+          startDistance -= length
+          continue
+        }
+        length = length - startDistance
+        startDistance = 0
+      }
+      const operate = i % 2 === 0 ? 'lineTo' : 'moveTo'
+      if (length >= distance) {
+        g[operate](p2.x, p2.y)
+        return offset + distance
+      }
+      const end = getPointByLengthAndDirection(p, length, p2)
+      g[operate](end.x, end.y)
+      distance -= length
+      offset += length
+      p = end
+    }
+  }
+  return 0
+}
+
 export interface Position {
   x: number
   y: number

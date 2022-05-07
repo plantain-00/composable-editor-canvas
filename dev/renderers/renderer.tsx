@@ -16,14 +16,24 @@ export function Renderer(props: {
   const children: unknown[] = []
   props.contents.forEach((content, i) => {
     let color = 0x00ff00
-    if (props.selectedContents.includes(i)) {
+    const selected = props.selectedContents.includes(i)
+    if (selected) {
       color = 0xff0000
     } else if (props.hoveringContent === i) {
       color = 0x000000
     }
-    const ContentRender = getModel(content.type)?.render
-    if (ContentRender) {
-      children.push(ContentRender({ content, stroke: color, target }))
+    const model = getModel(content.type)
+    if (model) {
+      const ContentRender = model.render
+      if (ContentRender) {
+        children.push(ContentRender({ content, stroke: color, target }))
+      }
+      if (selected) {
+        const RenderIfSelected = getModel(content.type)?.renderIfSelected
+        if (RenderIfSelected) {
+          children.push(RenderIfSelected({ content, stroke: color, target }))
+        }
+      }
     }
   })
   return target.getResult(children, 800, 600, {

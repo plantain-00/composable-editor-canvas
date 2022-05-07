@@ -1,7 +1,8 @@
 import React from 'react'
 import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseClickCreate, useEllipseEdit } from '../../src'
-import { BaseContent, getAngleSnap, Model } from './model'
-import { iteratePolygonLines } from './polygon-model'
+import { LineContent } from './line-model'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
+import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type EllipseContent = BaseContent<'ellipse'> & Ellipse
 
@@ -26,11 +27,15 @@ export const ellipseModel: Model<EllipseContent> = {
     content.angle = 2 * angle - (content.angle ?? 0)
   },
   render({ content, stroke, target }) {
+    if (content.dashArray) {
+      const { points } = getLinesAndPointsFromCache(content, getLines)
+      return strokePolygon(target, points, stroke, content.dashArray)
+    }
     return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, stroke, content.angle)
   },
   useCreate(type, onEnd, angleSnapEnabled) {
     const [ellipseCreate, setEllipseCreate] = React.useState<Ellipse>()
-    const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput } = useEllipseClickCreate(
+    const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
       setEllipseCreate,
       (c) => onEnd([{ ...c, type: 'ellipse' }]),
@@ -38,6 +43,19 @@ export const ellipseModel: Model<EllipseContent> = {
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
     )
+    let assistentContents: LineContent[] | undefined
+    if (startPosition && cursorPosition) {
+      if (middlePosition) {
+        assistentContents = [{ type: 'line', points: [startPosition, middlePosition], dashArray: [4] }]
+        if (type === 'ellipse center') {
+          assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+        } else if (ellipseCreate) {
+          assistentContents.push({ type: 'line', points: [{ x: ellipseCreate.cx, y: ellipseCreate.cy }, cursorPosition], dashArray: [4] })
+        }
+      } else {
+        assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
+      }
+    }
     return {
       input: ellipseClickCreateInput,
       onClick: onEllipseClickCreateClick,
@@ -47,6 +65,7 @@ export const ellipseModel: Model<EllipseContent> = {
           contents.push({ type: 'ellipse', ...ellipseCreate })
         }
       },
+      assistentContents,
     }
   },
   useEdit(onEnd) {
@@ -79,19 +98,21 @@ export const ellipseModel: Model<EllipseContent> = {
       { ...rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content), type: 'endpoint' },
     ]
   },
-  getLines(content) {
-    const points: Position[] = []
-    for (let i = 0; i < lineSegmentCount; i++) {
-      const angle = angleDelta * i * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      points.push(rotatePositionByEllipseCenter({ x, y }, content))
-    }
-    return {
-      lines: Array.from(iteratePolygonLines(points)),
-      points,
-    }
-  },
+  getLines,
+}
+
+function getLines(content: Omit<EllipseContent, "type">) {
+  const points: Position[] = []
+  for (let i = 0; i < lineSegmentCount; i++) {
+    const angle = angleDelta * i * Math.PI / 180
+    const x = content.cx + content.rx * Math.cos(angle)
+    const y = content.cy + content.ry * Math.sin(angle)
+    points.push(rotatePositionByEllipseCenter({ x, y }, content))
+  }
+  return {
+    lines: Array.from(iteratePolygonLines(points)),
+    points,
+  }
 }
 
 function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent, "type">) {
@@ -99,4 +120,4 @@ function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent
 }
 
 const lineSegmentCount = 72
-const angleDelta = 360 / lineSegmentCount
+export const angleDelta = 360 / lineSegmentCount

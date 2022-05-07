@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, Position, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
 import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
-import { iteratePolygonLines } from './polygon-model'
+import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type RectContent = BaseContent<'rect'> & Region & {
   angle: number
@@ -32,6 +32,10 @@ export const rectModel: Model<RectContent> = {
     content.angle = 2 * angle - content.angle
   },
   render({ content, stroke, target }) {
+    if (content.dashArray) {
+      const { points } = getLinesAndPointsFromCache(content, getRectModelLines)
+      return strokePolygon(target, points, stroke, content.dashArray)
+    }
     return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
   },
   useEdit(onEnd) {

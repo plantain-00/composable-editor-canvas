@@ -14,7 +14,7 @@ export function useEllipseClickCreate(
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const { input, setCursorPosition, clearText } = useCursorInput(!!type, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(!!type, (e, text, cursorPosition) => {
     if (e.key === 'Enter' && type) {
       const position = text.split(',')
       if (!startPosition) {
@@ -84,6 +84,9 @@ export function useEllipseClickCreate(
   }
 
   return {
+    startPosition,
+    middlePosition,
+    cursorPosition,
     onEllipseClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!type) {
         return

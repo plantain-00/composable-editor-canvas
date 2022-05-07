@@ -22,7 +22,7 @@ export const lineModel: Model<LineContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   render({ content, stroke, target }) {
-    return target.strokePolyline(content.points, stroke)
+    return target.strokePolyline(content.points, stroke, content.dashArray)
   },
   useEdit(onEnd) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()

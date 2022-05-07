@@ -23,6 +23,7 @@ export const moveCommand: Command = {
             assistentContents: [
               {
                 type: 'line',
+                dashArray: [4],
                 points: [startPostion, { x: startPostion.x + moveOffset.x, y: startPostion.y + moveOffset.y }]
               },
             ]

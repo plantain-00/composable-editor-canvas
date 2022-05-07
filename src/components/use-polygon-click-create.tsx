@@ -15,7 +15,7 @@ export function usePolygonClickCreate(
   const [inputType, setInputType] = React.useState<'radius' | 'sides'>('radius')
   const [sides, setSides] = React.useState(6)
 
-  const { input, setCursorPosition, clearText } = useCursorInput(enabled, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(enabled, (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const r = +text
       if (!isNaN(r) && r > 0) {
@@ -58,6 +58,8 @@ export function usePolygonClickCreate(
   }
 
   return {
+    startPosition,
+    cursorPosition,
     onPolygonClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!enabled) {
         return

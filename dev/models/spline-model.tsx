@@ -25,7 +25,10 @@ export const splineModel: Model<SplineContent> = {
   },
   render({ content, stroke, target }) {
     const { points } = getLinesAndPointsFromCache(content, getSplineModelLines)
-    return target.strokePolyline(points, stroke)
+    return target.strokePolyline(points, stroke, content.dashArray)
+  },
+  renderIfSelected({ content, stroke, target }) {
+    return target.strokePolyline(content.points, stroke, [4])
   },
   useEdit(onEnd) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
@@ -65,6 +68,7 @@ export const splineModel: Model<SplineContent> = {
           contents.push({ points: splineCreate.points, type: 'spline' })
         }
       },
+      assistentContents: splineCreate ? [{ points: splineCreate.points, type: 'polyline', dashArray: [4] }] : undefined,
     }
   },
   getSnapPoints(content) {
