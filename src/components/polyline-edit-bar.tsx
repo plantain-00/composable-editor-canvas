@@ -7,6 +7,7 @@ export function PolylineEditBar(props: {
   scale?: number
   resizeSize?: number
   isPolygon?: boolean
+  midpointDisabled?: boolean
   onClick?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void
   onMouseDown?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void
 }) {
@@ -30,7 +31,7 @@ export function PolylineEditBar(props: {
         },
       })
     }
-    if (i !== points.length - 1) {
+    if (!props.midpointDisabled && i !== points.length - 1) {
       const nextPoint = points[i + 1]
       bars.push({
         pointIndexes: [i, i + 1],

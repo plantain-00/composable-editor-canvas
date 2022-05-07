@@ -222,6 +222,7 @@ export function PolylineEditBar(props: {
     scale?: number;
     resizeSize?: number;
     isPolygon?: boolean;
+    midpointDisabled?: boolean;
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[]) => void;
 }): JSX.Element;

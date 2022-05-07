@@ -436,6 +436,11 @@
   resolved "https://registry.yarnpkg.com/@types/argparse/-/argparse-1.0.38.tgz#a81fd8606d481f873a3800c6ebae4f1d768a56a9"
   integrity sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA==
 
+"@types/b-spline@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/b-spline/-/b-spline-2.0.0.tgz#8bdd6b6ccd9692f775039515c03899bc20e01fc7"
+  integrity sha512-qBWrZ3/jG28l3t/86ZAJbEApszSQJi0anokF8pUaN2006llZfTSDwXrTPk2RIEHxv8F4E1ZMHAJseKbu9wvVeA==
+
 "@types/body-parser@*":
   version "1.19.2"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.19.2.tgz#aea2059e28b7658639081347ac4fab3de166e6f0"
@@ -1125,6 +1130,11 @@ ava@3.15.0:
     update-notifier "^5.0.1"
     write-file-atomic "^3.0.3"
     yargs "^16.2.0"
+
+b-spline@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/b-spline/-/b-spline-2.0.2.tgz#964becb6e33de6b11bae1ba229c4477eab2e4426"
+  integrity sha512-RPhM4apTUkejCpKo9sQrOiMdy/rUua4n98oppafwAnT64ZwqJDDp+fUk9+5EBEQNtTS3CsWWFRPukqFM3sasZQ==
 
 balanced-match@^1.0.0:
   version "1.0.2"
