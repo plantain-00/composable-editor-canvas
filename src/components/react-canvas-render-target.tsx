@@ -76,6 +76,15 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
+  fillText(x, y, text, color, fontSize) {
+    return (ctx) => {
+      ctx.save()
+      ctx.fillStyle = getColorString(color)
+      ctx.font = `${fontSize}px monospace`
+      ctx.fillText(text, x, y)
+      ctx.restore()
+    }
+  },
 }
 
 function Canvas(props: {

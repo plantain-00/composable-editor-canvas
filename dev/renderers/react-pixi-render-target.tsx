@@ -1,7 +1,7 @@
-import { Graphics, Stage } from "@inlet/react-pixi"
+import { Graphics, Stage, Text } from "@inlet/react-pixi"
 import * as PIXI from "pixi.js"
 import React from "react"
-import { drawDashedPolyline, Position, ReactRenderTarget } from "../../src"
+import { drawDashedPolyline, getColorString, Position, ReactRenderTarget } from "../../src"
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: 'pixi',
@@ -34,6 +34,9 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   },
   strokeArc(cx, cy, r, startAngle, endAngle, color) {
     return <ArcGraphic cx={cx} cy={cy} r={r} startAngle={startAngle} endAngle={endAngle} color={color} />
+  },
+  fillText(x, y, text, color, fontSize) {
+    return <Text x={x} y={y - fontSize} text={text} style={{ fill: getColorString(color), fontSize, fontFamily: 'monospace' }} />
   },
 }
 

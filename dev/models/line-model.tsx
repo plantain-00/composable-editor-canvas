@@ -24,6 +24,9 @@ export const lineModel: Model<LineContent> = {
   render({ content, stroke, target }) {
     return target.strokePolyline(content.points, stroke, content.dashArray)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  },
   useEdit(onEnd) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
     const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd)

@@ -15,4 +15,5 @@ export interface ReactRenderTarget<T = JSX.Element> {
   strokeCircle(cx: number, cy: number, r: number, color: number): T
   strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): T
   strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number): T
+  fillText(x: number, y: number, text: string, color: number, fontSize: number): T
 }
