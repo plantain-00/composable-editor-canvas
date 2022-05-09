@@ -17,6 +17,7 @@ export interface Model<T> {
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position): void
   render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
+  renderOperator?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V>, text: string, fontSize: number }): V
   useEdit?(onEnd: () => void): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void
@@ -179,6 +180,7 @@ export function useSnap(enabled: boolean, delta = 5) {
   }
 
   return {
+    snapPoint,
     snapAssistentContents: assistentContents,
     getSnapPoint(p: { clientX: number, clientY: number }, contents: BaseContent[], types: string[]) {
       if (!enabled) {

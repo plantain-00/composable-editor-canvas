@@ -29,6 +29,9 @@ export const polygonModel: Model<PolygonContent> = {
   render({ content, stroke, target }) {
     return strokePolygon(target, content.points, stroke, content.dashArray)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  },
   useEdit(onEnd) {
     const [polygonEditOffset, setPolygonEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
     const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd)
@@ -50,12 +53,14 @@ export const polygonModel: Model<PolygonContent> = {
   },
   useCreate(type, onEnd, angleSnapEnabled) {
     const [polygon, setPolygon] = React.useState<Position[]>()
+    const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
     const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
       type === 'polygon',
       setPolygon,
       (c) => onEnd([{ points: c, type: 'polygon' }]),
       {
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        toEdge: createType === 'edge',
       },
     )
     let assistentContents: LineContent[] | undefined
@@ -64,7 +69,14 @@ export const polygonModel: Model<PolygonContent> = {
     }
     return {
       input: polygonClickCreateInput,
-      subcommand: type === 'polygon' ? <button onClick={startSetSides} style={{ position: 'relative' }}>set sides</button> : undefined,
+      subcommand: type === 'polygon'
+        ? (
+          <>
+            <button onClick={startSetSides} style={{ position: 'relative' }}>set sides</button>
+            <button onClick={() => setCreateType(createType === 'edge' ? 'point' : 'edge')} style={{ position: 'relative' }}>{createType}</button>
+          </>
+        )
+        : undefined,
       onClick: onPolygonClickCreateClick,
       onMove: onPolygonClickCreateMove,
       updatePreview(contents) {

@@ -5431,6 +5431,18 @@ write-file-atomic@^3.0.0, write-file-atomic@^3.0.3:
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
 
+ws-heartbeat@1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/ws-heartbeat/-/ws-heartbeat-1.2.0.tgz#52f68ba3b583e95b7a45929be3b326a8587e1387"
+  integrity sha512-HlN5j2LEFU5O3onX/poHEEwOduF4QYPWrY956CYe+nJQP4tU7aAM+8KciNFlZ1wDEX1/ZnLFP3QNMqnTgMmBkw==
+  dependencies:
+    ws "7"
+
+ws@7:
+  version "7.5.7"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.7.tgz#9e0ac77ee50af70d58326ecff7e85eb3fa375e67"
+  integrity sha512-KMvVuFzpKBuiIXW3E4u3mySRO2/mCHSyZDJQM5NQ9Q9KHWHWh0NHgfbRMLLrceUK5qAL4ytALJbpRMjixFZh8A==
+
 ws@^8.4.2:
   version "8.6.0"
   resolved "https://registry.yarnpkg.com/ws/-/ws-8.6.0.tgz#e5e9f1d9e7ff88083d0c0dd8281ea662a42c9c23"

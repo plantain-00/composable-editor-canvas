@@ -38,6 +38,10 @@ export const rectModel: Model<RectContent> = {
     }
     return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    const { points } = getLinesAndPointsFromCache(content, getRectModelLines)
+    return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+  },
   useEdit(onEnd) {
     const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
     const [info, setInfo] = React.useState<{ angle: number, index: number }>()

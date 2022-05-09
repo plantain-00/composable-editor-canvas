@@ -18,6 +18,10 @@ export const arcModel: Model<ArcContent> = {
     }
     return target.strokeArc(content.x, content.y, content.r, content.startAngle, content.endAngle, stroke)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    const { points } = getLinesAndPointsFromCache(content, getArcLines)
+    return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+  },
   getLines: getArcLines,
 }
 

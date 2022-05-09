@@ -329,7 +329,12 @@ export function rotatePositionByCenter(position: Position, center: Position, rot
 /**
  * @public
  */
-export function getPolygonPoints(point: Position, center: Position, sides: number) {
+export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean) {
+  if (toEdge) {
+    const length = getTwoPointsDistance(point, center) / Math.cos(Math.PI / sides)
+    point = rotatePositionByCenter(point, center, 180 / sides)
+    point = getPointByLengthAndDirection(center, length, point)
+  }
   const points = [point]
   for (let i = 1; i < sides; i++) {
     points.push(rotatePositionByCenter(point, center, 360 / sides * i))
@@ -405,6 +410,88 @@ export function drawDashedLine(
     }
   }
   return 0
+}
+
+function getValueBetween2PointsByPercent(n1: number, n2: number, percent: number) {
+  return n1 + ((n2 - n1) * percent)
+}
+
+/**
+ * @public
+ */
+export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number) {
+  const points: Position[] = []
+  for (let t = 1; t < segmentCount; t++) {
+    const i = t / segmentCount
+    const xa = getValueBetween2PointsByPercent(p1.x, p2.x, i)
+    const ya = getValueBetween2PointsByPercent(p1.y, p2.y, i)
+    const xb = getValueBetween2PointsByPercent(p2.x, p3.x, i)
+    const yb = getValueBetween2PointsByPercent(p2.y, p3.y, i)
+    const xc = getValueBetween2PointsByPercent(p3.x, p4.x, i)
+    const yc = getValueBetween2PointsByPercent(p3.y, p4.y, i)
+
+    // The Blue Line
+    const xm = getValueBetween2PointsByPercent(xa, xb, i)
+    const ym = getValueBetween2PointsByPercent(ya, yb, i)
+    const xn = getValueBetween2PointsByPercent(xb, xc, i)
+    const yn = getValueBetween2PointsByPercent(yb, yc, i)
+
+    // The Black Dot
+    const x = getValueBetween2PointsByPercent(xm, xn, i);
+    const y = getValueBetween2PointsByPercent(ym, yn, i);
+    points.push({ x, y })
+  }
+  return points
+}
+
+/**
+ * @public
+ */
+export function getBezierSplineControlPointsOfPoints(points: Position[]) {
+  const x = getBezierSplineControlPoints(points.map((p) => p.x))
+  const y = getBezierSplineControlPoints(points.map((p) => p.y))
+  return x.p1.map((_, i) => [{ x: x.p1[i], y: y.p1[i] }, { x: x.p2[i], y: y.p2[i] }] as const)
+}
+
+function getBezierSplineControlPoints(k: number[]) {
+  const p1: number[] = []
+  const p2: number[] = []
+  const n = k.length - 1;
+  const a: number[] = []
+  const b: number[] = []
+  const c: number[] = []
+  const r: number[] = []
+  a[0] = 0;
+  b[0] = 2;
+  c[0] = 1;
+  r[0] = k[0] + 2 * k[1];
+  for (let i = 1; i < n - 1; i++) {
+    a[i] = 1;
+    b[i] = 4;
+    c[i] = 1;
+    r[i] = 4 * k[i] + 2 * k[i + 1];
+  }
+  a[n - 1] = 2;
+  b[n - 1] = 7;
+  c[n - 1] = 0;
+  r[n - 1] = 8 * k[n - 1] + k[n];
+
+  for (let i = 1; i < n; i++) {
+    const m = a[i] / b[i - 1];
+    b[i] = b[i] - m * c[i - 1];
+    r[i] = r[i] - m * r[i - 1];
+  }
+
+  p1[n - 1] = r[n - 1] / b[n - 1];
+  for (let i = n - 2; i >= 0; --i)
+    p1[i] = (r[i] - c[i] * p1[i + 1]) / b[i];
+
+  for (let i = 0; i < n - 1; i++) {
+    p2[i] = 2 * k[i + 1] - p1[i + 1];
+  }
+
+  p2[n - 1] = 0.5 * (k[n] + p1[n - 1])
+  return { p1: p1, p2: p2 };
 }
 
 export interface Position {

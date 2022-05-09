@@ -1,11 +1,12 @@
 import React from 'react'
 import bspline from 'b-spline'
-import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
+import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
 import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
 
 export type SplineContent = BaseContent<'spline'> & {
   points: Position[]
+  fitting?: boolean
 }
 
 export const splineModel: Model<SplineContent> = {
@@ -30,6 +31,9 @@ export const splineModel: Model<SplineContent> = {
   renderIfSelected({ content, stroke, target }) {
     return target.strokePolyline(content.points, stroke, [4])
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  },
   useEdit(onEnd) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
     const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd)
@@ -52,9 +56,9 @@ export const splineModel: Model<SplineContent> = {
   useCreate(type, onEnd, angleSnapEnabled) {
     const [splineCreate, setSplineCreate] = React.useState<{ points: Position[] }>()
     const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
-      type === 'spline',
+      type === 'spline' || type === 'spline fitting',
       (c) => setSplineCreate(c ? { points: c } : undefined),
-      (c) => onEnd([{ points: c, type: 'spline' }]),
+      (c) => onEnd([{ points: c, type: 'spline', fitting: type === 'spline fitting' }]),
       {
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
       },
@@ -65,7 +69,7 @@ export const splineModel: Model<SplineContent> = {
       onMove: onLineClickCreateMove,
       updatePreview(contents) {
         if (splineCreate) {
-          contents.push({ points: splineCreate.points, type: 'spline' })
+          contents.push({ points: splineCreate.points, type: 'spline', fitting: type === 'spline fitting' })
         }
       },
       assistentContents: splineCreate ? [{ points: splineCreate.points, type: 'polyline', dashArray: [4] }] : undefined,
@@ -81,20 +85,31 @@ function getSplineModelLines(content: Omit<SplineContent, "type">) {
   const inputPoints = content.points.map((p) => [p.x, p.y])
   let points: Position[] = []
   if (inputPoints.length > 2) {
-    const degree = 2
-    const knots: number[] = []
-    for (let i = 0; i < inputPoints.length + degree + 1; i++) {
-      if (i < degree + 1) {
-        knots.push(0)
-      } else if (i < inputPoints.length) {
-        knots.push(i - degree)
-      } else {
-        knots.push(inputPoints.length - degree)
+    if (content.fitting) {
+      const controlPoints = getBezierSplineControlPointsOfPoints(content.points)
+      for (let i = 0; i < controlPoints.length; i++) {
+        points.push(
+          content.points[i],
+          ...getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount),
+        )
       }
-    }
-    for (let t = 0; t <= splineSegmentCount; t++) {
-      const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
-      points.push({ x: p[0], y: p[1] })
+      points.push(content.points[content.points.length - 1])
+    } else {
+      const degree = 2
+      const knots: number[] = []
+      for (let i = 0; i < inputPoints.length + degree + 1; i++) {
+        if (i < degree + 1) {
+          knots.push(0)
+        } else if (i < inputPoints.length) {
+          knots.push(i - degree)
+        } else {
+          knots.push(inputPoints.length - degree)
+        }
+      }
+      for (let t = 0; t <= splineSegmentCount; t++) {
+        const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
+        points.push({ x: p[0], y: p[1] })
+      }
     }
   } else {
     points = content.points

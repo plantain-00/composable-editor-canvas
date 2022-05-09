@@ -64,6 +64,9 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       fill="none"
     />
   },
+  fillText(x, y, text, color, fontSize) {
+    return <text x={x} y={y} style={{ fill: getColorString(color), fontSize: `${fontSize}px`, fontFamily: 'monospace' }}>{text}</text>
+  },
 }
 
 function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {

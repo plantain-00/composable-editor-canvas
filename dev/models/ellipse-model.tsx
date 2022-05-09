@@ -33,6 +33,9 @@ export const ellipseModel: Model<EllipseContent> = {
     }
     return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, stroke, content.angle)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    return target.fillText(content.cx, content.cy, text, stroke, fontSize)
+  },
   useCreate(type, onEnd, angleSnapEnabled) {
     const [ellipseCreate, setEllipseCreate] = React.useState<Ellipse>()
     const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(

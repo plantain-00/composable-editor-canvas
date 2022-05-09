@@ -31,6 +31,9 @@ export const circleModel: Model<CircleContent> = {
     }
     return target.strokeCircle(content.x, content.y, content.r, stroke)
   },
+  renderOperator({ content, stroke, target, text, fontSize }) {
+    return target.fillText(content.x, content.y, text, stroke, fontSize)
+  },
   useEdit(onEnd) {
     const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
     const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, onEnd)

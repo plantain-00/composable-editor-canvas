@@ -8,6 +8,7 @@ export function usePolygonClickCreate(
   setPolygon: (polygon?: Position[]) => void,
   onEnd: (polygon: Position[]) => void,
   options?: Partial<{
+    toEdge: boolean
     getAngleSnap: (angle: number) => number | undefined
   }>,
 ) {
@@ -22,7 +23,7 @@ export function usePolygonClickCreate(
         if (inputType === 'radius') {
           if (startPosition) {
             const point = getPointByLengthAndDirection(startPosition, r, cursorPosition)
-            onEnd(getPolygonPoints(point, startPosition, sides))
+            onEnd(getPolygonPoints(point, startPosition, sides, options?.toEdge))
             reset()
           }
         } else if (inputType === 'sides' && Number.isInteger(r) && r >= 3) {
@@ -30,7 +31,7 @@ export function usePolygonClickCreate(
           setInputType('radius')
           clearText()
           if (startPosition) {
-            setPolygon(getPolygonPoints(cursorPosition, startPosition, r))
+            setPolygon(getPolygonPoints(cursorPosition, startPosition, r, options?.toEdge))
           }
         }
       }
@@ -69,7 +70,7 @@ export function usePolygonClickCreate(
         setStartPosition({ x: e.clientX, y: e.clientY })
       } else {
         const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
-        onEnd(getPolygonPoints(newPosition, startPosition, sides))
+        onEnd(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
         reset()
       }
     },
@@ -80,7 +81,7 @@ export function usePolygonClickCreate(
       const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
       setCursorPosition(newPosition)
       if (startPosition) {
-        setPolygon(getPolygonPoints(newPosition, startPosition, sides))
+        setPolygon(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
       }
     },
     polygonClickCreateInput: input,

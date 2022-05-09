@@ -6,6 +6,7 @@
 
 /// <reference types="react" />
 
+import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
 import { WritableDraft } from 'immer/dist/types/types-external';
 
@@ -141,6 +142,18 @@ export interface GeneralFormLine {
 }
 
 // @public (undocumented)
+export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number): Position[];
+
+// @public (undocumented)
+export function getBezierSplineControlPointsOfPoints(points: Position[]): (readonly [{
+    readonly x: number;
+    readonly y: number;
+}, {
+    readonly x: number;
+    readonly y: number;
+}])[];
+
+// @public (undocumented)
 export function getColorString(color: number): string;
 
 // @public (undocumented)
@@ -177,7 +190,7 @@ export function getPointByLengthAndDirection(startPoint: Position, length: numbe
 };
 
 // @public (undocumented)
-export function getPolygonPoints(point: Position, center: Position, sides: number): Position[];
+export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
 export function getRegion(p1: Position, p2: Position): Region;
@@ -252,6 +265,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
 
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
+    // (undocumented)
+    fillText(x: number, y: number, text: string, color: number, fontSize: number): T;
     // (undocumented)
     getResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
         style: React.CSSProperties;
@@ -504,7 +519,27 @@ export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]
 };
 
 // @public (undocumented)
+export function usePatchBasedUndoRedo<T, P>(defaultState: T, operator: P, options?: Partial<{
+    onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void;
+}>): {
+    state: T;
+    applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => T;
+    applyPatchFromSelf: (patches: Patch[], reversePatches: Patch[]) => T;
+    setState: (recipe: (draft: WritableDraft<T>) => void) => T;
+    canUndo: boolean;
+    canRedo: boolean;
+    undo: (e?: {
+        preventDefault(): void;
+    } | undefined) => void;
+    redo: (e?: {
+        preventDefault(): void;
+    } | undefined) => void;
+    stateIndex: number;
+};
+
+// @public (undocumented)
 export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void, options?: Partial<{
+    toEdge: boolean;
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
     startPosition: Position | undefined;
