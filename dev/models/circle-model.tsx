@@ -26,7 +26,7 @@ export const circleModel: Model<CircleContent> = {
   },
   render({ content, stroke, target }) {
     if (content.dashArray) {
-      const { points } = getLinesAndPointsFromCache(content, getLines)
+      const { points } = getCircleLines(content)
       return target.strokePolyline(points, stroke, content.dashArray)
     }
     return target.strokeCircle(content.x, content.y, content.r, stroke)
@@ -95,6 +95,8 @@ export const circleModel: Model<CircleContent> = {
   },
 }
 
-function getLines(content: Omit<CircleContent, "type">) {
-  return getArcLines({ ...content, startAngle: 0, endAngle: 360 })
+function getCircleLines(content: Omit<CircleContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    return getArcLines({ ...content, startAngle: 0, endAngle: 360 })
+  })
 }

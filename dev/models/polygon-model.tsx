@@ -23,7 +23,7 @@ export const polygonModel: Model<PolygonContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   explode(content) {
-    const { lines } = getLinesAndPointsFromCache(content, getPolygonModelLines)
+    const { lines } = getPolygonLines(content)
     return lines.map((line) => ({ type: 'line', points: line }))
   },
   render({ content, stroke, target }) {
@@ -88,7 +88,7 @@ export const polygonModel: Model<PolygonContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getLinesAndPointsFromCache(content, getPolygonModelLines)
+    const { points, lines } = getPolygonLines(content)
     return [
       ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
       ...lines.map(([start, end]) => ({
@@ -98,14 +98,16 @@ export const polygonModel: Model<PolygonContent> = {
       })),
     ]
   },
-  getLines: getPolygonModelLines,
+  getLines: getPolygonLines,
 }
 
-function getPolygonModelLines(content: Omit<PolygonContent, "type">) {
-  return {
-    lines: Array.from(iteratePolygonLines(content.points)),
-    points: content.points,
-  }
+function getPolygonLines(content: Omit<PolygonContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    return {
+      lines: Array.from(iteratePolygonLines(content.points)),
+      points: content.points,
+    }
+  })
 }
 
 export function* iteratePolygonLines(points: Position[]) {

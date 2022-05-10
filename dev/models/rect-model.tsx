@@ -20,7 +20,7 @@ export const rectModel: Model<RectContent> = {
     content.angle += angle
   },
   explode(content) {
-    const { lines } = getLinesAndPointsFromCache(content, getRectModelLines)
+    const { lines } = getRectLines(content)
     return lines.map((line) => ({ type: 'line', points: line }))
   },
   mirror(content, p1, p2) {
@@ -33,13 +33,13 @@ export const rectModel: Model<RectContent> = {
   },
   render({ content, stroke, target }) {
     if (content.dashArray) {
-      const { points } = getLinesAndPointsFromCache(content, getRectModelLines)
+      const { points } = getRectLines(content)
       return strokePolygon(target, points, stroke, content.dashArray)
     }
     return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
   },
   renderOperator({ content, stroke, target, text, fontSize }) {
-    const { points } = getLinesAndPointsFromCache(content, getRectModelLines)
+    const { points } = getRectLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
   useEdit(onEnd) {
@@ -125,7 +125,7 @@ export const rectModel: Model<RectContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getLinesAndPointsFromCache(content, getRectModelLines)
+    const { points, lines } = getRectLines(content)
     return [
       { x: content.x, y: content.y, type: 'center' },
       ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
@@ -136,18 +136,20 @@ export const rectModel: Model<RectContent> = {
       })),
     ]
   },
-  getLines: getRectModelLines,
+  getLines: getRectLines,
 }
 
-function getRectModelLines(content: Omit<RectContent, "type">) {
-  const points = [
-    { x: content.x - content.width / 2, y: content.y - content.height / 2 },
-    { x: content.x + content.width / 2, y: content.y - content.height / 2 },
-    { x: content.x + content.width / 2, y: content.y + content.height / 2 },
-    { x: content.x - content.width / 2, y: content.y + content.height / 2 },
-  ].map((p) => rotatePositionByCenter(p, content, -content.angle))
-  return {
-    lines: Array.from(iteratePolygonLines(points)),
-    points,
-  }
+function getRectLines(content: Omit<RectContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    const points = [
+      { x: content.x - content.width / 2, y: content.y - content.height / 2 },
+      { x: content.x + content.width / 2, y: content.y - content.height / 2 },
+      { x: content.x + content.width / 2, y: content.y + content.height / 2 },
+      { x: content.x - content.width / 2, y: content.y + content.height / 2 },
+    ].map((p) => rotatePositionByCenter(p, content, -content.angle))
+    return {
+      lines: Array.from(iteratePolygonLines(points)),
+      points,
+    }
+  })
 }
