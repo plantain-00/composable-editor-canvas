@@ -70,7 +70,7 @@ export const lineModel: Model<LineContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getLinesAndPointsFromCache(content, getLineModelLines)
+    const { points, lines } = getPolylineLines(content)
     return [
       ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
       ...lines.map(([start, end]) => ({
@@ -80,14 +80,16 @@ export const lineModel: Model<LineContent> = {
       })),
     ]
   },
-  getLines: getLineModelLines,
+  getLines: getPolylineLines,
 }
 
-export function getLineModelLines(content: Omit<LineContent, "type">) {
-  return {
-    lines: Array.from(iteratePolylineLines(content.points)),
-    points: content.points,
-  }
+export function getPolylineLines(content: Omit<LineContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    return {
+      lines: Array.from(iteratePolylineLines(content.points)),
+      points: content.points,
+    }
+  })
 }
 
 export function* iteratePolylineLines(points: Position[]) {

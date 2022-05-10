@@ -25,7 +25,7 @@ export const splineModel: Model<SplineContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   render({ content, stroke, target }) {
-    const { points } = getLinesAndPointsFromCache(content, getSplineModelLines)
+    const { points } = getSplineLines(content)
     return target.strokePolyline(points, stroke, content.dashArray)
   },
   renderIfSelected({ content, stroke, target }) {
@@ -78,46 +78,48 @@ export const splineModel: Model<SplineContent> = {
   getSnapPoints(content) {
     return content.points.map((p) => ({ ...p, type: 'endpoint' as const }))
   },
-  getLines: getSplineModelLines,
+  getLines: getSplineLines,
 }
 
-function getSplineModelLines(content: Omit<SplineContent, "type">) {
-  const inputPoints = content.points.map((p) => [p.x, p.y])
-  let points: Position[] = []
-  if (inputPoints.length > 2) {
-    if (content.fitting) {
-      const controlPoints = getBezierSplineControlPointsOfPoints(content.points)
-      for (let i = 0; i < controlPoints.length; i++) {
-        points.push(
-          content.points[i],
-          ...getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount),
-        )
-      }
-      points.push(content.points[content.points.length - 1])
-    } else {
-      const degree = 2
-      const knots: number[] = []
-      for (let i = 0; i < inputPoints.length + degree + 1; i++) {
-        if (i < degree + 1) {
-          knots.push(0)
-        } else if (i < inputPoints.length) {
-          knots.push(i - degree)
-        } else {
-          knots.push(inputPoints.length - degree)
+function getSplineLines(content: Omit<SplineContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    const inputPoints = content.points.map((p) => [p.x, p.y])
+    let points: Position[] = []
+    if (inputPoints.length > 2) {
+      if (content.fitting) {
+        const controlPoints = getBezierSplineControlPointsOfPoints(content.points)
+        for (let i = 0; i < controlPoints.length; i++) {
+          points.push(
+            content.points[i],
+            ...getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount),
+          )
+        }
+        points.push(content.points[content.points.length - 1])
+      } else {
+        const degree = 2
+        const knots: number[] = []
+        for (let i = 0; i < inputPoints.length + degree + 1; i++) {
+          if (i < degree + 1) {
+            knots.push(0)
+          } else if (i < inputPoints.length) {
+            knots.push(i - degree)
+          } else {
+            knots.push(inputPoints.length - degree)
+          }
+        }
+        for (let t = 0; t <= splineSegmentCount; t++) {
+          const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
+          points.push({ x: p[0], y: p[1] })
         }
       }
-      for (let t = 0; t <= splineSegmentCount; t++) {
-        const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
-        points.push({ x: p[0], y: p[1] })
-      }
+    } else {
+      points = content.points
     }
-  } else {
-    points = content.points
-  }
-  return {
-    lines: Array.from(iteratePolylineLines(points)),
-    points,
-  }
+    return {
+      lines: Array.from(iteratePolylineLines(points)),
+      points,
+    }
+  })
 }
 
 const splineSegmentCount = 100

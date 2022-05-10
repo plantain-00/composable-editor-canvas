@@ -28,7 +28,7 @@ export const ellipseModel: Model<EllipseContent> = {
   },
   render({ content, stroke, target }) {
     if (content.dashArray) {
-      const { points } = getLinesAndPointsFromCache(content, getLines)
+      const { points } = getEllipseLines(content)
       return strokePolygon(target, points, stroke, content.dashArray)
     }
     return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, stroke, content.angle)
@@ -101,21 +101,23 @@ export const ellipseModel: Model<EllipseContent> = {
       { ...rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content), type: 'endpoint' },
     ]
   },
-  getLines,
+  getLines: getEllipseLines,
 }
 
-function getLines(content: Omit<EllipseContent, "type">) {
-  const points: Position[] = []
-  for (let i = 0; i < lineSegmentCount; i++) {
-    const angle = angleDelta * i * Math.PI / 180
-    const x = content.cx + content.rx * Math.cos(angle)
-    const y = content.cy + content.ry * Math.sin(angle)
-    points.push(rotatePositionByEllipseCenter({ x, y }, content))
-  }
-  return {
-    lines: Array.from(iteratePolygonLines(points)),
-    points,
-  }
+function getEllipseLines(content: Omit<EllipseContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    const points: Position[] = []
+    for (let i = 0; i < lineSegmentCount; i++) {
+      const angle = angleDelta * i * Math.PI / 180
+      const x = content.cx + content.rx * Math.cos(angle)
+      const y = content.cy + content.ry * Math.sin(angle)
+      points.push(rotatePositionByEllipseCenter({ x, y }, content))
+    }
+    return {
+      lines: Array.from(iteratePolygonLines(points)),
+      points,
+    }
+  })
 }
 
 function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent, "type">) {

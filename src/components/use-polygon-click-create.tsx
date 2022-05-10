@@ -47,6 +47,12 @@ export function usePolygonClickCreate(
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition])
 
+  React.useEffect(() => {
+    if (startPosition && cursorPosition) {
+      setPolygon(getPolygonPoints(cursorPosition, startPosition, sides, options?.toEdge))
+    }
+  }, [options?.toEdge])
+
   const getAngleSnapPosition = (newPosition: { x: number, y: number }) => {
     if (options?.getAngleSnap && startPosition) {
       const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI

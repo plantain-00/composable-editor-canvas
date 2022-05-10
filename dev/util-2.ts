@@ -1,6 +1,6 @@
 import { getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from '../src'
 import { getCommand } from './commands/command'
-import { BaseContent, getLinesAndPointsFromCache, getModel } from './models/model'
+import { BaseContent, getModel } from './models/model'
 
 export function getContentByClickPosition(
   contents: BaseContent[],
@@ -18,7 +18,7 @@ export function getContentByClickPosition(
           return i
         }
       } else if (model?.getLines) {
-        const lines = getLinesAndPointsFromCache(content, model.getLines).lines
+        const lines = model.getLines(content).lines
         for (const line of lines) {
           const minDistance = getPointAndLineMinimumDistance(position, ...line)
           if (minDistance <= delta) {
@@ -59,7 +59,7 @@ export function getContentsByClickTwoPositions(
           }
         }
       } else if (model?.getLines) {
-        const { lines, points } = getLinesAndPointsFromCache(content, model.getLines)
+        const { lines, points } = model.getLines(content)
         if (points.every((p) => pointIsInRegion(p, region))) {
           result.push(i)
         }

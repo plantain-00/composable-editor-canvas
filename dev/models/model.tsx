@@ -238,10 +238,10 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
 const linesCache = new WeakMap<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[] }>()
 const snapPointsCache = new WeakMap<Omit<BaseContent, 'type'>, SnapPoint[]>()
 
-export function getLinesAndPointsFromCache<T>(content: Omit<T, 'type'>, func: (content: Omit<T, 'type'>) => { lines: [Position, Position][], points: Position[] }) {
+export function getLinesAndPointsFromCache<T>(content: Omit<T, 'type'>, func: () => { lines: [Position, Position][], points: Position[] }) {
   let result = linesCache.get(content)
   if (!result) {
-    result = func(content)
+    result = func()
     linesCache.set(content, result)
   }
   return result
@@ -263,16 +263,16 @@ function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent
     if (model1.getCircle && model2.getCircle) {
       yield* getTwoCircleIntersectionPoints(model1.getCircle(content1), model1.getCircle(content2))
     } else if (model1.getCircle && model2.getLines) {
-      for (const line of getLinesAndPointsFromCache(content2, model2.getLines).lines) {
+      for (const line of model2.getLines(content2).lines) {
         yield* getLineSegmentCircleIntersectionPoints(...line, model1.getCircle(content1))
       }
     } else if (model1.getLines && model2.getCircle) {
-      for (const line of getLinesAndPointsFromCache(content1, model1.getLines).lines) {
+      for (const line of model1.getLines(content1).lines) {
         yield* getLineSegmentCircleIntersectionPoints(...line, model2.getCircle(content2))
       }
     } else if (model1.getLines && model2.getLines) {
-      for (const line1 of getLinesAndPointsFromCache(content1, model1.getLines).lines) {
-        for (const line2 of getLinesAndPointsFromCache(content2, model2.getLines).lines) {
+      for (const line1 of model1.getLines(content1).lines) {
+        for (const line2 of model2.getLines(content2).lines) {
           const point = getTwoLinesIntersectionPoint(...line1, ...line2)
           if (point) {
             yield point

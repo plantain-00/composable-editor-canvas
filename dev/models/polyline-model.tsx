@@ -1,13 +1,13 @@
 import React from 'react'
 import { Position, useLineClickCreate } from '../../src'
-import { getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
-import { getLineModelLines, LineContent, lineModel } from './line-model'
+import { getAngleSnap, Model } from './model'
+import { getPolylineLines, LineContent, lineModel } from './line-model'
 
 export const polylineModel: Model<LineContent> = {
   ...lineModel,
   type: 'polyline',
   explode(content) {
-    const { lines } = getLinesAndPointsFromCache(content, getLineModelLines)
+    const { lines } = getPolylineLines(content)
     return lines.map((line) => ({ type: 'line', points: line }))
   },
   useCreate(type, onEnd, angleSnapEnabled) {
