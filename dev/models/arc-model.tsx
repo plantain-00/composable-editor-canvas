@@ -1,7 +1,10 @@
-import { Arc, Position } from '../../src'
+import React from 'react'
+import { Arc, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate } from '../../src'
+import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
-import { iteratePolylineLines } from './line-model'
+import { iteratePolylineLines, LineContent } from './line-model'
 import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { PolygonContent } from './polygon-model'
 
 export type ArcContent = BaseContent<'arc'> & Arc
 
@@ -10,6 +13,24 @@ export const arcModel: Model<ArcContent> = {
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
+  },
+  rotate(content, center, angle) {
+    const p = rotatePositionByCenter(content, center, -angle)
+    content.x = p.x
+    content.y = p.y
+    content.startAngle += angle
+    content.endAngle += angle
+  },
+  mirror(content, p1, p2) {
+    const line = twoPointLineToGeneralFormLine(p1, p2)
+    const p = getSymmetryPoint(content, line)
+    content.x = p.x
+    content.y = p.y
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
+    const startAngle = 2 * angle - content.endAngle
+    const endAngle = 2 * angle - content.startAngle
+    content.startAngle = startAngle
+    content.endAngle = endAngle
   },
   render({ content, stroke, target }) {
     if (content.dashArray) {
@@ -21,6 +42,82 @@ export const arcModel: Model<ArcContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     const { points } = getArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+  },
+  useCreate(type, onEnd) {
+    const [circleArcCreate, setCircleArcCreate] = React.useState<Arc>()
+    const { circleCreate, onCircleArcClickCreateClick, onCircleArcClickCreateMove, circleArcClickCreateInput, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
+      type === 'circle arc' ? 'center radius' : undefined,
+      setCircleArcCreate,
+      (c) => onEnd([{ ...c, type: 'arc' }]),
+    )
+    const assistentContents: (LineContent | PolygonContent | CircleContent)[] = []
+    if (startPosition && cursorPosition) {
+      if (middlePosition) {
+        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
+      } else {
+        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+      }
+    }
+    if (circleArcCreate) {
+      assistentContents.push({ type: 'circle', ...circleArcCreate, dashArray: [4] })
+      if (circleArcCreate.startAngle !== circleArcCreate.endAngle) {
+        assistentContents.push(
+          {
+            type: 'line', points: [
+              {
+                x: circleArcCreate.x + circleArcCreate.r * Math.cos(circleArcCreate.startAngle / 180 * Math.PI),
+                y: circleArcCreate.y + circleArcCreate.r * Math.sin(circleArcCreate.startAngle / 180 * Math.PI)
+              },
+              {
+                x: circleArcCreate.x,
+                y: circleArcCreate.y
+              },
+            ],
+            dashArray: [4]
+          },
+          {
+            type: 'line', points: [
+              {
+                x: circleArcCreate.x,
+                y: circleArcCreate.y
+              },
+              {
+                x: circleArcCreate.x + circleArcCreate.r * Math.cos(circleArcCreate.endAngle / 180 * Math.PI),
+                y: circleArcCreate.y + circleArcCreate.r * Math.sin(circleArcCreate.endAngle / 180 * Math.PI)
+              },
+            ],
+            dashArray: [4]
+          },
+        )
+      }
+    } else if (circleCreate) {
+      assistentContents.push({ type: 'circle', ...circleCreate, dashArray: [4] })
+      if (cursorPosition) {
+        assistentContents.push({ type: 'line', points: [circleCreate, cursorPosition], dashArray: [4] })
+      }
+    }
+    return {
+      input: circleArcClickCreateInput,
+      onClick: onCircleArcClickCreateClick,
+      onMove: onCircleArcClickCreateMove,
+      updatePreview(contents) {
+        if (circleArcCreate && circleArcCreate.startAngle !== circleArcCreate.endAngle) {
+          contents.push({ type: 'arc', ...circleArcCreate })
+        }
+      },
+      assistentContents,
+    }
+  },
+  getSnapPoints(content) {
+    const startAngle = content.startAngle / 180 * Math.PI
+    const endAngle = content.endAngle / 180 * Math.PI
+    const middleAngle = (startAngle + endAngle) / 2
+    return [
+      { x: content.x, y: content.y, type: 'center' },
+      { x: content.x + content.r * Math.cos(startAngle), y: content.y + content.r * Math.sin(startAngle), type: 'endpoint' },
+      { x: content.x + content.r * Math.cos(endAngle), y: content.y + content.r * Math.sin(endAngle), type: 'endpoint' },
+      { x: content.x + content.r * Math.cos(middleAngle), y: content.y + content.r * Math.sin(middleAngle), type: 'midpoint' },
+    ]
   },
   getLines: getArcLines,
 }

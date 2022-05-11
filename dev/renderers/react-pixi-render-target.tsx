@@ -13,6 +13,7 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
           backgroundColor: 0xffffff,
           width,
           height,
+          antialias: true,
         }}
         {...attributes}
       >
