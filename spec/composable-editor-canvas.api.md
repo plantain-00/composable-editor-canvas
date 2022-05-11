@@ -39,6 +39,29 @@ export interface Circle extends Position {
 }
 
 // @public (undocumented)
+export function CircleArcEditBar(props: {
+    x: number;
+    y: number;
+    r: number;
+    startAngle: number;
+    endAngle: number;
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'start angle' | 'end angle' | 'radius', cursor: React_2.CSSProperties['cursor']) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'start angle' | 'end angle' | 'radius', cursor: React_2.CSSProperties['cursor']) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export interface CircleArcEditData<T = void> extends Arc {
+    // (undocumented)
+    cursor: React_2.CSSProperties['cursor'];
+    // (undocumented)
+    data?: T;
+    // (undocumented)
+    type: 'center' | 'start angle' | 'end angle' | 'radius';
+}
+
+// @public (undocumented)
 export function CircleEditBar(props: {
     x: number;
     y: number;
@@ -382,6 +405,14 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
         clientY: number;
     }): void;
     circleArcClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useCircleArcEdit<T = void>(setCircleOffset: (offset: Arc & {
+    data?: T;
+}) => void, onEditEnd: () => void): {
+    onStartEditCircle(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: CircleArcEditData<T>): void;
+    circleEditMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Arc, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate } from '../../src'
+import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate, useCircleArcEdit } from '../../src'
 import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
@@ -42,6 +42,31 @@ export const arcModel: Model<ArcContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     const { points } = getArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+  },
+  useEdit(onEnd) {
+    const [circleEditOffset, setCircleEditOffset] = React.useState<Arc & { data?: number }>({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
+    const { onStartEditCircle, circleEditMask } = useCircleArcEdit<number>(setCircleEditOffset, onEnd)
+    return {
+      mask: circleEditMask,
+      updatePreview(contents) {
+        if (circleEditOffset.data !== undefined) {
+          const content = contents[circleEditOffset.data]
+          if (content.type === 'arc') {
+            content.x += circleEditOffset.x
+            content.y += circleEditOffset.y
+            content.r += circleEditOffset.r
+            content.startAngle += circleEditOffset.startAngle
+            content.endAngle += circleEditOffset.endAngle
+            if (content.endAngle < content.startAngle) {
+              content.endAngle += 360
+            }
+          }
+        }
+      },
+      editBar({ content, index }) {
+        return <CircleArcEditBar {...content} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+      },
+    }
   },
   useCreate(type, onEnd) {
     const [circleArcCreate, setCircleArcCreate] = React.useState<Arc>()
