@@ -131,7 +131,7 @@ export default () => {
           setOperations={setOperations}
         />
       )}
-      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
       {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
       {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>

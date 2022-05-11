@@ -80,6 +80,7 @@ export function useCircleClickCreate(
     startPosition,
     middlePosition,
     cursorPosition,
+    setCursorPosition,
     onCircleClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!type) {
         return

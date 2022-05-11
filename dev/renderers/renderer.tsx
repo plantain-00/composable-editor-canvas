@@ -22,22 +22,20 @@ export function Renderer(props: {
     }
     const OperatorRender = model.renderOperator
     let color = 0x00ff00
+    const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
     const selected = props.selectedContents.includes(i)
     if (selected) {
       color = 0xff0000
-      if (OperatorRender) {
-        children.push(OperatorRender({ content, stroke: color, target, text: 'me', fontSize: 16 }))
-      }
     } else if (props.hoveringContent === i) {
       color = 0x000000
-    } else {
-      const othersSelectedContents = props.othersSelectedContents.filter((s) => s.selection.includes(i))
-      if (othersSelectedContents.length > 0) {
-        color = 0x0000ff
-        if (OperatorRender) {
-          children.push(OperatorRender({ content, stroke: color, target, text: othersSelectedContents.map((c) => c.operator).join(','), fontSize: 16 }))
-        }
-      }
+    } else if (operators.length > 0) {
+      color = 0x0000ff
+    }
+    if (selected) {
+      operators.unshift('me')
+    }
+    if (OperatorRender && operators.length > 0) {
+      children.push(OperatorRender({ content, stroke: color, target, text: operators.join(','), fontSize: 16 }))
     }
     const ContentRender = model.render
     if (ContentRender) {

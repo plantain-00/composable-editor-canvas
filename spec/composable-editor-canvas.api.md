@@ -368,10 +368,28 @@ export interface TwoPointsFormRegion {
 }
 
 // @public (undocumented)
+export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircleArc: (arc?: Arc) => void, onEnd: (arc: Arc) => void): {
+    circleCreate: Circle | undefined;
+    startPosition: Position | undefined;
+    middlePosition: Position | undefined;
+    cursorPosition: Position | undefined;
+    onCircleArcClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onCircleArcClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    circleArcClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
+    setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     onCircleClickCreateClick(e: {
         clientX: number;
         clientY: number;
