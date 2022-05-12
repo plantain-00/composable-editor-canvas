@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { useEllipseClickCreate, useKey } from "."
-import { Ellipse, EllipseArc, rotatePositionByCenter } from "../utils"
+import { useEllipseClickCreate, useKey } from ".."
+import { Ellipse, EllipseArc, rotatePositionByCenter } from "../../utils"
 
 export function useEllipseArcClickCreate(
   type: 'ellipse center' | 'ellipse endpoint' | undefined,

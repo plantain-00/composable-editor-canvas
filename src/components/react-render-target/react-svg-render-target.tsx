@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ReactRenderTarget } from "."
+import { ReactRenderTarget } from ".."
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',

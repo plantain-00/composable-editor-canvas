@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from "."
-import { getPointByLengthAndDirection, getPolygonPoints, Position, rotatePositionByCenter } from "../utils"
+import { useCursorInput, useKey } from ".."
+import { getPointByLengthAndDirection, getPolygonPoints, Position, rotatePositionByCenter } from "../../utils"
 
 export function usePolygonClickCreate(
   enabled: boolean,

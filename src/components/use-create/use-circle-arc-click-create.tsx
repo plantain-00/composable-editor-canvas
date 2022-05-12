@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { useKey } from "."
-import { Arc, Circle } from "../utils"
+import { useKey } from ".."
+import { Arc, Circle } from "../../utils"
 import { useCircleClickCreate } from "./use-circle-click-create"
 
 export function useCircleArcClickCreate(

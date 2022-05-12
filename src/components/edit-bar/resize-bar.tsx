@@ -1,5 +1,5 @@
 import * as React from "react"
-import { allDirections, getResizeCursor, ResizeDirection } from ".."
+import { allDirections, getResizeCursor, ResizeDirection } from "../.."
 
 export function ResizeBar(props: {
   scale?: number

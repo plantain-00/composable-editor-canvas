@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getColorString, ReactRenderTarget } from "."
+import { getColorString, ReactRenderTarget } from ".."
 
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',

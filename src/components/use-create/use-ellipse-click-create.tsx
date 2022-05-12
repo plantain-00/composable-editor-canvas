@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from "."
-import { Ellipse, getPointByLengthAndDirection, getTwoPointsDistance, Position, rotatePositionByCenter } from "../utils"
+import { useCursorInput, useKey } from ".."
+import { Ellipse, getPointByLengthAndDirection, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils"
 
 export function useEllipseClickCreate(
   type: 'ellipse center' | 'ellipse endpoint' | undefined,

@@ -1,5 +1,5 @@
 import React from 'react'
-import { EllipseArc, Position, useEllipseArcClickCreate } from '../../src'
+import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
 import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
@@ -19,6 +19,32 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     const { points } = getEllipseArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+  },
+  useEdit(onEnd) {
+    const [ellipseArcEditOffset, setEllipseArcEditOffset] = React.useState<EllipseArc & { data?: number }>({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
+    const { onStartEditEllipseArc, ellipseArcEditMask } = useEllipseArcEdit<number>(setEllipseArcEditOffset, onEnd)
+    return {
+      mask: ellipseArcEditMask,
+      updatePreview(contents) {
+        if (ellipseArcEditOffset.data !== undefined) {
+          const content = contents[ellipseArcEditOffset.data]
+          if (content.type === 'ellipse arc') {
+            content.cx += ellipseArcEditOffset.cx
+            content.cy += ellipseArcEditOffset.cy
+            content.startAngle += ellipseArcEditOffset.startAngle
+            content.endAngle += ellipseArcEditOffset.endAngle
+            if (content.endAngle < content.startAngle) {
+              content.endAngle += 360
+            } else if (content.endAngle - content.startAngle > 360) {
+              content.endAngle -= 360
+            }
+          }
+        }
+      },
+      editBar({ content, index }) {
+        return <EllipseArcEditBar {...content} onClick={(e, type, cursor) => onStartEditEllipseArc(e, { ...content, type, cursor, data: index })} />
+      },
+    }
   },
   useCreate(type, onEnd) {
     const [ellipseArcCreate, setEllipseArcCreate] = React.useState<EllipseArc>()

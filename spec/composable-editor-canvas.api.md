@@ -6,7 +6,9 @@
 
 /// <reference types="react" />
 
+import { MouseEvent as MouseEvent_2 } from 'react';
 import type { Patch } from 'immer/dist/types/types-external';
+import { Property } from 'csstype';
 import * as React_2 from 'react';
 import { WritableDraft } from 'immer/dist/types/types-external';
 
@@ -52,16 +54,6 @@ export function CircleArcEditBar(props: {
 }): JSX.Element;
 
 // @public (undocumented)
-export interface CircleArcEditData<T = void> extends Arc {
-    // (undocumented)
-    cursor: React_2.CSSProperties['cursor'];
-    // (undocumented)
-    data?: T;
-    // (undocumented)
-    type: 'center' | 'start angle' | 'end angle' | 'radius';
-}
-
-// @public (undocumented)
 export function CircleEditBar(props: {
     x: number;
     y: number;
@@ -71,22 +63,6 @@ export function CircleEditBar(props: {
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
 }): JSX.Element;
-
-// @public (undocumented)
-export interface CircleEditData<T = void> {
-    // (undocumented)
-    cursor: React_2.CSSProperties['cursor'];
-    // (undocumented)
-    data?: T;
-    // (undocumented)
-    r: number;
-    // (undocumented)
-    type: 'center' | 'edge';
-    // (undocumented)
-    x: number;
-    // (undocumented)
-    y: number;
-}
 
 // @public (undocumented)
 export function DragMask(props: {
@@ -108,6 +84,21 @@ export function drawDashedPolyline(g: {
     moveTo: (x: number, y: number) => void;
     lineTo: (x: number, y: number) => void;
 }, points: Position[], dashArray: number[]): void;
+
+// @public (undocumented)
+export function EditBar<T = void>(props: {
+    positions: EditBarPosition<T>[];
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: T, cursor: React_2.CSSProperties['cursor']) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: T, cursor: React_2.CSSProperties['cursor']) => void;
+}): JSX.Element;
+
+// @public (undocumented)
+export type EditBarPosition<T> = Position & {
+    cursor?: React_2.CSSProperties['cursor'];
+    data: T;
+};
 
 // @public (undocumented)
 export interface Ellipse {
@@ -132,6 +123,14 @@ export interface EllipseArc extends Ellipse {
 }
 
 // @public (undocumented)
+export function EllipseArcEditBar(props: EllipseArc & {
+    scale?: number;
+    resizeSize?: number;
+    onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'start angle' | 'end angle', cursor: React_2.CSSProperties['cursor']) => void;
+    onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'start angle' | 'end angle', cursor: React_2.CSSProperties['cursor']) => void;
+}): JSX.Element;
+
+// @public (undocumented)
 export function EllipseEditBar(props: {
     cx: number;
     cy: number;
@@ -143,24 +142,6 @@ export function EllipseEditBar(props: {
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
 }): JSX.Element;
-
-// @public (undocumented)
-export interface EllipseEditData<T = void> {
-    // (undocumented)
-    cursor: React_2.CSSProperties['cursor'];
-    // (undocumented)
-    cx: number;
-    // (undocumented)
-    cy: number;
-    // (undocumented)
-    data?: T;
-    // (undocumented)
-    rx: number;
-    // (undocumented)
-    ry: number;
-    // (undocumented)
-    type: 'center' | 'major axis' | 'minor axis';
-}
 
 // @public (undocumented)
 export interface GeneralFormLine {
@@ -419,7 +400,12 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
 export function useCircleArcEdit<T = void>(setCircleOffset: (offset: Arc & {
     data?: T;
 }) => void, onEditEnd: () => void): {
-    onStartEditCircle(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: CircleArcEditData<T>): void;
+    onStartEditCircle: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
+        type: 'center' | 'start angle' | 'end angle' | 'radius';
+    } & Arc & {
+        data?: T | undefined;
+        cursor: Property.Cursor | undefined;
+    }) => void;
     circleEditMask: JSX.Element | undefined;
 };
 
@@ -444,7 +430,12 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
 export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
     data?: T;
 }) => void, onEditEnd: () => void): {
-    onStartEditCircle(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: CircleEditData<T>): void;
+    onStartEditCircle: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
+        type: 'center' | 'edge';
+    } & Circle & {
+        data?: T | undefined;
+        cursor: Property.Cursor | undefined;
+    }) => void;
     circleEditMask: JSX.Element | undefined;
 };
 
@@ -523,6 +514,14 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
+export function useEdit<V, T = void>(onEditEnd: () => void, onDragging: (start: Position & {
+    data: EditData<T, V>;
+}, end: Position) => void, reset: () => void): {
+    onStartEdit(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>): void;
+    editMask: JSX.Element | undefined;
+};
+
+// @public (undocumented)
 export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipseArc: (arc?: EllipseArc) => void, onEnd: (arc: EllipseArc) => void): {
     ellipseCreate: Ellipse | undefined;
     startPosition: Position | undefined;
@@ -537,6 +536,19 @@ export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpo
         clientY: number;
     }): void;
     ellipseArcClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useEllipseArcEdit<T = void>(setEllipseOffset: (offset: EllipseArc & {
+    data?: T;
+}) => void, onEditEnd: () => void): {
+    onStartEditEllipseArc: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
+        type: 'center' | 'start angle' | 'end angle';
+    } & EllipseArc & {
+        data?: T | undefined;
+        cursor: Property.Cursor | undefined;
+    }) => void;
+    ellipseArcEditMask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -562,7 +574,12 @@ export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint
 export function useEllipseEdit<T = void>(setEllipseOffset: (offset: Ellipse & {
     data?: T;
 }) => void, onEditEnd: () => void): {
-    onStartEditEllipse(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EllipseEditData<T>): void;
+    onStartEditEllipse: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
+        type: 'center' | 'major axis' | 'minor axis';
+    } & Ellipse & {
+        data?: T | undefined;
+        cursor: Property.Cursor | undefined;
+    }) => void;
     ellipseEditMask: JSX.Element | undefined;
 };
 
@@ -692,6 +709,10 @@ export interface ZoomOptions {
     // (undocumented)
     min: number;
 }
+
+// Warnings were encountered during analysis:
+//
+// dist/nodejs/components/use-edit/use-edit.d.ts:8:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

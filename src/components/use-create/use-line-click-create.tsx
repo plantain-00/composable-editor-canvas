@@ -1,7 +1,7 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from "."
-import { getPointByLengthAndDirection, Position, rotatePositionByCenter } from "../utils"
+import { useCursorInput, useKey } from ".."
+import { getPointByLengthAndDirection, Position, rotatePositionByCenter } from "../../utils"
 
 export function useLineClickCreate(
   enabled: boolean,
