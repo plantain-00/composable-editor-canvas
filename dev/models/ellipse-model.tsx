@@ -120,7 +120,7 @@ function getEllipseLines(content: Omit<EllipseContent, "type">) {
   })
 }
 
-function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent, "type">) {
+export function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent, "type">) {
   return rotatePositionByCenter(p, { x: content.cx, y: content.cy }, -(content.angle ?? 0))
 }
 

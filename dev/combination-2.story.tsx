@@ -21,6 +21,7 @@ import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
+import { ellipseArcModel } from './models/ellipse-arc-model'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -36,6 +37,7 @@ registerModel(polygonModel)
 registerModel(ellipseModel)
 registerModel(arcModel)
 registerModel(splineModel)
+registerModel(ellipseArcModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -131,7 +133,7 @@ export default () => {
           setOperations={setOperations}
         />
       )}
-      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
       {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
       {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
       <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
