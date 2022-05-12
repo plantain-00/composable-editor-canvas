@@ -87,6 +87,7 @@ export function useEllipseClickCreate(
     startPosition,
     middlePosition,
     cursorPosition,
+    setCursorPosition,
     onEllipseClickCreateClick(e: { clientX: number, clientY: number }) {
       if (!type) {
         return

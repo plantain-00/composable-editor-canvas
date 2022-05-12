@@ -124,6 +124,14 @@ export interface Ellipse {
 }
 
 // @public (undocumented)
+export interface EllipseArc extends Ellipse {
+    // (undocumented)
+    endAngle: number;
+    // (undocumented)
+    startAngle: number;
+}
+
+// @public (undocumented)
 export function EllipseEditBar(props: {
     cx: number;
     cy: number;
@@ -515,12 +523,30 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
+export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipseArc: (arc?: EllipseArc) => void, onEnd: (arc: EllipseArc) => void): {
+    ellipseCreate: Ellipse | undefined;
+    startPosition: Position | undefined;
+    middlePosition: Position | undefined;
+    cursorPosition: Position | undefined;
+    onEllipseArcClickCreateClick(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    onEllipseArcClickCreateMove(e: {
+        clientX: number;
+        clientY: number;
+    }): void;
+    ellipseArcClickCreateInput: JSX.Element | undefined;
+};
+
+// @public (undocumented)
 export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipse: (ellipse?: Ellipse) => void, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
+    setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     onEllipseClickCreateClick(e: {
         clientX: number;
         clientY: number;

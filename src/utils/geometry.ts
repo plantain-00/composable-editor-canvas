@@ -542,3 +542,11 @@ export interface Arc extends Circle {
   startAngle: number
   endAngle: number
 }
+
+/**
+ * @public
+ */
+export interface EllipseArc extends Ellipse {
+  startAngle: number
+  endAngle: number
+}
