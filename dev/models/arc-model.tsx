@@ -59,6 +59,8 @@ export const arcModel: Model<ArcContent> = {
             content.endAngle += circleEditOffset.endAngle
             if (content.endAngle < content.startAngle) {
               content.endAngle += 360
+            } else if (content.endAngle - content.startAngle > 360) {
+              content.endAngle -= 360
             }
           }
         }

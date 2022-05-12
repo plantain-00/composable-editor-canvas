@@ -45,7 +45,10 @@ export const rectModel: Model<RectContent> = {
   useEdit(onEnd) {
     const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
     const [info, setInfo] = React.useState<{ angle: number, index: number }>()
-    const { onStartResize, dragResizeMask } = useDragResize(setResizeOffset, onEnd, { rotate: info?.angle })
+    const { onStartResize, dragResizeMask } = useDragResize(setResizeOffset, onEnd, {
+      rotate: info?.angle,
+      centeredScaling: (e) => e.shiftKey,
+    })
     return {
       mask: dragResizeMask,
       updatePreview(contents) {
