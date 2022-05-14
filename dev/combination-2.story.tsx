@@ -1,5 +1,5 @@
 import React from 'react'
-import { reactCanvasRenderTarget, reactSvgRenderTarget, useDragSelect, useKey, usePatchBasedUndoRedo } from '../src'
+import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, reverseTransformPosition, Transform2, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce, { enablePatches, Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
@@ -179,6 +179,28 @@ const CADEditor = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
+  const [scale, setScale] = React.useState(1)
+  const [x, setX] = React.useState(0)
+  const [y, setY] = React.useState(0)
+  const wheelScrollRef = useWheelScroll<HTMLDivElement>(setX, setY, -1, -1)
+  const wheelZoomRef = useWheelZoom<HTMLDivElement>(setScale)
+  const { zoomIn, zoomOut } = useZoom(scale, setScale)
+  useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
+  useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
+  const size = useWindowSize()
+  const width = size.width / 2
+  const height = size.height
+  let transform: Transform2 | undefined = {
+    x,
+    y,
+    scale,
+    center: {
+      x: width / 2,
+      y: height / 2,
+    },
+  }
+  transform = undefined
+
   // commands
   const { commandMasks, updateContent, startCommand } = useCommands(
     () => {
@@ -199,7 +221,7 @@ const CADEditor = React.forwardRef((props: {
   // snap point
   const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!!operation)
   // edit model
-  const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => applyPatchFromSelf(previewPatches, previewReversePatches))
+  const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => applyPatchFromSelf(previewPatches, previewReversePatches), transform)
   // create model
   const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands, createAssistentContents } = useModelsCreate(operation, (c) => {
     setState((draft) => {
@@ -340,7 +362,7 @@ const CADEditor = React.forwardRef((props: {
     onCreatingMove(getSnapPoint(e, state, snapTypes))
     if (!operation) {
       // if no operation, hover by position
-      setHoveringContent(getContentByClickPosition(state, { x: e.clientX, y: e.clientY }, contentSelectable))
+      setHoveringContent(getContentByClickPosition(state, reverseTransformPosition({ x: e.clientX, y: e.clientY }, transform), contentSelectable))
     }
   }
   const onStartOperation = (p: string) => {
@@ -358,8 +380,8 @@ const CADEditor = React.forwardRef((props: {
   }
 
   return (
-    <div>
-      <div style={{ cursor: 'crosshair' }} onMouseMove={onMouseMove}>
+    <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
+      <div style={{ cursor: 'crosshair', position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
@@ -367,12 +389,29 @@ const CADEditor = React.forwardRef((props: {
           othersSelectedContents={othersSelectedContents}
           hoveringContent={hoveringContent}
           onClick={onClick}
+          transform={transform}
+          width={width}
+          height={height}
         />
         {!readOnly && previewContents.map((s, i) => {
           if (selectedContents.includes(i)) {
             const EditBar = editBarMap[s.type]
             if (EditBar) {
-              return <EditBar key={i} content={s} index={i} />
+              return (
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    boxSizing: 'border-box',
+                    width: `${width}px`,
+                    height: `${height}px`,
+                    transform: transform ? `scale(${transform.scale}) translate(${transform.x / transform.scale}px, ${transform.y / transform.scale}px)` : undefined,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <EditBar content={s} index={i} />
+                </div>
+              )
             }
           }
           return null

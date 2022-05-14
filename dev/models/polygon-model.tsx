@@ -32,9 +32,9 @@ export const polygonModel: Model<PolygonContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd) {
+  useEdit(onEnd, transform2) {
     const [polygonEditOffset, setPolygonEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd)
+    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd, { transform2 })
     return {
       mask: polylineEditMask,
       updatePreview(contents) {
@@ -47,7 +47,7 @@ export const polygonModel: Model<PolygonContent> = {
         }
       },
       editBar({ content, index }) {
-        return <PolylineEditBar points={content.points} isPolygon onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={transform2?.scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
       },
     }
   },

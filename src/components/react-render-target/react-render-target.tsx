@@ -9,6 +9,11 @@ export interface ReactRenderTarget<T = JSX.Element> {
     attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
       style: React.CSSProperties
     }>,
+    transform?: {
+      x: number
+      y: number
+      scale: number
+    }
   ): JSX.Element
   strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): T
   strokePolyline(points: Position[], color: number, dashArray?: number[]): T

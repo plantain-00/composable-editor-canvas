@@ -3,14 +3,21 @@ import { ReactRenderTarget } from ".."
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
-  getResult(children, width, height, attributes) {
+  getResult(children, width, height, attributes, transform) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    const x = transform?.x ?? 0
+    const y = transform?.y ?? 0
+    const scale = transform?.scale ?? 1
+    const viewportWidth = width / scale
+    const viewportHeight = height / scale
+    const viewportX = (width - viewportWidth) / 2 - x / scale
+    const viewportY = (height - viewportHeight) / 2 - y / scale
     return (
       <svg
         version="1.1"
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
-        viewBox={`0 0 ${width} ${height}`}
+        viewBox={`${viewportX} ${viewportY} ${viewportWidth} ${viewportHeight}`}
         width={width}
         height={height}
         colorInterpolationFilters="sRGB"

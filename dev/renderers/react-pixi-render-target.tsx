@@ -1,12 +1,17 @@
-import { Graphics, Stage, Text } from "@inlet/react-pixi"
+import { Graphics, Stage, Text, Container, _ReactPixi } from "@inlet/react-pixi"
 import * as PIXI from "pixi.js"
-import React from "react"
+import React, { PropsWithChildren } from "react"
 import { drawDashedPolyline, getColorString, Position, ReactRenderTarget } from "../../src"
+
+const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Container
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: 'pixi',
-  getResult(children, width, height, attributes) {
+  getResult(children, width, height, attributes, transform) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    const x = transform?.x ?? 0
+    const y = transform?.y ?? 0
+    const scale = transform?.scale ?? 1
     return (
       <Stage
         options={{
@@ -15,9 +20,13 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
           height,
           antialias: true,
         }}
+        width={width}
+        height={height}
         {...attributes}
       >
-        {children}
+        <PixiContainer position={[width / 2 + x, height / 2 + y]} pivot={[width / 2, height / 2]} scale={scale} >
+          {children}
+        </PixiContainer>
       </Stage>
     )
   },

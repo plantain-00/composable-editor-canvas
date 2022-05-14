@@ -34,9 +34,9 @@ export const circleModel: Model<CircleContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.x, content.y, text, stroke, fontSize)
   },
-  useEdit(onEnd) {
+  useEdit(onEnd, transform2) {
     const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
-    const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, onEnd)
+    const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, onEnd, { transform2 })
     return {
       mask: circleEditMask,
       updatePreview(contents) {
@@ -50,7 +50,7 @@ export const circleModel: Model<CircleContent> = {
         }
       },
       editBar({ content, index }) {
-        return <CircleEditBar x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+        return <CircleEditBar scale={transform2?.scale} x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
       },
     }
   },

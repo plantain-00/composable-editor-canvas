@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget } from '../../src'
+import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, Transform2 } from '../../src'
 import { CircleContent } from './circle-model'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
@@ -18,7 +18,7 @@ export interface Model<T> {
   render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderOperator?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V>, text: string, fontSize: number }): V
-  useEdit?(onEnd: () => void): {
+  useEdit?(onEnd: () => void, transform2?: Transform2): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void
     editBar(props: { content: T, index: number }): JSX.Element
@@ -47,7 +47,7 @@ export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
 
-export function useModelsEdit(onEnd: () => void) {
+export function useModelsEdit(onEnd: () => void, transform2?: Transform2) {
   const editMasks: JSX.Element[] = []
   const updateEditPreviews: ((contents: BaseContent[]) => void)[] = []
   const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
@@ -55,7 +55,7 @@ export function useModelsEdit(onEnd: () => void) {
     if (!model.useEdit) {
       return
     }
-    const { mask, updatePreview, editBar } = model.useEdit(onEnd)
+    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform2)
     if (mask) {
       editMasks.push(React.cloneElement(mask, { key: model.type }))
     }

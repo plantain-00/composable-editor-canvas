@@ -31,3 +31,18 @@ export interface Transform extends Position {
   targetSize: Size
   scale: number
 }
+
+export interface Transform2 extends Position {
+  center: Position
+  scale: number
+}
+
+export function reverseTransformPosition(position: Position, transform?: Transform2) {
+  if (!transform) {
+    return position
+  }
+  return {
+    x: (position.x - transform.center.x) / transform.scale + transform.center.x - transform.x / transform.scale,
+    y: (position.y - transform.center.y) / transform.scale + transform.center.y - transform.y / transform.scale,
+  }
+}

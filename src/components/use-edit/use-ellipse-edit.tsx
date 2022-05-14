@@ -1,10 +1,13 @@
 import { Ellipse } from "../.."
-import { getTwoPointsDistance } from "../../utils"
+import { getTwoPointsDistance, Transform2 } from "../../utils"
 import { useEdit } from "./use-edit"
 
 export function useEllipseEdit<T = void>(
   setEllipseOffset: (offset: Ellipse & { data?: T }) => void,
   onEditEnd: () => void,
+  options?: Partial<{
+    transform2: Transform2
+  }>
 ) {
   const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'major axis' | 'minor axis' } & Ellipse, T>(
     onEditEnd,
@@ -22,7 +25,8 @@ export function useEllipseEdit<T = void>(
         }
       }
     },
-    () => setEllipseOffset({ cx: 0, cy: 0, rx: 0, ry: 0 })
+    () => setEllipseOffset({ cx: 0, cy: 0, rx: 0, ry: 0 }),
+    options,
   )
 
   return {

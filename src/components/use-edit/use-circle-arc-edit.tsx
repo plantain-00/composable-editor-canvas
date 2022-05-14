@@ -1,10 +1,13 @@
 import { Arc } from "../.."
-import { getTwoPointsDistance } from "../../utils"
+import { getTwoPointsDistance, Transform2 } from "../../utils"
 import { useEdit } from "./use-edit"
 
 export function useCircleArcEdit<T = void>(
   setCircleOffset: (offset: Arc & { data?: T }) => void,
   onEditEnd: () => void,
+  options?: Partial<{
+    transform2: Transform2
+  }>
 ) {
   const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'start angle' | 'end angle' | 'radius' } & Arc, T>(
     onEditEnd,
@@ -25,6 +28,7 @@ export function useCircleArcEdit<T = void>(
       }
     },
     () => setCircleOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 }),
+    options,
   )
 
   return {

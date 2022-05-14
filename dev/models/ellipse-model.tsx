@@ -71,9 +71,9 @@ export const ellipseModel: Model<EllipseContent> = {
       assistentContents,
     }
   },
-  useEdit(onEnd) {
+  useEdit(onEnd, transform2) {
     const [ellipseEditOffset, setEllipseEditOffset] = React.useState<Ellipse & { data?: number }>({ cx: 0, cy: 0, rx: 0, ry: 0 })
-    const { onStartEditEllipse, ellipseEditMask } = useEllipseEdit<number>(setEllipseEditOffset, onEnd)
+    const { onStartEditEllipse, ellipseEditMask } = useEllipseEdit<number>(setEllipseEditOffset, onEnd, { transform2 })
     return {
       mask: ellipseEditMask,
       updatePreview(contents) {
@@ -88,7 +88,7 @@ export const ellipseModel: Model<EllipseContent> = {
         }
       },
       editBar({ content, index }) {
-        return <EllipseEditBar cx={content.cx} cy={content.cy} rx={content.rx} ry={content.ry} angle={content.angle} onClick={(e, type, cursor) => onStartEditEllipse(e, { ...content, type, cursor, data: index })} />
+        return <EllipseEditBar scale={transform2?.scale} cx={content.cx} cy={content.cy} rx={content.rx} ry={content.ry} angle={content.angle} onClick={(e, type, cursor) => onStartEditEllipse(e, { ...content, type, cursor, data: index })} />
       },
     }
   },
