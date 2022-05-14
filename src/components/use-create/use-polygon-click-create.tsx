@@ -16,7 +16,7 @@ export function usePolygonClickCreate(
   const [inputType, setInputType] = React.useState<'radius' | 'sides'>('radius')
   const [sides, setSides] = React.useState(6)
 
-  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(enabled, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(enabled, (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const r = +text
       if (!isNaN(r) && r > 0) {
@@ -43,6 +43,7 @@ export function usePolygonClickCreate(
     setPolygon(undefined)
     clearText()
     setCursorPosition(undefined)
+    setInputPosition(undefined)
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition])
@@ -67,25 +68,26 @@ export function usePolygonClickCreate(
   return {
     startPosition,
     cursorPosition,
-    onPolygonClickCreateClick(e: { clientX: number, clientY: number }) {
+    onPolygonClickCreateClick(p: Position) {
       if (!enabled) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(p)
       if (!startPosition) {
-        setStartPosition({ x: e.clientX, y: e.clientY })
+        setStartPosition(p)
       } else {
-        const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+        const newPosition = getAngleSnapPosition(p)
         onEnd(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
         reset()
       }
     },
-    onPolygonClickCreateMove(e: { clientX: number, clientY: number }) {
+    onPolygonClickCreateMove(p: Position, viewportPosition?: Position) {
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      const newPosition = getAngleSnapPosition(p)
       setCursorPosition(newPosition)
+      setInputPosition(viewportPosition || newPosition)
       if (startPosition) {
         setPolygon(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
       }

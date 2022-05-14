@@ -13,7 +13,7 @@ export function useLineClickCreate(
   }>,
 ) {
   const [positions, setPositions] = React.useState<Position[]>([])
-  const { input, setCursorPosition, clearText } = useCursorInput(enabled, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, setInputPosition } = useCursorInput(enabled, (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (position.length === 2) {
@@ -56,6 +56,7 @@ export function useLineClickCreate(
     setLine(undefined)
     clearText()
     setCursorPosition(undefined)
+    setInputPosition(undefined)
   }
 
   useKey((e) => e.key === 'Escape', () => {
@@ -78,11 +79,11 @@ export function useLineClickCreate(
   }
 
   return {
-    onLineClickCreateClick(e: { clientX: number, clientY: number }) {
+    onLineClickCreateClick(p: Position) {
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      const newPosition = getAngleSnapPosition(p)
       setCursorPosition(newPosition)
       if (options?.once && positions.length > 0) {
         onEnd([positions[0], newPosition])
@@ -91,12 +92,13 @@ export function useLineClickCreate(
       }
       setPositions([...positions, newPosition])
     },
-    onLineClickCreateMove(e: { clientX: number, clientY: number }) {
+    onLineClickCreateMove(p: Position, viewportPosition?: Position) {
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      const newPosition = getAngleSnapPosition(p)
       setCursorPosition(newPosition)
+      setInputPosition(viewportPosition || newPosition)
       if (options?.once && positions.length === 0) {
         return
       }

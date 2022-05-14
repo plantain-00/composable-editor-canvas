@@ -26,8 +26,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={onCircleClickCreateClick}
-        onMouseMove={onCircleClickCreateMove}
+        onClick={(e) => onCircleClickCreateClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onCircleClickCreateMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}

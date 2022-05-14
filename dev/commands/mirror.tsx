@@ -6,13 +6,13 @@ import { Command } from "./command"
 
 export const mirrorCommand: Command = {
   name: 'mirror',
-  useCommand(onEnd, getSnapPoint, enabled) {
+  useCommand(onEnd, getSnapPoint, _, enabled) {
     const [startPostion, setStartPosition] = React.useState<Position>()
     const [mirrorOffset, setMirrorOffset] = React.useState<Position>()
     const [changeOriginal, setChangeOriginal] = React.useState(false)
     const { onStartMove: onStartMirror, dragMoveMask: dragMirrorMask } = useDragMove(setMirrorOffset, onEnd, {
       getSnapPoint,
-      propagation: true,
+      ignoreLeavingEvent: true,
     })
     return {
       start: onStartMirror,

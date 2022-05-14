@@ -9,14 +9,18 @@ export function SelectionRenderer(props: {
   selected: number[] | undefined
   offset: Region
   rotate?: number
-  onStartMove?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+  onStartMove?: (p: Position) => void
   onStartRotate: (center: Position) => void
   onStartResize: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) => void
 }) {
-  const { styleGuide, scale, selected, onStartMove, offset, rotate, onStartRotate, onStartResize } = props
+  const { styleGuide, scale, selected, offset, rotate, onStartRotate, onStartResize } = props
   const target = getTargetByPath(selected, styleGuide)
   if (!target) {
     return null
+  }
+  const onStartMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    e.stopPropagation()
+    props.onStartMove?.({ x: e.clientX, y: e.clientY })
   }
   const template = target.template
   if (target.kind === 'template') {

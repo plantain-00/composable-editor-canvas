@@ -36,8 +36,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={onPolygonClickCreateClick}
-        onMouseMove={onPolygonClickCreateMove}
+        onClick={(e) => onPolygonClickCreateClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onPolygonClickCreateMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}

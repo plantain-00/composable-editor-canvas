@@ -5,14 +5,20 @@ import { Command } from "./command"
 
 export const rotateCommand: Command = {
   name: 'rotate',
-  useCommand(onEnd, getSnapPoint) {
+  useCommand(onEnd, getSnapPoint, transform) {
     const [startPostion, setStartPosition] = React.useState<Position>()
     const [rotateOffset, setRotateOffset] = React.useState<Position & { angle?: number }>()
-    const { onStartRotate, dragRotateMask } = useDragRotate((f, e) => setRotateOffset(e ? { x: e.clientX, y: e.clientY, angle: f !== undefined ? f - 90 : undefined } : undefined), onEnd, {
-      getSnapPoint,
-    })
+    const { onStartRotate, dragRotateMask } = useDragRotate(
+      (f, e) => {
+        setRotateOffset(e ? { ...transform({ x: e.clientX, y: e.clientY }), angle: f !== undefined ? f - 90 : undefined } : undefined)
+      },
+      onEnd,
+      {
+        getSnapPoint,
+      },
+    )
     return {
-      start: (e) => onStartRotate({ x: e.clientX, y: e.clientY }),
+      start: onStartRotate,
       mask: dragRotateMask,
       setStartPosition,
       updateContent(content) {

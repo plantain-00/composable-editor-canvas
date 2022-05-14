@@ -7,6 +7,7 @@ export function useCursorInput(
 ) {
   const [text, setText] = React.useState('')
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
+  const [inputPosition, setInputPosition] = React.useState<Position>()
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   React.useEffect(() => {
     inputRef.current?.focus()
@@ -15,18 +16,19 @@ export function useCursorInput(
   return {
     cursorPosition,
     setCursorPosition,
+    setInputPosition,
     clearText() {
       setText('')
     },
-    input: enabled && cursorPosition ? (
+    input: enabled && inputPosition && cursorPosition ? (
       <input
         ref={inputRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         style={{
           position: 'absolute',
-          left: `${cursorPosition.x + 10}px`,
-          top: `${cursorPosition.y - 5}px`,
+          left: `${inputPosition.x + 10}px`,
+          top: `${inputPosition.y - 5}px`,
         }}
         onKeyDown={(e) => onKeyDown(e, text, cursorPosition)}
       />

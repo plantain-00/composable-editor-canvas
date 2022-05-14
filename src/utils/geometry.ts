@@ -499,6 +499,9 @@ export interface Position {
   y: number
 }
 
+/**
+ * @public
+ */
 export interface Size {
   width: number
   height: number

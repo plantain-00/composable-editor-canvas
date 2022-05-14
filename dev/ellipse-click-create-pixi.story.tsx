@@ -31,8 +31,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={onEllipseClickCreateClick}
-        onMouseMove={onEllipseClickCreateMove}
+        onClick={(e) => onEllipseClickCreateClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onEllipseClickCreateMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}

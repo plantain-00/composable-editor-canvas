@@ -35,7 +35,7 @@ export default () => {
           background: 'radial-gradient(50% 50% at 50% 50%, red 0%, white 100%)',
           cursor: 'grab',
         }}
-        onMouseDown={onStartMove}
+        onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY })}
       ></div>
       {dragMoveMask}
     </div>

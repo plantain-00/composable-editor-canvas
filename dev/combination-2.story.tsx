@@ -1,9 +1,9 @@
 import React from 'react'
-import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, reverseTransformPosition, Transform2, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce, { enablePatches, Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, registerModel, useModelsCreate, useModelsEdit, useSnap } from './models/model'
+import { BaseContent, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
@@ -133,26 +133,28 @@ export default () => {
           setOperations={setOperations}
         />
       )}
-      {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
-      {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
-      {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
-      <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
-        {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
-      </select>
-      {!readOnly && ['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
-        <span key={type} style={{ position: 'relative' }}>
-          <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
-          <label htmlFor={type}>{type}</label>
+      <div style={{ position: 'fixed', width: '50%' }}>
+        {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
+        {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
+        <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
+          {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+        {!readOnly && ['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
+          <span key={type} style={{ position: 'relative' }}>
+            <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
+            <label htmlFor={type}>{type}</label>
+          </span>
+        ))}
+        {!readOnly && <span style={{ position: 'relative' }}>
+          <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
+          <label htmlFor='angle snap'>angle snap</label>
+        </span>}
+        <span style={{ position: 'relative' }}>
+          <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
+          <label htmlFor='read only'>read only</label>
         </span>
-      ))}
-      {!readOnly && <span style={{ position: 'relative' }}>
-        <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
-        <label htmlFor='angle snap'>angle snap</label>
-      </span>}
-      <span style={{ position: 'relative' }}>
-        <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
-        <label htmlFor='read only'>read only</label>
-      </span>
+      </div>
     </div>
   )
 }
@@ -190,7 +192,7 @@ const CADEditor = React.forwardRef((props: {
   const size = useWindowSize()
   const width = size.width / 2
   const height = size.height
-  let transform: Transform2 | undefined = {
+  const transform: Transform | undefined = {
     x,
     y,
     scale,
@@ -199,7 +201,6 @@ const CADEditor = React.forwardRef((props: {
       y: height / 2,
     },
   }
-  transform = undefined
 
   // commands
   const { commandMasks, updateContent, startCommand } = useCommands(
@@ -207,14 +208,23 @@ const CADEditor = React.forwardRef((props: {
       applyPatchFromSelf(previewPatches, previewReversePatches)
       setOperations([])
     },
-    (e) => getSnapPoint(e, state, snapTypes),
-    operation,
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
+    (p) => reverseTransformPosition(p, transform),
+    operation
   )
 
   // select by region
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
     if (end) {
-      setSelectedContents([...selectedContents, ...getContentsByClickTwoPositions(state, start, end, contentSelectable)])
+      setSelectedContents([
+        ...selectedContents,
+        ...getContentsByClickTwoPositions(
+          state,
+          reverseTransformPosition(start, transform),
+          reverseTransformPosition(end, transform),
+          contentSelectable,
+        ),
+      ])
     }
   })
 
@@ -342,7 +352,8 @@ const CADEditor = React.forwardRef((props: {
   }, [selectedContents])
 
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    const p = getSnapPoint(e, state, snapTypes)
+    const viewportPosition = { x: e.clientX, y: e.clientY }
+    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), state, snapTypes)
     // if the operation is create model/command, start it
     onStartCreate(p)
     if (operation && isCommand(operation)) {
@@ -359,10 +370,12 @@ const CADEditor = React.forwardRef((props: {
     }
   }
   const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    onCreatingMove(getSnapPoint(e, state, snapTypes))
+    const viewportPosition = { x: e.clientX, y: e.clientY }
+    const p = reverseTransformPosition(viewportPosition, transform)
+    onCreatingMove(getSnapPoint(p, state, snapTypes), viewportPosition)
     if (!operation) {
       // if no operation, hover by position
-      setHoveringContent(getContentByClickPosition(state, reverseTransformPosition({ x: e.clientX, y: e.clientY }, transform), contentSelectable))
+      setHoveringContent(getContentByClickPosition(state, p, contentSelectable))
     }
   }
   const onStartOperation = (p: string) => {

@@ -1,11 +1,11 @@
-import { EllipseArc, rotatePositionByCenter, Transform2 } from "../../utils"
+import { EllipseArc, rotatePositionByCenter, Position } from "../../utils"
 import { useEdit } from "./use-edit"
 
 export function useEllipseArcEdit<T = void>(
   setEllipseOffset: (offset: EllipseArc & { data?: T }) => void,
   onEditEnd: () => void,
   options?: Partial<{
-    transform2: Transform2
+    transform: (p: Position) => Position
   }>
 ) {
   const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'start angle' | 'end angle' } & EllipseArc, T>(

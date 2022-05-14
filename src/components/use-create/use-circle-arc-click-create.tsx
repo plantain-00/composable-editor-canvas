@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { useKey } from ".."
-import { Arc, Circle } from "../../utils"
+import { Arc, Circle, Position } from "../../utils"
 import { useCircleClickCreate } from "./use-circle-click-create"
 
 export function useCircleArcClickCreate(
@@ -31,17 +31,17 @@ export function useCircleArcClickCreate(
     startPosition,
     middlePosition,
     cursorPosition,
-    onCircleArcClickCreateClick(e: { clientX: number, clientY: number }) {
+    onCircleArcClickCreateClick(p: Position) {
       if (!type) {
         return
       }
       if (circleCreate) {
         if (startAngle === undefined) {
-          const angle = Math.atan2(e.clientY - circleCreate.y, e.clientX - circleCreate.x) * 180 / Math.PI
+          const angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
           setStartAngle(angle)
           setCircleArc({ ...circleCreate, startAngle: angle, endAngle: angle })
         } else {
-          let angle = Math.atan2(e.clientY - circleCreate.y, e.clientX - circleCreate.x) * 180 / Math.PI
+          let angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
           if (angle < startAngle) {
             angle += 360
           }
@@ -50,24 +50,24 @@ export function useCircleArcClickCreate(
           reset()
         }
       } else {
-        onCircleClickCreateClick(e)
+        onCircleClickCreateClick(p)
       }
     },
-    onCircleArcClickCreateMove(e: { clientX: number, clientY: number }) {
+    onCircleArcClickCreateMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
       if (circleCreate) {
-        setCursorPosition({ x: e.clientX, y: e.clientY })
+        setCursorPosition(p)
         if (startAngle) {
-          let angle = Math.atan2(e.clientY - circleCreate.y, e.clientX - circleCreate.x) * 180 / Math.PI
+          let angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
           if (angle < startAngle) {
             angle += 360
           }
           setCircleArc({ ...circleCreate, startAngle, endAngle: angle })
         }
       } else {
-        onCircleClickCreateMove(e)
+        onCircleClickCreateMove(p, viewportPosition)
       }
     },
     circleArcClickCreateInput: circleClickCreateInput,
