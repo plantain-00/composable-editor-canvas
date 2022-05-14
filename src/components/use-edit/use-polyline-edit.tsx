@@ -1,11 +1,14 @@
 import * as React from "react"
 
-import { Position } from "../.."
+import { Position, Transform2 } from "../.."
 import { useEdit } from "./use-edit"
 
 export function usePolylineEdit<T = void>(
   setPolylineOffset: (offset?: Position & { pointIndexes: number[], data?: T }) => void,
   onEditEnd: () => void,
+  options?: Partial<{
+    transform2: Transform2
+  }>
 ) {
   const { onStartEdit, editMask } = useEdit<{ pointIndexes: number[] }, T>(
     onEditEnd,
@@ -14,7 +17,8 @@ export function usePolylineEdit<T = void>(
       const y = end.y - start.y
       setPolylineOffset({ x, y, pointIndexes: start.data.pointIndexes, data: start.data.data })
     },
-    () => setPolylineOffset(undefined)
+    () => setPolylineOffset(undefined),
+    options,
   )
 
   return {

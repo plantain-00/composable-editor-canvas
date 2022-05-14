@@ -9,6 +9,13 @@ export function Renderer(props: {
   othersSelectedContents: { selection: number[], operator: string }[]
   hoveringContent: number
   onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
+  transform?: {
+    x: number
+    y: number
+    scale: number
+  }
+  width: number
+  height: number
 }) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
   if (!target) {
@@ -48,10 +55,13 @@ export function Renderer(props: {
       }
     }
   })
-  return target.getResult(children, 800, 600, {
-    style: { position: 'absolute', left: 0, top: 0 },
+  return target.getResult(children, props.width, props.height, {
+    style: {
+      position: 'absolute',
+      boxSizing: 'border-box',
+    },
     onClick: props.onClick,
-  })
+  }, props.transform)
 }
 
 const rendererCenter: Record<string, ReactRenderTarget<unknown>> = {}

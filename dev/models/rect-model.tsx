@@ -42,12 +42,13 @@ export const rectModel: Model<RectContent> = {
     const { points } = getRectLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd) {
+  useEdit(onEnd, transform2) {
     const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
     const [info, setInfo] = React.useState<{ angle: number, index: number }>()
     const { onStartResize, dragResizeMask } = useDragResize(setResizeOffset, onEnd, {
       rotate: info?.angle,
       centeredScaling: (e) => e.shiftKey,
+      transform2,
     })
     return {
       mask: dragResizeMask,
@@ -75,6 +76,7 @@ export const rectModel: Model<RectContent> = {
           >
             <ResizeBar
               rotate={content.angle}
+              scale={transform2?.scale}
               onClick={(e, direction) => {
                 onStartResize(e, direction)
                 setInfo({

@@ -3,13 +3,14 @@ import { getColorString, ReactRenderTarget } from ".."
 
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',
-  getResult(children, width, height, attributes) {
+  getResult(children, width, height, attributes, transform) {
     return (
       <Canvas
         width={width}
         height={height}
         attributes={attributes}
         draws={children}
+        transform={transform}
       />
     )
   },
@@ -94,6 +95,11 @@ function Canvas(props: {
     style: React.CSSProperties
   }>,
   draws: ((ctx: CanvasRenderingContext2D) => void)[]
+  transform?: {
+    x: number
+    y: number
+    scale: number
+  }
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   React.useEffect(() => {
@@ -107,12 +113,22 @@ function Canvas(props: {
       const ctx = ref.current.getContext('2d')
       if (ctx) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.save()
+        if (props.transform) {
+          ctx.translate(props.width / 2, props.height / 2)
+          ctx.scale(props.transform.scale, props.transform.scale)
+          ctx.translate(
+            props.transform.x / props.transform.scale - props.width / 2,
+            props.transform.y / props.transform.scale - props.height / 2,
+          )
+        }
         for (const draw of props.draws) {
           draw(ctx)
         }
+        ctx.restore()
       }
     }
-  }, [props.draws, ref.current])
+  }, [props.draws, ref.current, props.transform])
   return (
     <canvas
       ref={ref}

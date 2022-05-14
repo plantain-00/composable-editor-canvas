@@ -43,9 +43,9 @@ export const arcModel: Model<ArcContent> = {
     const { points } = getArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd) {
+  useEdit(onEnd, transform2) {
     const [circleEditOffset, setCircleEditOffset] = React.useState<Arc & { data?: number }>({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
-    const { onStartEditCircle, circleEditMask } = useCircleArcEdit<number>(setCircleEditOffset, onEnd)
+    const { onStartEditCircle, circleEditMask } = useCircleArcEdit<number>(setCircleEditOffset, onEnd, { transform2 })
     return {
       mask: circleEditMask,
       updatePreview(contents) {
@@ -66,7 +66,7 @@ export const arcModel: Model<ArcContent> = {
         }
       },
       editBar({ content, index }) {
-        return <CircleArcEditBar {...content} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+        return <CircleArcEditBar {...content} scale={transform2?.scale} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
       },
     }
   },
