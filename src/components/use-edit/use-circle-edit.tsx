@@ -1,13 +1,13 @@
 
 import { Circle } from "../.."
-import { getTwoPointsDistance, Transform2 } from "../../utils"
+import { getTwoPointsDistance, Position } from "../../utils"
 import { useEdit } from "./use-edit"
 
 export function useCircleEdit<T = void>(
   setCircleOffset: (offset: Circle & { data?: T }) => void,
   onEditEnd: () => void,
   options?: Partial<{
-    transform2: Transform2
+    transform: (p: Position) => Position
   }>
 ) {
   const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'edge' } & Circle, T>(

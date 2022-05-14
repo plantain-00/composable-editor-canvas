@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
 
 export type LineContent = BaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -27,9 +27,9 @@ export const lineModel: Model<LineContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform2) {
+  useEdit(onEnd, transform) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform2 })
+    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
     return {
       mask: polylineEditMask,
       updatePreview(contents) {
@@ -42,7 +42,7 @@ export const lineModel: Model<LineContent> = {
         }
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform2?.scale} points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={transform?.scale} points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
       },
     }
   },

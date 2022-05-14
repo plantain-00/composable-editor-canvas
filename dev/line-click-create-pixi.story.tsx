@@ -35,8 +35,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={onLineClickCreateClick}
-        onMouseMove={onLineClickCreateMove}
+        onClick={(e) => onLineClickCreateClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onLineClickCreateMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}

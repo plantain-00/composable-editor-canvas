@@ -1,8 +1,7 @@
 import * as React from "react"
 
 import { DragMask, useKey } from "."
-import { getResizeCursor, Position, Region, ResizeDirection, Transform, Transform2, transformPosition } from ".."
-import { reverseTransformPosition } from "../utils"
+import { getResizeCursor, Position, Region, ResizeDirection } from ".."
 
 export function useDragResize(
   setResizeOffset: (offset: Region, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => void,
@@ -12,8 +11,7 @@ export function useDragResize(
     keepRatio: number | undefined | ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number | undefined)
     rotate: number
     parentRotate: number
-    transform: Partial<Transform>
-    transform2: Transform2
+    transform: (p: Position) => Position
   }>,
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { direction: ResizeDirection }>()
@@ -28,20 +26,14 @@ export function useDragResize(
     dragResizeStartPosition: dragStartPosition,
     onStartResize(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) {
       e.stopPropagation()
-      const { x, y } = options?.transform2
-        ? reverseTransformPosition({ x: e.clientX, y: e.clientY }, options.transform2)
-        : transformPosition({ x: e.clientX, y: e.clientY }, options?.transform)
       setDragStartPosition({
-        x,
-        y,
+        ...options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY },
         direction,
       })
     },
     dragResizeMask: dragStartPosition && <DragMask
       onDragging={(e) => {
-        const { x: positionX, y: positionY } = options?.transform2
-          ? reverseTransformPosition({ x: e.clientX, y: e.clientY }, options.transform2)
-          : transformPosition({ x: e.clientX, y: e.clientY }, options?.transform)
+        const { x: positionX, y: positionY } = options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY }
         const originalOffsetX = positionX - dragStartPosition.x
         const originalOffsetY = positionY - dragStartPosition.y
 

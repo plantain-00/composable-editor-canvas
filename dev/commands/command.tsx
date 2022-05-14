@@ -6,10 +6,11 @@ export interface Command {
   name: string
   useCommand?(
     onEnd: () => void,
-    getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+    getSnapPoint: (p: Position) => Position,
+    transform: (p: Position) => Position,
     enabled: boolean,
   ): {
-    start(e: { clientX: number, clientY: number }): void
+    start(p: Position): void
     mask?: JSX.Element
     setStartPosition: React.Dispatch<React.SetStateAction<Position | undefined>>
     updateContent(content: BaseContent): {
@@ -32,7 +33,8 @@ export function getCommand(name: string): Command | undefined {
 
 export function useCommands(
   onEnd: () => void,
-  getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number },
+  getSnapPoint: (p: Position) => Position,
+  transform: (p: Position) => Position,
   operation?: string,
 ) {
   const masks: JSX.Element[] = []
@@ -41,10 +43,10 @@ export function useCommands(
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
   })[] = []
-  const startMap: Record<string, ((e: { clientX: number, clientY: number }) => void)> = {}
+  const startMap: Record<string, ((p: Position) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint, operation === command.name)
+      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint, transform, operation === command.name)
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
@@ -72,11 +74,11 @@ export function useCommands(
         newContents,
       }
     },
-    startCommand(name: string | undefined, e: { clientX: number, clientY: number }) {
+    startCommand(name: string | undefined, p: Position) {
       if (name && startMap[name]) {
-        startMap[name](e)
+        startMap[name](p)
         for (const setStartPosition of setStartPositions) {
-          setStartPosition({ x: e.clientX, y: e.clientY })
+          setStartPosition(p)
         }
       }
     },

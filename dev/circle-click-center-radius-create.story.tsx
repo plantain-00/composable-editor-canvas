@@ -13,8 +13,8 @@ export default () => {
 
   return (
     <div
-      onClick={onCircleClickCreateClick}
-      onMouseMove={onCircleClickCreateMove}
+      onClick={(e) => onCircleClickCreateClick({ x: e.clientX, y: e.clientY })}
+      onMouseMove={(e) => onCircleClickCreateMove({ x: e.clientX, y: e.clientY })}
       style={{ height: '100%' }}
     >
       {[...contents, circle].map((content, i) => content && (

@@ -65,7 +65,7 @@ export function Scrollbar(props: {
     <div style={containerStyle} >
       <div
         style={barStyle}
-        onMouseDown={(e) => onStartMove(e, { [type === 'vertical' ? 'y' : 'x']: offset })}
+        onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY }, { [type === 'vertical' ? 'y' : 'x']: offset })}
       >
       </div>
       {dragMoveMask}

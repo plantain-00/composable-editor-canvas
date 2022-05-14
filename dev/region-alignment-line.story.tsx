@@ -46,7 +46,7 @@ export default () => {
             backgroundSize: 'contain',
             border: selectedIndex === i ? '1px solid green' : undefined,
           }}
-          onMouseDown={(e) => onStartMove(e, { data: i })}
+          onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY }, { data: i })}
         >
         </div>
       ))}

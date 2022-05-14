@@ -10,8 +10,8 @@ export function useDragMove<T = void>(
     scale: number
     parentRotate: number
     clone: boolean
-    getSnapPoint: (p: { clientX: number, clientY: number }) => { clientX: number, clientY: number }
-    propagation: boolean
+    getSnapPoint: (p: Position) => Position
+    ignoreLeavingEvent: boolean
   }>
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
@@ -25,22 +25,20 @@ export function useDragMove<T = void>(
 
   return {
     dragMoveStartPosition: dragStartPosition,
-    onStartMove(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, startPosition?: Partial<Position & { data: T }>) {
-      if (!options?.propagation) {
-        e.stopPropagation()
-      }
+    onStartMove(p: Position, startPosition?: Partial<Position & { data: T }>) {
       setDragStartPosition({
-        x: e.clientX - (startPosition?.x ?? 0),
-        y: e.clientY - (startPosition?.y ?? 0),
+        x: p.x - (startPosition?.x ?? 0),
+        y: p.y - (startPosition?.y ?? 0),
         data: startPosition?.data,
       })
     },
     dragMoveMask: dragStartPosition && <DragMask
-      ignoreLeavingEvent={options?.propagation}
+      ignoreLeavingEvent={options?.ignoreLeavingEvent}
       onDragging={(e) => {
-        const f = options?.getSnapPoint?.(e) ?? e
-        const x = (f.clientX - dragStartPosition.x) / scale
-        const y = (f.clientY - dragStartPosition.y) / scale
+        const p = { x: e.clientX, y: e.clientY }
+        const f = options?.getSnapPoint?.(p) ?? p
+        const x = (f.x - dragStartPosition.x) / scale
+        const y = (f.y - dragStartPosition.y) / scale
         const sin = Math.sin(parentRotate)
         const cos = Math.cos(parentRotate)
         setMoveOffset({

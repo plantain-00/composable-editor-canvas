@@ -1,5 +1,5 @@
 import React from 'react'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, transformPosition, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuide } from './model'
@@ -124,7 +124,7 @@ export function App() {
       })
     },
     {
-      transform,
+      transform: (p) => transformPosition(p, transform),
       parentRotate,
     },
   )
@@ -168,7 +168,7 @@ export function App() {
       },
       rotate: selectedTarget?.kind === 'content' ? selectedTarget.content.rotate ?? 0 : 0,
       parentRotate,
-      transform,
+      transform: (p) => transformPosition(p, transform),
     },
   )
 
@@ -276,12 +276,44 @@ export function App() {
         contentSize={contentSize.height}
         onChange={setY}
       />
-      <AlignmentLine type='x' value={regionAlignmentX ?? lineAlignmentX} transform={transform} />
-      <AlignmentLine type='y' value={regionAlignmentY ?? lineAlignmentY} transform={transform} />
+      <AlignmentLine type='x' value={regionAlignmentX ?? lineAlignmentX} transformX={(x) => reverseTransformX(x, transform)} />
+      <AlignmentLine type='y' value={regionAlignmentY ?? lineAlignmentY} transformY={(y) => reverseTransformY(y, transform)} />
       {dragMoveMask}
       {dragRotateMask}
       {dragResizeMask}
       {dragSelectMask}
     </div>
   )
+}
+
+function reverseTransformX(
+  x: number,
+  transform?: Partial<Transform>,
+) {
+  return (transform?.containerSize?.width ?? 0) / 2 - ((transform?.targetSize?.width ?? 0) / 2 - x) * (transform?.scale ?? 1) + (transform?.x ?? 0)
+}
+
+function reverseTransformY(
+  y: number,
+  transform?: Partial<Transform>,
+) {
+  return (transform?.containerSize?.height ?? 0) / 2 - ((transform?.targetSize?.height ?? 0) / 2 - y) * (transform?.scale ?? 1) + (transform?.y ?? 0)
+}
+
+function transformPosition(
+  { x, y }: Position,
+  transform?: Partial<Transform>,
+) {
+  const positionX = (transform?.targetSize?.width ?? 0) / 2 - ((transform?.containerSize?.width ?? 0) / 2 - x + (transform?.x ?? 0)) / (transform?.scale ?? 1)
+  const positionY = (transform?.targetSize?.height ?? 0) / 2 - ((transform?.containerSize?.height ?? 0) / 2 - y + (transform?.y ?? 0)) / (transform?.scale ?? 1)
+  return {
+    x: positionX,
+    y: positionY,
+  }
+}
+
+interface Transform extends Position {
+  containerSize: Size
+  targetSize: Size
+  scale: number
 }

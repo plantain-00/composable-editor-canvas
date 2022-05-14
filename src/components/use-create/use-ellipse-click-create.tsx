@@ -14,7 +14,7 @@ export function useEllipseClickCreate(
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(!!type, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(!!type, (e, text, cursorPosition) => {
     if (e.key === 'Enter' && type) {
       const position = text.split(',')
       if (!startPosition) {
@@ -68,6 +68,7 @@ export function useEllipseClickCreate(
     setEllipse(undefined)
     clearText()
     setCursorPosition(undefined)
+    setInputPosition(undefined)
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
@@ -88,27 +89,28 @@ export function useEllipseClickCreate(
     middlePosition,
     cursorPosition,
     setCursorPosition,
-    onEllipseClickCreateClick(e: { clientX: number, clientY: number }) {
+    onEllipseClickCreateClick(p: Position) {
       if (!type) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(p)
       if (!startPosition) {
-        setStartPosition({ x: e.clientX, y: e.clientY })
+        setStartPosition(p)
       } else if (!middlePosition) {
-        const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+        const newPosition = getAngleSnapPosition(p)
         setMiddlePosition(newPosition)
       } else {
-        onEnd(getEllipse(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY }))
+        onEnd(getEllipse(type, startPosition, middlePosition, p))
         reset()
       }
     },
-    onEllipseClickCreateMove(e: { clientX: number, clientY: number }) {
+    onEllipseClickCreateMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
-      const newPosition = getAngleSnapPosition({ x: e.clientX, y: e.clientY })
+      const newPosition = getAngleSnapPosition(p)
       setCursorPosition(newPosition)
+      setInputPosition(viewportPosition || newPosition)
       if (startPosition && middlePosition) {
         setEllipse(getEllipse(type, startPosition, middlePosition, newPosition))
       }

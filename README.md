@@ -184,13 +184,6 @@ const { onStartResize, dragResizeMask } = useDragResize(
     centeredScaling: (e) => e.shiftKey,
     keepRatio: (e) => e.metaKey ? 1 : undefined,
     rotate: 0,
-    transform: {
-      containerSize,
-      targetSize,
-      x,
-      y,
-      scale,
-    },
   },
 )
 
@@ -237,8 +230,8 @@ const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clear
   setMoveOffset(f)
 }
 
-<AlignmentLine type='x' value={regionAlignmentX} transform={transform} />
-<AlignmentLine type='y' value={regionAlignmentY} transform={transform} />
+<AlignmentLine type='x' value={regionAlignmentX} transformX={transformX} />
+<AlignmentLine type='y' value={regionAlignmentY} transformY={transformY} />
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=region-alignment-line.story>
@@ -259,8 +252,8 @@ const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAl
   setResizeOffset(f)
 }
 
-<AlignmentLine type='x' value={lineAlignmentX} transform={transform} />
-<AlignmentLine type='y' value={lineAlignmentY} transform={transform} />
+<AlignmentLine type='x' value={lineAlignmentX} transformX={transformX} />
+<AlignmentLine type='y' value={lineAlignmentY} transformY={transformY} />
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=line-alignment-line.story>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, Transform2 } from '../../src'
+import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget } from '../../src'
 import { CircleContent } from './circle-model'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
@@ -18,7 +18,7 @@ export interface Model<T> {
   render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderOperator?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V>, text: string, fontSize: number }): V
-  useEdit?(onEnd: () => void, transform2?: Transform2): {
+  useEdit?(onEnd: () => void, transform?: Transform): {
     mask?: JSX.Element
     updatePreview(contents: T[]): void
     editBar(props: { content: T, index: number }): JSX.Element
@@ -28,8 +28,8 @@ export interface Model<T> {
     subcommand?: JSX.Element
     updatePreview(contents: T[]): void
     assistentContents?: BaseContent[]
-    onClick: (e: { clientX: number, clientY: number }) => void
-    onMove: (e: { clientX: number, clientY: number }) => void
+    onClick: (p: Position) => void
+    onMove: (p: Position, viewportPosition?: Position) => void
   }
   getSnapPoints?(content: Omit<T, 'type'>): SnapPoint[]
   getLines?(content: Omit<T, 'type'>): {
@@ -47,7 +47,7 @@ export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
 
-export function useModelsEdit(onEnd: () => void, transform2?: Transform2) {
+export function useModelsEdit(onEnd: () => void, transform?: Transform) {
   const editMasks: JSX.Element[] = []
   const updateEditPreviews: ((contents: BaseContent[]) => void)[] = []
   const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
@@ -55,7 +55,7 @@ export function useModelsEdit(onEnd: () => void, transform2?: Transform2) {
     if (!model.useEdit) {
       return
     }
-    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform2)
+    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform)
     if (mask) {
       editMasks.push(React.cloneElement(mask, { key: model.type }))
     }
@@ -77,8 +77,8 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
   const createInputs: JSX.Element[] = []
   const createSubcommands: JSX.Element[] = []
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
-  const onClicks: ((e: { clientX: number, clientY: number }) => void)[] = []
-  const onMoves: ((e: { clientX: number, clientY: number }) => void)[] = []
+  const onClicks: ((p: Position) => void)[] = []
+  const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
   const createAssistentContents: BaseContent[] = []
   Object.entries(modelCenter).forEach(([type, model]) => {
     if (!model.useCreate) {
@@ -106,14 +106,14 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
         updateCreatePreview(contents)
       }
     },
-    onStartCreate(e: { clientX: number, clientY: number }) {
+    onStartCreate(p: Position) {
       for (const onClick of onClicks) {
-        onClick(e)
+        onClick(p)
       }
     },
-    onCreatingMove(e: { clientX: number, clientY: number }) {
+    onCreatingMove(p: Position, viewportPosition?: Position) {
       for (const onMove of onMoves) {
-        onMove(e)
+        onMove(p, viewportPosition)
       }
     },
     createAssistentContents,
@@ -182,7 +182,7 @@ export function useSnap(enabled: boolean, delta = 5) {
   return {
     snapPoint,
     snapAssistentContents: assistentContents,
-    getSnapPoint(p: { clientX: number, clientY: number }, contents: BaseContent[], types: string[]) {
+    getSnapPoint(p: Position, contents: BaseContent[], types: string[]) {
       if (!enabled) {
         return p
       }
@@ -193,14 +193,11 @@ export function useSnap(enabled: boolean, delta = 5) {
           for (const point of snapPoints) {
             if (
               types.includes(point.type) &&
-              getTwoNumbersDistance(p.clientX, point.x) <= delta &&
-              getTwoNumbersDistance(p.clientY, point.y) <= delta
+              getTwoNumbersDistance(p.x, point.x) <= delta &&
+              getTwoNumbersDistance(p.y, point.y) <= delta
             ) {
               setSnapPoint(point)
-              return {
-                clientX: point.x,
-                clientY: point.y,
-              }
+              return point
             }
           }
         }
@@ -210,16 +207,13 @@ export function useSnap(enabled: boolean, delta = 5) {
           const content1 = contents[i]
           for (let j = i + 1; j < contents.length; j++) {
             const content2 = contents[j]
-            for (const point of iterateIntersectionPoints(content1, content2)) {
+            for (const point of getIntersectionPoints(content1, content2)) {
               if (
-                getTwoNumbersDistance(p.clientX, point.x) <= delta &&
-                getTwoNumbersDistance(p.clientY, point.y) <= delta
+                getTwoNumbersDistance(p.x, point.x) <= delta &&
+                getTwoNumbersDistance(p.y, point.y) <= delta
               ) {
                 setSnapPoint({ ...point, type: 'intersection' })
-                return {
-                  clientX: point.x,
-                  clientY: point.y,
-                }
+                return point
               }
             }
           }
@@ -252,6 +246,22 @@ export function getSnapPointsFromCache<T>(content: Omit<T, 'type'>, func: (conte
   if (!result) {
     result = func(content)
     snapPointsCache.set(content, result)
+  }
+  return result
+}
+
+const intersectionPointsCache = new WeakMap<BaseContent, WeakMap<BaseContent, Position[]>>()
+
+function getIntersectionPoints(content1: BaseContent, content2: BaseContent) {
+  let map = intersectionPointsCache.get(content1)
+  if (!map) {
+    map = new WeakMap<BaseContent, Position[]>()
+    intersectionPointsCache.set(content1, map)
+  }
+  let result = map.get(content2)
+  if (!result) {
+    result = Array.from(iterateIntersectionPoints(content1, content2))
+    map.set(content2, result)
   }
   return result
 }
@@ -289,4 +299,19 @@ export function getAngleSnap(angle: number) {
     return snap
   }
   return undefined
+}
+
+export interface Transform extends Position {
+  center: Position
+  scale: number
+}
+
+export function reverseTransformPosition(position: Position, transform: Transform | undefined) {
+  if (!transform) {
+    return position
+  }
+  return {
+    x: (position.x - transform.center.x) / transform.scale + transform.center.x - transform.x / transform.scale,
+    y: (position.y - transform.center.y) / transform.scale + transform.center.y - transform.y / transform.scale,
+  }
 }

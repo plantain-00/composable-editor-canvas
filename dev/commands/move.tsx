@@ -10,7 +10,7 @@ export const moveCommand: Command = {
     const [moveOffset, setMoveOffset] = React.useState<Position>({ x: 0, y: 0 })
     const { onStartMove, dragMoveMask } = useDragMove(setMoveOffset, onEnd, {
       getSnapPoint,
-      propagation: true,
+      ignoreLeavingEvent: true,
     })
     return {
       start: onStartMove,

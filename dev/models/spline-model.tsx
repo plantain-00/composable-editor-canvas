@@ -2,7 +2,7 @@ import React from 'react'
 import bspline from 'b-spline'
 import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
 
 export type SplineContent = BaseContent<'spline'> & {
   points: Position[]
@@ -34,9 +34,9 @@ export const splineModel: Model<SplineContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform2) {
+  useEdit(onEnd, transform) {
     const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform2 })
+    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
     return {
       mask: polylineEditMask,
       updatePreview(contents) {
@@ -49,7 +49,7 @@ export const splineModel: Model<SplineContent> = {
         }
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform2?.scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={transform?.scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
       },
     }
   },

@@ -1,11 +1,10 @@
 import * as React from "react"
 
-import { reverseTransformX, reverseTransformY, Transform } from ".."
-
 export function AlignmentLine(props: {
   value?: number
   type: 'x' | 'y'
-  transform?: Transform
+  transformX?: (p: number) => number
+  transformY?: (p: number) => number
   style?: React.CSSProperties
 }) {
   if (props.value === undefined) {
@@ -17,13 +16,13 @@ export function AlignmentLine(props: {
   }
   if (props.type === 'x') {
     style.borderLeft = '1px dashed black'
-    style.left = reverseTransformX(props.value, props.transform) + 'px'
+    style.left = (props.transformX?.(props.value) ?? props.value) + 'px'
     style.top = '0px'
     style.width = '1px'
     style.height = '100%'
   } else {
     style.borderTop = '1px dashed black'
-    style.top = reverseTransformY(props.value, props.transform) + 'px'
+    style.top = (props.transformY?.(props.value) ?? props.value) + 'px'
     style.left = '0px'
     style.width = '100%'
     style.height = '1px'

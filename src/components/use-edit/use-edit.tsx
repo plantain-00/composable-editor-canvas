@@ -1,7 +1,6 @@
 import * as React from "react"
 import { DragMask, useKey } from ".."
 import { Position } from "../.."
-import { reverseTransformPosition, Transform2 } from "../../utils"
 
 type EditData<T, V> = V & {
   data?: T
@@ -13,7 +12,7 @@ export function useEdit<V, T = void>(
   onDragging: (start: Position & { data: EditData<T, V> }, end: Position) => void,
   reset: () => void,
   options?: Partial<{
-    transform2: Transform2
+    transform: (p: Position) => Position
   }>
 ) {
 
@@ -28,14 +27,14 @@ export function useEdit<V, T = void>(
     onStartEdit(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>) {
       e.stopPropagation()
       setDragStartPosition({
-        ...reverseTransformPosition({ x: e.clientX, y: e.clientY }, options?.transform2),
+        ...options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY },
         data,
       })
     },
     editMask: dragStartPosition && <DragMask
       onDragging={(e) => {
         e.stopPropagation()
-        onDragging(dragStartPosition, reverseTransformPosition({ x: e.clientX, y: e.clientY }, options?.transform2))
+        onDragging(dragStartPosition, options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY })
       }}
       onDragEnd={() => {
         onEditEnd()

@@ -12,7 +12,7 @@ export const cloneCommand: Command = {
     const { onStartMove: onStartClone, dragMoveMask: dragCloneMask } = useDragMove(setCloneOffset, onEnd, {
       clone: true,
       getSnapPoint,
-      propagation: true,
+      ignoreLeavingEvent: true,
     })
     return {
       start: onStartClone,

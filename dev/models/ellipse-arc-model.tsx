@@ -2,7 +2,7 @@ import React from 'react'
 import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
 import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
 import { PolygonContent } from './polygon-model'
 
 export type EllipseArcContent = BaseContent<'ellipse arc'> & EllipseArc
@@ -20,9 +20,9 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     const { points } = getEllipseArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform2) {
+  useEdit(onEnd, transform) {
     const [ellipseArcEditOffset, setEllipseArcEditOffset] = React.useState<EllipseArc & { data?: number }>({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
-    const { onStartEditEllipseArc, ellipseArcEditMask } = useEllipseArcEdit<number>(setEllipseArcEditOffset, onEnd, { transform2 })
+    const { onStartEditEllipseArc, ellipseArcEditMask } = useEllipseArcEdit<number>(setEllipseArcEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
     return {
       mask: ellipseArcEditMask,
       updatePreview(contents) {
@@ -42,7 +42,7 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
         }
       },
       editBar({ content, index }) {
-        return <EllipseArcEditBar {...content} scale={transform2?.scale} onClick={(e, type, cursor) => onStartEditEllipseArc(e, { ...content, type, cursor, data: index })} />
+        return <EllipseArcEditBar {...content} scale={transform?.scale} onClick={(e, type, cursor) => onStartEditEllipseArc(e, { ...content, type, cursor, data: index })} />
       },
     }
   },

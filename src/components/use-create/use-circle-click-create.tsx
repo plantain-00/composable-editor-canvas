@@ -11,7 +11,7 @@ export function useCircleClickCreate(
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const { input, setCursorPosition, clearText, cursorPosition } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (startPosition) {
@@ -72,6 +72,7 @@ export function useCircleClickCreate(
     setCircle(undefined)
     clearText()
     setCursorPosition(undefined)
+    setInputPosition(undefined)
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
@@ -81,30 +82,31 @@ export function useCircleClickCreate(
     middlePosition,
     cursorPosition,
     setCursorPosition,
-    onCircleClickCreateClick(e: { clientX: number, clientY: number }) {
+    onCircleClickCreateClick(p: Position) {
       if (!type) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(p)
       if (!startPosition) {
-        setStartPosition({ x: e.clientX, y: e.clientY })
+        setStartPosition(p)
       } else if (type === '3 points' && !middlePosition) {
-        setMiddlePosition({ x: e.clientX, y: e.clientY })
+        setMiddlePosition(p)
       } else {
-        const circle = getCircle(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY })
+        const circle = getCircle(type, startPosition, middlePosition, p)
         if (circle) {
           onEnd(circle)
         }
         reset()
       }
     },
-    onCircleClickCreateMove(e: { clientX: number, clientY: number }) {
+    onCircleClickCreateMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
-      setCursorPosition({ x: e.clientX, y: e.clientY })
+      setCursorPosition(p)
+      setInputPosition(viewportPosition ?? p)
       if (startPosition) {
-        const circle = getCircle(type, startPosition, middlePosition, { x: e.clientX, y: e.clientY })
+        const circle = getCircle(type, startPosition, middlePosition, p)
         if (circle) {
           setCircle(circle)
         }

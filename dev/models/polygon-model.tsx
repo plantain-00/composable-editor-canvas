@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model } from './model'
+import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
 
 export type PolygonContent = BaseContent<'polygon'> & {
   points: Position[]
@@ -32,9 +32,9 @@ export const polygonModel: Model<PolygonContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform2) {
+  useEdit(onEnd, transform) {
     const [polygonEditOffset, setPolygonEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd, { transform2 })
+    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
     return {
       mask: polylineEditMask,
       updatePreview(contents) {
@@ -47,7 +47,7 @@ export const polygonModel: Model<PolygonContent> = {
         }
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform2?.scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={transform?.scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
       },
     }
   },
