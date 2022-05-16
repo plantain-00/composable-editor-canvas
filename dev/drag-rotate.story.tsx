@@ -11,24 +11,25 @@ export default () => {
     rotate: 0,
     url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg',
   })
-  const [rotate, setRotate] = React.useState<number>()
+  const { offset, onStart, mask } = useDragRotate(
+    () => setContent(previewContent),
+    {
+      transformOffset: (r, e) => {
+        if (e && r !== undefined && !e.shiftKey) {
+          const snap = Math.round(r / 45) * 45
+          if (Math.abs(snap - r) < 5) {
+            r = snap
+          }
+        }
+        return r
+      },
+    }
+  )
   const previewContent = produce(content, (draft) => {
-    if (rotate !== undefined) {
-      draft.rotate = rotate
+    if (offset?.angle !== undefined) {
+      draft.rotate = offset.angle
     }
   })
-  const { onStartRotate, dragRotateMask } = useDragRotate(
-    (r, e) => {
-      if (e && r !== undefined && !e.shiftKey) {
-        const snap = Math.round(r / 45) * 45
-        if (Math.abs(snap - r) < 5) {
-          r = snap
-        }
-      }
-      setRotate(r)
-    },
-    () => setContent(previewContent),
-  )
 
   return (
     <>
@@ -48,14 +49,14 @@ export default () => {
         <RotationBar
           scale={1}
           onMouseDown={() => {
-            onStartRotate({
+            onStart({
               x: content.x + content.width / 2,
               y: content.y + content.height / 2,
             })
           }}
         />
       </div>
-      {dragRotateMask}
+      {mask}
     </>
   )
 }

@@ -1,18 +1,17 @@
 import React from "react"
 import { Position } from "../../src"
-import { BaseContent } from "../models/model"
+import { BaseContent, getAngleSnap } from "../models/model"
 
 export interface Command {
   name: string
   useCommand?(
     onEnd: () => void,
-    getSnapPoint: (p: Position) => Position,
     transform: (p: Position) => Position,
+    getAngleSnap: ((angle: number) => number | undefined) | undefined,
     enabled: boolean,
   ): {
-    start(p: Position): void
+    onStart(p: Position): void
     mask?: JSX.Element
-    setStartPosition: React.Dispatch<React.SetStateAction<Position | undefined>>
     updateContent(content: BaseContent): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
@@ -33,25 +32,23 @@ export function getCommand(name: string): Command | undefined {
 
 export function useCommands(
   onEnd: () => void,
-  getSnapPoint: (p: Position) => Position,
   transform: (p: Position) => Position,
+  angleSnapEnabled: boolean,
   operation?: string,
 ) {
   const masks: JSX.Element[] = []
-  const setStartPositions: React.Dispatch<React.SetStateAction<Position | undefined>>[] = []
   const updateContents: ((content: BaseContent) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
   })[] = []
-  const startMap: Record<string, ((p: Position) => void)> = {}
+  const onStartMap: Record<string, ((p: Position) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { start, mask, setStartPosition, updateContent } = command.useCommand(onEnd, getSnapPoint, transform, operation === command.name)
+      const { onStart, mask, updateContent } = command.useCommand(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, operation === command.name)
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
-      setStartPositions.push(setStartPosition)
-      startMap[command.name] = start
+      onStartMap[command.name] = onStart
       updateContents.push(updateContent)
     }
   })
@@ -75,11 +72,8 @@ export function useCommands(
       }
     },
     startCommand(name: string | undefined, p: Position) {
-      if (name && startMap[name]) {
-        startMap[name](p)
-        for (const setStartPosition of setStartPositions) {
-          setStartPosition(p)
-        }
+      if (name && onStartMap[name]) {
+        onStartMap[name](p)
       }
     },
   }

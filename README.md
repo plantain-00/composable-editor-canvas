@@ -34,17 +34,13 @@ useKey((k) => k.code === 'KeyZ' && k.shiftKey && k.metaKey, redo)
 ```ts
 import { useWheelScroll } from "composable-editor-canvas"
 
-const [x, setX] = React.useState(0)
-const [y, setY] = React.useState(0)
 const initialScale = Math.min((containerSize.width - padding) / targetSize.width, (containerSize.height - padding) / targetSize.height)
 const scale = relativeScale * initialScale
 const contentSize = {
   width: targetSize.width * scale + padding,
   height: targetSize.height * scale + padding,
 }
-const wheelScrollRef = useWheelScroll<HTMLElement>(
-  setX,
-  setY,
+const { x, y, ref } = useWheelScroll<HTMLElement>(
   (contentSize.width - containerSize.width) / 2,
   (contentSize.height - containerSize.height) / 2,
 )
@@ -57,8 +53,7 @@ const wheelScrollRef = useWheelScroll<HTMLElement>(
 ```ts
 import { useWheelZoom } from "composable-editor-canvas"
 
-const [relativeScale, setRelativeScale] = React.useState(1)
-const wheelZoomRef = useWheelZoom<HTMLElement>(setRelativeScale)
+const { ref, scale, setScale } = useWheelZoom<HTMLElement>()
 ```
 
 <https://plantain-00.github.io/composable-editor-canvas/?p=wheel-zoom.story>
@@ -104,14 +99,12 @@ import { Scrollbar } from "composable-editor-canvas"
 ```ts
 import { useDragMove } from "composable-editor-canvas"
 
-const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-const { onStartMove, dragMoveMask } = useDragMove(
-  setMoveOffset,
+const { offset, onStart, mask } = useDragMove(
   () => {
     setState((draft) => {
       if (target) {
-        target.x += moveOffset.x
-        target.y += moveOffset.y
+        target.x += offset.x
+        target.y += offset.y
       }
     })
   },
@@ -128,9 +121,7 @@ const { onStartMove, dragMoveMask } = useDragMove(
 ```tsx
 import { useDragRotate, RotationBar } from "composable-editor-canvas"
 
-const [rotate, setRotate] = React.useState<number>()
-const { onStartRotate, dragRotateMask } = useDragRotate(
-  setRotate,
+const { offset, onStart, mask } = useDragRotate(
   () => {
     setState((draft) => {
       if (target) {
@@ -152,7 +143,7 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
 <RotationBar
   scale={scale}
   onMouseDown={() => {
-    onStartRotate({
+    onStart({
       x: template.x + content.x + width / 2,
       y: template.y + content.y + height / 2,
     })
@@ -167,16 +158,14 @@ const { onStartRotate, dragRotateMask } = useDragRotate(
 ```tsx
 import { useDragResize, ResizeBar } from "composable-editor-canvas"
 
-const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
-const { onStartResize, dragResizeMask } = useDragResize(
-  setResizeOffset,
+const { offset, onStart, mask } = useDragResize(
   () => {
     setState((draft) => {
       if (target) {
-        target.width += resizeOffset.width
-        target.height += resizeOffset.height
-        target.x += resizeOffset.x
-        target.y += resizeOffset.y
+        target.width += offset.width
+        target.height += offset.height
+        target.x += offset.x
+        target.y += offset.y
       }
     })
   },
@@ -189,7 +178,7 @@ const { onStartResize, dragResizeMask } = useDragResize(
 
 <ResizeBar
   scale={scale}
-  onMouseDown={onStartResize}
+  onMouseDown={onStart}
 />
 ```
 
@@ -263,9 +252,8 @@ const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAl
 ```ts
 import { useCircleClickCreate } from "composable-editor-canvas"
 
-const [circle, setCircle] = React.useState<Circle>()
 const [contents, setContents] = React.useState<Circle[]>([])
-const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('2 points', setCircle, (c) => {
+const { circle, onClick, onMove } = useCircleClickCreate('2 points', (c) => {
   setContents(produce(contents, (draft) => {
     draft.push(c)
   }))
@@ -281,9 +269,8 @@ const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCrea
 ```ts
 import { useLineClickCreate } from "composable-editor-canvas"
 
-const [line, setLine] = React.useState<Position[]>()
 const [contents, setContents] = React.useState<Position[][]>([])
-const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate('2 points', setLine, (n) => 
+const { line, onClick, onMove, input } = useLineClickCreate('2 points', (n) => {
   setContents(produce(contents, (draft) => {
     draft.push(n)
   }))
@@ -297,19 +284,18 @@ const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = 
 ```tsx
 import { useCircleEdit } from "composable-editor-canvas"
 
-const [circleEditOffset, setCircleEditOffset] = React.useState<Circle>({ x: 0, y: 0, r: 0 })
+const { offset, onStart, mask } = useCircleEdit(() => setContent(circle))
 const circle = produce(content, (draft) => {
-  draft.x += circleEditOffset.x
-  draft.y += circleEditOffset.y
-  draft.r += circleEditOffset.r
+  draft.x += offset.x
+  draft.y += offset.y
+  draft.r += offset.r
 })
-const { onStartEditCircle, circleEditMask } = useCircleEdit(setCircleEditOffset, () => setContent(circle))
 
 <CircleEditBar
   x={circle.x}
   y={circle.y}
   radius={circle.r}
-  onMouseDown={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor })}
+  onMouseDown={(e, type, cursor) => onStart(e, { ...content, type, cursor })}
 />
 ```
 
@@ -320,20 +306,19 @@ const { onStartEditCircle, circleEditMask } = useCircleEdit(setCircleEditOffset,
 ```tsx
 import { usePolylineEdit } from "composable-editor-canvas"
 
-const [polyineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[] }>()
+const { offset, onStart, mask } = usePolylineEdit(() => setContent(points))
 const points = produce(content, (draft) => {
-  if (polyineEditOffset) {
-    for (const pointIndex of polyineEditOffset.pointIndexes) {
-      draft[pointIndex].x += polyineEditOffset.x
-      draft[pointIndex].y += polyineEditOffset.y
+  if (offset) {
+    for (const pointIndex of offset.pointIndexes) {
+      draft[pointIndex].x += offset.x
+      draft[pointIndex].y += offset.y
     }
   }
 })
-const { onStartEditPolyline, polylineEditMask } = usePolylineEdit(setPolylineEditOffset, () => setContent(points))
 
 <PolylineEditBar
   points={points}
-  onMouseDown={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes)}
+  onMouseDown={(e, pointIndexes) => onStart(e, pointIndexes)}
 />
 ```
 

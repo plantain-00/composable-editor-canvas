@@ -4,12 +4,10 @@ import { useDragMove } from "../src"
 export default () => {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
-  const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask } = useDragMove(
-    setMoveOffset,
+  const { offset, onStart, mask } = useDragMove(
     () => {
-      setX((v) => v + moveOffset.x)
-      setY((v) => v + moveOffset.y)
+      setX((v) => v + offset.x)
+      setY((v) => v + offset.y)
     },
   )
 
@@ -31,13 +29,13 @@ export default () => {
           width: '800px',
           height: '800px',
           position: 'absolute',
-          transform: `translate(${x + moveOffset.x}px, ${y + moveOffset.y}px)`,
+          transform: `translate(${x + offset.x}px, ${y + offset.y}px)`,
           background: 'radial-gradient(50% 50% at 50% 50%, red 0%, white 100%)',
           cursor: 'grab',
         }}
-        onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY })}
+        onMouseDown={(e) => onStart({ x: e.clientX, y: e.clientY })}
       ></div>
-      {dragMoveMask}
+      {mask}
     </div>
   )
 }

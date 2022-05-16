@@ -3,9 +3,9 @@ import * as React from "react"
 import { getDefaultZoomOption, ZoomOptions } from "."
 
 export function useWheelZoom<T extends HTMLElement>(
-  setScale: React.Dispatch<React.SetStateAction<number>>,
   options?: Partial<ZoomOptions>
 ) {
+  const [scale, setScale] = React.useState(1)
   const ref = React.useRef<T | null>(null)
   const { min, max } = getDefaultZoomOption(options)
 
@@ -25,5 +25,9 @@ export function useWheelZoom<T extends HTMLElement>(
     }
   }, [ref.current])
 
-  return ref
+  return {
+    ref,
+    scale,
+    setScale,
+  }
 }

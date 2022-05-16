@@ -1,6 +1,6 @@
 import React from 'react'
-import { getSymmetryPoint, Position, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
-import { BaseContent, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type RectContent = BaseContent<'rect'> & Region & {
@@ -42,24 +42,27 @@ export const rectModel: Model<RectContent> = {
     const { points } = getRectLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
     const [info, setInfo] = React.useState<{ angle: number, index: number }>()
-    const { onStartResize, dragResizeMask } = useDragResize(setResizeOffset, onEnd, {
+    const { offset, onStart, mask, startPosition, cursorPosition } = useDragResize(onEnd, {
       rotate: info?.angle,
       centeredScaling: (e) => e.shiftKey,
-      transform: (p) => reverseTransformPosition(p, transform),
+      transform,
+      getAngleSnap,
     })
     return {
-      mask: dragResizeMask,
+      mask,
       updatePreview(contents) {
         if (info) {
           const content = contents[info.index]
-          content.x += resizeOffset.x + resizeOffset.width / 2
-          content.y += resizeOffset.y + resizeOffset.height / 2
-          content.width += resizeOffset.width
-          content.height += resizeOffset.height
+          const assistentContents = startPosition && cursorPosition ? [{ type: 'line', dashArray: [4], points: [{ x: startPosition.x, y: startPosition.y }, cursorPosition] }] : undefined
+          content.x += offset.x + offset.width / 2
+          content.y += offset.y + offset.height / 2
+          content.width += offset.width
+          content.height += offset.height
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
         return (
@@ -76,9 +79,9 @@ export const rectModel: Model<RectContent> = {
           >
             <ResizeBar
               rotate={content.angle}
-              scale={transform?.scale}
+              scale={scale}
               onClick={(e, direction) => {
-                onStartResize(e, direction)
+                onStart(e, direction)
                 setInfo({
                   angle: content.angle,
                   index,
@@ -90,11 +93,9 @@ export const rectModel: Model<RectContent> = {
       },
     }
   },
-  useCreate(type, onEnd) {
-    const [rectCreate, setRectCreate] = React.useState<{ points: Position[] }>()
-    const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'rect',
-      (c) => setRectCreate(c ? { points: c } : undefined),
       (c) => {
         onEnd([
           {
@@ -109,20 +110,21 @@ export const rectModel: Model<RectContent> = {
       },
       {
         once: true,
+        getAngleSnap,
       },
     )
     return {
-      input: lineClickCreateInput,
-      onClick: onLineClickCreateClick,
-      onMove: onLineClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (rectCreate) {
+        if (line) {
           contents.push({
             type: 'rect',
-            x: (rectCreate.points[0].x + rectCreate.points[1].x) / 2,
-            y: (rectCreate.points[0].y + rectCreate.points[1].y) / 2,
-            width: Math.abs(rectCreate.points[0].x - rectCreate.points[1].x),
-            height: Math.abs(rectCreate.points[0].y - rectCreate.points[1].y),
+            x: (line[0].x + line[1].x) / 2,
+            y: (line[0].y + line[1].y) / 2,
+            width: Math.abs(line[0].x - line[1].x),
+            height: Math.abs(line[0].y - line[1].y),
             angle: 0,
           })
         }

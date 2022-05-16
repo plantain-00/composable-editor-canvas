@@ -2,7 +2,7 @@ import React from 'react'
 import bspline from 'b-spline'
 import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 
 export type SplineContent = BaseContent<'spline'> & {
   points: Position[]
@@ -34,45 +34,48 @@ export const splineModel: Model<SplineContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: polylineEditMask,
+      mask,
       updatePreview(contents) {
-        if (polylineEditOffset?.data !== undefined) {
-          const content = contents[polylineEditOffset.data]
-          for (const pointIndex of polylineEditOffset.pointIndexes) {
-            content.points[pointIndex].x += polylineEditOffset.x
-            content.points[pointIndex].y += polylineEditOffset.y
+        if (offset?.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
+          for (const pointIndex of offset.pointIndexes) {
+            content.points[pointIndex].x += offset.x
+            content.points[pointIndex].y += offset.y
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform?.scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
     }
   },
-  useCreate(type, onEnd, angleSnapEnabled) {
-    const [splineCreate, setSplineCreate] = React.useState<{ points: Position[] }>()
-    const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'spline' || type === 'spline fitting',
-      (c) => setSplineCreate(c ? { points: c } : undefined),
       (c) => onEnd([{ points: c, type: 'spline', fitting: type === 'spline fitting' }]),
       {
-        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        getAngleSnap,
       },
     )
     return {
-      input: lineClickCreateInput,
-      onClick: onLineClickCreateClick,
-      onMove: onLineClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (splineCreate) {
-          contents.push({ points: splineCreate.points, type: 'spline', fitting: type === 'spline fitting' })
+        if (line) {
+          contents.push({ points: line, type: 'spline', fitting: type === 'spline fitting' })
         }
       },
-      assistentContents: splineCreate ? [{ points: splineCreate.points, type: 'polyline', dashArray: [4] }] : undefined,
+      assistentContents: line ? [{ points: line, type: 'polyline', dashArray: [4] }] : undefined,
     }
   },
   getSnapPoints(content) {

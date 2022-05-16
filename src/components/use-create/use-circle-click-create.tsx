@@ -1,13 +1,16 @@
 import * as React from "react"
 
 import { useCursorInput, useKey } from ".."
-import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position } from "../../utils"
+import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils"
 
 export function useCircleClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
-  setCircle: (circle?: Circle) => void,
   onEnd: (circle: Circle) => void,
+  options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined
+  }>,
 ) {
+  const [circle, setCircle] = React.useState<Circle>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
@@ -78,11 +81,12 @@ export function useCircleClickCreate(
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
   return {
+    circle,
     startPosition,
     middlePosition,
     cursorPosition,
     setCursorPosition,
-    onCircleClickCreateClick(p: Position) {
+    onClick(p: Position) {
       if (!type) {
         return
       }
@@ -90,19 +94,20 @@ export function useCircleClickCreate(
       if (!startPosition) {
         setStartPosition(p)
       } else if (type === '3 points' && !middlePosition) {
-        setMiddlePosition(p)
+        setMiddlePosition(getAngleSnapPosition(startPosition, p, options?.getAngleSnap))
       } else {
-        const circle = getCircle(type, startPosition, middlePosition, p)
+        const circle = getCircle(type, startPosition, middlePosition, getAngleSnapPosition(startPosition, p, options?.getAngleSnap))
         if (circle) {
           onEnd(circle)
         }
         reset()
       }
     },
-    onCircleClickCreateMove(p: Position, viewportPosition?: Position) {
+    onMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
+      p = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
       setCursorPosition(p)
       setInputPosition(viewportPosition ?? p)
       if (startPosition) {
@@ -112,7 +117,7 @@ export function useCircleClickCreate(
         }
       }
     },
-    circleClickCreateInput: input,
+    input,
   }
 }
 
@@ -142,4 +147,20 @@ function getCircle(
     return getThreePointsCircle(startPosition, middlePosition, endPosition)
   }
   return undefined
+}
+
+
+export function getAngleSnapPosition(
+  startPosition: Position | undefined,
+  newPosition: Position,
+  getAngleSnap?: (angle: number) => number | undefined,
+) {
+  if (getAngleSnap && startPosition) {
+    const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI
+    const newAngle = getAngleSnap(angle)
+    if (newAngle !== undefined && newAngle !== angle) {
+      newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)
+    }
+  }
+  return newPosition
 }

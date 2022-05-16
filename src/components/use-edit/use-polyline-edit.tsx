@@ -1,30 +1,34 @@
 import * as React from "react"
 
-import { Position } from "../.."
-import { useEdit } from "./use-edit"
+import { getAngleSnapPosition, Position } from "../.."
+import { EditOptions, useEdit } from "./use-edit"
 
 export function usePolylineEdit<T = void>(
-  setPolylineOffset: (offset?: Position & { pointIndexes: number[], data?: T }) => void,
-  onEditEnd: () => void,
-  options?: Partial<{
-    transform: (p: Position) => Position
-  }>
+  onEnd: () => void,
+  options?: EditOptions,
 ) {
-  const { onStartEdit, editMask } = useEdit<{ pointIndexes: number[] }, T>(
-    onEditEnd,
+  const [offset, setOffset] = React.useState<Position & { pointIndexes: number[], data?: T }>()
+  const [cursorPosition, setCursorPosition] = React.useState<Position>()
+  const { onStart, mask, dragStartPosition } = useEdit<{ pointIndexes: number[] }, T>(
+    onEnd,
     (start, end) => {
+      end = getAngleSnapPosition(start, end, options?.getAngleSnap)
+      setCursorPosition(end)
       const x = end.x - start.x
       const y = end.y - start.y
-      setPolylineOffset({ x, y, pointIndexes: start.data.pointIndexes, data: start.data.data })
+      setOffset({ x, y, pointIndexes: start.data.pointIndexes, data: start.data.data })
     },
-    () => setPolylineOffset(undefined),
+    () => setOffset(undefined),
     options,
   )
 
   return {
-    onStartEditPolyline(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T) {
-      onStartEdit(e, { pointIndexes, data, cursor: 'move' })
+    offset,
+    onStart(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T) {
+      onStart(e, { pointIndexes, data, cursor: 'move' })
     },
-    polylineEditMask: editMask,
+    mask,
+    cursorPosition,
+    dragStartPosition,
   }
 }

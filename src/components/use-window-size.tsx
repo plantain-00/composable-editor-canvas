@@ -5,11 +5,17 @@ export function useWindowSize() {
     width: window.innerWidth,
     height: window.innerHeight,
   })
+  const timeoutId = React.useRef<NodeJS.Timeout>()
   window.addEventListener('resize', () => {
-    setSize({
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    if (timeoutId.current) {
+      clearTimeout(timeoutId.current)
+    }
+    timeoutId.current = setTimeout(() => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+    }, 500)
   })
   return size
 }

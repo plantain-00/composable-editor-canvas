@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { Circle, CircleEditBar, useCircleEdit } from "../src"
+import { CircleEditBar, useCircleEdit } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState({
@@ -8,13 +8,13 @@ export default () => {
     y: 200,
     r: 100,
   })
-  const [circleEditOffset, setCircleEditOffset] = React.useState<Circle>({ x: 0, y: 0, r: 0 })
+
+  const { offset, onStart, mask } = useCircleEdit(() => setContent(circle))
   const circle = produce(content, (draft) => {
-    draft.x += circleEditOffset.x
-    draft.y += circleEditOffset.y
-    draft.r += circleEditOffset.r
+    draft.x += offset.x
+    draft.y += offset.y
+    draft.r += offset.r
   })
-  const { onStartEditCircle, circleEditMask } = useCircleEdit(setCircleEditOffset, () => setContent(circle))
 
   return (
     <>
@@ -34,9 +34,9 @@ export default () => {
         x={circle.x}
         y={circle.y}
         radius={circle.r}
-        onMouseDown={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor })}
+        onMouseDown={(e, type, cursor) => onStart(e, { ...content, type, cursor })}
       />
-      {circleEditMask}
+      {mask}
     </>
   )
 }

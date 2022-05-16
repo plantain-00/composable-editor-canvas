@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 
 export type PolygonContent = BaseContent<'polygon'> & {
   points: Position[]
@@ -32,34 +32,37 @@ export const polygonModel: Model<PolygonContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [polygonEditOffset, setPolygonEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolygonEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: polylineEditMask,
+      mask,
       updatePreview(contents) {
-        if (polygonEditOffset?.data !== undefined) {
-          const content = contents[polygonEditOffset.data]
-          for (const pointIndex of polygonEditOffset.pointIndexes) {
-            content.points[pointIndex].x += polygonEditOffset.x
-            content.points[pointIndex].y += polygonEditOffset.y
+        if (offset?.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
+          for (const pointIndex of offset.pointIndexes) {
+            content.points[pointIndex].x += offset.x
+            content.points[pointIndex].y += offset.y
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform?.scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
     }
   },
-  useCreate(type, onEnd, angleSnapEnabled) {
-    const [polygon, setPolygon] = React.useState<Position[]>()
+  useCreate(type, onEnd, getAngleSnap) {
     const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
-    const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
+    const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
       type === 'polygon',
-      setPolygon,
       (c) => onEnd([{ points: c, type: 'polygon' }]),
       {
-        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        getAngleSnap,
         toEdge: createType === 'edge',
       },
     )
@@ -68,7 +71,7 @@ export const polygonModel: Model<PolygonContent> = {
       assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
     }
     return {
-      input: polygonClickCreateInput,
+      input,
       subcommand: type === 'polygon'
         ? (
           <>
@@ -77,8 +80,8 @@ export const polygonModel: Model<PolygonContent> = {
           </>
         )
         : undefined,
-      onClick: onPolygonClickCreateClick,
-      onMove: onPolygonClickCreateMove,
+      onClick,
+      onMove,
       updatePreview(contents) {
         if (polygon) {
           contents.push({ points: polygon, type: 'polygon' })

@@ -1,45 +1,43 @@
 import produce from "immer"
 import React from "react"
-import { Position, useDragMove } from "../../src"
+import { useDragMove } from "../../src"
 import { mirrorContent } from "../util-2"
 import { Command } from "./command"
 
 export const mirrorCommand: Command = {
   name: 'mirror',
-  useCommand(onEnd, getSnapPoint, _, enabled) {
-    const [startPostion, setStartPosition] = React.useState<Position>()
-    const [mirrorOffset, setMirrorOffset] = React.useState<Position>()
+  useCommand(onEnd, transform, getAngleSnap, enabled) {
     const [changeOriginal, setChangeOriginal] = React.useState(false)
-    const { onStartMove: onStartMirror, dragMoveMask: dragMirrorMask } = useDragMove(setMirrorOffset, onEnd, {
-      getSnapPoint,
+    const { offset, onStart, mask, startPosition } = useDragMove(onEnd, {
+      transform,
       ignoreLeavingEvent: true,
+      getAngleSnap,
     })
     return {
-      start: onStartMirror,
+      onStart,
       mask: enabled ? (
         <>
-          {dragMirrorMask}
+          {mask}
           <button onClick={() => setChangeOriginal(!changeOriginal)} style={{ position: 'relative' }}>{changeOriginal ? 'create new' : 'change original'}</button>
         </>
       ) : undefined,
-      setStartPosition,
       updateContent(content) {
-        if (startPostion && mirrorOffset && (mirrorOffset.x !== 0 || mirrorOffset.y !== 0)) {
-          const end = { x: startPostion.x + mirrorOffset.x, y: startPostion.y + mirrorOffset.y }
+        if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
+          const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
           if (changeOriginal) {
-            mirrorContent(content, startPostion, end)
+            mirrorContent(content, startPosition, end)
           }
           return {
             newContents: !changeOriginal ? [
               produce(content, (d) => {
-                mirrorContent(d, startPostion, end)
+                mirrorContent(d, startPosition, end)
               }),
             ] : undefined,
             assistentContents: [
               {
                 type: 'line',
                 dashArray: [4],
-                points: [startPostion, end]
+                points: [startPosition, end]
               },
             ]
           }

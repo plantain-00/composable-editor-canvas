@@ -3,7 +3,7 @@ import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCent
 import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
 export type ArcContent = BaseContent<'arc'> & Arc
@@ -43,39 +43,45 @@ export const arcModel: Model<ArcContent> = {
     const { points } = getArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [circleEditOffset, setCircleEditOffset] = React.useState<Arc & { data?: number }>({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
-    const { onStartEditCircle, circleEditMask } = useCircleArcEdit<number>(setCircleEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, cursorPosition } = useCircleArcEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: circleEditMask,
+      mask,
       updatePreview(contents) {
-        if (circleEditOffset.data !== undefined) {
-          const content = contents[circleEditOffset.data]
+        if (offset.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.x, y: content.y }, cursorPosition] }]
           if (content.type === 'arc') {
-            content.x += circleEditOffset.x
-            content.y += circleEditOffset.y
-            content.r += circleEditOffset.r
-            content.startAngle += circleEditOffset.startAngle
-            content.endAngle += circleEditOffset.endAngle
+            content.x += offset.x
+            content.y += offset.y
+            content.r += offset.r
+            content.startAngle += offset.startAngle
+            content.endAngle += offset.endAngle
             if (content.endAngle < content.startAngle) {
               content.endAngle += 360
             } else if (content.endAngle - content.startAngle > 360) {
               content.endAngle -= 360
             }
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <CircleArcEditBar {...content} scale={transform?.scale} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+        return <CircleArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
     }
   },
-  useCreate(type, onEnd) {
-    const [circleArcCreate, setCircleArcCreate] = React.useState<Arc>()
-    const { circleCreate, onCircleArcClickCreateClick, onCircleArcClickCreateMove, circleArcClickCreateInput, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
       type === 'circle arc' ? 'center radius' : undefined,
-      setCircleArcCreate,
       (c) => onEnd([{ ...c, type: 'arc' }]),
+      {
+        getAngleSnap,
+      },
     )
     const assistentContents: (LineContent | PolygonContent | CircleContent)[] = []
     if (startPosition && cursorPosition) {
@@ -85,19 +91,19 @@ export const arcModel: Model<ArcContent> = {
         assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
       }
     }
-    if (circleArcCreate) {
-      assistentContents.push({ type: 'circle', ...circleArcCreate, dashArray: [4] })
-      if (circleArcCreate.startAngle !== circleArcCreate.endAngle) {
+    if (arc) {
+      assistentContents.push({ type: 'circle', ...arc, dashArray: [4] })
+      if (arc.startAngle !== arc.endAngle) {
         assistentContents.push(
           {
             type: 'line', points: [
               {
-                x: circleArcCreate.x + circleArcCreate.r * Math.cos(circleArcCreate.startAngle / 180 * Math.PI),
-                y: circleArcCreate.y + circleArcCreate.r * Math.sin(circleArcCreate.startAngle / 180 * Math.PI)
+                x: arc.x + arc.r * Math.cos(arc.startAngle / 180 * Math.PI),
+                y: arc.y + arc.r * Math.sin(arc.startAngle / 180 * Math.PI)
               },
               {
-                x: circleArcCreate.x,
-                y: circleArcCreate.y
+                x: arc.x,
+                y: arc.y
               },
             ],
             dashArray: [4]
@@ -105,31 +111,35 @@ export const arcModel: Model<ArcContent> = {
           {
             type: 'line', points: [
               {
-                x: circleArcCreate.x,
-                y: circleArcCreate.y
+                x: arc.x,
+                y: arc.y
               },
               {
-                x: circleArcCreate.x + circleArcCreate.r * Math.cos(circleArcCreate.endAngle / 180 * Math.PI),
-                y: circleArcCreate.y + circleArcCreate.r * Math.sin(circleArcCreate.endAngle / 180 * Math.PI)
+                x: arc.x + arc.r * Math.cos(arc.endAngle / 180 * Math.PI),
+                y: arc.y + arc.r * Math.sin(arc.endAngle / 180 * Math.PI)
               },
             ],
             dashArray: [4]
           },
         )
       }
-    } else if (circleCreate) {
-      assistentContents.push({ type: 'circle', ...circleCreate, dashArray: [4] })
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [circleCreate, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [arc, cursorPosition], dashArray: [4] })
+      }
+    }
+    if (circle) {
+      assistentContents.push({ type: 'circle', ...circle, dashArray: [4] })
+      if (cursorPosition) {
+        assistentContents.push({ type: 'line', points: [circle, cursorPosition], dashArray: [4] })
       }
     }
     return {
-      input: circleArcClickCreateInput,
-      onClick: onCircleArcClickCreateClick,
-      onMove: onCircleArcClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (circleArcCreate && circleArcCreate.startAngle !== circleArcCreate.endAngle) {
-          contents.push({ type: 'arc', ...circleArcCreate })
+        if (arc && arc.startAngle !== arc.endAngle) {
+          contents.push({ type: 'arc', ...arc })
         }
       },
       assistentContents,

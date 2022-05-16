@@ -1,37 +1,42 @@
 import * as React from "react"
 
-import { DragMask, useKey } from "."
+import { DragMask, getAngleSnapPosition, useKey } from "."
 import { Position } from ".."
 
 export function useDragRotate(
-  setRotate: (rotate: number | undefined, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void,
   onDragEnd: () => void,
   options?: Partial<{
     transform: (p: Position) => Position
     parentRotate: number
-    getSnapPoint(p: Position): Position
+    transformOffset: (p: number, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number
+    getAngleSnap: (angle: number) => number | undefined
   }>,
 ) {
+  const [offset, setOffset] = React.useState<Position & { angle?: number }>()
   const [center, setCenter] = React.useState<Position>()
   const parentRotate = options?.parentRotate ?? 0
   useKey((e) => e.key === 'Escape', () => {
-    setRotate(undefined)
+    setOffset(undefined)
     setCenter(undefined)
   }, [setCenter])
   return {
-    dragRotateCenter: center,
-    onStartRotate: setCenter,
-    dragRotateMask: center && <DragMask
+    offset,
+    center,
+    onStart: setCenter,
+    mask: center && <DragMask
       onDragging={(e) => {
-        const p = { x: e.clientX, y: e.clientY }
-        const f = options?.getSnapPoint?.(p) ?? p
-        const { x, y } = options?.transform?.(f) ?? f
-        const rotate = (Math.atan2(y - center.y, x - center.x) / Math.PI * 180 + 450 - parentRotate) % 360
-        setRotate(rotate, e)
+        const f = { x: e.clientX, y: e.clientY }
+        let p = options?.transform?.(f) ?? f
+        p = getAngleSnapPosition(center, p, options?.getAngleSnap)
+        const rotate = (Math.atan2(p.y - center.y, p.x - center.x) / Math.PI * 180 + 450 - parentRotate) % 360
+        setOffset({
+          ...p,
+          angle: options?.transformOffset?.(rotate, e) ?? rotate,
+        })
       }}
       onDragEnd={() => {
         onDragEnd?.()
-        setRotate(undefined)
+        setOffset(undefined)
         setCenter(undefined)
       }}
     />

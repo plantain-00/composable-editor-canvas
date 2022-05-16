@@ -2,7 +2,7 @@ import React from 'react'
 import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
 import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
 export type EllipseArcContent = BaseContent<'ellipse arc'> & EllipseArc
@@ -20,60 +20,70 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     const { points } = getEllipseArcLines(content)
     return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [ellipseArcEditOffset, setEllipseArcEditOffset] = React.useState<EllipseArc & { data?: number }>({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
-    const { onStartEditEllipseArc, ellipseArcEditMask } = useEllipseArcEdit<number>(setEllipseArcEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, cursorPosition } = useEllipseArcEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: ellipseArcEditMask,
+      mask,
       updatePreview(contents) {
-        if (ellipseArcEditOffset.data !== undefined) {
-          const content = contents[ellipseArcEditOffset.data]
+        if (offset.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.cx, y: content.cy }, cursorPosition] }]
           if (content.type === 'ellipse arc') {
-            content.cx += ellipseArcEditOffset.cx
-            content.cy += ellipseArcEditOffset.cy
-            content.startAngle += ellipseArcEditOffset.startAngle
-            content.endAngle += ellipseArcEditOffset.endAngle
+            content.cx += offset.cx
+            content.cy += offset.cy
+            content.startAngle += offset.startAngle
+            content.endAngle += offset.endAngle
             if (content.endAngle < content.startAngle) {
               content.endAngle += 360
             } else if (content.endAngle - content.startAngle > 360) {
               content.endAngle -= 360
             }
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <EllipseArcEditBar {...content} scale={transform?.scale} onClick={(e, type, cursor) => onStartEditEllipseArc(e, { ...content, type, cursor, data: index })} />
+        return <EllipseArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
     }
   },
-  useCreate(type, onEnd) {
-    const [ellipseArcCreate, setEllipseArcCreate] = React.useState<EllipseArc>()
-    const { ellipseCreate, onEllipseArcClickCreateClick, onEllipseArcClickCreateMove, ellipseArcClickCreateInput, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
       type === 'ellipse arc' ? 'ellipse center' : undefined,
-      setEllipseArcCreate,
       (c) => onEnd([{ ...c, type: 'ellipse arc' }]),
+      {
+        getAngleSnap,
+      },
     )
     const assistentContents: (LineContent | PolygonContent | EllipseContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
-        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4] })
+        const center = type === 'ellipse arc'
+          ? startPosition
+          : { x: (startPosition.x + middlePosition.x) / 2, y: (startPosition.y + middlePosition.y) / 2 }
+        assistentContents.push({ type: 'line', points: [center, cursorPosition], dashArray: [4] })
       } else {
         assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
       }
     }
-    if (ellipseArcCreate) {
-      assistentContents.push({ type: 'ellipse', ...ellipseArcCreate, dashArray: [4] })
-      if (ellipseArcCreate.startAngle !== ellipseArcCreate.endAngle) {
+    if (ellipseArc) {
+      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4] })
+      if (ellipseArc.startAngle !== ellipseArc.endAngle) {
         assistentContents.push(
           {
             type: 'line', points: [
               rotatePositionByEllipseCenter({
-                x: ellipseArcCreate.cx + ellipseArcCreate.rx * Math.cos(ellipseArcCreate.startAngle / 180 * Math.PI),
-                y: ellipseArcCreate.cy + ellipseArcCreate.ry * Math.sin(ellipseArcCreate.startAngle / 180 * Math.PI)
-              }, ellipseArcCreate),
+                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.startAngle / 180 * Math.PI),
+                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.startAngle / 180 * Math.PI)
+              }, ellipseArc),
               {
-                x: ellipseArcCreate.cx,
-                y: ellipseArcCreate.cy
+                x: ellipseArc.cx,
+                y: ellipseArc.cy
               },
             ],
             dashArray: [4]
@@ -81,31 +91,34 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
           {
             type: 'line', points: [
               {
-                x: ellipseArcCreate.cx,
-                y: ellipseArcCreate.cy
+                x: ellipseArc.cx,
+                y: ellipseArc.cy
               },
               rotatePositionByEllipseCenter({
-                x: ellipseArcCreate.cx + ellipseArcCreate.rx * Math.cos(ellipseArcCreate.endAngle / 180 * Math.PI),
-                y: ellipseArcCreate.cy + ellipseArcCreate.ry * Math.sin(ellipseArcCreate.endAngle / 180 * Math.PI)
-              }, ellipseArcCreate),
+                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.endAngle / 180 * Math.PI),
+                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
+              }, ellipseArc),
             ],
             dashArray: [4]
           },
         )
       }
-    } else if (ellipseCreate) {
-      assistentContents.push({ type: 'ellipse', ...ellipseCreate, dashArray: [4] })
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [{ x: ellipseCreate.cx, y: ellipseCreate.cy }, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4] })
+      }
+    } else if (ellipse) {
+      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4] })
+      if (cursorPosition) {
+        assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
       }
     }
     return {
-      input: ellipseArcClickCreateInput,
-      onClick: onEllipseArcClickCreateClick,
-      onMove: onEllipseArcClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (ellipseArcCreate && ellipseArcCreate.startAngle !== ellipseArcCreate.endAngle) {
-          contents.push({ type: 'ellipse arc', ...ellipseArcCreate })
+        if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
+          contents.push({ type: 'ellipse arc', ...ellipseArc })
         }
       },
       assistentContents,

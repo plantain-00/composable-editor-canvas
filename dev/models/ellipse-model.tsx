@@ -1,7 +1,7 @@
 import React from 'react'
 import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseClickCreate, useEllipseEdit } from '../../src'
 import { LineContent } from './line-model'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type EllipseContent = BaseContent<'ellipse'> & Ellipse
@@ -36,14 +36,12 @@ export const ellipseModel: Model<EllipseContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.cx, content.cy, text, stroke, fontSize)
   },
-  useCreate(type, onEnd, angleSnapEnabled) {
-    const [ellipseCreate, setEllipseCreate] = React.useState<Ellipse>()
-    const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
-      setEllipseCreate,
       (c) => onEnd([{ ...c, type: 'ellipse' }]),
       {
-        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        getAngleSnap,
       },
     )
     let assistentContents: LineContent[] | undefined
@@ -52,43 +50,48 @@ export const ellipseModel: Model<EllipseContent> = {
         assistentContents = [{ type: 'line', points: [startPosition, middlePosition], dashArray: [4] }]
         if (type === 'ellipse center') {
           assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
-        } else if (ellipseCreate) {
-          assistentContents.push({ type: 'line', points: [{ x: ellipseCreate.cx, y: ellipseCreate.cy }, cursorPosition], dashArray: [4] })
+        } else if (ellipse) {
+          assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
         }
       } else {
         assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
       }
     }
     return {
-      input: ellipseClickCreateInput,
-      onClick: onEllipseClickCreateClick,
-      onMove: onEllipseClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (ellipseCreate) {
-          contents.push({ type: 'ellipse', ...ellipseCreate })
+        if (ellipse) {
+          contents.push({ type: 'ellipse', ...ellipse })
         }
       },
       assistentContents,
     }
   },
-  useEdit(onEnd, transform) {
-    const [ellipseEditOffset, setEllipseEditOffset] = React.useState<Ellipse & { data?: number }>({ cx: 0, cy: 0, rx: 0, ry: 0 })
-    const { onStartEditEllipse, ellipseEditMask } = useEllipseEdit<number>(setEllipseEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, cursorPosition } = useEllipseEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: ellipseEditMask,
+      mask,
       updatePreview(contents) {
-        if (ellipseEditOffset.data !== undefined) {
-          const content = contents[ellipseEditOffset.data]
+        if (offset.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.cx, y: content.cy }, cursorPosition] }]
           if (content.type === 'ellipse') {
-            content.cx += ellipseEditOffset.cx
-            content.cy += ellipseEditOffset.cy
-            content.rx += ellipseEditOffset.rx
-            content.ry += ellipseEditOffset.ry
+            content.cx += offset.cx
+            content.cy += offset.cy
+            content.rx += offset.rx
+            content.ry += offset.ry
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <EllipseEditBar scale={transform?.scale} cx={content.cx} cy={content.cy} rx={content.rx} ry={content.ry} angle={content.angle} onClick={(e, type, cursor) => onStartEditEllipse(e, { ...content, type, cursor, data: index })} />
+        return <EllipseEditBar scale={scale} cx={content.cx} cy={content.cy} rx={content.rx} ry={content.ry} angle={content.angle} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
     }
   },

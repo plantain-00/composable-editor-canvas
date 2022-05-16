@@ -1,16 +1,16 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
-import { Ellipse, getPointByLengthAndDirection, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils"
+import { getAngleSnapPosition, useCursorInput, useKey } from ".."
+import { Ellipse, getPointByLengthAndDirection, getTwoPointsDistance, Position } from "../../utils"
 
 export function useEllipseClickCreate(
   type: 'ellipse center' | 'ellipse endpoint' | undefined,
-  setEllipse: (ellipse?: Ellipse) => void,
   onEnd: (ellipse: Ellipse) => void,
   options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined
   }>,
 ) {
+  const [ellipse, setEllipse] = React.useState<Ellipse>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
@@ -73,23 +73,13 @@ export function useEllipseClickCreate(
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
-  const getAngleSnapPosition = (newPosition: { x: number, y: number }) => {
-    if (options?.getAngleSnap && startPosition) {
-      const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI
-      const newAngle = options.getAngleSnap(angle)
-      if (newAngle !== undefined && newAngle !== angle) {
-        newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)
-      }
-    }
-    return newPosition
-  }
-
   return {
+    ellipse,
     startPosition,
     middlePosition,
     cursorPosition,
     setCursorPosition,
-    onEllipseClickCreateClick(p: Position) {
+    onClick(p: Position) {
       if (!type) {
         return
       }
@@ -97,25 +87,43 @@ export function useEllipseClickCreate(
       if (!startPosition) {
         setStartPosition(p)
       } else if (!middlePosition) {
-        const newPosition = getAngleSnapPosition(p)
+        const newPosition = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
         setMiddlePosition(newPosition)
       } else {
+        const center = type === 'ellipse center'
+          ? startPosition
+          : {
+            x: (startPosition.x + middlePosition.x) / 2,
+            y: (startPosition.y + middlePosition.y) / 2,
+          }
+        p = getAngleSnapPosition(center, p, options?.getAngleSnap)
         onEnd(getEllipse(type, startPosition, middlePosition, p))
         reset()
       }
     },
-    onEllipseClickCreateMove(p: Position, viewportPosition?: Position) {
+    onMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
-      const newPosition = getAngleSnapPosition(p)
+      let newPosition: Position
+      if (startPosition && middlePosition) {
+        const center = type === 'ellipse center'
+          ? startPosition
+          : {
+            x: (startPosition.x + middlePosition.x) / 2,
+            y: (startPosition.y + middlePosition.y) / 2,
+          }
+        newPosition = getAngleSnapPosition(center, p, options?.getAngleSnap)
+      } else {
+        newPosition = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
+      }
       setCursorPosition(newPosition)
       setInputPosition(viewportPosition || newPosition)
       if (startPosition && middlePosition) {
         setEllipse(getEllipse(type, startPosition, middlePosition, newPosition))
       }
     },
-    ellipseClickCreateInput: input,
+    input,
   }
 }
 

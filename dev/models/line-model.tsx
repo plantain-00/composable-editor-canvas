@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
-import { BaseContent, getAngleSnap, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 
 export type LineContent = BaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -27,43 +27,46 @@ export const lineModel: Model<LineContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [polylineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[], data?: number }>()
-    const { onStartEditPolyline, polylineEditMask } = usePolylineEdit<number>(setPolylineEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, cursorPosition, dragStartPosition } = usePolylineEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: polylineEditMask,
+      mask,
       updatePreview(contents) {
-        if (polylineEditOffset?.data !== undefined) {
-          const content = contents[polylineEditOffset.data]
-          for (const pointIndex of polylineEditOffset.pointIndexes) {
-            content.points[pointIndex].x += polylineEditOffset.x
-            content.points[pointIndex].y += polylineEditOffset.y
+        if (offset?.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
+          for (const pointIndex of offset.pointIndexes) {
+            content.points[pointIndex].x += offset.x
+            content.points[pointIndex].y += offset.y
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <PolylineEditBar scale={transform?.scale} points={content.points} onClick={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes, index)} />
+        return <PolylineEditBar scale={scale} points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
     }
   },
-  useCreate(type, onEnd, angleSnapEnabled) {
-    const [lineCreate, setLineCreate] = React.useState<{ points: Position[] }>()
-    const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'line',
-      (c) => setLineCreate(c ? { points: c } : undefined),
       (c) => onEnd(Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' }))),
       {
-        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        getAngleSnap,
       },
     )
     return {
-      input: lineClickCreateInput,
-      onClick: onLineClickCreateClick,
-      onMove: onLineClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (lineCreate) {
-          for (const line of iteratePolylineLines(lineCreate.points)) {
-            contents.push({ points: line, type: 'line' })
+        if (line) {
+          for (const lineSegment of iteratePolylineLines(line)) {
+            contents.push({ points: lineSegment, type: 'line' })
           }
         }
       },

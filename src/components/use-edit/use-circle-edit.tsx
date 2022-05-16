@@ -1,33 +1,37 @@
 
-import { Circle } from "../.."
+import * as React from "react"
+import { Circle, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
-import { useEdit } from "./use-edit"
+import { EditOptions, useEdit } from "./use-edit"
 
 export function useCircleEdit<T = void>(
-  setCircleOffset: (offset: Circle & { data?: T }) => void,
-  onEditEnd: () => void,
-  options?: Partial<{
-    transform: (p: Position) => Position
-  }>
+  onEnd: () => void,
+  options?: EditOptions,
 ) {
-  const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'edge' } & Circle, T>(
-    onEditEnd,
+  const [offset, setOffset] = React.useState<Circle & { data?: T }>({ x: 0, y: 0, r: 0 })
+  const [cursorPosition, setCursorPosition] = React.useState<Position>()
+  const { onStart, mask } = useEdit<{ type: 'center' | 'edge' } & Circle, T>(
+    onEnd,
     (start, end) => {
+      end = getAngleSnapPosition(start.data, end, options?.getAngleSnap)
+      setCursorPosition(end)
       if (start.data.type === 'center') {
         const x = end.x - start.x
         const y = end.y - start.y
-        setCircleOffset({ x, y, r: 0, data: start.data.data })
+        setOffset({ x, y, r: 0, data: start.data.data })
       } else {
         const r = getTwoPointsDistance(end, start.data) - start.data.r
-        setCircleOffset({ x: 0, y: 0, r, data: start.data.data })
+        setOffset({ x: 0, y: 0, r, data: start.data.data })
       }
     },
-    () => setCircleOffset({ x: 0, y: 0, r: 0 }),
+    () => setOffset({ x: 0, y: 0, r: 0 }),
     options,
   )
 
   return {
-    onStartEditCircle: onStartEdit,
-    circleEditMask: editMask,
+    cursorPosition,
+    offset,
+    onStart,
+    mask,
   }
 }
