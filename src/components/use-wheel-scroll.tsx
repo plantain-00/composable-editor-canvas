@@ -1,11 +1,11 @@
 import * as React from "react"
 
 export function useWheelScroll<T extends HTMLElement>(
-  setX: React.Dispatch<React.SetStateAction<number>>,
-  setY: React.Dispatch<React.SetStateAction<number>>,
   maxOffsetX: number,
   maxOffsetY: number,
 ) {
+  const [x, setX] = React.useState(0)
+  const [y, setY] = React.useState(0)
   const ref = React.useRef<T | null>(null)
 
   React.useEffect(() => {
@@ -35,5 +35,11 @@ export function useWheelScroll<T extends HTMLElement>(
     }
   }, [ref.current, maxOffsetX, maxOffsetY])
 
-  return ref
+  return {
+    ref,
+    x,
+    y,
+    setX,
+    setY,
+  }
 }

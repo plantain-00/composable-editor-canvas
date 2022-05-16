@@ -12,9 +12,6 @@ const draftState = localStorage.getItem(draftKey)
 const initialState = draftState ? JSON.parse(draftState) as StyleGuide : styleGuide
 
 export function App() {
-  const [relativeScale, setRelativeScale] = React.useState(1)
-  const [x, setX] = React.useState(0)
-  const [y, setY] = React.useState(0)
   const { state, setState, undo, redo, stateIndex } = useUndoRedo(initialState)
 
   React.useEffect(() => {
@@ -35,6 +32,7 @@ export function App() {
     width: window.innerWidth,
     height: window.innerHeight,
   }
+  const { ref: wheelZoomRef, scale: relativeScale, setScale: setRelativeScale } = useWheelZoom<HTMLDivElement>()
   const padding = 80
   const initialScale = Math.min((containerSize.width - padding) / targetSize.width, (containerSize.height - padding) / targetSize.height)
   const scale = relativeScale * initialScale
@@ -43,17 +41,14 @@ export function App() {
     height: targetSize.height * scale + padding,
   }
 
-  const wheelScrollRef = useWheelScroll<HTMLDivElement>(
-    setX,
-    setY,
+  const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>(
     (contentSize.width - containerSize.width) / 2,
     (contentSize.height - containerSize.height) / 2,
   )
-  const wheelZoomRef = useWheelZoom<HTMLDivElement>(setRelativeScale)
+
   const isMacKeyboard = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
-
   const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
@@ -73,17 +68,7 @@ export function App() {
   const parentRotate = selectedTarget?.kind === 'content' ? selectedTarget.parents.reduce((p, c) => p + (c.rotate ?? 0), 0) : undefined
 
   const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clearRegionAlignments } = useRegionAlignment(6 / scale)
-  const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove(
-    (f, e) => {
-      if (e && !e.shiftKey && selectedTarget?.kind === 'template') {
-        const template = selectedTarget.template
-        changeOffsetByRegionAlignment(f, template, state.templates.filter((t) => t !== template))
-      } else {
-        clearRegionAlignments()
-      }
-      setMoveOffset(f)
-    },
+  const { offset: moveOffset, onStart: onStartMove, mask: dragMoveMask, startPosition: dragMoveStartPosition } = useDragMove(
     () => {
       clearRegionAlignments()
       if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
@@ -101,48 +86,44 @@ export function App() {
     {
       scale,
       parentRotate,
+      transformOffset: (f, e) => {
+        if (e && !e.shiftKey && selectedTarget?.kind === 'template') {
+          const template = selectedTarget.template
+          changeOffsetByRegionAlignment(f, template, state.templates.filter((t) => t !== template))
+        } else {
+          clearRegionAlignments()
+        }
+        return f
+      },
     },
   )
 
-  const [rotate, setRotate] = React.useState<number>()
-  const { onStartRotate, dragRotateMask, dragRotateCenter } = useDragRotate(
-    (r, e) => {
-      if (e && r !== undefined && !e.shiftKey) {
-        const snap = Math.round(r / 45) * 45
-        if (Math.abs(snap - r) < 5) {
-          r = snap
-        }
-      }
-      setRotate(r)
-    },
+  const { offset: rotateOffset, onStart: onStartRotate, mask: dragRotateMask, center } = useDragRotate(
     () => {
       setState((draft) => {
         const target = getTargetByPath(selected, draft)
         if (target?.kind === 'content') {
-          target.content.rotate = rotate
+          target.content.rotate = rotateOffset?.angle
         }
       })
     },
     {
       transform: (p) => transformPosition(p, transform),
       parentRotate,
+      transformOffset: (r, e) => {
+        if (e && r !== undefined && !e.shiftKey) {
+          const snap = Math.round(r / 45) * 45
+          if (Math.abs(snap - r) < 5) {
+            r = snap
+          }
+        }
+        return r
+      },
     },
   )
 
   const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAlignments } = useLineAlignment(6 / scale)
-  const [resizeOffset, setResizeOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
-  const { onStartResize, dragResizeMask, dragResizeStartPosition } = useDragResize(
-    (f, e, direction) => {
-      if (e && direction && !e.altKey && selectedTarget?.kind === 'template') {
-        const template = selectedTarget.template
-        const xLines = state.templates.filter((t) => t !== template).map((t) => [t.x, t.x + t.width]).flat()
-        const yLines = state.templates.filter((t) => t !== template).map((t) => [t.y, t.y + t.height]).flat()
-        changeOffsetByLineAlignment(f, direction, template, xLines, yLines)
-      } else {
-        clearLineAlignments()
-      }
-      setResizeOffset(f)
-    },
+  const { offset: resizeOffset, onStart: onStartResize, mask: dragResizeMask, startPosition: dragResizeStartPosition } = useDragResize(
     () => {
       clearLineAlignments()
       setState((draft) => {
@@ -169,6 +150,17 @@ export function App() {
       rotate: selectedTarget?.kind === 'content' ? selectedTarget.content.rotate ?? 0 : 0,
       parentRotate,
       transform: (p) => transformPosition(p, transform),
+      transformOffset: (f, e, direction) => {
+        if (e && direction && !e.altKey && selectedTarget?.kind === 'template') {
+          const template = selectedTarget.template
+          const xLines = state.templates.filter((t) => t !== template).map((t) => [t.x, t.x + t.width]).flat()
+          const yLines = state.templates.filter((t) => t !== template).map((t) => [t.y, t.y + t.height]).flat()
+          changeOffsetByLineAlignment(f, direction, template, xLines, yLines)
+        } else {
+          clearLineAlignments()
+        }
+        return f
+      }
     },
   )
 
@@ -189,7 +181,7 @@ export function App() {
     width: resizeOffset.width,
     height: resizeOffset.height,
   }
-  const dragging = dragMoveStartPosition || dragRotateCenter || dragResizeStartPosition || dragSelectStartPosition
+  const dragging = dragMoveStartPosition || center || dragResizeStartPosition || dragSelectStartPosition
 
   return (
     <div
@@ -225,7 +217,7 @@ export function App() {
         scale={scale}
         onStartSelect={onStartSelect}
         offset={offset}
-        rotate={rotate}
+        rotate={rotateOffset?.angle}
         selected={selected}
       />
       {selected && <div
@@ -243,7 +235,7 @@ export function App() {
           selected={selected}
           onStartMove={onStartMove}
           offset={offset}
-          rotate={rotate}
+          rotate={rotateOffset?.angle}
           onStartRotate={onStartRotate}
           onStartResize={onStartResize}
         />

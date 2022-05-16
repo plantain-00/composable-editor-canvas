@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { PolylineEditBar, Position, usePolylineEdit } from "../src"
+import { PolylineEditBar, usePolylineEdit } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState([
@@ -8,16 +8,15 @@ export default () => {
     { x: 300, y: 200 },
     { x: 100, y: 200 },
   ])
-  const [polyineEditOffset, setPolylineEditOffset] = React.useState<Position & { pointIndexes: number[] }>()
+  const { offset, onStart, mask } = usePolylineEdit(() => setContent(points))
   const points = produce(content, (draft) => {
-    if (polyineEditOffset) {
-      for (const pointIndex of polyineEditOffset.pointIndexes) {
-        draft[pointIndex].x += polyineEditOffset.x
-        draft[pointIndex].y += polyineEditOffset.y
+    if (offset) {
+      for (const pointIndex of offset.pointIndexes) {
+        draft[pointIndex].x += offset.x
+        draft[pointIndex].y += offset.y
       }
     }
   })
-  const { onStartEditPolyline, polylineEditMask } = usePolylineEdit(setPolylineEditOffset, () => setContent(points))
   return (
     <>
       <svg
@@ -32,9 +31,9 @@ export default () => {
       </svg>
       <PolylineEditBar
         points={points}
-        onMouseDown={(e, pointIndexes) => onStartEditPolyline(e, pointIndexes)}
+        onMouseDown={(e, pointIndexes) => onStart(e, pointIndexes)}
       />
-      {polylineEditMask}
+      {mask}
     </>
   )
 }

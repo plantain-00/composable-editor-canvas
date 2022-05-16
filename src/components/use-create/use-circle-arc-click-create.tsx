@@ -1,75 +1,80 @@
 import * as React from "react"
 
 import { useKey } from ".."
-import { Arc, Circle, Position } from "../../utils"
-import { useCircleClickCreate } from "./use-circle-click-create"
+import { Arc, Position } from "../../utils"
+import { getAngleSnapPosition, useCircleClickCreate } from "./use-circle-click-create"
 
 export function useCircleArcClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
-  setCircleArc: (arc?: Arc) => void,
   onEnd: (arc: Arc) => void,
+  options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined
+  }>,
 ) {
-  const [circleCreate, setCircleCreate] = React.useState<Circle>()
+  const [arc, setArc] = React.useState<Arc>()
   const [startAngle, setStartAngle] = React.useState<number>()
 
-  const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput, startPosition, middlePosition, cursorPosition, setCursorPosition } = useCircleClickCreate(
+  const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition } = useCircleClickCreate(
     type,
-    (c) => setCircleArc(c ? { ...c, startAngle: 0, endAngle: 0 } : undefined),
-    setCircleCreate,
+    (c) => setArc(c ? { ...c, startAngle: 0, endAngle: 0 } : undefined),
+    options,
   )
 
   const reset = () => {
-    setCircleCreate(undefined)
     setStartAngle(undefined)
     setCursorPosition(undefined)
+    setArc(undefined)
   }
 
-  useKey((e) => e.key === 'Escape', reset, [setCircleCreate, setStartAngle, setCursorPosition])
+  useKey((e) => e.key === 'Escape', reset, [setArc, setStartAngle, setCursorPosition])
 
   return {
-    circleCreate,
+    circle,
+    arc,
     startPosition,
     middlePosition,
     cursorPosition,
-    onCircleArcClickCreateClick(p: Position) {
+    onClick(p: Position) {
       if (!type) {
         return
       }
-      if (circleCreate) {
+      if (arc) {
+        p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         if (startAngle === undefined) {
-          const angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
+          const angle = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI
           setStartAngle(angle)
-          setCircleArc({ ...circleCreate, startAngle: angle, endAngle: angle })
+          setArc({ ...arc, startAngle: angle, endAngle: angle })
         } else {
-          let angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
+          let angle = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI
           if (angle < startAngle) {
             angle += 360
           }
-          setCircleArc(undefined)
-          onEnd({ ...circleCreate, startAngle, endAngle: angle })
+          setArc(undefined)
+          onEnd({ ...arc, startAngle, endAngle: angle })
           reset()
         }
       } else {
-        onCircleClickCreateClick(p)
+        onClick(p)
       }
     },
-    onCircleArcClickCreateMove(p: Position, viewportPosition?: Position) {
+    onMove(p: Position, viewportPosition?: Position) {
       if (!type) {
         return
       }
-      if (circleCreate) {
+      if (arc) {
+        p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         setCursorPosition(p)
-        if (startAngle) {
-          let angle = Math.atan2(p.y - circleCreate.y, p.x - circleCreate.x) * 180 / Math.PI
+        if (startAngle !== undefined) {
+          let angle = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI
           if (angle < startAngle) {
             angle += 360
           }
-          setCircleArc({ ...circleCreate, startAngle, endAngle: angle })
+          setArc({ ...arc, startAngle, endAngle: angle })
         }
       } else {
-        onCircleClickCreateMove(p, viewportPosition)
+        onMove(p, viewportPosition)
       }
     },
-    circleArcClickCreateInput: circleClickCreateInput,
+    input,
   }
 }

@@ -1,10 +1,9 @@
 import * as React from "react"
 
-import { DragMask, useKey } from "."
+import { DragMask, getAngleSnapPosition, useKey } from "."
 import { getResizeCursor, Position, Region, ResizeDirection } from ".."
 
 export function useDragResize(
-  setResizeOffset: (offset: Region, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => void,
   onDragEnd: () => void,
   options?: Partial<{
     centeredScaling: boolean | ((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean)
@@ -12,28 +11,39 @@ export function useDragResize(
     rotate: number
     parentRotate: number
     transform: (p: Position) => Position
+    transformOffset: (p: Region, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => Region
+    getAngleSnap: (angle: number) => number | undefined
   }>,
 ) {
+  const [offset, setOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { direction: ResizeDirection }>()
   const rotate = -(options?.rotate ?? 0) * Math.PI / 180
   const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
+  const [cursorPosition, setCursorPosition] = React.useState<Position>()
   useKey((e) => e.key === 'Escape', () => {
-    setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
+    setOffset({ x: 0, y: 0, width: 0, height: 0 })
     setDragStartPosition(undefined)
   }, [setDragStartPosition])
 
   return {
-    dragResizeStartPosition: dragStartPosition,
-    onStartResize(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) {
+    offset,
+    cursorPosition,
+    startPosition: dragStartPosition,
+    onStart(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection) {
       e.stopPropagation()
+      const p = { x: e.clientX, y: e.clientY }
       setDragStartPosition({
-        ...options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY },
+        ...options?.transform?.(p) ?? p,
         direction,
       })
     },
-    dragResizeMask: dragStartPosition && <DragMask
+    mask: dragStartPosition && <DragMask
       onDragging={(e) => {
-        const { x: positionX, y: positionY } = options?.transform?.({ x: e.clientX, y: e.clientY }) ?? { x: e.clientX, y: e.clientY }
+        let p = { x: e.clientX, y: e.clientY }
+        p = options?.transform?.(p) ?? p
+        p = getAngleSnapPosition(dragStartPosition, p, options?.getAngleSnap)
+        setCursorPosition(p)
+        const { x: positionX, y: positionY } = p
         const originalOffsetX = positionX - dragStartPosition.x
         const originalOffsetY = positionY - dragStartPosition.y
 
@@ -43,7 +53,8 @@ export function useDragResize(
         const parentOffsetY = parentSin * originalOffsetX + parentCos * originalOffsetY
 
         if (dragStartPosition.direction === 'center') {
-          setResizeOffset({ x: parentOffsetX, y: parentOffsetY, width: 0, height: 0 }, e, dragStartPosition.direction)
+          const f = { x: parentOffsetX, y: parentOffsetY, width: 0, height: 0 }
+          setOffset(options?.transformOffset?.(f, e, dragStartPosition.direction) ?? f)
           return
         }
 
@@ -93,11 +104,11 @@ export function useDragResize(
             offset.y += (cos - 1) * offsetY / 2
           }
         }
-        setResizeOffset(offset, e, dragStartPosition.direction)
+        setOffset(options?.transformOffset?.(offset, e, dragStartPosition.direction) ?? offset)
       }}
       onDragEnd={() => {
         onDragEnd()
-        setResizeOffset({ x: 0, y: 0, width: 0, height: 0 })
+        setOffset({ x: 0, y: 0, width: 0, height: 0 })
         setDragStartPosition(undefined)
       }}
       style={{

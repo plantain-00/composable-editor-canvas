@@ -1,17 +1,17 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
-import { getPointByLengthAndDirection, getPolygonPoints, Position, rotatePositionByCenter } from "../../utils"
+import { getAngleSnapPosition, useCursorInput, useKey } from ".."
+import { getPointByLengthAndDirection, getPolygonPoints, Position } from "../../utils"
 
 export function usePolygonClickCreate(
   enabled: boolean,
-  setPolygon: (polygon?: Position[]) => void,
   onEnd: (polygon: Position[]) => void,
   options?: Partial<{
     toEdge: boolean
     getAngleSnap: (angle: number) => number | undefined
   }>,
 ) {
+  const [polygon, setPolygon] = React.useState<Position[]>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [inputType, setInputType] = React.useState<'radius' | 'sides'>('radius')
   const [sides, setSides] = React.useState(6)
@@ -54,21 +54,11 @@ export function usePolygonClickCreate(
     }
   }, [options?.toEdge])
 
-  const getAngleSnapPosition = (newPosition: { x: number, y: number }) => {
-    if (options?.getAngleSnap && startPosition) {
-      const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI
-      const newAngle = options.getAngleSnap(angle)
-      if (newAngle !== undefined && newAngle !== angle) {
-        newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)
-      }
-    }
-    return newPosition
-  }
-
   return {
+    polygon,
     startPosition,
     cursorPosition,
-    onPolygonClickCreateClick(p: Position) {
+    onClick(p: Position) {
       if (!enabled) {
         return
       }
@@ -76,23 +66,23 @@ export function usePolygonClickCreate(
       if (!startPosition) {
         setStartPosition(p)
       } else {
-        const newPosition = getAngleSnapPosition(p)
+        const newPosition = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
         onEnd(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
         reset()
       }
     },
-    onPolygonClickCreateMove(p: Position, viewportPosition?: Position) {
+    onMove(p: Position, viewportPosition?: Position) {
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition(p)
+      const newPosition = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
       setCursorPosition(newPosition)
       setInputPosition(viewportPosition || newPosition)
       if (startPosition) {
         setPolygon(getPolygonPoints(newPosition, startPosition, sides, options?.toEdge))
       }
     },
-    polygonClickCreateInput: input,
+    input,
     startSetSides() {
       setInputType('sides')
     }

@@ -1,36 +1,40 @@
-import { Ellipse } from "../.."
+import * as React from "react"
+import { Ellipse, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
-import { useEdit } from "./use-edit"
+import { EditOptions, useEdit } from "./use-edit"
 
 export function useEllipseEdit<T = void>(
-  setEllipseOffset: (offset: Ellipse & { data?: T }) => void,
-  onEditEnd: () => void,
-  options?: Partial<{
-    transform: (p: Position) => Position
-  }>
+  onEnd: () => void,
+  options?: EditOptions,
 ) {
-  const { onStartEdit, editMask } = useEdit<{ type: 'center' | 'major axis' | 'minor axis' } & Ellipse, T>(
-    onEditEnd,
+  const [offset, setOffset] = React.useState<Ellipse & { data?: T }>({ cx: 0, cy: 0, rx: 0, ry: 0 })
+  const [cursorPosition, setCursorPosition] = React.useState<Position>()
+  const { onStart, mask } = useEdit<{ type: 'center' | 'major axis' | 'minor axis' } & Ellipse, T>(
+    onEnd,
     (start, end) => {
+      end = getAngleSnapPosition({ x: start.data.cx, y: start.data.cy }, end, options?.getAngleSnap)
+      setCursorPosition(end)
       if (start.data.type === 'center') {
         const cx = end.x - start.x
         const cy = end.y - start.y
-        setEllipseOffset({ cx, cy, rx: 0, ry: 0, data: start.data.data })
+        setOffset({ cx, cy, rx: 0, ry: 0, data: start.data.data })
       } else {
         const r = getTwoPointsDistance(end, { x: start.data.cx, y: start.data.cy })
         if (start.data.type === 'major axis') {
-          setEllipseOffset({ cx: 0, cy: 0, rx: r - start.data.rx, ry: 0, data: start.data.data })
+          setOffset({ cx: 0, cy: 0, rx: r - start.data.rx, ry: 0, data: start.data.data })
         } else {
-          setEllipseOffset({ cx: 0, cy: 0, rx: 0, ry: r - start.data.ry, data: start.data.data })
+          setOffset({ cx: 0, cy: 0, rx: 0, ry: r - start.data.ry, data: start.data.data })
         }
       }
     },
-    () => setEllipseOffset({ cx: 0, cy: 0, rx: 0, ry: 0 }),
+    () => setOffset({ cx: 0, cy: 0, rx: 0, ry: 0 }),
     options,
   )
 
   return {
-    onStartEditEllipse: onStartEdit,
-    ellipseEditMask: editMask,
+    offset,
+    onStart,
+    mask,
+    cursorPosition,
   }
 }

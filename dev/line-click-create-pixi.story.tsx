@@ -5,15 +5,11 @@ import * as PIXI from 'pixi.js'
 import { Position, useLineClickCreate } from "../src"
 
 export default () => {
-  const [line, setLine] = React.useState<Position[]>()
   const [contents, setContents] = React.useState<Position[][]>([])
-  const { onLineClickCreateClick, onLineClickCreateMove, lineClickCreateInput } = useLineClickCreate(true, setLine, (c) => {
-    const data = c || line
-    if (data) {
-      setContents(produce(contents, (draft) => {
-        draft.push(data)
-      }))
-    }
+  const { line, onClick, onMove, input } = useLineClickCreate(true, (c) => {
+    setContents(produce(contents, (draft) => {
+      draft.push(c)
+    }))
   })
 
   const draw = React.useCallback((g: PIXI.Graphics) => {
@@ -35,8 +31,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={(e) => onLineClickCreateClick({ x: e.clientX, y: e.clientY })}
-        onMouseMove={(e) => onLineClickCreateMove({ x: e.clientX, y: e.clientY })}
+        onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}
@@ -44,7 +40,7 @@ export default () => {
       >
         <Graphics draw={draw} />
       </Stage>
-      {lineClickCreateInput}
+      {input}
     </div>
   )
 }

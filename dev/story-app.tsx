@@ -56,7 +56,10 @@ function HighlightCode(props: { code: string }) {
   )
 }
 
-createRoot(document.querySelector('#container')!).render(<StoryApp />)
+const container = document.querySelector('#container')
+if (container) {
+  createRoot(container).render(<StoryApp />)
+}
 
 declare global {
   const Prism: {

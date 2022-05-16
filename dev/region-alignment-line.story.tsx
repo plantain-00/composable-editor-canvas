@@ -8,27 +8,28 @@ export default () => {
   const [selectedIndex, setSelectedIndex] = React.useState(0)
 
   const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clearRegionAlignments } = useRegionAlignment(10)
-  const [moveOffset, setMoveOffset] = React.useState({ x: 0, y: 0 })
-  const { onStartMove, dragMoveMask, dragMoveStartPosition } = useDragMove<number>(
-    (f, e) => {
-      if (!e?.shiftKey) {
-        changeOffsetByRegionAlignment(f, contents[selectedIndex], contents.filter((_, i) => i !== selectedIndex))
-      } else {
-        clearRegionAlignments()
-      }
-      setMoveOffset(f)
-    },
+  const { offset, onStart, mask, startPosition } = useDragMove<number>(
     () => {
       clearRegionAlignments()
-      if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition?.data !== undefined) {
-        setSelectedIndex(dragMoveStartPosition.data)
+      if (offset.x === 0 && offset.y === 0 && startPosition?.data !== undefined) {
+        setSelectedIndex(startPosition.data)
         return
       }
       setContents(produce(contents, (draft) => {
-        draft[selectedIndex].x += moveOffset.x
-        draft[selectedIndex].y += moveOffset.y
+        draft[selectedIndex].x += offset.x
+        draft[selectedIndex].y += offset.y
       }))
     },
+    {
+      transformOffset: (f, e) => {
+        if (!e?.shiftKey) {
+          changeOffsetByRegionAlignment(f, contents[selectedIndex], contents.filter((_, i) => i !== selectedIndex))
+        } else {
+          clearRegionAlignments()
+        }
+        return f
+      },
+    }
   )
   return (
     <>
@@ -38,21 +39,21 @@ export default () => {
           style={{
             width: `${content.width}px`,
             height: `${content.height}px`,
-            left: `${content.x + (selectedIndex === i ? moveOffset.x : 0)}px`,
-            top: `${content.y + (selectedIndex === i ? moveOffset.y : 0)}px`,
+            left: `${content.x + (selectedIndex === i ? offset.x : 0)}px`,
+            top: `${content.y + (selectedIndex === i ? offset.y : 0)}px`,
             position: 'absolute',
             boxSizing: 'border-box',
             background: `url(${content.url})`,
             backgroundSize: 'contain',
             border: selectedIndex === i ? '1px solid green' : undefined,
           }}
-          onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY }, { data: i })}
+          onMouseDown={(e) => onStart({ x: e.clientX, y: e.clientY }, { data: i })}
         >
         </div>
       ))}
       <AlignmentLine type='x' value={regionAlignmentX} />
       <AlignmentLine type='y' value={regionAlignmentY} />
-      {dragMoveMask}
+      {mask}
     </>
   )
 }

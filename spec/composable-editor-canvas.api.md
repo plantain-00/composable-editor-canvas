@@ -6,9 +6,7 @@
 
 /// <reference types="react" />
 
-import { MouseEvent as MouseEvent_2 } from 'react';
 import type { Patch } from 'immer/dist/types/types-external';
-import { Property } from 'csstype';
 import * as React_2 from 'react';
 import { WritableDraft } from 'immer/dist/types/types-external';
 
@@ -102,6 +100,18 @@ export type EditBarPosition<T> = Position & {
 };
 
 // @public (undocumented)
+export type EditData<T, V> = V & {
+    data?: T;
+    cursor: React_2.CSSProperties['cursor'];
+};
+
+// @public (undocumented)
+export type EditOptions = Partial<{
+    transform: (p: Position) => Position;
+    getAngleSnap: (angle: number) => number | undefined;
+}>;
+
+// @public (undocumented)
 export interface Ellipse {
     // (undocumented)
     angle?: number;
@@ -153,6 +163,9 @@ export interface GeneralFormLine {
     // (undocumented)
     c: number;
 }
+
+// @public (undocumented)
+export function getAngleSnapPosition(startPosition: Position | undefined, newPosition: Position, getAngleSnap?: (angle: number) => number | undefined): Position;
 
 // @public (undocumented)
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number): Position[];
@@ -363,55 +376,55 @@ export interface TwoPointsFormRegion {
 }
 
 // @public (undocumented)
-export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircleArc: (arc?: Arc) => void, onEnd: (arc: Arc) => void): {
-    circleCreate: Circle | undefined;
+export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, onEnd: (arc: Arc) => void, options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
+    circle: Circle | undefined;
+    arc: Arc | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
-    onCircleArcClickCreateClick(p: Position): void;
-    onCircleArcClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    circleArcClickCreateInput: JSX.Element | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useCircleArcEdit<T = void>(setCircleOffset: (offset: Arc & {
-    data?: T;
-}) => void, onEditEnd: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    onStartEditCircle: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
-        type: 'center' | 'start angle' | 'end angle' | 'radius';
-    } & Arc & {
+export function useCircleArcEdit<T = void>(onEnd: () => void, options?: EditOptions): {
+    offset: Arc & {
         data?: T | undefined;
-        cursor: Property.Cursor | undefined;
-    }) => void;
-    circleEditMask: JSX.Element | undefined;
+    };
+    onStart: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, {
+    type: 'center' | 'start angle' | 'end angle' | 'radius';
+    } & Arc>) => void;
+    mask: JSX.Element | undefined;
+    cursorPosition: Position | undefined;
 };
 
 // @public (undocumented)
-export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, setCircle: (circle?: Circle) => void, onEnd: (circle: Circle) => void): {
+export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, onEnd: (circle: Circle) => void, options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
+    circle: Circle | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
-    onCircleClickCreateClick(p: Position): void;
-    onCircleClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    circleClickCreateInput: JSX.Element | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useCircleEdit<T = void>(setCircleOffset: (offset: Circle & {
-    data?: T;
-}) => void, onEditEnd: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    onStartEditCircle: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
-        type: 'center' | 'edge';
-    } & Circle & {
+export function useCircleEdit<T = void>(onEnd: () => void, options?: EditOptions): {
+    cursorPosition: Position | undefined;
+    offset: Circle & {
         data?: T | undefined;
-        cursor: Property.Cursor | undefined;
-    }) => void;
-    circleEditMask: JSX.Element | undefined;
+    };
+    onStart: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, {
+    type: 'center' | 'edge';
+    } & Circle>) => void;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -424,46 +437,62 @@ export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.Keyboard
 };
 
 // @public (undocumented)
-export function useDragMove<T = void>(setMoveOffset: (offset: Position, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd?: () => void, options?: Partial<{
+export function useDragMove<T = void>(onDragEnd?: () => void, options?: Partial<{
     scale: number;
     parentRotate: number;
-    clone: boolean;
-    getSnapPoint: (p: Position) => Position;
+    repeatedly: boolean;
+    transform: (p: Position) => Position;
     ignoreLeavingEvent: boolean;
+    transformOffset: (p: Position, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => Position;
+    getAngleSnap: (angle: number) => number | undefined;
 }>): {
-    dragMoveStartPosition: (Position & {
+    offset: Position;
+    startPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
-    onStartMove(p: Position, startPosition?: Partial<Position & {
+    onStart(p: Position, startPosition?: Partial<Position & {
         data: T;
     }> | undefined): void;
-    dragMoveMask: JSX.Element | undefined;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragResize(setResizeOffset: (offset: Region, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragResize(onDragEnd: () => void, options?: Partial<{
     centeredScaling: boolean | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean);
     keepRatio: number | undefined | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number | undefined);
     rotate: number;
     parentRotate: number;
     transform: (p: Position) => Position;
+    transformOffset: (p: Region, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction?: ResizeDirection) => Region;
+    getAngleSnap: (angle: number) => number | undefined;
 }>): {
-    dragResizeStartPosition: (Position & {
+    offset: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+    cursorPosition: Position | undefined;
+    startPosition: (Position & {
         direction: ResizeDirection;
     }) | undefined;
-    onStartResize(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection): void;
-    dragResizeMask: JSX.Element | undefined;
+    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, direction: ResizeDirection): void;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useDragRotate(setRotate: (rotate: number | undefined, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, onDragEnd: () => void, options?: Partial<{
+export function useDragRotate(onDragEnd: () => void, options?: Partial<{
     transform: (p: Position) => Position;
     parentRotate: number;
-    getSnapPoint(p: Position): Position;
+    transformOffset: (p: number, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number;
+    getAngleSnap: (angle: number) => number | undefined;
 }>): {
-    dragRotateCenter: Position | undefined;
-    onStartRotate: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
-    dragRotateMask: JSX.Element | undefined;
+    offset: (Position & {
+        angle?: number | undefined;
+    }) | undefined;
+    center: Position | undefined;
+    onStart: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -478,67 +507,68 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
-export function useEdit<V, T = void>(onEditEnd: () => void, onDragging: (start: Position & {
+export function useEdit<V, T = void>(onEnd: () => void, onDragging: (start: Position & {
     data: EditData<T, V>;
 }, end: Position) => void, reset: () => void, options?: Partial<{
     transform: (p: Position) => Position;
 }>): {
-    onStartEdit(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>): void;
-    editMask: JSX.Element | undefined;
+    dragStartPosition: (Position & {
+        data: EditData<T, V>;
+    }) | undefined;
+    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>): void;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipseArc: (arc?: EllipseArc) => void, onEnd: (arc: EllipseArc) => void): {
-    ellipseCreate: Ellipse | undefined;
+export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, onEnd: (arc: EllipseArc) => void, options?: Partial<{
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
+    ellipse: Ellipse | undefined;
+    ellipseArc: EllipseArc | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
-    onEllipseArcClickCreateClick(p: Position): void;
-    onEllipseArcClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    ellipseArcClickCreateInput: JSX.Element | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useEllipseArcEdit<T = void>(setEllipseOffset: (offset: EllipseArc & {
-    data?: T;
-}) => void, onEditEnd: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    onStartEditEllipseArc: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
-        type: 'center' | 'start angle' | 'end angle';
-    } & EllipseArc & {
+export function useEllipseArcEdit<T = void>(onEnd: () => void, options?: EditOptions): {
+    offset: EllipseArc & {
         data?: T | undefined;
-        cursor: Property.Cursor | undefined;
-    }) => void;
-    ellipseArcEditMask: JSX.Element | undefined;
+    };
+    onStart: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, {
+    type: 'center' | 'start angle' | 'end angle';
+    } & EllipseArc>) => void;
+    mask: JSX.Element | undefined;
+    cursorPosition: Position | undefined;
 };
 
 // @public (undocumented)
-export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, setEllipse: (ellipse?: Ellipse) => void, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
+export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
+    ellipse: Ellipse | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
-    onEllipseClickCreateClick(p: Position): void;
-    onEllipseClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    ellipseClickCreateInput: JSX.Element | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
-export function useEllipseEdit<T = void>(setEllipseOffset: (offset: Ellipse & {
-    data?: T;
-}) => void, onEditEnd: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    onStartEditEllipse: (e: MouseEvent_2<HTMLOrSVGElement, MouseEvent>, data: {
-        type: 'center' | 'major axis' | 'minor axis';
-    } & Ellipse & {
+export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOptions): {
+    offset: Ellipse & {
         data?: T | undefined;
-        cursor: Property.Cursor | undefined;
-    }) => void;
-    ellipseEditMask: JSX.Element | undefined;
+    };
+    onStart: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, {
+    type: 'center' | 'major axis' | 'minor axis';
+    } & Ellipse>) => void;
+    mask: JSX.Element | undefined;
+    cursorPosition: Position | undefined;
 };
 
 // @public (undocumented)
@@ -553,13 +583,14 @@ export function useLineAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useLineClickCreate(enabled: boolean, setLine: (line?: Position[]) => void, onEnd: (line: Position[]) => void, options?: Partial<{
+export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) => void, options?: Partial<{
     once: boolean;
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
-    onLineClickCreateClick(p: Position): void;
-    onLineClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    lineClickCreateInput: JSX.Element | undefined;
+    line: Position[] | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -582,27 +613,33 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: T, operator: P, option
 };
 
 // @public (undocumented)
-export function usePolygonClickCreate(enabled: boolean, setPolygon: (polygon?: Position[]) => void, onEnd: (polygon: Position[]) => void, options?: Partial<{
+export function usePolygonClickCreate(enabled: boolean, onEnd: (polygon: Position[]) => void, options?: Partial<{
     toEdge: boolean;
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
+    polygon: Position[] | undefined;
     startPosition: Position | undefined;
     cursorPosition: Position | undefined;
-    onPolygonClickCreateClick(p: Position): void;
-    onPolygonClickCreateMove(p: Position, viewportPosition?: Position | undefined): void;
-    polygonClickCreateInput: JSX.Element | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    input: JSX.Element | undefined;
     startSetSides(): void;
 };
 
 // @public (undocumented)
-export function usePolylineEdit<T = void>(setPolylineOffset: (offset?: Position & {
-    pointIndexes: number[];
-    data?: T;
-}) => void, onEditEnd: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    onStartEditPolyline(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T | undefined): void;
-    polylineEditMask: JSX.Element | undefined;
+export function usePolylineEdit<T = void>(onEnd: () => void, options?: EditOptions): {
+    offset: (Position & {
+        pointIndexes: number[];
+        data?: T | undefined;
+    }) | undefined;
+    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T | undefined): void;
+    mask: JSX.Element | undefined;
+    cursorPosition: Position | undefined;
+    dragStartPosition: (Position & {
+        data: EditData<T, {
+        pointIndexes: number[];
+        }>;
+    }) | undefined;
 };
 
 // @public (undocumented)
@@ -629,10 +666,20 @@ export function useUndoRedo<T>(defaultState: T): {
 };
 
 // @public (undocumented)
-export function useWheelScroll<T extends HTMLElement>(setX: React_2.Dispatch<React_2.SetStateAction<number>>, setY: React_2.Dispatch<React_2.SetStateAction<number>>, maxOffsetX: number, maxOffsetY: number): React_2.MutableRefObject<T | null>;
+export function useWheelScroll<T extends HTMLElement>(maxOffsetX: number, maxOffsetY: number): {
+    ref: React_2.MutableRefObject<T | null>;
+    x: number;
+    y: number;
+    setX: React_2.Dispatch<React_2.SetStateAction<number>>;
+    setY: React_2.Dispatch<React_2.SetStateAction<number>>;
+};
 
 // @public (undocumented)
-export function useWheelZoom<T extends HTMLElement>(setScale: React_2.Dispatch<React_2.SetStateAction<number>>, options?: Partial<ZoomOptions>): React_2.MutableRefObject<T | null>;
+export function useWheelZoom<T extends HTMLElement>(options?: Partial<ZoomOptions>): {
+    ref: React_2.MutableRefObject<T | null>;
+    scale: number;
+    setScale: React_2.Dispatch<React_2.SetStateAction<number>>;
+};
 
 // @public (undocumented)
 export function useWindowSize(): {
@@ -663,10 +710,6 @@ export interface ZoomOptions {
     // (undocumented)
     min: number;
 }
-
-// Warnings were encountered during analysis:
-//
-// dist/nodejs/components/use-edit/use-edit.d.ts:8:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

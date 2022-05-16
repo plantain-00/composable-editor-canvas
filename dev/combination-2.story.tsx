@@ -181,11 +181,8 @@ const CADEditor = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
-  const [scale, setScale] = React.useState(1)
-  const [x, setX] = React.useState(0)
-  const [y, setY] = React.useState(0)
-  const wheelScrollRef = useWheelScroll<HTMLDivElement>(setX, setY, -1, -1)
-  const wheelZoomRef = useWheelZoom<HTMLDivElement>(setScale)
+  const { x, y, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>(-1, -1)
+  const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
@@ -209,7 +206,7 @@ const CADEditor = React.forwardRef((props: {
       setOperations([])
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
-    (p) => reverseTransformPosition(p, transform),
+    angleSnapEnabled,
     operation
   )
 
@@ -231,7 +228,12 @@ const CADEditor = React.forwardRef((props: {
   // snap point
   const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!!operation)
   // edit model
-  const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(() => applyPatchFromSelf(previewPatches, previewReversePatches), transform)
+  const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(
+    () => applyPatchFromSelf(previewPatches, previewReversePatches),
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes, true),
+    angleSnapEnabled,
+    transform.scale,
+  )
   // create model
   const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands, createAssistentContents } = useModelsCreate(operation, (c) => {
     setState((draft) => {
@@ -259,7 +261,8 @@ const CADEditor = React.forwardRef((props: {
       }
     })
     draft.push(...newContents)
-    updateEditPreview(draft)
+    const result = updateEditPreview(draft)
+    assistentContents.push(...result.assistentContents)
     updateCreatePreview(draft)
   }, (patches, reversePatches) => {
     previewPatches.push(...patches)

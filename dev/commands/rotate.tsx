@@ -1,36 +1,31 @@
-import React from "react"
-import { getTwoPointsDistance, Position, useDragRotate } from "../../src"
+import { getTwoPointsDistance, useDragRotate } from "../../src"
 import { rotateContent } from "../util-2"
 import { Command } from "./command"
 
 export const rotateCommand: Command = {
   name: 'rotate',
-  useCommand(onEnd, getSnapPoint, transform) {
-    const [startPostion, setStartPosition] = React.useState<Position>()
-    const [rotateOffset, setRotateOffset] = React.useState<Position & { angle?: number }>()
-    const { onStartRotate, dragRotateMask } = useDragRotate(
-      (f, e) => {
-        setRotateOffset(e ? { ...transform({ x: e.clientX, y: e.clientY }), angle: f !== undefined ? f - 90 : undefined } : undefined)
-      },
+  useCommand(onEnd, transform, getAngleSnap) {
+    const { offset, onStart, mask, center: startPostion } = useDragRotate(
       onEnd,
       {
-        getSnapPoint,
+        transform,
+        transformOffset: (f) => f - 90,
+        getAngleSnap,
       },
     )
     return {
-      start: onStartRotate,
-      mask: dragRotateMask,
-      setStartPosition,
+      onStart,
+      mask,
       updateContent(content) {
-        if (startPostion && rotateOffset?.angle) {
-          rotateContent(content, startPostion, rotateOffset.angle)
-          const r = getTwoPointsDistance(startPostion, rotateOffset)
+        if (startPostion && offset?.angle !== undefined) {
+          rotateContent(content, startPostion, offset.angle)
+          const r = getTwoPointsDistance(startPostion, offset)
           return {
             assistentContents: [
               {
                 type: 'line',
                 dashArray: [4],
-                points: [startPostion, rotateOffset]
+                points: [startPostion, offset]
               },
               {
                 type: 'arc',
@@ -38,8 +33,8 @@ export const rotateCommand: Command = {
                 y: startPostion.y,
                 r,
                 dashArray: [4],
-                startAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? rotateOffset.angle : 0,
-                endAngle: rotateOffset.angle > 180 || rotateOffset.angle < 0 ? 0 : rotateOffset.angle,
+                startAngle: offset.angle > 180 || offset.angle < 0 ? offset.angle : 0,
+                endAngle: offset.angle > 180 || offset.angle < 0 ? 0 : offset.angle,
               },
               {
                 type: 'line',

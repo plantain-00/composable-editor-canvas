@@ -5,9 +5,8 @@ import * as PIXI from 'pixi.js'
 import { Circle, useCircleClickCreate } from "../src"
 
 export default () => {
-  const [circle, setCircle] = React.useState<Circle>()
   const [contents, setContents] = React.useState<Circle[]>([])
-  const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput } = useCircleClickCreate('center radius', setCircle, (c) => {
+  const { circle, onClick, onMove, input } = useCircleClickCreate('center radius', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
@@ -26,8 +25,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={(e) => onCircleClickCreateClick({ x: e.clientX, y: e.clientY })}
-        onMouseMove={(e) => onCircleClickCreateMove({ x: e.clientX, y: e.clientY })}
+        onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}
@@ -35,7 +34,7 @@ export default () => {
       >
         <Graphics draw={draw} />
       </Stage>
-      {circleClickCreateInput}
+      {input}
     </div>
   )
 }

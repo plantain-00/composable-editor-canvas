@@ -2,7 +2,7 @@ import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
 import { LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model, reverseTransformPosition } from './model'
+import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
 export type CircleContent = BaseContent<'circle'> & Circle
@@ -34,32 +34,38 @@ export const circleModel: Model<CircleContent> = {
   renderOperator({ content, stroke, target, text, fontSize }) {
     return target.fillText(content.x, content.y, text, stroke, fontSize)
   },
-  useEdit(onEnd, transform) {
-    const [circleEditOffset, setCircleEditOffset] = React.useState<Circle & { data?: number }>({ x: 0, y: 0, r: 0 })
-    const { onStartEditCircle, circleEditMask } = useCircleEdit<number>(setCircleEditOffset, onEnd, { transform: (p) => reverseTransformPosition(p, transform) })
+  useEdit(onEnd, transform, getAngleSnap, scale) {
+    const { offset, onStart, mask, cursorPosition } = useCircleEdit<number>(onEnd, {
+      transform,
+      getAngleSnap,
+    })
     return {
-      mask: circleEditMask,
+      mask,
       updatePreview(contents) {
-        if (circleEditOffset.data !== undefined) {
-          const content = contents[circleEditOffset.data]
+        if (offset.data !== undefined) {
+          const content = contents[offset.data]
+          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.x, y: content.y }, cursorPosition] }]
           if (content.type === 'circle') {
-            content.x += circleEditOffset.x
-            content.y += circleEditOffset.y
-            content.r += circleEditOffset.r
+            content.x += offset.x
+            content.y += offset.y
+            content.r += offset.r
           }
+          return { assistentContents }
         }
+        return {}
       },
       editBar({ content, index }) {
-        return <CircleEditBar scale={transform?.scale} x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStartEditCircle(e, { ...content, type, cursor, data: index })} />
+        return <CircleEditBar scale={scale} x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
     }
   },
-  useCreate(type, onEnd) {
-    const [circleCreate, setCircleCreate] = React.useState<Circle>()
-    const { onCircleClickCreateClick, onCircleClickCreateMove, circleClickCreateInput, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
+  useCreate(type, onEnd, getAngleSnap) {
+    const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
-      setCircleCreate,
       (c) => onEnd([{ ...c, type: 'circle' }]),
+      {
+        getAngleSnap,
+      },
     )
     let assistentContents: (LineContent | PolygonContent)[] | undefined
     if (startPosition && cursorPosition) {
@@ -70,12 +76,12 @@ export const circleModel: Model<CircleContent> = {
       }
     }
     return {
-      input: circleClickCreateInput,
-      onClick: onCircleClickCreateClick,
-      onMove: onCircleClickCreateMove,
+      input,
+      onClick,
+      onMove,
       updatePreview(contents) {
-        if (circleCreate) {
-          contents.push({ type: 'circle', ...circleCreate })
+        if (circle) {
+          contents.push({ type: 'circle', ...circle })
         }
       },
       assistentContents,

@@ -5,9 +5,8 @@ import * as PIXI from 'pixi.js'
 import { Position, usePolygonClickCreate } from "../src"
 
 export default () => {
-  const [polygon, setPolygon] = React.useState<Position[]>()
   const [contents, setContents] = React.useState<Position[][]>([])
-  const { onPolygonClickCreateClick, onPolygonClickCreateMove, polygonClickCreateInput } = usePolygonClickCreate(true, setPolygon, (c) => {
+  const { polygon, onClick, onMove, input } = usePolygonClickCreate(true, (c) => {
     const data = c || polygon
     if (data) {
       setContents(produce(contents, (draft) => {
@@ -36,8 +35,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={(e) => onPolygonClickCreateClick({ x: e.clientX, y: e.clientY })}
-        onMouseMove={(e) => onPolygonClickCreateMove({ x: e.clientX, y: e.clientY })}
+        onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}
@@ -45,7 +44,7 @@ export default () => {
       >
         <Graphics draw={draw} />
       </Stage>
-      {polygonClickCreateInput}
+      {input}
     </div>
   )
 }

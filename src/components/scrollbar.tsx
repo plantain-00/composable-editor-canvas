@@ -12,10 +12,13 @@ export function Scrollbar(props: {
 }) {
   const { type, containerSize, contentSize } = props
 
-  const { onStartMove, dragMoveMask } = useDragMove(({ x, y }) => {
-    const newOffset = Math.max(Math.min(type === 'vertical' ? y : x, containerSize - scrollbarSize), 0)
-    if (newOffset !== offset) {
-      props.onChange((newOffset + scrollbarSize / 2 - containerSize / 2) * scale)
+  const { onStart, mask } = useDragMove(undefined, {
+    transformOffset: ({ x, y }) => {
+      const newOffset = Math.max(Math.min(type === 'vertical' ? y : x, containerSize - scrollbarSize), 0)
+      if (newOffset !== offset) {
+        props.onChange((newOffset + scrollbarSize / 2 - containerSize / 2) * scale)
+      }
+      return { x, y }
     }
   })
 
@@ -65,10 +68,10 @@ export function Scrollbar(props: {
     <div style={containerStyle} >
       <div
         style={barStyle}
-        onMouseDown={(e) => onStartMove({ x: e.clientX, y: e.clientY }, { [type === 'vertical' ? 'y' : 'x']: offset })}
+        onMouseDown={(e) => onStart({ x: e.clientX, y: e.clientY }, { [type === 'vertical' ? 'y' : 'x']: offset })}
       >
       </div>
-      {dragMoveMask}
+      {mask}
     </div>
   )
 }

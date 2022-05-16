@@ -3,9 +3,8 @@ import React from "react"
 import { Circle, useCircleClickCreate } from "../src"
 
 export default () => {
-  const [circle, setCircle] = React.useState<Circle>()
   const [contents, setContents] = React.useState<Circle[]>([])
-  const { onCircleClickCreateClick, onCircleClickCreateMove } = useCircleClickCreate('3 points', setCircle, (c) => {
+  const { circle, onClick, onMove } = useCircleClickCreate('3 points', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
@@ -13,8 +12,8 @@ export default () => {
 
   return (
     <div
-      onClick={(e) => onCircleClickCreateClick({ x: e.clientX, y: e.clientY })}
-      onMouseMove={(e) => onCircleClickCreateMove({ x: e.clientX, y: e.clientY })}
+      onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+      onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
       style={{ height: '100%' }}
     >
       {[...contents, circle].map((content, i) => content && (

@@ -18,12 +18,14 @@ export interface Model<T> {
   render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
   renderOperator?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V>, text: string, fontSize: number }): V
-  useEdit?(onEnd: () => void, transform?: Transform): {
+  useEdit?(onEnd: () => void, transform: (p: Position) => Position, getAngleSnap?: (angle: number) => number | undefined, scale?: number): {
     mask?: JSX.Element
-    updatePreview(contents: T[]): void
+    updatePreview(contents: T[]): {
+      assistentContents?: BaseContent[]
+    }
     editBar(props: { content: T, index: number }): JSX.Element
   }
-  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, angleSnapEnabled: boolean): {
+  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, getAngleSnap?: (angle: number) => number | undefined): {
     input?: JSX.Element
     subcommand?: JSX.Element
     updatePreview(contents: T[]): void
@@ -47,15 +49,15 @@ export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
 
-export function useModelsEdit(onEnd: () => void, transform?: Transform) {
+export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Position, angleSnapEnabled: boolean, scale?: number) {
   const editMasks: JSX.Element[] = []
-  const updateEditPreviews: ((contents: BaseContent[]) => void)[] = []
+  const updateEditPreviews: ((contents: BaseContent[]) => { assistentContents?: BaseContent[] })[] = []
   const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
   Object.values(modelCenter).forEach((model) => {
     if (!model.useEdit) {
       return
     }
-    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform)
+    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, scale)
     if (mask) {
       editMasks.push(React.cloneElement(mask, { key: model.type }))
     }
@@ -65,8 +67,15 @@ export function useModelsEdit(onEnd: () => void, transform?: Transform) {
   return {
     editMasks,
     updateEditPreview(contents: BaseContent[]) {
+      const assistentContents: BaseContent[] = []
       for (const updateEditPreview of updateEditPreviews) {
-        updateEditPreview(contents)
+        const result = updateEditPreview(contents)
+        if (result.assistentContents) {
+          assistentContents.push(...result.assistentContents)
+        }
+      }
+      return {
+        assistentContents,
       }
     },
     editBarMap,
@@ -84,7 +93,7 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
     if (!model.useCreate) {
       return
     }
-    const { input, updatePreview, onClick, onMove, subcommand, assistentContents } = model.useCreate(operation, onEnd, angleSnapEnabled)
+    const { input, updatePreview, onClick, onMove, subcommand, assistentContents } = model.useCreate(operation, onEnd, angleSnapEnabled ? getAngleSnap : undefined)
     if (input) {
       createInputs.push(React.cloneElement(input, { key: type }))
     }
@@ -182,8 +191,9 @@ export function useSnap(enabled: boolean, delta = 5) {
   return {
     snapPoint,
     snapAssistentContents: assistentContents,
-    getSnapPoint(p: Position, contents: BaseContent[], types: string[]) {
-      if (!enabled) {
+    getSnapPoint(p: Position, contents: BaseContent[], types: string[], forceEnabled?: boolean) {
+      if (!enabled && !forceEnabled) {
+        setSnapPoint(undefined)
         return p
       }
       for (const content of contents) {
@@ -294,7 +304,7 @@ function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent
 }
 
 export function getAngleSnap(angle: number) {
-  const snap = Math.round(angle / 90) * 90
+  const snap = Math.round(angle / 45) * 45
   if (snap !== angle && Math.abs(snap - angle) < 5) {
     return snap
   }

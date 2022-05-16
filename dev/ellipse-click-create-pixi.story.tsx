@@ -5,9 +5,8 @@ import * as PIXI from 'pixi.js'
 import { Ellipse, useEllipseClickCreate } from "../src"
 
 export default () => {
-  const [ellipse, setEllipse] = React.useState<Ellipse>()
   const [contents, setContents] = React.useState<Ellipse[]>([])
-  const { onEllipseClickCreateClick, onEllipseClickCreateMove, ellipseClickCreateInput } = useEllipseClickCreate('ellipse center', setEllipse, (c) => {
+  const { ellipse, onClick, onMove, input } = useEllipseClickCreate('ellipse center', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
@@ -31,8 +30,8 @@ export default () => {
   return (
     <div style={{ height: '100%' }}>
       <Stage
-        onClick={(e) => onEllipseClickCreateClick({ x: e.clientX, y: e.clientY })}
-        onMouseMove={(e) => onEllipseClickCreateMove({ x: e.clientX, y: e.clientY })}
+        onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+        onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
         options={{
           backgroundColor: 0xffffff,
         }}
@@ -40,7 +39,7 @@ export default () => {
       >
         <Graphics draw={draw} />
       </Stage>
-      {ellipseClickCreateInput}
+      {input}
     </div>
   )
 }
