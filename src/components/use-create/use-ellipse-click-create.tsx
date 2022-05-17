@@ -8,13 +8,35 @@ export function useEllipseClickCreate(
   onEnd: (ellipse: Ellipse) => void,
   options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined
+    message: string
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void
   }>,
 ) {
   const [ellipse, setEllipse] = React.useState<Ellipse>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
 
-  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(!!type, (e, text, cursorPosition) => {
+  let message = ''
+  if (type) {
+    if (startPosition) {
+      if (middlePosition) {
+        message = 'specify secondary semi-axis by click, input position or input length'
+      } else {
+        message = 'specify end point by click, input position or input length'
+      }
+    } else {
+      message = type === 'ellipse endpoint' ? 'specify first point by click or input position' : 'specify ellipse center point by click or input position'
+    }
+    if (options?.message) {
+      message = options.message
+    }
+  }
+
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, type ? (e, text, cursorPosition) => {
+    if (options?.onKeyDown) {
+      options.onKeyDown(e, text, cursorPosition)
+      return
+    }
     if (e.key === 'Enter' && type) {
       const position = text.split(',')
       if (!startPosition) {
@@ -60,7 +82,7 @@ export function useEllipseClickCreate(
         }
       }
     }
-  })
+  } : undefined)
 
   const reset = () => {
     setStartPosition(undefined)
@@ -79,6 +101,8 @@ export function useEllipseClickCreate(
     middlePosition,
     cursorPosition,
     setCursorPosition,
+    setInputPosition,
+    clearText,
     onClick(p: Position) {
       if (!type) {
         return

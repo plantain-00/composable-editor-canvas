@@ -26,7 +26,7 @@ export interface Model<T> {
     editBar(props: { content: T, index: number }): JSX.Element
   }
   useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, getAngleSnap?: (angle: number) => number | undefined): {
-    input?: JSX.Element
+    input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
     updatePreview(contents: T[]): void
     assistentContents?: BaseContent[]
@@ -82,9 +82,13 @@ export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Pos
   }
 }
 
-export function useModelsCreate(operation: string | undefined, onEnd: (contents: BaseContent[]) => void, angleSnapEnabled: boolean) {
+export function useModelsCreate(
+  operation: string | undefined,
+  onEnd: (contents: BaseContent[]) => void,
+  angleSnapEnabled: boolean,
+  inputFixed: boolean,
+) {
   const createInputs: JSX.Element[] = []
-  const createSubcommands: JSX.Element[] = []
   const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
   const onClicks: ((p: Position) => void)[] = []
   const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
@@ -95,10 +99,25 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
     }
     const { input, updatePreview, onClick, onMove, subcommand, assistentContents } = model.useCreate(operation, onEnd, angleSnapEnabled ? getAngleSnap : undefined)
     if (input) {
-      createInputs.push(React.cloneElement(input, { key: type }))
-    }
-    if (subcommand) {
-      createSubcommands.push(React.cloneElement(subcommand, { key: type }))
+      const children: React.ReactNode[] = [...input.props.children]
+      if (subcommand) {
+        const props: Record<string, unknown> = {
+          key: type + 'sub command',
+        }
+        if (inputFixed) {
+          children.push(React.cloneElement(subcommand, props))
+        } else {
+          props.style = fixedInputStyle
+          createInputs.push(React.cloneElement(subcommand, props))
+        }
+      }
+      const props: Record<string, unknown> = {
+        key: type,
+      }
+      if (inputFixed) {
+        props.style = fixedInputStyle
+      }
+      createInputs.push(React.cloneElement(input, props, ...children))
     }
     updateCreatePreviews.push(updatePreview)
     onClicks.push(onClick)
@@ -109,7 +128,6 @@ export function useModelsCreate(operation: string | undefined, onEnd: (contents:
   })
   return {
     createInputs,
-    createSubcommands,
     updateCreatePreview(contents: BaseContent[]) {
       for (const updateCreatePreview of updateCreatePreviews) {
         updateCreatePreview(contents)
@@ -324,4 +342,11 @@ export function reverseTransformPosition(position: Position, transform: Transfor
     x: (position.x - transform.center.x) / transform.scale + transform.center.x - transform.x / transform.scale,
     y: (position.y - transform.center.y) / transform.scale + transform.center.y - transform.y / transform.scale,
   }
+}
+
+export const fixedInputStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: '10px',
+  left: '25%',
+  transform: 'translate(-50%, 0px)',
 }

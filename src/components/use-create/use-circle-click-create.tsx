@@ -8,13 +8,34 @@ export function useCircleClickCreate(
   onEnd: (circle: Circle) => void,
   options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined
+    message: string
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void
   }>,
 ) {
   const [circle, setCircle] = React.useState<Circle>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [middlePosition, setMiddlePosition] = React.useState<Position>()
+  let message = ''
+  if (type) {
+    if (startPosition) {
+      if (type === '3 points') {
+        message = middlePosition ? 'specify third point by click' : 'specify second point by click'
+      } else {
+        message = type === '2 points' ? 'specify second point by click, input position or input length' : 'specify circle edge point by click, input position or input length'
+      }
+    } else {
+      message = type === '2 points' || type === '3 points' ? 'specify first point by click or input position' : 'specify circle center point by click or input position'
+    }
+    if (options?.message) {
+      message = options.message
+    }
+  }
 
-  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(type === 'center radius' || type === 'center diameter' || type === '2 points', (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, type === 'center radius' || type === 'center diameter' || type === '2 points' ? (e, text, cursorPosition) => {
+    if (options?.onKeyDown) {
+      options.onKeyDown(e, text, cursorPosition)
+      return
+    }
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (startPosition) {
@@ -67,7 +88,7 @@ export function useCircleClickCreate(
         }
       }
     }
-  })
+  } : undefined)
 
   const reset = () => {
     setStartPosition(undefined)
@@ -86,6 +107,8 @@ export function useCircleClickCreate(
     middlePosition,
     cursorPosition,
     setCursorPosition,
+    setInputPosition,
+    clearText,
     onClick(p: Position) {
       if (!type) {
         return

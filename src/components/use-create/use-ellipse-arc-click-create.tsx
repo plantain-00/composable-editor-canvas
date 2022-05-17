@@ -13,16 +13,43 @@ export function useEllipseArcClickCreate(
   const [ellipseArc, setEllipseArc] = React.useState<EllipseArc>()
   const [startAngle, setStartAngle] = React.useState<number>()
 
-  const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition } = useEllipseClickCreate(
+  let message: string | undefined
+  if (ellipseArc) {
+    message = startAngle === undefined ? 'specify start angle by click or input angle' : 'specify end angle by click or input angle'
+  }
+  const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition, clearText, setInputPosition } = useEllipseClickCreate(
     type,
     (c) => setEllipseArc(c ? { ...c, startAngle: 0, endAngle: 0 } : undefined),
-    options,
+    {
+      ...options,
+      message,
+      onKeyDown: ellipseArc ? (e, text) => {
+        if (e.key === 'Enter') {
+          let angle = +text
+          if (!isNaN(angle)) {
+            if (startAngle === undefined) {
+              setStartAngle(angle)
+              setEllipseArc({ ...ellipseArc, startAngle: angle, endAngle: angle })
+              clearText()
+            } else {
+              if (angle < startAngle) {
+                angle += 360
+              }
+              setEllipseArc(undefined)
+              onEnd({ ...ellipseArc, startAngle, endAngle: angle })
+              reset()
+            }
+          }
+        }
+      } : undefined,
+    },
   )
 
   const reset = () => {
     setEllipseArc(undefined)
     setStartAngle(undefined)
     setCursorPosition(undefined)
+    clearText()
   }
 
   useKey((e) => e.key === 'Escape', reset, [setEllipseArc, setStartAngle, setCursorPosition])
@@ -63,6 +90,7 @@ export function useEllipseArcClickCreate(
       if (ellipseArc) {
         p = getAngleSnapPosition({ x: ellipseArc.cx, y: ellipseArc.cy }, p, options?.getAngleSnap)
         setCursorPosition(p)
+        setInputPosition(viewportPosition ?? p)
         if (startAngle !== undefined) {
           const newPosition = rotatePositionByCenter(p, { x: ellipseArc.cx, y: ellipseArc.cy }, ellipseArc.angle ?? 0)
           let angle = Math.atan2((newPosition.y - ellipseArc.cy) / ellipseArc.ry, (newPosition.x - ellipseArc.cx) / ellipseArc.rx) * 180 / Math.PI

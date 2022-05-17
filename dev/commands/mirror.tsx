@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { useDragMove } from "../../src"
+import { useCursorInput, useDragMove } from "../../src"
 import { mirrorContent } from "../util-2"
 import { Command } from "./command"
 
@@ -13,13 +13,24 @@ export const mirrorCommand: Command = {
       ignoreLeavingEvent: true,
       getAngleSnap,
     })
+    let message = ''
+    if (enabled) {
+      message = startPosition ? 'specify second point' : 'specify first point'
+    }
+    const { input, setInputPosition } = useCursorInput(message)
     return {
       onStart,
-      mask: enabled ? (
-        <>
-          {mask}
-          <button onClick={() => setChangeOriginal(!changeOriginal)} style={{ position: 'relative' }}>{changeOriginal ? 'create new' : 'change original'}</button>
-        </>
+      mask: enabled ? mask : undefined,
+      input,
+      subcommand: enabled ? (
+        <button
+          onClick={(e) => {
+            setChangeOriginal(!changeOriginal)
+            e.stopPropagation()
+          }}
+        >
+          {changeOriginal ? 'create new' : 'change original'}
+        </button>
       ) : undefined,
       updateContent(content) {
         if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
@@ -43,7 +54,10 @@ export const mirrorCommand: Command = {
           }
         }
         return {}
-      }
+      },
+      onMove(_, p) {
+        setInputPosition(p)
+      },
     }
   }
 }

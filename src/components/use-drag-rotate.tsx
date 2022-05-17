@@ -8,6 +8,7 @@ export function useDragRotate(
   options?: Partial<{
     transform: (p: Position) => Position
     parentRotate: number
+    ignoreLeavingEvent: boolean
     transformOffset: (p: number, e?: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number
     getAngleSnap: (angle: number) => number | undefined
   }>,
@@ -24,6 +25,7 @@ export function useDragRotate(
     center,
     onStart: setCenter,
     mask: center && <DragMask
+      ignoreLeavingEvent={options?.ignoreLeavingEvent}
       onDragging={(e) => {
         const f = { x: e.clientX, y: e.clientY }
         let p = options?.transform?.(f) ?? f
