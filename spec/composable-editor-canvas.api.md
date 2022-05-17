@@ -404,12 +404,16 @@ export function useCircleArcEdit<T = void>(onEnd: () => void, options?: EditOpti
 // @public (undocumented)
 export function useCircleClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, onEnd: (circle: Circle) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
+    message: string;
+    onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void;
 }>): {
     circle: Circle | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    clearText: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position | undefined): void;
     input: JSX.Element | undefined;
@@ -428,7 +432,7 @@ export function useCircleEdit<T = void>(onEnd: () => void, options?: EditOptions
 };
 
 // @public (undocumented)
-export function useCursorInput(enabled: boolean, onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
+export function useCursorInput(message: string, onKeyDown?: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
@@ -484,6 +488,7 @@ export function useDragResize(onDragEnd: () => void, options?: Partial<{
 export function useDragRotate(onDragEnd: () => void, options?: Partial<{
     transform: (p: Position) => Position;
     parentRotate: number;
+    ignoreLeavingEvent: boolean;
     transformOffset: (p: number, e?: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => number;
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
@@ -548,12 +553,16 @@ export function useEllipseArcEdit<T = void>(onEnd: () => void, options?: EditOpt
 // @public (undocumented)
 export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint' | undefined, onEnd: (ellipse: Ellipse) => void, options?: Partial<{
     getAngleSnap: (angle: number) => number | undefined;
+    message: string;
+    onKeyDown: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void;
 }>): {
     ellipse: Ellipse | undefined;
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    clearText: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position | undefined): void;
     input: JSX.Element | undefined;

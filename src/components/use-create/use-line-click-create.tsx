@@ -13,7 +13,7 @@ export function useLineClickCreate(
 ) {
   const [line, setLine] = React.useState<Position[]>()
   const [positions, setPositions] = React.useState<Position[]>([])
-  const { input, setCursorPosition, clearText, setInputPosition } = useCursorInput(enabled, (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, setInputPosition } = useCursorInput('specify next point by click, input position or input length', enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (position.length === 2) {
@@ -49,7 +49,7 @@ export function useLineClickCreate(
         }
       }
     }
-  })
+  } : undefined)
 
   const reset = () => {
     setPositions([])

@@ -74,10 +74,10 @@ export const polygonModel: Model<PolygonContent> = {
       input,
       subcommand: type === 'polygon'
         ? (
-          <>
+          <span>
             <button onClick={startSetSides} style={{ position: 'relative' }}>set sides</button>
             <button onClick={() => setCreateType(createType === 'edge' ? 'point' : 'edge')} style={{ position: 'relative' }}>{createType}</button>
-          </>
+          </span>
         )
         : undefined,
       onClick,

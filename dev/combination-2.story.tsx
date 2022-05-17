@@ -1,9 +1,9 @@
 import React from 'react'
-import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce, { enablePatches, Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
+import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
@@ -114,6 +114,7 @@ export default () => {
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
   const [operations, setOperations] = React.useState<[string?, string?]>([])
+  const [inputFixed, setInputFixed] = React.useState(false)
 
   return (
     <div style={{ height: '100%' }}>
@@ -131,6 +132,7 @@ export default () => {
           setCanRedo={setCanRedo}
           operations={operations}
           setOperations={setOperations}
+          inputFixed={inputFixed}
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
@@ -154,6 +156,10 @@ export default () => {
           <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
           <label htmlFor='read only'>read only</label>
         </span>
+        {!readOnly && <span style={{ position: 'relative' }}>
+          <input type='checkbox' checked={inputFixed} id='input fixed' onChange={(e) => setInputFixed(e.target.checked)} />
+          <label htmlFor='input fixed'>input fixed</label>
+        </span>}
       </div>
     </div>
   )
@@ -165,6 +171,7 @@ const CADEditor = React.forwardRef((props: {
   onSendSelection: (selectedContents: number[]) => void
   readOnly: boolean
   angleSnapEnabled: boolean
+  inputFixed: boolean
   snapTypes: string[]
   renderTarget?: string
   setCanUndo: (canUndo: boolean) => void
@@ -172,7 +179,7 @@ const CADEditor = React.forwardRef((props: {
   operations: [string?, string?]
   setOperations: (operation: [string?, string?]) => void
 }, ref: React.ForwardedRef<CADEditorRef>) => {
-  const { operations: [operation, nextOperation], setOperations, snapTypes, angleSnapEnabled, renderTarget, readOnly } = props
+  const { operations: [operation, nextOperation], setOperations, snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
   })
@@ -200,13 +207,14 @@ const CADEditor = React.forwardRef((props: {
   }
 
   // commands
-  const { commandMasks, updateContent, startCommand } = useCommands(
+  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove } = useCommands(
     () => {
       applyPatchFromSelf(previewPatches, previewReversePatches)
       setOperations([])
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
     angleSnapEnabled,
+    inputFixed,
     operation
   )
 
@@ -235,12 +243,12 @@ const CADEditor = React.forwardRef((props: {
     transform.scale,
   )
   // create model
-  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createSubcommands, createAssistentContents } = useModelsCreate(operation, (c) => {
+  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createAssistentContents } = useModelsCreate(operation, (c) => {
     setState((draft) => {
       draft.push(...c)
     })
     setOperations([])
-  }, angleSnapEnabled && !snapPoint)
+  }, angleSnapEnabled && !snapPoint, inputFixed)
 
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
@@ -354,6 +362,20 @@ const CADEditor = React.forwardRef((props: {
     props.onSendSelection(selectedContents)
   }, [selectedContents])
 
+  let message = ''
+  if (!operation && nextOperation) {
+    message = selectedContents.length ? `${selectedContents.length} selected, press Enter to finish selection` : 'select targets'
+  }
+  const { input: cursorInput, setInputPosition } = useCursorInput(message)
+  let selectionInput = cursorInput
+  if (!readOnly && cursorInput) {
+    if (inputFixed) {
+      selectionInput = React.cloneElement(cursorInput, {
+        style: fixedInputStyle,
+      })
+    }
+  }
+
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), state, snapTypes)
@@ -374,8 +396,12 @@ const CADEditor = React.forwardRef((props: {
   }
   const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
+    setInputPosition(viewportPosition)
     const p = reverseTransformPosition(viewportPosition, transform)
     onCreatingMove(getSnapPoint(p, state, snapTypes), viewportPosition)
+    if (operation && isCommand(operation)) {
+      onCommandMove(getSnapPoint(p, state, snapTypes), viewportPosition)
+    }
     if (!operation) {
       // if no operation, hover by position
       setHoveringContent(getContentByClickPosition(state, p, contentSelectable))
@@ -432,12 +458,13 @@ const CADEditor = React.forwardRef((props: {
           }
           return null
         })}
+        {commandMasks}
         {!readOnly && createInputs}
+        {selectionInput}
+        {!readOnly && commandInputs}
       </div>
-      {!readOnly && createSubcommands}
       {editMasks}
       {dragSelectMask}
-      {commandMasks}
     </div>
   )
 })

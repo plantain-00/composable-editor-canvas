@@ -14,16 +14,43 @@ export function useCircleArcClickCreate(
   const [arc, setArc] = React.useState<Arc>()
   const [startAngle, setStartAngle] = React.useState<number>()
 
-  const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition } = useCircleClickCreate(
+  let message: string | undefined
+  if (arc) {
+    message = startAngle === undefined ? 'specify start angle by click or input angle' : 'specify end angle by click or input angle'
+  }
+  const { circle, onClick, onMove, input, setInputPosition, startPosition, middlePosition, cursorPosition, setCursorPosition, clearText } = useCircleClickCreate(
     type,
     (c) => setArc(c ? { ...c, startAngle: 0, endAngle: 0 } : undefined),
-    options,
+    {
+      ...options,
+      message,
+      onKeyDown: arc ? (e, text) => {
+        if (e.key === 'Enter') {
+          let angle = +text
+          if (!isNaN(angle)) {
+            if (startAngle === undefined) {
+              setStartAngle(angle)
+              setArc({ ...arc, startAngle: angle, endAngle: angle })
+              clearText()
+            } else {
+              if (angle < startAngle) {
+                angle += 360
+              }
+              setArc(undefined)
+              onEnd({ ...arc, startAngle, endAngle: angle })
+              reset()
+            }
+          }
+        }
+      } : undefined,
+    },
   )
 
   const reset = () => {
     setStartAngle(undefined)
     setCursorPosition(undefined)
     setArc(undefined)
+    clearText()
   }
 
   useKey((e) => e.key === 'Escape', reset, [setArc, setStartAngle, setCursorPosition])
@@ -64,6 +91,7 @@ export function useCircleArcClickCreate(
       if (arc) {
         p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         setCursorPosition(p)
+        setInputPosition(viewportPosition ?? p)
         if (startAngle !== undefined) {
           let angle = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI
           if (angle < startAngle) {
