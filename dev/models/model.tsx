@@ -339,8 +339,8 @@ export function reverseTransformPosition(position: Position, transform: Transfor
     return position
   }
   return {
-    x: (position.x - transform.center.x) / transform.scale + transform.center.x - transform.x / transform.scale,
-    y: (position.y - transform.center.y) / transform.scale + transform.center.y - transform.y / transform.scale,
+    x: (position.x - transform.center.x - transform.x) / transform.scale + transform.center.x,
+    y: (position.y - transform.center.y - transform.y) / transform.scale + transform.center.y,
   }
 }
 

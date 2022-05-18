@@ -684,7 +684,9 @@ export function useWheelScroll<T extends HTMLElement>(maxOffsetX: number, maxOff
 };
 
 // @public (undocumented)
-export function useWheelZoom<T extends HTMLElement>(options?: Partial<ZoomOptions>): {
+export function useWheelZoom<T extends HTMLElement>(options?: Partial<ZoomOptions & {
+    onChange(oldScale: number, newScale: number, cursor: Position): void;
+}>): {
     ref: React_2.MutableRefObject<T | null>;
     scale: number;
     setScale: React_2.Dispatch<React_2.SetStateAction<number>>;

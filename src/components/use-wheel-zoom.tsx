@@ -1,9 +1,12 @@
 import * as React from "react"
 
 import { getDefaultZoomOption, ZoomOptions } from "."
+import { Position } from "../utils"
 
 export function useWheelZoom<T extends HTMLElement>(
-  options?: Partial<ZoomOptions>
+  options?: Partial<ZoomOptions & {
+    onChange(oldScale: number, newScale: number, cursor: Position): void
+  }>
 ) {
   const [scale, setScale] = React.useState(1)
   const ref = React.useRef<T | null>(null)
@@ -16,7 +19,13 @@ export function useWheelZoom<T extends HTMLElement>(
     const wheelHandler = (e: WheelEvent) => {
       e.preventDefault()
       if (e.ctrlKey) {
-        setScale((s) => Math.min(Math.max(min, s * Math.exp(-e.deltaY / 100)), max))
+        setScale((s) => {
+          const newScale = Math.min(Math.max(min, s * Math.exp(-e.deltaY / 100)), max)
+          if (s !== newScale) {
+            options?.onChange?.(s, newScale, { x: e.clientX, y: e.clientY })
+          }
+          return newScale
+        })
       }
     }
     ref.current.addEventListener('wheel', wheelHandler, { passive: false })
