@@ -188,8 +188,13 @@ const CADEditor = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
-  const { x, y, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>(-1, -1)
-  const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
+  const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>(-1, -1)
+  const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
+    onChange(oldScale, newScale, cursor) {
+      setX((x) => cursor.x - width / 2 - (cursor.x - width / 2 - x) * newScale / oldScale)
+      setY((y) => cursor.y - height / 2 - (cursor.y - height / 2 - y) * newScale / oldScale)
+    }
+  })
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
