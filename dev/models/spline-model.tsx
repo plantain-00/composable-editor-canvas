@@ -2,9 +2,9 @@ import React from 'react'
 import bspline from 'b-spline'
 import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 
-export type SplineContent = BaseContent<'spline'> & {
+export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
   fitting?: boolean
 }
@@ -24,15 +24,15 @@ export const splineModel: Model<SplineContent> = {
     const line = twoPointLineToGeneralFormLine(p1, p2)
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     const { points } = getSplineLines(content)
-    return target.strokePolyline(points, stroke, content.dashArray)
+    return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderIfSelected({ content, stroke, target }) {
-    return target.strokePolyline(content.points, stroke, [4])
+  renderIfSelected({ content, color, target }) {
+    return target.strokePolyline(content.points, color ?? defaultStrokeColor, [4])
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
-    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  getOperatorRenderPosition(content) {
+    return content.points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {

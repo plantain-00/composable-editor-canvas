@@ -3,10 +3,10 @@ import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCent
 import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
-export type ArcContent = BaseContent<'arc'> & Arc
+export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
 export const arcModel: Model<ArcContent> = {
   type: 'arc',
@@ -32,16 +32,16 @@ export const arcModel: Model<ArcContent> = {
     content.startAngle = startAngle
     content.endAngle = endAngle
   },
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getArcLines(content)
-      return target.strokePolyline(points, stroke, content.dashArray)
+      return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeArc(content.x, content.y, content.r, content.startAngle, content.endAngle, stroke)
+    return target.strokeArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color ?? defaultStrokeColor, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
+  getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
-    return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+    return points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, cursorPosition } = useCircleArcEdit<number>(onEnd, {

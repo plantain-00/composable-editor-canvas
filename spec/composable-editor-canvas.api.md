@@ -302,15 +302,15 @@ export interface ReactRenderTarget<T = JSX.Element> {
         scale: number;
     }): JSX.Element;
     // (undocumented)
-    strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number): T;
+    strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number, strokeWidth?: number): T;
     // (undocumented)
-    strokeCircle(cx: number, cy: number, r: number, color: number): T;
+    strokeCircle(cx: number, cy: number, r: number, color: number, strokeWidth?: number): T;
     // (undocumented)
-    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): T;
+    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number, strokeWidth?: number): T;
     // (undocumented)
-    strokePolyline(points: Position[], color: number, dashArray?: number[]): T;
+    strokePolyline(points: Position[], color: number, dashArray?: number[], strokeWidth?: number): T;
     // (undocumented)
-    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): T;
+    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number, strokeWidth?: number): T;
     // (undocumented)
     type: string;
 }
@@ -675,7 +675,7 @@ export function useUndoRedo<T>(defaultState: T): {
 };
 
 // @public (undocumented)
-export function useWheelScroll<T extends HTMLElement>(maxOffsetX: number, maxOffsetY: number): {
+export function useWheelScroll<T extends HTMLElement>(maxOffsetX?: number, maxOffsetY?: number): {
     ref: React_2.MutableRefObject<T | null>;
     x: number;
     y: number;

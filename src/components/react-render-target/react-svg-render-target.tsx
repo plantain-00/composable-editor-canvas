@@ -27,32 +27,35 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       </svg>
     )
   },
-  strokeRect(x, y, width, height, color, angle) {
+  strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return <rect
       x={x}
       y={y}
       width={width}
       height={height}
       stroke={getColorString(color)}
+      strokeWidth={strokeWidth}
       fill="none"
       transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
     />
   },
-  strokePolyline(points, color, dashArray) {
+  strokePolyline(points, color, dashArray, strokeWidth) {
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}
       stroke={getColorString(color)}
+      strokeWidth={strokeWidth}
       strokeDasharray={dashArray?.join(' ')}
       fill="none"
     />
   },
-  strokeCircle(cx, cy, r, color) {
-    return <circle stroke={getColorString(color)} cx={cx} cy={cy} r={r} fill="none" />
+  strokeCircle(cx, cy, r, color, strokeWidth) {
+    return <circle stroke={getColorString(color)} strokeWidth={strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
   },
-  strokeEllipse(cx, cy, rx, ry, color, angle) {
+  strokeEllipse(cx, cy, rx, ry, color, angle, strokeWidth) {
     return <ellipse
       stroke={getColorString(color)}
+      strokeWidth={strokeWidth}
       cx={cx}
       cy={cy}
       rx={rx}
@@ -61,12 +64,13 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${cx},${cy})` : undefined}
     />
   },
-  strokeArc(cx, cy, r, startAngle, endAngle, color) {
+  strokeArc(cx, cy, r, startAngle, endAngle, color, strokeWidth) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
     return <path
       d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
+      strokeWidth={strokeWidth}
       stroke={getColorString(color)}
       fill="none"
     />

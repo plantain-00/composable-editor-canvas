@@ -6,6 +6,9 @@ import { RectContent } from './rect-model'
 
 export interface BaseContent<T extends string = string> {
   type: T
+}
+
+export interface StrokeBaseContent<T extends string = string> extends BaseContent<T> {
   dashArray?: number[]
 }
 
@@ -15,9 +18,9 @@ export interface Model<T> {
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number): void
   explode?(content: Omit<T, 'type'>): BaseContent[]
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position): void
-  render?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V> }): V
-  renderOperator?<V>(props: { content: Omit<T, 'type'>, stroke: number, target: ReactRenderTarget<V>, text: string, fontSize: number }): V
+  render?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V> }): V
+  getOperatorRenderPosition?(content: Omit<T, 'type'>): Position
   useEdit?(onEnd: () => void, transform: (p: Position) => Position, getAngleSnap?: (angle: number) => number | undefined, scale?: number): {
     mask?: JSX.Element
     updatePreview(contents: T[]): {
@@ -48,6 +51,8 @@ const modelCenter: Record<string, Model<BaseContent>> = {}
 export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
+
+export const defaultStrokeColor = 0x00ff00
 
 export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Position, angleSnapEnabled: boolean, scale?: number) {
   const editMasks: JSX.Element[] = []

@@ -1,8 +1,8 @@
 import * as React from "react"
 
 export function useWheelScroll<T extends HTMLElement>(
-  maxOffsetX: number,
-  maxOffsetY: number,
+  maxOffsetX = -1,
+  maxOffsetY = -1,
 ) {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)

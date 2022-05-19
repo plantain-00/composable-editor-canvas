@@ -1,8 +1,10 @@
 import React from 'react'
-import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { getSymmetryPoint, getTwoPointsDistance, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
+import { ArcContent } from './arc-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { TextContent } from './text-model'
 
-export type LineContent = BaseContent<'line' | 'polyline'> & {
+export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
 }
 
@@ -21,11 +23,11 @@ export const lineModel: Model<LineContent> = {
     const line = twoPointLineToGeneralFormLine(p1, p2)
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
-  render({ content, stroke, target }) {
-    return target.strokePolyline(content.points, stroke, content.dashArray)
+  render({ content, color, target, strokeWidth }) {
+    return target.strokePolyline(content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
-    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  getOperatorRenderPosition(content) {
+    return content.points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, cursorPosition, dragStartPosition } = usePolylineEdit<number>(onEnd, {
@@ -59,6 +61,45 @@ export const lineModel: Model<LineContent> = {
         getAngleSnap,
       },
     )
+    let assistentContents: (LineContent | ArcContent | TextContent)[] | undefined
+    if (line && line.length > 1) {
+      const start = line[line.length - 2]
+      const end = line[line.length - 1]
+      const r = getTwoPointsDistance(start, end)
+      const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
+      assistentContents = [
+        {
+          type: 'arc',
+          x: start.x,
+          y: start.y,
+          r,
+          dashArray: [4],
+          startAngle: angle > 180 || angle < 0 ? angle : 0,
+          endAngle: angle > 180 || angle < 0 ? 0 : angle,
+        },
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [start, { x: start.x + r, y: start.y }]
+        },
+        {
+          type: 'text',
+          x: (start.x + end.x) / 2 - 20,
+          y: (start.y + end.y) / 2 + 4,
+          text: r.toFixed(2),
+          color: 0xff0000,
+          fontSize: 16,
+        },
+        {
+          type: 'text',
+          x: end.x + 10,
+          y: end.y - 10,
+          text: `${angle.toFixed(1)}°`,
+          color: 0xff0000,
+          fontSize: 16,
+        },
+      ]
+    }
     return {
       input,
       onClick,
@@ -70,6 +111,7 @@ export const lineModel: Model<LineContent> = {
           }
         }
       },
+      assistentContents,
     }
   },
   getSnapPoints(content) {

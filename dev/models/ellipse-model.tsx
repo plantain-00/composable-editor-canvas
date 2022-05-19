@@ -1,10 +1,10 @@
 import React from 'react'
 import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseClickCreate, useEllipseEdit } from '../../src'
 import { LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
-export type EllipseContent = BaseContent<'ellipse'> & Ellipse
+export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
 
 export const ellipseModel: Model<EllipseContent> = {
   type: 'ellipse',
@@ -26,15 +26,15 @@ export const ellipseModel: Model<EllipseContent> = {
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - (content.angle ?? 0)
   },
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getEllipseLines(content)
-      return strokePolygon(target, points, stroke, content.dashArray)
+      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, stroke, content.angle)
+    return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, color ?? defaultStrokeColor, content.angle, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
-    return target.fillText(content.cx, content.cy, text, stroke, fontSize)
+  getOperatorRenderPosition(content) {
+    return { x: content.cx, y: content.cy }
   },
   useCreate(type, onEnd, getAngleSnap) {
     const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(

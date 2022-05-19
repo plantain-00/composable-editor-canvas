@@ -21,14 +21,14 @@ export function Renderer(props: {
   if (!target) {
     return null
   }
+  const strokeWidth = 1 / (props.transform?.scale ?? 1)
   const children: unknown[] = []
   props.contents.forEach((content, i) => {
     const model = getModel(content.type)
     if (!model) {
       return
     }
-    const OperatorRender = model.renderOperator
-    let color = 0x00ff00
+    let color: number | undefined
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
     const selected = props.selectedContents.includes(i)
     if (selected) {
@@ -41,17 +41,18 @@ export function Renderer(props: {
     if (selected) {
       operators.unshift('me')
     }
-    if (OperatorRender && operators.length > 0) {
-      children.push(OperatorRender({ content, stroke: color, target, text: operators.join(','), fontSize: 16 }))
+    if (model.getOperatorRenderPosition && operators.length > 0) {
+      const renderPosition = model.getOperatorRenderPosition(content)
+      children.push(target.fillText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16))
     }
     const ContentRender = model.render
     if (ContentRender) {
-      children.push(ContentRender({ content, stroke: color, target }))
+      children.push(ContentRender({ content, color, target, strokeWidth }))
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
-        children.push(RenderIfSelected({ content, stroke: color, target }))
+        children.push(RenderIfSelected({ content, color, target }))
       }
     }
   })

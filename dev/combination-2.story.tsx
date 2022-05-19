@@ -22,6 +22,7 @@ import { ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
+import { textModel } from './models/text-model'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -38,6 +39,7 @@ registerModel(ellipseModel)
 registerModel(arcModel)
 registerModel(splineModel)
 registerModel(ellipseArcModel)
+registerModel(textModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -188,7 +190,7 @@ const CADEditor = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
-  const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>(-1, -1)
+  const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     onChange(oldScale, newScale, cursor) {
       setX((x) => cursor.x - width / 2 - (cursor.x - width / 2 - x) * newScale / oldScale)

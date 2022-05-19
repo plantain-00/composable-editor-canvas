@@ -15,10 +15,10 @@ export interface ReactRenderTarget<T = JSX.Element> {
       scale: number
     }
   ): JSX.Element
-  strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number): T
-  strokePolyline(points: Position[], color: number, dashArray?: number[]): T
-  strokeCircle(cx: number, cy: number, r: number, color: number): T
-  strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number): T
-  strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number): T
+  strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number, strokeWidth?: number): T
+  strokePolyline(points: Position[], color: number, dashArray?: number[], strokeWidth?: number): T
+  strokeCircle(cx: number, cy: number, r: number, color: number, strokeWidth?: number): T
+  strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number, strokeWidth?: number): T
+  strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number, strokeWidth?: number): T
   fillText(x: number, y: number, text: string, color: number, fontSize: number): T
 }

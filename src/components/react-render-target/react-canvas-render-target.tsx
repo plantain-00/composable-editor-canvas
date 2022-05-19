@@ -14,10 +14,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       />
     )
   },
-  strokeRect(x, y, width, height, color, angle) {
+  strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
+      ctx.lineWidth = strokeWidth ?? 1
       if (angle) {
         ctx.translate(x + width / 2, y + height / 2)
         ctx.rotate(angle / 180 * Math.PI)
@@ -28,10 +29,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokePolyline(points, color, dashArray) {
+  strokePolyline(points, color, dashArray, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
+      ctx.lineWidth = strokeWidth ?? 1
       ctx.strokeStyle = getColorString(color)
       if (dashArray) {
         ctx.setLineDash(dashArray)
@@ -47,30 +49,33 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokeCircle(cx, cy, r, color) {
+  strokeCircle(cx, cy, r, color, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
+      ctx.lineWidth = strokeWidth ?? 1
       ctx.strokeStyle = getColorString(color)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  strokeEllipse(cx, cy, rx, ry, color, angle) {
+  strokeEllipse(cx, cy, rx, ry, color, angle, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
+      ctx.lineWidth = strokeWidth ?? 1
       ctx.strokeStyle = getColorString(color)
       ctx.ellipse(cx, cy, rx, ry, (angle ?? 0) / 180 * Math.PI, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  strokeArc(cx, cy, r, startAngle, endAngle, color) {
+  strokeArc(cx, cy, r, startAngle, endAngle, color, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
+      ctx.lineWidth = strokeWidth ?? 1
       ctx.strokeStyle = getColorString(color)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
       ctx.stroke()
