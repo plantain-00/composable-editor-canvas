@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
 import produce, { enablePatches, Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
@@ -138,7 +138,7 @@ export default () => {
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
-        {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['move canvas', '2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
         <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
@@ -200,12 +200,18 @@ const CADEditor = React.forwardRef((props: {
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(
+    () => {
+      setX((v) => v + offset.x)
+      setY((v) => v + offset.y)
+    },
+  )
   const size = useWindowSize()
   const width = size.width / 2
   const height = size.height
   const transform: Transform | undefined = {
-    x,
-    y,
+    x: x + offset.x,
+    y: y + offset.y,
     scale,
     center: {
       x: width / 2,
@@ -401,6 +407,11 @@ const CADEditor = React.forwardRef((props: {
       }
     }
   }
+  const onMouseDown = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (operation === 'move canvas') {
+      onStartMoveCanvas({ x: e.clientX, y: e.clientY })
+    }
+  }
   const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
@@ -430,7 +441,7 @@ const CADEditor = React.forwardRef((props: {
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-      <div style={{ cursor: 'crosshair', position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+      <div style={{ cursor: operation === 'move canvas' ? 'grab' : 'crosshair', position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
@@ -438,6 +449,7 @@ const CADEditor = React.forwardRef((props: {
           othersSelectedContents={othersSelectedContents}
           hoveringContent={hoveringContent}
           onClick={onClick}
+          onMouseDown={onMouseDown}
           transform={transform}
           width={width}
           height={height}
@@ -472,6 +484,7 @@ const CADEditor = React.forwardRef((props: {
       </div>
       {editMasks}
       {dragSelectMask}
+      {moveCanvasMask}
     </div>
   )
 })
