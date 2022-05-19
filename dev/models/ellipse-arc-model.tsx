@@ -2,23 +2,23 @@ import React from 'react'
 import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
 import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
-export type EllipseArcContent = BaseContent<'ellipse arc'> & EllipseArc
+export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
 export const ellipseArcModel: Model<EllipseArcContent> = {
   type: 'ellipse arc',
   move: ellipseModel.move,
   rotate: ellipseModel.rotate,
   mirror: ellipseModel.mirror,
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     const { points } = getEllipseArcLines(content)
-    return target.strokePolyline(points, stroke, content.dashArray)
+    return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
+  getOperatorRenderPosition(content) {
     const { points } = getEllipseArcLines(content)
-    return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+    return points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, cursorPosition } = useEllipseArcEdit<number>(onEnd, {

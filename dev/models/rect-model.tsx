@@ -1,9 +1,9 @@
 import React from 'react'
 import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
-export type RectContent = BaseContent<'rect'> & Region & {
+export type RectContent = StrokeBaseContent<'rect'> & Region & {
   angle: number
 }
 
@@ -31,16 +31,16 @@ export const rectModel: Model<RectContent> = {
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - content.angle
   },
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getRectLines(content)
-      return strokePolygon(target, points, stroke, content.dashArray)
+      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, stroke, content.angle)
+    return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color ?? defaultStrokeColor, content.angle, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
+  getOperatorRenderPosition(content) {
     const { points } = getRectLines(content)
-    return target.fillText(points[0].x, points[0].y, text, stroke, fontSize)
+    return points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const [info, setInfo] = React.useState<{ angle: number, index: number }>()

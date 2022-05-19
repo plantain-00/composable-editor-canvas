@@ -2,10 +2,10 @@ import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
 import { LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
 
-export type CircleContent = BaseContent<'circle'> & Circle
+export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
@@ -24,15 +24,15 @@ export const circleModel: Model<CircleContent> = {
     content.x = p.x
     content.y = p.y
   },
-  render({ content, stroke, target }) {
+  render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getCircleLines(content)
-      return target.strokePolyline(points, stroke, content.dashArray)
+      return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeCircle(content.x, content.y, content.r, stroke)
+    return target.strokeCircle(content.x, content.y, content.r, color ?? defaultStrokeColor, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
-    return target.fillText(content.x, content.y, text, stroke, fontSize)
+  getOperatorRenderPosition(content) {
+    return content
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, cursorPosition } = useCircleEdit<number>(onEnd, {

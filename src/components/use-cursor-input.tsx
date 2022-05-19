@@ -32,6 +32,7 @@ export function useCursorInput(
         {onKeyDown && cursorPosition && <input
           ref={inputRef}
           value={text}
+          style={{ width: '50px' }}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => onKeyDown(e, text, cursorPosition)}
         />}

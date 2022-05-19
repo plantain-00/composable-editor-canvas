@@ -1,9 +1,9 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { BaseContent, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 
-export type PolygonContent = BaseContent<'polygon'> & {
+export type PolygonContent = StrokeBaseContent<'polygon'> & {
   points: Position[]
 }
 
@@ -26,11 +26,11 @@ export const polygonModel: Model<PolygonContent> = {
     const { lines } = getPolygonLines(content)
     return lines.map((line) => ({ type: 'line', points: line }))
   },
-  render({ content, stroke, target }) {
-    return strokePolygon(target, content.points, stroke, content.dashArray)
+  render({ content, color, target, strokeWidth }) {
+    return strokePolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderOperator({ content, stroke, target, text, fontSize }) {
-    return target.fillText(content.points[0].x, content.points[0].y, text, stroke, fontSize)
+  getOperatorRenderPosition(content) {
+    return content.points[0]
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {
@@ -123,6 +123,7 @@ export function strokePolygon<T>(
   points: Position[],
   stroke: number,
   dashArray?: number[],
+  strokeWidth?: number,
 ) {
-  return target.strokePolyline([...points, points[0]], stroke, dashArray)
+  return target.strokePolyline([...points, points[0]], stroke, dashArray, strokeWidth)
 }
