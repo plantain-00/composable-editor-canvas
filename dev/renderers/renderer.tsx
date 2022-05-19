@@ -8,7 +8,6 @@ export function Renderer(props: {
   selectedContents: number[]
   othersSelectedContents: { selection: number[], operator: string }[]
   hoveringContent: number
-  onClick: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
   transform?: {
     x: number
     y: number
@@ -16,7 +15,7 @@ export function Renderer(props: {
   }
   width: number
   height: number
-}) {
+} & React.DOMAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
   if (!target) {
     return null
@@ -62,6 +61,7 @@ export function Renderer(props: {
       boxSizing: 'border-box',
     },
     onClick: props.onClick,
+    onMouseDown: props.onMouseDown,
   }, props.transform)
 }
 
