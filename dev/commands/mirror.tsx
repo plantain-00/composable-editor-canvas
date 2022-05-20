@@ -17,7 +17,14 @@ export const mirrorCommand: Command = {
     if (enabled) {
       message = startPosition ? 'specify second point' : 'specify first point'
     }
-    const { input, setInputPosition } = useCursorInput(message)
+    const { input, setInputPosition, clearText, setCursorPosition } = useCursorInput(message, (e, text) => {
+      if (e.key === 'Enter') {
+        if (text.toLowerCase() === 'y' || text.toLowerCase() === 'n') {
+          setChangeOriginal(!changeOriginal)
+          clearText()
+        }
+      }
+    })
     return {
       onStart,
       mask: enabled ? mask : undefined,
@@ -29,7 +36,7 @@ export const mirrorCommand: Command = {
             e.stopPropagation()
           }}
         >
-          {changeOriginal ? 'create new' : 'change original'}
+          {changeOriginal ? 'create new(N)' : 'change original(Y)'}
         </button>
       ) : undefined,
       updateContent(content) {
@@ -55,8 +62,9 @@ export const mirrorCommand: Command = {
         }
         return {}
       },
-      onMove(_, p) {
-        setInputPosition(p)
+      onMove(p, viewportPosition) {
+        setCursorPosition(p)
+        setInputPosition(viewportPosition || p)
       },
     }
   }

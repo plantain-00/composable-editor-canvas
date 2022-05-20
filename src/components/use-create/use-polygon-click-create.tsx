@@ -9,6 +9,9 @@ export function usePolygonClickCreate(
   options?: Partial<{
     toEdge: boolean
     getAngleSnap: (angle: number) => number | undefined
+    setSidesKey: string
+    switchTypeKey: string
+    switchType(): void
   }>,
 ) {
   const [polygon, setPolygon] = React.useState<Position[]>()
@@ -30,6 +33,16 @@ export function usePolygonClickCreate(
   }
   const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
+      if (options?.setSidesKey && text.toLowerCase() === options.setSidesKey.toLowerCase()) {
+        setInputType('sides')
+        clearText()
+        return
+      }
+      if (options?.switchTypeKey && options.switchType && text.toLowerCase() === options.switchTypeKey.toLowerCase()) {
+        options.switchType()
+        clearText()
+        return
+      }
       const r = +text
       if (!isNaN(r) && r > 0) {
         if (inputType === 'radius') {
