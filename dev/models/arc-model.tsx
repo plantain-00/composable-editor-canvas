@@ -1,10 +1,11 @@
 import React from 'react'
-import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate, useCircleArcEdit } from '../../src'
+import { Arc, CircleArcEditBar, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate, useCircleArcEdit } from '../../src'
 import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
+import { TextContent } from './text-model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -83,12 +84,22 @@ export const arcModel: Model<ArcContent> = {
         getAngleSnap,
       },
     )
-    const assistentContents: (LineContent | PolygonContent | CircleContent)[] = []
+    const assistentContents: (LineContent | PolygonContent | CircleContent | TextContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
         assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
       } else {
-        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+        assistentContents.push(
+          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
+          {
+            type: 'text',
+            x: (startPosition.x + cursorPosition.x) / 2 - 20,
+            y: (startPosition.y + cursorPosition.y) / 2 + 4,
+            text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+            color: 0xff0000,
+            fontSize: 16,
+          },
+        )
       }
     }
     if (arc) {

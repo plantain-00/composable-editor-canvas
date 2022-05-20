@@ -64,6 +64,9 @@ export const polygonModel: Model<PolygonContent> = {
       {
         getAngleSnap,
         toEdge: createType === 'edge',
+        setSidesKey: 'S',
+        switchTypeKey: 'T',
+        switchType: () => setCreateType(createType === 'edge' ? 'point' : 'edge'),
       },
     )
     let assistentContents: LineContent[] | undefined
@@ -75,8 +78,8 @@ export const polygonModel: Model<PolygonContent> = {
       subcommand: type === 'polygon'
         ? (
           <span>
-            <button onClick={startSetSides} style={{ position: 'relative' }}>set sides</button>
-            <button onClick={() => setCreateType(createType === 'edge' ? 'point' : 'edge')} style={{ position: 'relative' }}>{createType}</button>
+            <button onClick={startSetSides} style={{ position: 'relative' }}>set sides(S)</button>
+            <button onClick={() => setCreateType(createType === 'edge' ? 'point' : 'edge')} style={{ position: 'relative' }}>{createType}(T)</button>
           </span>
         )
         : undefined,

@@ -625,6 +625,9 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: T, operator: P, option
 export function usePolygonClickCreate(enabled: boolean, onEnd: (polygon: Position[]) => void, options?: Partial<{
     toEdge: boolean;
     getAngleSnap: (angle: number) => number | undefined;
+    setSidesKey: string;
+    switchTypeKey: string;
+    switchType(): void;
 }>): {
     polygon: Position[] | undefined;
     startPosition: Position | undefined;

@@ -1,9 +1,10 @@
 import React from 'react'
-import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
+import { Circle, CircleEditBar, getSymmetryPoint, getTwoPointsDistance, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
 import { PolygonContent } from './polygon-model'
+import { TextContent } from './text-model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -67,12 +68,22 @@ export const circleModel: Model<CircleContent> = {
         getAngleSnap,
       },
     )
-    let assistentContents: (LineContent | PolygonContent)[] | undefined
+    let assistentContents: (LineContent | PolygonContent | TextContent)[] | undefined
     if (startPosition && cursorPosition) {
       if (middlePosition) {
         assistentContents = [{ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] }]
       } else {
-        assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
+        assistentContents = [
+          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
+          {
+            type: 'text',
+            x: (startPosition.x + cursorPosition.x) / 2 - 20,
+            y: (startPosition.y + cursorPosition.y) / 2 + 4,
+            text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+            color: 0xff0000,
+            fontSize: 16,
+          },
+        ]
       }
     }
     return {
