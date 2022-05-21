@@ -2,7 +2,7 @@ import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, getTwoPointsDistance, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { PolygonContent } from './polygon-model'
 import { TextContent } from './text-model'
 
@@ -99,17 +99,18 @@ export const circleModel: Model<CircleContent> = {
     }
   },
   getSnapPoints(content) {
-    return [
+    return getSnapPointsFromCache(content, () => [
       { x: content.x, y: content.y, type: 'center' },
       { x: content.x - content.r, y: content.y, type: 'endpoint' },
       { x: content.x + content.r, y: content.y, type: 'endpoint' },
       { x: content.x, y: content.y - content.r, type: 'endpoint' },
       { x: content.x, y: content.y + content.r, type: 'endpoint' },
-    ]
+    ])
   },
   getCircle(content) {
     return content
   },
+  getLines: getCircleLines,
 }
 
 function getCircleLines(content: Omit<CircleContent, "type">) {

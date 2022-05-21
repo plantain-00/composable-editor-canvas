@@ -2,7 +2,7 @@ import React from 'react'
 import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
 import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { PolygonContent } from './polygon-model'
 
 export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
@@ -125,15 +125,17 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     }
   },
   getSnapPoints(content) {
-    const startAngle = content.startAngle / 180 * Math.PI
-    const endAngle = content.endAngle / 180 * Math.PI
-    const middleAngle = (startAngle + endAngle) / 2
-    return [
-      { x: content.cx, y: content.cy, type: 'center' },
-      { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, content), type: 'endpoint' },
-      { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, content), type: 'endpoint' },
-      { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(middleAngle), y: content.cy + content.ry * Math.sin(middleAngle) }, content), type: 'midpoint' },
-    ]
+    return getSnapPointsFromCache(content, () => {
+      const startAngle = content.startAngle / 180 * Math.PI
+      const endAngle = content.endAngle / 180 * Math.PI
+      const middleAngle = (startAngle + endAngle) / 2
+      return [
+        { x: content.cx, y: content.cy, type: 'center' },
+        { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, content), type: 'endpoint' },
+        { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, content), type: 'endpoint' },
+        { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(middleAngle), y: content.cy + content.ry * Math.sin(middleAngle) }, content), type: 'midpoint' },
+      ]
+    })
   },
   getLines: getEllipseArcLines,
 }

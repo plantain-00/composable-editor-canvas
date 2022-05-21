@@ -2,7 +2,7 @@ import { Command } from "./command"
 
 export const deleteCommand: Command = {
   name: 'delete',
-  execuateCommand() {
+  executeCommand() {
     return {
       removed: true,
     }

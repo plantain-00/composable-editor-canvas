@@ -30,6 +30,17 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
       </Stage>
     )
   },
+  getEmpty() {
+    return <></>
+  },
+  getGroup(children, x, y, base, angle) {
+    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    return (
+      <PixiContainer position={[base.x + x, base.y + y]} pivot={[base.x, base.y]} angle={angle} >
+        {children}
+      </PixiContainer>
+    )
+  },
   strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return <RectGraphic x={x} y={y} width={width} height={height} color={color} angle={angle} strokeWidth={strokeWidth} />
   },

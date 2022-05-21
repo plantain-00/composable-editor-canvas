@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, getTwoPointsDistance, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { ArcContent } from './arc-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { TextContent } from './text-model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
@@ -115,15 +115,17 @@ export const lineModel: Model<LineContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getPolylineLines(content)
-    return [
-      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-      ...lines.map(([start, end]) => ({
-        x: (start.x + end.x) / 2,
-        y: (start.y + end.y) / 2,
-        type: 'midpoint' as const,
-      })),
-    ]
+    return getSnapPointsFromCache(content, () => {
+      const { points, lines } = getPolylineLines(content)
+      return [
+        ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+        ...lines.map(([start, end]) => ({
+          x: (start.x + end.x) / 2,
+          y: (start.y + end.y) / 2,
+          type: 'midpoint' as const,
+        })),
+      ]
+    })
   },
   getLines: getPolylineLines,
 }
