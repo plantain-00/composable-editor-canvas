@@ -14,6 +14,26 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       />
     )
   },
+  getEmpty() {
+    return () => {
+      // empty
+    }
+  },
+  getGroup(children, x, y, base, angle) {
+    return (ctx) => {
+      ctx.save()
+      ctx.translate(x, y)
+      if (angle) {
+        ctx.translate(base.x, base.y)
+        ctx.rotate(angle / 180 * Math.PI)
+        ctx.translate(-base.x, - base.y)
+      }
+      children.forEach((c) => {
+        c(ctx)
+      })
+      ctx.restore()
+    }
+  },
   strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return (ctx) => {
       ctx.save()

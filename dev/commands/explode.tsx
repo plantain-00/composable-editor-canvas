@@ -3,11 +3,11 @@ import { Command } from "./command"
 
 export const explodeCommand: Command = {
   name: 'explode',
-  execuateCommand(content) {
+  executeCommand(content, contents) {
     if (canExplodeContent(content)) {
       return {
         removed: true,
-        newContents: explodeContent(content),
+        newContents: explodeContent(content, contents),
       }
     }
     return {}

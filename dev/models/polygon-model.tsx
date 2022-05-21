@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
   points: Position[]
@@ -94,15 +94,17 @@ export const polygonModel: Model<PolygonContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getPolygonLines(content)
-    return [
-      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-      ...lines.map(([start, end]) => ({
-        x: (start.x + end.x) / 2,
-        y: (start.y + end.y) / 2,
-        type: 'midpoint' as const,
-      })),
-    ]
+    return getSnapPointsFromCache(content, () => {
+      const { points, lines } = getPolygonLines(content)
+      return [
+        ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+        ...lines.map(([start, end]) => ({
+          x: (start.x + end.x) / 2,
+          y: (start.y + end.y) / 2,
+          type: 'midpoint' as const,
+        })),
+      ]
+    })
   },
   getLines: getPolygonLines,
 }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
@@ -132,16 +132,18 @@ export const rectModel: Model<RectContent> = {
     }
   },
   getSnapPoints(content) {
-    const { points, lines } = getRectLines(content)
-    return [
-      { x: content.x, y: content.y, type: 'center' },
-      ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-      ...lines.map(([start, end]) => ({
-        x: (start.x + end.x) / 2,
-        y: (start.y + end.y) / 2,
-        type: 'midpoint' as const,
-      })),
-    ]
+    return getSnapPointsFromCache(content, () => {
+      const { points, lines } = getRectLines(content)
+      return [
+        { x: content.x, y: content.y, type: 'center' },
+        ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
+        ...lines.map(([start, end]) => ({
+          x: (start.x + end.x) / 2,
+          y: (start.y + end.y) / 2,
+          type: 'midpoint' as const,
+        })),
+      ]
+    })
   },
   getLines: getRectLines,
 }

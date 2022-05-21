@@ -4,9 +4,9 @@ import { BaseContent, getModel } from "../models/model"
 
 export function Renderer(props: {
   type?: string
-  contents: BaseContent[]
-  selectedContents: number[]
-  othersSelectedContents: { selection: number[], operator: string }[]
+  contents: readonly BaseContent[]
+  selectedContents: readonly number[]
+  othersSelectedContents: readonly { selection: number[], operator: string }[]
   hoveringContent: number
   transform?: {
     x: number
@@ -41,12 +41,12 @@ export function Renderer(props: {
       operators.unshift('me')
     }
     if (model.getOperatorRenderPosition && operators.length > 0) {
-      const renderPosition = model.getOperatorRenderPosition(content)
+      const renderPosition = model.getOperatorRenderPosition(content, props.contents)
       children.push(target.fillText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16))
     }
     const ContentRender = model.render
     if (ContentRender) {
-      children.push(ContentRender({ content, color, target, strokeWidth }))
+      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected

@@ -27,6 +27,17 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       </svg>
     )
   },
+  getEmpty() {
+    return <></>
+  },
+  getGroup(children, x, y, base, angle) {
+    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    return (
+      <g transform={angle ? `translate(${x}, ${y}) rotate(${angle},${base.x},${base.y})` : `translate(${x}, ${y})`}>
+        {children}
+      </g>
+    )
+  },
   strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return <rect
       x={x}

@@ -27,9 +27,9 @@ export const rotateCommand: Command = {
       onMove(_, p) {
         setInputPosition(p)
       },
-      updateContent(content) {
+      updateContent(content, contents) {
         if (startPosition && offset?.angle !== undefined) {
-          rotateContent(content, startPosition, offset.angle)
+          rotateContent(content, startPosition, offset.angle, contents)
           const r = getTwoPointsDistance(startPosition, offset)
           return {
             assistentContents: [

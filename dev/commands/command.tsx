@@ -5,7 +5,7 @@ import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 export interface Command {
   name: string
   useCommand?(
-    onEnd: () => void,
+    onEnd: (updateContents?: (contents: BaseContent[], selectedContents: readonly number[]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     enabled: boolean,
@@ -15,12 +15,12 @@ export interface Command {
     mask?: JSX.Element
     input?: JSX.Element
     subcommand?: JSX.Element
-    updateContent(content: BaseContent): {
+    updateContent?(content: BaseContent, contents: readonly BaseContent[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
     }
   }
-  execuateCommand?(content: BaseContent): {
+  executeCommand?(content: BaseContent, contents: readonly BaseContent[]): {
     removed?: boolean
     newContents?: BaseContent[]
   }
@@ -34,7 +34,7 @@ export function getCommand(name: string): Command | undefined {
 }
 
 export function useCommands(
-  onEnd: () => void,
+  onEnd: (updateContents?: (contents: BaseContent[], selectedContents: readonly number[]) => void) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
   inputFixed: boolean,
@@ -43,7 +43,7 @@ export function useCommands(
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
   const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
-  const updateContents: ((content: BaseContent) => {
+  const updateContents: ((content: BaseContent, contents: readonly BaseContent[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
   })[] = []
@@ -55,7 +55,9 @@ export function useCommands(
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
       onStartMap[command.name] = onStart
-      updateContents.push(updateContent)
+      if (updateContent) {
+        updateContents.push(updateContent)
+      }
       if (onMove) {
         onMoves.push(onMove)
       }
@@ -85,11 +87,11 @@ export function useCommands(
   return {
     commandMasks: masks,
     commandInputs,
-    updateContent(content: BaseContent) {
+    updateContent(content: BaseContent, contents: readonly BaseContent[]) {
       const assistentContents: BaseContent[] = []
       const newContents: BaseContent[] = []
       for (const updateContent of updateContents) {
-        const result = updateContent(content)
+        const result = updateContent(content, contents)
         if (result.assistentContents) {
           assistentContents.push(...result.assistentContents)
         }

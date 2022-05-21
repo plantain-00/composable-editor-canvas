@@ -1,7 +1,7 @@
 import React from 'react'
 import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
-import produce, { enablePatches, Patch } from 'immer'
+import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
 import { lineModel } from './models/line-model'
@@ -23,6 +23,8 @@ import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
 import { textModel } from './models/text-model'
+import { blockReferenceModel } from './models/block-model'
+import { createBlockCommand } from './commands/create-block'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -40,6 +42,7 @@ registerModel(arcModel)
 registerModel(splineModel)
 registerModel(ellipseArcModel)
 registerModel(textModel)
+registerModel(blockReferenceModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -47,6 +50,7 @@ registerCommand(mirrorCommand)
 registerCommand(cloneCommand)
 registerCommand(deleteCommand)
 registerCommand(explodeCommand)
+registerCommand(createBlockCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -138,7 +142,7 @@ export default () => {
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
-        {!readOnly && ['move canvas', '2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['move canvas', '2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
         <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
@@ -221,8 +225,15 @@ const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove } = useCommands(
-    () => {
-      applyPatchFromSelf(previewPatches, previewReversePatches)
+    (updateContents) => {
+      if (updateContents) {
+        const [, ...patches] = produceWithPatches(state, (draft) => {
+          updateContents(draft, selectedContents)
+        })
+        applyPatchFromSelf(...patches)
+      } else {
+        applyPatchFromSelf(previewPatches, previewReversePatches)
+      }
       setOperations([])
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
@@ -272,7 +283,7 @@ const CADEditor = React.forwardRef((props: {
     const newContents: BaseContent[] = []
     draft.forEach((content, i) => {
       if (selectedContents.includes(i)) {
-        const result = updateContent(content)
+        const result = updateContent(content, state)
         if (result.assistentContents) {
           assistentContents.push(...result.assistentContents)
         }
@@ -295,7 +306,7 @@ const CADEditor = React.forwardRef((props: {
     const newContents: BaseContent[] = []
     state.forEach((c, i) => {
       if (selectedContents.includes(i)) {
-        const result = executeCommand(name, c)
+        const result = executeCommand(name, c, state)
         if (result?.newContents) {
           newContents.push(...result.newContents)
         }

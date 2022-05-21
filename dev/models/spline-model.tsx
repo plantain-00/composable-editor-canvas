@@ -2,7 +2,7 @@ import React from 'react'
 import bspline from 'b-spline'
 import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 
 export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
@@ -79,7 +79,7 @@ export const splineModel: Model<SplineContent> = {
     }
   },
   getSnapPoints(content) {
-    return content.points.map((p) => ({ ...p, type: 'endpoint' as const }))
+    return getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
   },
   getLines: getSplineLines,
 }

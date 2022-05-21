@@ -3,7 +3,7 @@ import { Arc, CircleArcEditBar, getSymmetryPoint, getTwoPointsDistance, Position
 import { CircleContent } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { PolygonContent } from './polygon-model'
 import { TextContent } from './text-model'
 
@@ -157,15 +157,17 @@ export const arcModel: Model<ArcContent> = {
     }
   },
   getSnapPoints(content) {
-    const startAngle = content.startAngle / 180 * Math.PI
-    const endAngle = content.endAngle / 180 * Math.PI
-    const middleAngle = (startAngle + endAngle) / 2
-    return [
-      { x: content.x, y: content.y, type: 'center' },
-      { x: content.x + content.r * Math.cos(startAngle), y: content.y + content.r * Math.sin(startAngle), type: 'endpoint' },
-      { x: content.x + content.r * Math.cos(endAngle), y: content.y + content.r * Math.sin(endAngle), type: 'endpoint' },
-      { x: content.x + content.r * Math.cos(middleAngle), y: content.y + content.r * Math.sin(middleAngle), type: 'midpoint' },
-    ]
+    return getSnapPointsFromCache(content, () => {
+      const startAngle = content.startAngle / 180 * Math.PI
+      const endAngle = content.endAngle / 180 * Math.PI
+      const middleAngle = (startAngle + endAngle) / 2
+      return [
+        { x: content.x, y: content.y, type: 'center' },
+        { x: content.x + content.r * Math.cos(startAngle), y: content.y + content.r * Math.sin(startAngle), type: 'endpoint' },
+        { x: content.x + content.r * Math.cos(endAngle), y: content.y + content.r * Math.sin(endAngle), type: 'endpoint' },
+        { x: content.x + content.r * Math.cos(middleAngle), y: content.y + content.r * Math.sin(middleAngle), type: 'midpoint' },
+      ]
+    })
   },
   getLines: getArcLines,
 }

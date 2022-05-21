@@ -1,7 +1,7 @@
 import React from 'react'
 import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseClickCreate, useEllipseEdit } from '../../src'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
@@ -96,13 +96,13 @@ export const ellipseModel: Model<EllipseContent> = {
     }
   },
   getSnapPoints(content) {
-    return [
+    return getSnapPointsFromCache(content, () => [
       { x: content.cx, y: content.cy, type: 'center' },
       { ...rotatePositionByEllipseCenter({ x: content.cx - content.rx, y: content.cy }, content), type: 'endpoint' },
       { ...rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content), type: 'endpoint' },
       { ...rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content), type: 'endpoint' },
       { ...rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content), type: 'endpoint' },
-    ]
+    ])
   },
   getLines: getEllipseLines,
 }

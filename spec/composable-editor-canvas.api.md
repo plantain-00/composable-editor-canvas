@@ -294,6 +294,10 @@ export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
     fillText(x: number, y: number, text: string, color: number, fontSize: number): T;
     // (undocumented)
+    getEmpty(): T;
+    // (undocumented)
+    getGroup(children: T[], x: number, y: number, base: Position, angle?: number): T;
+    // (undocumented)
     getResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
         style: React.CSSProperties;
     }>, transform?: {
@@ -716,6 +720,18 @@ export function useZoom(value: number, onChange: (value: number) => void, option
         preventDefault(): void;
     } | undefined) => void;
 };
+
+// @public (undocumented)
+export class WeakmapCache<TKey extends object, TValue> {
+    // (undocumented)
+    get(key: TKey, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
 
 // @public (undocumented)
 export interface ZoomOptions {
