@@ -31,7 +31,7 @@ export function usePolygonClickCreate(
   } else {
     message = 'specify center point by click'
   }
-  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition, resetInput } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       if (options?.setSidesKey && text.toLowerCase() === options.setSidesKey.toLowerCase()) {
         setInputType('sides')
@@ -66,9 +66,7 @@ export function usePolygonClickCreate(
   const reset = () => {
     setStartPosition(undefined)
     setPolygon(undefined)
-    clearText()
-    setCursorPosition(undefined)
-    setInputPosition(undefined)
+    resetInput()
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition])

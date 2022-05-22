@@ -1,5 +1,7 @@
 import { getTwoPointsDistance, useCursorInput, useDragRotate } from "../../src"
-import { rotateContent } from "../util-2"
+import { ArcContent } from "../models/arc-model"
+import { LineContent } from "../models/line-model"
+import { getModel } from "../models/model"
 import { Command } from "./command"
 
 export const rotateCommand: Command = {
@@ -19,6 +21,31 @@ export const rotateCommand: Command = {
       message = startPosition ? 'specify angle point' : 'specify center point'
     }
     const { input, setInputPosition } = useCursorInput(message)
+    let assistentContents: (LineContent | ArcContent)[] | undefined
+    if (startPosition && offset?.angle !== undefined) {
+      const r = getTwoPointsDistance(startPosition, offset)
+      assistentContents = [
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [startPosition, offset]
+        },
+        {
+          type: 'arc',
+          x: startPosition.x,
+          y: startPosition.y,
+          r,
+          dashArray: [4],
+          startAngle: offset.angle > 180 || offset.angle < 0 ? offset.angle : 0,
+          endAngle: offset.angle > 180 || offset.angle < 0 ? 0 : offset.angle,
+        },
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [startPosition, { x: startPosition.x + r, y: startPosition.y }]
+        }
+      ]
+    }
 
     return {
       onStart,
@@ -29,34 +56,14 @@ export const rotateCommand: Command = {
       },
       updateContent(content, contents) {
         if (startPosition && offset?.angle !== undefined) {
-          rotateContent(content, startPosition, offset.angle, contents)
-          const r = getTwoPointsDistance(startPosition, offset)
-          return {
-            assistentContents: [
-              {
-                type: 'line',
-                dashArray: [4],
-                points: [startPosition, offset]
-              },
-              {
-                type: 'arc',
-                x: startPosition.x,
-                y: startPosition.y,
-                r,
-                dashArray: [4],
-                startAngle: offset.angle > 180 || offset.angle < 0 ? offset.angle : 0,
-                endAngle: offset.angle > 180 || offset.angle < 0 ? 0 : offset.angle,
-              },
-              {
-                type: 'line',
-                dashArray: [4],
-                points: [startPosition, { x: startPosition.x + r, y: startPosition.y }]
-              }
-            ]
-          }
+          getModel(content.type)?.rotate?.(content, startPosition, offset.angle, contents)
         }
         return {}
-      }
+      },
+      assistentContents,
     }
-  }
+  },
+  contentSelectable(content) {
+    return getModel(content.type)?.rotate !== undefined
+  },
 }

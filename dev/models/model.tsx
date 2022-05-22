@@ -18,6 +18,7 @@ export interface Model<T> {
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly BaseContent[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): BaseContent[]
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position, contents: readonly BaseContent[]): void
+  deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
   render?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[] }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V> }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
@@ -26,7 +27,7 @@ export interface Model<T> {
     updatePreview(contents: T[]): {
       assistentContents?: BaseContent[]
     }
-    editBar(props: { content: T, index: number }): JSX.Element
+    editBar(props: { content: T, index: number, contents: readonly BaseContent[] }): JSX.Element | null
   }
   useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, getAngleSnap?: (angle: number) => number | undefined): {
     input?: React.ReactElement<{ children: React.ReactNode[] }>
@@ -57,7 +58,7 @@ export const defaultStrokeColor = 0x00ff00
 export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Position, angleSnapEnabled: boolean, scale?: number) {
   const editMasks: JSX.Element[] = []
   const updateEditPreviews: ((contents: BaseContent[]) => { assistentContents?: BaseContent[] })[] = []
-  const editBarMap: Record<string, (props: { content: BaseContent, index: number }) => JSX.Element> = {}
+  const editBarMap: Record<string, (props: { content: BaseContent, index: number, contents: readonly BaseContent[] }) => JSX.Element | null> = {}
   Object.values(modelCenter).forEach((model) => {
     if (!model.useEdit) {
       return

@@ -13,18 +13,20 @@ export interface Command {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
     mask?: JSX.Element
-    input?: JSX.Element
+    input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
     updateContent?(content: BaseContent, contents: readonly BaseContent[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
     }
+    assistentContents?: BaseContent[]
   }
   executeCommand?(content: BaseContent, contents: readonly BaseContent[]): {
     removed?: boolean
     newContents?: BaseContent[]
   }
-  contentSelectable?(content: BaseContent): boolean
+  contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
+  selectOperation?: 'select one'
 }
 
 const commandCenter: Record<string, Command> = {}
@@ -47,10 +49,11 @@ export function useCommands(
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
   })[] = []
+  const commandAssistentContents: BaseContent[] = []
   const onStartMap: Record<string, ((p: Position) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { onStart, mask, updateContent, input, subcommand, onMove } = command.useCommand(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, operation === command.name)
+      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, operation === command.name)
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
@@ -60,6 +63,9 @@ export function useCommands(
       }
       if (onMove) {
         onMoves.push(onMove)
+      }
+      if (assistentContents) {
+        commandAssistentContents.push(...assistentContents)
       }
       if (input) {
         const children: React.ReactNode[] = [...input.props.children]
@@ -104,6 +110,7 @@ export function useCommands(
         newContents,
       }
     },
+    commandAssistentContents,
     startCommand(name: string | undefined, p: Position) {
       if (name && onStartMap[name]) {
         onStartMap[name](p)

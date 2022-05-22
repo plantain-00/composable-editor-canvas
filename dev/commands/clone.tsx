@@ -1,6 +1,6 @@
 import produce from "immer"
 import { useCursorInput, useDragMove } from "../../src"
-import { moveContent } from "../util-2"
+import { getModel } from "../models/model"
 import { Command } from "./command"
 
 export const cloneCommand: Command = {
@@ -30,20 +30,23 @@ export const cloneCommand: Command = {
           return {
             newContents: [
               produce(content, (d) => {
-                moveContent(d, offset)
+                getModel(d.type)?.move?.(d, offset)
               }),
             ],
-            assistentContents: [
-              {
-                type: 'line',
-                dashArray: [4],
-                points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
-              },
-            ]
           }
         }
         return {}
-      }
+      },
+      assistentContents: startPosition && (offset.x !== 0 || offset.y !== 0) ? [
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
+        },
+      ] : undefined,
     }
-  }
+  },
+  contentSelectable(content) {
+    return getModel(content.type)?.move !== undefined
+  },
 }

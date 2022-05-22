@@ -1,5 +1,4 @@
 import { getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from '../src'
-import { getCommand } from './commands/command'
 import { BaseContent, getModel } from './models/model'
 
 export function getContentByClickPosition(
@@ -50,8 +49,7 @@ export function getContentsByClickTwoPositions(
           { x: circle.x + circle.r, y: circle.y + circle.r },
         ].every((p) => pointIsInRegion(p, region))) {
           result.push(i)
-        }
-        if (partial) {
+        } else if (partial) {
           const minDistance = getPointAndRegionMinimumDistance(circle, region)
           const maxDistance = getPointAndRegionMaximumDistance(circle, region)
           if (minDistance <= circle.r && maxDistance >= circle.r) {
@@ -62,11 +60,11 @@ export function getContentsByClickTwoPositions(
         const { lines, points } = model.getLines(content, contents)
         if (points.every((p) => pointIsInRegion(p, region))) {
           result.push(i)
-        }
-        if (partial) {
+        } else if (partial) {
           for (const line of lines) {
             if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
               result.push(i)
+              break
             }
           }
         }
@@ -74,40 +72,4 @@ export function getContentsByClickTwoPositions(
     }
   })
   return result
-}
-
-export function moveContent(content: BaseContent, offset: Position) {
-  getModel(content.type)?.move?.(content, offset)
-}
-
-export function rotateContent(content: BaseContent, center: Position, angle: number, contents: readonly BaseContent[]) {
-  getModel(content.type)?.rotate?.(content, center, angle, contents)
-}
-
-export function canExplodeContent(content: BaseContent) {
-  return getModel(content.type)?.explode !== undefined
-}
-
-export function explodeContent(content: BaseContent, contents: readonly BaseContent[]) {
-  return getModel(content.type)?.explode?.(content, contents)
-}
-
-export function mirrorContent(content: BaseContent, p1: Position, p2: Position, contents: readonly BaseContent[]) {
-  getModel(content.type)?.mirror?.(content, p1, p2, contents)
-}
-
-export function isCommand(name: string) {
-  return !!getCommand(name)
-}
-
-export function isExecutableCommand(name: string) {
-  return !!getCommand(name)?.executeCommand
-}
-
-export function executeCommand(name: string, content: BaseContent, contents: readonly BaseContent[]) {
-  return getCommand(name)?.executeCommand?.(content, contents)
-}
-
-export function isContentSelectable(name: string, content: BaseContent) {
-  return getCommand(name)?.contentSelectable?.(content) ?? true
 }

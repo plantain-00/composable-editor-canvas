@@ -1,3 +1,4 @@
+import { BaseContent, getModel } from "../models/model"
 import { Command } from "./command"
 
 export const deleteCommand: Command = {
@@ -6,5 +7,8 @@ export const deleteCommand: Command = {
     return {
       removed: true,
     }
+  },
+  contentSelectable(content: BaseContent, contents: readonly BaseContent[]) {
+    return getModel(content.type)?.deletable?.(content, contents) ?? true
   },
 }

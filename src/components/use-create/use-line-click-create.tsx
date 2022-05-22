@@ -27,7 +27,7 @@ export function useLineClickCreate(
       message = `specify next point by click, input position or input ${inputMode}, press tab to input ${tabSwitchList[nextTabSwitchIndex]}`
     }
   }
-  const { input, setCursorPosition, clearText, setInputPosition } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, setInputPosition, resetInput } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       if (inputMode === 'angle') {
         const angle = +text
@@ -89,9 +89,7 @@ export function useLineClickCreate(
   const reset = () => {
     setPositions([])
     setLine(undefined)
-    clearText()
-    setCursorPosition(undefined)
-    setInputPosition(undefined)
+    resetInput()
     setFixedAngle(undefined)
     setTabSwitchIndex(0)
   }

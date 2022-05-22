@@ -1,6 +1,6 @@
 import React from 'react'
 import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
-import { executeCommand, getContentByClickPosition, getContentsByClickTwoPositions, isCommand, isContentSelectable, isExecutableCommand } from './util-2'
+import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
@@ -8,7 +8,7 @@ import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
 import { rectModel } from './models/rect-model'
-import { registerCommand, useCommands } from './commands/command'
+import { getCommand, registerCommand, useCommands } from './commands/command'
 import { moveCommand } from './commands/move'
 import { rotateCommand } from './commands/rotate'
 import { mirrorCommand } from './commands/mirror'
@@ -23,8 +23,10 @@ import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
 import { textModel } from './models/text-model'
-import { blockReferenceModel } from './models/block-model'
+import { blockModel } from './models/block-model'
+import { blockReferenceModel } from './models/block-reference-model'
 import { createBlockCommand } from './commands/create-block'
+import { createBlockReferenceCommand } from './commands/create-block-reference'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -42,6 +44,7 @@ registerModel(arcModel)
 registerModel(splineModel)
 registerModel(ellipseArcModel)
 registerModel(textModel)
+registerModel(blockModel)
 registerModel(blockReferenceModel)
 
 registerCommand(moveCommand)
@@ -51,6 +54,7 @@ registerCommand(cloneCommand)
 registerCommand(deleteCommand)
 registerCommand(explodeCommand)
 registerCommand(createBlockCommand)
+registerCommand(createBlockReferenceCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -142,7 +146,7 @@ export default () => {
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
-        {!readOnly && ['move canvas', '2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['move canvas', '2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference'].map((p) => <button onClick={() => editorRef.current?.onStartOperation(p)} key={p} style={{ position: 'relative', borderColor: operations.includes(p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
         <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
@@ -223,8 +227,22 @@ const CADEditor = React.forwardRef((props: {
     },
   }
 
+  const select = (targets: number[]) => {
+    if (operation === 'select one') {
+      const target = targets.find((s) => !selectedContents.includes(s))
+      if (target !== undefined) {
+        setSelectedContents([target])
+        startNextOperation()
+      }
+    } else {
+      targets = targets.filter((s) => !selectedContents.includes(s))
+      setSelectedContents([...selectedContents, ...targets])
+    }
+  }
+  const isSelectOperation = operation === undefined || operation === 'select one'
+
   // commands
-  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove } = useCommands(
+  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents } = useCommands(
     (updateContents) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(state, (draft) => {
@@ -245,20 +263,19 @@ const CADEditor = React.forwardRef((props: {
   // select by region
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
     if (end) {
-      setSelectedContents([
-        ...selectedContents,
-        ...getContentsByClickTwoPositions(
+      select(
+        getContentsByClickTwoPositions(
           state,
           reverseTransformPosition(start, transform),
           reverseTransformPosition(end, transform),
           contentSelectable,
         ),
-      ])
+      )
     }
   })
 
   // snap point
-  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!!operation)
+  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
   // edit model
   const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(
     () => applyPatchFromSelf(previewPatches, previewReversePatches),
@@ -278,6 +295,7 @@ const CADEditor = React.forwardRef((props: {
   const assistentContents: BaseContent[] = [
     ...snapAssistentContents,
     ...createAssistentContents,
+    ...commandAssistentContents,
   ]
   const previewContents = produce(state, (draft) => {
     const newContents: BaseContent[] = []
@@ -304,9 +322,10 @@ const CADEditor = React.forwardRef((props: {
   const executeCommandForSelectedContents = (name: string) => {
     const removedContents: number[] = []
     const newContents: BaseContent[] = []
+    const command = getCommand(name)
     state.forEach((c, i) => {
-      if (selectedContents.includes(i)) {
-        const result = executeCommand(name, c, state)
+      if (selectedContents.includes(i) && (command?.contentSelectable?.(c, state) ?? true)) {
+        const result = command?.executeCommand?.(c, state)
         if (result?.newContents) {
           newContents.push(...result.newContents)
         }
@@ -332,16 +351,16 @@ const CADEditor = React.forwardRef((props: {
     if (selectedContents.includes(index)) {
       return false
     }
-    return nextOperation ? isContentSelectable(nextOperation, content) : true
+    return nextOperation ? (getCommand(nextOperation)?.contentSelectable?.(content, state) ?? true) : true
   }
 
   useKey((e) => e.key === 'Escape', () => {
     setOperations([])
     setSelectedContents([])
   }, [setOperations])
-  useKey((e) => e.key === 'Enter', () => {
+  const startNextOperation = () => {
     // after selection, execute command immediately
-    if (nextOperation && isExecutableCommand(nextOperation)) {
+    if (nextOperation && getCommand(nextOperation)?.executeCommand) {
       executeCommandForSelectedContents(nextOperation)
       setOperations([operation])
       return
@@ -350,7 +369,8 @@ const CADEditor = React.forwardRef((props: {
     if (nextOperation) {
       setOperations([nextOperation])
     }
-  })
+  }
+  useKey((e) => e.key === 'Enter', startNextOperation)
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
 
@@ -387,8 +407,12 @@ const CADEditor = React.forwardRef((props: {
   }, [selectedContents])
 
   let message = ''
-  if (!operation && nextOperation) {
-    message = selectedContents.length ? `${selectedContents.length} selected, press Enter to finish selection` : 'select targets'
+  if (isSelectOperation && nextOperation) {
+    if (operation === 'select one') {
+      message = 'select one target'
+    } else {
+      message = selectedContents.length ? `${selectedContents.length} selected, press Enter to finish selection` : 'select targets'
+    }
   }
   const { input: cursorInput, setInputPosition } = useCursorInput(message)
   let selectionInput = cursorInput
@@ -405,15 +429,15 @@ const CADEditor = React.forwardRef((props: {
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), state, snapTypes)
     // if the operation is create model/command, start it
     onStartCreate(p)
-    if (operation && isCommand(operation)) {
+    if (!isSelectOperation && getCommand(operation)) {
       startCommand(operation, p)
     }
-    if (!operation) {
+    if (isSelectOperation) {
       if (hoveringContent >= 0) {
-        // if no operation and is hovering content, add it to selection
-        setSelectedContents([...selectedContents, hoveringContent])
+        // if hovering content, add it to selection
+        select([hoveringContent])
       } else {
-        // if no operation and is not hovering, start selection by region
+        // start selection by region
         onStartSelect(e)
       }
     }
@@ -428,22 +452,23 @@ const CADEditor = React.forwardRef((props: {
     setInputPosition(viewportPosition)
     const p = reverseTransformPosition(viewportPosition, transform)
     onCreatingMove(getSnapPoint(p, state, snapTypes), viewportPosition)
-    if (operation && isCommand(operation)) {
+    if (!isSelectOperation && getCommand(operation)) {
       onCommandMove(getSnapPoint(p, state, snapTypes), viewportPosition)
     }
-    if (!operation) {
-      // if no operation, hover by position
+    if (isSelectOperation) {
+      // hover by position
       setHoveringContent(getContentByClickPosition(state, p, contentSelectable))
     }
   }
   const onStartOperation = (p: string) => {
+    const command = getCommand(p)
     // for commands, but no content selected, start to select some
-    if (isCommand(p) && selectedContents.length === 0) {
-      setOperations([undefined, p])
+    if (command && selectedContents.length === 0) {
+      setOperations([command.selectOperation, p])
       return
     }
     // for executable commands, if there are selections, do it
-    if (isExecutableCommand(p)) {
+    if (command?.executeCommand) {
       executeCommandForSelectedContents(p)
       return
     }
@@ -481,7 +506,7 @@ const CADEditor = React.forwardRef((props: {
                     pointerEvents: 'none',
                   }}
                 >
-                  <EditBar content={s} index={i} />
+                  <EditBar content={s} index={i} contents={state} />
                 </div>
               )
             }
