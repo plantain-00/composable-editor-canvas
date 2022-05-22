@@ -1,16 +1,15 @@
-import { canExplodeContent, explodeContent } from "../util-2"
+import { BaseContent, getModel } from "../models/model"
 import { Command } from "./command"
 
 export const explodeCommand: Command = {
   name: 'explode',
   executeCommand(content, contents) {
-    if (canExplodeContent(content)) {
-      return {
-        removed: true,
-        newContents: explodeContent(content, contents),
-      }
+    return {
+      removed: true,
+      newContents: getModel(content.type)?.explode?.(content, contents),
     }
-    return {}
   },
-  contentSelectable: canExplodeContent,
+  contentSelectable(content: BaseContent) {
+    return getModel(content.type)?.explode !== undefined
+  },
 }

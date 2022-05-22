@@ -1,7 +1,7 @@
 import produce from "immer"
 import React from "react"
 import { useCursorInput, useDragMove } from "../../src"
-import { mirrorContent } from "../util-2"
+import { getModel } from "../models/model"
 import { Command } from "./command"
 
 export const mirrorCommand: Command = {
@@ -43,21 +43,15 @@ export const mirrorCommand: Command = {
         if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
           const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
           if (changeOriginal) {
-            mirrorContent(content, startPosition, end, contents)
+            getModel(content.type)?.mirror?.(content, startPosition, end, contents)
           }
           return {
             newContents: !changeOriginal ? [
               produce(content, (d) => {
-                mirrorContent(d, startPosition, end, contents)
+                getModel(d.type)?.mirror?.(d, startPosition, end, contents)
               }),
             ] : undefined,
-            assistentContents: [
-              {
-                type: 'line',
-                dashArray: [4],
-                points: [startPosition, end]
-              },
-            ]
+            
           }
         }
         return {}
@@ -66,6 +60,16 @@ export const mirrorCommand: Command = {
         setCursorPosition(p)
         setInputPosition(viewportPosition || p)
       },
+      assistentContents: startPosition && offset && (offset.x !== 0 || offset.y !== 0) ? [
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
+        },
+      ] : undefined,
     }
-  }
+  },
+  contentSelectable(content) {
+    return getModel(content.type)?.mirror !== undefined
+  },
 }

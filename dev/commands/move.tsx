@@ -1,5 +1,5 @@
 import { useCursorInput, useDragMove } from "../../src"
-import { moveContent } from "../util-2"
+import { getModel } from "../models/model"
 import { Command } from "./command"
 
 export const moveCommand: Command = {
@@ -25,19 +25,20 @@ export const moveCommand: Command = {
       },
       updateContent(content) {
         if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
-          moveContent(content, offset)
-          return {
-            assistentContents: [
-              {
-                type: 'line',
-                dashArray: [4],
-                points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
-              },
-            ]
-          }
+          getModel(content.type)?.move?.(content, offset)
         }
         return {}
-      }
+      },
+      assistentContents: startPosition && (offset.x !== 0 || offset.y !== 0) ? [
+        {
+          type: 'line',
+          dashArray: [4],
+          points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
+        },
+      ] : undefined,
     }
-  }
+  },
+  contentSelectable(content) {
+    return getModel(content.type)?.move !== undefined
+  },
 }

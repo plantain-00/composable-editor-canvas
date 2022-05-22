@@ -437,6 +437,7 @@ export function useCircleEdit<T = void>(onEnd: () => void, options?: EditOptions
 
 // @public (undocumented)
 export function useCursorInput(message: string, onKeyDown?: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
+    resetInput: () => void;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;

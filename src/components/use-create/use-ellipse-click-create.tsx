@@ -32,7 +32,7 @@ export function useEllipseClickCreate(
     }
   }
 
-  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, type ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition, resetInput } = useCursorInput(message, type ? (e, text, cursorPosition) => {
     if (options?.onKeyDown) {
       options.onKeyDown(e, text, cursorPosition)
       return
@@ -88,9 +88,7 @@ export function useEllipseClickCreate(
     setStartPosition(undefined)
     setMiddlePosition(undefined)
     setEllipse(undefined)
-    clearText()
-    setCursorPosition(undefined)
-    setInputPosition(undefined)
+    resetInput()
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])

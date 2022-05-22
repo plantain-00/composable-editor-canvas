@@ -31,7 +31,7 @@ export function useCircleClickCreate(
     }
   }
 
-  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition } = useCursorInput(message, type === 'center radius' || type === 'center diameter' || type === '2 points' ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, cursorPosition, setInputPosition, resetInput } = useCursorInput(message, type === 'center radius' || type === 'center diameter' || type === '2 points' ? (e, text, cursorPosition) => {
     if (options?.onKeyDown) {
       options.onKeyDown(e, text, cursorPosition)
       return
@@ -94,9 +94,7 @@ export function useCircleClickCreate(
     setStartPosition(undefined)
     setMiddlePosition(undefined)
     setCircle(undefined)
-    clearText()
-    setCursorPosition(undefined)
-    setInputPosition(undefined)
+    resetInput()
   }
 
   useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])

@@ -1,6 +1,6 @@
-import produce from "immer"
-import { getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, WeakmapCache2 } from "../../src"
-import { BaseContent, getModel, Model, SnapPoint } from "./model"
+import { Position, ReactRenderTarget } from "../../src"
+import { isBlockReferenceContent } from "./block-reference-model"
+import { BaseContent, getLinesAndPointsFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
 export type BlockContent = BaseContent<'block'> & {
   id: number
@@ -8,136 +8,59 @@ export type BlockContent = BaseContent<'block'> & {
   base: Position
 }
 
-export type BlockReferenceContent = BaseContent<'block reference'> & Position & {
-  id: number
-  angle: number
-}
-
-export const blockReferenceModel: Model<BlockReferenceContent> = {
-  type: 'block reference',
-  move(content, offset) {
-    content.x += offset.x
-    content.y += offset.y
-  },
-  rotate(content, center, angle, contents) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      const p = rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle)
-      content.x = p.x - block.base.x
-      content.y = p.y - block.base.y
-      content.angle += angle
-    }
-  },
-  explode(content, contents) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      const result: BaseContent[] = []
-      block.contents.forEach((c) => {
-        const extracted = extractContentInBlockReference(c, content, block, contents)
-        if (extracted) {
-          result.push(extracted)
-        }
-      })
-      return result
-    }
-    return []
-  },
-  mirror(content, p1, p2, contents) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      const line = twoPointLineToGeneralFormLine(p1, p2)
-      const p = getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
-      content.x = p.x - block.base.x
-      content.y = p.y - block.base.y
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
-      content.angle = 2 * angle - content.angle
-    }
+export const blockModel: Model<BlockContent> = {
+  type: 'block',
+  deletable(content, contents) {
+    return !contents.some((c) => isBlockReferenceContent(c) && c.id === content.id)
   },
   render({ content, target, color, strokeWidth, contents }) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      const children: (ReturnType<typeof target.getGroup>)[] = []
-      block.contents.forEach((blockContent) => {
-        const model = getModel(blockContent.type)
-        if (model?.render) {
-          const ContentRender = model.render
-          children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents }))
-        }
-      })
-      return target.getGroup(children, content.x, content.y, block.base, content.angle)
-    }
-    return target.getEmpty()
+    const children = renderBlockChildren(content, target, strokeWidth, contents, color)
+    return target.getGroup(children, 0, 0, { x: 0, y: 0 })
   },
-  getOperatorRenderPosition(content, contents) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      return { x: content.x + block.base.x, y: content.y + block.base.y }
-    }
-    return content
+  getOperatorRenderPosition(content) {
+    return content.base
   },
   getSnapPoints(content, contents) {
-    const block = getBlock(content.id, contents)
-    if (block) {
-      return blockSnapPointsCache.get(block, content, () => {
-        const result: SnapPoint[] = []
-        block.contents.forEach((c) => {
-          const model = getModel(c.type)
-          const extracted = extractContentInBlockReference(c, content, block, contents)
-          if (extracted) {
-            const r = model?.getSnapPoints?.(extracted, contents)
-            if (r) {
-              result.push(...r)
-            }
-          }
-        })
-        return result
-      })
-    }
-    return []
-  },
-  getLines: getBlockReferenceLines,
-}
-
-function extractContentInBlockReference(
-  target: BaseContent,
-  content: Omit<BlockReferenceContent, "type">,
-  block: BlockContent,
-  contents: readonly BaseContent[],
-) {
-  const model = getModel(target.type)
-  if (!model) {
-    return undefined
-  }
-  return produce(target, (draft) => {
-    model.rotate?.(draft, block.base, content.angle, contents)
-    model.move?.(draft, content)
-  })
-}
-
-function getBlock(id: number, contents: readonly BaseContent[]) {
-  return (contents as BlockContent[]).find((c) => c.type === 'block' && c.id === id)
-}
-
-function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, contents: readonly BaseContent[]) {
-  const block = getBlock(content.id, contents)
-  if (block) {
-    return blockLinesCache.get(block, content, () => {
-      const result: { lines: [Position, Position][], points: Position[] } = { lines: [], points: [] }
-      block.contents.forEach((c) => {
-        const extracted = extractContentInBlockReference(c, content, block, contents)
-        if (extracted) {
-          const r = getModel(c.type)?.getLines?.(extracted)
-          if (r) {
-            result.lines.push(...r.lines)
-            result.points.push(...r.points)
-          }
+    return getSnapPointsFromCache(content, () => {
+      const result: SnapPoint[] = []
+      content.contents.forEach((c) => {
+        const r = getModel(c.type)?.getSnapPoints?.(c, contents)
+        if (r) {
+          result.push(...r)
         }
       })
       return result
     })
-  }
-  return { lines: [], points: [] }
+  },
+  getLines: getBlockLines,
 }
 
-const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][], points: Position[] }>()
-const blockSnapPointsCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, SnapPoint[]>()
+export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color?: number) {
+  const children: (ReturnType<typeof target.getGroup>)[] = []
+  block.contents.forEach((blockContent) => {
+    const model = getModel(blockContent.type)
+    if (model?.render) {
+      const ContentRender = model.render
+      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents }))
+    }
+  })
+  return children
+}
+
+function getBlockLines(content: Omit<BlockContent, "type">) {
+  return getLinesAndPointsFromCache(content, () => {
+    const result: { lines: [Position, Position][], points: Position[] } = { lines: [], points: [] }
+    content.contents.forEach((c) => {
+      const r = getModel(c.type)?.getLines?.(c)
+      if (r) {
+        result.lines.push(...r.lines)
+        result.points.push(...r.points)
+      }
+    })
+    return result
+  })
+}
+
+export function isBlockContent(content: BaseContent): content is BlockContent {
+  return content.type === 'block'
+}

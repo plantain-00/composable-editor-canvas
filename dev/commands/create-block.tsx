@@ -1,5 +1,7 @@
 import { useCursorInput } from "../../src"
-import { BlockContent, BlockReferenceContent } from "../models/block-model"
+import { BlockContent, isBlockContent } from "../models/block-model"
+import { isBlockReferenceContent } from "../models/block-reference-model"
+import { BaseContent } from "../models/model"
 import { Command } from "./command"
 
 export const createBlockCommand: Command = {
@@ -17,26 +19,19 @@ export const createBlockCommand: Command = {
           let id = 1
           const removedContents: number[] = []
           contents.forEach((content, i) => {
-            if (content.type === 'block') {
-              id = Math.max(id, (content as BlockContent).id + 1)
+            if (isBlockContent(content)) {
+              id = Math.max(id, content.id + 1)
             }
             if (selectedContents.includes(i)) {
               removedContents.push(i)
             }
           })
-          const newContents: (BlockContent | BlockReferenceContent)[] = [
+          const newContents: BlockContent[] = [
             {
               type: 'block',
               id,
-              contents: contents.filter((c, i) => selectedContents.includes(i) && c.type !== 'block reference'),
+              contents: contents.filter((c, i) => selectedContents.includes(i) && contentSelectable(c)),
               base: p,
-            },
-            {
-              type: 'block reference',
-              id,
-              x: 0,
-              y: 0,
-              angle: 0,
             },
           ]
           for (let i = contents.length; i >= 0; i--) {
@@ -53,5 +48,9 @@ export const createBlockCommand: Command = {
       },
     }
   },
-  contentSelectable: (content) => content.type !== 'block reference',
+  contentSelectable,
+}
+
+function contentSelectable(content: BaseContent) {
+  return !isBlockReferenceContent(content) && !isBlockContent(content)
 }
