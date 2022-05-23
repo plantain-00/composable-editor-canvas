@@ -608,13 +608,13 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
-export function usePatchBasedUndoRedo<T, P>(defaultState: T, operator: P, options?: Partial<{
+export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator: P, options?: Partial<{
     onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void;
 }>): {
-    state: T;
-    applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => T;
-    applyPatchFromSelf: (patches: Patch[], reversePatches: Patch[]) => T;
-    setState: (recipe: (draft: WritableDraft<T>) => void) => T;
+    state: Readonly<T>;
+    applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => Readonly<T>;
+    applyPatchFromSelf: (patches: Patch[], reversePatches: Patch[]) => Readonly<T>;
+    setState: (recipe: (draft: WritableDraft<T>) => void) => Readonly<T>;
     canUndo: boolean;
     canRedo: boolean;
     undo: (e?: {

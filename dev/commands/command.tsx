@@ -21,9 +21,10 @@ export interface Command {
     }
     assistentContents?: BaseContent[]
   }
-  executeCommand?(content: BaseContent, contents: readonly BaseContent[]): {
+  executeCommand?(content: BaseContent, contents: readonly BaseContent[], index: number): {
     removed?: boolean
     newContents?: BaseContent[]
+    editingStatePath?: (string | number)[]
   }
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectOperation?: 'select one'

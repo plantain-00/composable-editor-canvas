@@ -3,7 +3,7 @@ import produce, { applyPatches, castDraft } from "immer"
 import type { Patch, WritableDraft } from "immer/dist/types/types-external"
 
 export function usePatchBasedUndoRedo<T, P>(
-  defaultState: T,
+  defaultState: Readonly<T>,
   operator: P,
   options?: Partial<{
     onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void
