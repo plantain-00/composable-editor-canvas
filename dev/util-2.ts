@@ -27,7 +27,7 @@ export function getContentByClickPosition(
       }
     }
   }
-  return -1
+  return undefined
 }
 
 export function getContentsByClickTwoPositions(

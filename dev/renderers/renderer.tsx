@@ -5,9 +5,9 @@ import { BaseContent, getModel } from "../models/model"
 export function Renderer(props: {
   type?: string
   contents: readonly BaseContent[]
-  selectedContents: readonly number[]
+  isSelected: (i: number) => boolean
   othersSelectedContents: readonly { selection: number[], operator: string }[]
-  hoveringContent: number
+  isHovering: (i: number) => boolean
   transform?: {
     x: number
     y: number
@@ -29,10 +29,10 @@ export function Renderer(props: {
     }
     let color: number | undefined
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
-    const selected = props.selectedContents.includes(i)
+    const selected = props.isSelected(i)
     if (selected) {
       color = 0xff0000
-    } else if (props.hoveringContent === i) {
+    } else if (props.isHovering(i)) {
       color = 0x000000
     } else if (operators.length > 0) {
       color = 0x0000ff

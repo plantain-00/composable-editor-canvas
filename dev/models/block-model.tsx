@@ -13,6 +13,9 @@ export const blockModel: Model<BlockContent> = {
   deletable(content, contents) {
     return !contents.some((c) => isBlockReferenceContent(c) && c.id === content.id)
   },
+  explode(content) {
+    return content.contents
+  },
   render({ content, target, color, strokeWidth, contents }) {
     const children = renderBlockChildren(content, target, strokeWidth, contents, color)
     return target.getGroup(children, 0, 0, { x: 0, y: 0 })
