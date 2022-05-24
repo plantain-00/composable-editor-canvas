@@ -586,6 +586,13 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 };
 
 // @public (undocumented)
+export function useHovering<T extends string | number>(): {
+    hovering: T | undefined;
+    isHovering: (value: T) => boolean;
+    setHovering: React_2.Dispatch<React_2.SetStateAction<T | undefined>>;
+};
+
+// @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
 
 // @public (undocumented)
@@ -665,6 +672,19 @@ export function useRegionAlignment(delta: number): {
     regionAlignmentY: number | undefined;
     changeOffsetByRegionAlignment(offset: Position, target: Region, regions: Region[]): void;
     clearRegionAlignments(): void;
+};
+
+// @public (undocumented)
+export function useSelection<T extends string | number>(options?: Partial<{
+    onChange: (s: readonly T[]) => void;
+}>): {
+    selected: readonly T[];
+    clearSelection(): void;
+    isSelected: (value: T) => boolean;
+    isNotSelected: (value: T) => boolean;
+    addSelection: (value: T[]) => void;
+    setSelection: React_2.Dispatch<React_2.SetStateAction<readonly T[]>>;
+    selectedCount: number;
 };
 
 // @public (undocumented)

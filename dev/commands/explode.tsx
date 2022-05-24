@@ -1,4 +1,4 @@
-import { BaseContent, getModel } from "../models/model"
+import { getModel } from "../models/model"
 import { Command } from "./command"
 
 export const explodeCommand: Command = {
@@ -9,7 +9,8 @@ export const explodeCommand: Command = {
       newContents: getModel(content.type)?.explode?.(content, contents),
     }
   },
-  contentSelectable(content: BaseContent) {
-    return getModel(content.type)?.explode !== undefined
+  contentSelectable(content, contents) {
+    const model = getModel(content.type)
+    return model?.explode !== undefined && (model.deletable?.(content, contents) ?? true)
   },
 }
