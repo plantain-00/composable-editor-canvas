@@ -9,5 +9,5 @@ export const startEditBlockCommand: Command = {
     }
   },
   contentSelectable: isBlockContent,
-  selectOperation: 'select one',
+  selectCount: 1,
 }

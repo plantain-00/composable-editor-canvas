@@ -27,7 +27,7 @@ export interface Command {
     editingStatePath?: (string | number)[]
   }
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
-  selectOperation?: 'select one'
+  selectCount?: number
 }
 
 const commandCenter: Record<string, Command> = {}

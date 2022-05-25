@@ -7,10 +7,27 @@ export function useSelection<T extends string | number>(options?: Partial<{
 
   const isSelected = (value: T) => selected.includes(value)
   const isNotSelected = (value: T) => !isSelected(value)
-  const addSelection = (value: T[]) => {
+  const addSelection = (value: T[], max?: number) => {
     value = value.filter(isNotSelected)
     if (value.length > 0) {
-      setSelected([...selected, ...value])
+      let result = [...selected, ...value]
+      if (max !== undefined) {
+        result = result.slice(-max)
+      }
+      setSelected(result)
+      return result
+    }
+    return selected
+  }
+  const filterSelection = (filter: (value: T) => boolean, max?: number) => {
+    let result = selected.filter(filter)
+    if (max !== undefined) {
+      result = result.slice(-max)
+    }
+    setSelected(result)
+    return {
+      selected: result,
+      isSelected: (value: T) => result.includes(value)
     }
   }
 
@@ -20,6 +37,7 @@ export function useSelection<T extends string | number>(options?: Partial<{
 
   return {
     selected,
+    filterSelection,
     clearSelection() {
       setSelected([])
     },
