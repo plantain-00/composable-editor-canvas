@@ -679,10 +679,14 @@ export function useSelection<T extends string | number>(options?: Partial<{
     onChange: (s: readonly T[]) => void;
 }>): {
     selected: readonly T[];
+    filterSelection: (filter: (value: T) => boolean, max?: number | undefined) => {
+        selected: T[];
+        isSelected: (value: T) => boolean;
+    };
     clearSelection(): void;
     isSelected: (value: T) => boolean;
     isNotSelected: (value: T) => boolean;
-    addSelection: (value: T[]) => void;
+    addSelection: (value: T[], max?: number | undefined) => readonly T[];
     setSelection: React_2.Dispatch<React_2.SetStateAction<readonly T[]>>;
     selectedCount: number;
 };

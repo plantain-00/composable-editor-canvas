@@ -61,5 +61,5 @@ export const createBlockReferenceCommand: Command = {
     }
   },
   contentSelectable: isBlockContent,
-  selectOperation: 'select one',
+  selectCount: 1,
 }
