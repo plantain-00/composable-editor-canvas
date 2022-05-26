@@ -192,7 +192,7 @@ export function getArcLines(content: Omit<ArcContent, "type">) {
       })
     }
     return {
-      lines: Array.from(iteratePolylineLines(points)),
+      lines: [Array.from(iteratePolylineLines(points))],
       points,
     }
   })

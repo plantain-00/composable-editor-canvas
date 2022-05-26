@@ -5,6 +5,7 @@ export function getContentByClickPosition(
   contents: readonly BaseContent[],
   position: Position,
   contentSelectable?: (content: BaseContent, index: number) => boolean,
+  part = false,
   delta = 3,
 ) {
   for (let i = 0; i < contents.length; i++) {
@@ -18,10 +19,15 @@ export function getContentByClickPosition(
         }
       } else if (model?.getLines) {
         const lines = model.getLines(content, contents).lines
-        for (const line of lines) {
-          const minDistance = getPointAndLineMinimumDistance(position, ...line)
-          if (minDistance <= delta) {
-            return i
+        for (let j = 0; j < lines.length; j++) {
+          for (const line of lines[j]) {
+            const minDistance = getPointAndLineMinimumDistance(position, ...line)
+            if (minDistance <= delta) {
+              if (part) {
+                return [i, j] as const
+              }
+              return i
+            }
           }
         }
       }
@@ -61,7 +67,7 @@ export function getContentsByClickTwoPositions(
         if (points.every((p) => pointIsInRegion(p, region))) {
           result.push(i)
         } else if (partial) {
-          for (const line of lines) {
+          for (const line of lines.flat()) {
             if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
               result.push(i)
               break

@@ -1,5 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
+import { LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
@@ -21,7 +22,7 @@ export const rectModel: Model<RectContent> = {
   },
   explode(content) {
     const { lines } = getRectLines(content)
-    return lines.map((line) => ({ type: 'line', points: line }))
+    return lines.map((line) => ({ type: 'line', points: line[0] } as LineContent))
   },
   mirror(content, p1, p2) {
     const line = twoPointLineToGeneralFormLine(p1, p2)
@@ -31,10 +32,10 @@ export const rectModel: Model<RectContent> = {
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - content.angle
   },
-  render({ content, color, target, strokeWidth }) {
-    if (content.dashArray) {
+  render({ content, color, target, strokeWidth, partsStyles }) {
+    if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectLines(content)
-      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
     }
     return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color ?? defaultStrokeColor, content.angle, strokeWidth)
   },
@@ -137,7 +138,7 @@ export const rectModel: Model<RectContent> = {
       return [
         { x: content.x, y: content.y, type: 'center' },
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-        ...lines.map(([start, end]) => ({
+        ...lines.map(([[start, end]]) => ({
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
           type: 'midpoint' as const,
@@ -157,7 +158,7 @@ function getRectLines(content: Omit<RectContent, "type">) {
       { x: content.x - content.width / 2, y: content.y + content.height / 2 },
     ].map((p) => rotatePositionByCenter(p, content, -content.angle))
     return {
-      lines: Array.from(iteratePolygonLines(points)),
+      lines: Array.from(iteratePolygonLines(points)).map((n) => [n]),
       points,
     }
   })

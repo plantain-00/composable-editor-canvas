@@ -158,7 +158,7 @@ function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
       points.push(rotatePositionByEllipseCenter({ x, y }, content))
     }
     return {
-      lines: Array.from(iteratePolylineLines(points)),
+      lines: [Array.from(iteratePolylineLines(points))],
       points,
     }
   })

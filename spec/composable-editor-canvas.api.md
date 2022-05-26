@@ -82,7 +82,7 @@ export function drawDashedLine(g: {
 export function drawDashedPolyline(g: {
     moveTo: (x: number, y: number) => void;
     lineTo: (x: number, y: number) => void;
-}, points: Position[], dashArray: number[]): void;
+}, points: Position[], dashArray: number[], skippedLines?: number[]): void;
 
 // @public (undocumented)
 export function EditBar<T = void>(props: {
@@ -312,7 +312,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
     strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number, strokeWidth?: number): T;
     // (undocumented)
-    strokePolyline(points: Position[], color: number, dashArray?: number[], strokeWidth?: number): T;
+    strokePolyline(points: Position[], color: number, dashArray?: number[], strokeWidth?: number, skippedLines?: number[]): T;
     // (undocumented)
     strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number, strokeWidth?: number): T;
     // (undocumented)
@@ -586,9 +586,9 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 };
 
 // @public (undocumented)
-export function useHovering<T extends string | number>(): {
+export function useHovering<T extends string | number | readonly [number, number]>(): {
     hovering: T | undefined;
-    isHovering: (value: T) => boolean;
+    isHovering: (value: T) => number | boolean;
     setHovering: React_2.Dispatch<React_2.SetStateAction<T | undefined>>;
 };
 
@@ -675,7 +675,7 @@ export function useRegionAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useSelection<T extends string | number>(options?: Partial<{
+export function useSelection<T extends string | number | readonly [number, number]>(options?: Partial<{
     onChange: (s: readonly T[]) => void;
 }>): {
     selected: readonly T[];
@@ -684,9 +684,8 @@ export function useSelection<T extends string | number>(options?: Partial<{
         isSelected: (value: T) => boolean;
     };
     clearSelection(): void;
-    isSelected: (value: T) => boolean;
-    isNotSelected: (value: T) => boolean;
-    addSelection: (value: T[], max?: number | undefined) => readonly T[];
+    isSelected: (value: T, s?: readonly T[]) => boolean | number[];
+    addSelection: (value: readonly T[], max?: number | undefined) => readonly T[];
     setSelection: React_2.Dispatch<React_2.SetStateAction<readonly T[]>>;
     selectedCount: number;
 };

@@ -44,8 +44,8 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   strokeRect(x, y, width, height, color, angle, strokeWidth) {
     return <RectGraphic x={x} y={y} width={width} height={height} color={color} angle={angle} strokeWidth={strokeWidth} />
   },
-  strokePolyline(points, color, dashArray, strokeWidth) {
-    return <PolylineGraphic points={points} color={color} dashArray={dashArray} strokeWidth={strokeWidth} />
+  strokePolyline(points, color, dashArray, strokeWidth, skippedLines) {
+    return <PolylineGraphic points={points} color={color} dashArray={dashArray} strokeWidth={strokeWidth} skippedLines={skippedLines} />
   },
   strokeCircle(cx, cy, r, color, strokeWidth) {
     return <CircleGraphic cx={cx} cy={cy} r={r} color={color} strokeWidth={strokeWidth} />
@@ -88,22 +88,23 @@ function PolylineGraphic(props: {
   color: number
   dashArray?: number[]
   strokeWidth?: number
+  skippedLines?: number[]
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(props.strokeWidth ?? 1, props.color)
     if (props.dashArray) {
-      drawDashedPolyline(g, props.points, props.dashArray)
+      drawDashedPolyline(g, props.points, props.dashArray, props.skippedLines)
     } else {
       props.points.forEach((p, i) => {
-        if (i === 0) {
+        if (i === 0 || props.skippedLines?.includes(i - 1)) {
           g.moveTo(p.x, p.y)
         } else {
           g.lineTo(p.x, p.y)
         }
       })
     }
-  }, [props.points, props.color, props.dashArray, props.strokeWidth])
+  }, [props.points, props.color, props.dashArray, props.strokeWidth, props.skippedLines])
   return <Graphics draw={draw} />
 }
 

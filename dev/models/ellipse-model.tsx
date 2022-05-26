@@ -117,7 +117,7 @@ function getEllipseLines(content: Omit<EllipseContent, "type">) {
       points.push(rotatePositionByEllipseCenter({ x, y }, content))
     }
     return {
-      lines: Array.from(iteratePolygonLines(points)),
+      lines: [Array.from(iteratePolygonLines(points))],
       points,
     }
   })

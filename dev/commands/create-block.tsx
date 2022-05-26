@@ -22,7 +22,7 @@ export const createBlockCommand: Command = {
             if (isBlockContent(content)) {
               id = Math.max(id, content.id + 1)
             }
-            if (isSelected(i)) {
+            if (isSelected(i) === true) {
               removedContents.push(i)
             }
           })

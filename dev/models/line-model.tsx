@@ -119,7 +119,7 @@ export const lineModel: Model<LineContent> = {
       const { points, lines } = getPolylineLines(content)
       return [
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-        ...lines.map(([start, end]) => ({
+        ...lines.map(([[start, end]]) => ({
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
           type: 'midpoint' as const,
@@ -133,7 +133,7 @@ export const lineModel: Model<LineContent> = {
 export function getPolylineLines(content: Omit<LineContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
     return {
-      lines: Array.from(iteratePolylineLines(content.points)),
+      lines: Array.from(iteratePolylineLines(content.points)).map((n) => [n]),
       points: content.points,
     }
   })
