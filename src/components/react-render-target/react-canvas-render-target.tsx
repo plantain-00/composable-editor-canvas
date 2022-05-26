@@ -49,7 +49,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokePolyline(points, color, dashArray, strokeWidth) {
+  strokePolyline(points, color, dashArray, strokeWidth, skippedLines) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
@@ -59,7 +59,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.setLineDash(dashArray)
       }
       for (let i = 0; i < points.length; i++) {
-        if (i === 0) {
+        if (i === 0 || skippedLines?.includes(i - 1)) {
           ctx.moveTo(points[i].x, points[i].y)
         } else {
           ctx.lineTo(points[i].x, points[i].y)

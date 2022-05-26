@@ -198,12 +198,12 @@ const CADEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
   })
-  const { filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelection<number>({
+  const { selected, filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelection<number | readonly [number, number]>({
     onChange(selected) {
-      props.onSendSelection(selected)
+      props.onSendSelection(selected.map((s) => typeof s === 'number' ? s : s[0]))
     }
   })
-  const { hovering, isHovering, setHovering } = useHovering<number>()
+  const { hovering, isHovering, setHovering } = useHovering<number | readonly [number, number]>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
@@ -236,13 +236,13 @@ const CADEditor = React.forwardRef((props: {
     },
   }
 
-  const select = (targets: number[]) => {
+  const select = (targets: (number | readonly [number, number])[]) => {
     const result = addSelection(targets, operation?.type === 'select' ? operation.count : undefined)
     if (operation?.type === 'select' && operation.count === result.length) {
-      startNextOperation((v) => result.includes(v))
+      startNextOperation((v) => isSelected(v, result))
     }
   }
-  const isSelectOperation = operation === undefined || operation.type === 'select'
+  const isSelectOperation = operation === undefined || operation.type === 'select' || operation.type === 'select part'
   const [editingStatePath, setEditingStatePath] = React.useState<(string | number)[]>()
   const editingContents = getByPath(state, editingStatePath)
 
@@ -335,7 +335,7 @@ const CADEditor = React.forwardRef((props: {
     previewReversePatches.push(...reversePatches)
   })
 
-  const executeCommandForSelectedContents = (name: string, s: (value: number) => boolean) => {
+  const executeCommandForSelectedContents = (name: string, s: (value: number) => boolean | readonly number[]) => {
     const removedContents: number[] = []
     const newContents: BaseContent[] = []
     const command = getCommand(name)
@@ -368,7 +368,7 @@ const CADEditor = React.forwardRef((props: {
   }
   const contentSelectable = (content: BaseContent, index: number) => {
     // ignore selected contents
-    if (isSelected(index)) {
+    if (isSelected(index) === true) {
       return false
     }
     return nextOperation?.type === 'command' ? (getCommand(nextOperation.name)?.contentSelectable?.(content, state) ?? true) : true
@@ -378,7 +378,7 @@ const CADEditor = React.forwardRef((props: {
     setOperations([])
     clearSelection()
   }, [setOperations])
-  const startNextOperation = (s: (value: number) => boolean) => {
+  const startNextOperation = (s: (value: number) => boolean | readonly number[]) => {
     // after selection, execute command immediately
     if (nextOperation?.type === 'command' && getCommand(nextOperation.name)?.executeCommand) {
       executeCommandForSelectedContents(nextOperation.name, s)
@@ -393,6 +393,10 @@ const CADEditor = React.forwardRef((props: {
   useKey((e) => e.key === 'Enter', () => startNextOperation(isSelected))
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
+  useKey((k) => k.code === 'KeyA' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+    addSelection(selected)
+    e.preventDefault()
+  })
 
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
@@ -477,14 +481,14 @@ const CADEditor = React.forwardRef((props: {
     }
     if (isSelectOperation) {
       // hover by position
-      setHovering(getContentByClickPosition(editingContents, p, contentSelectable))
+      setHovering(getContentByClickPosition(editingContents, p, contentSelectable, operation?.type === 'select part'))
     }
   }
   const onStartOperation = (p: Operation) => {
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
-        const { selected, isSelected } = filterSelection((v) => command.contentSelectable?.(state[v], state) ?? true, command.selectCount)
+        const { selected, isSelected } = filterSelection((v) => command.contentSelectable?.(state[typeof v === 'number' ? v : v[0]], state) ?? true, command.selectCount)
         // for commands, but no/no enough content selected, start to select some
         if (command.selectCount === undefined ? selected.length === 0 : selected.length < command.selectCount) {
           setOperations([
@@ -519,7 +523,7 @@ const CADEditor = React.forwardRef((props: {
           height={height}
         />
         {!readOnly && previewContents.map((s, i) => {
-          if (isSelected(i)) {
+          if (isSelected(i) === true) {
             const EditBar = editBarMap[s.type]
             if (EditBar) {
               return (
@@ -583,6 +587,10 @@ function getByPath<T>(target: T, path?: (string | number)[]) {
 type Operation =
   | {
     type: 'select'
+    count: number
+  }
+  | {
+    type: 'select part'
     count: number
   }
   | {

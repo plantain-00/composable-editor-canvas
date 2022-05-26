@@ -5,9 +5,9 @@ import { BaseContent, getModel } from "../models/model"
 export function Renderer(props: {
   type?: string
   contents: readonly BaseContent[]
-  isSelected: (i: number) => boolean
+  isSelected: (i: number) => boolean | readonly number[]
   othersSelectedContents: readonly { selection: number[], operator: string }[]
-  isHovering: (i: number) => boolean
+  isHovering: (i: number) => boolean | number
   transform?: {
     x: number
     y: number
@@ -28,14 +28,24 @@ export function Renderer(props: {
       return
     }
     let color: number | undefined
+    const partsStyles: { index: number, color: number }[] = []
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
     const selected = props.isSelected(i)
-    if (selected) {
+    if (selected === true) {
       color = 0xff0000
-    } else if (props.isHovering(i)) {
-      color = 0x000000
-    } else if (operators.length > 0) {
-      color = 0x0000ff
+    } else {
+      const h = props.isHovering(i)
+      if (h === true) {
+        color = 0x000000
+      } else if (operators.length > 0) {
+        color = 0x0000ff
+      }
+      if (selected !== false) {
+        partsStyles.push(...selected.map((s) => ({ index: s, color: 0x000000 })))
+      }
+      if (typeof h === 'number') {
+        partsStyles.push({ index: h, color: 0x000000 })
+      }
     }
     if (selected) {
       operators.unshift('me')
@@ -46,7 +56,7 @@ export function Renderer(props: {
     }
     const ContentRender = model.render
     if (ContentRender) {
-      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
+      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles }))
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected

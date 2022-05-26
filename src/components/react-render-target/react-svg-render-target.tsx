@@ -50,7 +50,19 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
     />
   },
-  strokePolyline(points, color, dashArray, strokeWidth) {
+  strokePolyline(points, color, dashArray, strokeWidth, skippedLines) {
+    if (skippedLines && skippedLines.length > 0) {
+      const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
+      return (
+        <path
+          d={d}
+          strokeWidth={strokeWidth}
+          stroke={getColorString(color)}
+          strokeDasharray={dashArray?.join(' ')}
+          fill="none"
+        />
+      )
+    }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}

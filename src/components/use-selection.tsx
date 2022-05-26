@@ -1,14 +1,27 @@
 import * as React from "react"
 
-export function useSelection<T extends string | number>(options?: Partial<{
+export function useSelection<T extends string | number | readonly [number, number]>(options?: Partial<{
   onChange: (s: readonly T[]) => void
 }>) {
   const [selected, setSelected] = React.useState<readonly T[]>([])
 
-  const isSelected = (value: T) => selected.includes(value)
-  const isNotSelected = (value: T) => !isSelected(value)
-  const addSelection = (value: T[], max?: number) => {
-    value = value.filter(isNotSelected)
+  const isSelected = (value: T, s = selected) => {
+    if (typeof value === 'number' || typeof value === 'string') {
+      if (s.includes(value)) {
+        return true
+      }
+      const result: number[] = []
+      for (const h of s) {
+        if (typeof h !== 'number' && typeof h !== 'string' && h[0] === value) {
+          result.push(h[1])
+        }
+      }
+      return result.length > 0 ? result : false
+    }
+    return s.some((v) => typeof v !== 'number' && typeof v !== 'string' && v[0] === value[0] && v[1] === value[1])
+  }
+  const addSelection = (value: readonly T[], max?: number) => {
+    value = value.filter((s) => isSelected(s) !== true)
     if (value.length > 0) {
       let result = [...selected, ...value]
       if (max !== undefined) {
@@ -42,7 +55,6 @@ export function useSelection<T extends string | number>(options?: Partial<{
       setSelected([])
     },
     isSelected,
-    isNotSelected,
     addSelection,
     setSelection: setSelected,
     selectedCount: selected.length,

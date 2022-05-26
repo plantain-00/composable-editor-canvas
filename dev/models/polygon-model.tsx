@@ -2,6 +2,7 @@ import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { strokePolyline } from './polyline-model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
   points: Position[]
@@ -24,10 +25,10 @@ export const polygonModel: Model<PolygonContent> = {
   },
   explode(content) {
     const { lines } = getPolygonLines(content)
-    return lines.map((line) => ({ type: 'line', points: line }))
+    return lines.map((line) => ({ type: 'line', points: line[0] } as LineContent))
   },
-  render({ content, color, target, strokeWidth }) {
-    return strokePolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+  render({ content, color, target, strokeWidth, partsStyles }) {
+    return strokePolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
@@ -98,7 +99,7 @@ export const polygonModel: Model<PolygonContent> = {
       const { points, lines } = getPolygonLines(content)
       return [
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-        ...lines.map(([start, end]) => ({
+        ...lines.map(([[start, end]]) => ({
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
           type: 'midpoint' as const,
@@ -112,7 +113,7 @@ export const polygonModel: Model<PolygonContent> = {
 function getPolygonLines(content: Omit<PolygonContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
     return {
-      lines: Array.from(iteratePolygonLines(content.points)),
+      lines: Array.from(iteratePolygonLines(content.points)).map((n) => [n]),
       points: content.points,
     }
   })
@@ -129,6 +130,7 @@ export function strokePolygon<T>(
   stroke: number,
   dashArray?: number[],
   strokeWidth?: number,
+  partsStyles: readonly { index: number, color: number }[] = [],
 ) {
-  return target.strokePolyline([...points, points[0]], stroke, dashArray, strokeWidth)
+  return strokePolyline(target, [...points, points[0]], stroke, dashArray, strokeWidth, partsStyles)
 }

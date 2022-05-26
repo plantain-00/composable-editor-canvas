@@ -359,10 +359,11 @@ export function drawDashedPolyline(
   g: { moveTo: (x: number, y: number) => void, lineTo: (x: number, y: number) => void },
   points: Position[],
   dashArray: number[],
+  skippedLines?: number[],
 ) {
   let startDistance = 0
   points.forEach((p, i) => {
-    if (i === 0) {
+    if (i === 0 || skippedLines?.includes(i - 1)) {
       g.moveTo(p.x, p.y)
     } else {
       startDistance = drawDashedLine(g, points[i - 1], p, dashArray, startDistance)

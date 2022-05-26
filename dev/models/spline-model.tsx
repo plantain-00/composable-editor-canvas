@@ -119,7 +119,7 @@ function getSplineLines(content: Omit<SplineContent, "type">) {
       points = content.points
     }
     return {
-      lines: Array.from(iteratePolylineLines(points)),
+      lines: [Array.from(iteratePolylineLines(points))],
       points,
     }
   })

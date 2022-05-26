@@ -44,7 +44,7 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target
     const model = getModel(blockContent.type)
     if (model?.render) {
       const ContentRender = model.render
-      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents }))
+      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents, partsStyles: [] }))
     }
   })
   return children
@@ -52,15 +52,21 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target
 
 function getBlockLines(content: Omit<BlockContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
-    const result: { lines: [Position, Position][], points: Position[] } = { lines: [], points: [] }
+    const lines: [Position, Position][] = []
+    const points: Position[] = []
     content.contents.forEach((c) => {
       const r = getModel(c.type)?.getLines?.(c)
       if (r) {
-        result.lines.push(...r.lines)
-        result.points.push(...r.points)
+        for (const line of r.lines) {
+          lines.push(...line)
+        }
+        points.push(...r.points)
       }
     })
-    return result
+    return {
+      lines: [lines],
+      points,
+    }
   })
 }
 

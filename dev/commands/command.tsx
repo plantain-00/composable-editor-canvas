@@ -5,7 +5,7 @@ import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 export interface Command {
   name: string
   useCommand?(
-    onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean) => void) => void,
+    onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     enabled: boolean,
@@ -37,7 +37,7 @@ export function getCommand(name: string): Command | undefined {
 }
 
 export function useCommands(
-  onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean) => void) => void,
+  onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
   inputFixed: boolean,
