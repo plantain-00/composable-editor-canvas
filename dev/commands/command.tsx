@@ -4,11 +4,12 @@ import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 
 export interface Command {
   name: string
+  type?: string[]
   useCommand?(
     onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
-    enabled: boolean,
+    type?: string,
   ): {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
@@ -54,11 +55,21 @@ export function useCommands(
   const onStartMap: Record<string, ((p: Position) => void)> = {}
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, operation === command.name)
+      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand(
+        onEnd,
+        transform,
+        angleSnapEnabled ? getAngleSnap : undefined,
+        operation && (operation === command.name || command.type?.includes(operation)) ? operation : undefined,
+      )
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
       onStartMap[command.name] = onStart
+      if (command.type) {
+        for (const type of command.type) {
+          onStartMap[type] = onStart
+        }
+      }
       if (updateContent) {
         updateContents.push(updateContent)
       }

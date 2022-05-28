@@ -1,0 +1,82 @@
+import { useEllipseArcClickCreate } from "../../src";
+import { EllipseArcContent } from "../models/ellipse-arc-model";
+import { EllipseContent, rotatePositionByEllipseCenter } from "../models/ellipse-model";
+import { LineContent } from "../models/line-model";
+import { PolygonContent } from "../models/polygon-model";
+import { Command } from "./command";
+
+export const createEllipseArcCommand: Command = {
+  name: 'create ellipse arc',
+  useCommand(onEnd, _, getAngleSnap, type) {
+    const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
+      type === 'create ellipse arc' ? 'ellipse center' : undefined,
+      (c) => onEnd((contents) => contents.push({ ...c, type: 'ellipse arc' })),
+      {
+        getAngleSnap,
+      },
+    )
+    const assistentContents: (LineContent | PolygonContent | EllipseContent | EllipseArcContent)[] = []
+    if (startPosition && cursorPosition) {
+      if (middlePosition) {
+        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4] })
+        const center = type === 'create ellipse arc'
+          ? startPosition
+          : { x: (startPosition.x + middlePosition.x) / 2, y: (startPosition.y + middlePosition.y) / 2 }
+        assistentContents.push({ type: 'line', points: [center, cursorPosition], dashArray: [4] })
+      } else {
+        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+      }
+    }
+    if (ellipseArc) {
+      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4] })
+      if (ellipseArc.startAngle !== ellipseArc.endAngle) {
+        assistentContents.push(
+          {
+            type: 'line', points: [
+              rotatePositionByEllipseCenter({
+                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.startAngle / 180 * Math.PI),
+                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.startAngle / 180 * Math.PI)
+              }, ellipseArc),
+              {
+                x: ellipseArc.cx,
+                y: ellipseArc.cy
+              },
+            ],
+            dashArray: [4]
+          },
+          {
+            type: 'line', points: [
+              {
+                x: ellipseArc.cx,
+                y: ellipseArc.cy
+              },
+              rotatePositionByEllipseCenter({
+                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.endAngle / 180 * Math.PI),
+                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
+              }, ellipseArc),
+            ],
+            dashArray: [4]
+          },
+        )
+      }
+      if (cursorPosition) {
+        assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4] })
+      }
+    } else if (ellipse) {
+      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4] })
+      if (cursorPosition) {
+        assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
+      }
+    }
+    if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
+      assistentContents.push({ type: 'ellipse arc', ...ellipseArc })
+    }
+    return {
+      onStart: onClick,
+      input,
+      onMove,
+      assistentContents,
+    }
+  },
+  selectCount: 0,
+}

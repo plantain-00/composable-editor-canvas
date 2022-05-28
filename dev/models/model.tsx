@@ -36,14 +36,6 @@ export interface Model<T> {
     }
     editBar(props: { content: T, index: number, contents: readonly BaseContent[] }): JSX.Element | null
   }
-  useCreate?(type: string | undefined, onEnd: (contents: T[]) => void, getAngleSnap?: (angle: number) => number | undefined): {
-    input?: React.ReactElement<{ children: React.ReactNode[] }>
-    subcommand?: JSX.Element
-    updatePreview(contents: T[]): void
-    assistentContents?: BaseContent[]
-    onClick: (p: Position) => void
-    onMove: (p: Position, viewportPosition?: Position) => void
-  }
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
   getLines?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
     lines: [Position, Position][][]
@@ -95,70 +87,6 @@ export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Pos
   }
 }
 
-export function useModelsCreate(
-  operation: string | undefined,
-  onEnd: (contents: BaseContent[]) => void,
-  angleSnapEnabled: boolean,
-  inputFixed: boolean,
-) {
-  const createInputs: JSX.Element[] = []
-  const updateCreatePreviews: ((contents: BaseContent[]) => void)[] = []
-  const onClicks: ((p: Position) => void)[] = []
-  const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
-  const createAssistentContents: BaseContent[] = []
-  Object.entries(modelCenter).forEach(([type, model]) => {
-    if (!model.useCreate) {
-      return
-    }
-    const { input, updatePreview, onClick, onMove, subcommand, assistentContents } = model.useCreate(operation, onEnd, angleSnapEnabled ? getAngleSnap : undefined)
-    if (input) {
-      const children: React.ReactNode[] = [...input.props.children]
-      if (subcommand) {
-        const props: Record<string, unknown> = {
-          key: type + 'sub command',
-        }
-        if (inputFixed) {
-          children.push(React.cloneElement(subcommand, props))
-        } else {
-          props.style = fixedInputStyle
-          createInputs.push(React.cloneElement(subcommand, props))
-        }
-      }
-      const props: Record<string, unknown> = {
-        key: type,
-      }
-      if (inputFixed) {
-        props.style = fixedInputStyle
-      }
-      createInputs.push(React.cloneElement(input, props, ...children))
-    }
-    updateCreatePreviews.push(updatePreview)
-    onClicks.push(onClick)
-    onMoves.push(onMove)
-    if (assistentContents) {
-      createAssistentContents.push(...assistentContents)
-    }
-  })
-  return {
-    createInputs,
-    updateCreatePreview(contents: BaseContent[]) {
-      for (const updateCreatePreview of updateCreatePreviews) {
-        updateCreatePreview(contents)
-      }
-    },
-    onStartCreate(p: Position) {
-      for (const onClick of onClicks) {
-        onClick(p)
-      }
-    },
-    onCreatingMove(p: Position, viewportPosition?: Position) {
-      for (const onMove of onMoves) {
-        onMove(p, viewportPosition)
-      }
-    },
-    createAssistentContents,
-  }
-}
 
 export function useSnap(enabled: boolean, delta = 5) {
   const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()

@@ -1,5 +1,5 @@
 import React from 'react'
-import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize, useLineClickCreate } from '../../src'
+import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize } from '../../src'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
@@ -91,44 +91,6 @@ export const rectModel: Model<RectContent> = {
             />
           </div>
         )
-      },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
-      type === 'rect',
-      (c) => {
-        onEnd([
-          {
-            type: 'rect',
-            x: (c[0].x + c[1].x) / 2,
-            y: (c[0].y + c[1].y) / 2,
-            width: Math.abs(c[0].x - c[1].x),
-            height: Math.abs(c[0].y - c[1].y),
-            angle: 0,
-          },
-        ])
-      },
-      {
-        once: true,
-        getAngleSnap,
-      },
-    )
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (line) {
-          contents.push({
-            type: 'rect',
-            x: (line[0].x + line[1].x) / 2,
-            y: (line[0].y + line[1].y) / 2,
-            width: Math.abs(line[0].x - line[1].x),
-            height: Math.abs(line[0].y - line[1].y),
-            angle: 0,
-          })
-        }
       },
     }
   },

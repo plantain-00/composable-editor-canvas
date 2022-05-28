@@ -1,8 +1,6 @@
 import React from 'react'
-import { getSymmetryPoint, getTwoPointsDistance, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
-import { ArcContent } from './arc-model'
+import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { TextContent } from './text-model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -51,67 +49,6 @@ export const lineModel: Model<LineContent> = {
       editBar({ content, index }) {
         return <PolylineEditBar scale={scale} points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
-      type === 'line',
-      (c) => onEnd(Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' }))),
-      {
-        getAngleSnap,
-      },
-    )
-    let assistentContents: (LineContent | ArcContent | TextContent)[] | undefined
-    if (line && line.length > 1) {
-      const start = line[line.length - 2]
-      const end = line[line.length - 1]
-      const r = getTwoPointsDistance(start, end)
-      const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
-      assistentContents = [
-        {
-          type: 'arc',
-          x: start.x,
-          y: start.y,
-          r,
-          dashArray: [4],
-          startAngle: angle > 180 || angle < 0 ? angle : 0,
-          endAngle: angle > 180 || angle < 0 ? 0 : angle,
-        },
-        {
-          type: 'line',
-          dashArray: [4],
-          points: [start, { x: start.x + r, y: start.y }]
-        },
-        {
-          type: 'text',
-          x: (start.x + end.x) / 2 - 20,
-          y: (start.y + end.y) / 2 + 4,
-          text: r.toFixed(2),
-          color: 0xff0000,
-          fontSize: 16,
-        },
-        {
-          type: 'text',
-          x: end.x + 10,
-          y: end.y - 10,
-          text: `${angle.toFixed(1)}°`,
-          color: 0xff0000,
-          fontSize: 16,
-        },
-      ]
-    }
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (line) {
-          for (const lineSegment of iteratePolylineLines(line)) {
-            contents.push({ points: lineSegment, type: 'line' })
-          }
-        }
-      },
-      assistentContents,
     }
   },
   getSnapPoints(content) {

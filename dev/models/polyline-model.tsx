@@ -1,4 +1,4 @@
-import { Position, ReactRenderTarget, useLineClickCreate } from '../../src'
+import { Position, ReactRenderTarget } from '../../src'
 import { defaultStrokeColor, Model } from './model'
 import { getPolylineLines, LineContent, lineModel } from './line-model'
 
@@ -11,25 +11,6 @@ export const polylineModel: Model<LineContent> = {
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
     return strokePolyline(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
-      type === 'polyline',
-      (c) => onEnd([{ points: c, type: 'polyline' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (line) {
-          contents.push({ points: line, type: 'polyline' })
-        }
-      },
-    }
   },
 }
 

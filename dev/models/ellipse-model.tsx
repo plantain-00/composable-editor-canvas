@@ -1,6 +1,5 @@
 import React from 'react'
-import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseClickCreate, useEllipseEdit } from '../../src'
-import { LineContent } from './line-model'
+import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseEdit } from '../../src'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
@@ -35,39 +34,6 @@ export const ellipseModel: Model<EllipseContent> = {
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
-      type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
-      (c) => onEnd([{ ...c, type: 'ellipse' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    let assistentContents: LineContent[] | undefined
-    if (startPosition && cursorPosition) {
-      if (middlePosition) {
-        assistentContents = [{ type: 'line', points: [startPosition, middlePosition], dashArray: [4] }]
-        if (type === 'ellipse center') {
-          assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
-        } else if (ellipse) {
-          assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
-        }
-      } else {
-        assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
-      }
-    }
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (ellipse) {
-          contents.push({ type: 'ellipse', ...ellipse })
-        }
-      },
-      assistentContents,
-    }
   },
   useEdit(onEnd, transform, getAngleSnap, scale) {
     const { offset, onStart, mask, cursorPosition } = useEllipseEdit<number>(onEnd, {
