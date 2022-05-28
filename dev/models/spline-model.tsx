@@ -1,6 +1,6 @@
 import React from 'react'
 import bspline from 'b-spline'
-import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useLineClickCreate, usePolylineEdit } from '../../src'
+import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 
@@ -56,26 +56,6 @@ export const splineModel: Model<SplineContent> = {
       editBar({ content, index }) {
         return <PolylineEditBar scale={scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
-      type === 'spline' || type === 'spline fitting',
-      (c) => onEnd([{ points: c, type: 'spline', fitting: type === 'spline fitting' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (line) {
-          contents.push({ points: line, type: 'spline', fitting: type === 'spline fitting' })
-        }
-      },
-      assistentContents: line ? [{ points: line, type: 'polyline', dashArray: [4] }] : undefined,
     }
   },
   getSnapPoints(content) {

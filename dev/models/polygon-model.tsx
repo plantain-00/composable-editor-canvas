@@ -1,5 +1,5 @@
 import React from 'react'
-import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolygonClickCreate, usePolylineEdit } from '../../src'
+import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { strokePolyline } from './polyline-model'
@@ -55,43 +55,6 @@ export const polygonModel: Model<PolygonContent> = {
       editBar({ content, index }) {
         return <PolylineEditBar scale={scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
-    const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
-      type === 'polygon',
-      (c) => onEnd([{ points: c, type: 'polygon' }]),
-      {
-        getAngleSnap,
-        toEdge: createType === 'edge',
-        setSidesKey: 'S',
-        switchTypeKey: 'T',
-        switchType: () => setCreateType(createType === 'edge' ? 'point' : 'edge'),
-      },
-    )
-    let assistentContents: LineContent[] | undefined
-    if (startPosition && cursorPosition) {
-      assistentContents = [{ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] }]
-    }
-    return {
-      input,
-      subcommand: type === 'polygon'
-        ? (
-          <span>
-            <button onClick={startSetSides} style={{ position: 'relative' }}>set sides(S)</button>
-            <button onClick={() => setCreateType(createType === 'edge' ? 'point' : 'edge')} style={{ position: 'relative' }}>{createType}(T)</button>
-          </span>
-        )
-        : undefined,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (polygon) {
-          contents.push({ points: polygon, type: 'polygon' })
-        }
-      },
-      assistentContents,
     }
   },
   getSnapPoints(content) {

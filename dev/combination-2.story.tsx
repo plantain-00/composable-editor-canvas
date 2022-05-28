@@ -3,7 +3,7 @@ import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCur
 import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsCreate, useModelsEdit, useSnap } from './models/model'
+import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsEdit, useSnap } from './models/model'
 import { lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
@@ -28,6 +28,15 @@ import { blockReferenceModel } from './models/block-reference-model'
 import { createBlockCommand } from './commands/create-block'
 import { createBlockReferenceCommand } from './commands/create-block-reference'
 import { startEditBlockCommand } from './commands/start-edit-block'
+import { createCircleCommand } from './commands/create-circle'
+import { createArcCommand } from './commands/create-arc'
+import { createEllipseCommand } from './commands/create-ellipse'
+import { createEllipseArcCommand } from './commands/create-ellipse-arc'
+import { createLineCommand } from './commands/create-line'
+import { createPolylineCommand } from './commands/create-polyline'
+import { createPolygonCommand } from './commands/create-polygon'
+import { createRectCommand } from './commands/create-rect'
+import { createSplineCommand } from './commands/create-spline'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -57,6 +66,15 @@ registerCommand(explodeCommand)
 registerCommand(createBlockCommand)
 registerCommand(startEditBlockCommand)
 registerCommand(createBlockReferenceCommand)
+registerCommand(createCircleCommand)
+registerCommand(createArcCommand)
+registerCommand(createEllipseCommand)
+registerCommand(createEllipseArcCommand)
+registerCommand(createLineCommand)
+registerCommand(createPolylineCommand)
+registerCommand(createPolygonCommand)
+registerCommand(createRectCommand)
+registerCommand(createSplineCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -149,8 +167,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === p) ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['2 points', '3 points', 'center radius', 'center diameter', 'line', 'polyline', 'rect', 'polygon', 'ellipse center', 'ellipse endpoint', 'spline', 'spline fitting', 'circle arc', 'ellipse arc'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'create model', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'create model' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -246,6 +263,9 @@ const CADEditor = React.forwardRef((props: {
   const [editingStatePath, setEditingStatePath] = React.useState<(string | number)[]>()
   const editingContents = getByPath(state, editingStatePath)
 
+  // snap point
+  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
+
   // commands
   const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents } = useCommands(
     (updateContents) => {
@@ -266,7 +286,7 @@ const CADEditor = React.forwardRef((props: {
       setOperations([])
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
-    angleSnapEnabled,
+    angleSnapEnabled && !snapPoint,
     inputFixed,
     operation?.type === 'command' ? operation.name : undefined,
   )
@@ -285,8 +305,6 @@ const CADEditor = React.forwardRef((props: {
     }
   })
 
-  // snap point
-  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
   // edit model
   const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(
     () => {
@@ -299,18 +317,10 @@ const CADEditor = React.forwardRef((props: {
     angleSnapEnabled,
     transform.scale,
   )
-  // create model
-  const { createInputs, updateCreatePreview, onStartCreate, onCreatingMove, createAssistentContents } = useModelsCreate(operation?.type === 'create model' ? operation.name : undefined, (c) => {
-    setState((draft) => {
-      getByPath(draft, editingStatePath).push(...c)
-    })
-    setOperations([])
-  }, angleSnapEnabled && !snapPoint, inputFixed)
 
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
     ...snapAssistentContents,
-    ...createAssistentContents,
     ...commandAssistentContents,
   ]
   const previewContents = produce(editingContents, (draft) => {
@@ -329,7 +339,6 @@ const CADEditor = React.forwardRef((props: {
     draft.push(...newContents)
     const result = updateEditPreview(draft)
     assistentContents.push(...result.assistentContents)
-    updateCreatePreview(draft)
   }, (patches, reversePatches) => {
     previewPatches.push(...patches)
     previewReversePatches.push(...reversePatches)
@@ -451,8 +460,7 @@ const CADEditor = React.forwardRef((props: {
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContents, snapTypes)
-    // if the operation is create model/command, start it
-    onStartCreate(p)
+    // if the operation is command, start it
     if (!isSelectOperation && operation.type === 'command') {
       startCommand(operation.name, p)
     }
@@ -475,7 +483,6 @@ const CADEditor = React.forwardRef((props: {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
     const p = reverseTransformPosition(viewportPosition, transform)
-    onCreatingMove(getSnapPoint(p, editingContents, snapTypes), viewportPosition)
     if (!isSelectOperation && operation.type === 'command') {
       onCommandMove(getSnapPoint(p, editingContents, snapTypes), viewportPosition)
     }
@@ -546,7 +553,6 @@ const CADEditor = React.forwardRef((props: {
           return null
         })}
         {commandMasks}
-        {!readOnly && createInputs}
         {selectionInput}
         {!readOnly && commandInputs}
       </div>
@@ -592,10 +598,6 @@ type Operation =
   | {
     type: 'select part'
     count: number
-  }
-  | {
-    type: 'create model'
-    name: string
   }
   | {
     type: 'command'

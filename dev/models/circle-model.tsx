@@ -1,10 +1,7 @@
 import React from 'react'
-import { Circle, CircleEditBar, getSymmetryPoint, getTwoPointsDistance, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleClickCreate, useCircleEdit } from '../../src'
+import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
-import { LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { PolygonContent } from './polygon-model'
-import { TextContent } from './text-model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -58,44 +55,6 @@ export const circleModel: Model<CircleContent> = {
       editBar({ content, index }) {
         return <CircleEditBar scale={scale} x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
-      type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
-      (c) => onEnd([{ ...c, type: 'circle' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    let assistentContents: (LineContent | PolygonContent | TextContent)[] | undefined
-    if (startPosition && cursorPosition) {
-      if (middlePosition) {
-        assistentContents = [{ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] }]
-      } else {
-        assistentContents = [
-          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
-          {
-            type: 'text',
-            x: (startPosition.x + cursorPosition.x) / 2 - 20,
-            y: (startPosition.y + cursorPosition.y) / 2 + 4,
-            text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-            color: 0xff0000,
-            fontSize: 16,
-          },
-        ]
-      }
-    }
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (circle) {
-          contents.push({ type: 'circle', ...circle })
-        }
-      },
-      assistentContents,
     }
   },
   getSnapPoints(content) {

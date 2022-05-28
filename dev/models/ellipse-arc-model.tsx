@@ -1,9 +1,8 @@
 import React from 'react'
-import { EllipseArc, Position, useEllipseArcClickCreate, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
-import { angleDelta, EllipseContent, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
-import { iteratePolylineLines, LineContent } from './line-model'
+import { EllipseArc, Position, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
+import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
+import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { PolygonContent } from './polygon-model'
 
 export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
@@ -49,79 +48,6 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
       editBar({ content, index }) {
         return <EllipseArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
-      type === 'ellipse arc' ? 'ellipse center' : undefined,
-      (c) => onEnd([{ ...c, type: 'ellipse arc' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    const assistentContents: (LineContent | PolygonContent | EllipseContent)[] = []
-    if (startPosition && cursorPosition) {
-      if (middlePosition) {
-        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4] })
-        const center = type === 'ellipse arc'
-          ? startPosition
-          : { x: (startPosition.x + middlePosition.x) / 2, y: (startPosition.y + middlePosition.y) / 2 }
-        assistentContents.push({ type: 'line', points: [center, cursorPosition], dashArray: [4] })
-      } else {
-        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
-      }
-    }
-    if (ellipseArc) {
-      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4] })
-      if (ellipseArc.startAngle !== ellipseArc.endAngle) {
-        assistentContents.push(
-          {
-            type: 'line', points: [
-              rotatePositionByEllipseCenter({
-                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.startAngle / 180 * Math.PI),
-                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.startAngle / 180 * Math.PI)
-              }, ellipseArc),
-              {
-                x: ellipseArc.cx,
-                y: ellipseArc.cy
-              },
-            ],
-            dashArray: [4]
-          },
-          {
-            type: 'line', points: [
-              {
-                x: ellipseArc.cx,
-                y: ellipseArc.cy
-              },
-              rotatePositionByEllipseCenter({
-                x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.endAngle / 180 * Math.PI),
-                y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
-              }, ellipseArc),
-            ],
-            dashArray: [4]
-          },
-        )
-      }
-      if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4] })
-      }
-    } else if (ellipse) {
-      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4] })
-      if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
-      }
-    }
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
-          contents.push({ type: 'ellipse arc', ...ellipseArc })
-        }
-      },
-      assistentContents,
     }
   },
   getSnapPoints(content) {

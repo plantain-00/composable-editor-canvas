@@ -1,11 +1,8 @@
 import React from 'react'
-import { Arc, CircleArcEditBar, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcClickCreate, useCircleArcEdit } from '../../src'
-import { CircleContent } from './circle-model'
+import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcEdit } from '../../src'
 import { angleDelta } from './ellipse-model'
-import { iteratePolylineLines, LineContent } from './line-model'
+import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { PolygonContent } from './polygon-model'
-import { TextContent } from './text-model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -74,86 +71,6 @@ export const arcModel: Model<ArcContent> = {
       editBar({ content, index }) {
         return <CircleArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
       },
-    }
-  },
-  useCreate(type, onEnd, getAngleSnap) {
-    const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
-      type === 'circle arc' ? 'center radius' : undefined,
-      (c) => onEnd([{ ...c, type: 'arc' }]),
-      {
-        getAngleSnap,
-      },
-    )
-    const assistentContents: (LineContent | PolygonContent | CircleContent | TextContent)[] = []
-    if (startPosition && cursorPosition) {
-      if (middlePosition) {
-        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
-      } else {
-        assistentContents.push(
-          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
-          {
-            type: 'text',
-            x: (startPosition.x + cursorPosition.x) / 2 - 20,
-            y: (startPosition.y + cursorPosition.y) / 2 + 4,
-            text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-            color: 0xff0000,
-            fontSize: 16,
-          },
-        )
-      }
-    }
-    if (arc) {
-      assistentContents.push({ type: 'circle', ...arc, dashArray: [4] })
-      if (arc.startAngle !== arc.endAngle) {
-        assistentContents.push(
-          {
-            type: 'line', points: [
-              {
-                x: arc.x + arc.r * Math.cos(arc.startAngle / 180 * Math.PI),
-                y: arc.y + arc.r * Math.sin(arc.startAngle / 180 * Math.PI)
-              },
-              {
-                x: arc.x,
-                y: arc.y
-              },
-            ],
-            dashArray: [4]
-          },
-          {
-            type: 'line', points: [
-              {
-                x: arc.x,
-                y: arc.y
-              },
-              {
-                x: arc.x + arc.r * Math.cos(arc.endAngle / 180 * Math.PI),
-                y: arc.y + arc.r * Math.sin(arc.endAngle / 180 * Math.PI)
-              },
-            ],
-            dashArray: [4]
-          },
-        )
-      }
-      if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [arc, cursorPosition], dashArray: [4] })
-      }
-    }
-    if (circle) {
-      assistentContents.push({ type: 'circle', ...circle, dashArray: [4] })
-      if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [circle, cursorPosition], dashArray: [4] })
-      }
-    }
-    return {
-      input,
-      onClick,
-      onMove,
-      updatePreview(contents) {
-        if (arc && arc.startAngle !== arc.endAngle) {
-          contents.push({ type: 'arc', ...arc })
-        }
-      },
-      assistentContents,
     }
   },
   getSnapPoints(content) {
