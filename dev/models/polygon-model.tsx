@@ -71,6 +71,7 @@ export const polygonModel: Model<PolygonContent> = {
     })
   },
   getLines: getPolygonLines,
+  canSelectPart: true,
 }
 
 function getPolygonLines(content: Omit<PolygonContent, "type">) {

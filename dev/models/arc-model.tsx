@@ -2,7 +2,7 @@ import React from 'react'
 import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcEdit } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -36,6 +36,10 @@ export const arcModel: Model<ArcContent> = {
       return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
     return target.strokeArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color ?? defaultStrokeColor, strokeWidth)
+  },
+  renderIfSelected({ content, color, target }) {
+    const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
+    return target.strokePolyline(points, color ?? defaultStrokeColor, [4])
   },
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
@@ -113,4 +117,8 @@ export function getArcLines(content: Omit<ArcContent, "type">) {
       points,
     }
   })
+}
+
+export function isArcContent(content: BaseContent): content is ArcContent {
+  return content.type === 'arc'
 }

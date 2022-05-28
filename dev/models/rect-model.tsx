@@ -1,7 +1,7 @@
 import React from 'react'
 import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize } from '../../src'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
@@ -109,6 +109,7 @@ export const rectModel: Model<RectContent> = {
     })
   },
   getLines: getRectLines,
+  canSelectPart: true,
 }
 
 function getRectLines(content: Omit<RectContent, "type">) {
@@ -124,4 +125,8 @@ function getRectLines(content: Omit<RectContent, "type">) {
       points,
     }
   })
+}
+
+export function isRectContent(content: BaseContent): content is RectContent {
+  return content.type === 'rect'
 }

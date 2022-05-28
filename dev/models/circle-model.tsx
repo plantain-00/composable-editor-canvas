@@ -1,7 +1,7 @@
 import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleEdit } from '../../src'
 import { getArcLines } from './arc-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -72,8 +72,12 @@ export const circleModel: Model<CircleContent> = {
   getLines: getCircleLines,
 }
 
-function getCircleLines(content: Omit<CircleContent, "type">) {
+export function getCircleLines(content: Omit<CircleContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
     return getArcLines({ ...content, startAngle: 0, endAngle: 360 })
   })
+}
+
+export function isCircleContent(content: BaseContent): content is CircleContent {
+  return content.type === 'circle'
 }

@@ -41,7 +41,7 @@ export function Renderer(props: {
         color = 0x0000ff
       }
       if (selected !== false) {
-        partsStyles.push(...selected.map((s) => ({ index: s, color: 0x000000 })))
+        partsStyles.push(...selected.map((s) => ({ index: s, color: 0xff0000 })))
       }
       if (typeof h === 'number') {
         partsStyles.push({ index: h, color: 0x000000 })

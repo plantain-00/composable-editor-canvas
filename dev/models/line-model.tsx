@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -80,4 +80,8 @@ export function* iteratePolylineLines(points: Position[]) {
   for (let i = 1; i < points.length; i++) {
     yield [points[i - 1], points[i]] as [Position, Position]
   }
+}
+
+export function isLineContent(content: BaseContent): content is LineContent {
+  return content.type === 'line'
 }

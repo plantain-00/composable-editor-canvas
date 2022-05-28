@@ -9,7 +9,8 @@ export interface Command {
     onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
-    type?: string,
+    type: string | undefined,
+    selected: BaseContent[],
   ): {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
@@ -29,6 +30,7 @@ export interface Command {
   }
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectCount?: number
+  selectType?: 'select part'
 }
 
 const commandCenter: Record<string, Command> = {}
@@ -42,7 +44,8 @@ export function useCommands(
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
   inputFixed: boolean,
-  operation?: string,
+  operation: string | undefined,
+  selected: BaseContent[],
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
@@ -60,6 +63,7 @@ export function useCommands(
         transform,
         angleSnapEnabled ? getAngleSnap : undefined,
         operation && (operation === command.name || command.type?.includes(operation)) ? operation : undefined,
+        selected,
       )
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
