@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLinesIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
+import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
 import { CircleContent } from './circle-model'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
@@ -42,6 +42,7 @@ export interface Model<T> {
     points: Position[]
   }
   getCircle?(content: Omit<T, 'type'>): Circle
+  canSelectPart?: boolean
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -86,7 +87,6 @@ export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Pos
     editBarMap,
   }
 }
-
 
 export function useSnap(enabled: boolean, delta = 5) {
   const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
@@ -230,7 +230,7 @@ function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent
         for (const line2 of model2.getLines(content2, contents).lines) {
           for (const n1 of line1) {
             for (const n2 of line2) {
-              const point = getTwoLinesIntersectionPoint(...n1, ...n2)
+              const point = getTwoLineSegmentsIntersectionPoint(...n1, ...n2)
               if (point) {
                 yield point
               }
@@ -270,4 +270,17 @@ export const fixedInputStyle: React.CSSProperties = {
   bottom: '10px',
   left: '25%',
   transform: 'translate(-50%, 0px)',
+}
+
+export function getContentByIndex(state: readonly BaseContent[], index: number | readonly [number, number]) {
+  let content: BaseContent = typeof index === 'number' ? state[index] : state[index[0]]
+  if (typeof index === 'number') {
+    return state[index]
+  }
+  content = state[index[0]]
+  const line = getModel(content.type)?.getLines?.(content)?.lines?.[index[1]]
+  if (line) {
+    return { type: 'line', points: line[0] } as LineContent
+  }
+  return undefined
 }

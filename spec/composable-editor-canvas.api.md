@@ -180,6 +180,15 @@ export function getBezierSplineControlPointsOfPoints(points: Position[]): (reado
 }])[];
 
 // @public (undocumented)
+export function getCirclesTangentTo2Circles(circle1: Circle, circle2: Circle, radius: number): Position[];
+
+// @public (undocumented)
+export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, radius: number): Position[];
+
+// @public (undocumented)
+export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Position, circle: Circle, radius: number): Position[];
+
+// @public (undocumented)
 export function getColorString(color: number): string;
 
 // @public (undocumented)
@@ -201,6 +210,13 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 }[];
 
 // @public (undocumented)
+export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): {
+    c: number;
+    a: number;
+    b: number;
+}[];
+
+// @public (undocumented)
 export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position): number;
 
 // @public (undocumented)
@@ -210,10 +226,22 @@ export function getPointAndRegionMaximumDistance(position: Position, region: Two
 export function getPointAndRegionMinimumDistance(position: Position, region: TwoPointsFormRegion): number;
 
 // @public (undocumented)
+export function getPointByLengthAndAngle(startPoint: Position, length: number, angle: number): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
 export function getPointByLengthAndDirection(startPoint: Position, length: number, directionPoint: Position): {
     x: number;
     y: number;
 };
+
+// @public (undocumented)
+export function getPointByLengthAndDirectionSafely(startPoint: Position, length: number, directionPoint: Position): {
+    x: number;
+    y: number;
+} | undefined;
 
 // @public (undocumented)
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
@@ -241,6 +269,18 @@ export function getThreePointsCircle(startPosition: Position, middlePosition: Po
 export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { x: x2, y: y2, r: r2 }: Circle): Position[];
 
 // @public (undocumented)
+export function getTwoGeneralFormLinesIntersectionPoint(p1: GeneralFormLine, p2: GeneralFormLine): {
+    x: number;
+    y: number;
+} | undefined;
+
+// @public (undocumented)
+export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position): {
+    x: number;
+    y: number;
+} | undefined;
+
+// @public (undocumented)
 export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position): {
     x: number;
     y: number;
@@ -259,10 +299,16 @@ export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFor
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
+export function isSamePoint(p1: Position, p2: Position): boolean;
+
+// @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position): boolean;
 
 // @public (undocumented)
 export function PolylineEditBar(props: {

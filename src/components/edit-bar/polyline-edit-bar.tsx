@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Position } from "../../utils"
+import { isSamePoint, Position } from "../../utils"
 import { EditBar, EditBarPosition } from "./edit-bar"
 
 export function PolylineEditBar(props: {
@@ -15,8 +15,7 @@ export function PolylineEditBar(props: {
   const points = props.points
   const isClosed = !props.isPolygon &&
     points.length > 2 &&
-    points[0].x === points[points.length - 1].x &&
-    points[0].y === points[points.length - 1].y
+    isSamePoint(points[0], points[points.length - 1])
 
   const positions: EditBarPosition<number[]>[] = []
   points.forEach((point, i) => {

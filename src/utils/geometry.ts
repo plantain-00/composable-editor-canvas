@@ -5,10 +5,51 @@ export function getPointByLengthAndDirection(
 ) {
   const dx = directionPoint.x - startPoint.x
   const dy = directionPoint.y - startPoint.y
+  if (dx === 0) {
+    return {
+      x: startPoint.x,
+      y: startPoint.y + length * (dy > 0 ? 1 : -1),
+    }
+  }
   const offsetX = Math.sqrt(length ** 2 * dx ** 2 / (dx ** 2 + dy ** 2)) * (dx > 0 ? 1 : -1)
   return {
     x: startPoint.x + offsetX,
     y: startPoint.y + dy / dx * offsetX,
+  }
+}
+
+/**
+ * @public
+ */
+export function getPointByLengthAndDirectionSafely(
+  startPoint: Position,
+  length: number,
+  directionPoint: Position
+) {
+  if (isSamePoint(startPoint, directionPoint)) {
+    return undefined
+  }
+  return getPointByLengthAndDirection(startPoint, length, directionPoint)
+}
+
+/**
+ * @public
+ */
+export function isSamePoint(p1: Position, p2: Position) {
+  return p1.x === p2.x && p1.y === p2.y
+}
+
+/**
+ * @public
+ */
+export function getPointByLengthAndAngle(
+  startPoint: Position,
+  length: number,
+  angle: number,
+) {
+  return {
+    x: startPoint.x + length * Math.cos(angle),
+    y: startPoint.y + length * Math.sin(angle),
   }
 }
 
@@ -23,7 +64,10 @@ export function getPointAndLineMinimumDistance(position: Position, point1: Posit
   return Math.min(getTwoPointsDistance(position, point1), getTwoPointsDistance(position, point2))
 }
 
-function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
+/**
+ * @public
+ */
+export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
   if (point1.x !== point2.x && isBetween(p.x, point1.x, point2.x)) {
     return true
   }
@@ -94,6 +138,43 @@ export function twoPointLineToGeneralFormLine(point1: Position, point2: Position
     b: -dx,
     c: -point1.x * dy + point1.y * dx,
   }
+}
+
+function generalFormLineToTwoPointLine({ a, b, c }: GeneralFormLine): [Position, Position] {
+  if (a === 0) {
+    return [
+      {
+        x: 0,
+        y: -c / b
+      },
+      {
+        x: 1,
+        y: -c / b
+      },
+    ]
+  }
+  if (b === 0) {
+    return [
+      {
+        x: -c / a,
+        y: 0
+      },
+      {
+        x: -c / a,
+        y: 1
+      },
+    ]
+  }
+  return [
+    {
+      x: 0,
+      y: -c / b
+    },
+    {
+      x: -c / a,
+      y: 0
+    },
+  ]
 }
 
 export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position) {
@@ -187,7 +268,7 @@ function lineIntersectWithLine(a: Position, b: Position, c: Position, d: Positio
   const v = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y)
   const w = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y)
   const z = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y)
-  return (u * v <= 0.00000001 && w * z <= 0.00000001);
+  return u * v <= 0 && w * z <= 0
 }
 
 /**
@@ -206,21 +287,35 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine) {
 /**
  * @public
  */
+export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
+  const result = getTwoLinesIntersectionPoint(p1Start, p1End, p2Start, p2End)
+  if (result && pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
+    return result
+  }
+  return undefined
+}
+
+/**
+ * @public
+ */
 export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
-  const { a: a1, b: b1, c: c1 } = twoPointLineToGeneralFormLine(p1Start, p1End)
-  const { a: a2, b: b2, c: c2 } = twoPointLineToGeneralFormLine(p2Start, p2End)
+  return getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(p1Start, p1End), twoPointLineToGeneralFormLine(p2Start, p2End))
+}
+
+/**
+ * @public
+ */
+export function getTwoGeneralFormLinesIntersectionPoint(p1: GeneralFormLine, p2: GeneralFormLine) {
+  const { a: a1, b: b1, c: c1 } = p1
+  const { a: a2, b: b2, c: c2 } = p2
   const d = a2 * b1 - a1 * b2
   if (d === 0) {
     return undefined
   }
-  const result = {
+  return {
     x: (c1 * b2 - b1 * c2) / d,
     y: (c2 * a1 - c1 * a2) / d,
   }
-  if (pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
-    return result
-  }
-  return undefined
 }
 
 /**
@@ -306,6 +401,10 @@ function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y,
       y: start.y - baY * abScalingFactor2,
     },
   ]
+}
+
+function getGeneralFormLineCircleIntersectionPoints(line: GeneralFormLine, circle: Circle) {
+  return getLineCircleIntersectionPoints(...generalFormLineToTwoPointLine(line), circle)
 }
 
 /**
@@ -553,4 +652,77 @@ export interface Arc extends Circle {
 export interface EllipseArc extends Ellipse {
   startAngle: number
   endAngle: number
+}
+
+/**
+ * @public
+ */
+export function getCirclesTangentTo2Circles(circle1: Circle, circle2: Circle, radius: number) {
+  const result: Position[] = []
+  const circles1 = [circle1.r + radius, Math.abs(circle1.r - radius)]
+  const circles2 = [circle2.r + radius, Math.abs(circle2.r - radius)]
+  for (const r1 of circles1) {
+    for (const r2 of circles2) {
+      result.push(...getTwoCircleIntersectionPoints({ ...circle1, r: r1 }, { ...circle2, r: r2 }))
+    }
+  }
+  // for (const [r1, r2] of [
+  //   [radius + circle1.r, radius + circle2.r],
+  //   [radius + circle1.r, radius - circle2.r],
+  //   [radius - circle1.r, radius + circle2.r],
+  //   [radius - circle1.r, radius - circle2.r],
+  // ] as const) {
+  //   result.push(...getTwoCircleIntersectionPoints({ ...circle1, r: Math.abs(r1) }, { ...circle2, r: Math.abs(r2) }))
+  // }
+  return result
+}
+
+/**
+ * @public
+ */
+export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, radius: number) {
+  const result: Position[] = []
+  const lines1 = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p1Start, p1End), radius)
+  const lines2 = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p2Start, p2End), radius)
+  for (const line1 of lines1) {
+    for (const line2 of lines2) {
+      const point = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+      if (point) {
+        result.push(point)
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * @public
+ */
+export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Position, circle: Circle, radius: number) {
+  const result: Position[] = []
+  const lines = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p1Start, p1End), radius)
+  const circles = [circle.r + radius, Math.abs(circle.r - radius)]
+  for (const line of lines) {
+    for (const r of circles) {
+      result.push(...getGeneralFormLineCircleIntersectionPoints(line, { ...circle, r }))
+    }
+  }
+  return result
+}
+
+/**
+ * @public
+ */
+export function getParallelLinesByDistance(line: GeneralFormLine, distance: number) {
+  const d = distance * Math.sqrt(line.a ** 2 + line.b ** 2)
+  return [
+    {
+      ...line,
+      c: line.c + d,
+    },
+    {
+      ...line,
+      c: line.c - d,
+    },
+  ]
 }

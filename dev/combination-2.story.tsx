@@ -3,8 +3,8 @@ import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCur
 import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, registerModel, reverseTransformPosition, Transform, useModelsEdit, useSnap } from './models/model'
-import { lineModel } from './models/line-model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getModel, registerModel, reverseTransformPosition, Transform, useModelsEdit, useSnap } from './models/model'
+import { LineContent, lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
 import { rectModel } from './models/rect-model'
@@ -37,6 +37,9 @@ import { createPolylineCommand } from './commands/create-polyline'
 import { createPolygonCommand } from './commands/create-polygon'
 import { createRectCommand } from './commands/create-rect'
 import { createSplineCommand } from './commands/create-spline'
+import { createTangentTangentRadiusCircleCommand } from './commands/create-tangent-tangent-radius-circle'
+import { filletCommand } from './commands/fillet'
+import { chamferCommand } from './commands/chamfer'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -75,6 +78,9 @@ registerCommand(createPolylineCommand)
 registerCommand(createPolygonCommand)
 registerCommand(createRectCommand)
 registerCommand(createSplineCommand)
+registerCommand(createTangentTangentRadiusCircleCommand)
+registerCommand(filletCommand)
+registerCommand(chamferCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -167,7 +173,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === p) ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -254,14 +260,28 @@ const CADEditor = React.forwardRef((props: {
   }
 
   const select = (targets: (number | readonly [number, number])[]) => {
-    const result = addSelection(targets, operation?.type === 'select' ? operation.count : undefined)
-    if (operation?.type === 'select' && operation.count === result.length) {
+    const result = addSelection(targets, operation?.type === 'select' || operation?.type === 'select part' ? operation.count : undefined)
+    if ((operation?.type === 'select' || operation?.type === 'select part') && operation.count === result.length) {
       startNextOperation((v) => isSelected(v, result))
     }
   }
   const isSelectOperation = operation === undefined || operation.type === 'select' || operation.type === 'select part'
   const [editingStatePath, setEditingStatePath] = React.useState<(string | number)[]>()
   const editingContents = getByPath(state, editingStatePath)
+  const selectedContents: BaseContent[] = []
+  editingContents.forEach((s, i) => {
+    const e = isSelected(i)
+    if (typeof e !== 'boolean') {
+      for (const j of e) {
+        const line = getModel(s.type)?.getLines?.(s)?.lines?.[j]
+        if (line) {
+          selectedContents.push({ type: 'line', points: line[0] } as LineContent)
+        }
+      }
+    } else if (e) {
+      selectedContents.push(s)
+    }
+  })
 
   // snap point
   const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
@@ -284,11 +304,13 @@ const CADEditor = React.forwardRef((props: {
         )
       }
       setOperations([])
+      clearSelection()
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
     angleSnapEnabled && !snapPoint,
     inputFixed,
     operation?.type === 'command' ? operation.name : undefined,
+    selectedContents,
   )
 
   // select by region
@@ -375,12 +397,19 @@ const CADEditor = React.forwardRef((props: {
     }
     clearSelection()
   }
-  const contentSelectable = (content: BaseContent, index: number) => {
+  const contentSelectable = (index: number | readonly [number, number]) => {
     // ignore selected contents
     if (isSelected(index) === true) {
       return false
     }
-    return nextOperation?.type === 'command' ? (getCommand(nextOperation.name)?.contentSelectable?.(content, state) ?? true) : true
+    if (nextOperation?.type === 'command') {
+      const command = getCommand(nextOperation.name)
+      const content = getContentByIndex(editingContents, index)
+      if (content) {
+        return command?.contentSelectable?.(content, state) ?? true
+      }
+    }
+    return true
   }
 
   useKey((e) => e.key === 'Escape', () => {
@@ -442,7 +471,9 @@ const CADEditor = React.forwardRef((props: {
   let message = ''
   if (isSelectOperation && nextOperation) {
     if (operation?.type === 'select') {
-      message = `select ${operation.count} target`
+      message = `${selectedCount} selected, extra ${operation.count - selectedCount} targets are needed`
+    } else if (operation?.type === 'select part') {
+      message = `${selectedContents.length} selected, extra ${operation.count - selectedContents.length} targets are needed`
     } else {
       message = selectedCount ? `${selectedCount} selected, press Enter to finish selection` : 'select targets'
     }
@@ -468,6 +499,7 @@ const CADEditor = React.forwardRef((props: {
       if (hovering !== undefined) {
         // if hovering content, add it to selection
         select([hovering])
+        setHovering(undefined)
       } else {
         // start selection by region
         onStartSelect(e)
@@ -495,11 +527,20 @@ const CADEditor = React.forwardRef((props: {
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
-        const { selected, isSelected } = filterSelection((v) => command.contentSelectable?.(state[typeof v === 'number' ? v : v[0]], state) ?? true, command.selectCount)
+        const { selected, isSelected } = filterSelection(
+          (v) => {
+            const content = getContentByIndex(editingContents, v)
+            if (content) {
+              return command.contentSelectable?.(content, editingContents) ?? true
+            }
+            return false
+          },
+          command.selectCount,
+        )
         // for commands, but no/no enough content selected, start to select some
         if (command.selectCount === undefined ? selected.length === 0 : selected.length < command.selectCount) {
           setOperations([
-            command.selectCount !== undefined ? { type: 'select', count: command.selectCount } : undefined,
+            command.selectCount !== undefined ? { type: command.selectType ?? 'select', count: command.selectCount } : undefined,
             p,
           ])
           return

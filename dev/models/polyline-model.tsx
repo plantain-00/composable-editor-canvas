@@ -12,6 +12,7 @@ export const polylineModel: Model<LineContent> = {
   render({ content, color, target, strokeWidth, partsStyles }) {
     return strokePolyline(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
   },
+  canSelectPart: true,
 }
 
 export function strokePolyline<T>(

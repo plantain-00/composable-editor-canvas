@@ -4,28 +4,28 @@ import { BaseContent, getModel } from './models/model'
 export function getContentByClickPosition(
   contents: readonly BaseContent[],
   position: Position,
-  contentSelectable?: (content: BaseContent, index: number) => boolean,
+  contentSelectable: (index: number | readonly [number, number]) => boolean,
   part = false,
   delta = 3,
 ) {
   for (let i = 0; i < contents.length; i++) {
     const content = contents[i]
-    if (contentSelectable?.(content, i)) {
-      const model = getModel(content.type)
-      if (model?.getCircle) {
-        const circle = model.getCircle(content)
-        if (getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
-          return i
-        }
-      } else if (model?.getLines) {
-        const lines = model.getLines(content, contents).lines
-        for (let j = 0; j < lines.length; j++) {
-          for (const line of lines[j]) {
-            const minDistance = getPointAndLineMinimumDistance(position, ...line)
-            if (minDistance <= delta) {
-              if (part) {
-                return [i, j] as const
-              }
+    const model = getModel(content.type)
+    if (model?.getCircle) {
+      const circle = model.getCircle(content)
+      if (contentSelectable(i) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
+        return i
+      }
+    } else if (model?.getLines) {
+      const lines = model.getLines(content, contents).lines
+      for (let j = 0; j < lines.length; j++) {
+        for (const line of lines[j]) {
+          const minDistance = getPointAndLineMinimumDistance(position, ...line)
+          if (minDistance <= delta) {
+            if (part && model.canSelectPart && contentSelectable([i, j])) {
+              return [i, j] as const
+            }
+            if (contentSelectable(i)) {
               return i
             }
           }
@@ -40,13 +40,13 @@ export function getContentsByClickTwoPositions(
   contents: readonly BaseContent[],
   startPosition: Position,
   endPosition: Position,
-  contentSelectable?: (content: BaseContent, index: number) => boolean,
+  contentSelectable?: (index: number) => boolean,
 ) {
   const result: number[] = []
   const region = getTwoPointsFormRegion(startPosition, endPosition)
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
-    if (contentSelectable?.(content, i)) {
+    if (contentSelectable?.(i)) {
       const model = getModel(content.type)
       if (model?.getCircle) {
         const circle = model.getCircle(content)
