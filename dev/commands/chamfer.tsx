@@ -71,6 +71,7 @@ export const chamferCommand: Command = {
   selectCount: 2,
   contentSelectable: (c) => isLineContent(c),
   selectType: 'select part',
+  hotkey: 'CHA',
 }
 
 function getChamfers(content1: BaseContent, content2: BaseContent, d1: number, d2: number) {

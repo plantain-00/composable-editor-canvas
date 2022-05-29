@@ -49,4 +49,5 @@ export const cloneCommand: Command = {
   contentSelectable(content) {
     return getModel(content.type)?.move !== undefined
   },
+  hotkey: 'CO',
 }

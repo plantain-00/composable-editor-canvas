@@ -4,7 +4,7 @@ import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 
 export interface Command {
   name: string
-  type?: string[]
+  type?: { name: string, hotkey?: string }[]
   useCommand?(
     onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
     transform: (p: Position) => Position,
@@ -31,6 +31,7 @@ export interface Command {
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectCount?: number
   selectType?: 'select part'
+  hotkey?: string
 }
 
 const commandCenter: Record<string, Command> = {}
@@ -56,13 +57,14 @@ export function useCommands(
   })[] = []
   const commandAssistentContents: BaseContent[] = []
   const onStartMap: Record<string, ((p: Position) => void)> = {}
+  const hotkeys: { key: string, command: string }[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
       const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand(
         onEnd,
         transform,
         angleSnapEnabled ? getAngleSnap : undefined,
-        operation && (operation === command.name || command.type?.includes(operation)) ? operation : undefined,
+        operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined,
         selected,
       )
       if (mask) {
@@ -71,7 +73,7 @@ export function useCommands(
       onStartMap[command.name] = onStart
       if (command.type) {
         for (const type of command.type) {
-          onStartMap[type] = onStart
+          onStartMap[type.name] = onStart
         }
       }
       if (updateContent) {
@@ -105,6 +107,15 @@ export function useCommands(
         commandInputs.push(React.cloneElement(input, props, ...children))
       }
     }
+    if (command.type) {
+      for (const type of command.type) {
+        if (type.hotkey) {
+          hotkeys.push({ key: type.hotkey, command: type.name })
+        }
+      }
+    } else if (command.hotkey) {
+      hotkeys.push({ key: command.hotkey, command: command.name })
+    }
   })
   return {
     commandMasks: masks,
@@ -136,6 +147,10 @@ export function useCommands(
       for (const onMove of onMoves) {
         onMove(p, viewportPosition)
       }
+    },
+    getCommandByHotkey(key: string) {
+      key = key.toUpperCase()
+      return hotkeys.find((k) => k.key === key)?.command
     },
   }
 }

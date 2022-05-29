@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
-import { iteratePolylineLines, LineContent } from './line-model'
+import { breakPolyline, iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { strokePolyline } from './polyline-model'
 
@@ -25,7 +25,11 @@ export const polygonModel: Model<PolygonContent> = {
   },
   explode(content) {
     const { lines } = getPolygonLines(content)
-    return lines.map((line) => ({ type: 'line', points: line[0] } as LineContent))
+    return lines.map((line) => ({ type: 'line', points: line } as LineContent))
+  },
+  break(content, intersectionPoints) {
+    const { lines } = getPolygonLines(content)
+    return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
     return strokePolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
@@ -62,7 +66,7 @@ export const polygonModel: Model<PolygonContent> = {
       const { points, lines } = getPolygonLines(content)
       return [
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-        ...lines.map(([[start, end]]) => ({
+        ...lines.map(([start, end]) => ({
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
           type: 'midpoint' as const,
@@ -77,7 +81,7 @@ export const polygonModel: Model<PolygonContent> = {
 function getPolygonLines(content: Omit<PolygonContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
     return {
-      lines: Array.from(iteratePolygonLines(content.points)).map((n) => [n]),
+      lines: Array.from(iteratePolygonLines(content.points)),
       points: content.points,
     }
   })

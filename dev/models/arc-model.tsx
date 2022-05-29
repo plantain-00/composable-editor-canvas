@@ -1,5 +1,5 @@
 import React from 'react'
-import { Arc, CircleArcEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcEdit } from '../../src'
+import { Arc, CircleArcEditBar, equals, getSymmetryPoint, normalizeAngleInRange, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcEdit } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
@@ -29,6 +29,42 @@ export const arcModel: Model<ArcContent> = {
     const endAngle = 2 * angle - content.startAngle
     content.startAngle = startAngle
     content.endAngle = endAngle
+  },
+  break(content, points) {
+    if (points.length === 0) {
+      return
+    }
+    const angles = points.map((p) => normalizeAngleInRange(Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI, content))
+    angles.sort((a, b) => a - b)
+    const result: ArcContent[] = []
+    if (!equals(angles[0], content.startAngle)) {
+      result.push({
+        ...content,
+        type: 'arc',
+        startAngle: content.startAngle,
+        endAngle: angles[0],
+      })
+    }
+    angles.forEach((a, i) => {
+      if (i === angles.length - 1) {
+        if (!equals(a, content.endAngle)) {
+          result.push({
+            ...content,
+            type: 'arc',
+            startAngle: a,
+            endAngle: content.endAngle,
+          })
+        }
+      } else {
+        result.push({
+          ...content,
+          type: 'arc',
+          startAngle: a,
+          endAngle: angles[i + 1],
+        })
+      }
+    })
+    return result.length > 1 ? result : undefined
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
@@ -113,7 +149,7 @@ export function getArcLines(content: Omit<ArcContent, "type">) {
       })
     }
     return {
-      lines: [Array.from(iteratePolylineLines(points))],
+      lines: Array.from(iteratePolylineLines(points)),
       points,
     }
   })

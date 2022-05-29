@@ -23,11 +23,15 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
-export interface Arc extends Circle {
+export interface AngleRange {
     // (undocumented)
     endAngle: number;
     // (undocumented)
     startAngle: number;
+}
+
+// @public (undocumented)
+export interface Arc extends Circle, AngleRange {
 }
 
 // @public (undocumented)
@@ -62,6 +66,12 @@ export function CircleEditBar(props: {
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'edge', cursor: React_2.CSSProperties['cursor']) => void;
 }): JSX.Element;
+
+// @public (undocumented)
+export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
+
+// @public (undocumented)
+export function deduplicatePosition(array: Position[]): Position[];
 
 // @public (undocumented)
 export function DragMask(props: {
@@ -126,11 +136,7 @@ export interface Ellipse {
 }
 
 // @public (undocumented)
-export interface EllipseArc extends Ellipse {
-    // (undocumented)
-    endAngle: number;
-    // (undocumented)
-    startAngle: number;
+export interface EllipseArc extends Ellipse, AngleRange {
 }
 
 // @public (undocumented)
@@ -153,6 +159,9 @@ export function EllipseEditBar(props: {
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
 }): JSX.Element;
+
+// @public (undocumented)
+export function equals(a: number, b: number): boolean;
 
 // @public (undocumented)
 export interface GeneralFormLine {
@@ -196,6 +205,9 @@ export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
     min: number;
     max: number;
 };
+
+// @public (undocumented)
+export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 
 // @public (undocumented)
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
@@ -302,10 +314,19 @@ export function isBetween(target: number, a: number, b: number): boolean;
 export function isSamePoint(p1: Position, p2: Position): boolean;
 
 // @public (undocumented)
+export function isZero(value: number): boolean;
+
+// @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
+export function normalizeAngleInRange(angle: number, range: AngleRange): number;
+
+// @public (undocumented)
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export function pointIsOnLine(p: Position, point1: Position, point2: Position): boolean;
 
 // @public (undocumented)
 export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position): boolean;
@@ -482,7 +503,10 @@ export function useCircleEdit<T = void>(onEnd: () => void, options?: EditOptions
 };
 
 // @public (undocumented)
-export function useCursorInput(message: string, onKeyDown?: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void): {
+export function useCursorInput(message: string, onKeyDown?: (e: React_2.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void, options?: Partial<{
+    hideIfNoInput: boolean;
+    inputStyle: React_2.CSSProperties;
+}>): {
     resetInput: () => void;
     cursorPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;

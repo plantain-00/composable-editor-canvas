@@ -72,4 +72,5 @@ export const mirrorCommand: Command = {
   contentSelectable(content) {
     return getModel(content.type)?.mirror !== undefined
   },
+  hotkey: 'MI',
 }

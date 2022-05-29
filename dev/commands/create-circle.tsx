@@ -7,7 +7,12 @@ import { Command } from "./command";
 
 export const createCircleCommand: Command = {
   name: 'create circle',
-  type: ['2 points', '3 points', 'center radius', 'center diameter'],
+  type: [
+    { name: '2 points' },
+    { name: '3 points' },
+    { name: 'center radius', hotkey: 'C' },
+    { name: 'center diameter' },
+  ],
   useCommand(onEnd, _, getAngleSnap, type) {
     const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,

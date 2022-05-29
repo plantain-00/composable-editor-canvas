@@ -5,7 +5,7 @@ export function getPointByLengthAndDirection(
 ) {
   const dx = directionPoint.x - startPoint.x
   const dy = directionPoint.y - startPoint.y
-  if (dx === 0) {
+  if (isZero(dx)) {
     return {
       x: startPoint.x,
       y: startPoint.y + length * (dy > 0 ? 1 : -1),
@@ -16,6 +16,13 @@ export function getPointByLengthAndDirection(
     x: startPoint.x + offsetX,
     y: startPoint.y + dy / dx * offsetX,
   }
+}
+
+/**
+ * @public
+ */
+export function isZero(value: number) {
+  return Math.abs(value) < 0.00000001
 }
 
 /**
@@ -36,7 +43,7 @@ export function getPointByLengthAndDirectionSafely(
  * @public
  */
 export function isSamePoint(p1: Position, p2: Position) {
-  return p1.x === p2.x && p1.y === p2.y
+  return equals(p1.x, p2.x) && equals(p1.y, p2.y)
 }
 
 /**
@@ -68,13 +75,21 @@ export function getPointAndLineMinimumDistance(position: Position, point1: Posit
  * @public
  */
 export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
-  if (point1.x !== point2.x && isBetween(p.x, point1.x, point2.x)) {
+  if (!equals(point1.x, point2.x) && isBetween(p.x, point1.x, point2.x)) {
     return true
   }
-  if (point1.y !== point2.y && isBetween(p.y, point1.y, point2.y)) {
+  if (!equals(point1.y, point2.y) && isBetween(p.y, point1.y, point2.y)) {
     return true
   }
   return false
+}
+
+/**
+ * @public
+ */
+export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
+  const { a, b, c } = twoPointLineToGeneralFormLine(point1, point2)
+  return isZero(a * p.x + b * p.y + c)
 }
 
 /**
@@ -124,7 +139,7 @@ export function getTwoNumbersDistance(n1: number, n2: number) {
  * @public
  */
 export function isBetween(target: number, a: number, b: number) {
-  return target < Math.max(a, b) && target > Math.min(a, b)
+  return target <= Math.max(a, b) && target >= Math.min(a, b)
 }
 
 /**
@@ -141,7 +156,7 @@ export function twoPointLineToGeneralFormLine(point1: Position, point2: Position
 }
 
 function generalFormLineToTwoPointLine({ a, b, c }: GeneralFormLine): [Position, Position] {
-  if (a === 0) {
+  if (isZero(a)) {
     return [
       {
         x: 0,
@@ -153,7 +168,7 @@ function generalFormLineToTwoPointLine({ a, b, c }: GeneralFormLine): [Position,
       },
     ]
   }
-  if (b === 0) {
+  if (isZero(b)) {
     return [
       {
         x: -c / a,
@@ -309,7 +324,7 @@ export function getTwoGeneralFormLinesIntersectionPoint(p1: GeneralFormLine, p2:
   const { a: a1, b: b1, c: c1 } = p1
   const { a: a2, b: b2, c: c2 } = p2
   const d = a2 * b1 - a1 * b2
-  if (d === 0) {
+  if (isZero(d)) {
     return undefined
   }
   return {
@@ -335,7 +350,7 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
   const c = l / d
   const g = c * dx + x1
   const i = c * dy + y1
-  if (f === 0) {
+  if (isZero(f)) {
     return [
       {
         x: g,
@@ -376,17 +391,17 @@ function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y,
   const c = caX * caX + caY * caY - r * r
   const pBy2 = bBy2 / a
   const q = c / a
-  const disc = pBy2 * pBy2 - q;
-  if (disc < 0) {
-    return []
-  }
-  if (disc == 0) {
+  const disc = pBy2 * pBy2 - q
+  if (isZero(disc)) {
     return [
       {
         x: start.x + baX * pBy2,
         y: start.y + baY * pBy2,
       }
     ]
+  }
+  if (disc < 0) {
+    return []
   }
   const tmpSqrt = Math.sqrt(disc)
   const abScalingFactor1 = -pBy2 + tmpSqrt
@@ -641,15 +656,19 @@ export interface Circle extends Position {
 /**
  * @public
  */
-export interface Arc extends Circle {
-  startAngle: number
-  endAngle: number
+export interface Arc extends Circle, AngleRange {
 }
 
 /**
  * @public
  */
-export interface EllipseArc extends Ellipse {
+export interface EllipseArc extends Ellipse, AngleRange {
+}
+
+/**
+ * @public
+ */
+export interface AngleRange {
   startAngle: number
   endAngle: number
 }
@@ -725,4 +744,52 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
       c: line.c - d,
     },
   ]
+}
+
+/**
+ * @public
+ */
+export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean) {
+  const result: T[] = []
+  for (const item of array) {
+    if (result.every((r) => !isSameValue(r, item))) {
+      result.push(item)
+    }
+  }
+  return result
+}
+
+/**
+ * @public
+ */
+export function equals(a: number, b: number) {
+  return isZero(a - b)
+}
+
+/**
+ * @public
+ */
+export function deduplicatePosition(array: Position[]) {
+  return deduplicate(array, isSamePoint)
+}
+
+/**
+ * @public
+ */
+export function getEllipseAngle(p: Position, ellipse: Ellipse) {
+  const newPosition = rotatePositionByCenter(p, { x: ellipse.cx, y: ellipse.cy }, ellipse.angle ?? 0)
+  return Math.atan2((newPosition.y - ellipse.cy) / ellipse.ry, (newPosition.x - ellipse.cx) / ellipse.rx) * 180 / Math.PI
+}
+
+/**
+ * @public
+ */
+export function normalizeAngleInRange(angle: number, range: AngleRange) {
+  while (angle > range.endAngle) {
+    angle -= 360
+  }
+  while (angle < range.startAngle) {
+    angle += 360
+  }
+  return angle
 }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize } from '../../src'
-import { LineContent } from './line-model'
+import { breakPolyline, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
@@ -22,7 +22,11 @@ export const rectModel: Model<RectContent> = {
   },
   explode(content) {
     const { lines } = getRectLines(content)
-    return lines.map((line) => ({ type: 'line', points: line[0] } as LineContent))
+    return lines.map((line) => ({ type: 'line', points: line } as LineContent))
+  },
+  break(content, intersectionPoints) {
+    const { lines } = getRectLines(content)
+    return breakPolyline(lines, intersectionPoints)
   },
   mirror(content, p1, p2) {
     const line = twoPointLineToGeneralFormLine(p1, p2)
@@ -100,7 +104,7 @@ export const rectModel: Model<RectContent> = {
       return [
         { x: content.x, y: content.y, type: 'center' },
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-        ...lines.map(([[start, end]]) => ({
+        ...lines.map(([start, end]) => ({
           x: (start.x + end.x) / 2,
           y: (start.y + end.y) / 2,
           type: 'midpoint' as const,
@@ -121,7 +125,7 @@ function getRectLines(content: Omit<RectContent, "type">) {
       { x: content.x - content.width / 2, y: content.y + content.height / 2 },
     ].map((p) => rotatePositionByCenter(p, content, -content.angle))
     return {
-      lines: Array.from(iteratePolygonLines(points)).map((n) => [n]),
+      lines: Array.from(iteratePolygonLines(points)),
       points,
     }
   })

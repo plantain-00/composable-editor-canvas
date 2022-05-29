@@ -66,4 +66,5 @@ export const rotateCommand: Command = {
   contentSelectable(content) {
     return getModel(content.type)?.rotate !== undefined
   },
+  hotkey: 'RO',
 }

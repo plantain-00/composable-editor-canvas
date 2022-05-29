@@ -87,4 +87,5 @@ export const createArcCommand: Command = {
     }
   },
   selectCount: 0,
+  hotkey: 'A',
 }

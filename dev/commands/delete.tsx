@@ -11,4 +11,5 @@ export const deleteCommand: Command = {
   contentSelectable(content: BaseContent, contents: readonly BaseContent[]) {
     return getModel(content.type)?.deletable?.(content, contents) ?? true
   },
+  hotkey: 'E',
 }

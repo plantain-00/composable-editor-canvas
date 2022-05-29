@@ -66,4 +66,5 @@ export const createLineCommand: Command = {
     }
   },
   selectCount: 0,
+  hotkey: 'L',
 }

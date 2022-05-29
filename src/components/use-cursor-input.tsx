@@ -5,6 +5,10 @@ import { useKey } from "./use-key"
 export function useCursorInput(
   message: string,
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>, text: string, cursorPosition: Position) => void,
+  options?: Partial<{
+    hideIfNoInput: boolean
+    inputStyle: React.CSSProperties
+  }>
 ) {
   const [text, setText] = React.useState('')
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
@@ -41,7 +45,7 @@ export function useCursorInput(
         {onKeyDown && cursorPosition && <input
           ref={inputRef}
           value={text}
-          style={{ width: '50px' }}
+          style={{ width: '50px', opacity: options?.hideIfNoInput && !text ? 0 : undefined, ...options?.inputStyle }}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => onKeyDown(e, text, cursorPosition)}
         />}

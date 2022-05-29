@@ -1,5 +1,5 @@
 import React from 'react'
-import { EllipseArc, Position, useEllipseArcEdit, EllipseArcEditBar } from '../../src'
+import { EllipseArc, Position, useEllipseArcEdit, EllipseArcEditBar, getEllipseAngle, equals, normalizeAngleInRange } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
@@ -11,6 +11,42 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   move: ellipseModel.move,
   rotate: ellipseModel.rotate,
   mirror: ellipseModel.mirror,
+  break(content, points) {
+    if (points.length === 0) {
+      return
+    }
+    const angles = points.map((p) => normalizeAngleInRange(getEllipseAngle(p, content), content))
+    angles.sort((a, b) => a - b)
+    const result: EllipseArcContent[] = []
+    if (!equals(angles[0], content.startAngle)) {
+      result.push({
+        ...content,
+        type: 'ellipse arc',
+        startAngle: content.startAngle,
+        endAngle: angles[0],
+      })
+    }
+    angles.forEach((a, i) => {
+      if (i === angles.length - 1) {
+        if (!equals(a, content.endAngle)) {
+          result.push({
+            ...content,
+            type: 'ellipse arc',
+            startAngle: a,
+            endAngle: content.endAngle,
+          })
+        }
+      } else {
+        result.push({
+          ...content,
+          type: 'ellipse arc',
+          startAngle: a,
+          endAngle: angles[i + 1],
+        })
+      }
+    })
+    return result.length > 1 ? result : undefined
+  },
   render({ content, color, target, strokeWidth }) {
     const { points } = getEllipseArcLines(content)
     return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
@@ -88,7 +124,7 @@ function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
       points.push(rotatePositionByEllipseCenter({ x, y }, content))
     }
     return {
-      lines: [Array.from(iteratePolylineLines(points))],
+      lines: Array.from(iteratePolylineLines(points)),
       points,
     }
   })

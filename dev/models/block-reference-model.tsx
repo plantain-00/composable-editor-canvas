@@ -170,15 +170,13 @@ function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, co
         if (extracted) {
           const r = getModel(c.type)?.getLines?.(extracted)
           if (r) {
-            for (const line of r.lines) {
-              lines.push(...line)
-            }
+            lines.push(...r.lines)
             points.push(...r.points)
           }
         }
       })
       return {
-        lines: [lines],
+        lines,
         points,
       }
     })
@@ -186,7 +184,7 @@ function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, co
   return { lines: [], points: [] }
 }
 
-const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][][], points: Position[] }>()
+const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][], points: Position[] }>()
 const blockSnapPointsCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, SnapPoint[]>()
 
 export function isBlockReferenceContent(content: BaseContent): content is BlockReferenceContent {

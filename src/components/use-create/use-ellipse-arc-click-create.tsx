@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { getAngleSnapPosition, useEllipseClickCreate, useKey } from ".."
-import { EllipseArc, Position, rotatePositionByCenter } from "../../utils"
+import { EllipseArc, getEllipseAngle, Position } from "../../utils"
 
 export function useEllipseArcClickCreate(
   type: 'ellipse center' | 'ellipse endpoint' | undefined,
@@ -66,8 +66,7 @@ export function useEllipseArcClickCreate(
       }
       if (ellipseArc) {
         p = getAngleSnapPosition({ x: ellipseArc.cx, y: ellipseArc.cy }, p, options?.getAngleSnap)
-        const newPosition = rotatePositionByCenter(p, { x: ellipseArc.cx, y: ellipseArc.cy }, ellipseArc.angle ?? 0)
-        let angle = Math.atan2((newPosition.y - ellipseArc.cy) / ellipseArc.ry, (newPosition.x - ellipseArc.cx) / ellipseArc.rx) * 180 / Math.PI
+        let angle = getEllipseAngle(p, ellipseArc)
         if (startAngle === undefined) {
           setStartAngle(angle)
           setEllipseArc({ ...ellipseArc, startAngle: angle, endAngle: angle })
@@ -92,8 +91,7 @@ export function useEllipseArcClickCreate(
         setCursorPosition(p)
         setInputPosition(viewportPosition ?? p)
         if (startAngle !== undefined) {
-          const newPosition = rotatePositionByCenter(p, { x: ellipseArc.cx, y: ellipseArc.cy }, ellipseArc.angle ?? 0)
-          let angle = Math.atan2((newPosition.y - ellipseArc.cy) / ellipseArc.ry, (newPosition.x - ellipseArc.cx) / ellipseArc.rx) * 180 / Math.PI
+          let angle = getEllipseAngle(p, ellipseArc)
           if (angle < startAngle) {
             angle += 360
           }

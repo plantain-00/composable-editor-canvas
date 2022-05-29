@@ -49,6 +49,7 @@ export const createBlockCommand: Command = {
     }
   },
   contentSelectable,
+  hotkey: 'B',
 }
 
 function contentSelectable(content: BaseContent) {
