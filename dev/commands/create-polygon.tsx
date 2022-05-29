@@ -42,4 +42,5 @@ export const createPolygonCommand: Command = {
     }
   },
   selectCount: 0,
+  hotkey: 'POL',
 }

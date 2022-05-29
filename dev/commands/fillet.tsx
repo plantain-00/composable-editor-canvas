@@ -62,6 +62,7 @@ export const filletCommand: Command = {
   selectCount: 2,
   contentSelectable: (c) => isLineContent(c),
   selectType: 'select part',
+  hotkey: 'F',
 }
 
 function getFillets(content1: BaseContent, content2: BaseContent, radius: number) {

@@ -1,5 +1,6 @@
 import React from 'react'
-import { Ellipse, EllipseEditBar, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseEdit } from '../../src'
+import { Ellipse, EllipseEditBar, getEllipseAngle, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseEdit } from '../../src'
+import { EllipseArcContent } from './ellipse-arc-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
 
@@ -24,6 +25,19 @@ export const ellipseModel: Model<EllipseContent> = {
     content.cy = p.y
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - (content.angle ?? 0)
+  },
+  break(content, points) {
+    if (points.length < 2) {
+      return
+    }
+    const angles = points.map((p) => getEllipseAngle(p, content))
+    angles.sort((a, b) => a - b)
+    return angles.map((a, i) => ({
+      ...content,
+      type: 'ellipse arc',
+      startAngle: a,
+      endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
+    }) as EllipseArcContent)
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
@@ -83,7 +97,7 @@ function getEllipseLines(content: Omit<EllipseContent, "type">) {
       points.push(rotatePositionByEllipseCenter({ x, y }, content))
     }
     return {
-      lines: [Array.from(iteratePolygonLines(points))],
+      lines: Array.from(iteratePolygonLines(points)),
       points,
     }
   })

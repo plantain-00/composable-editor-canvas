@@ -13,4 +13,5 @@ export const explodeCommand: Command = {
     const model = getModel(content.type)
     return model?.explode !== undefined && (model.deletable?.(content, contents) ?? true)
   },
+  hotkey: 'X',
 }

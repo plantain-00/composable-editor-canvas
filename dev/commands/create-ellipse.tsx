@@ -5,7 +5,10 @@ import { Command } from "./command";
 
 export const createEllipseCommand: Command = {
   name: 'create ellipse',
-  type: ['ellipse center', 'ellipse endpoint'],
+  type: [
+    { name: 'ellipse center', hotkey: 'EL' },
+    { name: 'ellipse endpoint' },
+  ],
   useCommand(onEnd, _, getAngleSnap, type) {
     const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,

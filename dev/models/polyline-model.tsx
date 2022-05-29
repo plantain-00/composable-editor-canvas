@@ -7,7 +7,7 @@ export const polylineModel: Model<LineContent> = {
   type: 'polyline',
   explode(content) {
     const { lines } = getPolylineLines(content)
-    return lines.map((line) => ({ type: 'line', points: line[0] } as LineContent))
+    return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
     return strokePolyline(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)

@@ -5,7 +5,10 @@ import { Command } from "./command";
 
 export const createSplineCommand: Command = {
   name: 'create spline',
-  type: ['spline', 'spline fitting'],
+  type: [
+    { name: 'spline', hotkey: 'SPL' },
+    { name: 'spline fitting' },
+  ],
   useCommand(onEnd, _, getAngleSnap, type) {
     const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'spline' || type === 'spline fitting',

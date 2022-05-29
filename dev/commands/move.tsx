@@ -41,4 +41,5 @@ export const moveCommand: Command = {
   contentSelectable(content) {
     return getModel(content.type)?.move !== undefined
   },
+  hotkey: 'M',
 }

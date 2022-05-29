@@ -17,6 +17,7 @@ export interface Model<T> {
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly BaseContent[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): BaseContent[]
+  break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position, contents: readonly BaseContent[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
   render?<V>(props: {
@@ -38,7 +39,7 @@ export interface Model<T> {
   }
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
   getLines?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
-    lines: [Position, Position][][]
+    lines: [Position, Position][]
     points: Position[]
   }
   getCircle?(content: Omit<T, 'type'>): Circle
@@ -197,15 +198,15 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][][], points: Position[] }>()
+const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[] }>()
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
 
 export const getLinesAndPointsFromCache = linesAndPointsCache.get.bind(linesAndPointsCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
 
-const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
+export const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
 
-function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly BaseContent[]) {
+export function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly BaseContent[]) {
   const model1 = getModel(content1.type)
   const model2 = getModel(content2.type)
   if (model1 && model2) {
@@ -214,27 +215,19 @@ function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent
     } else if (model1.getCircle && model2.getLines) {
       const circle = model1.getCircle(content1)
       for (const line of model2.getLines(content2, contents).lines) {
-        for (const n of line) {
-          yield* getLineSegmentCircleIntersectionPoints(...n, circle)
-        }
+        yield* getLineSegmentCircleIntersectionPoints(...line, circle)
       }
     } else if (model1.getLines && model2.getCircle) {
       const circle = model2.getCircle(content2)
       for (const line of model1.getLines(content1, contents).lines) {
-        for (const n of line) {
-          yield* getLineSegmentCircleIntersectionPoints(...n, circle)
-        }
+        yield* getLineSegmentCircleIntersectionPoints(...line, circle)
       }
     } else if (model1.getLines && model2.getLines) {
       for (const line1 of model1.getLines(content1, contents).lines) {
         for (const line2 of model2.getLines(content2, contents).lines) {
-          for (const n1 of line1) {
-            for (const n2 of line2) {
-              const point = getTwoLineSegmentsIntersectionPoint(...n1, ...n2)
-              if (point) {
-                yield point
-              }
-            }
+          const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
+          if (point) {
+            yield point
           }
         }
       }
@@ -280,7 +273,7 @@ export function getContentByIndex(state: readonly BaseContent[], index: number |
   content = state[index[0]]
   const line = getModel(content.type)?.getLines?.(content)?.lines?.[index[1]]
   if (line) {
-    return { type: 'line', points: line[0] } as LineContent
+    return { type: 'line', points: line } as LineContent
   }
   return undefined
 }

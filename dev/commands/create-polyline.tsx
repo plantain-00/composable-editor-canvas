@@ -64,4 +64,5 @@ export const createPolylineCommand: Command = {
     }
   },
   selectCount: 0,
+  hotkey: 'PL',
 }

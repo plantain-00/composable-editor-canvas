@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useHovering, useKey, usePatchBasedUndoRedo, useSelection, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useHovering, useKey, usePatchBasedUndoRedo, useSelection, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
@@ -40,6 +40,7 @@ import { createSplineCommand } from './commands/create-spline'
 import { createTangentTangentRadiusCircleCommand } from './commands/create-tangent-tangent-radius-circle'
 import { filletCommand } from './commands/fillet'
 import { chamferCommand } from './commands/chamfer'
+import { breakCommand } from './commands/break'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -81,6 +82,7 @@ registerCommand(createSplineCommand)
 registerCommand(createTangentTangentRadiusCircleCommand)
 registerCommand(filletCommand)
 registerCommand(chamferCommand)
+registerCommand(breakCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -173,7 +175,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === p) ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -221,12 +223,13 @@ const CADEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
   })
-  const { selected, filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelection<number | readonly [number, number]>({
+  const { filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelection<number | readonly [number, number]>({
     onChange(selected) {
       props.onSendSelection(selected.map((s) => typeof s === 'number' ? s : s[0]))
     }
   })
   const { hovering, isHovering, setHovering } = useHovering<number | readonly [number, number]>()
+  const [position, setPosition] = React.useState<Position>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
@@ -275,7 +278,7 @@ const CADEditor = React.forwardRef((props: {
       for (const j of e) {
         const line = getModel(s.type)?.getLines?.(s)?.lines?.[j]
         if (line) {
-          selectedContents.push({ type: 'line', points: line[0] } as LineContent)
+          selectedContents.push({ type: 'line', points: line } as LineContent)
         }
       }
     } else if (e) {
@@ -287,7 +290,7 @@ const CADEditor = React.forwardRef((props: {
   const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
 
   // commands
-  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents } = useCommands(
+  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
     (updateContents) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContents, (draft) => {
@@ -432,7 +435,7 @@ const CADEditor = React.forwardRef((props: {
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
   useKey((k) => k.code === 'KeyA' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
-    addSelection(selected)
+    addSelection(editingContents.map((_, i) => i))
     e.preventDefault()
   })
 
@@ -478,7 +481,16 @@ const CADEditor = React.forwardRef((props: {
       message = selectedCount ? `${selectedCount} selected, press Enter to finish selection` : 'select targets'
     }
   }
-  const { input: cursorInput, setInputPosition } = useCursorInput(message)
+  const { input: cursorInput, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, isSelectOperation ? (e, text) => {
+    if (e.key === 'Enter' && text) {
+      const command = getCommandByHotkey(text)
+      if (command) {
+        onStartOperation({ type: 'command', name: command })
+      }
+      clearText()
+      e.stopPropagation()
+    }
+  } : undefined, { hideIfNoInput: true, inputStyle: { textTransform: 'uppercase' } })
   let selectionInput = cursorInput
   if (!readOnly && cursorInput) {
     if (inputFixed) {
@@ -515,6 +527,8 @@ const CADEditor = React.forwardRef((props: {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
     const p = reverseTransformPosition(viewportPosition, transform)
+    setCursorPosition(p)
+    setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (!isSelectOperation && operation.type === 'command') {
       onCommandMove(getSnapPoint(p, editingContents, snapTypes), viewportPosition)
     }
@@ -593,6 +607,7 @@ const CADEditor = React.forwardRef((props: {
           }
           return null
         })}
+        {position && `${position.x},${position.y}`}
         {commandMasks}
         {selectionInput}
         {!readOnly && commandInputs}

@@ -57,14 +57,12 @@ function getBlockLines(content: Omit<BlockContent, "type">) {
     content.contents.forEach((c) => {
       const r = getModel(c.type)?.getLines?.(c)
       if (r) {
-        for (const line of r.lines) {
-          lines.push(...line)
-        }
+        lines.push(...r.lines)
         points.push(...r.points)
       }
     })
     return {
-      lines: [lines],
+      lines,
       points,
     }
   })

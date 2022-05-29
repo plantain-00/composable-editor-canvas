@@ -39,4 +39,5 @@ export const createRectCommand: Command = {
     }
   },
   selectCount: 0,
+  hotkey: 'REC',
 }

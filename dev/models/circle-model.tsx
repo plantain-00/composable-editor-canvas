@@ -1,6 +1,6 @@
 import React from 'react'
 import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleEdit } from '../../src'
-import { getArcLines } from './arc-model'
+import { ArcContent, getArcLines } from './arc-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
@@ -21,6 +21,19 @@ export const circleModel: Model<CircleContent> = {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
+  },
+  break(content, points) {
+    if (points.length < 2) {
+      return
+    }
+    const angles = points.map((p) => Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI)
+    angles.sort((a, b) => a - b)
+    return angles.map((a, i) => ({
+      ...content,
+      type: 'arc',
+      startAngle: a,
+      endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
+    }) as ArcContent)
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
