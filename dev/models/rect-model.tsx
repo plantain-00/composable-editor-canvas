@@ -1,5 +1,5 @@
 import React from 'react'
-import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, twoPointLineToGeneralFormLine, useDragResize } from '../../src'
+import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, useDragResize } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
@@ -28,12 +28,10 @@ export const rectModel: Model<RectContent> = {
     const { lines } = getRectLines(content)
     return breakPolyline(lines, intersectionPoints)
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line, angle) {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
-    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - content.angle
   },
   render({ content, color, target, strokeWidth, partsStyles }) {

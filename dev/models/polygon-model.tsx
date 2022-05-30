@@ -1,5 +1,5 @@
 import React from 'react'
-import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
+import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, usePolylineEdit } from '../../src'
 import { breakPolyline, iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { strokePolyline } from './polyline-model'
@@ -19,8 +19,7 @@ export const polygonModel: Model<PolygonContent> = {
   rotate(content, center, angle) {
     content.points = content.points.map((p) => rotatePositionByCenter(p, center, -angle))
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line) {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   explode(content) {

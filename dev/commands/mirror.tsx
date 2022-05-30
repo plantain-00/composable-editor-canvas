@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { useCursorInput, useDragMove } from "../../src"
+import { twoPointLineToGeneralFormLine, useCursorInput, useDragMove } from "../../src"
 import { getModel } from "../models/model"
 import { Command } from "./command"
 
@@ -42,13 +42,15 @@ export const mirrorCommand: Command = {
       updateContent(content, contents) {
         if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
           const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
+          const line = twoPointLineToGeneralFormLine(startPosition, end)
+          const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI
           if (changeOriginal) {
-            getModel(content.type)?.mirror?.(content, startPosition, end, contents)
+            getModel(content.type)?.mirror?.(content, line, angle, contents)
           }
           return {
             newContents: !changeOriginal ? [
               produce(content, (d) => {
-                getModel(d.type)?.mirror?.(d, startPosition, end, contents)
+                getModel(d.type)?.mirror?.(d, line, angle, contents)
               }),
             ] : undefined,
             

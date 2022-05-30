@@ -1,5 +1,5 @@
 import React from 'react'
-import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit, pointIsOnLine } from '../../src'
+import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, PolylineEditBar, Position, rotatePositionByCenter, usePolylineEdit, pointIsOnLine } from '../../src'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
@@ -17,8 +17,7 @@ export const lineModel: Model<LineContent> = {
   rotate(content, center, angle) {
     content.points = content.points.map((p) => rotatePositionByCenter(p, center, -angle))
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line) {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   break(content, intersectionPoints) {

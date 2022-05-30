@@ -1,5 +1,5 @@
 import React from 'react'
-import { Arc, CircleArcEditBar, equals, getSymmetryPoint, normalizeAngleInRange, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleArcEdit } from '../../src'
+import { Arc, CircleArcEditBar, equals, getSymmetryPoint, normalizeAngleInRange, Position, rotatePositionByCenter, useCircleArcEdit } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
@@ -19,12 +19,10 @@ export const arcModel: Model<ArcContent> = {
     content.startAngle += angle
     content.endAngle += angle
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line, angle) {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
-    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     const startAngle = 2 * angle - content.endAngle
     const endAngle = 2 * angle - content.startAngle
     content.startAngle = startAngle

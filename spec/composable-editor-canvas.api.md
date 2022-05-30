@@ -656,10 +656,10 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 };
 
 // @public (undocumented)
-export function useHovering<T extends string | number | readonly [number, number]>(): {
-    hovering: T | undefined;
-    isHovering: (value: T) => number | boolean;
-    setHovering: React_2.Dispatch<React_2.SetStateAction<T | undefined>>;
+export function useHoverPart<T extends string | number>(): {
+    hovering: T | readonly [T, number] | undefined;
+    isHovering: (value: T | readonly [T, number]) => number | boolean;
+    setHovering: React_2.Dispatch<React_2.SetStateAction<T | readonly [T, number] | undefined>>;
 };
 
 // @public (undocumented)
@@ -745,18 +745,28 @@ export function useRegionAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useSelection<T extends string | number | readonly [number, number]>(options?: Partial<{
-    onChange: (s: readonly T[]) => void;
+export function useSelectBeforeOperate<T>(): {
+    operation: T | undefined;
+    nextOperation: T | undefined;
+    resetOperation(): void;
+    completeCurrentOperation(): void;
+    selectBeforeOperate(select: T | undefined, p: T): void;
+    operate(p: T): void;
+};
+
+// @public (undocumented)
+export function useSelectPart<T extends string | number>(options?: Partial<{
+    onChange: (s: readonly (T | readonly [T, number])[]) => void;
 }>): {
-    selected: readonly T[];
-    filterSelection: (filter: (value: T) => boolean, max?: number | undefined) => {
-        selected: T[];
-        isSelected: (value: T) => boolean;
+    selected: readonly (T | readonly [T, number])[];
+    filterSelection: (filter: (value: (T | readonly [T, number])) => boolean, max?: number | undefined) => {
+        selected: (T | readonly [T, number])[];
+        isSelected: (value: (T | readonly [T, number])) => boolean;
     };
     clearSelection(): void;
-    isSelected: (value: T, s?: readonly T[]) => boolean | number[];
-    addSelection: (value: readonly T[], max?: number | undefined) => readonly T[];
-    setSelection: React_2.Dispatch<React_2.SetStateAction<readonly T[]>>;
+    isSelected: (value: (T | readonly [T, number]), s?: readonly (T | readonly [T, number])[]) => boolean | number[];
+    addSelection: (value: readonly ((T | readonly [T, number]))[], max?: number | undefined) => readonly (T | readonly [T, number])[];
+    setSelection: React_2.Dispatch<React_2.SetStateAction<readonly (T | readonly [T, number])[]>>;
     selectedCount: number;
 };
 

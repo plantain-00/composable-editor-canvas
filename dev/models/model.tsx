@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
+import { Circle, GeneralFormLine, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
 import { CircleContent } from './circle-model'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
@@ -18,7 +18,7 @@ export interface Model<T> {
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly BaseContent[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
-  mirror?(content: Omit<T, 'type'>, p1: Position, p2: Position, contents: readonly BaseContent[]): void
+  mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly BaseContent[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
   render?<V>(props: {
     content: Omit<T, 'type'>

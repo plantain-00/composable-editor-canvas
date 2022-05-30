@@ -1,6 +1,6 @@
 import React from 'react'
 import bspline from 'b-spline'
-import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, usePolylineEdit } from '../../src'
+import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, usePolylineEdit } from '../../src'
 import { iteratePolylineLines } from './line-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 
@@ -20,8 +20,7 @@ export const splineModel: Model<SplineContent> = {
   rotate(content, center, angle) {
     content.points = content.points.map((p) => rotatePositionByCenter(p, center, -angle))
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line) {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   render({ content, color, target, strokeWidth }) {
