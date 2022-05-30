@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useHovering, useKey, usePatchBasedUndoRedo, useSelection, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useHoverPart, useKey, usePatchBasedUndoRedo, useSelectBeforeOperate, useSelectPart, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
 import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
@@ -151,7 +151,7 @@ export default () => {
   const [renderTarget, setRenderTarget] = React.useState<string>()
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
-  const [operations, setOperations] = React.useState<[Operation?, Operation?]>([])
+  const [operation, setOperation] = React.useState<string>()
   const [inputFixed, setInputFixed] = React.useState(false)
 
   return (
@@ -168,14 +168,13 @@ export default () => {
           renderTarget={renderTarget}
           setCanUndo={setCanUndo}
           setCanRedo={setCanRedo}
-          operations={operations}
-          setOperations={setOperations}
+          setOperation={setOperation}
           inputFixed={inputFixed}
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
-        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === p) ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operations.some((r) => r?.type === 'command' && r.name === p) ? 'red' : undefined }}>{p}</button>)}
+        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -216,19 +215,19 @@ const CADEditor = React.forwardRef((props: {
   renderTarget?: string
   setCanUndo: (canUndo: boolean) => void
   setCanRedo: (canRedo: boolean) => void
-  operations: [Operation?, Operation?]
-  setOperations: (operations: [Operation?, Operation?]) => void
+  setOperation: (operations: string | undefined) => void
 }, ref: React.ForwardedRef<CADEditorRef>) => {
-  const { operations: [operation, nextOperation], setOperations, snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
+  const { operation, nextOperation, resetOperation, completeCurrentOperation, selectBeforeOperate, operate } = useSelectBeforeOperate<Operation>()
+  const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
   })
-  const { filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelection<number | readonly [number, number]>({
+  const { filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelectPart<number>({
     onChange(selected) {
       props.onSendSelection(selected.map((s) => typeof s === 'number' ? s : s[0]))
     }
   })
-  const { hovering, isHovering, setHovering } = useHovering<number | readonly [number, number]>()
+  const { hovering, isHovering, setHovering } = useHoverPart<number>()
   const [position, setPosition] = React.useState<Position>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
@@ -306,7 +305,7 @@ const CADEditor = React.forwardRef((props: {
           prependPatchPath(previewReversePatches, editingStatePath),
         )
       }
-      setOperations([])
+      resetOperation()
       clearSelection()
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
@@ -416,20 +415,17 @@ const CADEditor = React.forwardRef((props: {
   }
 
   useKey((e) => e.key === 'Escape', () => {
-    setOperations([])
+    resetOperation()
     clearSelection()
-  }, [setOperations])
+  }, [resetOperation])
   const startNextOperation = (s: (value: number) => boolean | readonly number[]) => {
     // after selection, execute command immediately
     if (nextOperation?.type === 'command' && getCommand(nextOperation.name)?.executeCommand) {
       executeCommandForSelectedContents(nextOperation.name, s)
-      setOperations([])
+      resetOperation()
       return
     }
-    // after selection, continue operation
-    if (nextOperation) {
-      setOperations([nextOperation])
-    }
+    completeCurrentOperation()
   }
   useKey((e) => e.key === 'Enter', () => startNextOperation(isSelected))
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
@@ -441,6 +437,10 @@ const CADEditor = React.forwardRef((props: {
 
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
+  React.useEffect(() => {
+    const p = nextOperation || operation
+    props.setOperation(p?.type === 'command' ? p.name : p?.type)
+  }, [operation, nextOperation])
 
   const [othersSelectedContents, setOthersSelectedContents] = React.useState<{ selection: number[], operator: string }[]>([])
 
@@ -553,10 +553,10 @@ const CADEditor = React.forwardRef((props: {
         )
         // for commands, but no/no enough content selected, start to select some
         if (command.selectCount === undefined ? selected.length === 0 : selected.length < command.selectCount) {
-          setOperations([
+          selectBeforeOperate(
             command.selectCount !== undefined ? { type: command.selectType ?? 'select', count: command.selectCount } : undefined,
             p,
-          ])
+          )
           return
         }
         // for executable commands, if there are selections, do it
@@ -566,7 +566,7 @@ const CADEditor = React.forwardRef((props: {
         }
       }
     }
-    setOperations([p])
+    operate(p)
   }
 
   return (

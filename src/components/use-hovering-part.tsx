@@ -1,9 +1,9 @@
 import * as React from "react"
 
-export function useHovering<T extends string | number | readonly [number, number]>() {
-  const [hovering, setHovering] = React.useState<T>()
+export function useHoverPart<T extends string | number>() {
+  const [hovering, setHovering] = React.useState<T | readonly [T, number]>()
 
-  const isHovering = (value: T) => {
+  const isHovering = (value: T | readonly [T, number]) => {
     if (hovering === undefined) {
       return false
     }

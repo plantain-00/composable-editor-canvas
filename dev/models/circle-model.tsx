@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, twoPointLineToGeneralFormLine, useCircleEdit } from '../../src'
+import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, useCircleEdit } from '../../src'
 import { ArcContent, getArcLines } from './arc-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
 
@@ -16,8 +16,7 @@ export const circleModel: Model<CircleContent> = {
     content.x = p.x
     content.y = p.y
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line) {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y

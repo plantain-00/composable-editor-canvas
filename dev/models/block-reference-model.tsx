@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { EditBar, getAngleSnapPosition, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEdit, WeakmapCache2 } from "../../src"
+import { EditBar, getAngleSnapPosition, getSymmetryPoint, Position, rotatePositionByCenter, useEdit, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
 import { BaseContent, getModel, Model, SnapPoint } from "./model"
@@ -39,14 +39,12 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     }
     return []
   },
-  mirror(content, p1, p2, contents) {
+  mirror(content, line, angle, contents) {
     const block = getBlock(content.id, contents)
     if (block) {
-      const line = twoPointLineToGeneralFormLine(p1, p2)
       const p = getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
       content.x = p.x - block.base.x
       content.y = p.y - block.base.y
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
       content.angle = 2 * angle - content.angle
     }
   },

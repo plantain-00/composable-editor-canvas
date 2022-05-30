@@ -1,11 +1,11 @@
 import * as React from "react"
 
-export function useSelection<T extends string | number | readonly [number, number]>(options?: Partial<{
-  onChange: (s: readonly T[]) => void
+export function useSelectPart<T extends string | number>(options?: Partial<{
+  onChange: (s: readonly (T | readonly [T, number])[]) => void
 }>) {
-  const [selected, setSelected] = React.useState<readonly T[]>([])
+  const [selected, setSelected] = React.useState<readonly ((T | readonly [T, number]))[]>([])
 
-  const isSelected = (value: T, s = selected) => {
+  const isSelected = (value: (T | readonly [T, number]), s = selected) => {
     if (typeof value === 'number' || typeof value === 'string') {
       if (s.includes(value)) {
         return true
@@ -20,7 +20,7 @@ export function useSelection<T extends string | number | readonly [number, numbe
     }
     return s.some((v) => typeof v !== 'number' && typeof v !== 'string' && v[0] === value[0] && v[1] === value[1])
   }
-  const addSelection = (value: readonly T[], max?: number) => {
+  const addSelection = (value: readonly ((T | readonly [T, number]))[], max?: number) => {
     value = value.filter((s) => isSelected(s) !== true)
     if (value.length > 0) {
       let result = [...selected, ...value]
@@ -32,7 +32,7 @@ export function useSelection<T extends string | number | readonly [number, numbe
     }
     return selected
   }
-  const filterSelection = (filter: (value: T) => boolean, max?: number) => {
+  const filterSelection = (filter: (value: (T | readonly [T, number])) => boolean, max?: number) => {
     let result = selected.filter(filter)
     if (max !== undefined) {
       result = result.slice(-max)
@@ -40,7 +40,7 @@ export function useSelection<T extends string | number | readonly [number, numbe
     setSelected(result)
     return {
       selected: result,
-      isSelected: (value: T) => result.includes(value)
+      isSelected: (value: (T | readonly [T, number])) => result.includes(value)
     }
   }
 

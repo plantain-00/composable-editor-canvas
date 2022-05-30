@@ -1,5 +1,5 @@
 import React from 'react'
-import { Ellipse, EllipseEditBar, getEllipseAngle, getSymmetryPoint, Position, rotatePositionByCenter, twoPointLineToGeneralFormLine, useEllipseEdit } from '../../src'
+import { Ellipse, EllipseEditBar, getEllipseAngle, getSymmetryPoint, Position, rotatePositionByCenter, useEllipseEdit } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
 import { iteratePolygonLines, strokePolygon } from './polygon-model'
@@ -18,12 +18,10 @@ export const ellipseModel: Model<EllipseContent> = {
     content.cy = p.y
     content.angle = (content.angle ?? 0) + angle
   },
-  mirror(content, p1, p2) {
-    const line = twoPointLineToGeneralFormLine(p1, p2)
+  mirror(content, line, angle) {
     const p = getSymmetryPoint({ x: content.cx, y: content.cy }, line)
     content.cx = p.x
     content.cy = p.y
-    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
     content.angle = 2 * angle - (content.angle ?? 0)
   },
   break(content, points) {
