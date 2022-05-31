@@ -1,7 +1,13 @@
 import * as React from "react"
+import { useKey } from "./use-key"
 
 export function useSelectBeforeOperate<T>() {
   const [[operation, nextOperation], setOperations] = React.useState<[T?, T?]>([])
+  
+  useKey((e) => e.key === 'Escape', () => {
+    setOperations([])
+  }, [setOperations])
+
   return {
     operation,
     nextOperation,

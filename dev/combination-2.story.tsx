@@ -414,10 +414,6 @@ const CADEditor = React.forwardRef((props: {
     return true
   }
 
-  useKey((e) => e.key === 'Escape', () => {
-    resetOperation()
-    clearSelection()
-  }, [resetOperation])
   const startNextOperation = (s: (value: number) => boolean | readonly number[]) => {
     // after selection, execute command immediately
     if (nextOperation?.type === 'command' && getCommand(nextOperation.name)?.executeCommand) {
