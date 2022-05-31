@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useKey } from "./use-key"
 
 export function useSelectPart<T extends string | number>(options?: Partial<{
   onChange: (s: readonly (T | readonly [T, number])[]) => void
@@ -47,6 +48,10 @@ export function useSelectPart<T extends string | number>(options?: Partial<{
   React.useEffect(() => {
     options?.onChange?.(selected)
   }, [selected])
+
+  useKey((e) => e.key === 'Escape', () => {
+    setSelected([])
+  }, [setSelected])
 
   return {
     selected,
