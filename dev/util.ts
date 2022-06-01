@@ -88,21 +88,6 @@ export function getTemplateContentSize(content: TemplateContent, styleGuide: Sty
   return content
 }
 
-export function isSamePath(path1: number[] | undefined, path2: number[] | undefined) {
-  if (path1 && path2) {
-    if (path1.length !== path2.length) {
-      return false
-    }
-    for (let i = 0; i < path1.length; i++) {
-      if (path1[i] !== path2[i]) {
-        return false
-      }
-    }
-    return true
-  }
-  return path1 === undefined && path2 === undefined
-}
-
 export function selectTemplateByArea(styleGuide: StyleGuide, position1: Position, position2: Position) {
   const region = {
     x: Math.min(position1.x, position2.x),

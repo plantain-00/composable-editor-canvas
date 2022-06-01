@@ -4,17 +4,17 @@ import { BaseContent, getModel } from './models/model'
 export function getContentByClickPosition(
   contents: readonly BaseContent[],
   position: Position,
-  contentSelectable: (index: number | readonly [number, number]) => boolean,
+  contentSelectable: (index: number[]) => boolean,
   part = false,
   delta = 3,
-) {
+): number[] | undefined {
   for (let i = 0; i < contents.length; i++) {
     const content = contents[i]
     const model = getModel(content.type)
     if (model?.getCircle) {
       const circle = model.getCircle(content)
-      if (contentSelectable(i) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
-        return i
+      if (contentSelectable([i]) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
+        return [i]
       }
     } else if (model?.getLines) {
       const lines = model.getLines(content, contents).lines
@@ -23,10 +23,10 @@ export function getContentByClickPosition(
         const minDistance = getPointAndLineMinimumDistance(position, ...line)
         if (minDistance <= delta) {
           if (part && model.canSelectPart && contentSelectable([i, j])) {
-            return [i, j] as const
+            return [i, j]
           }
-          if (contentSelectable(i)) {
-            return i
+          if (contentSelectable([i])) {
+            return [i]
           }
         }
       }
@@ -39,13 +39,13 @@ export function getContentsByClickTwoPositions(
   contents: readonly BaseContent[],
   startPosition: Position,
   endPosition: Position,
-  contentSelectable?: (index: number) => boolean,
+  contentSelectable?: (index: number[]) => boolean,
 ) {
-  const result: number[] = []
+  const result: number[][] = []
   const region = getTwoPointsFormRegion(startPosition, endPosition)
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
-    if (contentSelectable?.(i)) {
+    if (contentSelectable?.([i])) {
       const model = getModel(content.type)
       if (model?.getCircle) {
         const circle = model.getCircle(content)
@@ -53,22 +53,22 @@ export function getContentsByClickTwoPositions(
           { x: circle.x - circle.r, y: circle.y - circle.r },
           { x: circle.x + circle.r, y: circle.y + circle.r },
         ].every((p) => pointIsInRegion(p, region))) {
-          result.push(i)
+          result.push([i])
         } else if (partial) {
           const minDistance = getPointAndRegionMinimumDistance(circle, region)
           const maxDistance = getPointAndRegionMaximumDistance(circle, region)
           if (minDistance <= circle.r && maxDistance >= circle.r) {
-            result.push(i)
+            result.push([i])
           }
         }
       } else if (model?.getLines) {
         const { lines, points } = model.getLines(content, contents)
         if (points.every((p) => pointIsInRegion(p, region))) {
-          result.push(i)
+          result.push([i])
         } else if (partial) {
           for (const line of lines) {
             if (lineIntersectWithTwoPointsFormRegion(...line, region)) {
-              result.push(i)
+              result.push([i])
               break
             }
           }

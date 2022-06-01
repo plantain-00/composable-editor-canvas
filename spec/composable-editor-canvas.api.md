@@ -311,7 +311,13 @@ export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFor
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
+export function isSamePath<T extends SelectPath = SelectPath>(path1: T | undefined, path2: T | undefined): boolean;
+
+// @public (undocumented)
 export function isSamePoint(p1: Position, p2: Position): boolean;
+
+// @public (undocumented)
+export function isSelected<T extends SelectPath = SelectPath>(value: T, selected: readonly T[]): boolean;
 
 // @public (undocumented)
 export function isZero(value: number): boolean;
@@ -426,6 +432,9 @@ export function Scrollbar(props: {
     onChange: (value: number) => void;
     style?: React_2.CSSProperties;
 }): JSX.Element | null;
+
+// @public (undocumented)
+export type SelectPath = readonly (string | number)[];
 
 // @public (undocumented)
 export interface Size {
@@ -656,13 +665,6 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 };
 
 // @public (undocumented)
-export function useHoverPart<T extends string | number>(): {
-    hovering: T | readonly [T, number] | undefined;
-    isHovering: (value: T | readonly [T, number]) => number | boolean;
-    setHovering: React_2.Dispatch<React_2.SetStateAction<T | readonly [T, number] | undefined>>;
-};
-
-// @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
 
 // @public (undocumented)
@@ -755,19 +757,15 @@ export function useSelectBeforeOperate<T>(): {
 };
 
 // @public (undocumented)
-export function useSelectPart<T extends string | number>(options?: Partial<{
-    onChange: (s: readonly (T | readonly [T, number])[]) => void;
+export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<{
+    onChange: (s: readonly T[]) => void;
+    maxCount: number;
 }>): {
-    selected: readonly (T | readonly [T, number])[];
-    filterSelection: (filter: (value: (T | readonly [T, number])) => boolean, max?: number | undefined) => {
-        selected: (T | readonly [T, number])[];
-        isSelected: (value: (T | readonly [T, number])) => boolean;
-    };
-    clearSelection(): void;
-    isSelected: (value: (T | readonly [T, number]), s?: readonly (T | readonly [T, number])[]) => boolean | number[];
-    addSelection: (value: readonly ((T | readonly [T, number]))[], max?: number | undefined) => readonly (T | readonly [T, number])[];
-    setSelection: React_2.Dispatch<React_2.SetStateAction<readonly (T | readonly [T, number])[]>>;
-    selectedCount: number;
+    selected: readonly T[];
+    filterSelection: (filter: (value: T) => boolean, maxCount?: number | undefined) => T[];
+    isSelected: (value: T, s?: readonly T[]) => boolean;
+    addSelection: (value: readonly T[], maxCount?: number | undefined) => readonly T[];
+    setSelected(...value: readonly (T | undefined)[]): void;
 };
 
 // @public (undocumented)

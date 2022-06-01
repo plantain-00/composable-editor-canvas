@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useHoverPart, useKey, usePatchBasedUndoRedo, useSelectBeforeOperate, useSelectPart, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, SelectPath } from '../src'
 import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
@@ -222,12 +222,10 @@ const CADEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
   })
-  const { filterSelection, isSelected, selectedCount, addSelection, clearSelection } = useSelectPart<number>({
-    onChange(selected) {
-      props.onSendSelection(selected.map((s) => typeof s === 'number' ? s : s[0]))
-    }
+  const { filterSelection, selected, isSelected, addSelection, setSelected } = useSelected<number[]>({
+    onChange: (c) => props.onSendSelection(c.map((s) => s[0]))
   })
-  const { hovering, isHovering, setHovering } = useHoverPart<number>()
+  const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
   const [position, setPosition] = React.useState<Position>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
@@ -261,27 +259,29 @@ const CADEditor = React.forwardRef((props: {
     },
   }
 
-  const select = (targets: (number | readonly [number, number])[]) => {
-    const result = addSelection(targets, operation?.type === 'select' || operation?.type === 'select part' ? operation.count : undefined)
-    if ((operation?.type === 'select' || operation?.type === 'select part') && operation.count === result.length) {
-      startNextOperation((v) => isSelected(v, result))
+  const select = (targets: readonly number[][]) => {
+    const maxCount = operation?.type === 'select' || operation?.type === 'select part' ? operation.count : undefined
+    const result = addSelection(targets, maxCount)
+    if (maxCount !== undefined && maxCount === result.length) {
+      startNextOperation(result)
     }
   }
   const isSelectOperation = operation === undefined || operation.type === 'select' || operation.type === 'select part'
-  const [editingStatePath, setEditingStatePath] = React.useState<(string | number)[]>()
+  const [editingStatePath, setEditingStatePath] = React.useState<SelectPath>()
   const editingContents = getByPath(state, editingStatePath)
   const selectedContents: BaseContent[] = []
   editingContents.forEach((s, i) => {
-    const e = isSelected(i)
-    if (typeof e !== 'boolean') {
-      for (const j of e) {
-        const line = getModel(s.type)?.getLines?.(s)?.lines?.[j]
-        if (line) {
-          selectedContents.push({ type: 'line', points: line } as LineContent)
+    if (isSelected([i])) {
+      selectedContents.push(s)
+    } else {
+      for (const f of selected) {
+        if (f.length === 2 && f[0] === i) {
+          const line = getModel(s.type)?.getLines?.(s)?.lines?.[f[1]]
+          if (line) {
+            selectedContents.push({ type: 'line', points: line } as LineContent)
+          }
         }
       }
-    } else if (e) {
-      selectedContents.push(s)
     }
   })
 
@@ -293,7 +293,7 @@ const CADEditor = React.forwardRef((props: {
     (updateContents) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContents, (draft) => {
-          updateContents(draft, isSelected)
+          updateContents(draft, selected)
         })
         applyPatchFromSelf(
           prependPatchPath(patches[0], editingStatePath),
@@ -306,7 +306,7 @@ const CADEditor = React.forwardRef((props: {
         )
       }
       resetOperation()
-      clearSelection()
+      setSelected()
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
     angleSnapEnabled && !snapPoint,
@@ -350,7 +350,7 @@ const CADEditor = React.forwardRef((props: {
   const previewContents = produce(editingContents, (draft) => {
     const newContents: BaseContent[] = []
     draft.forEach((content, i) => {
-      if (isSelected(i)) {
+      if (isSelected([i])) {
         const result = updateContent(content, state)
         if (result.assistentContents) {
           assistentContents.push(...result.assistentContents)
@@ -368,12 +368,12 @@ const CADEditor = React.forwardRef((props: {
     previewReversePatches.push(...reversePatches)
   })
 
-  const executeCommandForSelectedContents = (name: string, s: (value: number) => boolean | readonly number[]) => {
+  const executeCommandForSelectedContents = (name: string, s = selected) => {
     const removedContents: number[] = []
     const newContents: BaseContent[] = []
     const command = getCommand(name)
     editingContents.forEach((c, i) => {
-      if (s(i) && (command?.contentSelectable?.(c, state) ?? true)) {
+      if (isSelected([i], s) && (command?.contentSelectable?.(c, state) ?? true)) {
         const result = command?.executeCommand?.(c, state, i)
         if (result?.newContents) {
           newContents.push(...result.newContents)
@@ -397,11 +397,11 @@ const CADEditor = React.forwardRef((props: {
         draft.push(...newContents)
       })
     }
-    clearSelection()
+    setSelected()
   }
-  const contentSelectable = (index: number | readonly [number, number]) => {
+  const contentSelectable = (index: number[]) => {
     // ignore selected contents
-    if (isSelected(index) === true) {
+    if (isSelected(index)) {
       return false
     }
     if (nextOperation?.type === 'command') {
@@ -414,7 +414,7 @@ const CADEditor = React.forwardRef((props: {
     return true
   }
 
-  const startNextOperation = (s: (value: number) => boolean | readonly number[]) => {
+  const startNextOperation = (s = selected) => {
     // after selection, execute command immediately
     if (nextOperation?.type === 'command' && getCommand(nextOperation.name)?.executeCommand) {
       executeCommandForSelectedContents(nextOperation.name, s)
@@ -423,11 +423,11 @@ const CADEditor = React.forwardRef((props: {
     }
     completeCurrentOperation()
   }
-  useKey((e) => e.key === 'Enter', () => startNextOperation(isSelected))
+  useKey((e) => e.key === 'Enter', () => startNextOperation())
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
   useKey((k) => k.code === 'KeyA' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
-    addSelection(editingContents.map((_, i) => i))
+    addSelection(editingContents.map((_, i) => [i]))
     e.preventDefault()
   })
 
@@ -463,18 +463,18 @@ const CADEditor = React.forwardRef((props: {
     onStartOperation,
     exitEditBlock() {
       setEditingStatePath(undefined)
-      clearSelection()
+      setSelected()
     },
   }), [applyPatchFromOtherOperators])
 
   let message = ''
   if (isSelectOperation && nextOperation) {
     if (operation?.type === 'select') {
-      message = `${selectedCount} selected, extra ${operation.count - selectedCount} targets are needed`
+      message = `${selected.length} selected, extra ${operation.count - selected.length} targets are needed`
     } else if (operation?.type === 'select part') {
       message = `${selectedContents.length} selected, extra ${operation.count - selectedContents.length} targets are needed`
     } else {
-      message = selectedCount ? `${selectedCount} selected, press Enter to finish selection` : 'select targets'
+      message = selected.length ? `${selected.length} selected, press Enter to finish selection` : 'select targets'
     }
   }
   const { input: cursorInput, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, isSelectOperation ? (e, text) => {
@@ -504,10 +504,10 @@ const CADEditor = React.forwardRef((props: {
       startCommand(operation.name, p)
     }
     if (isSelectOperation) {
-      if (hovering !== undefined) {
+      if (hovering.length > 0) {
         // if hovering content, add it to selection
-        select([hovering])
-        setHovering(undefined)
+        select(hovering)
+        setHovering()
       } else {
         // start selection by region
         onStartSelect(e)
@@ -537,7 +537,7 @@ const CADEditor = React.forwardRef((props: {
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
-        const { selected, isSelected } = filterSelection(
+        const s = filterSelection(
           (v) => {
             const content = getContentByIndex(editingContents, v)
             if (content) {
@@ -548,7 +548,7 @@ const CADEditor = React.forwardRef((props: {
           command.selectCount,
         )
         // for commands, but no/no enough content selected, start to select some
-        if (command.selectCount === undefined ? selected.length === 0 : selected.length < command.selectCount) {
+        if (command.selectCount === undefined ? s.length === 0 : s.length < command.selectCount) {
           selectBeforeOperate(
             command.selectCount !== undefined ? { type: command.selectType ?? 'select', count: command.selectCount } : undefined,
             p,
@@ -557,7 +557,7 @@ const CADEditor = React.forwardRef((props: {
         }
         // for executable commands, if there are selections, do it
         if (command.executeCommand) {
-          executeCommandForSelectedContents(p.name, isSelected)
+          executeCommandForSelectedContents(p.name, s)
           return
         }
       }
@@ -571,9 +571,9 @@ const CADEditor = React.forwardRef((props: {
         <Renderer
           type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
-          isSelected={isSelected}
+          selected={selected}
           othersSelectedContents={othersSelectedContents}
-          isHovering={isHovering}
+          hovering={hovering}
           onClick={onClick}
           onMouseDown={onMouseDown}
           transform={transform}
@@ -581,7 +581,7 @@ const CADEditor = React.forwardRef((props: {
           height={height}
         />
         {!readOnly && previewContents.map((s, i) => {
-          if (isSelected(i) === true) {
+          if (isSelected([i])) {
             const EditBar = editBarMap[s.type]
             if (EditBar) {
               return (
@@ -624,14 +624,14 @@ interface CADEditorRef {
   exitEditBlock(): void
 }
 
-function prependPatchPath(patches: Patch[], path?: (string | number)[]): Patch[] {
+function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   if (path && path.length > 0) {
     return patches.map((p) => ({ ...p, path: [...path, ...p.path] }))
   }
   return patches
 }
 
-function getByPath<T>(target: T, path?: (string | number)[]) {
+function getByPath<T>(target: T, path?: SelectPath) {
   if (path) {
     let result: any = target
     for (const p of path) {
