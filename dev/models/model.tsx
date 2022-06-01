@@ -265,12 +265,11 @@ export const fixedInputStyle: React.CSSProperties = {
   transform: 'translate(-50%, 0px)',
 }
 
-export function getContentByIndex(state: readonly BaseContent[], index: number | readonly [number, number]) {
-  let content: BaseContent = typeof index === 'number' ? state[index] : state[index[0]]
-  if (typeof index === 'number') {
-    return state[index]
+export function getContentByIndex(state: readonly BaseContent[], index: readonly number[]) {
+  const content = state[index[0]]
+  if (index.length === 1) {
+    return content
   }
-  content = state[index[0]]
   const line = getModel(content.type)?.getLines?.(content)?.lines?.[index[1]]
   if (line) {
     return { type: 'line', points: line } as LineContent

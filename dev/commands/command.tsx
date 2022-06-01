@@ -1,12 +1,12 @@
 import React from "react"
-import { Position } from "../../src"
+import { Position, SelectPath } from "../../src"
 import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 
 export interface Command {
   name: string
   type?: { name: string, hotkey?: string }[]
   useCommand?(
-    onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
+    onEnd: (updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
@@ -26,7 +26,7 @@ export interface Command {
   executeCommand?(content: BaseContent, contents: readonly BaseContent[], index: number): {
     removed?: boolean
     newContents?: BaseContent[]
-    editingStatePath?: (string | number)[]
+    editingStatePath?: SelectPath
   }
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectCount?: number
@@ -41,7 +41,7 @@ export function getCommand(name: string): Command | undefined {
 }
 
 export function useCommands(
-  onEnd: (updateContents?: (contents: BaseContent[], isSelected: (i: number) => boolean | readonly number[]) => void) => void,
+  onEnd: (updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
   inputFixed: boolean,

@@ -1,8 +1,8 @@
 import React from 'react'
-import { Position, Region, Size } from '../src'
+import { isSamePath, Position, Region, Size } from '../src'
 
 import { TemplateContent, TemplateTextContent, TemplateImageContent, TemplateColorContent, Template, StyleGuide, TemplateReferenceContent, TemplateSnapshotContent } from './model'
-import { isSamePath, nameSize } from './util'
+import { nameSize } from './util'
 
 export function StyleGuideRenderer(props: Position & {
   styleGuide: StyleGuide

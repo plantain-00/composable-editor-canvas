@@ -1,4 +1,4 @@
-import { useCursorInput } from "../../src"
+import { isSelected, useCursorInput } from "../../src"
 import { BlockContent, isBlockContent } from "../models/block-model"
 import { Command } from "./command"
 
@@ -14,9 +14,9 @@ export const createBlockReferenceCommand: Command = {
     return {
       onStart(p) {
         resetInput()
-        onEnd((contents, isSelected) => {
+        onEnd((contents, selected) => {
           contents.push(...contents
-            .filter((c, i): c is BlockContent => isSelected(i) && isBlockContent(c))
+            .filter((c, i): c is BlockContent => isSelected([i], selected) && isBlockContent(c))
             .map((block) => ({
               type: 'block reference',
               id: block.id,
@@ -25,10 +25,14 @@ export const createBlockReferenceCommand: Command = {
               angle: 0,
             }))
           )
+          setCursorPosition(undefined)
         })
       },
       input,
       onMove(p, viewportPosition) {
+        if (!enabled) {
+          return
+        }
         setCursorPosition(p)
         setInputPosition(viewportPosition || p)
       },

@@ -1,11 +1,11 @@
 import React from 'react'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size, useSelected, isSamePath } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuide } from './model'
 import { StyleGuideRenderer } from './renderer'
 import { SelectionRenderer } from './selection'
-import { getSelectedSize, getTargetByPath, selectByPosition, getSelectedPosition, selectTemplateByArea, isSamePath } from './util'
+import { getSelectedSize, getTargetByPath, selectByPosition, getSelectedPosition, selectTemplateByArea } from './util'
 
 const draftKey = 'composable-editor-canvas-draft'
 const draftState = localStorage.getItem(draftKey)
@@ -53,8 +53,8 @@ export function App() {
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
 
-  const [selected, setSelected] = React.useState<number[]>()
-  const [hovered, setHovered] = React.useState<number[]>()
+  const { selected: [selected], setSelected } = useSelected<number[]>({ maxCount: 1 })
+  const { selected: [hovered], setSelected: setHovered } = useSelected<number[]>({ maxCount: 1 })
   const transform = {
     containerSize,
     targetSize,
@@ -197,7 +197,7 @@ export function App() {
       ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
       onMouseMove={(e) => {
         if (dragging) {
-          setHovered(undefined)
+          setHovered()
         } else {
           const path = selectByPosition(state, transformPosition({ x: e.clientX, y: e.clientY }, transform), scale)
           if (!isSamePath(path, hovered)) {

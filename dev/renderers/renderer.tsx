@@ -1,13 +1,13 @@
 import React from "react"
-import { ReactRenderTarget } from "../../src"
+import { isSelected, ReactRenderTarget } from "../../src"
 import { BaseContent, getModel } from "../models/model"
 
 export function Renderer(props: {
   type?: string
   contents: readonly BaseContent[]
-  isSelected: (i: number) => boolean | readonly number[]
+  selected: readonly number[][]
   othersSelectedContents: readonly { selection: number[], operator: string }[]
-  isHovering: (i: number) => boolean | number
+  hovering: readonly number[][]
   transform?: {
     x: number
     y: number
@@ -30,21 +30,24 @@ export function Renderer(props: {
     let color: number | undefined
     const partsStyles: { index: number, color: number }[] = []
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
-    const selected = props.isSelected(i)
-    if (selected === true) {
+    let selected = false
+    if (isSelected([i], props.selected)) {
       color = 0xff0000
+      selected = true
     } else {
-      const h = props.isHovering(i)
-      if (h === true) {
+      if (isSelected([i], props.hovering)) {
         color = 0x000000
       } else if (operators.length > 0) {
         color = 0x0000ff
       }
-      if (selected !== false) {
-        partsStyles.push(...selected.map((s) => ({ index: s, color: 0xff0000 })))
+      const selectedPart = props.selected.filter((v) => v.length === 2 && v[0] === i)
+      if (selectedPart.length > 0) {
+        partsStyles.push(...selectedPart.map((s) => ({ index: s[1], color: 0xff0000 })))
+        selected = true
       }
-      if (typeof h === 'number') {
-        partsStyles.push({ index: h, color: 0x000000 })
+      const hoveringPart = props.hovering.find((v) => v.length === 2 && v[0] === i)
+      if (hoveringPart) {
+        partsStyles.push({ index: hoveringPart[1], color: 0x000000 })
       }
     }
     if (selected) {

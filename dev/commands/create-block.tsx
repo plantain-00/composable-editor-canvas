@@ -1,4 +1,4 @@
-import { useCursorInput } from "../../src"
+import { isSelected, useCursorInput } from "../../src"
 import { BlockContent, isBlockContent } from "../models/block-model"
 import { isBlockReferenceContent } from "../models/block-reference-model"
 import { BaseContent } from "../models/model"
@@ -15,14 +15,14 @@ export const createBlockCommand: Command = {
 
     return {
       onStart(p) {
-        onEnd((contents, isSelected) => {
+        onEnd((contents, selected) => {
           let id = 1
           const removedContents: number[] = []
           contents.forEach((content, i) => {
             if (isBlockContent(content)) {
               id = Math.max(id, content.id + 1)
             }
-            if (isSelected(i) === true) {
+            if (isSelected([i], selected)) {
               removedContents.push(i)
             }
           })
@@ -30,7 +30,7 @@ export const createBlockCommand: Command = {
             {
               type: 'block',
               id,
-              contents: contents.filter((c, i) => isSelected(i) && contentSelectable(c)),
+              contents: contents.filter((c, i) => isSelected([i], selected) && contentSelectable(c)),
               base: p,
             },
           ]
