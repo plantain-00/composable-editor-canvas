@@ -1,6 +1,6 @@
 import * as React from "react"
 import produce, { castDraft } from "immer"
-import { WritableDraft } from "immer/dist/types/types-external"
+import type { WritableDraft } from "immer/dist/types/types-external"
 
 export function useUndoRedo<T>(defaultState: T) {
   const [history, setHistory] = React.useState({

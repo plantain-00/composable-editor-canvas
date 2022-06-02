@@ -15,7 +15,7 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     setSelected([])
   }, [setSelected])
 
-  const addSelection = (value: readonly T[], maxCount = options?.maxCount) => {
+  const addSelection = (value: readonly T[], maxCount = options?.maxCount, reachMaxCount?: (selected: T[]) => void) => {
     value = value.filter((s) => !isSelected(s, selected))
     if (value.length > 0) {
       let result = [...selected, ...value]
@@ -23,9 +23,10 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
         result = result.slice(-maxCount)
       }
       setSelected(result)
-      return result
+      if (maxCount !== undefined && maxCount === result.length) {
+        reachMaxCount?.(result)
+      }
     }
-    return selected
   }
   const filterSelection = (filter: (value: T) => boolean, maxCount = options?.maxCount) => {
     let result = selected.filter(filter)
@@ -33,7 +34,10 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       result = result.slice(-maxCount)
     }
     setSelected(result)
-    return result
+    return {
+      result,
+      needSelect: maxCount === undefined ? result.length === 0 : result.length < maxCount,
+    }
   }
   return {
     selected,

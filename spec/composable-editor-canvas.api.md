@@ -8,7 +8,7 @@
 
 import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
-import { WritableDraft } from 'immer/dist/types/types-external';
+import type { WritableDraft } from 'immer/dist/types/types-external';
 
 // @public (undocumented)
 export function AlignmentLine(props: {
@@ -687,6 +687,14 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
+export function usePartialEdit<T>(content: T): {
+    editingContent: T;
+    setEditingContentPath: React_2.Dispatch<React_2.SetStateAction<SelectPath | undefined>>;
+    prependPatchPath: (patches: Patch[]) => Patch[];
+    getContentByPath<V>(content: V): V;
+};
+
+// @public (undocumented)
 export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator: P, options?: Partial<{
     onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void;
 }>): {
@@ -747,11 +755,11 @@ export function useRegionAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useSelectBeforeOperate<T>(): {
+export function useSelectBeforeOperate<T>(executeOperation: (operation?: T, selected?: readonly number[][]) => boolean): {
     operation: T | undefined;
     nextOperation: T | undefined;
+    startNextOperation: (selected?: readonly number[][] | undefined) => void;
     resetOperation(): void;
-    completeCurrentOperation(): void;
     selectBeforeOperate(select: T | undefined, p: T): void;
     operate(p: T): void;
 };
@@ -762,9 +770,12 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     maxCount: number;
 }>): {
     selected: readonly T[];
-    filterSelection: (filter: (value: T) => boolean, maxCount?: number | undefined) => T[];
+    filterSelection: (filter: (value: T) => boolean, maxCount?: number | undefined) => {
+        result: T[];
+        needSelect: boolean;
+    };
     isSelected: (value: T, s?: readonly T[]) => boolean;
-    addSelection: (value: readonly T[], maxCount?: number | undefined) => readonly T[];
+    addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined) => void;
     setSelected(...value: readonly (T | undefined)[]): void;
 };
 
