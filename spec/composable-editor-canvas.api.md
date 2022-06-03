@@ -465,7 +465,7 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
 };
 
@@ -495,7 +495,7 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText: () => void;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
 };
 
@@ -540,7 +540,7 @@ export function useDragMove<T = void>(onDragEnd?: () => void, options?: Partial<
     }) | undefined;
     onStart(p: Position, startPosition?: Partial<Position & {
         data: T;
-    }> | undefined): void;
+    }>): void;
     mask: JSX.Element | undefined;
 };
 
@@ -591,7 +591,7 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
     dragSelectStartPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
-    onStartSelect(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T | undefined): void;
+    onStartSelect(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T): void;
     dragSelectMask: JSX.Element | undefined;
 };
 
@@ -618,7 +618,7 @@ export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpo
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
 };
 
@@ -648,7 +648,7 @@ export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText: () => void;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
 };
 
@@ -682,7 +682,7 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 }>): {
     line: Position[] | undefined;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
 };
 
@@ -706,10 +706,10 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
     canRedo: boolean;
     undo: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
     redo: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
     stateIndex: number;
 };
 
@@ -725,7 +725,7 @@ export function usePolygonClickCreate(enabled: boolean, onEnd: (polygon: Positio
     startPosition: Position | undefined;
     cursorPosition: Position | undefined;
     onClick(p: Position): void;
-    onMove(p: Position, viewportPosition?: Position | undefined): void;
+    onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
     startSetSides(): void;
 };
@@ -736,7 +736,7 @@ export function usePolylineEdit<T = void>(onEnd: () => void, options?: EditOptio
         pointIndexes: number[];
         data?: T | undefined;
     }) | undefined;
-    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T | undefined): void;
+    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, pointIndexes: number[], data?: T): void;
     mask: JSX.Element | undefined;
     cursorPosition: Position | undefined;
     dragStartPosition: (Position & {
@@ -758,7 +758,7 @@ export function useRegionAlignment(delta: number): {
 export function useSelectBeforeOperate<T>(executeOperation: (operation?: T, selected?: readonly number[][]) => boolean): {
     operation: T | undefined;
     nextOperation: T | undefined;
-    startNextOperation: (selected?: readonly number[][] | undefined) => void;
+    startNextOperation: (selected?: readonly number[][]) => void;
     resetOperation(): void;
     selectBeforeOperate(select: T | undefined, p: T): void;
     operate(p: T): void;
@@ -788,10 +788,10 @@ export function useUndoRedo<T>(defaultState: T): {
     canRedo: boolean;
     undo: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
     redo: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
 };
 
 // @public (undocumented)
@@ -828,10 +828,10 @@ export function useZoom(value: number, onChange: (value: number) => void, option
     canZoomOut: boolean;
     zoomIn: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
     zoomOut: (e?: {
         preventDefault(): void;
-    } | undefined) => void;
+    }) => void;
 };
 
 // @public (undocumented)
