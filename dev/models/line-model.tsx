@@ -1,6 +1,5 @@
-import React from 'react'
-import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, PolylineEditBar, Position, rotatePositionByCenter, usePolylineEdit, pointIsOnLine } from '../../src'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
+import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine } from '../../src'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -25,34 +24,13 @@ export const lineModel: Model<LineContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth }) {
-    return target.strokePolyline(content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+    return target.renderPolyline(content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, cursorPosition, dragStartPosition } = usePolylineEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
-    })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset?.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
-          for (const pointIndex of offset.pointIndexes) {
-            content.points[pointIndex].x += offset.x
-            content.points[pointIndex].y += offset.y
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <PolylineEditBar scale={scale} points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
-      },
-    }
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isLineContent) }))
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
@@ -140,4 +118,69 @@ export function breakPolyline(
 
 export function isLineContent(content: BaseContent): content is LineContent {
   return content.type === 'line'
+}
+
+export function getPolylineEditPoints(
+  content: { points: Position[] },
+  isPolyLineContent: (content: BaseContent<string>) => content is { type: string, points: Position[] },
+  isPolygon?: boolean,
+  midpointDisabled?: boolean,
+) {
+  const points = content.points
+  const isClosed = !isPolygon &&
+    points.length > 2 &&
+    isSamePoint(points[0], points[points.length - 1])
+
+  const positions: (Position & { pointIndexes: number[] })[] = []
+  points.forEach((point, i) => {
+    if (isPolygon || i !== points.length - 1 || !isClosed) {
+      positions.push({
+        pointIndexes: [i],
+        x: point.x,
+        y: point.y,
+      })
+    }
+    if (!midpointDisabled && i !== points.length - 1) {
+      const nextPoint = points[i + 1]
+      positions.push({
+        pointIndexes: [i, i + 1],
+        x: (point.x + nextPoint.x) / 2,
+        y: (point.y + nextPoint.y) / 2,
+      })
+    }
+    if (isPolygon && i === points.length - 1) {
+      const nextPoint = points[0]
+      positions.push({
+        pointIndexes: [points.length - 1, 0],
+        x: (point.x + nextPoint.x) / 2,
+        y: (point.y + nextPoint.y) / 2,
+      })
+    }
+  })
+  if (isClosed) {
+    for (const position of positions) {
+      if (position.pointIndexes.includes(0)) {
+        position.pointIndexes.push(points.length - 1)
+      } else if (position.pointIndexes.includes(points.length - 1)) {
+        position.pointIndexes.push(0)
+      }
+    }
+  }
+  return positions.map((p) => ({
+    x: p.x,
+    y: p.y,
+    cursor: 'move',
+    update(c: BaseContent, cursor: Position, start: Position) {
+      if (!isPolyLineContent(c)) {
+        return
+      }
+      const offsetX = cursor.x - start.x
+      const offsetY = cursor.y - start.y
+      for (const pointIndex of p.pointIndexes) {
+        c.points[pointIndex].x += offsetX
+        c.points[pointIndex].y += offsetY
+      }
+      return { assistentContents: [{ type: 'line', dashArray: [4], points: [start, cursor] } as LineContent] }
+    },
+  }))
 }

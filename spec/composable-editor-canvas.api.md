@@ -6,6 +6,7 @@
 
 /// <reference types="react" />
 
+import type { Draft } from 'immer/dist/types/types-external';
 import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
@@ -110,16 +111,12 @@ export type EditBarPosition<T> = Position & {
 };
 
 // @public (undocumented)
-export type EditData<T, V> = V & {
-    data?: T;
-    cursor: React_2.CSSProperties['cursor'];
+export type EditPoint<T> = Position & {
+    cursor: string;
+    update: (content: Draft<T>, cursor: Position, start: Position) => {
+        assistentContents?: T[];
+    } | void;
 };
-
-// @public (undocumented)
-export type EditOptions = Partial<{
-    transform: (p: Position) => Position;
-    getAngleSnap: (angle: number) => number | undefined;
-}>;
 
 // @public (undocumented)
 export interface Ellipse {
@@ -201,6 +198,24 @@ export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Posit
 export function getColorString(color: number): string;
 
 // @public (undocumented)
+export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (index: number[]) => boolean, getModel: (content: T) => {
+    getCircle?: (content: T) => Circle;
+    getLines?: (content: T, contents: readonly T[]) => {
+        lines: [Position, Position][];
+    };
+    canSelectPart?: boolean;
+} | undefined, part?: boolean, delta?: number): number[] | undefined;
+
+// @public (undocumented)
+export function getContentsByClickTwoPositions<T>(contents: readonly T[], startPosition: Position, endPosition: Position, getModel: (content: T) => {
+    getCircle?: (content: T) => Circle;
+    getLines?: (content: T, contents: readonly T[]) => {
+        lines: [Position, Position][];
+        points: Position[];
+    };
+} | undefined, contentSelectable?: (index: number[]) => boolean): number[][];
+
+// @public (undocumented)
 export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
     min: number;
     max: number;
@@ -265,6 +280,14 @@ export function getRegion(p1: Position, p2: Position): Region;
 export function getResizeCursor(rotate: number, direction: ResizeDirection): string;
 
 // @public (undocumented)
+export function getResizeOffset(startPosition: Position, cursorPosition: Position, direction: ResizeDirection, rotate?: number, isCenteredScaling?: boolean, ratio?: number, parentRotate?: number): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+} | undefined;
+
+// @public (undocumented)
 export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
     x: number;
     y: number;
@@ -299,7 +322,16 @@ export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position,
 } | undefined;
 
 // @public (undocumented)
+export function getTwoNumberCenter(p1: number, p2: number): number;
+
+// @public (undocumented)
 export function getTwoNumbersDistance(n1: number, n2: number): number;
+
+// @public (undocumented)
+export function getTwoPointCenter(p1: Position, p2: Position): {
+    x: number;
+    y: number;
+};
 
 // @public (undocumented)
 export function getTwoPointsDistance(point1: Position, point2: Position): number;
@@ -327,6 +359,9 @@ export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position,
 
 // @public (undocumented)
 export function normalizeAngleInRange(angle: number, range: AngleRange): number;
+
+// @public (undocumented)
+export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
@@ -365,13 +400,21 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
-    fillText(x: number, y: number, text: string, color: number, fontSize: number): T;
+    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, strokeColor: number, strokeWidth?: number): T;
     // (undocumented)
-    getEmpty(): T;
+    renderCircle(cx: number, cy: number, r: number, strokeColor: number, strokeWidth?: number): T;
     // (undocumented)
-    getGroup(children: T[], x: number, y: number, base: Position, angle?: number): T;
+    renderEllipse(cx: number, cy: number, rx: number, ry: number, strokeColor: number, angle?: number, strokeWidth?: number): T;
     // (undocumented)
-    getResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
+    renderEmpty(): T;
+    // (undocumented)
+    renderGroup(children: T[], x: number, y: number, base: Position, angle?: number): T;
+    // (undocumented)
+    renderPolyline(points: Position[], strokeColor: number, dashArray?: number[], strokeWidth?: number, skippedLines?: number[]): T;
+    // (undocumented)
+    renderRect(x: number, y: number, width: number, height: number, strokeColor: number, angle?: number, strokeWidth?: number, fillColor?: number): T;
+    // (undocumented)
+    renderResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
         style: React.CSSProperties;
     }>, transform?: {
         x: number;
@@ -379,15 +422,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         scale: number;
     }): JSX.Element;
     // (undocumented)
-    strokeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, color: number, strokeWidth?: number): T;
-    // (undocumented)
-    strokeCircle(cx: number, cy: number, r: number, color: number, strokeWidth?: number): T;
-    // (undocumented)
-    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: number, angle?: number, strokeWidth?: number): T;
-    // (undocumented)
-    strokePolyline(points: Position[], color: number, dashArray?: number[], strokeWidth?: number, skippedLines?: number[]): T;
-    // (undocumented)
-    strokeRect(x: number, y: number, width: number, height: number, color: number, angle?: number, strokeWidth?: number): T;
+    renderText(x: number, y: number, text: string, strokeColor: number, fontSize: number): T;
     // (undocumented)
     type: string;
 }
@@ -411,6 +446,9 @@ export function ResizeBar(props: {
 
 // @public (undocumented)
 export type ResizeDirection = typeof allDirections[number];
+
+// @public (undocumented)
+export function reverseTransformPosition(position: Position, transform: Transform | undefined): Position;
 
 // @public (undocumented)
 export function rotatePositionByCenter(position: Position, center: Position, rotate: number): Position;
@@ -445,6 +483,14 @@ export interface Size {
 }
 
 // @public (undocumented)
+export interface Transform extends Position {
+    // (undocumented)
+    center: Position;
+    // (undocumented)
+    scale: number;
+}
+
+// @public (undocumented)
 export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine;
 
 // @public (undocumented)
@@ -469,6 +515,8 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
     input: JSX.Element | undefined;
 };
 
+// Warning: (ae-forgotten-export) The symbol "EditOptions" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
 export function useCircleArcEdit<T = void>(onEnd: () => void, options?: EditOptions): {
     offset: Arc & {
@@ -596,16 +644,27 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
-export function useEdit<V, T = void>(onEnd: () => void, onDragging: (start: Position & {
-    data: EditData<T, V>;
-}, end: Position) => void, reset: () => void, options?: Partial<{
-    transform: (p: Position) => Position;
-}>): {
-    dragStartPosition: (Position & {
-        data: EditData<T, V>;
+export function useEdit<T>(onEnd: () => void, readOnly: boolean, scale: number, contents: readonly T[], selected: readonly number[][], createRect: (rect: Region) => T, getAngleSnap?: (angle: number) => number | undefined, getEditPoints?: (content: T, contents: readonly T[]) => {
+    editPoints: EditPoint<T>[];
+    angleSnapStartPoint?: Position;
+} | undefined): {
+    editPoint: (Position & {
+        cursor: string;
+        update: (content: Draft<T>, cursor: Position, start: Position) => void | {
+            assistentContents?: T[] | undefined;
+        };
+    } & {
+        index: number;
+        angleSnapStartPoint?: Position | undefined;
     }) | undefined;
-    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>): void;
-    mask: JSX.Element | undefined;
+    updateEditContent(content: T, contents: readonly T[]): {
+        assistentContents: T[];
+    };
+    updateEditPreview(contents: Draft<T>[]): void | {
+        assistentContents?: T[] | undefined;
+    };
+    onEditMove(p: Position): void;
+    onEditClick(p: Position): void;
 };
 
 // @public (undocumented)
@@ -853,6 +912,10 @@ export interface ZoomOptions {
     // (undocumented)
     min: number;
 }
+
+// Warnings were encountered during analysis:
+//
+// dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:9:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

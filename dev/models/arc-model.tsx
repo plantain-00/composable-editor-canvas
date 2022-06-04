@@ -1,8 +1,7 @@
-import React from 'react'
-import { Arc, CircleArcEditBar, equals, getSymmetryPoint, normalizeAngleInRange, Position, rotatePositionByCenter, useCircleArcEdit } from '../../src'
+import { Arc, equals, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
 import { angleDelta } from './ellipse-model'
-import { iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
+import { iteratePolylineLines, LineContent } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -67,49 +66,82 @@ export const arcModel: Model<ArcContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getArcLines(content)
-      return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color ?? defaultStrokeColor, strokeWidth)
+    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color ?? defaultStrokeColor, strokeWidth)
   },
-  renderIfSelected({ content, color, target }) {
+  renderIfSelected({ content, color, target, strokeWidth }) {
     const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.strokePolyline(points, color ?? defaultStrokeColor, [4])
+    return target.renderPolyline(points, color ?? defaultStrokeColor, [4], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
     return points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, cursorPosition } = useCircleArcEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => {
+      const x = content.x
+      const y = content.y
+      const startAngle = content.startAngle / 180 * Math.PI
+      const endAngle = content.endAngle / 180 * Math.PI
+      const middleAngle = (startAngle + endAngle) / 2
+      return {
+        editPoints: [
+          {
+            x,
+            y,
+            cursor: 'move',
+            update(c, cursor, start) {
+              if (!isArcContent(c)) {
+                return
+              }
+              c.x += cursor.x - start.x
+              c.y += cursor.y - start.y
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: x + content.r * Math.cos(startAngle),
+            y: y + content.r * Math.sin(startAngle),
+            cursor: getResizeCursor(content.startAngle, 'top'),
+            update(c, cursor) {
+              if (!isArcContent(c)) {
+                return
+              }
+              c.startAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+              normalizeAngleRange(c)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: x + content.r * Math.cos(endAngle),
+            y: y + content.r * Math.sin(endAngle),
+            cursor: getResizeCursor(content.endAngle, 'top'),
+            update(c, cursor) {
+              if (!isArcContent(c)) {
+                return
+              }
+              c.endAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+              normalizeAngleRange(c)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: x + content.r * Math.cos(middleAngle),
+            y: y + content.r * Math.sin(middleAngle),
+            cursor: getResizeCursor((content.startAngle + content.endAngle) / 2, 'right'),
+            update(c, cursor) {
+              if (!isArcContent(c)) {
+                return
+              }
+              c.r = getTwoPointsDistance(cursor, c)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+            },
+          },
+        ],
+        angleSnapStartPoint: content,
+      }
     })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.x, y: content.y }, cursorPosition] }]
-          if (content.type === 'arc') {
-            content.x += offset.x
-            content.y += offset.y
-            content.r += offset.r
-            content.startAngle += offset.startAngle
-            content.endAngle += offset.endAngle
-            if (content.endAngle < content.startAngle) {
-              content.endAngle += 360
-            } else if (content.endAngle - content.startAngle > 360) {
-              content.endAngle -= 360
-            }
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <CircleArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
-      },
-    }
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {

@@ -1,8 +1,7 @@
-import React from 'react'
-import { EllipseArc, Position, useEllipseArcEdit, EllipseArcEditBar, getEllipseAngle, equals, normalizeAngleInRange } from '../../src'
+import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
-import { iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { iteratePolylineLines, LineContent } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
@@ -49,46 +48,67 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     const { points } = getEllipseArcLines(content)
-    return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+    return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderIfSelected({ content, color, target }) {
+  renderIfSelected({ content, color, target, strokeWidth }) {
     const { points } = getEllipseArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.strokePolyline(points, color ?? defaultStrokeColor, [4])
+    return target.renderPolyline(points, color ?? defaultStrokeColor, [4], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     const { points } = getEllipseArcLines(content)
     return points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, cursorPosition } = useEllipseArcEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => {
+      const center = { x: content.cx, y: content.cy }
+      const startAngle = content.startAngle / 180 * Math.PI
+      const endAngle = content.endAngle / 180 * Math.PI
+      const rotate = -(content.angle ?? 0)
+      return {
+        editPoints: [
+          {
+            x: content.cx,
+            y: content.cy,
+            cursor: 'move',
+            update(c, cursor, start) {
+              if (!isEllipseArcContent(c)) {
+                return
+              }
+              c.cx += cursor.x - start.x
+              c.cy += cursor.y - start.y
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            ...rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, center, rotate),
+            cursor: getResizeCursor(content.startAngle - rotate, 'top'),
+            update(c, cursor) {
+              if (!isEllipseArcContent(c)) {
+                return
+              }
+              const p = rotatePositionByCenter(cursor, center, content.angle ?? 0)
+              c.startAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
+              normalizeAngleRange(c)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            ...rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, center, rotate),
+            cursor: getResizeCursor(content.endAngle - rotate, 'top'),
+            update(c, cursor) {
+              if (!isEllipseArcContent(c)) {
+                return
+              }
+              const p = rotatePositionByCenter(cursor, center, content.angle ?? 0)
+              c.endAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
+              normalizeAngleRange(c)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+        ],
+        angleSnapStartPoint: center,
+      }
     })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.cx, y: content.cy }, cursorPosition] }]
-          if (content.type === 'ellipse arc') {
-            content.cx += offset.cx
-            content.cy += offset.cy
-            content.startAngle += offset.startAngle
-            content.endAngle += offset.endAngle
-            if (content.endAngle < content.startAngle) {
-              content.endAngle += 360
-            } else if (content.endAngle - content.startAngle > 360) {
-              content.endAngle -= 360
-            }
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <EllipseArcEditBar {...content} scale={scale} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
-      },
-    }
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
@@ -128,4 +148,8 @@ function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
       points,
     }
   })
+}
+
+export function isEllipseArcContent(content: BaseContent): content is EllipseArcContent {
+  return content.type === 'ellipse arc'
 }

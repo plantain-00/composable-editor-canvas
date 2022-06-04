@@ -1,7 +1,7 @@
-import React from 'react'
-import { Circle, CircleEditBar, getSymmetryPoint, rotatePositionByCenter, useCircleEdit } from '../../src'
+import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
 import { ArcContent, getArcLines } from './arc-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
+import { LineContent } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -37,37 +37,67 @@ export const circleModel: Model<CircleContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getCircleLines(content)
-      return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeCircle(content.x, content.y, content.r, color ?? defaultStrokeColor, strokeWidth)
+    return target.renderCircle(content.x, content.y, content.r, color ?? defaultStrokeColor, strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, cursorPosition } = useCircleEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
-    })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.x, y: content.y }, cursorPosition] }]
-          if (content.type === 'circle') {
-            content.x += offset.x
-            content.y += offset.y
-            content.r += offset.r
-          }
-          return { assistentContents }
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => {
+      const x = content.x
+      const y = content.y
+      const updateEdges = (c: BaseContent, cursor: Position) => {
+        if (!isCircleContent(c)) {
+          return
         }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <CircleEditBar scale={scale} x={content.x} y={content.y} radius={content.r} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
-      },
-    }
+        c.r = getTwoPointsDistance(cursor, c)
+        return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+      }
+      return {
+        editPoints: [
+          {
+            x,
+            y,
+            cursor: 'move',
+            update(c, cursor, start) {
+              if (!isCircleContent(c)) {
+                return
+              }
+              c.x += cursor.x - start.x
+              c.y += cursor.y - start.y
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: x - content.r,
+            y,
+            cursor: 'ew-resize',
+            update: updateEdges,
+          },
+          {
+            x,
+            y: y - content.r,
+            cursor: 'ns-resize',
+            update: updateEdges,
+          },
+          {
+            x: x + content.r,
+            y,
+            cursor: 'ew-resize',
+            update: updateEdges,
+          },
+          {
+            x,
+            y: y + content.r,
+            cursor: 'ns-resize',
+            update: updateEdges,
+          },
+        ],
+        angleSnapStartPoint: content,
+      }
+    })
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => [

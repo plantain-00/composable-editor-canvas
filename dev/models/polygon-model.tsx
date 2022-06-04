@@ -1,8 +1,7 @@
-import React from 'react'
-import { getSymmetryPoint, PolylineEditBar, Position, ReactRenderTarget, rotatePositionByCenter, usePolylineEdit } from '../../src'
-import { breakPolyline, iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { strokePolyline } from './polyline-model'
+import { getSymmetryPoint, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
+import { breakPolyline, getPolylineEditPoints, iteratePolylineLines, LineContent } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { renderPolyline } from './polyline-model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
   points: Position[]
@@ -31,34 +30,13 @@ export const polygonModel: Model<PolygonContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return strokePolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
+    return renderPolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
-    })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset?.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
-          for (const pointIndex of offset.pointIndexes) {
-            content.points[pointIndex].x += offset.x
-            content.points[pointIndex].y += offset.y
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <PolylineEditBar scale={scale} points={content.points} isPolygon onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
-      },
-    }
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolygonContent, true) }))
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
@@ -91,7 +69,11 @@ export function* iteratePolygonLines(points: Position[]) {
   yield [points[points.length - 1], points[0]] as [Position, Position]
 }
 
-export function strokePolygon<T>(
+export function isPolygonContent(content: BaseContent): content is PolygonContent {
+  return content.type === 'polygon'
+}
+
+export function renderPolygon<T>(
   target: ReactRenderTarget<T>,
   points: Position[],
   stroke: number,
@@ -99,5 +81,5 @@ export function strokePolygon<T>(
   strokeWidth?: number,
   partsStyles: readonly { index: number, color: number }[] = [],
 ) {
-  return strokePolyline(target, [...points, points[0]], stroke, dashArray, strokeWidth, partsStyles)
+  return renderPolyline(target, [...points, points[0]], stroke, dashArray, strokeWidth, partsStyles)
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, GeneralFormLine, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
+import { Circle, EditPoint, GeneralFormLine, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
 import { CircleContent } from './circle-model'
 import { LineContent } from './line-model'
 import { RectContent } from './rect-model'
@@ -28,15 +28,12 @@ export interface Model<T> {
     contents: readonly BaseContent[]
     partsStyles: readonly { index: number, color: number }[]
   }): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V> }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
-  useEdit?(onEnd: () => void, transform: (p: Position) => Position, getAngleSnap?: (angle: number) => number | undefined, scale?: number): {
-    mask?: JSX.Element
-    updatePreview(contents: T[]): {
-      assistentContents?: BaseContent[]
-    }
-    editBar(props: { content: T, index: number, contents: readonly BaseContent[] }): JSX.Element | null
-  }
+  getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {
+    editPoints: EditPoint<BaseContent>[]
+    angleSnapStartPoint?: Position
+  } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
   getLines?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
     lines: [Position, Position][]
@@ -55,39 +52,6 @@ export function getModel(type: string): Model<BaseContent> | undefined {
 }
 
 export const defaultStrokeColor = 0x00ff00
-
-export function useModelsEdit(onEnd: () => void, transform: (p: Position) => Position, angleSnapEnabled: boolean, scale?: number) {
-  const editMasks: JSX.Element[] = []
-  const updateEditPreviews: ((contents: BaseContent[]) => { assistentContents?: BaseContent[] })[] = []
-  const editBarMap: Record<string, (props: { content: BaseContent, index: number, contents: readonly BaseContent[] }) => JSX.Element | null> = {}
-  Object.values(modelCenter).forEach((model) => {
-    if (!model.useEdit) {
-      return
-    }
-    const { mask, updatePreview, editBar } = model.useEdit(onEnd, transform, angleSnapEnabled ? getAngleSnap : undefined, scale)
-    if (mask) {
-      editMasks.push(React.cloneElement(mask, { key: model.type }))
-    }
-    updateEditPreviews.push(updatePreview)
-    editBarMap[model.type] = editBar
-  })
-  return {
-    editMasks,
-    updateEditPreview(contents: BaseContent[]) {
-      const assistentContents: BaseContent[] = []
-      for (const updateEditPreview of updateEditPreviews) {
-        const result = updateEditPreview(contents)
-        if (result.assistentContents) {
-          assistentContents.push(...result.assistentContents)
-        }
-      }
-      return {
-        assistentContents,
-      }
-    },
-    editBarMap,
-  }
-}
 
 export function useSnap(enabled: boolean, delta = 5) {
   const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
@@ -151,8 +115,8 @@ export function useSnap(enabled: boolean, delta = 5) {
   return {
     snapPoint,
     snapAssistentContents: assistentContents,
-    getSnapPoint(p: Position, contents: readonly BaseContent[], types: string[], forceEnabled?: boolean) {
-      if (!enabled && !forceEnabled) {
+    getSnapPoint(p: Position, contents: readonly BaseContent[], types: string[]) {
+      if (!enabled) {
         setSnapPoint(undefined)
         return p
       }
@@ -200,9 +164,11 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
 
 const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[] }>()
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
+const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 
 export const getLinesAndPointsFromCache = linesAndPointsCache.get.bind(linesAndPointsCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
+export const getEditPointsFromCache = editPointsCache.get.bind(editPointsCache)
 
 export const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
 
@@ -241,21 +207,6 @@ export function getAngleSnap(angle: number) {
     return snap
   }
   return undefined
-}
-
-export interface Transform extends Position {
-  center: Position
-  scale: number
-}
-
-export function reverseTransformPosition(position: Position, transform: Transform | undefined) {
-  if (!transform) {
-    return position
-  }
-  return {
-    x: (position.x - transform.center.x - transform.x) / transform.scale + transform.center.x,
-    y: (position.y - transform.center.y - transform.y) / transform.scale + transform.center.y,
-  }
 }
 
 export const fixedInputStyle: React.CSSProperties = {

@@ -43,66 +43,12 @@ export function useDragResize(
         p = options?.transform?.(p) ?? p
         p = getAngleSnapPosition(dragStartPosition, p, options?.getAngleSnap)
         setCursorPosition(p)
-        const { x: positionX, y: positionY } = p
-        const originalOffsetX = positionX - dragStartPosition.x
-        const originalOffsetY = positionY - dragStartPosition.y
 
-        const parentSin = Math.sin(parentRotate)
-        const parentCos = Math.cos(parentRotate)
-        const parentOffsetX = parentCos * originalOffsetX - parentSin * originalOffsetY
-        const parentOffsetY = parentSin * originalOffsetX + parentCos * originalOffsetY
-
-        if (dragStartPosition.direction === 'center') {
-          const f = { x: parentOffsetX, y: parentOffsetY, width: 0, height: 0 }
-          setOffset(options?.transformOffset?.(f, e, dragStartPosition.direction) ?? f)
-          return
-        }
-
-        const sin = Math.sin(rotate)
-        const cos = Math.cos(rotate)
-        let offsetX = cos * parentOffsetX - sin * parentOffsetY
-        let offsetY = sin * parentOffsetX + cos * parentOffsetY
-        const scaleX = dragStartPosition.direction.includes('right') ? 1 : dragStartPosition.direction.includes('left') ? -1 : 0
-        const scaleY = dragStartPosition.direction.includes('bottom') ? 1 : dragStartPosition.direction.includes('top') ? -1 : 0
         const isCenteredScaling = typeof options?.centeredScaling === 'boolean' ? options.centeredScaling : options?.centeredScaling?.(e)
         const ratio = typeof options?.keepRatio === 'number' ? options.keepRatio : options?.keepRatio?.(e)
-        if (ratio) {
-          if (dragStartPosition.direction === 'left' || dragStartPosition.direction === 'right' || dragStartPosition.direction === 'top' || dragStartPosition.direction === 'bottom') {
-            return
-          }
-          const x = offsetX * scaleX
-          const y = offsetY * scaleY
-          offsetX = Math.min(y * ratio, x) * scaleX
-          offsetY = Math.min(x / ratio, y) * scaleY
-        }
-        const offset = {
-          x: 0,
-          y: 0,
-          width: 0,
-          height: 0,
-        }
-        offset.width = offsetX * (isCenteredScaling ? 2 : 1) * scaleX
-        offset.height = offsetY * (isCenteredScaling ? 2 : 1) * scaleY
-        if (isCenteredScaling) {
-          offset.x -= offsetX * scaleX
-          offset.y -= offsetY * scaleY
-        } else {
-          if (dragStartPosition.direction.includes('left')) {
-            offset.x += (cos + 1) * offsetX / 2
-            offset.y -= sin * offsetX / 2
-          }
-          if (dragStartPosition.direction.includes('right')) {
-            offset.x += (cos - 1) * offsetX / 2
-            offset.y -= sin * offsetX / 2
-          }
-          if (dragStartPosition.direction.includes('top')) {
-            offset.x += sin * offsetY / 2
-            offset.y += (cos + 1) * offsetY / 2
-          }
-          if (dragStartPosition.direction.includes('bottom')) {
-            offset.x += sin * offsetY / 2
-            offset.y += (cos - 1) * offsetY / 2
-          }
+        const offset = getResizeOffset(dragStartPosition, p, dragStartPosition.direction, rotate, isCenteredScaling, ratio, parentRotate)
+        if (!offset) {
+          return
         }
         setOffset(options?.transformOffset?.(offset, e, dragStartPosition.direction) ?? offset)
       }}
@@ -116,4 +62,72 @@ export function useDragResize(
       }}
     />,
   }
+}
+
+export function getResizeOffset(
+  startPosition: Position,
+  cursorPosition: Position,
+  direction: ResizeDirection,
+  rotate = 0,
+  isCenteredScaling?: boolean,
+  ratio?: number,
+  parentRotate = 0,
+) {
+  const originalOffsetX = cursorPosition.x - startPosition.x
+  const originalOffsetY = cursorPosition.y - startPosition.y
+
+  const parentSin = Math.sin(parentRotate)
+  const parentCos = Math.cos(parentRotate)
+  const parentOffsetX = parentCos * originalOffsetX - parentSin * originalOffsetY
+  const parentOffsetY = parentSin * originalOffsetX + parentCos * originalOffsetY
+
+  if (direction === 'center') {
+    return { x: parentOffsetX, y: parentOffsetY, width: 0, height: 0 }
+  }
+
+  const sin = Math.sin(rotate)
+  const cos = Math.cos(rotate)
+  let offsetX = cos * parentOffsetX - sin * parentOffsetY
+  let offsetY = sin * parentOffsetX + cos * parentOffsetY
+  const scaleX = direction.includes('right') ? 1 : direction.includes('left') ? -1 : 0
+  const scaleY = direction.includes('bottom') ? 1 : direction.includes('top') ? -1 : 0
+  if (ratio) {
+    if (direction === 'left' || direction === 'right' || direction === 'top' || direction === 'bottom') {
+      return
+    }
+    const x = offsetX * scaleX
+    const y = offsetY * scaleY
+    offsetX = Math.min(y * ratio, x) * scaleX
+    offsetY = Math.min(x / ratio, y) * scaleY
+  }
+  const offset = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  }
+  offset.width = offsetX * (isCenteredScaling ? 2 : 1) * scaleX
+  offset.height = offsetY * (isCenteredScaling ? 2 : 1) * scaleY
+  if (isCenteredScaling) {
+    offset.x -= offsetX * scaleX
+    offset.y -= offsetY * scaleY
+  } else {
+    if (direction.includes('left')) {
+      offset.x += (cos + 1) * offsetX / 2
+      offset.y -= sin * offsetX / 2
+    }
+    if (direction.includes('right')) {
+      offset.x += (cos - 1) * offsetX / 2
+      offset.y -= sin * offsetX / 2
+    }
+    if (direction.includes('top')) {
+      offset.x += sin * offsetY / 2
+      offset.y += (cos + 1) * offsetY / 2
+    }
+    if (direction.includes('bottom')) {
+      offset.x += sin * offsetY / 2
+      offset.y += (cos - 1) * offsetY / 2
+    }
+  }
+  return offset
 }

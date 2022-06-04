@@ -55,7 +55,7 @@ export function Renderer(props: {
     }
     if (model.getOperatorRenderPosition && operators.length > 0) {
       const renderPosition = model.getOperatorRenderPosition(content, props.contents)
-      children.push(target.fillText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16))
+      children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16))
     }
     const ContentRender = model.render
     if (ContentRender) {
@@ -64,11 +64,11 @@ export function Renderer(props: {
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
-        children.push(RenderIfSelected({ content, color, target }))
+        children.push(RenderIfSelected({ content, color, target, strokeWidth }))
       }
     }
   })
-  return target.getResult(children, props.width, props.height, {
+  return target.renderResult(children, props.width, props.height, {
     style: {
       position: 'absolute',
       boxSizing: 'border-box',
