@@ -18,7 +18,7 @@ export const blockModel: Model<BlockContent> = {
   },
   render({ content, target, color, strokeWidth, contents }) {
     const children = renderBlockChildren(content, target, strokeWidth, contents, color)
-    return target.getGroup(children, 0, 0, { x: 0, y: 0 })
+    return target.renderGroup(children, 0, 0, { x: 0, y: 0 })
   },
   getOperatorRenderPosition(content) {
     return content.base
@@ -39,7 +39,7 @@ export const blockModel: Model<BlockContent> = {
 }
 
 export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color?: number) {
-  const children: (ReturnType<typeof target.getGroup>)[] = []
+  const children: (ReturnType<typeof target.renderGroup>)[] = []
   block.contents.forEach((blockContent) => {
     const model = getModel(blockContent.type)
     if (model?.render) {

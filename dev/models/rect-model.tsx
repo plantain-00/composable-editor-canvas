@@ -1,11 +1,11 @@
-import React from 'react'
-import { getSymmetryPoint, Region, ResizeBar, rotatePositionByCenter, useDragResize } from '../../src'
+import { getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent } from './model'
-import { iteratePolygonLines, strokePolygon } from './polygon-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { iteratePolygonLines, renderPolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
   angle: number
+  fillColor?: number
 }
 
 export const rectModel: Model<RectContent> = {
@@ -37,64 +37,49 @@ export const rectModel: Model<RectContent> = {
   render({ content, color, target, strokeWidth, partsStyles }) {
     if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectLines(content)
-      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
+      return renderPolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
     }
-    return target.strokeRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color ?? defaultStrokeColor, content.angle, strokeWidth)
+    return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color ?? defaultStrokeColor, content.angle, strokeWidth, content.fillColor)
   },
   getOperatorRenderPosition(content) {
     const { points } = getRectLines(content)
     return points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const [info, setInfo] = React.useState<{ angle: number, index: number }>()
-    const { offset, onStart, mask, startPosition, cursorPosition } = useDragResize(onEnd, {
-      rotate: info?.angle,
-      centeredScaling: (e) => e.shiftKey,
-      transform,
-      getAngleSnap,
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => {
+      const { points, lines } = getRectLines(content)
+      return {
+        editPoints: [
+          { x: content.x, y: content.y, direction: 'center' as const },
+          { ...points[0], direction: 'left-top' as const },
+          { ...points[1], direction: 'right-top' as const },
+          { ...points[2], direction: 'right-bottom' as const },
+          { ...points[3], direction: 'left-bottom' as const },
+          { ...getTwoPointCenter(...lines[0]), direction: 'top' as const },
+          { ...getTwoPointCenter(...lines[1]), direction: 'right' as const },
+          { ...getTwoPointCenter(...lines[2]), direction: 'bottom' as const },
+          { ...getTwoPointCenter(...lines[3]), direction: 'left' as const },
+        ].map((p) => ({
+          x: p.x,
+          y: p.y,
+          cursor: getResizeCursor(content.angle, p.direction),
+          update(c, cursor, start) {
+            if (!isRectContent(c)) {
+              return
+            }
+            const offset = getResizeOffset(start, cursor, p.direction, -content.angle * Math.PI / 180)
+            if (!offset) {
+              return
+            }
+            c.x += offset.x + offset.width / 2
+            c.y += offset.y + offset.height / 2
+            c.width += offset.width
+            c.height += offset.height
+            return { assistentContents: [{ type: 'line', dashArray: [4], points: [start, cursor] } as LineContent] }
+          },
+        }))
+      }
     })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (info) {
-          const content = contents[info.index]
-          const assistentContents = startPosition && cursorPosition ? [{ type: 'line', dashArray: [4], points: [{ x: startPosition.x, y: startPosition.y }, cursorPosition] }] : undefined
-          content.x += offset.x + offset.width / 2
-          content.y += offset.y + offset.height / 2
-          content.width += offset.width
-          content.height += offset.height
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return (
-          <div
-            style={{
-              left: content.x - content.width / 2,
-              top: content.y - content.height / 2,
-              width: content.width,
-              height: content.height,
-              position: 'absolute',
-              transform: `rotate(${content.angle}deg)`,
-              pointerEvents: 'none',
-            }}
-          >
-            <ResizeBar
-              rotate={content.angle}
-              scale={scale}
-              onClick={(e, direction) => {
-                onStart(e, direction)
-                setInfo({
-                  angle: content.angle,
-                  index,
-                })
-              }}
-            />
-          </div>
-        )
-      },
-    }
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {

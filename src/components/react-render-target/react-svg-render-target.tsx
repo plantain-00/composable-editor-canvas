@@ -3,7 +3,7 @@ import { ReactRenderTarget } from ".."
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
-  getResult(children, width, height, attributes, transform) {
+  renderResult(children, width, height, attributes, transform) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const x = transform?.x ?? 0
     const y = transform?.y ?? 0
@@ -27,10 +27,10 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       </svg>
     )
   },
-  getEmpty() {
+  renderEmpty() {
     return <></>
   },
-  getGroup(children, x, y, base, angle) {
+  renderGroup(children, x, y, base, angle) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     return (
       <g transform={angle ? `translate(${x}, ${y}) rotate(${angle},${base.x},${base.y})` : `translate(${x}, ${y})`}>
@@ -38,26 +38,26 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       </g>
     )
   },
-  strokeRect(x, y, width, height, color, angle, strokeWidth) {
+  renderRect(x, y, width, height, strokeColor, angle, strokeWidth, fillColor) {
     return <rect
       x={x}
       y={y}
       width={width}
       height={height}
-      stroke={getColorString(color)}
+      stroke={getColorString(strokeColor)}
       strokeWidth={strokeWidth}
-      fill="none"
+      fill={fillColor !== undefined ? getColorString(fillColor) : 'none'}
       transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
     />
   },
-  strokePolyline(points, color, dashArray, strokeWidth, skippedLines) {
+  renderPolyline(points, strokeColor, dashArray, strokeWidth, skippedLines) {
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
       return (
         <path
           d={d}
           strokeWidth={strokeWidth}
-          stroke={getColorString(color)}
+          stroke={getColorString(strokeColor)}
           strokeDasharray={dashArray?.join(' ')}
           fill="none"
         />
@@ -66,18 +66,18 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}
-      stroke={getColorString(color)}
+      stroke={getColorString(strokeColor)}
       strokeWidth={strokeWidth}
       strokeDasharray={dashArray?.join(' ')}
       fill="none"
     />
   },
-  strokeCircle(cx, cy, r, color, strokeWidth) {
-    return <circle stroke={getColorString(color)} strokeWidth={strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
+  renderCircle(cx, cy, r, strokeColor, strokeWidth) {
+    return <circle stroke={getColorString(strokeColor)} strokeWidth={strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
   },
-  strokeEllipse(cx, cy, rx, ry, color, angle, strokeWidth) {
+  renderEllipse(cx, cy, rx, ry, strokeColor, angle, strokeWidth) {
     return <ellipse
-      stroke={getColorString(color)}
+      stroke={getColorString(strokeColor)}
       strokeWidth={strokeWidth}
       cx={cx}
       cy={cy}
@@ -87,19 +87,19 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       transform={angle ? `rotate(${angle},${cx},${cy})` : undefined}
     />
   },
-  strokeArc(cx, cy, r, startAngle, endAngle, color, strokeWidth) {
+  renderArc(cx, cy, r, startAngle, endAngle, strokeColor, strokeWidth) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
     return <path
       d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
       strokeWidth={strokeWidth}
-      stroke={getColorString(color)}
+      stroke={getColorString(strokeColor)}
       fill="none"
     />
   },
-  fillText(x, y, text, color, fontSize) {
-    return <text x={x} y={y} style={{ fill: getColorString(color), fontSize: `${fontSize}px`, fontFamily: 'monospace' }}>{text}</text>
+  renderText(x, y, text, strokeColor, fontSize) {
+    return <text x={x} y={y} style={{ fill: getColorString(strokeColor), fontSize: `${fontSize}px`, fontFamily: 'monospace' }}>{text}</text>
   },
 }
 

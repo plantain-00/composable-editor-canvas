@@ -10,6 +10,6 @@ export type TextContent = BaseContent<'text'> & Position & {
 export const textModel: Model<TextContent> = {
   type: 'text',
   render({ content, target, color }) {
-    return target.fillText(content.x, content.y, content.text, color ?? content.color, content.fontSize)
+    return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize)
   },
 }

@@ -1,8 +1,8 @@
-import React from 'react'
-import { Ellipse, EllipseEditBar, getEllipseAngle, getSymmetryPoint, Position, rotatePositionByCenter, useEllipseEdit } from '../../src'
+import { Ellipse, getEllipseAngle, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
-import { iteratePolygonLines, strokePolygon } from './polygon-model'
+import { LineContent } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { iteratePolygonLines, renderPolygon } from './polygon-model'
 
 export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
 
@@ -40,38 +40,88 @@ export const ellipseModel: Model<EllipseContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getEllipseLines(content)
-      return strokePolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return renderPolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
     }
-    return target.strokeEllipse(content.cx, content.cy, content.rx, content.ry, color ?? defaultStrokeColor, content.angle, strokeWidth)
+    return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, color ?? defaultStrokeColor, content.angle, strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, cursorPosition } = useEllipseEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => {
+      const center = { x: content.cx, y: content.cy }
+      const rotate = -(content.angle ?? 0)
+      const left = rotatePositionByCenter({ x: content.cx - content.rx, y: content.cy }, center, rotate)
+      const right = rotatePositionByCenter({ x: content.cx + content.rx, y: content.cy }, center, rotate)
+      const top = rotatePositionByCenter({ x: content.cx, y: content.cy - content.ry }, center, rotate)
+      const bottom = rotatePositionByCenter({ x: content.cx, y: content.cy + content.ry }, center, rotate)
+      return {
+        editPoints: [
+          {
+            x: content.cx,
+            y: content.cy,
+            cursor: 'move',
+            update(c, cursor, start) {
+              if (!isEllipseContent(c)) {
+                return
+              }
+              c.cx += cursor.x - start.x
+              c.cy += cursor.y - start.y
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: left.x,
+            y: left.y,
+            cursor: getResizeCursor(-rotate, 'left'),
+            update(c, cursor) {
+              if (!isEllipseContent(c)) {
+                return
+              }
+              c.rx = getTwoPointsDistance(cursor, center)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: right.x,
+            y: right.y,
+            cursor: getResizeCursor(-rotate, 'right'),
+            update(c, cursor) {
+              if (!isEllipseContent(c)) {
+                return
+              }
+              c.rx = getTwoPointsDistance(cursor, center)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: top.x,
+            y: top.y,
+            cursor: getResizeCursor(-rotate, 'top'),
+            update(c, cursor) {
+              if (!isEllipseContent(c)) {
+                return
+              }
+              c.ry = getTwoPointsDistance(cursor, center)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+          {
+            x: bottom.x,
+            y: bottom.y,
+            cursor: getResizeCursor(-rotate, 'bottom'),
+            update(c, cursor) {
+              if (!isEllipseContent(c)) {
+                return
+              }
+              c.ry = getTwoPointsDistance(cursor, center)
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+            },
+          },
+        ],
+        angleSnapStartPoint: { x: content.cx, y: content.cy },
+      }
     })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = [{ type: 'line', dashArray: [4], points: [{ x: content.cx, y: content.cy }, cursorPosition] }]
-          if (content.type === 'ellipse') {
-            content.cx += offset.cx
-            content.cy += offset.cy
-            content.rx += offset.rx
-            content.ry += offset.ry
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <EllipseEditBar scale={scale} cx={content.cx} cy={content.cy} rx={content.rx} ry={content.ry} angle={content.angle} onClick={(e, type, cursor) => onStart(e, { ...content, type, cursor, data: index })} />
-      },
-    }
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => [
@@ -107,3 +157,7 @@ export function rotatePositionByEllipseCenter(p: Position, content: Omit<Ellipse
 
 const lineSegmentCount = 72
 export const angleDelta = 360 / lineSegmentCount
+
+export function isEllipseContent(content: BaseContent): content is EllipseContent {
+  return content.type === 'ellipse'
+}

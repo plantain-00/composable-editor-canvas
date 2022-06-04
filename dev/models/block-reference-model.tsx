@@ -1,9 +1,8 @@
 import produce from "immer"
-import React from "react"
-import { EditBar, getAngleSnapPosition, getSymmetryPoint, Position, rotatePositionByCenter, useEdit, WeakmapCache2 } from "../../src"
+import { getSymmetryPoint, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
-import { BaseContent, getModel, Model, SnapPoint } from "./model"
+import { BaseContent, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
 
 export type BlockReferenceContent = BaseContent<'block reference'> & Position & {
   id: number
@@ -52,9 +51,9 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     const block = getBlock(content.id, contents)
     if (block) {
       const children = renderBlockChildren(block, target, strokeWidth, contents, color)
-      return target.getGroup(children, content.x, content.y, block.base, content.angle)
+      return target.renderGroup(children, content.x, content.y, block.base, content.angle)
     }
-    return target.getEmpty()
+    return target.renderEmpty()
   },
   getOperatorRenderPosition(content, contents) {
     const block = getBlock(content.id, contents)
@@ -63,56 +62,31 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     }
     return content
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const [offset, setOffset] = React.useState<Position & { data?: number }>({ x: 0, y: 0 })
-    const [cursorPosition, setCursorPosition] = React.useState<Position>()
-    const { onStart, mask } = useEdit<{ type: 'base' } & Position, number>(
-      onEnd,
-      (start, end) => {
-        end = getAngleSnapPosition(start.data, end, getAngleSnap)
-        setCursorPosition(end)
-        setOffset({ x: end.x - start.x, y: end.y - start.y, data: start.data.data })
-      },
-      () => setOffset({ x: 0, y: 0 }),
-      {
-        transform,
-      },
-    )
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents: LineContent[] = []
-          if (cursorPosition) {
-            const block = getBlock(content.id, contents)
-            if (block) {
-              assistentContents.push({ type: 'line', dashArray: [4], points: [{ x: content.x + block.base.x, y: content.y + block.base.y }, cursorPosition] })
-            }
-          }
-          if (content.type === 'block reference') {
-            content.x += offset.x
-            content.y += offset.y
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index, contents }) {
-        const block = getBlock(content.id, contents)
-        if (!block) {
-          return null
-        }
-        const p = { x: content.x + block.base.x, y: content.y + block.base.y }
-        return (
-          <EditBar
-            positions={[{ data: 'base' as const, ...p, cursor: 'move' }]}
-            scale={scale}
-            onClick={(e, type, cursor) => onStart(e, { ...p, type, cursor, data: index })}
-          />
-        )
-      },
+  getEditPoints(content, contents) {
+    const block = getBlock(content.id, contents)
+    if (!block) {
+      return
     }
+    return getEditPointsFromCache(content, () => {
+      const p = { x: content.x + block.base.x, y: content.y + block.base.y }
+      return {
+        editPoints: [
+          {
+            ...p,
+            cursor: 'move',
+            update(c, cursor, start) {
+              if (!isBlockReferenceContent(c)) {
+                return
+              }
+              c.x += cursor.x - start.x
+              c.y += cursor.y - start.y
+              return { assistentContents: [{ type: 'line', dashArray: [4], points: [p, cursor] } as LineContent] }
+            },
+          },
+        ],
+        angleSnapStartPoint: p,
+      }
+    })
   },
   getSnapPoints(content, contents) {
     const block = getBlock(content.id, contents)

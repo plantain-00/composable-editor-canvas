@@ -1,16 +1,23 @@
-import { getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from '../src'
-import { BaseContent, getModel } from './models/model'
+import { Circle, getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from "./geometry"
 
-export function getContentByClickPosition(
-  contents: readonly BaseContent[],
+/**
+ * @public
+ */
+export function getContentByClickPosition<T>(
+  contents: readonly T[],
   position: Position,
   contentSelectable: (index: number[]) => boolean,
+  getModel: (content: T) => {
+    getCircle?: (content: T) => Circle,
+    getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][] },
+    canSelectPart?: boolean,
+  } | undefined,
   part = false,
   delta = 3,
 ): number[] | undefined {
   for (let i = 0; i < contents.length; i++) {
     const content = contents[i]
-    const model = getModel(content.type)
+    const model = getModel(content)
     if (model?.getCircle) {
       const circle = model.getCircle(content)
       if (contentSelectable([i]) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
@@ -35,10 +42,17 @@ export function getContentByClickPosition(
   return undefined
 }
 
-export function getContentsByClickTwoPositions(
-  contents: readonly BaseContent[],
+/**
+ * @public
+ */
+export function getContentsByClickTwoPositions<T>(
+  contents: readonly T[],
   startPosition: Position,
   endPosition: Position,
+  getModel: (content: T) => {
+    getCircle?: (content: T) => Circle,
+    getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], points: Position[] },
+  } | undefined,
   contentSelectable?: (index: number[]) => boolean,
 ) {
   const result: number[][] = []
@@ -46,7 +60,7 @@ export function getContentsByClickTwoPositions(
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
     if (contentSelectable?.([i])) {
-      const model = getModel(content.type)
+      const model = getModel(content)
       if (model?.getCircle) {
         const circle = model.getCircle(content)
         if ([

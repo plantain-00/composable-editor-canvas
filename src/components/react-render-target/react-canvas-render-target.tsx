@@ -3,7 +3,7 @@ import { getColorString, ReactRenderTarget } from ".."
 
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',
-  getResult(children, width, height, attributes, transform) {
+  renderResult(children, width, height, attributes, transform) {
     return (
       <Canvas
         width={width}
@@ -14,12 +14,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       />
     )
   },
-  getEmpty() {
+  renderEmpty() {
     return () => {
       // empty
     }
   },
-  getGroup(children, x, y, base, angle) {
+  renderGroup(children, x, y, base, angle) {
     return (ctx) => {
       ctx.save()
       ctx.translate(x, y)
@@ -34,7 +34,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokeRect(x, y, width, height, color, angle, strokeWidth) {
+  renderRect(x, y, width, height, strokeColor, angle, strokeWidth, fillColor) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
@@ -44,17 +44,21 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.rotate(angle / 180 * Math.PI)
         ctx.translate(-(x + width / 2), -(y + height / 2))
       }
-      ctx.strokeStyle = getColorString(color)
+      if (fillColor !== undefined) {
+        ctx.fillStyle = getColorString(fillColor)
+        ctx.fillRect(x, y, width, height)
+      }
+      ctx.strokeStyle = getColorString(strokeColor)
       ctx.strokeRect(x, y, width, height)
       ctx.restore()
     }
   },
-  strokePolyline(points, color, dashArray, strokeWidth, skippedLines) {
+  renderPolyline(points, strokeColor, dashArray, strokeWidth, skippedLines) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
       ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(color)
+      ctx.strokeStyle = getColorString(strokeColor)
       if (dashArray) {
         ctx.setLineDash(dashArray)
       }
@@ -69,43 +73,43 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  strokeCircle(cx, cy, r, color, strokeWidth) {
+  renderCircle(cx, cy, r, strokeColor, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
       ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(color)
+      ctx.strokeStyle = getColorString(strokeColor)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  strokeEllipse(cx, cy, rx, ry, color, angle, strokeWidth) {
+  renderEllipse(cx, cy, rx, ry, strokeColor, angle, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
       ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(color)
+      ctx.strokeStyle = getColorString(strokeColor)
       ctx.ellipse(cx, cy, rx, ry, (angle ?? 0) / 180 * Math.PI, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  strokeArc(cx, cy, r, startAngle, endAngle, color, strokeWidth) {
+  renderArc(cx, cy, r, startAngle, endAngle, strokeColor, strokeWidth) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
       ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(color)
+      ctx.strokeStyle = getColorString(strokeColor)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  fillText(x, y, text, color, fontSize) {
+  renderText(x, y, text, strokeColor, fontSize) {
     return (ctx) => {
       ctx.save()
-      ctx.fillStyle = getColorString(color)
+      ctx.fillStyle = getColorString(strokeColor)
       ctx.font = `${fontSize}px monospace`
       ctx.fillText(text, x, y)
       ctx.restore()

@@ -1,13 +1,12 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit } from '../src'
-import { getContentByClickPosition, getContentsByClickTwoPositions } from './util-2'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, getContentByIndex, getModel, registerModel, reverseTransformPosition, Transform, useModelsEdit, useSnap } from './models/model'
+import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getModel, registerModel, useSnap } from './models/model'
 import { LineContent, lineModel } from './models/line-model'
 import { circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
-import { rectModel } from './models/rect-model'
+import { RectContent, rectModel } from './models/rect-model'
 import { getCommand, registerCommand, useCommands } from './commands/command'
 import { moveCommand } from './commands/move'
 import { rotateCommand } from './commands/rotate'
@@ -249,12 +248,10 @@ const CADEditor = React.forwardRef((props: {
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(
-    () => {
-      setX((v) => v + offset.x)
-      setY((v) => v + offset.y)
-    },
-  )
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+    setX((v) => v + offset.x)
+    setY((v) => v + offset.y)
+  })
   const size = useWindowSize()
   const width = size.width / 2
   const height = size.height
@@ -286,8 +283,19 @@ const CADEditor = React.forwardRef((props: {
     }
   })
 
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, updateEditContent } = useEdit(
+    () => applyPatchFromSelf(previewPatches, previewReversePatches),
+    readOnly,
+    transform.scale,
+    editingContent,
+    selected,
+    (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent),
+    angleSnapEnabled ? getAngleSnap : undefined,
+    (s, contents) => getModel(s.type)?.getEditPoints?.(s, contents),
+  )
+
   // snap point
-  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation)
+  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation || editPoint !== undefined)
 
   // commands
   const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
@@ -318,6 +326,7 @@ const CADEditor = React.forwardRef((props: {
           editingContent,
           reverseTransformPosition(start, transform),
           reverseTransformPosition(end, transform),
+          (c) => getModel(c.type),
           contentSelectable,
         ),
         maxCount,
@@ -325,16 +334,6 @@ const CADEditor = React.forwardRef((props: {
       )
     }
   })
-
-  // edit model
-  const { editMasks, updateEditPreview, editBarMap } = useModelsEdit(
-    () => {
-      applyPatchFromSelf(previewPatches, previewReversePatches)
-    },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes, true),
-    angleSnapEnabled,
-    transform.scale,
-  )
 
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
@@ -356,7 +355,17 @@ const CADEditor = React.forwardRef((props: {
     })
     draft.push(...newContents)
     const result = updateEditPreview(draft)
-    assistentContents.push(...result.assistentContents)
+    if (result?.assistentContents) {
+      assistentContents.push(...result.assistentContents)
+    }
+    draft.forEach((content, i) => {
+      if (isSelected([i])) {
+        const result = updateEditContent(content, state)
+        if (result.assistentContents) {
+          assistentContents.push(...result.assistentContents)
+        }
+      }
+    })
   }, (patches, reversePatches) => {
     previewPatches.push(...prependPatchPath(patches))
     previewReversePatches.push(...prependPatchPath(reversePatches))
@@ -486,7 +495,9 @@ const CADEditor = React.forwardRef((props: {
       startCommand(operation.name, p)
     }
     if (isSelectOperation) {
-      if (hovering.length > 0) {
+      if (editPoint) {
+        onEditClick(p)
+      } else if (hovering.length > 0) {
         // if hovering content, add it to selection
         addSelection(hovering, maxCount, (r) => startNextOperation(r))
         setHovering()
@@ -511,8 +522,9 @@ const CADEditor = React.forwardRef((props: {
       onCommandMove(getSnapPoint(p, editingContent, snapTypes), viewportPosition)
     }
     if (isSelectOperation) {
+      onEditMove(getSnapPoint(p, editingContent, snapTypes))
       // hover by position
-      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, operation?.type === 'select part'))
+      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, (c) => getModel(c.type), operation?.type === 'select part'))
     }
   }
   const onStartOperation = (p: Operation) => {
@@ -549,7 +561,7 @@ const CADEditor = React.forwardRef((props: {
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-      <div style={{ cursor: operation?.type === 'move canvas' ? 'grab' : 'crosshair', position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+      <div style={{ cursor: editPoint?.cursor ?? (operation?.type === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
@@ -562,35 +574,11 @@ const CADEditor = React.forwardRef((props: {
           width={width}
           height={height}
         />
-        {!readOnly && previewContents.map((s, i) => {
-          if (isSelected([i])) {
-            const EditBar = editBarMap[s.type]
-            if (EditBar) {
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    boxSizing: 'border-box',
-                    width: `${width}px`,
-                    height: `${height}px`,
-                    transform: transform ? `scale(${transform.scale}) translate(${transform.x / transform.scale}px, ${transform.y / transform.scale}px)` : undefined,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <EditBar content={s} index={i} contents={editingContent} />
-                </div>
-              )
-            }
-          }
-          return null
-        })}
         {position && `${position.x},${position.y}`}
         {commandMasks}
         {selectionInput}
         {!readOnly && commandInputs}
       </div>
-      {editMasks}
       {dragSelectMask}
       {moveCanvasMask}
     </div>

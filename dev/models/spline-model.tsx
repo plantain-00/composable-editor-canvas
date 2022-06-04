@@ -1,8 +1,7 @@
-import React from 'react'
 import bspline from 'b-spline'
-import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, PolylineEditBar, Position, rotatePositionByCenter, usePolylineEdit } from '../../src'
-import { iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache } from './model'
+import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, Position, rotatePositionByCenter } from '../../src'
+import { getPolylineEditPoints, iteratePolylineLines } from './line-model'
+import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
@@ -25,37 +24,16 @@ export const splineModel: Model<SplineContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     const { points } = getSplineLines(content)
-    return target.strokePolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+    return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
   },
-  renderIfSelected({ content, color, target }) {
-    return target.strokePolyline(content.points, color ?? defaultStrokeColor, [4])
+  renderIfSelected({ content, color, target, strokeWidth }) {
+    return target.renderPolyline(content.points, color ?? defaultStrokeColor, [4], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
-  useEdit(onEnd, transform, getAngleSnap, scale) {
-    const { offset, onStart, mask, dragStartPosition, cursorPosition } = usePolylineEdit<number>(onEnd, {
-      transform,
-      getAngleSnap,
-    })
-    return {
-      mask,
-      updatePreview(contents) {
-        if (offset?.data !== undefined) {
-          const content = contents[offset.data]
-          const assistentContents = dragStartPosition ? [{ type: 'line', dashArray: [4], points: [{ x: dragStartPosition.x, y: dragStartPosition.y }, cursorPosition] }] : undefined
-          for (const pointIndex of offset.pointIndexes) {
-            content.points[pointIndex].x += offset.x
-            content.points[pointIndex].y += offset.y
-          }
-          return { assistentContents }
-        }
-        return {}
-      },
-      editBar({ content, index }) {
-        return <PolylineEditBar scale={scale} midpointDisabled points={content.points} onClick={(e, pointIndexes) => onStart(e, pointIndexes, index)} />
-      },
-    }
+  getEditPoints(content) {
+    return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isSplineContent, false, true) }))
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
@@ -102,6 +80,10 @@ function getSplineLines(content: Omit<SplineContent, "type">) {
       points,
     }
   })
+}
+
+export function isSplineContent(content: BaseContent): content is SplineContent {
+  return content.type === 'spline'
 }
 
 const splineSegmentCount = 100

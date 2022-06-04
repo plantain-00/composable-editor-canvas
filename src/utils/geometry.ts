@@ -138,6 +138,23 @@ export function getTwoNumbersDistance(n1: number, n2: number) {
 /**
  * @public
  */
+export function getTwoPointCenter(p1: Position, p2: Position) {
+  return {
+    x: getTwoNumberCenter(p1.x, p2.x),
+    y: getTwoNumberCenter(p1.y, p2.y),
+  }
+}
+
+/**
+ * @public
+ */
+export function getTwoNumberCenter(p1: number, p2: number) {
+  return (p1 + p2) / 2
+}
+
+/**
+ * @public
+ */
 export function isBetween(target: number, a: number, b: number) {
   return target <= Math.max(a, b) && target >= Math.min(a, b)
 }
@@ -792,4 +809,15 @@ export function normalizeAngleInRange(angle: number, range: AngleRange) {
     angle += 360
   }
   return angle
+}
+
+/**
+ * @public
+ */
+export function normalizeAngleRange(content: AngleRange) {
+  if (content.endAngle < content.startAngle) {
+    content.endAngle += 360
+  } else if (content.endAngle - content.startAngle > 360) {
+    content.endAngle -= 360
+  }
 }
