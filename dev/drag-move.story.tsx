@@ -4,12 +4,10 @@ import { useDragMove } from "../src"
 export default () => {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
-  const { offset, onStart, mask } = useDragMove(
-    () => {
-      setX((v) => v + offset.x)
-      setY((v) => v + offset.y)
-    },
-  )
+  const { offset, onStart, mask } = useDragMove(() => {
+    setX((v) => v + offset.x)
+    setY((v) => v + offset.y)
+  })
 
   return (
     <div

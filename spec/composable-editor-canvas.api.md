@@ -355,6 +355,15 @@ export function isSelected<T extends SelectPath = SelectPath>(value: T, selected
 export function isZero(value: number): boolean;
 
 // @public (undocumented)
+export function iterateIntersectionPoints<T>(content1: T, content2: T, contents: readonly T[], getModel: (content: T) => {
+    getCircle?: (content: T) => Circle;
+    getLines?: (content: T, contents: readonly T[]) => {
+        lines: [Position, Position][];
+        points: Position[];
+    };
+} | undefined): Generator<Position, void, undefined>;
+
+// @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
@@ -371,6 +380,12 @@ export function pointIsOnLine(p: Position, point1: Position, point2: Position): 
 
 // @public (undocumented)
 export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position): boolean;
+
+// @public (undocumented)
+export function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number): {
+    x: number;
+    y: number;
+};
 
 // @public (undocumented)
 export function PolylineEditBar(props: {
@@ -455,7 +470,7 @@ export function rotatePositionByCenter(position: Position, center: Position, rot
 
 // @public (undocumented)
 export function RotationBar(props: {
-    scale: number;
+    scale?: number;
     rotateStickLength?: number;
     rotateCircleSize?: number;
     onMouseDown: React_2.MouseEventHandler<HTMLOrSVGElement>;
@@ -481,6 +496,11 @@ export interface Size {
     // (undocumented)
     width: number;
 }
+
+// @public (undocumented)
+export type SnapPoint = Position & {
+    type: 'endpoint' | 'midpoint' | 'center' | 'intersection';
+};
 
 // @public (undocumented)
 export interface Transform extends Position {
@@ -836,6 +856,13 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     isSelected: (value: T, s?: readonly T[]) => boolean;
     addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined) => void;
     setSelected(...value: readonly (T | undefined)[]): void;
+};
+
+// @public (undocumented)
+export function useSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], createCircle: (circle: Circle) => T, createRect: (rect: Region) => T, createPolyline: (points: Position[]) => T, getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[] | undefined, delta?: number): {
+    snapPoint: SnapPoint | undefined;
+    snapAssistentContents: T[];
+    getSnapPoint(p: Position, contents: readonly T[], types: string[]): Position;
 };
 
 // @public (undocumented)

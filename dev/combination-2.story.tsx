@@ -1,10 +1,10 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, useSnap } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getModel, registerModel, useSnap } from './models/model'
+import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
 import { LineContent, lineModel } from './models/line-model'
-import { circleModel } from './models/circle-model'
+import { CircleContent, circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
 import { RectContent, rectModel } from './models/rect-model'
 import { getCommand, registerCommand, useCommands } from './commands/command'
@@ -295,7 +295,14 @@ const CADEditor = React.forwardRef((props: {
   )
 
   // snap point
-  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(!isSelectOperation || editPoint !== undefined)
+  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(
+    !isSelectOperation || editPoint !== undefined,
+    getIntersectionPoints,
+    (circle) => ({ type: 'circle', ...circle } as CircleContent),
+    (rect) => ({ type: 'rect', ...rect, angle: 0 } as RectContent as BaseContent),
+    (points) => ({ type: 'polyline', points } as LineContent),
+    (c, s) => getModel(c.type)?.getSnapPoints?.(c, s),
+  )
 
   // commands
   const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
@@ -326,7 +333,7 @@ const CADEditor = React.forwardRef((props: {
           editingContent,
           reverseTransformPosition(start, transform),
           reverseTransformPosition(end, transform),
-          (c) => getModel(c.type),
+          getContentModel,
           contentSelectable,
         ),
         maxCount,
@@ -524,7 +531,7 @@ const CADEditor = React.forwardRef((props: {
     if (isSelectOperation) {
       onEditMove(getSnapPoint(p, editingContent, snapTypes))
       // hover by position
-      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, (c) => getModel(c.type), operation?.type === 'select part'))
+      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, getContentModel, operation?.type === 'select part'))
     }
   }
   const onStartOperation = (p: Operation) => {

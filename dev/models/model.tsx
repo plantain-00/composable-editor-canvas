@@ -1,8 +1,6 @@
 import React from 'react'
-import { Circle, EditPoint, GeneralFormLine, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, getTwoNumbersDistance, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
-import { CircleContent } from './circle-model'
+import { Circle, EditPoint, GeneralFormLine, iterateIntersectionPoints, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
 import { LineContent } from './line-model'
-import { RectContent } from './rect-model'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -53,111 +51,6 @@ export function getModel(type: string): Model<BaseContent> | undefined {
 
 export const defaultStrokeColor = 0x00ff00
 
-export function useSnap(enabled: boolean, delta = 5) {
-  const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
-
-  React.useEffect(() => {
-    if (enabled === false) {
-      setSnapPoint(undefined)
-    }
-  }, [enabled])
-
-  const assistentContents: BaseContent[] = []
-  if (snapPoint) {
-    const contents: (LineContent | CircleContent | RectContent)[] = []
-    if (snapPoint.type === 'center') {
-      contents.push({
-        type: 'circle',
-        x: snapPoint.x,
-        y: snapPoint.y,
-        r: delta * 2,
-      })
-    } else if (snapPoint.type === 'endpoint') {
-      contents.push({
-        type: 'rect',
-        x: snapPoint.x,
-        y: snapPoint.y,
-        width: delta * 4,
-        height: delta * 4,
-        angle: 0,
-      })
-    } else if (snapPoint.type === 'midpoint') {
-      contents.push({
-        type: 'polyline',
-        points: [
-          { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
-          { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
-          { x: snapPoint.x, y: snapPoint.y - delta * 2 },
-          { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
-        ],
-      })
-    } else if (snapPoint.type === 'intersection') {
-      contents.push(
-        {
-          type: 'polyline',
-          points: [
-            { x: snapPoint.x - delta * 2, y: snapPoint.y - delta * 2 },
-            { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
-          ],
-        },
-        {
-          type: 'polyline',
-          points: [
-            { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
-            { x: snapPoint.x + delta * 2, y: snapPoint.y - delta * 2 },
-          ],
-        },
-      )
-    }
-    assistentContents.push(...contents)
-  }
-
-  return {
-    snapPoint,
-    snapAssistentContents: assistentContents,
-    getSnapPoint(p: Position, contents: readonly BaseContent[], types: string[]) {
-      if (!enabled) {
-        setSnapPoint(undefined)
-        return p
-      }
-      for (const content of contents) {
-        const snapPoints = getModel(content.type)?.getSnapPoints?.(content, contents)
-        if (snapPoints) {
-          for (const point of snapPoints) {
-            if (
-              types.includes(point.type) &&
-              getTwoNumbersDistance(p.x, point.x) <= delta &&
-              getTwoNumbersDistance(p.y, point.y) <= delta
-            ) {
-              setSnapPoint(point)
-              return point
-            }
-          }
-        }
-      }
-      if (types.includes('intersection')) {
-        for (let i = 0; i < contents.length; i++) {
-          const content1 = contents[i]
-          for (let j = i + 1; j < contents.length; j++) {
-            const content2 = contents[j]
-            for (const point of intersectionPointsCache.get(content1, content2, () => Array.from(iterateIntersectionPoints(content1, content2, contents)))) {
-              if (
-                getTwoNumbersDistance(p.x, point.x) <= delta &&
-                getTwoNumbersDistance(p.y, point.y) <= delta
-              ) {
-                setSnapPoint({ ...point, type: 'intersection' })
-                return point
-              }
-            }
-          }
-        }
-      }
-      setSnapPoint(undefined)
-      return p
-    }
-  }
-}
-
 export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
@@ -170,35 +63,13 @@ export const getLinesAndPointsFromCache = linesAndPointsCache.get.bind(linesAndP
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
 export const getEditPointsFromCache = editPointsCache.get.bind(editPointsCache)
 
-export const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
+const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
+export function getIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly BaseContent[]) {
+  return intersectionPointsCache.get(content1, content2, () => Array.from(iterateIntersectionPoints(content1, content2, contents, getContentModel)))
+}
 
-export function* iterateIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly BaseContent[]) {
-  const model1 = getModel(content1.type)
-  const model2 = getModel(content2.type)
-  if (model1 && model2) {
-    if (model1.getCircle && model2.getCircle) {
-      yield* getTwoCircleIntersectionPoints(model1.getCircle(content1), model1.getCircle(content2))
-    } else if (model1.getCircle && model2.getLines) {
-      const circle = model1.getCircle(content1)
-      for (const line of model2.getLines(content2, contents).lines) {
-        yield* getLineSegmentCircleIntersectionPoints(...line, circle)
-      }
-    } else if (model1.getLines && model2.getCircle) {
-      const circle = model2.getCircle(content2)
-      for (const line of model1.getLines(content1, contents).lines) {
-        yield* getLineSegmentCircleIntersectionPoints(...line, circle)
-      }
-    } else if (model1.getLines && model2.getLines) {
-      for (const line1 of model1.getLines(content1, contents).lines) {
-        for (const line2 of model2.getLines(content2, contents).lines) {
-          const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
-          if (point) {
-            yield point
-          }
-        }
-      }
-    }
-  }
+export function getContentModel(content: BaseContent) {
+  return getModel(content.type)
 }
 
 export function getAngleSnap(angle: number) {

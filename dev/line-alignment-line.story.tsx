@@ -50,10 +50,7 @@ export default () => {
           onClick={() => setSelectedIndex(i)}
         >
           <img src={content.url} style={{ objectFit: 'fill', width: '100%', height: '100%' }} />
-          {selectedIndex === i && <ResizeBar
-            scale={1}
-            onMouseDown={onStart}
-          />}
+          {selectedIndex === i && <ResizeBar onMouseDown={onStart} />}
         </div>
       ))}
       <AlignmentLine type='x' value={lineAlignmentX} />

@@ -1,5 +1,5 @@
 import { deduplicatePosition, Position } from "../../src"
-import { getModel, intersectionPointsCache, iterateIntersectionPoints } from "../models/model"
+import { getIntersectionPoints, getModel } from "../models/model"
 import { Command } from "./command"
 
 export const breakCommand: Command = {
@@ -10,7 +10,7 @@ export const breakCommand: Command = {
       const c = contents[i]
       if (i !== index) {
         const p = i < index ? [c, content] as const : [content, c] as const
-        intersectionPoints.push(...intersectionPointsCache.get(...p, () => Array.from(iterateIntersectionPoints(...p, contents))))
+        intersectionPoints.push(...getIntersectionPoints(...p, contents))
       }
     }
     intersectionPoints = deduplicatePosition(intersectionPoints)

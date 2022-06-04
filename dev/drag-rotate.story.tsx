@@ -46,15 +46,7 @@ export default () => {
           backgroundSize: 'contain',
         }}
       >
-        <RotationBar
-          scale={1}
-          onMouseDown={() => {
-            onStart({
-              x: content.x + content.width / 2,
-              y: content.y + content.height / 2,
-            })
-          }}
-        />
+        <RotationBar onMouseDown={() => onStart({ x: content.x + content.width / 2, y: content.y + content.height / 2 })} />
       </div>
       {mask}
     </>
