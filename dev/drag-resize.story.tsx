@@ -36,10 +36,7 @@ export default () => {
           background: 'radial-gradient(50% 50% at 50% 50%, red 0%, white 100%)',
         }}
       >
-        <ResizeBar
-          scale={1}
-          onMouseDown={onStart}
-        />
+        <ResizeBar onMouseDown={onStart} />
       </div>
       {mask}
     </>

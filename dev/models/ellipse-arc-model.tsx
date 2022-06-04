@@ -126,7 +126,7 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   getLines: getEllipseArcLines,
 }
 
-function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
+export function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
   return getLinesAndPointsFromCache(content, () => {
     const points: Position[] = []
     const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle

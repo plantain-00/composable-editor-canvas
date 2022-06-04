@@ -1,10 +1,10 @@
 import React from 'react'
-import { useUndoRedo, useKey } from '../src'
+import { useKey, usePatchBasedUndoRedo } from '../src'
 
 const initialState = { count: 0 }
 
 export default () => {
-  const { state, setState, undo, redo } = useUndoRedo(initialState)
+  const { state, setState, undo, redo } = usePatchBasedUndoRedo(initialState, 'a')
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && k.metaKey, undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && k.metaKey, redo)
   return (

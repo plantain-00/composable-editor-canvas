@@ -103,7 +103,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
   },
 }
 
-function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+export function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
   const angleInRadians = angleInDegrees * Math.PI / 180
   return {
     x: cx + (radius * Math.cos(angleInRadians)),

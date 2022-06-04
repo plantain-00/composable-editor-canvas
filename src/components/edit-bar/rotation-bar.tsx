@@ -1,14 +1,15 @@
 import * as React from "react"
 
 export function RotationBar(props: {
-  scale: number
+  scale?: number
   rotateStickLength?: number
   rotateCircleSize?: number
   onMouseDown: React.MouseEventHandler<HTMLOrSVGElement>
 }) {
-  const length = (props.rotateStickLength ?? 40) / props.scale
-  const border = 1 / props.scale
-  const rotateCircleWidth = (props.rotateCircleSize ?? 10) / props.scale
+  const scale = props.scale ?? 1
+  const length = (props.rotateStickLength ?? 40) / scale
+  const border = 1 / scale
+  const rotateCircleWidth = (props.rotateCircleSize ?? 10) / scale
   return (
     <>
       <div
