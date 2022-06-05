@@ -3,25 +3,25 @@ import * as React from "react"
 import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
 import { useKey } from "./use-key"
-import { isSelected } from "./use-selected"
+import { SelectPath } from "./use-selected"
 
-export function useEdit<T>(
+export function useEdit<T, TPath extends SelectPath = SelectPath>(
   onEnd: () => void,
-  readOnly: boolean,
-  scale: number,
-  contents: readonly T[],
-  selected: readonly number[][],
-  createRect: (rect: Region) => T,
-  getAngleSnap?: (angle: number) => number | undefined,
-  getEditPoints?: (content: T, contents: readonly T[]) => {
+  getEditPoints?: (content: T) => {
     editPoints: EditPoint<T>[]
     angleSnapStartPoint?: Position
   } | undefined,
+  options?: Partial<{
+    scale: number
+    readOnly: boolean
+    getAngleSnap: (angle: number) => number | undefined,
+  }>,
 ) {
-  const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { index: number, angleSnapStartPoint?: Position }>()
+  const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { path: TPath, angleSnapStartPoint?: Position }>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const cursorWidth = 5 / scale
+  const cursorWidth = 5 / (options?.scale ?? 1)
+  const readOnly = options?.readOnly ?? false
 
   const reset = () => {
     setEditPoint(undefined)
@@ -41,10 +41,10 @@ export function useEdit<T>(
 
   return {
     editPoint,
-    updateEditContent(content: T, contents: readonly T[]) {
-      const assistentContents: T[] = []
+    getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V) {
+      const assistentContents: V[] = []
       if (!readOnly) {
-        const editPoints = getEditPoints?.(content, contents)
+        const editPoints = getEditPoints?.(content)
         if (editPoints) {
           assistentContents.push(...editPoints.editPoints.map((e) => createRect({
             x: e.x,
@@ -54,36 +54,36 @@ export function useEdit<T>(
           })))
         }
       }
-      return { assistentContents }
+      return assistentContents
     },
-    updateEditPreview(contents: Draft<T>[]) {
+    updateEditPreview(getContentByPath: (path: TPath) => Draft<T> | undefined) {
       if (editPoint && startPosition && cursorPosition) {
-        return editPoint.update(contents[editPoint.index], cursorPosition, startPosition)
+        const content = getContentByPath(editPoint.path)
+        if (content) {
+          return editPoint.update(content, cursorPosition, startPosition)
+        }
       }
     },
-    onEditMove(p: Position) {
+    onEditMove(p: Position, selectedContents: readonly { content: T, path: TPath }[]) {
       if (readOnly) {
         return
       }
       if (editPoint?.angleSnapStartPoint) {
-        p = getAngleSnapPosition(editPoint.angleSnapStartPoint, p, getAngleSnap)
+        p = getAngleSnapPosition(editPoint.angleSnapStartPoint, p, options?.getAngleSnap)
       } else if (startPosition) {
-        p = getAngleSnapPosition(startPosition, p, getAngleSnap)
+        p = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
       }
       if (startPosition) {
         setCursorPosition(p)
         return
       }
-      for (let i = 0; i < contents.length; i++) {
-        const s = contents[i]
-        if (isSelected([i], selected)) {
-          const editPoints = getEditPoints?.(s, contents)
-          if (editPoints) {
-            const t = editPoints.editPoints.find((e) => getTwoNumbersDistance(e.x, p.x) <= cursorWidth && getTwoNumbersDistance(e.y, p.y) <= cursorWidth)
-            if (t) {
-              setEditPoint({ ...t, index: i, angleSnapStartPoint: editPoints.angleSnapStartPoint })
-              return
-            }
+      for (const { content, path } of selectedContents) {
+        const editPoints = getEditPoints?.(content)
+        if (editPoints) {
+          const t = editPoints.editPoints.find((e) => getTwoNumbersDistance(e.x, p.x) <= cursorWidth && getTwoNumbersDistance(e.y, p.y) <= cursorWidth)
+          if (t) {
+            setEditPoint({ ...t, path, angleSnapStartPoint: editPoints.angleSnapStartPoint })
+            return
           }
         }
       }

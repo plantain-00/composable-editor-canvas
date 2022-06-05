@@ -10,7 +10,7 @@ export interface Command {
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
-    selected: BaseContent[],
+    selected: { content: BaseContent, path: number[] }[],
   ): {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
@@ -46,7 +46,7 @@ export function useCommands(
   angleSnapEnabled: boolean,
   inputFixed: boolean,
   operation: string | undefined,
-  selected: BaseContent[],
+  selected: { content: BaseContent, path: number[] }[],
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []

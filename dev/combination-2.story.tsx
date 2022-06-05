@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, useSnap } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
@@ -146,7 +146,7 @@ export default () => {
 
   const [readOnly, setReadOnly] = React.useState(false)
   const [angleSnapEnabled, setAngleSnapEnabled] = React.useState(true)
-  const [snapTypes, setSnapTypes] = React.useState(['endpoint', 'midpoint', 'center', 'intersection'])
+  const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
   const [renderTarget, setRenderTarget] = React.useState<string>()
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
@@ -180,7 +180,7 @@ export default () => {
         <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
           {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
         </select>
-        {!readOnly && ['endpoint', 'midpoint', 'center', 'intersection'].map((type) => (
+        {!readOnly && allSnapTypes.map((type) => (
           <span key={type} style={{ position: 'relative' }}>
             <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
             <label htmlFor={type}>{type}</label>
@@ -210,17 +210,47 @@ const CADEditor = React.forwardRef((props: {
   readOnly: boolean
   angleSnapEnabled: boolean
   inputFixed: boolean
-  snapTypes: string[]
+  snapTypes: readonly SnapPointType[]
   renderTarget?: string
   setCanUndo: (canUndo: boolean) => void
   setCanRedo: (canRedo: boolean) => void
   setOperation: (operations: string | undefined) => void
 }, ref: React.ForwardedRef<CADEditorRef>) => {
-  const { operation, nextOperation, resetOperation, startNextOperation, selectBeforeOperate, operate } = useSelectBeforeOperate<Operation>(
-    (p, s) => {
-      if (p?.type === 'command' && getCommand(p.name)?.executeCommand) {
-        executeCommandForSelectedContents(p.name, s)
-        return true
+  const { operation, nextOperation, executeOperation, resetOperation, startNextOperation, selectBeforeOperate, operate } = useSelectBeforeOperate<Operation>(
+    (p, s = selected) => {
+      if (p?.type === 'command') {
+        const command = getCommand(p.name)
+        if (command?.executeCommand) {
+          const removedContents: number[] = []
+          const newContents: BaseContent[] = []
+          editingContent.forEach((c, i) => {
+            if (isSelected([i], s) && (command?.contentSelectable?.(c, state) ?? true)) {
+              const result = command?.executeCommand?.(c, state, i)
+              if (result?.newContents) {
+                newContents.push(...result.newContents)
+              }
+              if (result?.removed) {
+                removedContents.push(i)
+              }
+              if (result?.editingStatePath) {
+                setEditingContentPath(result.editingStatePath)
+              }
+            }
+          })
+          if (removedContents.length + newContents.length > 0) {
+            setState((draft) => {
+              draft = getContentByPath(draft)
+              for (let i = draft.length; i >= 0; i--) {
+                if (removedContents.includes(i)) {
+                  draft.splice(i, 1)
+                }
+              }
+              draft.push(...newContents)
+            })
+          }
+          setSelected()
+          return true
+        }
       }
       return false
     },
@@ -267,41 +297,38 @@ const CADEditor = React.forwardRef((props: {
 
   const maxCount = operation?.type === 'select' || operation?.type === 'select part' ? operation.count : undefined
   const isSelectOperation = operation === undefined || operation.type === 'select' || operation.type === 'select part'
-  const selectedContents: BaseContent[] = []
+  const selectedContents: { content: BaseContent, path: number[] }[] = []
   editingContent.forEach((s, i) => {
     if (isSelected([i])) {
-      selectedContents.push(s)
+      selectedContents.push({ content: s, path: [i] })
     } else {
       for (const f of selected) {
         if (f.length === 2 && f[0] === i) {
           const line = getModel(s.type)?.getLines?.(s)?.lines?.[f[1]]
           if (line) {
-            selectedContents.push({ type: 'line', points: line } as LineContent)
+            selectedContents.push({ content: { type: 'line', points: line } as LineContent, path: f })
           }
         }
       }
     }
   })
 
-  const { editPoint, updateEditPreview, onEditMove, onEditClick, updateEditContent } = useEdit(
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, number[]>(
     () => applyPatchFromSelf(previewPatches, previewReversePatches),
-    readOnly,
-    transform.scale,
-    editingContent,
-    selected,
-    (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent),
-    angleSnapEnabled ? getAngleSnap : undefined,
-    (s, contents) => getModel(s.type)?.getEditPoints?.(s, contents),
+    (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
+    {
+      scale: transform.scale,
+      readOnly,
+      getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+    }
   )
 
   // snap point
-  const { snapAssistentContents, getSnapPoint, snapPoint } = useSnap(
+  const { getSnapAssistentContents, getSnapPoint, snapPoint } = usePointSnap(
     !isSelectOperation || editPoint !== undefined,
     getIntersectionPoints,
-    (circle) => ({ type: 'circle', ...circle } as CircleContent),
-    (rect) => ({ type: 'rect', ...rect, angle: 0 } as RectContent as BaseContent),
-    (points) => ({ type: 'polyline', points } as LineContent),
-    (c, s) => getModel(c.type)?.getSnapPoints?.(c, s),
+    snapTypes,
+    (c) => getModel(c.type)?.getSnapPoints?.(c, editingContent),
   )
 
   // commands
@@ -311,14 +338,14 @@ const CADEditor = React.forwardRef((props: {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
         })
-        applyPatchFromSelf(...patches)
+        applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
       } else {
         applyPatchFromSelf(previewPatches, previewReversePatches)
       }
       resetOperation()
       setSelected()
     },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), state, snapTypes),
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent),
     angleSnapEnabled && !snapPoint,
     inputFixed,
     operation?.type === 'command' ? operation.name : undefined,
@@ -344,7 +371,11 @@ const CADEditor = React.forwardRef((props: {
 
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
-    ...snapAssistentContents,
+    ...getSnapAssistentContents(
+      (circle) => ({ type: 'circle', ...circle } as CircleContent),
+      (rect) => ({ type: 'rect', ...rect, angle: 0 } as RectContent),
+      (points) => ({ type: 'polyline', points } as LineContent),
+    ),
     ...commandAssistentContents,
   ]
   const previewContents = produce(editingContent, (draft) => {
@@ -361,16 +392,13 @@ const CADEditor = React.forwardRef((props: {
       }
     })
     draft.push(...newContents)
-    const result = updateEditPreview(draft)
+    const result = updateEditPreview((path) => getContentByIndex(draft, path))
     if (result?.assistentContents) {
       assistentContents.push(...result.assistentContents)
     }
     draft.forEach((content, i) => {
       if (isSelected([i])) {
-        const result = updateEditContent(content, state)
-        if (result.assistentContents) {
-          assistentContents.push(...result.assistentContents)
-        }
+        assistentContents.push(...getEditAssistentContents(content, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent)))
       }
     })
   }, (patches, reversePatches) => {
@@ -378,37 +406,6 @@ const CADEditor = React.forwardRef((props: {
     previewReversePatches.push(...prependPatchPath(reversePatches))
   })
 
-  const executeCommandForSelectedContents = (name: string, s = selected) => {
-    const removedContents: number[] = []
-    const newContents: BaseContent[] = []
-    const command = getCommand(name)
-    editingContent.forEach((c, i) => {
-      if (isSelected([i], s) && (command?.contentSelectable?.(c, state) ?? true)) {
-        const result = command?.executeCommand?.(c, state, i)
-        if (result?.newContents) {
-          newContents.push(...result.newContents)
-        }
-        if (result?.removed) {
-          removedContents.push(i)
-        }
-        if (result?.editingStatePath) {
-          setEditingContentPath(result.editingStatePath)
-        }
-      }
-    })
-    if (removedContents.length + newContents.length > 0) {
-      setState((draft) => {
-        draft = getContentByPath(draft)
-        for (let i = draft.length; i >= 0; i--) {
-          if (removedContents.includes(i)) {
-            draft.splice(i, 1)
-          }
-        }
-        draft.push(...newContents)
-      })
-    }
-    setSelected()
-  }
   const contentSelectable = (index: number[]) => {
     // ignore selected contents
     if (isSelected(index)) {
@@ -496,7 +493,7 @@ const CADEditor = React.forwardRef((props: {
 
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
-    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, snapTypes)
+    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent)
     // if the operation is command, start it
     if (!isSelectOperation && operation.type === 'command') {
       startCommand(operation.name, p)
@@ -526,10 +523,10 @@ const CADEditor = React.forwardRef((props: {
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (!isSelectOperation && operation.type === 'command') {
-      onCommandMove(getSnapPoint(p, editingContent, snapTypes), viewportPosition)
+      onCommandMove(getSnapPoint(p, editingContent), viewportPosition)
     }
     if (isSelectOperation) {
-      onEditMove(getSnapPoint(p, editingContent, snapTypes))
+      onEditMove(getSnapPoint(p, editingContent), selectedContents)
       // hover by position
       setHovering(getContentByClickPosition(editingContent, p, contentSelectable, getContentModel, operation?.type === 'select part'))
     }
@@ -556,9 +553,7 @@ const CADEditor = React.forwardRef((props: {
           )
           return
         }
-        // for executable commands, if there are selections, do it
-        if (command.executeCommand) {
-          executeCommandForSelectedContents(p.name, result)
+        if (executeOperation(p, result)) {
           return
         }
       }

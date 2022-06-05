@@ -24,6 +24,9 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
+export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection"];
+
+// @public (undocumented)
 export interface AngleRange {
     // (undocumented)
     endAngle: number;
@@ -499,8 +502,11 @@ export interface Size {
 
 // @public (undocumented)
 export type SnapPoint = Position & {
-    type: 'endpoint' | 'midpoint' | 'center' | 'intersection';
+    type: SnapPointType;
 };
+
+// @public (undocumented)
+export type SnapPointType = typeof allSnapTypes[number];
 
 // @public (undocumented)
 export interface Transform extends Position {
@@ -664,26 +670,31 @@ export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Pos
 };
 
 // @public (undocumented)
-export function useEdit<T>(onEnd: () => void, readOnly: boolean, scale: number, contents: readonly T[], selected: readonly number[][], createRect: (rect: Region) => T, getAngleSnap?: (angle: number) => number | undefined, getEditPoints?: (content: T, contents: readonly T[]) => {
+export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => void, getEditPoints?: (content: T) => {
     editPoints: EditPoint<T>[];
     angleSnapStartPoint?: Position;
-} | undefined): {
+} | undefined, options?: Partial<{
+    scale: number;
+    readOnly: boolean;
+    getAngleSnap: (angle: number) => number | undefined;
+}>): {
     editPoint: (Position & {
         cursor: string;
         update: (content: Draft<T>, cursor: Position, start: Position) => void | {
             assistentContents?: T[] | undefined;
         };
     } & {
-        index: number;
+        path: TPath;
         angleSnapStartPoint?: Position | undefined;
     }) | undefined;
-    updateEditContent(content: T, contents: readonly T[]): {
-        assistentContents: T[];
-    };
-    updateEditPreview(contents: Draft<T>[]): void | {
+    getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
+    updateEditPreview(getContentByPath: (path: TPath) => Draft<T> | undefined): void | {
         assistentContents?: T[] | undefined;
     };
-    onEditMove(p: Position): void;
+    onEditMove(p: Position, selectedContents: readonly {
+        content: T;
+        path: TPath;
+    }[]): void;
     onEditClick(p: Position): void;
 };
 
@@ -793,6 +804,13 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 };
 
 // @public (undocumented)
+export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getSnapPoints?: (content: T) => SnapPoint[] | undefined, delta?: number): {
+    snapPoint: SnapPoint | undefined;
+    getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
+    getSnapPoint(p: Position, contents: readonly T[]): Position;
+};
+
+// @public (undocumented)
 export function usePolygonClickCreate(enabled: boolean, onEnd: (polygon: Position[]) => void, options?: Partial<{
     toEdge: boolean;
     getAngleSnap: (angle: number) => number | undefined;
@@ -837,6 +855,7 @@ export function useRegionAlignment(delta: number): {
 export function useSelectBeforeOperate<T>(executeOperation: (operation?: T, selected?: readonly number[][]) => boolean): {
     operation: T | undefined;
     nextOperation: T | undefined;
+    executeOperation: (operation?: T, selected?: readonly number[][]) => boolean;
     startNextOperation: (selected?: readonly number[][]) => void;
     resetOperation(): void;
     selectBeforeOperate(select: T | undefined, p: T): void;
@@ -856,13 +875,6 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     isSelected: (value: T, s?: readonly T[]) => boolean;
     addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined) => void;
     setSelected(...value: readonly (T | undefined)[]): void;
-};
-
-// @public (undocumented)
-export function useSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], createCircle: (circle: Circle) => T, createRect: (rect: Region) => T, createPolyline: (points: Position[]) => T, getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[] | undefined, delta?: number): {
-    snapPoint: SnapPoint | undefined;
-    snapAssistentContents: T[];
-    getSnapPoint(p: Position, contents: readonly T[], types: string[]): Position;
 };
 
 // @public (undocumented)

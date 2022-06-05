@@ -25,6 +25,7 @@ export function useSelectBeforeOperate<T>(
   return {
     operation,
     nextOperation,
+    executeOperation,
     startNextOperation,
     resetOperation() {
       setOperations([])

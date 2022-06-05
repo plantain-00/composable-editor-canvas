@@ -29,13 +29,13 @@ export const chamferCommand: Command = {
           const d1 = +position[0]
           const d2 = +position[1]
           if (!isNaN(d1) && !isNaN(d2)) {
-            setCandidates(getChamfers(selected[0], selected[1], d1, d2))
+            setCandidates(getChamfers(selected[0].content, selected[1].content, d1, d2))
             clearText()
           }
         } else {
           const d = +text
           if (!isNaN(d)) {
-            setCandidates(getChamfers(selected[0], selected[1], d, d))
+            setCandidates(getChamfers(selected[0].content, selected[1].content, d, d))
             clearText()
           }
         }
