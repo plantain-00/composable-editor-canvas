@@ -42,3 +42,12 @@ A composable editor canvas library.
 + `useEllipseArcEdit` `EllipseArcEditBar` <https://plantain-00.github.io/composable-editor-canvas/?p=ellipse-arc-edit.story>
 + `ReactRenderTarget` `reactSvgRenderTarget` `reactCanvasRenderTarget` <https://plantain-00.github.io/composable-editor-canvas/?p=react-render-target.story>
 + `useWindowSize` <https://plantain-00.github.io/composable-editor-canvas/?p=window-size.story>
++ `useSelected` <https://plantain-00.github.io/composable-editor-canvas/?p=use-selected.story>
++ `useEdit` <https://plantain-00.github.io/composable-editor-canvas/?p=edit.story>
++ `usePartialEdit` <https://plantain-00.github.io/composable-editor-canvas/?p=partial-edit.story>
++ `useSelectBeforeOperate` <https://plantain-00.github.io/composable-editor-canvas/?p=select-before-operate.story>
+
+## combinations
+
++ combination 1: <https://plantain-00.github.io/composable-editor-canvas/?p=index>
++ combination-2.story: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-2.story>

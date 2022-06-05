@@ -27,7 +27,7 @@ export const filletCommand: Command = {
       if (e.key === 'Enter') {
         const radius = +text
         if (!isNaN(radius)) {
-          setCandidates(getFillets(selected[0], selected[1], radius))
+          setCandidates(getFillets(selected[0].content, selected[1].content, radius))
           clearText()
         }
       }

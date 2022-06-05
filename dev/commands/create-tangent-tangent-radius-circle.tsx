@@ -28,7 +28,7 @@ export const createTangentTangentRadiusCircleCommand: Command = {
       if (e.key === 'Enter') {
         const radius = +text
         if (!isNaN(radius)) {
-          setCandidates(getTangentTangentRadiusCircles(selected[0], selected[1], radius))
+          setCandidates(getTangentTangentRadiusCircles(selected[0].content, selected[1].content, radius))
           clearText()
         }
       }

@@ -1,13 +1,9 @@
 import produce from "immer"
 import React from "react"
-import { CircleEditBar, useCircleEdit } from "../src"
+import { Circle, CircleEditBar, useCircleEdit } from "../src"
 
 export default () => {
-  const [content, setContent] = React.useState({
-    x: 300,
-    y: 200,
-    r: 100,
-  })
+  const [content, setContent] = React.useState<Circle>({ x: 300, y: 200, r: 100 })
 
   const { offset, onStart, mask } = useCircleEdit(() => setContent(circle))
   const circle = produce(content, (draft) => {
