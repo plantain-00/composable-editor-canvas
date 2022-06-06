@@ -1,40 +1,52 @@
 import * as React from "react"
 import { useKey } from "./use-key"
 
-export function useSelectBeforeOperate<T>(
-  executeOperation: (operation?: T, selected?: readonly number[][]) => boolean,
+export function useSelectBeforeOperate<TSelect, TOperate>(
+  defaultOperation: TSelect,
+  executeOperation: (operation: TOperate, selected?: readonly number[][]) => boolean,
 ) {
-  const [[operation, nextOperation], setOperations] = React.useState<[T?, T?]>([])
-  
+  const [operations, setOperations] = React.useState<{
+    type: 'select'
+    select: TSelect
+  } | {
+    type: 'operate'
+    operate: TOperate
+  } | {
+    type: 'select then operate'
+    select: TSelect
+    operate: TOperate
+  }>({ type: 'select', select: defaultOperation })
+
+  const resetOperation = () => {
+    setOperations({ type: 'select', select: defaultOperation })
+  }
+
   useKey((e) => e.key === 'Escape', () => {
-    setOperations([])
+    setOperations({ type: 'select', select: defaultOperation })
   }, [setOperations])
 
   const startNextOperation = (selected?: readonly number[][]) => {
-    if (executeOperation(nextOperation, selected)) {
-      setOperations([])
-      return
-    }
-    if (nextOperation) {
-      setOperations([nextOperation])
+    if (operations.type === 'select then operate') {
+      if (executeOperation(operations.operate, selected)) {
+        resetOperation()
+        return
+      }
+      setOperations({ type: 'operate', operate: operations.operate })
     }
   }
 
   useKey((e) => e.key === 'Enter', () => startNextOperation())
 
   return {
-    operation,
-    nextOperation,
+    operations,
     executeOperation,
     startNextOperation,
-    resetOperation() {
-      setOperations([])
+    resetOperation,
+    selectBeforeOperate(select: TSelect, operate: TOperate) {
+      setOperations({ type: 'select then operate', select, operate })
     },
-    selectBeforeOperate(select: T | undefined, p: T) {
-      setOperations([select, p])
-    },
-    operate(p: T) {
-      setOperations([p])
+    operate(operate: TOperate) {
+      setOperations({ type: 'operate', operate })
     },
   }
 }

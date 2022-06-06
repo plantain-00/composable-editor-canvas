@@ -172,7 +172,7 @@ export default () => {
         />
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
-        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break'].map((p) => <button onClick={() => editorRef.current?.onStartOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
@@ -216,45 +216,43 @@ const CADEditor = React.forwardRef((props: {
   setCanRedo: (canRedo: boolean) => void
   setOperation: (operations: string | undefined) => void
 }, ref: React.ForwardedRef<CADEditorRef>) => {
-  const { operation, nextOperation, executeOperation, resetOperation, startNextOperation, selectBeforeOperate, operate } = useSelectBeforeOperate<Operation>(
-    (p, s = selected) => {
-      if (p?.type === 'command') {
-        const command = getCommand(p.name)
-        if (command?.executeCommand) {
-          const removedContents: number[] = []
-          const newContents: BaseContent[] = []
-          editingContent.forEach((c, i) => {
-            if (isSelected([i], s) && (command?.contentSelectable?.(c, state) ?? true)) {
-              const result = command?.executeCommand?.(c, state, i)
-              if (result?.newContents) {
-                newContents.push(...result.newContents)
-              }
-              if (result?.removed) {
-                removedContents.push(i)
-              }
-              if (result?.editingStatePath) {
-                setEditingContentPath(result.editingStatePath)
+  const { operations, executeOperation, resetOperation, startNextOperation, selectBeforeOperate, operate } = useSelectBeforeOperate<{ count?: number, part?: boolean }, Operation>({}, (p, s = selected) => {
+    if (p?.type === 'command') {
+      const command = getCommand(p.name)
+      if (command?.executeCommand) {
+        const removedContents: number[] = []
+        const newContents: BaseContent[] = []
+        editingContent.forEach((c, i) => {
+          if (isSelected([i], s) && (command?.contentSelectable?.(c, state) ?? true)) {
+            const result = command?.executeCommand?.(c, state, i)
+            if (result?.newContents) {
+              newContents.push(...result.newContents)
+            }
+            if (result?.removed) {
+              removedContents.push(i)
+            }
+            if (result?.editingStatePath) {
+              setEditingContentPath(result.editingStatePath)
+            }
+          }
+        })
+        if (removedContents.length + newContents.length > 0) {
+          setState((draft) => {
+            draft = getContentByPath(draft)
+            for (let i = draft.length; i >= 0; i--) {
+              if (removedContents.includes(i)) {
+                draft.splice(i, 1)
               }
             }
+            draft.push(...newContents)
           })
-          if (removedContents.length + newContents.length > 0) {
-            setState((draft) => {
-              draft = getContentByPath(draft)
-              for (let i = draft.length; i >= 0; i--) {
-                if (removedContents.includes(i)) {
-                  draft.splice(i, 1)
-                }
-              }
-              draft.push(...newContents)
-            })
-          }
-          setSelected()
-          return true
         }
+        setSelected()
+        return true
       }
-      return false
-    },
-  )
+    }
+    return false
+  })
   const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatches: props.onApplyPatches,
@@ -295,8 +293,8 @@ const CADEditor = React.forwardRef((props: {
     },
   }
 
-  const maxCount = operation?.type === 'select' || operation?.type === 'select part' ? operation.count : undefined
-  const isSelectOperation = operation === undefined || operation.type === 'select' || operation.type === 'select part'
+  const maxCount = operations.type !== 'operate' ? operations.select.count : undefined
+  const isSelectOperation = operations.type !== 'operate'
   const selectedContents: { content: BaseContent, path: number[] }[] = []
   editingContent.forEach((s, i) => {
     if (isSelected([i])) {
@@ -348,7 +346,7 @@ const CADEditor = React.forwardRef((props: {
     (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent),
     angleSnapEnabled && !snapPoint,
     inputFixed,
-    operation?.type === 'command' ? operation.name : undefined,
+    operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
   )
 
@@ -408,11 +406,11 @@ const CADEditor = React.forwardRef((props: {
 
   const contentSelectable = (index: number[]) => {
     // ignore selected contents
-    if (isSelected(index)) {
+    if (isSelected(index) || operations.type === 'operate') {
       return false
     }
-    if (nextOperation?.type === 'command') {
-      const command = getCommand(nextOperation.name)
+    if (operations.type === 'select then operate' && operations.operate.type === 'command') {
+      const command = getCommand(operations.operate.name)
       const content = getContentByIndex(editingContent, index)
       if (content) {
         return command?.contentSelectable?.(content, state) ?? true
@@ -431,9 +429,8 @@ const CADEditor = React.forwardRef((props: {
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
   React.useEffect(() => {
-    const p = nextOperation || operation
-    props.setOperation(p?.type === 'command' ? p.name : p?.type)
-  }, [operation, nextOperation])
+    props.setOperation(operations.type === 'operate' || operations.type === 'select then operate' ? operations.operate.name : undefined)
+  }, [operations])
 
   const [othersSelectedContents, setOthersSelectedContents] = React.useState<{ selection: number[], operator: string }[]>([])
 
@@ -465,7 +462,7 @@ const CADEditor = React.forwardRef((props: {
   }), [applyPatchFromOtherOperators])
 
   let message = ''
-  if (isSelectOperation && nextOperation) {
+  if (isSelectOperation && operations.type === 'select then operate') {
     if (maxCount !== undefined) {
       message = `${selected.length} selected, extra ${maxCount - selected.length} targets are needed`
     } else {
@@ -495,8 +492,8 @@ const CADEditor = React.forwardRef((props: {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent)
     // if the operation is command, start it
-    if (!isSelectOperation && operation.type === 'command') {
-      startCommand(operation.name, p)
+    if (!isSelectOperation && operations.type === 'operate' && operations.operate.type === 'command') {
+      startCommand(operations.operate.name, p)
     }
     if (isSelectOperation) {
       if (editPoint) {
@@ -512,7 +509,7 @@ const CADEditor = React.forwardRef((props: {
     }
   }
   const onMouseDown = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    if (operation?.type === 'move canvas') {
+    if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     }
   }
@@ -522,13 +519,13 @@ const CADEditor = React.forwardRef((props: {
     const p = reverseTransformPosition(viewportPosition, transform)
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
-    if (!isSelectOperation && operation.type === 'command') {
+    if (!isSelectOperation && operations.type === 'operate' && operations.operate.type === 'command') {
       onCommandMove(getSnapPoint(p, editingContent), viewportPosition)
     }
     if (isSelectOperation) {
       onEditMove(getSnapPoint(p, editingContent), selectedContents)
       // hover by position
-      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, getContentModel, operation?.type === 'select part'))
+      setHovering(getContentByClickPosition(editingContent, p, contentSelectable, getContentModel, operations.select.part))
     }
   }
   const onStartOperation = (p: Operation) => {
@@ -547,10 +544,7 @@ const CADEditor = React.forwardRef((props: {
         )
         // for commands, but no/no enough content selected, start to select some
         if (needSelect) {
-          selectBeforeOperate(
-            command.selectCount !== undefined ? { type: command.selectType ?? 'select', count: command.selectCount } : undefined,
-            p,
-          )
+          selectBeforeOperate({ count: command.selectCount, part: command.selectType === 'select part' }, p)
           return
         }
         if (executeOperation(p, result)) {
@@ -563,7 +557,7 @@ const CADEditor = React.forwardRef((props: {
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-      <div style={{ cursor: editPoint?.cursor ?? (operation?.type === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+      <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
           contents={[...previewContents, ...assistentContents]}
@@ -596,19 +590,7 @@ interface CADEditorRef {
   exitEditBlock(): void
 }
 
-type Operation =
-  | {
-    type: 'select'
-    count: number
-  }
-  | {
-    type: 'select part'
-    count: number
-  }
-  | {
-    type: 'command'
-    name: string
-  }
-  | {
-    type: 'move canvas'
-  }
+type Operation = {
+  type: 'command' | 'non command'
+  name: string
+}
