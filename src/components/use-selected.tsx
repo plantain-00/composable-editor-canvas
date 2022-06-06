@@ -28,8 +28,8 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       }
     }
   }
-  const filterSelection = (filter: (value: T) => boolean, maxCount = options?.maxCount) => {
-    let result = selected.filter(filter)
+  const filterSelection = (filter?: (value: T) => boolean, maxCount = options?.maxCount) => {
+    let result = filter ? selected.filter(filter) : selected
     if (maxCount !== undefined) {
       result = result.slice(-maxCount)
     }

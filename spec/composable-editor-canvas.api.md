@@ -852,14 +852,23 @@ export function useRegionAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useSelectBeforeOperate<T>(executeOperation: (operation?: T, selected?: readonly number[][]) => boolean): {
-    operation: T | undefined;
-    nextOperation: T | undefined;
-    executeOperation: (operation?: T, selected?: readonly number[][]) => boolean;
+export function useSelectBeforeOperate<TSelect, TOperate>(defaultOperation: TSelect, executeOperation: (operation: TOperate, selected?: readonly number[][]) => boolean): {
+    operations: {
+        type: 'select';
+        select: TSelect;
+    } | {
+        type: 'operate';
+        operate: TOperate;
+    } | {
+        type: 'select then operate';
+        select: TSelect;
+        operate: TOperate;
+    };
+    executeOperation: (operation: TOperate, selected?: readonly number[][]) => boolean;
     startNextOperation: (selected?: readonly number[][]) => void;
-    resetOperation(): void;
-    selectBeforeOperate(select: T | undefined, p: T): void;
-    operate(p: T): void;
+    resetOperation: () => void;
+    selectBeforeOperate(select: TSelect, operate: TOperate): void;
+    operate(operate: TOperate): void;
 };
 
 // @public (undocumented)
@@ -868,8 +877,8 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     maxCount: number;
 }>): {
     selected: readonly T[];
-    filterSelection: (filter: (value: T) => boolean, maxCount?: number | undefined) => {
-        result: T[];
+    filterSelection: (filter?: ((value: T) => boolean) | undefined, maxCount?: number | undefined) => {
+        result: readonly T[];
         needSelect: boolean;
     };
     isSelected: (value: T, s?: readonly T[]) => boolean;
