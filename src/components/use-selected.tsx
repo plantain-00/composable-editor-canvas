@@ -1,10 +1,7 @@
 import * as React from "react"
 import { useKey } from "./use-key"
 
-export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<{
-  onChange: (s: readonly T[]) => void
-  maxCount: number
-}>) {
+export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<UseSelectedOptions<T>>) {
   const [selected, setSelected] = React.useState<readonly T[]>([])
 
   React.useEffect(() => {
@@ -15,8 +12,13 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     setSelected([])
   }, [setSelected])
 
-  const addSelection = (value: readonly T[], maxCount = options?.maxCount, reachMaxCount?: (selected: T[]) => void) => {
-    value = value.filter((s) => !isSelected(s, selected))
+  const addSelection = (
+    value: readonly T[],
+    maxCount = options?.maxCount,
+    reachMaxCount?: (selected: T[]) => void,
+    selectable?: (value: T) => boolean,
+  ) => {
+    value = value.filter((s) => !isSelected(s, selected) && (selectable?.(s) ?? true))
     if (value.length > 0) {
       let result = [...selected, ...value]
       if (maxCount !== undefined) {
@@ -28,8 +30,8 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       }
     }
   }
-  const filterSelection = (filter?: (value: T) => boolean, maxCount = options?.maxCount) => {
-    let result = filter ? selected.filter(filter) : selected
+  const filterSelection = (selectable?: (value: T) => boolean, maxCount = options?.maxCount) => {
+    let result = selectable ? selected.filter(selectable) : selected
     if (maxCount !== undefined) {
       result = result.slice(-maxCount)
     }
@@ -50,6 +52,11 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       setSelected(value.filter((v): v is T => v !== undefined))
     },
   }
+}
+
+export interface UseSelectedOptions<T> {
+  onChange: (s: readonly T[]) => void
+  maxCount: number
 }
 
 export function isSelected<T extends SelectPath = SelectPath>(value: T, selected: readonly T[]) {
