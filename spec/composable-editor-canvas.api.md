@@ -852,7 +852,19 @@ export function useRegionAlignment(delta: number): {
 };
 
 // @public (undocumented)
-export function useSelectBeforeOperate<TSelect, TOperate>(defaultOperation: TSelect, executeOperation: (operation: TOperate, selected?: readonly number[][]) => boolean): {
+export function useSelectBeforeOperate<TSelect extends {
+    count?: number;
+    selectable?: (index: TPath) => boolean;
+}, TOperate, TPath extends SelectPath = SelectPath>(defaultOperation: TSelect, executeOperation: (operation: TOperate, selected: readonly TPath[]) => boolean, options?: Partial<UseSelectedOptions<TPath>>): {
+    message: string;
+    selected: readonly TPath[];
+    isSelected: (value: TPath, s?: readonly TPath[]) => boolean;
+    addSelection(...value: readonly TPath[]): void;
+    setSelected: (...value: readonly (TPath | undefined)[]) => void;
+    filterSelection: (selectable?: ((value: TPath) => boolean) | undefined, maxCount?: number | undefined) => {
+        result: readonly TPath[];
+        needSelect: boolean;
+    };
     operations: {
         type: 'select';
         select: TSelect;
@@ -864,27 +876,32 @@ export function useSelectBeforeOperate<TSelect, TOperate>(defaultOperation: TSel
         select: TSelect;
         operate: TOperate;
     };
-    executeOperation: (operation: TOperate, selected?: readonly number[][]) => boolean;
-    startNextOperation: (selected?: readonly number[][]) => void;
+    executeOperation: (operation: TOperate, selected: readonly TPath[]) => boolean;
+    startNextOperation: (s?: readonly TPath[]) => void;
     resetOperation: () => void;
     selectBeforeOperate(select: TSelect, operate: TOperate): void;
     operate(operate: TOperate): void;
 };
 
 // @public (undocumented)
-export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<{
-    onChange: (s: readonly T[]) => void;
-    maxCount: number;
-}>): {
+export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<UseSelectedOptions<T>>): {
     selected: readonly T[];
-    filterSelection: (filter?: ((value: T) => boolean) | undefined, maxCount?: number | undefined) => {
+    filterSelection: (selectable?: ((value: T) => boolean) | undefined, maxCount?: number | undefined) => {
         result: readonly T[];
         needSelect: boolean;
     };
     isSelected: (value: T, s?: readonly T[]) => boolean;
-    addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined) => void;
+    addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined, selectable?: ((value: T) => boolean) | undefined) => void;
     setSelected(...value: readonly (T | undefined)[]): void;
 };
+
+// @public (undocumented)
+export interface UseSelectedOptions<T> {
+    // (undocumented)
+    maxCount: number;
+    // (undocumented)
+    onChange: (s: readonly T[]) => void;
+}
 
 // @public (undocumented)
 export function useUndoRedo<T>(defaultState: T): {

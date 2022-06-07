@@ -69,13 +69,6 @@ export function breakPolyline(
 ) {
   const result: LineContent[] = []
   let lastPoints: Position[] = [lines[0][0]]
-  const addAsResult = () => {
-    if (lastPoints.length === 2) {
-      result.push({ type: 'line', points: lastPoints })
-    } else if (lastPoints.length > 2) {
-      result.push({ type: 'polyline', points: lastPoints })
-    }
-  }
   lines.forEach((line) => {
     const current: Position[] = []
     const remain: Position[] = []
@@ -95,7 +88,7 @@ export function breakPolyline(
         if (!isSamePoint(lastPoints[lastPoints.length - 1], p)) {
           lastPoints.push(p)
         }
-        addAsResult()
+        result.push({ type: 'polyline', points: lastPoints })
         lastPoints = [p]
       })
       if (!isSamePoint(lastPoints[lastPoints.length - 1], line[1])) {
@@ -103,7 +96,7 @@ export function breakPolyline(
       }
     }
   })
-  addAsResult()
+  result.push({ type: 'polyline', points: lastPoints })
   if (result.length > 1) {
     const startPoint = result[0].points[0]
     const lastResult = result[result.length - 1].points
@@ -112,6 +105,11 @@ export function breakPolyline(
       return result.slice(0, result.length - 1)
     }
     return result
+  }
+  for (const r of result) {
+    if (r.points.length === 2) {
+      r.type === 'line'
+    }
   }
   return undefined
 }
