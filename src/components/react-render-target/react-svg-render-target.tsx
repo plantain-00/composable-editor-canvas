@@ -3,7 +3,7 @@ import { ReactRenderTarget } from ".."
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
-  renderResult(children, width, height, attributes, transform) {
+  renderResult(children, width, height, attributes, transform, backgroundColor) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const x = transform?.x ?? 0
     const y = transform?.y ?? 0
@@ -22,6 +22,10 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
         height={height}
         colorInterpolationFilters="sRGB"
         {...attributes}
+        style={{
+          ...attributes?.style,
+          backgroundColor: backgroundColor ? getColorString(backgroundColor) : undefined,
+        }}
       >
         {children}
       </svg>
@@ -114,4 +118,8 @@ export function polarToCartesian(cx: number, cy: number, radius: number, angleIn
 export function getColorString(color: number) {
   const s = color.toString(16)
   return `#${'0'.repeat(6 - s.length)}${s}`
+}
+
+export function colorStringToNumber(color: string) {
+  return +`0x${color.slice(1)}`
 }

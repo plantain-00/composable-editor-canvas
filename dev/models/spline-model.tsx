@@ -1,7 +1,7 @@
 import bspline from 'b-spline'
 import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getSymmetryPoint, Position, rotatePositionByCenter } from '../../src'
 import { getPolylineEditPoints, iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
@@ -24,10 +24,10 @@ export const splineModel: Model<SplineContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     const { points } = getSplineLines(content)
-    return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+    return target.renderPolyline(points, color, content.dashArray, strokeWidth)
   },
   renderIfSelected({ content, color, target, strokeWidth }) {
-    return target.renderPolyline(content.points, color ?? defaultStrokeColor, [4], strokeWidth)
+    return target.renderPolyline(content.points, color, [4], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]

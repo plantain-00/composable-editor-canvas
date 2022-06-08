@@ -1,6 +1,6 @@
 import { getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 import { iteratePolygonLines, renderPolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
@@ -37,9 +37,9 @@ export const rectModel: Model<RectContent> = {
   render({ content, color, target, strokeWidth, partsStyles }) {
     if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectLines(content)
-      return renderPolygon(target, points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
+      return renderPolygon(target, points, color, content.dashArray, strokeWidth, partsStyles)
     }
-    return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color ?? defaultStrokeColor, content.angle, strokeWidth, content.fillColor)
+    return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color, content.angle, strokeWidth, content.fillColor)
   },
   getOperatorRenderPosition(content) {
     const { points } = getRectLines(content)

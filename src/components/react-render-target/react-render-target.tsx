@@ -13,7 +13,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
       x: number
       y: number
       scale: number
-    }
+    },
+    backgroundColor?: number,
   ): JSX.Element
   renderEmpty(): T
   renderGroup(children: T[], x: number, y: number, base: Position, angle?: number): T

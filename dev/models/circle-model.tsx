@@ -1,7 +1,7 @@
 import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
 import { ArcContent, getArcLines } from './arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -37,9 +37,9 @@ export const circleModel: Model<CircleContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getCircleLines(content)
-      return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, color, content.dashArray, strokeWidth)
     }
-    return target.renderCircle(content.x, content.y, content.r, color ?? defaultStrokeColor, strokeWidth)
+    return target.renderCircle(content.x, content.y, content.r, color, strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content

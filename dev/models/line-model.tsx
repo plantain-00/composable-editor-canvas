@@ -1,5 +1,5 @@
 import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine } from '../../src'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -24,7 +24,7 @@ export const lineModel: Model<LineContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth }) {
-    return target.renderPolyline(content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+    return target.renderPolyline(content.points, color, content.dashArray, strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]

@@ -1,5 +1,5 @@
 import { Position, ReactRenderTarget } from '../../src'
-import { BaseContent, defaultStrokeColor, getEditPointsFromCache, Model } from './model'
+import { BaseContent, getEditPointsFromCache, Model } from './model'
 import { getPolylineEditPoints, getPolylineLines, LineContent, lineModel } from './line-model'
 
 export const polylineModel: Model<LineContent> = {
@@ -10,7 +10,7 @@ export const polylineModel: Model<LineContent> = {
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return renderPolyline(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
+    return renderPolyline(target, content.points, color, content.dashArray, strokeWidth, partsStyles)
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolyLineContent) }))

@@ -38,7 +38,7 @@ export const blockModel: Model<BlockContent> = {
   getLines: getBlockLines,
 }
 
-export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color?: number) {
+export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color: number) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
   block.contents.forEach((blockContent) => {
     const model = getModel(blockContent.type)

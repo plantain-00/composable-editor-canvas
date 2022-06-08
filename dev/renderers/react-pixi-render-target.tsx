@@ -7,19 +7,26 @@ const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Contai
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: 'pixi',
-  renderResult(children, width, height, attributes, transform) {
+  renderResult(children, width, height, attributes, transform, backgroundColor = 0xffffff) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const x = transform?.x ?? 0
     const y = transform?.y ?? 0
     const scale = transform?.scale ?? 1
+    const ref = React.useRef<Stage & { app: PIXI.Application } | null>(null)
+    React.useEffect(() => {
+      if (ref.current) {
+        ref.current.app.renderer.backgroundColor = backgroundColor
+      }
+    }, [backgroundColor])
     return (
       <Stage
         options={{
-          backgroundColor: 0xffffff,
+          backgroundColor,
           width,
           height,
           antialias: true,
         }}
+        ref={ref}
         width={width}
         height={height}
         {...attributes}

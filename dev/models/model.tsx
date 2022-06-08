@@ -18,15 +18,16 @@ export interface Model<T> {
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly BaseContent[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
+  getDefaultColor?(content: Omit<T, 'type'>): number
   render?<V>(props: {
     content: Omit<T, 'type'>
-    color?: number
+    color: number
     target: ReactRenderTarget<V>
     strokeWidth: number
     contents: readonly BaseContent[]
     partsStyles: readonly { index: number, color: number }[]
   }): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color?: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {
     editPoints: EditPoint<BaseContent>[]
@@ -48,8 +49,6 @@ const modelCenter: Record<string, Model<BaseContent>> = {}
 export function getModel(type: string): Model<BaseContent> | undefined {
   return modelCenter[type]
 }
-
-export const defaultStrokeColor = 0x00ff00
 
 export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
