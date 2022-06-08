@@ -1,5 +1,5 @@
 import React from "react"
-import { isSelected, ReactRenderTarget } from "../../src"
+import { getColorString, isSelected, ReactRenderTarget } from "../../src"
 import { BaseContent, getModel } from "../models/model"
 
 export function Renderer(props: {
@@ -15,12 +15,24 @@ export function Renderer(props: {
   }
   width: number
   height: number
+  backgroundColor: number
 } & React.DOMAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
   if (!target) {
     return null
   }
   const strokeWidth = 1 / (props.transform?.scale ?? 1)
+  const backgroundColor = getColorString(props.backgroundColor)
+  const r = +`0x${backgroundColor.substring(1, 3)}`
+  const b = +`0x${backgroundColor.substring(3, 5)}`
+  const g = +`0x${backgroundColor.substring(5)}`
+  const light = (Math.max(r, g, b) + Math.min(r, g, b)) / 2
+  const transformColor = (color: number) => {
+    if (light < 128) {
+      return color === 0 ? 0xffffff : color
+    }
+    return color === 0xffffff ? 0 : color
+  }
   const children: unknown[] = []
   props.contents.forEach((content, i) => {
     const model = getModel(content.type)
@@ -36,9 +48,11 @@ export function Renderer(props: {
       selected = true
     } else {
       if (isSelected([i], props.hovering)) {
-        color = 0x000000
+        color = 0x00ff00
       } else if (operators.length > 0) {
         color = 0x0000ff
+      } else {
+        color = model.getDefaultColor?.(content) ?? 0x000000
       }
       const selectedPart = props.selected.filter((v) => v.length === 2 && v[0] === i)
       if (selectedPart.length > 0) {
@@ -47,9 +61,10 @@ export function Renderer(props: {
       }
       const hoveringPart = props.hovering.find((v) => v.length === 2 && v[0] === i)
       if (hoveringPart) {
-        partsStyles.push({ index: hoveringPart[1], color: 0x000000 })
+        partsStyles.push({ index: hoveringPart[1], color: 0x00ff00 })
       }
     }
+    color = transformColor(color)
     if (selected) {
       operators.unshift('me')
     }
@@ -75,7 +90,8 @@ export function Renderer(props: {
     },
     onClick: props.onClick,
     onMouseDown: props.onMouseDown,
-  }, props.transform)
+    onContextMenu: props.onContextMenu,
+  }, props.transform, props.backgroundColor)
 }
 
 const rendererCenter: Record<string, ReactRenderTarget<unknown>> = {}

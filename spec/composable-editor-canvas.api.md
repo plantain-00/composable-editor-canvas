@@ -72,6 +72,9 @@ export function CircleEditBar(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export function colorStringToNumber(color: string): number;
+
+// @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
 
 // @public (undocumented)
@@ -438,7 +441,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         x: number;
         y: number;
         scale: number;
-    }): JSX.Element;
+    }, backgroundColor?: number): JSX.Element;
     // (undocumented)
     renderText(x: number, y: number, text: string, strokeColor: number, fontSize: number): T;
     // (undocumented)
@@ -478,6 +481,12 @@ export function RotationBar(props: {
     rotateCircleSize?: number;
     onMouseDown: React_2.MouseEventHandler<HTMLOrSVGElement>;
 }): JSX.Element;
+
+// @public (undocumented)
+export function scaleByCursorPosition({ width, height }: Size, scale: number, cursor: Position): {
+    setX: (x: number) => number;
+    setY: (y: number) => number;
+};
 
 // @public (undocumented)
 export function Scrollbar(props: {
@@ -865,6 +874,7 @@ export function useSelectBeforeOperate<TSelect extends {
         result: readonly TPath[];
         needSelect: boolean;
     };
+    isSelectable: (path: TPath) => boolean;
     operations: {
         type: 'select';
         select: TSelect;
@@ -977,6 +987,13 @@ export interface ZoomOptions {
     // (undocumented)
     min: number;
 }
+
+// @public (undocumented)
+export function zoomToFit(points: Position[], { width, height }: Size, center: Position, paddingScale?: number): {
+    scale: number;
+    x: number;
+    y: number;
+} | undefined;
 
 // Warnings were encountered during analysis:
 //

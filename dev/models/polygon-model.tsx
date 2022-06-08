@@ -1,6 +1,6 @@
 import { getSymmetryPoint, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 import { renderPolyline } from './polyline-model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
@@ -30,7 +30,7 @@ export const polygonModel: Model<PolygonContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return renderPolygon(target, content.points, color ?? defaultStrokeColor, content.dashArray, strokeWidth, partsStyles)
+    return renderPolygon(target, content.points, color, content.dashArray, strokeWidth, partsStyles)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]

@@ -1,7 +1,7 @@
 import { Arc, equals, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, defaultStrokeColor, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -66,13 +66,13 @@ export const arcModel: Model<ArcContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getArcLines(content)
-      return target.renderPolyline(points, color ?? defaultStrokeColor, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, color, content.dashArray, strokeWidth)
     }
-    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color ?? defaultStrokeColor, strokeWidth)
+    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color, strokeWidth)
   },
   renderIfSelected({ content, color, target, strokeWidth }) {
     const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.renderPolyline(points, color ?? defaultStrokeColor, [4], strokeWidth)
+    return target.renderPolyline(points, color, [4], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)

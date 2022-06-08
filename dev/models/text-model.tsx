@@ -9,6 +9,9 @@ export type TextContent = BaseContent<'text'> & Position & {
 
 export const textModel: Model<TextContent> = {
   type: 'text',
+  getDefaultColor(content) {
+    return content.color
+  },
   render({ content, target, color }) {
     return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize)
   },

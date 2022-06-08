@@ -49,6 +49,10 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
     }
   }
 
+  const isSelectable = (path: TPath) => {
+    return !isSelected(path) && operations.type !== 'operate' && (operations.select.selectable?.(path) ?? true)
+  }
+
   return {
     message,
     selected,
@@ -58,11 +62,12 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
         value,
         operations.type !== 'operate' ? operations.select.count : undefined,
         startNextOperation,
-        (v) => operations.type !== 'operate' && (operations.select.selectable?.(v) ?? true)
+        isSelectable
       )
     },
     setSelected,
     filterSelection,
+    isSelectable,
     operations,
     executeOperation,
     startNextOperation,
