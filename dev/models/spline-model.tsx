@@ -26,8 +26,8 @@ export const splineModel: Model<SplineContent> = {
     const { points } = getSplineLines(content)
     return target.renderPolyline(points, color, content.dashArray, strokeWidth)
   },
-  renderIfSelected({ content, color, target, strokeWidth }) {
-    return target.renderPolyline(content.points, color, [4], strokeWidth)
+  renderIfSelected({ content, color, target, strokeWidth, scale }) {
+    return target.renderPolyline(content.points, color, [4 / scale], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     return content.points[0]

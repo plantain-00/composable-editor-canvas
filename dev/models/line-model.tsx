@@ -168,7 +168,7 @@ export function getPolylineEditPoints(
     x: p.x,
     y: p.y,
     cursor: 'move',
-    update(c: BaseContent, cursor: Position, start: Position) {
+    update(c: BaseContent, { cursor, start, scale }: { cursor: Position, start: Position, scale: number }) {
       if (!isPolyLineContent(c)) {
         return
       }
@@ -178,7 +178,7 @@ export function getPolylineEditPoints(
         c.points[pointIndex].x += offsetX
         c.points[pointIndex].y += offsetY
       }
-      return { assistentContents: [{ type: 'line', dashArray: [4], points: [start, cursor] } as LineContent] }
+      return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
     },
   }))
 }

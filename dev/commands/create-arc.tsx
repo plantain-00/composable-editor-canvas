@@ -8,7 +8,7 @@ import { Command } from "./command";
 
 export const createArcCommand: Command = {
   name: 'create arc',
-  useCommand(onEnd, _, getAngleSnap, type) {
+  useCommand({ onEnd, getAngleSnap, type, scale }) {
     const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
       type === 'create arc' ? 'center radius' : undefined,
       (c) => onEnd((contents) => contents.push({ ...c, type: 'arc' })),
@@ -19,23 +19,23 @@ export const createArcCommand: Command = {
     const assistentContents: (LineContent | PolygonContent | CircleContent | TextContent | ArcContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
-        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4 / scale] })
       } else {
         assistentContents.push(
-          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
+          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] },
           {
             type: 'text',
             x: (startPosition.x + cursorPosition.x) / 2 - 20,
             y: (startPosition.y + cursorPosition.y) / 2 + 4,
             text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
             color: 0xff0000,
-            fontSize: 16,
+            fontSize: 16 / scale,
           },
         )
       }
     }
     if (arc) {
-      assistentContents.push({ type: 'circle', ...arc, dashArray: [4] })
+      assistentContents.push({ type: 'circle', ...arc, dashArray: [4 / scale] })
       if (arc.startAngle !== arc.endAngle) {
         assistentContents.push(
           {
@@ -49,7 +49,7 @@ export const createArcCommand: Command = {
                 y: arc.y
               },
             ],
-            dashArray: [4]
+            dashArray: [4 / scale]
           },
           {
             type: 'line', points: [
@@ -62,18 +62,18 @@ export const createArcCommand: Command = {
                 y: arc.y + arc.r * Math.sin(arc.endAngle / 180 * Math.PI)
               },
             ],
-            dashArray: [4]
+            dashArray: [4 / scale]
           },
         )
       }
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [arc, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [arc, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (circle) {
-      assistentContents.push({ type: 'circle', ...circle, dashArray: [4] })
+      assistentContents.push({ type: 'circle', ...circle, dashArray: [4 / scale] })
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [circle, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [circle, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (arc && arc.startAngle !== arc.endAngle) {

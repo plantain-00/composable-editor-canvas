@@ -48,12 +48,12 @@ export const circleModel: Model<CircleContent> = {
     return getEditPointsFromCache(content, () => {
       const x = content.x
       const y = content.y
-      const updateEdges = (c: BaseContent, cursor: Position) => {
+      const updateEdges = (c: BaseContent, { cursor, scale }: { cursor: Position, scale: number }) => {
         if (!isCircleContent(c)) {
           return
         }
         c.r = getTwoPointsDistance(cursor, c)
-        return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+        return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
       }
       return {
         editPoints: [
@@ -61,13 +61,13 @@ export const circleModel: Model<CircleContent> = {
             x,
             y,
             cursor: 'move',
-            update(c, cursor, start) {
+            update(c, { cursor, start, scale }) {
               if (!isCircleContent(c)) {
                 return
               }
               c.x += cursor.x - start.x
               c.y += cursor.y - start.y
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           },
           {

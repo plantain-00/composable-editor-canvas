@@ -6,7 +6,7 @@ import { Command } from "./command"
 
 export const rotateCommand: Command = {
   name: 'rotate',
-  useCommand(onEnd, transform, getAngleSnap, enabled) {
+  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
     const { offset, onStart, mask, center: startPosition } = useDragRotate(
       onEnd,
       {
@@ -17,7 +17,7 @@ export const rotateCommand: Command = {
       },
     )
     let message = ''
-    if (enabled) {
+    if (type) {
       message = startPosition ? 'specify angle point' : 'specify center point'
     }
     const { input, setInputPosition } = useCursorInput(message)
@@ -27,7 +27,7 @@ export const rotateCommand: Command = {
       assistentContents = [
         {
           type: 'line',
-          dashArray: [4],
+          dashArray: [4 / scale],
           points: [startPosition, offset]
         },
         {
@@ -35,13 +35,13 @@ export const rotateCommand: Command = {
           x: startPosition.x,
           y: startPosition.y,
           r,
-          dashArray: [4],
+          dashArray: [4 / scale],
           startAngle: offset.angle > 180 || offset.angle < 0 ? offset.angle : 0,
           endAngle: offset.angle > 180 || offset.angle < 0 ? 0 : offset.angle,
         },
         {
           type: 'line',
-          dashArray: [4],
+          dashArray: [4 / scale],
           points: [startPosition, { x: startPosition.x + r, y: startPosition.y }]
         }
       ]

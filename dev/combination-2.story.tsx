@@ -40,6 +40,7 @@ import { createTangentTangentRadiusCircleCommand } from './commands/create-tange
 import { filletCommand } from './commands/fillet'
 import { chamferCommand } from './commands/chamfer'
 import { breakCommand } from './commands/break'
+import { measureCommand } from './commands/measure'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -82,6 +83,7 @@ registerCommand(createTangentTangentRadiusCircleCommand)
 registerCommand(filletCommand)
 registerCommand(chamferCommand)
 registerCommand(breakCommand)
+registerCommand(measureCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -175,7 +177,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -333,6 +335,7 @@ const CADEditor = React.forwardRef((props: {
     getIntersectionPoints,
     snapTypes,
     (c) => getModel(c.type)?.getSnapPoints?.(c, editingContent),
+    scale,
   )
 
   // commands
@@ -354,6 +357,7 @@ const CADEditor = React.forwardRef((props: {
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
+    scale,
   )
 
   // select by region

@@ -6,11 +6,11 @@ import { Command } from "./command"
 
 export const chamferCommand: Command = {
   name: 'chamfer',
-  useCommand(onEnd, _t, _s, enabled, selected) {
+  useCommand({ onEnd, type, selected, scale }) {
     const [candidates, setCandidates] = React.useState<Position[][]>([])
     const [result, setResult] = React.useState<Position[]>()
     let message = ''
-    if (enabled) {
+    if (type) {
       if (candidates.length > 0) {
         message = 'select one result'
       } else {
@@ -20,9 +20,9 @@ export const chamferCommand: Command = {
     const assistentContents: LineContent[] = candidates.map((c) => ({
       type: 'line',
       points: c,
-      dashArray: c === result ? undefined : [4],
+      dashArray: c === result ? undefined : [4 / scale],
     }))
-    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, enabled && candidates.length == 0 ? (e, text) => {
+    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, type && candidates.length == 0 ? (e, text) => {
       if (e.key === 'Enter') {
         const position = text.split(',')
         if (position.length === 2) {

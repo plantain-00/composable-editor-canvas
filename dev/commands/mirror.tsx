@@ -6,7 +6,7 @@ import { Command } from "./command"
 
 export const mirrorCommand: Command = {
   name: 'mirror',
-  useCommand(onEnd, transform, getAngleSnap, enabled) {
+  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
     const [changeOriginal, setChangeOriginal] = React.useState(false)
     const { offset, onStart, mask, startPosition } = useDragMove(onEnd, {
       transform,
@@ -14,10 +14,10 @@ export const mirrorCommand: Command = {
       getAngleSnap,
     })
     let message = ''
-    if (enabled) {
+    if (type) {
       message = startPosition ? 'specify second point' : 'specify first point'
     }
-    const { input, setInputPosition, clearText, setCursorPosition } = useCursorInput(message, enabled ? (e, text) => {
+    const { input, setInputPosition, clearText, setCursorPosition } = useCursorInput(message, type ? (e, text) => {
       if (e.key === 'Enter') {
         if (text.toLowerCase() === 'y' || text.toLowerCase() === 'n') {
           setChangeOriginal(!changeOriginal)
@@ -27,9 +27,9 @@ export const mirrorCommand: Command = {
     } : undefined)
     return {
       onStart,
-      mask: enabled ? mask : undefined,
+      mask: type ? mask : undefined,
       input,
-      subcommand: enabled ? (
+      subcommand: type ? (
         <button
           onClick={(e) => {
             setChangeOriginal(!changeOriginal)
@@ -53,7 +53,7 @@ export const mirrorCommand: Command = {
                 getModel(d.type)?.mirror?.(d, line, angle, contents)
               }),
             ] : undefined,
-            
+
           }
         }
         return {}
@@ -65,7 +65,7 @@ export const mirrorCommand: Command = {
       assistentContents: startPosition && offset && (offset.x !== 0 || offset.y !== 0) ? [
         {
           type: 'line',
-          dashArray: [4],
+          dashArray: [4 / scale],
           points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
         },
       ] : undefined,

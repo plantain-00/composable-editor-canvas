@@ -7,7 +7,7 @@ import { Command } from "./command";
 
 export const createEllipseArcCommand: Command = {
   name: 'create ellipse arc',
-  useCommand(onEnd, _, getAngleSnap, type) {
+  useCommand({ onEnd, getAngleSnap, type, scale }) {
     const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
       type === 'create ellipse arc' ? 'ellipse center' : undefined,
       (c) => onEnd((contents) => contents.push({ ...c, type: 'ellipse arc' })),
@@ -18,17 +18,17 @@ export const createEllipseArcCommand: Command = {
     const assistentContents: (LineContent | PolygonContent | EllipseContent | EllipseArcContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
-        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4 / scale] })
         const center = type === 'create ellipse arc'
           ? startPosition
           : { x: (startPosition.x + middlePosition.x) / 2, y: (startPosition.y + middlePosition.y) / 2 }
-        assistentContents.push({ type: 'line', points: [center, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [center, cursorPosition], dashArray: [4 / scale] })
       } else {
-        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (ellipseArc) {
-      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4] })
+      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4 / scale] })
       if (ellipseArc.startAngle !== ellipseArc.endAngle) {
         assistentContents.push(
           {
@@ -42,7 +42,7 @@ export const createEllipseArcCommand: Command = {
                 y: ellipseArc.cy
               },
             ],
-            dashArray: [4]
+            dashArray: [4 / scale]
           },
           {
             type: 'line', points: [
@@ -55,17 +55,17 @@ export const createEllipseArcCommand: Command = {
                 y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
               }, ellipseArc),
             ],
-            dashArray: [4]
+            dashArray: [4 / scale]
           },
         )
       }
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4 / scale] })
       }
     } else if (ellipse) {
-      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4] })
+      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4 / scale] })
       if (cursorPosition) {
-        assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {

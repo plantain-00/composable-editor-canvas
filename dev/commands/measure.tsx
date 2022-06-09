@@ -1,23 +1,27 @@
-import { getTwoPointsDistance, useLineClickCreate } from "../../src";
-import { ArcContent } from "../models/arc-model";
-import { LineContent } from "../models/line-model";
-import { TextContent } from "../models/text-model";
-import { Command } from "./command";
+import { getTwoPointsDistance, useCursorInput, useDragMove } from "../../src"
+import { ArcContent } from "../models/arc-model"
+import { LineContent } from "../models/line-model"
+import { TextContent } from "../models/text-model"
+import { Command } from "./command"
 
-export const createPolylineCommand: Command = {
-  name: 'create polyline',
-  useCommand({ onEnd, scale, getAngleSnap, type }) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
-      type === 'create polyline',
-      (c) => onEnd((contents) => contents.push({ points: c, type: 'polyline' } as LineContent)),
-      {
-        getAngleSnap,
-      },
-    )
+export const measureCommand: Command = {
+  name: 'measure',
+  useCommand({ transform, getAngleSnap, type, scale }) {
+    const { onStart, mask, startPosition } = useDragMove(undefined, {
+      transform,
+      ignoreLeavingEvent: true,
+      getAngleSnap,
+    })
+    let message = ''
+    if (type) {
+      message = startPosition ? 'specify end point' : 'specify start point'
+    }
+    const { input, setInputPosition, cursorPosition, setCursorPosition } = useCursorInput(message)
+
     const assistentContents: (LineContent | ArcContent | TextContent)[] = []
-    if (line && line.length > 1) {
-      const start = line[line.length - 2]
-      const end = line[line.length - 1]
+    if (startPosition && cursorPosition) {
+      const start = startPosition
+      const end = cursorPosition
       const r = getTwoPointsDistance(start, end)
       const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
       assistentContents.push(
@@ -51,18 +55,23 @@ export const createPolylineCommand: Command = {
           color: 0xff0000,
           fontSize: 16 / scale,
         },
+        {
+          type: 'line',
+          points: [startPosition, cursorPosition]
+        },
       )
     }
-    if (line) {
-      assistentContents.push({ points: line, type: 'polyline' })
-    }
+
     return {
-      onStart: onClick,
+      onStart,
+      mask,
       input,
-      onMove,
+      onMove(p, viewportPosition) {
+        setCursorPosition(p)
+        setInputPosition(viewportPosition ?? p)
+      },
       assistentContents,
     }
   },
   selectCount: 0,
-  hotkey: 'PL',
 }

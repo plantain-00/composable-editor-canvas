@@ -119,7 +119,11 @@ export type EditBarPosition<T> = Position & {
 // @public (undocumented)
 export type EditPoint<T> = Position & {
     cursor: string;
-    update: (content: Draft<T>, cursor: Position, start: Position) => {
+    update: (content: Draft<T>, props: {
+        cursor: Position;
+        start: Position;
+        scale: number;
+    }) => {
         assistentContents?: T[];
     } | void;
 };
@@ -689,7 +693,11 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
 }>): {
     editPoint: (Position & {
         cursor: string;
-        update: (content: Draft<T>, cursor: Position, start: Position) => void | {
+        update: (content: Draft<T>, props: {
+            cursor: Position;
+            start: Position;
+            scale: number;
+        }) => void | {
             assistentContents?: T[] | undefined;
         };
     } & {
@@ -813,7 +821,7 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 };
 
 // @public (undocumented)
-export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getSnapPoints?: (content: T) => SnapPoint[] | undefined, delta?: number): {
+export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getSnapPoints?: (content: T) => SnapPoint[] | undefined, scale?: number, delta?: number): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
     getSnapPoint(p: Position, contents: readonly T[]): Position;

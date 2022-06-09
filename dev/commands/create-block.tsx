@@ -6,9 +6,9 @@ import { Command } from "./command"
 
 export const createBlockCommand: Command = {
   name: 'create block',
-  useCommand(onEnd, _t, _s, enabled) {
+  useCommand({ onEnd, type }) {
     let message = ''
-    if (enabled) {
+    if (type) {
       message = 'specify base point'
     }
     const { input, setInputPosition } = useCursorInput(message)

@@ -70,9 +70,9 @@ export const arcModel: Model<ArcContent> = {
     }
     return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color, strokeWidth)
   },
-  renderIfSelected({ content, color, target, strokeWidth }) {
+  renderIfSelected({ content, color, target, strokeWidth, scale }) {
     const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.renderPolyline(points, color, [4], strokeWidth)
+    return target.renderPolyline(points, color, [4 / scale], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
@@ -91,51 +91,51 @@ export const arcModel: Model<ArcContent> = {
             x,
             y,
             cursor: 'move',
-            update(c, cursor, start) {
+            update(c, { cursor, start, scale }) {
               if (!isArcContent(c)) {
                 return
               }
               c.x += cursor.x - start.x
               c.y += cursor.y - start.y
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           },
           {
             x: x + content.r * Math.cos(startAngle),
             y: y + content.r * Math.sin(startAngle),
             cursor: getResizeCursor(content.startAngle, 'top'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isArcContent(c)) {
                 return
               }
               c.startAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
               normalizeAngleRange(c)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           },
           {
             x: x + content.r * Math.cos(endAngle),
             y: y + content.r * Math.sin(endAngle),
             cursor: getResizeCursor(content.endAngle, 'top'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isArcContent(c)) {
                 return
               }
               c.endAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
               normalizeAngleRange(c)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           },
           {
             x: x + content.r * Math.cos(middleAngle),
             y: y + content.r * Math.sin(middleAngle),
             cursor: getResizeCursor((content.startAngle + content.endAngle) / 2, 'right'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isArcContent(c)) {
                 return
               }
               c.r = getTwoPointsDistance(cursor, c)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           },
         ],

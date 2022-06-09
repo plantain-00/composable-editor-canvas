@@ -74,13 +74,13 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
           {
             ...p,
             cursor: 'move',
-            update(c, cursor, start) {
+            update(c, { cursor, start, scale }) {
               if (!isBlockReferenceContent(c)) {
                 return
               }
               c.x += cursor.x - start.x
               c.y += cursor.y - start.y
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [p, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p, cursor] } as LineContent] }
             },
           },
         ],

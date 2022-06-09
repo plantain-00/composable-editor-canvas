@@ -63,7 +63,7 @@ export const rectModel: Model<RectContent> = {
           x: p.x,
           y: p.y,
           cursor: getResizeCursor(content.angle, p.direction),
-          update(c, cursor, start) {
+          update(c, { cursor, start, scale }) {
             if (!isRectContent(c)) {
               return
             }
@@ -75,7 +75,7 @@ export const rectModel: Model<RectContent> = {
             c.y += offset.y + offset.height / 2
             c.width += offset.width
             c.height += offset.height
-            return { assistentContents: [{ type: 'line', dashArray: [4], points: [start, cursor] } as LineContent] }
+            return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
           },
         }))
       }

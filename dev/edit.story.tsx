@@ -12,15 +12,15 @@ export default () => {
           x: s.x,
           y: s.y,
           cursor: 'move',
-          update(c, cursor, start) {
+          update(c, { cursor, start }) {
             c.x += cursor.x - start.x
             c.y += cursor.y - start.y
           }
         },
-        { x: s.x - s.r, y: s.y, cursor: 'ew-resize', update(c, cursor) { c.r = getTwoPointsDistance(cursor, c) } },
-        { x: s.x, y: s.y - s.r, cursor: 'ns-resize', update(c, cursor) { c.r = getTwoPointsDistance(cursor, c) } },
-        { x: s.x + s.r, y: s.y, cursor: 'ew-resize', update(c, cursor) { c.r = getTwoPointsDistance(cursor, c) } },
-        { x: s.x, y: s.y + s.r, cursor: 'ns-resize', update(c, cursor) { c.r = getTwoPointsDistance(cursor, c) } },
+        { x: s.x - s.r, y: s.y, cursor: 'ew-resize', update(c, { cursor }) { c.r = getTwoPointsDistance(cursor, c) } },
+        { x: s.x, y: s.y - s.r, cursor: 'ns-resize', update(c, { cursor }) { c.r = getTwoPointsDistance(cursor, c) } },
+        { x: s.x + s.r, y: s.y, cursor: 'ew-resize', update(c, { cursor }) { c.r = getTwoPointsDistance(cursor, c) } },
+        { x: s.x, y: s.y + s.r, cursor: 'ns-resize', update(c, { cursor }) { c.r = getTwoPointsDistance(cursor, c) } },
       ],
     }),
   )
