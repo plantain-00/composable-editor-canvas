@@ -79,7 +79,7 @@ export function Renderer(props: {
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
-        children.push(RenderIfSelected({ content, color, target, strokeWidth }))
+        children.push(RenderIfSelected({ content, color, target, strokeWidth, scale: props.transform?.scale ?? 1 }))
       }
     }
   })

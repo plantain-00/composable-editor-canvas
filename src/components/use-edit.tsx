@@ -60,7 +60,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       if (editPoint && startPosition && cursorPosition) {
         const content = getContentByPath(editPoint.path)
         if (content) {
-          return editPoint.update(content, cursorPosition, startPosition)
+          return editPoint.update(content, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
         }
       }
     },
@@ -105,5 +105,5 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
 
 export type EditPoint<T> = Position & {
   cursor: string
-  update: (content: Draft<T>, cursor: Position, start: Position) => { assistentContents?: T[] } | void
+  update: (content: Draft<T>, props: { cursor: Position, start: Position, scale: number }) => { assistentContents?: T[] } | void
 }

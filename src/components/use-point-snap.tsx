@@ -6,6 +6,7 @@ export function usePointSnap<T>(
   getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[],
   types: readonly SnapPointType[],
   getSnapPoints?: (content: T) => SnapPoint[] | undefined,
+  scale = 1,
   delta = 5,
 ) {
   const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
@@ -25,35 +26,36 @@ export function usePointSnap<T>(
     ) {
       const assistentContents: (TCircle | TRect | TPolyline)[] = []
       if (snapPoint) {
+        const d = delta * 2 / scale
         if (snapPoint.type === 'center') {
           assistentContents.push(createCircle({
             x: snapPoint.x,
             y: snapPoint.y,
-            r: delta * 2,
+            r: d,
           }))
         } else if (snapPoint.type === 'endpoint') {
           assistentContents.push(createRect({
             x: snapPoint.x,
             y: snapPoint.y,
-            width: delta * 4,
-            height: delta * 4,
+            width: d * 2,
+            height: d * 2,
           }))
         } else if (snapPoint.type === 'midpoint') {
           assistentContents.push(createPolyline([
-            { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
-            { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
-            { x: snapPoint.x, y: snapPoint.y - delta * 2 },
-            { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
+            { x: snapPoint.x - d, y: snapPoint.y + d },
+            { x: snapPoint.x + d, y: snapPoint.y + d },
+            { x: snapPoint.x, y: snapPoint.y - d },
+            { x: snapPoint.x - d, y: snapPoint.y + d },
           ]))
         } else if (snapPoint.type === 'intersection') {
           assistentContents.push(
             createPolyline([
-              { x: snapPoint.x - delta * 2, y: snapPoint.y - delta * 2 },
-              { x: snapPoint.x + delta * 2, y: snapPoint.y + delta * 2 },
+              { x: snapPoint.x - d, y: snapPoint.y - d },
+              { x: snapPoint.x + d, y: snapPoint.y + d },
             ]),
             createPolyline([
-              { x: snapPoint.x - delta * 2, y: snapPoint.y + delta * 2 },
-              { x: snapPoint.x + delta * 2, y: snapPoint.y - delta * 2 },
+              { x: snapPoint.x - d, y: snapPoint.y + d },
+              { x: snapPoint.x + d, y: snapPoint.y - d },
             ]),
           )
         }

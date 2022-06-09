@@ -50,9 +50,9 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     const { points } = getEllipseArcLines(content)
     return target.renderPolyline(points, color, content.dashArray, strokeWidth)
   },
-  renderIfSelected({ content, color, target, strokeWidth }) {
+  renderIfSelected({ content, color, target, strokeWidth, scale }) {
     const { points } = getEllipseArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.renderPolyline(points, color, [4], strokeWidth)
+    return target.renderPolyline(points, color, [4 / scale], strokeWidth)
   },
   getOperatorRenderPosition(content) {
     const { points } = getEllipseArcLines(content)
@@ -70,39 +70,39 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
             x: content.cx,
             y: content.cy,
             cursor: 'move',
-            update(c, cursor, start) {
+            update(c, { cursor, start, scale }) {
               if (!isEllipseArcContent(c)) {
                 return
               }
               c.cx += cursor.x - start.x
               c.cy += cursor.y - start.y
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             ...rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, center, rotate),
             cursor: getResizeCursor(content.startAngle - rotate, 'top'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseArcContent(c)) {
                 return
               }
               const p = rotatePositionByCenter(cursor, center, content.angle ?? 0)
               c.startAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
               normalizeAngleRange(c)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             ...rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, center, rotate),
             cursor: getResizeCursor(content.endAngle - rotate, 'top'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseArcContent(c)) {
                 return
               }
               const p = rotatePositionByCenter(cursor, center, content.angle ?? 0)
               c.endAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
               normalizeAngleRange(c)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
         ],

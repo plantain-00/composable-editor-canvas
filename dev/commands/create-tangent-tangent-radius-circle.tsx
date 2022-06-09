@@ -8,11 +8,11 @@ import { Command } from "./command"
 
 export const createTangentTangentRadiusCircleCommand: Command = {
   name: 'create tangent tangent radius circle',
-  useCommand(onEnd, _t, _s, enabled, selected) {
+  useCommand({ onEnd, type, selected, scale }) {
     const [candidates, setCandidates] = React.useState<Circle[]>([])
     const [result, setResult] = React.useState<Circle>()
     let message = ''
-    if (enabled) {
+    if (type) {
       if (candidates.length > 0) {
         message = 'select one result'
       } else {
@@ -22,9 +22,9 @@ export const createTangentTangentRadiusCircleCommand: Command = {
     const assistentContents: CircleContent[] = candidates.map((c) => ({
       ...c,
       type: 'circle',
-      dashArray: c === result ? undefined : [4],
+      dashArray: c === result ? undefined : [4 / scale],
     }))
-    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, enabled && candidates.length == 0 ? (e, text) => {
+    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, type && candidates.length == 0 ? (e, text) => {
       if (e.key === 'Enter') {
         const radius = +text
         if (!isNaN(radius)) {

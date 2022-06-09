@@ -4,7 +4,7 @@ import { Command } from "./command";
 
 export const createRectCommand: Command = {
   name: 'create rect',
-  useCommand(onEnd, _, getAngleSnap, type) {
+  useCommand({ onEnd, getAngleSnap, type }) {
     const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'create rect',
       (c) => onEnd((contents) => contents.push({

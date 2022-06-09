@@ -13,7 +13,7 @@ export const createCircleCommand: Command = {
     { name: 'center radius', hotkey: 'C' },
     { name: 'center diameter' },
   ],
-  useCommand(onEnd, _, getAngleSnap, type) {
+  useCommand({ onEnd, scale, getAngleSnap, type }) {
     const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
       (c) => onEnd((contents) => contents.push({ ...c, type: 'circle' })),
@@ -24,17 +24,17 @@ export const createCircleCommand: Command = {
     const assistentContents: (LineContent | PolygonContent | TextContent | CircleContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
-        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'polygon', points: [startPosition, middlePosition, cursorPosition], dashArray: [4 / scale] })
       } else {
         assistentContents.push(
-          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4] },
+          { type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] },
           {
             type: 'text',
             x: (startPosition.x + cursorPosition.x) / 2 - 20,
             y: (startPosition.y + cursorPosition.y) / 2 + 4,
             text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
             color: 0xff0000,
-            fontSize: 16,
+            fontSize: 16 / scale,
           },
         )
       }

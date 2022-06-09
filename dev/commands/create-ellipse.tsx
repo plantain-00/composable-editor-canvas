@@ -9,7 +9,7 @@ export const createEllipseCommand: Command = {
     { name: 'ellipse center', hotkey: 'EL' },
     { name: 'ellipse endpoint' },
   ],
-  useCommand(onEnd, _, getAngleSnap, type) {
+  useCommand({ onEnd, getAngleSnap, type, scale }) {
     const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
       (c) => onEnd((contents) => contents.push({ ...c, type: 'ellipse' })),
@@ -20,14 +20,14 @@ export const createEllipseCommand: Command = {
     const assistentContents: (LineContent | EllipseContent)[] = []
     if (startPosition && cursorPosition) {
       if (middlePosition) {
-        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [startPosition, middlePosition], dashArray: [4 / scale] })
         if (type === 'ellipse center') {
-          assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+          assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
         } else if (ellipse) {
-          assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4] })
+          assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] })
         }
       } else {
-        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4] })
+        assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (ellipse) {

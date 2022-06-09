@@ -7,11 +7,11 @@ import { Command } from "./command"
 
 export const filletCommand: Command = {
   name: 'fillet',
-  useCommand(onEnd, _t, _s, enabled, selected) {
+  useCommand({ onEnd, type, selected, scale }) {
     const [candidates, setCandidates] = React.useState<Arc[]>([])
     const [result, setResult] = React.useState<Arc>()
     let message = ''
-    if (enabled) {
+    if (type) {
       if (candidates.length > 0) {
         message = 'select one result'
       } else {
@@ -21,9 +21,9 @@ export const filletCommand: Command = {
     const assistentContents: ArcContent[] = candidates.map((c) => ({
       ...c,
       type: 'arc',
-      dashArray: c === result ? undefined : [4],
+      dashArray: c === result ? undefined : [4 / scale],
     }))
-    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, enabled && candidates.length == 0 ? (e, text) => {
+    const { input, setInputPosition, setCursorPosition, clearText, resetInput } = useCursorInput(message, type && candidates.length == 0 ? (e, text) => {
       if (e.key === 'Enter') {
         const radius = +text
         if (!isNaN(radius)) {

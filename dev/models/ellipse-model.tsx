@@ -61,61 +61,61 @@ export const ellipseModel: Model<EllipseContent> = {
             x: content.cx,
             y: content.cy,
             cursor: 'move',
-            update(c, cursor, start) {
+            update(c, { cursor, start, scale }) {
               if (!isEllipseContent(c)) {
                 return
               }
               c.cx += cursor.x - start.x
               c.cy += cursor.y - start.y
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             x: left.x,
             y: left.y,
             cursor: getResizeCursor(-rotate, 'left'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseContent(c)) {
                 return
               }
               c.rx = getTwoPointsDistance(cursor, center)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             x: right.x,
             y: right.y,
             cursor: getResizeCursor(-rotate, 'right'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseContent(c)) {
                 return
               }
               c.rx = getTwoPointsDistance(cursor, center)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             x: top.x,
             y: top.y,
             cursor: getResizeCursor(-rotate, 'top'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseContent(c)) {
                 return
               }
               c.ry = getTwoPointsDistance(cursor, center)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
           {
             x: bottom.x,
             y: bottom.y,
             cursor: getResizeCursor(-rotate, 'bottom'),
-            update(c, cursor) {
+            update(c, { cursor, scale }) {
               if (!isEllipseContent(c)) {
                 return
               }
               c.ry = getTwoPointsDistance(cursor, center)
-              return { assistentContents: [{ type: 'line', dashArray: [4], points: [center, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
             },
           },
         ],

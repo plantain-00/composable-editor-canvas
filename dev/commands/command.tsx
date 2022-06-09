@@ -5,13 +5,14 @@ import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 export interface Command {
   name: string
   type?: { name: string, hotkey?: string }[]
-  useCommand?(
+  useCommand?(props: {
     onEnd: (updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
     selected: { content: BaseContent, path: number[] }[],
-  ): {
+    scale: number,
+  }): {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
     mask?: JSX.Element
@@ -47,6 +48,7 @@ export function useCommands(
   inputFixed: boolean,
   operation: string | undefined,
   selected: { content: BaseContent, path: number[] }[],
+  scale: number,
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
@@ -60,13 +62,14 @@ export function useCommands(
   const hotkeys: { key: string, command: string }[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
-      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand(
+      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand({
         onEnd,
         transform,
-        angleSnapEnabled ? getAngleSnap : undefined,
-        operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined,
+        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
+        type: operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined,
         selected,
-      )
+        scale,
+      })
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }

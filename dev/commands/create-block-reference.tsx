@@ -4,13 +4,13 @@ import { Command } from "./command"
 
 export const createBlockReferenceCommand: Command = {
   name: 'create block reference',
-  useCommand(onEnd, _t, _s, enabled) {
+  useCommand({ onEnd, type, scale }) {
     let message = ''
-    if (enabled) {
+    if (type) {
       message = 'specify target point'
     }
     const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = useCursorInput(message)
-    
+
     return {
       onStart(p) {
         resetInput()
@@ -30,7 +30,7 @@ export const createBlockReferenceCommand: Command = {
       },
       input,
       onMove(p, viewportPosition) {
-        if (!enabled) {
+        if (!type) {
           return
         }
         setCursorPosition(p)
@@ -54,7 +54,7 @@ export const createBlockReferenceCommand: Command = {
             assistentContents: [
               {
                 type: 'line',
-                dashArray: [4],
+                dashArray: [4 / scale],
                 points: [{ x: content.base.x, y: content.base.y }, cursorPosition]
               },
             ]

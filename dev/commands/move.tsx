@@ -4,14 +4,14 @@ import { Command } from "./command"
 
 export const moveCommand: Command = {
   name: 'move',
-  useCommand(onEnd, transform, getAngleSnap, enabled) {
+  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
     const { offset, onStart, mask, startPosition } = useDragMove(onEnd, {
       transform,
       ignoreLeavingEvent: true,
       getAngleSnap,
     })
     let message = ''
-    if (enabled) {
+    if (type) {
       message = startPosition ? 'specify end point' : 'specify start point'
     }
     const { input, setInputPosition } = useCursorInput(message)
@@ -32,7 +32,7 @@ export const moveCommand: Command = {
       assistentContents: startPosition && (offset.x !== 0 || offset.y !== 0) ? [
         {
           type: 'line',
-          dashArray: [4],
+          dashArray: [4 / scale],
           points: [startPosition, { x: startPosition.x + offset.x, y: startPosition.y + offset.y }]
         },
       ] : undefined,
