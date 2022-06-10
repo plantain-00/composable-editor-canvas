@@ -1,4 +1,4 @@
-import { getTwoNumberCenter, Position, Size } from "../../utils"
+import { getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils"
 
 /**
  * @public
@@ -25,25 +25,17 @@ export function reverseTransformPosition(position: Position, transform: Transfor
  * @public
  */
 export function zoomToFit(
-  points: Position[],
+  bounding: TwoPointsFormRegion | undefined,
   { width, height }: Size,
   center: Position,
   paddingScale = 0.8,
 ) {
-  if (points.length > 0) {
-    const xs = points.map((p) => p.x)
-    const ys = points.map((p) => p.y)
-    const xMin = Math.min(...xs)
-    const xMax = Math.max(...xs)
-    const yMin = Math.min(...ys)
-    const yMax = Math.max(...ys)
-    if (xMin < xMax && yMin < yMax) {
-      const scale = Math.min(width / (xMax - xMin), height / (yMax - yMin)) * paddingScale
-      return {
-        scale,
-        x: (center.x - getTwoNumberCenter(xMin, xMax)) * scale,
-        y: (center.y - getTwoNumberCenter(yMin, yMax)) * scale,
-      }
+  if (bounding && bounding.start.x < bounding.end.x && bounding.start.y < bounding.end.y) {
+    const scale = Math.min(width / (bounding.end.x - bounding.start.x), height / (bounding.end.y - bounding.start.y)) * paddingScale
+    return {
+      scale,
+      x: (center.x - getTwoNumberCenter(bounding.start.x, bounding.end.x)) * scale,
+      y: (center.y - getTwoNumberCenter(bounding.start.y, bounding.end.y)) * scale,
     }
   }
   return

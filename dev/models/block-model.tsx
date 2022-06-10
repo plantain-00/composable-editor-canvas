@@ -1,4 +1,4 @@
-import { Position, ReactRenderTarget } from "../../src"
+import { getPointsBounding, Position, ReactRenderTarget } from "../../src"
 import { isBlockReferenceContent } from "./block-reference-model"
 import { BaseContent, getLinesAndPointsFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
@@ -64,6 +64,7 @@ function getBlockLines(content: Omit<BlockContent, "type">) {
     return {
       lines,
       points,
+      bounding: getPointsBounding(points),
     }
   })
 }

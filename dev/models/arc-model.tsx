@@ -1,4 +1,4 @@
-import { Arc, equals, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
+import { Arc, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
@@ -77,6 +77,9 @@ export const arcModel: Model<ArcContent> = {
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
     return points[0]
+  },
+  getDefaultColor(content) {
+    return content.strokeColor
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -181,6 +184,7 @@ export function getArcLines(content: Omit<ArcContent, "type">) {
     return {
       lines: Array.from(iteratePolylineLines(points)),
       points,
+      bounding: getPointsBounding(points),
     }
   })
 }

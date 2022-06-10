@@ -1,5 +1,5 @@
 import React from "react"
-import { getPointAndLineMinimumDistance, getPointByLengthAndDirectionSafely, getTwoLinesIntersectionPoint, isSamePoint, Position, useCursorInput, useKey } from "../../src"
+import { getPointAndLineSegmentMinimumDistance, getPointByLengthAndDirectionSafely, getTwoLinesIntersectionPoint, isSamePoint, Position, useCursorInput, useKey } from "../../src"
 import { isLineContent, LineContent } from "../models/line-model"
 import { BaseContent } from "../models/model"
 import { Command } from "./command"
@@ -63,7 +63,7 @@ export const chamferCommand: Command = {
       onMove(p, viewportPosition) {
         setCursorPosition(p)
         setInputPosition(viewportPosition || p)
-        setResult(candidates.find((c) => getPointAndLineMinimumDistance(p, c[0], c[1]) < 5))
+        setResult(candidates.find((c) => getPointAndLineSegmentMinimumDistance(p, c[0], c[1]) < 5))
       },
       assistentContents,
     }

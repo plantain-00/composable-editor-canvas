@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, EditPoint, GeneralFormLine, iterateIntersectionPoints, Position, ReactRenderTarget, WeakmapCache, WeakmapCache2 } from '../../src'
+import { Circle, EditPoint, GeneralFormLine, iterateIntersectionPoints, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2 } from '../../src'
 import { LineContent } from './line-model'
 
 export interface BaseContent<T extends string = string> {
@@ -8,6 +8,7 @@ export interface BaseContent<T extends string = string> {
 
 export interface StrokeBaseContent<T extends string = string> extends BaseContent<T> {
   dashArray?: number[]
+  strokeColor?: number
 }
 
 export interface Model<T> {
@@ -18,7 +19,7 @@ export interface Model<T> {
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly BaseContent[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
-  getDefaultColor?(content: Omit<T, 'type'>): number
+  getDefaultColor?(content: Omit<T, 'type'>): number | undefined
   render?<V>(props: {
     content: Omit<T, 'type'>
     color: number
@@ -37,8 +38,9 @@ export interface Model<T> {
   getLines?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
     lines: [Position, Position][]
     points: Position[]
+    bounding?: TwoPointsFormRegion
   }
-  getCircle?(content: Omit<T, 'type'>): Circle
+  getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
 }
 
@@ -54,7 +56,7 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[] }>()
+const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[], bounding?: TwoPointsFormRegion }>()
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 
