@@ -1,4 +1,4 @@
-import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor } from '../../src'
+import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
@@ -57,6 +57,9 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   getOperatorRenderPosition(content) {
     const { points } = getEllipseArcLines(content)
     return points[0]
+  },
+  getDefaultColor(content) {
+    return content.strokeColor
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -146,6 +149,7 @@ export function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
     return {
       lines: Array.from(iteratePolylineLines(points)),
       points,
+      bounding: getPointsBounding(points),
     }
   })
 }

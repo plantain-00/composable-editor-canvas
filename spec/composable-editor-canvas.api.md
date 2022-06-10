@@ -24,7 +24,7 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
-export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection"];
+export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest"];
 
 // @public (undocumented)
 export interface AngleRange {
@@ -209,7 +209,9 @@ export function getColorString(color: number): string;
 
 // @public (undocumented)
 export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (index: number[]) => boolean, getModel: (content: T) => {
-    getCircle?: (content: T) => Circle;
+    getCircle?: (content: T) => {
+        circle: Circle;
+    };
     getLines?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
     };
@@ -218,10 +220,13 @@ export function getContentByClickPosition<T>(contents: readonly T[], position: P
 
 // @public (undocumented)
 export function getContentsByClickTwoPositions<T>(contents: readonly T[], startPosition: Position, endPosition: Position, getModel: (content: T) => {
-    getCircle?: (content: T) => Circle;
+    getCircle?: (content: T) => {
+        circle: Circle;
+        bounding: TwoPointsFormRegion;
+    };
     getLines?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
-        points: Position[];
+        bounding?: TwoPointsFormRegion;
     };
 } | undefined, contentSelectable?: (index: number[]) => boolean): number[][];
 
@@ -241,6 +246,12 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
+export function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y, r }: Circle): {
+    x: number;
+    y: number;
+}[];
+
+// @public (undocumented)
 export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle): {
     x: number;
     y: number;
@@ -254,7 +265,13 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
 }[];
 
 // @public (undocumented)
-export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position): number;
+export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position): number;
+
+// @public (undocumented)
+export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position): {
+    point: Position;
+    distance: number;
+};
 
 // @public (undocumented)
 export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion): number;
@@ -279,6 +296,9 @@ export function getPointByLengthAndDirectionSafely(startPoint: Position, length:
     x: number;
     y: number;
 } | undefined;
+
+// @public (undocumented)
+export function getPointsBounding(points: Position[]): TwoPointsFormRegion | undefined;
 
 // @public (undocumented)
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
@@ -366,10 +386,11 @@ export function isZero(value: number): boolean;
 
 // @public (undocumented)
 export function iterateIntersectionPoints<T>(content1: T, content2: T, contents: readonly T[], getModel: (content: T) => {
-    getCircle?: (content: T) => Circle;
+    getCircle?: (content: T) => {
+        circle: Circle;
+    };
     getLines?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
-        points: Position[];
     };
 } | undefined): Generator<Position, void, undefined>;
 
@@ -821,7 +842,17 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 };
 
 // @public (undocumented)
-export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getSnapPoints?: (content: T) => SnapPoint[] | undefined, scale?: number, delta?: number): {
+export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getModel: (content: T) => {
+    getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[];
+    getLines?: (content: T, contents: readonly T[]) => {
+        lines: [Position, Position][];
+        bounding?: TwoPointsFormRegion;
+    };
+    getCircle?: (content: T) => {
+        circle: Circle;
+        bounding?: TwoPointsFormRegion;
+    };
+} | undefined, scale?: number, delta?: number): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
     getSnapPoint(p: Position, contents: readonly T[]): Position;
@@ -997,7 +1028,7 @@ export interface ZoomOptions {
 }
 
 // @public (undocumented)
-export function zoomToFit(points: Position[], { width, height }: Size, center: Position, paddingScale?: number): {
+export function zoomToFit(bounding: TwoPointsFormRegion | undefined, { width, height }: Size, center: Position, paddingScale?: number): {
     scale: number;
     x: number;
     y: number;

@@ -44,6 +44,9 @@ export const circleModel: Model<CircleContent> = {
   getOperatorRenderPosition(content) {
     return content
   },
+  getDefaultColor(content) {
+    return content.strokeColor
+  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
       const x = content.x
@@ -109,7 +112,13 @@ export const circleModel: Model<CircleContent> = {
     ])
   },
   getCircle(content) {
-    return content
+    return {
+      circle: content,
+      bounding: {
+        start: { x: content.x - content.r, y: content.y - content.r },
+        end: { x: content.x + content.r, y: content.y + content.r },
+      }
+    }
   },
   getLines: getCircleLines,
 }

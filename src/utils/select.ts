@@ -1,4 +1,4 @@
-import { Circle, getPointAndLineMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position } from "./geometry"
+import { Circle, getPointAndLineSegmentMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointIsInRegion, Position, TwoPointsFormRegion } from "./geometry"
 
 /**
  * @public
@@ -8,7 +8,7 @@ export function getContentByClickPosition<T>(
   position: Position,
   contentSelectable: (index: number[]) => boolean,
   getModel: (content: T) => {
-    getCircle?: (content: T) => Circle,
+    getCircle?: (content: T) => { circle: Circle },
     getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][] },
     canSelectPart?: boolean,
   } | undefined,
@@ -19,7 +19,7 @@ export function getContentByClickPosition<T>(
     const content = contents[i]
     const model = getModel(content)
     if (model?.getCircle) {
-      const circle = model.getCircle(content)
+      const { circle } = model.getCircle(content)
       if (contentSelectable([i]) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
         return [i]
       }
@@ -27,7 +27,7 @@ export function getContentByClickPosition<T>(
       const lines = model.getLines(content, contents).lines
       for (let j = 0; j < lines.length; j++) {
         const line = lines[j]
-        const minDistance = getPointAndLineMinimumDistance(position, ...line)
+        const minDistance = getPointAndLineSegmentMinimumDistance(position, ...line)
         if (minDistance <= delta) {
           if (part && model.canSelectPart && contentSelectable([i, j])) {
             return [i, j]
@@ -50,8 +50,8 @@ export function getContentsByClickTwoPositions<T>(
   startPosition: Position,
   endPosition: Position,
   getModel: (content: T) => {
-    getCircle?: (content: T) => Circle,
-    getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], points: Position[] },
+    getCircle?: (content: T) => { circle: Circle, bounding: TwoPointsFormRegion },
+    getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion },
   } | undefined,
   contentSelectable?: (index: number[]) => boolean,
 ) {
@@ -62,11 +62,8 @@ export function getContentsByClickTwoPositions<T>(
     if (contentSelectable?.([i])) {
       const model = getModel(content)
       if (model?.getCircle) {
-        const circle = model.getCircle(content)
-        if ([
-          { x: circle.x - circle.r, y: circle.y - circle.r },
-          { x: circle.x + circle.r, y: circle.y + circle.r },
-        ].every((p) => pointIsInRegion(p, region))) {
+        const { circle, bounding } = model.getCircle(content)
+        if (pointIsInRegion(bounding.start, region) && pointIsInRegion(bounding.end, region)) {
           result.push([i])
         } else if (partial) {
           const minDistance = getPointAndRegionMinimumDistance(circle, region)
@@ -76,8 +73,8 @@ export function getContentsByClickTwoPositions<T>(
           }
         }
       } else if (model?.getLines) {
-        const { lines, points } = model.getLines(content, contents)
-        if (points.every((p) => pointIsInRegion(p, region))) {
+        const { lines, bounding } = model.getLines(content, contents)
+        if (bounding && pointIsInRegion(bounding.start, region) && pointIsInRegion(bounding.end, region)) {
           result.push([i])
         } else if (partial) {
           for (const line of lines) {

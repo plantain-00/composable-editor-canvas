@@ -63,12 +63,34 @@ export function getPointByLengthAndAngle(
 /**
  * @public
  */
-export function getPointAndLineMinimumDistance(position: Position, point1: Position, point2: Position) {
+export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position) {
+  const { distance } = getPointAndLineSegmentNearestPointAndDistance(position, point1, point2)
+  return distance
+}
+
+/**
+ * @public
+ */
+export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position) {
   const footPoint = getFootPoint(position, twoPointLineToGeneralFormLine(point1, point2))
   if (pointIsOnLineSegment(footPoint, point1, point2)) {
-    return getTwoPointsDistance(position, footPoint)
+    return {
+      point: footPoint,
+      distance: getTwoPointsDistance(position, footPoint),
+    }
   }
-  return Math.min(getTwoPointsDistance(position, point1), getTwoPointsDistance(position, point2))
+  const d1 = getTwoPointsDistance(position, point1)
+  const d2 = getTwoPointsDistance(position, point2)
+  if (d1 < d2) {
+    return {
+      point: point1,
+      distance: d1,
+    }
+  }
+  return {
+    point: point2,
+    distance: d2,
+  }
 }
 
 /**
@@ -98,7 +120,7 @@ export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
 export function getPointAndRegionMinimumDistance(position: Position, region: TwoPointsFormRegion) {
   const polygon = getPolygonFromTwoPointsFormRegion(region)
   const polygonLine = Array.from(getPolygonLine(polygon))
-  return Math.min(...polygonLine.map((r) => getPointAndLineMinimumDistance(position, ...r)))
+  return Math.min(...polygonLine.map((r) => getPointAndLineSegmentMinimumDistance(position, ...r)))
 }
 
 /**
@@ -264,6 +286,27 @@ export function pointIsInRegion(point: Position, region: TwoPointsFormRegion) {
 /**
  * @public
  */
+export function getPointsBounding(points: Position[]): TwoPointsFormRegion | undefined {
+  if (points.length === 0) {
+    return
+  }
+  const x = points.map((p) => p.x)
+  const y = points.map((p) => p.y)
+  return {
+    start: {
+      x: Math.min(...x),
+      y: Math.min(...y),
+    },
+    end: {
+      x: Math.max(...x),
+      y: Math.max(...y),
+    },
+  }
+}
+
+/**
+ * @public
+ */
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion) {
   return lineIntersectWithPolygon(p1, p2, getPolygonFromTwoPointsFormRegion(region))
 }
@@ -361,7 +404,7 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
   const b = r1 ** 2
   const l = (b - r2 ** 2 + a) / 2 / d
   const f = b - l ** 2
-  if (f < 0) {
+  if (f < 0 && !isZero(f)) {
     return []
   }
   const c = l / d
@@ -398,7 +441,10 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
   return getLineCircleIntersectionPoints(start, end, circle).filter((p) => pointIsOnLineSegment(p, start, end))
 }
 
-function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y, r }: Circle) {
+/**
+ * @public
+ */
+export function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y, r }: Circle) {
   const baX = end.x - start.x
   const baY = end.y - start.y
   const caX = x - start.x

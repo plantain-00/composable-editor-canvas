@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
@@ -334,7 +334,7 @@ const CADEditor = React.forwardRef((props: {
     operations.type === 'operate' || editPoint !== undefined,
     getIntersectionPoints,
     snapTypes,
-    (c) => getModel(c.type)?.getSnapPoints?.(c, editingContent),
+    getContentModel,
     scale,
   )
 
@@ -374,12 +374,18 @@ const CADEditor = React.forwardRef((props: {
       // double click
       const points: Position[] = []
       editingContent.forEach((c) => {
-        const lines = getModel(c.type)?.getLines?.(c, state)
-        if (lines) {
-          points.push(...lines.points)
+        const model = getModel(c.type)
+        if (model?.getCircle) {
+          const { bounding } = model.getCircle(c)
+          points.push(bounding.start, bounding.end)
+        } else if (model?.getLines) {
+          const { bounding } = model.getLines(c, state)
+          if (bounding) {
+            points.push(bounding.start, bounding.end)
+          }
         }
       })
-      const result = zoomToFit(points, { width, height }, transform.center)
+      const result = zoomToFit(getPointsBounding(points), { width, height }, transform.center)
       if (result) {
         setScale(result.scale)
         setX(result.x)
@@ -391,9 +397,9 @@ const CADEditor = React.forwardRef((props: {
   // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
     ...getSnapAssistentContents(
-      (circle) => ({ type: 'circle', ...circle } as CircleContent),
-      (rect) => ({ type: 'rect', ...rect, angle: 0 } as RectContent),
-      (points) => ({ type: 'polyline', points } as LineContent),
+      (circle) => ({ type: 'circle', ...circle, strokeColor: 0x00ff00 } as CircleContent),
+      (rect) => ({ type: 'rect', ...rect, angle: 0, strokeColor: 0x00ff00 } as RectContent),
+      (points) => ({ type: 'polyline', points, strokeColor: 0x00ff00 } as LineContent),
     ),
     ...commandAssistentContents,
   ]
@@ -479,7 +485,7 @@ const CADEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const { input: cursorInput, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, operations.type !== 'operate' ? (e, text) => {
+  const { input: cursorInput, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, operations.type !== 'operate' && !readOnly ? (e, text) => {
     if (e.key === 'Enter' && text) {
       const command = getCommandByHotkey(text)
       if (command) {

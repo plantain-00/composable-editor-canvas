@@ -1,5 +1,5 @@
 import produce from "immer"
-import { getSymmetryPoint, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
+import { getPointsBounding, getSymmetryPoint, Position, rotatePositionByCenter, TwoPointsFormRegion, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
 import { BaseContent, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
@@ -150,13 +150,14 @@ function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, co
       return {
         lines,
         points,
+        bounding: getPointsBounding(points),
       }
     })
   }
   return { lines: [], points: [] }
 }
 
-const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][], points: Position[] }>()
+const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][], points: Position[], bounding?: TwoPointsFormRegion }>()
 const blockSnapPointsCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, SnapPoint[]>()
 
 export function isBlockReferenceContent(content: BaseContent): content is BlockReferenceContent {

@@ -1,4 +1,4 @@
-import { getSymmetryPoint, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
+import { getPointsBounding, getSymmetryPoint, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, iteratePolylineLines, LineContent } from './line-model'
 import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 import { renderPolyline } from './polyline-model'
@@ -35,6 +35,9 @@ export const polygonModel: Model<PolygonContent> = {
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
+  getDefaultColor(content) {
+    return content.strokeColor
+  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolygonContent, true) }))
   },
@@ -60,6 +63,7 @@ function getPolygonLines(content: Omit<PolygonContent, "type">) {
     return {
       lines: Array.from(iteratePolygonLines(content.points)),
       points: content.points,
+      bounding: getPointsBounding(content.points),
     }
   })
 }
