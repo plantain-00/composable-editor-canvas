@@ -37,9 +37,9 @@ export const circleModel: Model<CircleContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getCircleLines(content)
-      return target.renderPolyline(points, color, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderCircle(content.x, content.y, content.r, color, strokeWidth)
+    return target.renderCircle(content.x, content.y, content.r, { strokeColor: color, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return content

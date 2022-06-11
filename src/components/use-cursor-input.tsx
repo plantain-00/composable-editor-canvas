@@ -28,6 +28,7 @@ export function useCursorInput(
   return {
     resetInput,
     cursorPosition,
+    inputPosition,
     setCursorPosition,
     setInputPosition,
     clearText() {

@@ -30,11 +30,11 @@ export const createBlockReferenceCommand: Command = {
       },
       input,
       onMove(p, viewportPosition) {
+        setInputPosition(viewportPosition || p)
         if (!type) {
           return
         }
         setCursorPosition(p)
-        setInputPosition(viewportPosition || p)
       },
       updateContent(content) {
         if (!isBlockContent(content)) {

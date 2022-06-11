@@ -83,13 +83,13 @@ export function useEllipseArcClickCreate(
       }
     },
     onMove(p: Position, viewportPosition?: Position) {
+      setInputPosition(viewportPosition ?? p)
       if (!type) {
         return
       }
       if (ellipseArc) {
         p = getAngleSnapPosition({ x: ellipseArc.cx, y: ellipseArc.cy }, p, options?.getAngleSnap)
         setCursorPosition(p)
-        setInputPosition(viewportPosition ?? p)
         if (startAngle !== undefined) {
           let angle = getEllipseAngle(p, ellipseArc)
           if (angle < startAngle) {

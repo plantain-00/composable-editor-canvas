@@ -62,25 +62,28 @@ export function useCommands(
   const hotkeys: { key: string, command: string }[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
+      const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
       const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand({
         onEnd,
         transform,
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
-        type: operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined,
+        type,
         selected,
         scale,
       })
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }
-      onStartMap[command.name] = onStart
-      if (command.type) {
-        for (const type of command.type) {
-          onStartMap[type.name] = onStart
+      if (type) {
+        onStartMap[command.name] = onStart
+        if (command.type) {
+          for (const type of command.type) {
+            onStartMap[type.name] = onStart
+          }
         }
-      }
-      if (updateContent) {
-        updateContents.push(updateContent)
+        if (updateContent) {
+          updateContents.push(updateContent)
+        }
       }
       if (onMove) {
         onMoves.push(onMove)

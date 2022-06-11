@@ -46,6 +46,7 @@ export const measureCommand: Command = {
           text: r.toFixed(2),
           color: 0xff0000,
           fontSize: 16 / scale,
+          fontFamily: 'monospace',
         },
         {
           type: 'text',
@@ -54,6 +55,7 @@ export const measureCommand: Command = {
           text: `${angle.toFixed(1)}°`,
           color: 0xff0000,
           fontSize: 16 / scale,
+          fontFamily: 'monospace',
         },
         {
           type: 'line',

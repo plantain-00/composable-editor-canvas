@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { getAngleSnapPosition, useCursorInput, useKey } from ".."
-import { getPointByLengthAndDirection, Position } from "../../utils"
+import { getPointByLengthAndDirection, getTwoPointsDistance, Position } from "../../utils"
 
 export function useLineClickCreate(
   enabled: boolean,
@@ -9,16 +9,19 @@ export function useLineClickCreate(
   options?: Partial<{
     once: boolean
     getAngleSnap: (angle: number) => number | undefined
+    getLengthSnap: (angle: number) => number | undefined
   }>,
 ) {
   const [line, setLine] = React.useState<Position[]>()
   const [positions, setPositions] = React.useState<Position[]>([])
   const [tabSwitchIndex, setTabSwitchIndex] = React.useState(0)
   const [fixedAngle, setFixedAngle] = React.useState<number>()
+  const [fixedLength, setFixedLength] = React.useState<number>()
 
   const inputMode = tabSwitchList[tabSwitchIndex]
   const nextTabSwitchIndex = (tabSwitchIndex + 1) % tabSwitchList.length
   const getAngleSnap = fixedAngle !== undefined ? () => fixedAngle : options?.getAngleSnap
+  const getLengthSnap = fixedLength !== undefined ? () => fixedLength : options?.getAngleSnap
   let message = ''
   if (line) {
     if (line.length === 1) {
@@ -32,14 +35,16 @@ export function useLineClickCreate(
       if (inputMode === 'angle') {
         const angle = +text
         if (!isNaN(angle)) {
-          setFixedAngle(angle)
-          setTabSwitchIndex(0)
           clearText()
           if (line && line.length > 1) {
             const start = line[line.length - 2]
             const end = line[line.length - 1]
-            const newPosition = getAngleSnapPosition(start, end, () => angle)
-            setLine([...positions, newPosition])
+            let newPosition = getAngleSnapPosition(start, end, () => angle)
+            newPosition = getLengthSnapPosition(start, newPosition, getLengthSnap)
+            setPositions([...positions, newPosition])
+            setLine([...positions, newPosition, { x: cursorPosition.x, y: cursorPosition.y }])
+            setFixedAngle(undefined)
+            setFixedLength(undefined)
           }
         }
         return
@@ -61,6 +66,7 @@ export function useLineClickCreate(
           setLine([...positions, { x, y }, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
           setFixedAngle(undefined)
+          setFixedLength(undefined)
         }
         return
       }
@@ -77,11 +83,26 @@ export function useLineClickCreate(
           setLine([...positions, point, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
           setFixedAngle(undefined)
+          setFixedLength(undefined)
         }
       }
     } else if (e.key === 'Tab') {
       e.stopPropagation()
       e.preventDefault()
+      if (text) {
+        const value = +text
+        if (!isNaN(value)) {
+          if (inputMode === 'angle') {
+            setFixedAngle(value)
+            setFixedLength(undefined)
+            clearText()
+          } else if (value > 0) {
+            setFixedLength(value)
+            setFixedAngle(undefined)
+            clearText()
+          }
+        }
+      }
       setTabSwitchIndex(nextTabSwitchIndex)
     }
   } : undefined)
@@ -91,6 +112,7 @@ export function useLineClickCreate(
     setLine(undefined)
     resetInput()
     setFixedAngle(undefined)
+    setFixedLength(undefined)
     setTabSwitchIndex(0)
   }
 
@@ -103,13 +125,16 @@ export function useLineClickCreate(
 
   return {
     line,
+    inputMode,
     onClick(p: Position) {
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition(positions[positions.length - 1], p, getAngleSnap)
+      let newPosition = getAngleSnapPosition(positions[positions.length - 1], p, getAngleSnap)
+      newPosition = getLengthSnapPosition(positions[positions.length - 1], newPosition, getLengthSnap)
       setCursorPosition(newPosition)
       setFixedAngle(undefined)
+      setFixedLength(undefined)
       if (options?.once && positions.length > 0) {
         onEnd([positions[0], newPosition])
         reset()
@@ -118,12 +143,13 @@ export function useLineClickCreate(
       setPositions([...positions, newPosition])
     },
     onMove(p: Position, viewportPosition?: Position) {
+      setInputPosition(viewportPosition || p)
       if (!enabled) {
         return
       }
-      const newPosition = getAngleSnapPosition(positions[positions.length - 1], p, getAngleSnap)
+      let newPosition = getAngleSnapPosition(positions[positions.length - 1], p, getAngleSnap)
+      newPosition = getLengthSnapPosition(positions[positions.length - 1], newPosition, getLengthSnap)
       setCursorPosition(newPosition)
-      setInputPosition(viewportPosition || newPosition)
       if (options?.once && positions.length === 0) {
         return
       }
@@ -134,3 +160,18 @@ export function useLineClickCreate(
 }
 
 const tabSwitchList = ['length', 'angle'] as const
+
+function getLengthSnapPosition(
+  startPosition: Position | undefined,
+  newPosition: Position,
+  getLengthSnap?: (length: number) => number | undefined,
+) {
+  if (getLengthSnap && startPosition) {
+    const length = getTwoPointsDistance(startPosition, newPosition)
+    const newLength = getLengthSnap(length)
+    if (newLength !== undefined && newLength !== length) {
+      newPosition = getPointByLengthAndDirection(startPosition, newLength, newPosition)
+    }
+  }
+  return newPosition
+}

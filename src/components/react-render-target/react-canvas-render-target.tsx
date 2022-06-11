@@ -3,15 +3,15 @@ import { getColorString, ReactRenderTarget } from ".."
 
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',
-  renderResult(children, width, height, attributes, transform, backgroundColor) {
+  renderResult(children, width, height, options) {
     return (
       <Canvas
         width={width}
         height={height}
-        attributes={attributes}
+        attributes={options?.attributes}
         draws={children}
-        transform={transform}
-        backgroundColor={backgroundColor}
+        transform={options?.transform}
+        backgroundColor={options?.backgroundColor}
       />
     )
   },
@@ -20,14 +20,21 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       // empty
     }
   },
-  renderGroup(children, x, y, base, angle) {
+  renderGroup(children, options) {
     return (ctx) => {
       ctx.save()
-      ctx.translate(x, y)
-      if (angle) {
-        ctx.translate(base.x, base.y)
-        ctx.rotate(angle / 180 * Math.PI)
-        ctx.translate(-base.x, - base.y)
+      if (options?.translate) {
+        ctx.translate(options.translate.x, options.translate.y)
+      }
+      if (options?.angle && options?.base !== undefined) {
+        ctx.translate(options.base.x, options?.base.y)
+        ctx.rotate(options.angle / 180 * Math.PI)
+        ctx.translate(-options.base.x, - options.base.y)
+      }
+      if (options?.rotation && options?.base !== undefined) {
+        ctx.translate(options.base.x, options?.base.y)
+        ctx.rotate(options.rotation)
+        ctx.translate(-options.base.x, - options.base.y)
       }
       children.forEach((c) => {
         c(ctx)
@@ -35,83 +42,93 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
-  renderRect(x, y, width, height, strokeColor, angle, strokeWidth, fillColor) {
+  renderRect(x, y, width, height, options) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = strokeWidth ?? 1
-      if (angle) {
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      if (options?.angle) {
         ctx.translate(x + width / 2, y + height / 2)
-        ctx.rotate(angle / 180 * Math.PI)
+        ctx.rotate(options.angle / 180 * Math.PI)
         ctx.translate(-(x + width / 2), -(y + height / 2))
       }
-      if (fillColor !== undefined) {
-        ctx.fillStyle = getColorString(fillColor)
+      if (options?.rotation) {
+        ctx.translate(x + width / 2, y + height / 2)
+        ctx.rotate(options.rotation)
+        ctx.translate(-(x + width / 2), -(y + height / 2))
+      }
+      if (options?.fillColor !== undefined) {
+        ctx.fillStyle = getColorString(options.fillColor)
         ctx.fillRect(x, y, width, height)
       }
-      ctx.strokeStyle = getColorString(strokeColor)
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       ctx.strokeRect(x, y, width, height)
       ctx.restore()
     }
   },
-  renderPolyline(points, strokeColor, dashArray, strokeWidth, skippedLines) {
+  renderPolyline(points, options) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(strokeColor)
-      if (dashArray) {
-        ctx.setLineDash(dashArray)
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
       }
       for (let i = 0; i < points.length; i++) {
-        if (i === 0 || skippedLines?.includes(i - 1)) {
+        if (i === 0 || options?.skippedLines?.includes(i - 1)) {
           ctx.moveTo(points[i].x, points[i].y)
         } else {
           ctx.lineTo(points[i].x, points[i].y)
         }
       }
       ctx.stroke()
+      if (options?.fillColor !== undefined) {
+        ctx.fillStyle = getColorString(options.fillColor)
+        ctx.fill()
+      }
       ctx.restore()
     }
   },
-  renderCircle(cx, cy, r, strokeColor, strokeWidth) {
+  renderCircle(cx, cy, r, options) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(strokeColor)
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  renderEllipse(cx, cy, rx, ry, strokeColor, angle, strokeWidth) {
+  renderEllipse(cx, cy, rx, ry, options) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(strokeColor)
-      ctx.ellipse(cx, cy, rx, ry, (angle ?? 0) / 180 * Math.PI, 0, 2 * Math.PI)
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+      const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
+      ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  renderArc(cx, cy, r, startAngle, endAngle, strokeColor, strokeWidth) {
+  renderArc(cx, cy, r, startAngle, endAngle, options) {
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(strokeColor)
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
       ctx.stroke()
       ctx.restore()
     }
   },
-  renderText(x, y, text, strokeColor, fontSize) {
+  renderText(x, y, text, fillColor, fontSize, fontFamily) {
     return (ctx) => {
       ctx.save()
-      ctx.fillStyle = getColorString(strokeColor)
-      ctx.font = `${fontSize}px monospace`
+      ctx.fillStyle = getColorString(fillColor)
+      ctx.font = `${fontSize}px ${fontFamily}`
       ctx.fillText(text, x, y)
       ctx.restore()
     }

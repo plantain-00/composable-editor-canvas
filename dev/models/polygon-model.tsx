@@ -30,7 +30,7 @@ export const polygonModel: Model<PolygonContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return renderPolygon(target, content.points, color, content.dashArray, strokeWidth, partsStyles)
+    return renderPolygon(target, content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
@@ -80,10 +80,12 @@ export function isPolygonContent(content: BaseContent): content is PolygonConten
 export function renderPolygon<T>(
   target: ReactRenderTarget<T>,
   points: Position[],
-  stroke: number,
-  dashArray?: number[],
-  strokeWidth?: number,
-  partsStyles: readonly { index: number, color: number }[] = [],
+  options?: Partial<{
+    strokeColor: number,
+    dashArray: number[],
+    strokeWidth: number,
+    partsStyles: readonly { index: number, color: number }[],
+  }>,
 ) {
-  return renderPolyline(target, [...points, points[0]], stroke, dashArray, strokeWidth, partsStyles)
+  return renderPolyline(target, [...points, points[0]], options)
 }

@@ -7,7 +7,7 @@ import { Command } from "./command";
 export const createLineCommand: Command = {
   name: 'create line',
   useCommand({ onEnd, scale, getAngleSnap, type }) {
-    const { line, onClick, onMove, input } = useLineClickCreate(
+    const { line, onClick, onMove, input, inputMode } = useLineClickCreate(
       type === 'create line',
       (c) => onEnd((contents) => contents.push(...Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' })))),
       {
@@ -40,16 +40,18 @@ export const createLineCommand: Command = {
           x: (start.x + end.x) / 2 - 20,
           y: (start.y + end.y) / 2 + 4,
           text: r.toFixed(2),
-          color: 0xff0000,
+          color: inputMode === 'length' ? 0xff0000 : 0xffcccc,
           fontSize: 16 / scale,
+          fontFamily: 'monospace',
         },
         {
           type: 'text',
           x: end.x + 10,
           y: end.y - 10,
           text: `${angle.toFixed(1)}°`,
-          color: 0xff0000,
+          color: inputMode === 'angle' ? 0xff0000 : 0xffcccc,
           fontSize: 16 / scale,
+          fontFamily: 'monospace',
         },
       )
     }

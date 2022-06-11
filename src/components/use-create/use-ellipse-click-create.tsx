@@ -124,6 +124,7 @@ export function useEllipseClickCreate(
       }
     },
     onMove(p: Position, viewportPosition?: Position) {
+      setInputPosition(viewportPosition || p)
       if (!type) {
         return
       }
@@ -140,7 +141,6 @@ export function useEllipseClickCreate(
         newPosition = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
       }
       setCursorPosition(newPosition)
-      setInputPosition(viewportPosition || newPosition)
       if (startPosition && middlePosition) {
         setEllipse(getEllipse(type, startPosition, middlePosition, newPosition))
       }

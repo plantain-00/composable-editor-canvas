@@ -70,7 +70,7 @@ export function Renderer(props: {
     }
     if (model.getOperatorRenderPosition && operators.length > 0) {
       const renderPosition = model.getOperatorRenderPosition(content, props.contents)
-      children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16))
+      children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
     }
     const ContentRender = model.render
     if (ContentRender) {
@@ -84,14 +84,18 @@ export function Renderer(props: {
     }
   })
   return target.renderResult(children, props.width, props.height, {
-    style: {
-      position: 'absolute',
-      boxSizing: 'border-box',
+    attributes: {
+      style: {
+        position: 'absolute',
+        boxSizing: 'border-box',
+      },
+      onClick: props.onClick,
+      onMouseDown: props.onMouseDown,
+      onContextMenu: props.onContextMenu,
     },
-    onClick: props.onClick,
-    onMouseDown: props.onMouseDown,
-    onContextMenu: props.onContextMenu,
-  }, props.transform, props.backgroundColor)
+    transform: props.transform,
+    backgroundColor: props.backgroundColor,
+  })
 }
 
 const rendererCenter: Record<string, ReactRenderTarget<unknown>> = {}

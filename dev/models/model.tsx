@@ -56,7 +56,15 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { lines: [Position, Position][], points: Position[], bounding?: TwoPointsFormRegion }>()
+const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
+  lines: [Position, Position][]
+  points: Position[]
+  bounding?: TwoPointsFormRegion
+  regions?: {
+    points: Position[]
+    lines: [Position, Position][]
+  }[]
+}>()
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 
