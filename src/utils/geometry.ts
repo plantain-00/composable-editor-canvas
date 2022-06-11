@@ -3,8 +3,13 @@ export function getPointByLengthAndDirection(
   length: number,
   directionPoint: Position
 ) {
-  const dx = directionPoint.x - startPoint.x
-  const dy = directionPoint.y - startPoint.y
+  let dx = directionPoint.x - startPoint.x
+  let dy = directionPoint.y - startPoint.y
+  if (length < 0) {
+    length = -length
+    dx = -dx
+    dy = -dy
+  }
   if (isZero(dx)) {
     return {
       x: startPoint.x,
@@ -488,15 +493,24 @@ function getGeneralFormLineCircleIntersectionPoints(line: GeneralFormLine, circl
 /**
  * @public
  */
-export function rotatePositionByCenter(position: Position, center: Position, rotate: number) {
-  if (!rotate) {
+export function rotatePositionByCenter(position: Position, center: Position, angle: number) {
+  if (!angle) {
     return position
   }
-  rotate = -rotate * Math.PI / 180
+  return rotatePosition(position, center, -angle * Math.PI / 180)
+}
+
+/**
+ * @public
+ */
+export function rotatePosition(position: Position, center: Position, rotation: number) {
+  if (!rotation) {
+    return position
+  }
   const offsetX = position.x - center.x
   const offsetY = position.y - center.y
-  const sin = Math.sin(rotate)
-  const cos = Math.cos(rotate)
+  const sin = Math.sin(rotation)
+  const cos = Math.cos(rotation)
   return {
     x: cos * offsetX - sin * offsetY + center.x,
     y: sin * offsetX + cos * offsetY + center.y,
@@ -866,4 +880,21 @@ export function normalizeAngleRange(content: AngleRange) {
   } else if (content.endAngle - content.startAngle > 360) {
     content.endAngle -= 360
   }
+}
+
+/**
+ * @public
+ */
+export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x
+    const yi = polygon[i].y
+    const xj = polygon[j].x
+    const yj = polygon[j].y
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside
+    }
+  }
+  return inside;
 }

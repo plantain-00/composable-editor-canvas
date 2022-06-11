@@ -24,7 +24,7 @@ export const lineModel: Model<LineContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth }) {
-    return target.renderPolyline(content.points, color, content.dashArray, strokeWidth)
+    return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return content.points[0]

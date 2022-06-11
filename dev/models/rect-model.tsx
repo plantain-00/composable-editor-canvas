@@ -37,9 +37,9 @@ export const rectModel: Model<RectContent> = {
   render({ content, color, target, strokeWidth, partsStyles }) {
     if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectLines(content)
-      return renderPolygon(target, points, color, content.dashArray, strokeWidth, partsStyles)
+      return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
     }
-    return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, color, content.angle, strokeWidth, content.fillColor)
+    return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
   },
   getOperatorRenderPosition(content) {
     const { points } = getRectLines(content)

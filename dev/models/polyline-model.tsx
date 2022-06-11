@@ -10,7 +10,7 @@ export const polylineModel: Model<LineContent> = {
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return renderPolyline(target, content.points, color, content.dashArray, strokeWidth, partsStyles)
+    return renderPolyline(target, content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolyLineContent) }))
@@ -25,17 +25,20 @@ export function isPolyLineContent(content: BaseContent): content is LineContent 
 export function renderPolyline<T>(
   target: ReactRenderTarget<T>,
   points: Position[],
-  stroke: number,
-  dashArray?: number[],
-  strokeWidth?: number,
-  partsStyles: readonly { index: number, color: number }[] = [],
+  options?: Partial<{
+    strokeColor: number,
+    dashArray?: number[],
+    strokeWidth?: number,
+    partsStyles: readonly { index: number, color: number }[],
+  }>,
 ) {
+  const partsStyles = options?.partsStyles ?? []
   if (partsStyles.length > 0) {
     const children: T[] = [
-      target.renderPolyline(points, stroke, dashArray, strokeWidth, partsStyles.map((s) => s.index)),
-      ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], color, dashArray, strokeWidth)),
+      target.renderPolyline(points, { strokeColor: options?.strokeColor, dashArray: options?.dashArray, strokeWidth: options?.strokeWidth, skippedLines: partsStyles.map((s) => s.index) }),
+      ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { strokeColor: color, dashArray: options?.dashArray, strokeWidth: options?.strokeWidth })),
     ]
-    return target.renderGroup(children, 0, 0, { x: 0, y: 0 })
+    return target.renderGroup(children)
   }
-  return target.renderPolyline(points, stroke, dashArray, strokeWidth)
+  return target.renderPolyline(points, { strokeColor: options?.strokeColor, dashArray: options?.dashArray, strokeWidth: options?.strokeWidth })
 }

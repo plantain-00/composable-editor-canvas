@@ -214,6 +214,9 @@ export function getContentByClickPosition<T>(contents: readonly T[], position: P
     };
     getLines?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
+        regions?: {
+            points: Position[];
+        }[];
     };
     canSelectPart?: boolean;
 } | undefined, part?: boolean, delta?: number): number[] | undefined;
@@ -227,6 +230,10 @@ export function getContentsByClickTwoPositions<T>(contents: readonly T[], startP
     getLines?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
         bounding?: TwoPointsFormRegion;
+        regions?: {
+            points: Position[];
+            lines: [Position, Position][];
+        }[];
     };
 } | undefined, contentSelectable?: (index: number[]) => boolean): number[][];
 
@@ -324,6 +331,12 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
+export function getTextSize(font: string, text: string): {
+    width: number;
+    height: number;
+} | undefined;
+
+// @public (undocumented)
 export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position): {
     r: number;
     x: number;
@@ -398,10 +411,19 @@ export function iterateIntersectionPoints<T>(content1: T, content2: T, contents:
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
+export class MapCache2<TKey1, TKey2, TValue> {
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
 export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 
 // @public (undocumented)
 export function normalizeAngleRange(content: AngleRange): void;
+
+// @public (undocumented)
+export function pointInPolygon({ x, y }: Position, polygon: Position[]): boolean;
 
 // @public (undocumented)
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion): boolean;
@@ -446,29 +468,61 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
-    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, strokeColor: number, strokeWidth?: number): T;
+    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, options?: Partial<{
+        strokeColor: number;
+        strokeWidth: number;
+    }>): T;
     // (undocumented)
-    renderCircle(cx: number, cy: number, r: number, strokeColor: number, strokeWidth?: number): T;
+    renderCircle(cx: number, cy: number, r: number, options?: Partial<{
+        strokeColor: number;
+        strokeWidth: number;
+    }>): T;
     // (undocumented)
-    renderEllipse(cx: number, cy: number, rx: number, ry: number, strokeColor: number, angle?: number, strokeWidth?: number): T;
+    renderEllipse(cx: number, cy: number, rx: number, ry: number, options?: Partial<{
+        strokeColor: number;
+        angle: number;
+        rotation: number;
+        strokeWidth: number;
+    }>): T;
     // (undocumented)
     renderEmpty(): T;
     // (undocumented)
-    renderGroup(children: T[], x: number, y: number, base: Position, angle?: number): T;
+    renderGroup(children: T[], options?: Partial<{
+        translate: Position;
+        base: Position;
+        angle: number;
+        rotation: number;
+    }>): T;
     // (undocumented)
-    renderPolyline(points: Position[], strokeColor: number, dashArray?: number[], strokeWidth?: number, skippedLines?: number[]): T;
+    renderPolyline(points: Position[], options?: Partial<{
+        strokeColor: number;
+        dashArray: number[];
+        strokeWidth: number;
+        skippedLines: number[];
+        fillColor: number;
+    }>): T;
     // (undocumented)
-    renderRect(x: number, y: number, width: number, height: number, strokeColor: number, angle?: number, strokeWidth?: number, fillColor?: number): T;
+    renderRect(x: number, y: number, width: number, height: number, options?: Partial<{
+        strokeColor: number;
+        angle: number;
+        rotation: number;
+        strokeWidth: number;
+        fillColor: number;
+    }>): T;
     // (undocumented)
-    renderResult(children: T[], width: number, height: number, attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
-        style: React.CSSProperties;
-    }>, transform?: {
-        x: number;
-        y: number;
-        scale: number;
-    }, backgroundColor?: number): JSX.Element;
+    renderResult(children: T[], width: number, height: number, options?: Partial<{
+        attributes: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
+            style: React.CSSProperties;
+        }>;
+        transform: {
+            x: number;
+            y: number;
+            scale: number;
+        };
+        backgroundColor: number;
+    }>): JSX.Element;
     // (undocumented)
-    renderText(x: number, y: number, text: string, strokeColor: number, fontSize: number): T;
+    renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string): T;
     // (undocumented)
     type: string;
 }
@@ -497,7 +551,10 @@ export type ResizeDirection = typeof allDirections[number];
 export function reverseTransformPosition(position: Position, transform: Transform | undefined): Position;
 
 // @public (undocumented)
-export function rotatePositionByCenter(position: Position, center: Position, rotate: number): Position;
+export function rotatePosition(position: Position, center: Position, rotation: number): Position;
+
+// @public (undocumented)
+export function rotatePositionByCenter(position: Position, center: Position, angle: number): Position;
 
 // @public (undocumented)
 export function RotationBar(props: {
@@ -626,6 +683,7 @@ export function useCursorInput(message: string, onKeyDown?: (e: React_2.Keyboard
 }>): {
     resetInput: () => void;
     cursorPosition: Position | undefined;
+    inputPosition: Position | undefined;
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
@@ -807,8 +865,10 @@ export function useLineAlignment(delta: number): {
 export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) => void, options?: Partial<{
     once: boolean;
     getAngleSnap: (angle: number) => number | undefined;
+    getLengthSnap: (angle: number) => number | undefined;
 }>): {
     line: Position[] | undefined;
+    inputMode: "length" | "angle";
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;

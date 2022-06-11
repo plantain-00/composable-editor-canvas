@@ -7,11 +7,12 @@ const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Contai
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: 'pixi',
-  renderResult(children, width, height, attributes, transform, backgroundColor = 0xffffff) {
+  renderResult(children, width, height, options) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
-    const x = transform?.x ?? 0
-    const y = transform?.y ?? 0
-    const scale = transform?.scale ?? 1
+    const x = options?.transform?.x ?? 0
+    const y = options?.transform?.y ?? 0
+    const scale = options?.transform?.scale ?? 1
+    const backgroundColor = options?.backgroundColor ?? 0xffffff
     const ref = React.useRef<Stage & { app: PIXI.Application } | null>(null)
     React.useEffect(() => {
       if (ref.current) {
@@ -29,7 +30,7 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
         ref={ref}
         width={width}
         height={height}
-        {...attributes}
+        {...options?.attributes}
       >
         <PixiContainer position={[width / 2 + x, height / 2 + y]} pivot={[width / 2, height / 2]} scale={scale} >
           {children}
@@ -40,31 +41,35 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   renderEmpty() {
     return <></>
   },
-  renderGroup(children, x, y, base, angle) {
+  renderGroup(children, options) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    const baseX = options?.base?.x ?? 0
+    const baseY = options?.base?.y ?? 0
+    const translateX = options?.translate?.x ?? 0
+    const translateY = options?.translate?.y ?? 0
     return (
-      <PixiContainer position={[base.x + x, base.y + y]} pivot={[base.x, base.y]} angle={angle} >
+      <PixiContainer position={[baseX + translateX, baseY + translateY]} pivot={[baseX, baseY]} angle={options?.angle} rotation={options?.rotation} >
         {children}
       </PixiContainer>
     )
   },
-  renderRect(x, y, width, height, strokeColor, angle, strokeWidth, fillColor) {
-    return <RectGraphic x={x} y={y} width={width} height={height} strokeColor={strokeColor} angle={angle} strokeWidth={strokeWidth} fillColor={fillColor} />
+  renderRect(x, y, width, height, options) {
+    return <RectGraphic x={x} y={y} width={width} height={height} strokeColor={options?.strokeColor} angle={options?.angle} rotation={options?.rotation} strokeWidth={options?.strokeWidth} fillColor={options?.fillColor} />
   },
-  renderPolyline(points, strokeColor, dashArray, strokeWidth, skippedLines) {
-    return <PolylineGraphic points={points} strokeColor={strokeColor} dashArray={dashArray} strokeWidth={strokeWidth} skippedLines={skippedLines} />
+  renderPolyline(points, options) {
+    return <PolylineGraphic points={points} strokeColor={options?.strokeColor} dashArray={options?.dashArray} strokeWidth={options?.strokeWidth} skippedLines={options?.skippedLines} fillColor={options?.fillColor} />
   },
-  renderCircle(cx, cy, r, strokeColor, strokeWidth) {
-    return <CircleGraphic cx={cx} cy={cy} r={r} strokeColor={strokeColor} strokeWidth={strokeWidth} />
+  renderCircle(cx, cy, r, options) {
+    return <CircleGraphic cx={cx} cy={cy} r={r} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} />
   },
-  renderEllipse(cx, cy, rx, ry, strokeColor, angle, strokeWidth) {
-    return <EllipseGraphic cx={cx} cy={cy} rx={rx} ry={ry} strokeColor={strokeColor} angle={angle} strokeWidth={strokeWidth} />
+  renderEllipse(cx, cy, rx, ry, options) {
+    return <EllipseGraphic cx={cx} cy={cy} rx={rx} ry={ry} strokeColor={options?.strokeColor} angle={options?.angle} rotation={options?.rotation} strokeWidth={options?.strokeWidth} />
   },
-  renderArc(cx, cy, r, startAngle, endAngle, strokeColor, strokeWidth) {
-    return <ArcGraphic cx={cx} cy={cy} r={r} startAngle={startAngle} endAngle={endAngle} strokeColor={strokeColor} strokeWidth={strokeWidth} />
+  renderArc(cx, cy, r, startAngle, endAngle, options) {
+    return <ArcGraphic cx={cx} cy={cy} r={r} startAngle={startAngle} endAngle={endAngle} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} />
   },
-  renderText(x, y, text, strokeColor, fontSize) {
-    return <Text x={x} y={y - fontSize} text={text} style={{ fill: getColorString(strokeColor), fontSize, fontFamily: 'monospace' }} />
+  renderText(x, y, text, fillColor, fontSize, fontFamily) {
+    return <Text x={x} y={y - fontSize} text={text} style={{ fill: getColorString(fillColor), fontSize, fontFamily }} />
   },
 }
 
@@ -73,8 +78,9 @@ function RectGraphic(props: {
   y: number
   width: number
   height: number
-  strokeColor: number
+  strokeColor?: number
   angle?: number
+  rotation?: number
   strokeWidth?: number
   fillColor?: number
 }) {
@@ -90,20 +96,24 @@ function RectGraphic(props: {
       g.beginFill(props.fillColor)
     }
     g.drawRect(-props.width / 2, -props.height / 2, props.width, props.height)
-  }, [props.x, props.y, props.width, props.height, props.strokeColor, props.angle, props.strokeWidth, props.fillColor])
+  }, [props.x, props.y, props.width, props.height, props.strokeColor, props.angle, props.rotation, props.strokeWidth, props.fillColor])
   return <Graphics draw={draw} />
 }
 
 function PolylineGraphic(props: {
   points: Position[]
-  strokeColor: number
+  strokeColor?: number
   dashArray?: number[]
   strokeWidth?: number
   skippedLines?: number[]
+  fillColor?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
+    if (props.fillColor !== undefined) {
+      g.beginFill(props.fillColor)
+    }
     if (props.dashArray) {
       drawDashedPolyline(g, props.points, props.dashArray, props.skippedLines)
     } else {
@@ -115,7 +125,7 @@ function PolylineGraphic(props: {
         }
       })
     }
-  }, [props.points, props.strokeColor, props.dashArray, props.strokeWidth, props.skippedLines])
+  }, [props.points, props.strokeColor, props.dashArray, props.strokeWidth, props.skippedLines, props.fillColor])
   return <Graphics draw={draw} />
 }
 
@@ -123,7 +133,7 @@ function CircleGraphic(props: {
   cx: number
   cy: number
   r: number
-  strokeColor: number
+  strokeColor?: number
   strokeWidth?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
@@ -140,7 +150,8 @@ function EllipseGraphic(props: {
   rx: number
   ry: number
   angle?: number
-  strokeColor: number
+  rotation?: number
+  strokeColor?: number
   strokeWidth?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
@@ -149,10 +160,13 @@ function EllipseGraphic(props: {
     if (props.angle !== undefined) {
       g.angle = props.angle
     }
+    if (props.rotation !== undefined) {
+      g.rotation = props.rotation
+    }
     g.position.x = props.cx
     g.position.y = props.cy
     g.drawEllipse(0, 0, props.rx, props.ry)
-  }, [props.cx, props.cy, props.rx, props.ry, props.angle, props.strokeColor, props.strokeWidth])
+  }, [props.cx, props.cy, props.rx, props.ry, props.angle, props.rotation, props.strokeColor, props.strokeWidth])
   return <Graphics draw={draw} />
 }
 
@@ -162,7 +176,7 @@ function ArcGraphic(props: {
   r: number
   startAngle: number
   endAngle: number
-  strokeColor: number
+  strokeColor?: number
   strokeWidth?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {

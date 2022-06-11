@@ -3,11 +3,11 @@ import { ReactRenderTarget } from ".."
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
-  renderResult(children, width, height, attributes, transform, backgroundColor) {
+  renderResult(children, width, height, options) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
-    const x = transform?.x ?? 0
-    const y = transform?.y ?? 0
-    const scale = transform?.scale ?? 1
+    const x = options?.transform?.x ?? 0
+    const y = options?.transform?.y ?? 0
+    const scale = options?.transform?.scale ?? 1
     const viewportWidth = width / scale
     const viewportHeight = height / scale
     const viewportX = (width - viewportWidth) / 2 - x / scale
@@ -21,10 +21,10 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
         width={width}
         height={height}
         colorInterpolationFilters="sRGB"
-        {...attributes}
+        {...options?.attributes}
         style={{
-          ...attributes?.style,
-          backgroundColor: backgroundColor ? getColorString(backgroundColor) : undefined,
+          ...options?.attributes?.style,
+          backgroundColor: options?.backgroundColor ? getColorString(options.backgroundColor) : undefined,
         }}
       >
         {children}
@@ -34,76 +34,88 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
   renderEmpty() {
     return <></>
   },
-  renderGroup(children, x, y, base, angle) {
+  renderGroup(children, options) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+    const transform: string[] = []
+    if (options?.translate) {
+      transform.push(`translate(${options.translate.x}, ${options.translate.y})`)
+    }
+    if (options?.base) {
+      const rotateTransform = getRotateTransform(options.base.x, options.base.y, options)
+      if (rotateTransform) {
+        transform.push(rotateTransform)
+      }
+    }
     return (
-      <g transform={angle ? `translate(${x}, ${y}) rotate(${angle},${base.x},${base.y})` : `translate(${x}, ${y})`}>
+      <g transform={transform.join(' ')}>
         {children}
       </g>
     )
   },
-  renderRect(x, y, width, height, strokeColor, angle, strokeWidth, fillColor) {
+  renderRect(x, y, width, height, options) {
     return <rect
       x={x}
       y={y}
       width={width}
       height={height}
-      stroke={getColorString(strokeColor)}
-      strokeWidth={strokeWidth}
-      fill={fillColor !== undefined ? getColorString(fillColor) : 'none'}
-      transform={angle ? `rotate(${angle},${x + width / 2},${y + height / 2})` : undefined}
+      stroke={getColorString(options?.strokeColor ?? 0)}
+      strokeWidth={options?.strokeWidth}
+      fill={options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'}
+      transform={getRotateTransform(x + width / 2, y + height / 2, options)}
     />
   },
-  renderPolyline(points, strokeColor, dashArray, strokeWidth, skippedLines) {
+  renderPolyline(points, options) {
+    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
       return (
         <path
           d={d}
-          strokeWidth={strokeWidth}
-          stroke={getColorString(strokeColor)}
-          strokeDasharray={dashArray?.join(' ')}
-          fill="none"
+          strokeWidth={options?.strokeWidth}
+          stroke={getColorString(options?.strokeColor ?? 0)}
+          strokeDasharray={options?.dashArray?.join(' ')}
+          fill={fill}
         />
       )
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
     return <polyline
       points={pointsText}
-      stroke={getColorString(strokeColor)}
-      strokeWidth={strokeWidth}
-      strokeDasharray={dashArray?.join(' ')}
-      fill="none"
+      stroke={getColorString(options?.strokeColor ?? 0)}
+      strokeWidth={options?.strokeWidth}
+      strokeDasharray={options?.dashArray?.join(' ')}
+      fill={fill}
     />
   },
-  renderCircle(cx, cy, r, strokeColor, strokeWidth) {
-    return <circle stroke={getColorString(strokeColor)} strokeWidth={strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
+  renderCircle(cx, cy, r, options) {
+    return <circle stroke={getColorString(options?.strokeColor ?? 0)} strokeWidth={options?.strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
   },
-  renderEllipse(cx, cy, rx, ry, strokeColor, angle, strokeWidth) {
+  renderEllipse(cx, cy, rx, ry, options) {
     return <ellipse
-      stroke={getColorString(strokeColor)}
-      strokeWidth={strokeWidth}
+      stroke={getColorString(options?.strokeColor ?? 0)}
+      strokeWidth={options?.strokeWidth}
       cx={cx}
       cy={cy}
       rx={rx}
       ry={ry}
       fill="none"
-      transform={angle ? `rotate(${angle},${cx},${cy})` : undefined}
+      transform={getRotateTransform(cx, cy, options)}
     />
   },
-  renderArc(cx, cy, r, startAngle, endAngle, strokeColor, strokeWidth) {
+  renderArc(cx, cy, r, startAngle, endAngle, options) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
     return <path
       d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
-      strokeWidth={strokeWidth}
-      stroke={getColorString(strokeColor)}
+      strokeWidth={options?.strokeWidth}
+      stroke={getColorString(options?.strokeColor ?? 0)}
       fill="none"
     />
   },
-  renderText(x, y, text, strokeColor, fontSize) {
-    return <text x={x} y={y} style={{ fill: getColorString(strokeColor), fontSize: `${fontSize}px`, fontFamily: 'monospace' }}>{text}</text>
+  renderText(x, y, text, fillColor, fontSize, fontFamily) {
+    return <text x={x} y={y} style={{ fill: getColorString(fillColor), fontSize: `${fontSize}px`, fontFamily }}>{text}</text>
   },
 }
 
@@ -122,4 +134,21 @@ export function getColorString(color: number) {
 
 export function colorStringToNumber(color: string) {
   return +`0x${color.slice(1)}`
+}
+
+function getRotateTransform(
+  x: number,
+  y: number,
+  options?: Partial<{
+    angle: number
+    rotation: number
+  }>,
+) {
+  if (options?.angle) {
+    return `rotate(${options.angle},${x},${y})`
+  }
+  if (options?.rotation) {
+    return `rotate(${options.rotation * 180 / Math.PI},${x},${y})`
+  }
+  return undefined
 }

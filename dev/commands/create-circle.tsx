@@ -35,6 +35,7 @@ export const createCircleCommand: Command = {
             text: getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
             color: 0xff0000,
             fontSize: 16 / scale,
+            fontFamily: 'monospace',
           },
         )
       }

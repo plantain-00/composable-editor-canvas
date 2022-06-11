@@ -125,12 +125,12 @@ export function useCircleClickCreate(
       }
     },
     onMove(p: Position, viewportPosition?: Position) {
+      setInputPosition(viewportPosition ?? p)
       if (!type) {
         return
       }
       p = getAngleSnapPosition(startPosition, p, options?.getAngleSnap)
       setCursorPosition(p)
-      setInputPosition(viewportPosition ?? p)
       if (startPosition) {
         const circle = getCircle(type, startPosition, middlePosition, p)
         if (circle) {
@@ -169,7 +169,6 @@ function getCircle(
   }
   return undefined
 }
-
 
 export function getAngleSnapPosition(
   startPosition: Position | undefined,

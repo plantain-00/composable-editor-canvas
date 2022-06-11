@@ -18,7 +18,7 @@ export const blockModel: Model<BlockContent> = {
   },
   render({ content, target, color, strokeWidth, contents }) {
     const children = renderBlockChildren(content, target, strokeWidth, contents, color)
-    return target.renderGroup(children, 0, 0, { x: 0, y: 0 })
+    return target.renderGroup(children)
   },
   getOperatorRenderPosition(content) {
     return content.base

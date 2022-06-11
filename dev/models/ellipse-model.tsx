@@ -40,9 +40,9 @@ export const ellipseModel: Model<EllipseContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getEllipseLines(content)
-      return renderPolygon(target, points, color, content.dashArray, strokeWidth)
+      return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, color, content.angle, strokeWidth)
+    return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }

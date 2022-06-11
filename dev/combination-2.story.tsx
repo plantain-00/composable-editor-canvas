@@ -41,6 +41,8 @@ import { filletCommand } from './commands/fillet'
 import { chamferCommand } from './commands/chamfer'
 import { breakCommand } from './commands/break'
 import { measureCommand } from './commands/measure'
+import { radialDimensionModel } from './models/radial-dimension-model'
+import { createRadialDimensionCommand } from './commands/create-radial-dimension'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -60,6 +62,7 @@ registerModel(ellipseArcModel)
 registerModel(textModel)
 registerModel(blockModel)
 registerModel(blockReferenceModel)
+registerModel(radialDimensionModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -84,6 +87,7 @@ registerCommand(filletCommand)
 registerCommand(chamferCommand)
 registerCommand(breakCommand)
 registerCommand(measureCommand)
+registerCommand(createRadialDimensionCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -177,7 +181,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -485,7 +489,7 @@ const CADEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const { input: cursorInput, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, operations.type !== 'operate' && !readOnly ? (e, text) => {
+  const { input: cursorInput, inputPosition, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, operations.type !== 'operate' && !readOnly ? (e, text) => {
     if (e.key === 'Enter' && text) {
       const command = getCommandByHotkey(text)
       if (command) {
@@ -572,6 +576,9 @@ const CADEditor = React.forwardRef((props: {
       }
     }
     operate(p)
+    if (position) {
+      onCommandMove(getSnapPoint(position, editingContent), inputPosition)
+    }
   }
   const onContextMenu = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (lastOperation) {
@@ -597,7 +604,7 @@ const CADEditor = React.forwardRef((props: {
           height={height}
           backgroundColor={props.backgroundColor}
         />
-        {position && `${position.x},${position.y}`}
+        {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
         {commandMasks}
         {selectionInput}
         {!readOnly && commandInputs}

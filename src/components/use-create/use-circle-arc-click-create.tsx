@@ -85,13 +85,13 @@ export function useCircleArcClickCreate(
       }
     },
     onMove(p: Position, viewportPosition?: Position) {
+      setInputPosition(viewportPosition ?? p)
       if (!type) {
         return
       }
       if (arc) {
         p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         setCursorPosition(p)
-        setInputPosition(viewportPosition ?? p)
         if (startAngle !== undefined) {
           let angle = Math.atan2(p.y - arc.y, p.x - arc.x) * 180 / Math.PI
           if (angle < startAngle) {

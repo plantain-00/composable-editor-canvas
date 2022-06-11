@@ -66,13 +66,13 @@ export const arcModel: Model<ArcContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getArcLines(content)
-      return target.renderPolyline(points, color, content.dashArray, strokeWidth)
+      return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, color, strokeWidth)
+    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth })
   },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
     const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
-    return target.renderPolyline(points, color, [4 / scale], strokeWidth)
+    return target.renderPolyline(points, { strokeColor: color, dashArray: [4 / scale], strokeWidth })
   },
   getOperatorRenderPosition(content) {
     const { points } = getArcLines(content)
