@@ -6,7 +6,10 @@ export interface Command {
   name: string
   type?: { name: string, hotkey?: string }[]
   useCommand?(props: {
-    onEnd: (updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void) => void,
+    onEnd: (
+      updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
+      nextCommand?: string,
+    ) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
@@ -42,7 +45,10 @@ export function getCommand(name: string): Command | undefined {
 }
 
 export function useCommands(
-  onEnd: (updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void) => void,
+  onEnd: (
+    updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
+    nextCommand?: string,
+  ) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
   inputFixed: boolean,
