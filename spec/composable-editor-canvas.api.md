@@ -969,7 +969,7 @@ export function useSelectBeforeOperate<TSelect extends {
     isSelected: (value: TPath, s?: readonly TPath[]) => boolean;
     addSelection(...value: readonly TPath[]): void;
     setSelected: (...value: readonly (TPath | undefined)[]) => void;
-    filterSelection: (selectable?: ((value: TPath) => boolean) | undefined, maxCount?: number | undefined) => {
+    filterSelection: (selectable?: ((value: TPath) => boolean) | undefined, maxCount?: number | undefined, s?: readonly TPath[]) => {
         result: readonly TPath[];
         needSelect: boolean;
     };
@@ -995,7 +995,7 @@ export function useSelectBeforeOperate<TSelect extends {
 // @public (undocumented)
 export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<UseSelectedOptions<T>>): {
     selected: readonly T[];
-    filterSelection: (selectable?: ((value: T) => boolean) | undefined, maxCount?: number | undefined) => {
+    filterSelection: (selectable?: ((value: T) => boolean) | undefined, maxCount?: number | undefined, s?: readonly T[]) => {
         result: readonly T[];
         needSelect: boolean;
     };

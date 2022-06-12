@@ -25,10 +25,10 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     if (regions && regions.length > 0) {
       children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
     }
-    const { textPosition, rotation } = getTextPosition(content)
+    const { textPosition, rotation, text } = getTextPosition(content)
     children.push(target.renderGroup(
       [
-        target.renderText(textPosition.x, textPosition.y, `R${content.r}`, color, content.fontSize, content.fontFamily),
+        target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily),
       ],
       {
         rotation,
@@ -54,6 +54,9 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
               }
               c.position.x += cursor.x - start.x
               c.position.y += cursor.y - start.y
+              if (getTwoPointsDistance(c, c.position) > c.r) {
+                return
+              }
               return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
             },
           }
@@ -68,9 +71,9 @@ export function getRadialDimensionLines(content: Omit<RadialDimensionContent, "t
   return getLinesAndPointsFromCache(content, () => {
     const edgePoint = getPointByLengthAndDirection(content, content.r, content.position)
     const distance = getTwoPointsDistance(content, content.position)
-    const arrowPoint = getPointByLengthAndDirection(edgePoint, 10, content.position)
-    const arrowTail1 = rotatePositionByCenter(arrowPoint, edgePoint, 15)
-    const arrowTail2 = rotatePositionByCenter(arrowPoint, edgePoint, -15)
+    const arrowPoint = getPointByLengthAndDirection(edgePoint, dimensionStyle.arrowSize, content.position)
+    const arrowTail1 = rotatePositionByCenter(arrowPoint, edgePoint, dimensionStyle.arrowAngle)
+    const arrowTail2 = rotatePositionByCenter(arrowPoint, edgePoint, -dimensionStyle.arrowAngle)
     const linePoints = [distance > content.r ? content : edgePoint, content.position]
     const arrowPoints = [edgePoint, arrowTail1, arrowTail2]
     let textPoints: Position[] = []
@@ -115,11 +118,13 @@ const textPositionMap = new WeakmapCache<Omit<RadialDimensionContent, 'type'>, {
   textPosition: Position
   rotation: number
   size?: Size
+  text: string
 }>()
 function getTextPosition(content: Omit<RadialDimensionContent, 'type'>) {
   return textPositionMap.get(content, () => {
     let textPosition = content.position
-    const size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, `R${content.r}`)
+    const text = `R${content.r}`
+    const size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
     let rotation = Math.atan2(content.position.y - content.y, content.position.x - content.x)
     if (size) {
       const distance = getTwoPointsDistance(content, content.position)
@@ -134,11 +139,18 @@ function getTextPosition(content: Omit<RadialDimensionContent, 'type'>) {
         rotation = rotation + Math.PI
       }
     }
-    textPosition = getPointByLengthAndAngle(textPosition, 5, rotation - Math.PI / 2)
+    textPosition = getPointByLengthAndAngle(textPosition, dimensionStyle.textDistance, rotation - Math.PI / 2)
     return {
       textPosition,
       rotation,
       size,
+      text,
     }
   })
+}
+
+export const dimensionStyle = {
+  textDistance: 5,
+  arrowAngle: 15,
+  arrowSize: 10,
 }

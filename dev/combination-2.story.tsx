@@ -43,6 +43,8 @@ import { breakCommand } from './commands/break'
 import { measureCommand } from './commands/measure'
 import { radialDimensionModel } from './models/radial-dimension-model'
 import { createRadialDimensionCommand } from './commands/create-radial-dimension'
+import { createLinearDimensionCommand } from './commands/create-linear-dimension'
+import { linearDimensionModel } from './models/linear-dimension-model'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -63,6 +65,7 @@ registerModel(textModel)
 registerModel(blockModel)
 registerModel(blockReferenceModel)
 registerModel(radialDimensionModel)
+registerModel(linearDimensionModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -88,6 +91,7 @@ registerCommand(chamferCommand)
 registerCommand(breakCommand)
 registerCommand(measureCommand)
 registerCommand(createRadialDimensionCommand)
+registerCommand(createLinearDimensionCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -181,7 +185,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -328,7 +332,7 @@ const CADEditor = React.forwardRef((props: {
     (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
     {
       scale: transform.scale,
-      readOnly,
+      readOnly: readOnly || operations.type === 'operate',
       getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
     }
   )
@@ -344,7 +348,7 @@ const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
-    (updateContents) => {
+    (updateContents, nextCommand) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
@@ -355,6 +359,9 @@ const CADEditor = React.forwardRef((props: {
       }
       resetOperation()
       setSelected()
+      if (nextCommand) {
+        startOperation({ type: 'command', name: nextCommand }, [])
+      }
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent),
     angleSnapEnabled && !snapPoint,
@@ -549,7 +556,7 @@ const CADEditor = React.forwardRef((props: {
     }
   }
   const [lastOperation, setLastOperation] = React.useState<Operation>()
-  const startOperation = (p: Operation) => {
+  const startOperation = (p: Operation, s = selected) => {
     setLastOperation(p)
     if (p.type === 'command') {
       const command = getCommand(p.name)
@@ -565,7 +572,7 @@ const CADEditor = React.forwardRef((props: {
             return false
           },
         }
-        const { result, needSelect } = filterSelection(select.selectable, select.count)
+        const { result, needSelect } = filterSelection(select.selectable, select.count, s)
         if (needSelect) {
           selectBeforeOperate(select, p)
           return
