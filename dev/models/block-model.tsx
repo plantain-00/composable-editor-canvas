@@ -23,22 +23,24 @@ export const blockModel: Model<BlockContent> = {
   getOperatorRenderPosition(content) {
     return content.base
   },
-  getSnapPoints(content, contents) {
-    return getSnapPointsFromCache(content, () => {
-      const result: SnapPoint[] = []
-      content.contents.forEach((c) => {
-        const r = getModel(c.type)?.getSnapPoints?.(c, contents)
-        if (r) {
-          result.push(...r)
-        }
-      })
-      return result
-    })
-  },
+  getSnapPoints: getBlockSnapPoints,
   getLines: getBlockLines,
 }
 
-export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color: number) {
+export function getBlockSnapPoints(content: Omit<BlockContent, 'type' | 'id' | 'base'>, contents: readonly BaseContent[]) {
+  return getSnapPointsFromCache(content, () => {
+    const result: SnapPoint[] = []
+    content.contents.forEach((c) => {
+      const r = getModel(c.type)?.getSnapPoints?.(c, contents)
+      if (r) {
+        result.push(...r)
+      }
+    })
+    return result
+  })
+}
+
+export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' | 'base'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color: number) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
   block.contents.forEach((blockContent) => {
     const model = getModel(blockContent.type)
@@ -50,7 +52,7 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type'>, target
   return children
 }
 
-function getBlockLines(content: Omit<BlockContent, "type">) {
+export function getBlockLines(content: Omit<BlockContent, "type" | 'id' | 'base'>) {
   return getLinesAndPointsFromCache(content, () => {
     const lines: [Position, Position][] = []
     const points: Position[] = []

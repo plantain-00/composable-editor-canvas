@@ -25,6 +25,9 @@ export function useUndoRedo<T>(defaultState: T) {
     stateIndex,
     setState: (recipe: (draft: WritableDraft<T>) => void) => {
       const s = produce(state, recipe)
+      if (s === state) {
+        return state
+      }
       const newStateIndex = stateIndex + 1
       setHistory(produce(history, (draft) => {
         draft.states.splice(newStateIndex, draft.states.length, castDraft(s))

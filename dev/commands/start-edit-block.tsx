@@ -1,13 +1,22 @@
+import { isSelected } from "../../src"
 import { isBlockContent } from "../models/block-model"
+import { isGroupContent } from "../models/group-model"
+import { BaseContent } from "../models/model"
 import { Command } from "./command"
 
 export const startEditBlockCommand: Command = {
   name: 'start edit block',
-  executeCommand(content, _, index) {
-    return {
-      editingStatePath: isBlockContent(content) ? [index, 'contents'] : undefined,
-    }
+  execute(contents, selected, setEditingContentPath) {
+    contents.forEach((content, index) => {
+      if (isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+        setEditingContentPath(contentSelectable(content) ? [index, 'contents'] : undefined)
+      }
+    })
   },
-  contentSelectable: isBlockContent,
+  contentSelectable,
   selectCount: 1,
+}
+
+function contentSelectable(c: BaseContent) {
+  return isBlockContent(c) || isGroupContent(c)
 }
