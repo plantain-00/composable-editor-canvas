@@ -41,6 +41,9 @@ export function usePatchBasedUndoRedo<T, P>(
     applyPatchFromSelf,
     setState: (recipe: (draft: WritableDraft<T>) => void) => {
       return produce(history.state, recipe, (patches, reversePatches) => {
+        if (patches.length === 0) {
+          return
+        }
         applyPatchFromSelf(patches, reversePatches)
       })
     },

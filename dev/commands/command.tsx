@@ -27,11 +27,11 @@ export interface Command {
     }
     assistentContents?: BaseContent[]
   }
-  executeCommand?(content: BaseContent, contents: readonly BaseContent[], index: number): {
-    removed?: boolean
-    newContents?: BaseContent[]
-    editingStatePath?: SelectPath
-  }
+  execute?(
+    contents: BaseContent[],
+    selected: readonly number[][],
+    setEditingContentPath: (value: React.SetStateAction<SelectPath | undefined>) => void
+  ): void
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectCount?: number
   selectType?: 'select part'
