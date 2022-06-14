@@ -24,7 +24,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
         {...options?.attributes}
         style={{
           ...options?.attributes?.style,
-          backgroundColor: options?.backgroundColor ? getColorString(options.backgroundColor) : undefined,
+          backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
         {children}

@@ -1,4 +1,4 @@
-import { getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, Position, rotatePosition, rotatePositionByCenter, Size, WeakmapCache } from "../../src"
+import { getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, WeakmapCache } from "../../src"
 import { iteratePolylineLines, LineContent } from "./line-model"
 import { getLinesAndPointsFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
 import { iteratePolygonLines } from "./polygon-model"
@@ -9,6 +9,7 @@ export type LinearDimensionContent = StrokeBaseContent<'linear dimension'> & Tex
   p1: Position
   p2: Position
   position: Position
+  direct?: boolean
 }
 
 export const linearDimensionModel: Model<LinearDimensionContent> = {
@@ -80,8 +81,47 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
     let arrow1Points: Position[]
     let arrow2Points: Position[]
     let textPoints: Position[] = []
-    const rotation = Math.abs(Math.atan2(content.position.y - center.y, content.position.x - center.x))
-    if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
+    const centerRotation = Math.atan2(content.position.y - center.y, content.position.x - center.x)
+    const rotation = Math.abs(centerRotation)
+    if (content.direct) {
+      const left = content.p1.x > content.p2.x ? content.p2 : content.p1
+      const right = content.p1.x > content.p2.x ? content.p1 : content.p2
+      const footPoint = getFootPoint(content.position, twoPointLineToGeneralFormLine(left, right))
+      const distance = getTwoPointsDistance(content.position, footPoint)
+      const r = Math.atan2(right.y - left.y, right.x - left.x)
+      let rotationDelta = r - centerRotation
+      if (rotationDelta < -Math.PI) {
+        rotationDelta += Math.PI * 2
+      }
+      const direction = rotationDelta > 0 && rotationDelta < Math.PI ? -1 : 1
+      line1Points = [left, getPointByLengthAndAngle(left, distance + dimensionStyle.textDistance, r + direction * Math.PI / 2)]
+      line2Points = [right, getPointByLengthAndAngle(right, distance + dimensionStyle.textDistance, r + direction * Math.PI / 2)]
+      const p1 = getPointByLengthAndAngle(left, distance, r + direction * Math.PI / 2)
+      const p2 = getPointByLengthAndAngle(right, distance, r + direction * Math.PI / 2)
+      if (p1.y < p2.y) {
+        line3Points = [
+          { x: Math.min(p1.x, p2.x, content.position.x), y: Math.min(p1.y, p2.y, content.position.y) },
+          { x: Math.max(p1.x, p2.x, content.position.x), y: Math.max(p1.y, p2.y, content.position.y) },
+        ]
+      } else {
+        line3Points = [
+          { x: Math.min(p1.x, p2.x, content.position.x), y: Math.max(p1.y, p2.y, content.position.y) },
+          { x: Math.max(p1.x, p2.x, content.position.x), y: Math.min(p1.y, p2.y, content.position.y) },
+        ]
+      }
+      const arrow1 = getPointByLengthAndAngle(p1, dimensionStyle.arrowSize, r)
+      const arrow2 = getPointByLengthAndAngle(p2, dimensionStyle.arrowSize, r + Math.PI)
+      arrow1Points = [
+        p1,
+        rotatePositionByCenter(arrow1, p1, dimensionStyle.arrowAngle),
+        rotatePositionByCenter(arrow1, p1, -dimensionStyle.arrowAngle),
+      ]
+      arrow2Points = [
+        p2,
+        rotatePositionByCenter(arrow2, p2, dimensionStyle.arrowAngle),
+        rotatePositionByCenter(arrow2, p2, -dimensionStyle.arrowAngle),
+      ]
+    } else if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
       const direction = content.position.y > center.y ? 1 : -1
       line1Points = [content.p1, { x: content.p1.x, y: content.position.y + direction * dimensionStyle.textDistance }]
       line2Points = [content.p2, { x: content.p2.x, y: content.position.y + direction * dimensionStyle.textDistance }]
@@ -177,8 +217,27 @@ function getTextPosition(content: Omit<LinearDimensionContent, 'type'>) {
     let text: string
     let size: Size | undefined
     let textRotation = 0
-    const rotation = Math.abs(Math.atan2(content.position.y - center.y, content.position.x - center.x))
-    if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
+    const centerRotation = Math.atan2(content.position.y - center.y, content.position.x - center.x)
+    const rotation = Math.abs(centerRotation)
+    if (content.direct) {
+      const left = content.p1.x > content.p2.x ? content.p2 : content.p1
+      const right = content.p1.x > content.p2.x ? content.p1 : content.p2
+      const footPoint = getFootPoint(content.position, twoPointLineToGeneralFormLine(left, right))
+      const distance = getTwoPointsDistance(content.position, footPoint)
+      textRotation = Math.atan2(right.y - left.y, right.x - left.x)
+      const r = Math.atan2(right.y - left.y, right.x - left.x)
+      let rotationDelta = r - centerRotation
+      if (rotationDelta < -Math.PI) {
+        rotationDelta += Math.PI * 2
+      }
+      const direction = rotationDelta > 0 && rotationDelta < Math.PI ? 1 : -1
+      textPosition = getPointByLengthAndDirection(footPoint, distance + direction * dimensionStyle.textDistance, content.position)
+      text = getTwoNumbersDistance(left.x, right.x).toString()
+      size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
+      if (size) {
+        textPosition = getPointByLengthAndAngle(textPosition, size.width / 2, textRotation - Math.PI)
+      }
+    } else if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
       textPosition = {
         x: content.position.x,
         y: content.position.y - dimensionStyle.textDistance,
