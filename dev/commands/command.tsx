@@ -117,6 +117,12 @@ export function useCommands(
           props.style = fixedInputStyle
         }
         commandInputs.push(React.cloneElement(input, props, ...children))
+      } else if (subcommand) {
+        const props: Record<string, unknown> = {
+          key: command.name + 'sub command',
+        }
+        props.style = fixedInputStyle
+        commandInputs.push(React.cloneElement(subcommand, props))
       }
     }
     if (command.type) {

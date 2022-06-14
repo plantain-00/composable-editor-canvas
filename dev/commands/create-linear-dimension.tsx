@@ -10,6 +10,7 @@ export const createLinearDimensionCommand: Command = {
   useCommand({ onEnd, type, scale }) {
     const [p1, setP1] = React.useState<Position>()
     const [p2, setP2] = React.useState<Position>()
+    const [direct, setDirect] = React.useState(false)
     const [cursorPosition, setCursorPosition] = React.useState<Position>()
     const [result, setResult] = React.useState<LinearDimensionContent>()
     const reset = () => {
@@ -48,11 +49,24 @@ export const createLinearDimensionCommand: Command = {
             position: p,
             p1,
             p2,
+            direct,
             fontSize: 16,
             fontFamily: 'monospace',
           })
         }
       },
+      subcommand: type
+        ? (
+          <span>
+            <button onClick={() => {
+              if (result) {
+                setResult({ ...result, direct: !direct })
+              }
+              setDirect(!direct)
+            }} style={{ position: 'relative' }}>{direct ? 'direct' : 'axis'}</button>
+          </span>
+        )
+        : undefined,
       assistentContents,
     }
   },

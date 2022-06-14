@@ -34,7 +34,7 @@ export function useCursorInput(
     clearText() {
       setText('')
     },
-    input: inputPosition ? (
+    input: inputPosition && (message || (onKeyDown && cursorPosition)) ? (
       <span
         style={{
           position: 'absolute',
