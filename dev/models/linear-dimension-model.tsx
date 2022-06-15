@@ -1,4 +1,4 @@
-import { getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, WeakmapCache } from "../../src"
+import { formatNumber, getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, WeakmapCache } from "../../src"
 import { iteratePolylineLines, LineContent } from "./line-model"
 import { getLinesAndPointsFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
 import { iteratePolygonLines } from "./polygon-model"
@@ -81,6 +81,7 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
     let arrow1Points: Position[]
     let arrow2Points: Position[]
     let textPoints: Position[] = []
+    const { textPosition, size, textRotation } = getTextPosition(content)
     const centerRotation = Math.atan2(content.position.y - center.y, content.position.x - center.x)
     const rotation = Math.abs(centerRotation)
     if (content.direct) {
@@ -96,8 +97,29 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
       const direction = rotationDelta > 0 && rotationDelta < Math.PI ? -1 : 1
       line1Points = [left, getPointByLengthAndAngle(left, distance + dimensionStyle.textDistance, r + direction * Math.PI / 2)]
       line2Points = [right, getPointByLengthAndAngle(right, distance + dimensionStyle.textDistance, r + direction * Math.PI / 2)]
-      const p1 = getPointByLengthAndAngle(left, distance, r + direction * Math.PI / 2)
-      const p2 = getPointByLengthAndAngle(right, distance, r + direction * Math.PI / 2)
+      let p1 = getPointByLengthAndAngle(left, distance, r + direction * Math.PI / 2)
+      let p2 = getPointByLengthAndAngle(right, distance, r + direction * Math.PI / 2)
+      const p1p2Distance = getTwoPointsDistance(content.p1, content.p2)
+      let arrowDirection = 1
+      if (size && p1p2Distance <= dimensionStyle.arrowSize * 2 + size.width) {
+        arrowDirection = -1
+      }
+      const arrow1 = getPointByLengthAndAngle(p1, arrowDirection * dimensionStyle.arrowSize, r)
+      const arrow2 = getPointByLengthAndAngle(p2, arrowDirection * dimensionStyle.arrowSize, r + Math.PI)
+      arrow1Points = [
+        p1,
+        rotatePositionByCenter(arrow1, p1, dimensionStyle.arrowAngle),
+        rotatePositionByCenter(arrow1, p1, -dimensionStyle.arrowAngle),
+      ]
+      arrow2Points = [
+        p2,
+        rotatePositionByCenter(arrow2, p2, dimensionStyle.arrowAngle),
+        rotatePositionByCenter(arrow2, p2, -dimensionStyle.arrowAngle),
+      ]
+      if (size && p1p2Distance <= dimensionStyle.arrowSize * 2 + size.width) {
+        p1 = getPointByLengthAndDirection(p1, - 2 * dimensionStyle.arrowSize, p2)
+        p2 = getPointByLengthAndDirection(p2, - 2 * dimensionStyle.arrowSize, p1)
+      }
       if (p1.y < p2.y) {
         line3Points = [
           { x: Math.min(p1.x, p2.x, content.position.x), y: Math.min(p1.y, p2.y, content.position.y) },
@@ -109,18 +131,6 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
           { x: Math.max(p1.x, p2.x, content.position.x), y: Math.min(p1.y, p2.y, content.position.y) },
         ]
       }
-      const arrow1 = getPointByLengthAndAngle(p1, dimensionStyle.arrowSize, r)
-      const arrow2 = getPointByLengthAndAngle(p2, dimensionStyle.arrowSize, r + Math.PI)
-      arrow1Points = [
-        p1,
-        rotatePositionByCenter(arrow1, p1, dimensionStyle.arrowAngle),
-        rotatePositionByCenter(arrow1, p1, -dimensionStyle.arrowAngle),
-      ]
-      arrow2Points = [
-        p2,
-        rotatePositionByCenter(arrow2, p2, dimensionStyle.arrowAngle),
-        rotatePositionByCenter(arrow2, p2, -dimensionStyle.arrowAngle),
-      ]
     } else if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
       const direction = content.position.y > center.y ? 1 : -1
       line1Points = [content.p1, { x: content.p1.x, y: content.position.y + direction * dimensionStyle.textDistance }]
@@ -131,7 +141,12 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
         { x: Math.min(content.p1.x, content.p2.x, content.position.x), y: content.position.y },
         { x: Math.max(content.p1.x, content.p2.x, content.position.x), y: content.position.y },
       ]
-      const p1ArrowSize = p1.x < p2.x ? dimensionStyle.arrowSize : -dimensionStyle.arrowSize
+      let p1ArrowSize = p1.x < p2.x ? dimensionStyle.arrowSize : -dimensionStyle.arrowSize
+      if (size && Math.abs(p1.x - p2.x) <= dimensionStyle.arrowSize * 2 + size.width) {
+        p1ArrowSize = -p1ArrowSize
+        line3Points[0].x = Math.min(line3Points[0].x, Math.min(p1.x, p2.x) - 2 * dimensionStyle.arrowSize)
+        line3Points[1].x = Math.max(line3Points[1].x, Math.max(p1.x, p2.x) + 2 * dimensionStyle.arrowSize)
+      }
       arrow1Points = [
         p1,
         rotatePositionByCenter({ x: p1.x + p1ArrowSize, y: p1.y }, p1, dimensionStyle.arrowAngle),
@@ -152,7 +167,12 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
         { x: content.position.x, y: Math.min(content.p1.y, content.p2.y, content.position.y) },
         { x: content.position.x, y: Math.max(content.p1.y, content.p2.y, content.position.y) },
       ]
-      const p1ArrowSize = p1.y < p2.y ? dimensionStyle.arrowSize : -dimensionStyle.arrowSize
+      let p1ArrowSize = p1.y < p2.y ? dimensionStyle.arrowSize : -dimensionStyle.arrowSize
+      if (size && Math.abs(p1.y - p2.y) <= dimensionStyle.arrowSize * 2 + size.width) {
+        p1ArrowSize = -p1ArrowSize
+        line3Points[0].y = Math.min(line3Points[0].y, Math.min(p1.y, p2.y) - 2 * dimensionStyle.arrowSize)
+        line3Points[1].y = Math.max(line3Points[1].y, Math.max(p1.y, p2.y) + 2 * dimensionStyle.arrowSize)
+      }
       arrow1Points = [
         p1,
         rotatePositionByCenter({ x: p1.x, y: p1.y + p1ArrowSize }, p1, dimensionStyle.arrowAngle),
@@ -164,7 +184,6 @@ export function getLinearDimensionLines(content: Omit<LinearDimensionContent, "t
         rotatePositionByCenter({ x: p2.x, y: p2.y - p1ArrowSize }, p2, -dimensionStyle.arrowAngle),
       ]
     }
-    const { textPosition, size, textRotation } = getTextPosition(content)
     if (size) {
       textPoints = [
         { x: textPosition.x, y: textPosition.y - size.height },
@@ -232,7 +251,7 @@ function getTextPosition(content: Omit<LinearDimensionContent, 'type'>) {
       }
       const direction = rotationDelta > 0 && rotationDelta < Math.PI ? 1 : -1
       textPosition = getPointByLengthAndDirection(footPoint, distance + direction * dimensionStyle.textDistance, content.position)
-      text = getTwoNumbersDistance(left.x, right.x).toString()
+      text = formatNumber(getTwoNumbersDistance(left.x, right.x)).toString()
       size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
       if (size) {
         textPosition = getPointByLengthAndAngle(textPosition, size.width / 2, textRotation - Math.PI)
@@ -242,7 +261,7 @@ function getTextPosition(content: Omit<LinearDimensionContent, 'type'>) {
         x: content.position.x,
         y: content.position.y - dimensionStyle.textDistance,
       }
-      text = getTwoNumbersDistance(content.p1.x, content.p2.x).toString()
+      text = formatNumber(getTwoNumbersDistance(content.p1.x, content.p2.x)).toString()
       size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
       if (size) {
         textPosition.x -= size.width / 2
@@ -252,7 +271,7 @@ function getTextPosition(content: Omit<LinearDimensionContent, 'type'>) {
         x: content.position.x - dimensionStyle.textDistance,
         y: content.position.y,
       }
-      text = getTwoNumbersDistance(content.p1.y, content.p2.y).toString()
+      text = formatNumber(getTwoNumbersDistance(content.p1.y, content.p2.y)).toString()
       size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
       if (size) {
         textPosition.y += size.width / 2

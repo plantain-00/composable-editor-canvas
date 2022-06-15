@@ -1,4 +1,4 @@
-import { Circle, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTextSize, getTwoPointsDistance, MapCache2, Position, rotatePosition, rotatePositionByCenter, Size, WeakmapCache } from "../../src"
+import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTextSize, getTwoPointsDistance, MapCache2, Position, rotatePosition, rotatePositionByCenter, Size, WeakmapCache } from "../../src"
 import { iteratePolylineLines, LineContent } from "./line-model"
 import { getLinesAndPointsFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
 import { iteratePolygonLines } from "./polygon-model"
@@ -123,7 +123,7 @@ const textPositionMap = new WeakmapCache<Omit<RadialDimensionContent, 'type'>, {
 function getTextPosition(content: Omit<RadialDimensionContent, 'type'>) {
   return textPositionMap.get(content, () => {
     let textPosition = content.position
-    const text = `R${content.r}`
+    const text = `R${formatNumber(content.r)}`
     const size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
     let rotation = Math.atan2(content.position.y - content.y, content.position.x - content.x)
     if (size) {
