@@ -14,3 +14,10 @@ export function getTextSize(font: string, text: string) {
   }
   return undefined
 }
+
+/**
+ * @public
+ */
+export function formatNumber(n: number, precision = 100) {
+  return Math.round(n * precision) / precision
+}

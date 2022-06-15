@@ -171,6 +171,9 @@ export function EllipseEditBar(props: {
 export function equals(a: number, b: number): boolean;
 
 // @public (undocumented)
+export function formatNumber(n: number, precision?: number): number;
+
+// @public (undocumented)
 export interface GeneralFormLine {
     // (undocumented)
     a: number;
