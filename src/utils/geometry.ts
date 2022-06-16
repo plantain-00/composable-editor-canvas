@@ -898,3 +898,14 @@ export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
   }
   return inside;
 }
+
+export function* iteratePolylineLines(points: Position[]) {
+  for (let i = 1; i < points.length; i++) {
+    yield [points[i - 1], points[i]] as [Position, Position]
+  }
+}
+
+export function* iteratePolygonLines(points: Position[]) {
+  yield* iteratePolylineLines(points)
+  yield [points[points.length - 1], points[0]] as [Position, Position]
+}

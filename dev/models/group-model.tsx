@@ -1,4 +1,4 @@
-import { getBlockLines, getBlockSnapPoints, renderBlockChildren } from "./block-model"
+import { getBlockGeometries, getBlockSnapPoints, renderBlockChildren } from "./block-model"
 import { BaseContent, getModel, Model } from "./model"
 
 export type GroupContent = BaseContent<'group'> & {
@@ -30,7 +30,7 @@ export const groupModel: Model<GroupContent> = {
     return target.renderGroup(children)
   },
   getSnapPoints: getBlockSnapPoints,
-  getLines: getBlockLines,
+  getGeometries: getBlockGeometries,
 }
 
 export function isGroupContent(content: BaseContent): content is GroupContent {

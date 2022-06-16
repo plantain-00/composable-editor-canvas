@@ -1,7 +1,7 @@
-import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding } from '../../src'
+import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
-import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { LineContent } from './line-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
@@ -47,15 +47,15 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     return result.length > 1 ? result : undefined
   },
   render({ content, color, target, strokeWidth }) {
-    const { points } = getEllipseArcLines(content)
+    const { points } = getEllipseArcGeometries(content)
     return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
-    const { points } = getEllipseArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
+    const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
     return target.renderPolyline(points, { strokeColor: color, dashArray: [4 / scale], strokeWidth })
   },
   getOperatorRenderPosition(content) {
-    const { points } = getEllipseArcLines(content)
+    const { points } = getEllipseArcGeometries(content)
     return points[0]
   },
   getDefaultColor(content) {
@@ -126,11 +126,11 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
       ]
     })
   },
-  getLines: getEllipseArcLines,
+  getGeometries: getEllipseArcGeometries,
 }
 
-export function getEllipseArcLines(content: Omit<EllipseArcContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+export function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     const points: Position[] = []
     const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
     let i = content.startAngle

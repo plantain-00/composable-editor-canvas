@@ -136,7 +136,7 @@ export function colorStringToNumber(color: string) {
   return +`0x${color.slice(1)}`
 }
 
-function getRotateTransform(
+export function getRotateTransform(
   x: number,
   y: number,
   options?: Partial<{

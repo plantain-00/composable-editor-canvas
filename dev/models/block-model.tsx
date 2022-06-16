@@ -1,6 +1,6 @@
 import { getPointsBounding, Position, ReactRenderTarget } from "../../src"
 import { isBlockReferenceContent } from "./block-reference-model"
-import { BaseContent, getLinesAndPointsFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
+import { BaseContent, getGeometriesFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
 export type BlockContent = BaseContent<'block'> & {
   id: number
@@ -24,7 +24,7 @@ export const blockModel: Model<BlockContent> = {
     return content.base
   },
   getSnapPoints: getBlockSnapPoints,
-  getLines: getBlockLines,
+  getGeometries: getBlockGeometries,
 }
 
 export function getBlockSnapPoints(content: Omit<BlockContent, 'type' | 'id' | 'base'>, contents: readonly BaseContent[]) {
@@ -52,12 +52,12 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' |
   return children
 }
 
-export function getBlockLines(content: Omit<BlockContent, "type" | 'id' | 'base'>) {
-  return getLinesAndPointsFromCache(content, () => {
+export function getBlockGeometries(content: Omit<BlockContent, "type" | 'id' | 'base'>) {
+  return getGeometriesFromCache(content, () => {
     const lines: [Position, Position][] = []
     const points: Position[] = []
     content.contents.forEach((c) => {
-      const r = getModel(c.type)?.getLines?.(c)
+      const r = getModel(c.type)?.getGeometries?.(c)
       if (r) {
         lines.push(...r.lines)
         points.push(...r.points)

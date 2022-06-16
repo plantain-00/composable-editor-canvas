@@ -1,14 +1,9 @@
-import { Position } from "../../src"
+import { Position, TextStyle } from "../../src"
 import { BaseContent, Model } from "./model"
 
 export type TextContent = BaseContent<'text'> & Position & TextStyle & {
   text: string
   color: number
-}
-
-export interface TextStyle {
-  fontSize: number
-  fontFamily: string
 }
 
 export const textModel: Model<TextContent> = {

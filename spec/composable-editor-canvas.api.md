@@ -215,7 +215,7 @@ export function getContentByClickPosition<T>(contents: readonly T[], position: P
     getCircle?: (content: T) => {
         circle: Circle;
     };
-    getLines?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
         regions?: {
             points: Position[];
@@ -230,7 +230,7 @@ export function getContentsByClickTwoPositions<T>(contents: readonly T[], startP
         circle: Circle;
         bounding: TwoPointsFormRegion;
     };
-    getLines?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
         bounding?: TwoPointsFormRegion;
         regions?: {
@@ -254,6 +254,34 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number
 
 // @public (undocumented)
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
+
+// @public (undocumented)
+export function getLinearDimensionGeometries(content: LinearDimension, dimensionStyle: {
+    margin: number;
+    arrowAngle: number;
+    arrowSize: number;
+}, getTextPosition: (content: LinearDimension) => {
+    textPosition: Position;
+    textRotation: number;
+    size?: Size;
+    text: string;
+}): {
+    lines: [Position, Position][];
+    regions: {
+        points: Position[];
+        lines: [Position, Position][];
+    }[];
+    points: Position[];
+    bounding: TwoPointsFormRegion | undefined;
+};
+
+// @public (undocumented)
+export function getLinearDimensionTextPosition(content: LinearDimension, margin: number, getTextSize: (font: string, text: string) => Size | undefined): {
+    text: string;
+    textPosition: Position;
+    size: Size | undefined;
+    textRotation: number;
+};
 
 // @public (undocumented)
 export function getLineCircleIntersectionPoints(start: Position, end: Position, { x, y, r }: Circle): {
@@ -314,6 +342,34 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
+export function getRadialDimensionGeometries(content: RadialDimension, dimensionStyle: {
+    margin: number;
+    arrowAngle: number;
+    arrowSize: number;
+}, getTextPosition: (content: RadialDimension) => {
+    textPosition: Position;
+    textRotation: number;
+    size?: Size;
+    text: string;
+}): {
+    lines: [Position, Position][];
+    regions: {
+        points: Position[];
+        lines: [Position, Position][];
+    }[];
+    points: Position[];
+    bounding: TwoPointsFormRegion | undefined;
+};
+
+// @public (undocumented)
+export function getRadialDimensionTextPosition(content: RadialDimension, margin: number, getTextSize: (font: string, text: string) => Size | undefined): {
+    textPosition: Position;
+    textRotation: number;
+    size: Size | undefined;
+    text: string;
+};
+
+// @public (undocumented)
 export function getRegion(p1: Position, p2: Position): Region;
 
 // @public (undocumented)
@@ -326,6 +382,12 @@ export function getResizeOffset(startPosition: Position, cursorPosition: Positio
     width: number;
     height: number;
 } | undefined;
+
+// @public (undocumented)
+export function getRotateTransform(x: number, y: number, options?: Partial<{
+    angle: number;
+    rotation: number;
+}>): string | undefined;
 
 // @public (undocumented)
 export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
@@ -405,10 +467,28 @@ export function iterateIntersectionPoints<T>(content1: T, content2: T, contents:
     getCircle?: (content: T) => {
         circle: Circle;
     };
-    getLines?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
     };
 } | undefined): Generator<Position, void, undefined>;
+
+// @public (undocumented)
+export function iteratePolygonLines(points: Position[]): Generator<[Position, Position], void, unknown>;
+
+// @public (undocumented)
+export function iteratePolylineLines(points: Position[]): Generator<[Position, Position], void, unknown>;
+
+// @public (undocumented)
+export interface LinearDimension extends TextStyle {
+    // (undocumented)
+    direct?: boolean;
+    // (undocumented)
+    p1: Position;
+    // (undocumented)
+    p2: Position;
+    // (undocumented)
+    position: Position;
+}
 
 // @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
@@ -463,6 +543,12 @@ export interface Position {
     x: number;
     // (undocumented)
     y: number;
+}
+
+// @public (undocumented)
+export interface RadialDimension extends Circle, TextStyle {
+    // (undocumented)
+    position: Position;
 }
 
 // @public (undocumented)
@@ -601,6 +687,14 @@ export type SnapPoint = Position & {
 
 // @public (undocumented)
 export type SnapPointType = typeof allSnapTypes[number];
+
+// @public (undocumented)
+export interface TextStyle {
+    // (undocumented)
+    fontFamily: string;
+    // (undocumented)
+    fontSize: number;
+}
 
 // @public (undocumented)
 export interface Transform extends Position {
@@ -907,7 +1001,7 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 // @public (undocumented)
 export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getModel: (content: T) => {
     getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[];
-    getLines?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
         bounding?: TwoPointsFormRegion;
     };

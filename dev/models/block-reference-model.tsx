@@ -108,7 +108,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     }
     return []
   },
-  getLines: getBlockReferenceLines,
+  getGeometries: getBlockReferenceGeometries,
 }
 
 function extractContentInBlockReference(
@@ -131,7 +131,7 @@ function getBlock(id: number, contents: readonly BaseContent[]) {
   return contents.find((c): c is BlockContent => isBlockContent(c) && c.id === id)
 }
 
-function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, contents: readonly BaseContent[]) {
+function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly BaseContent[]) {
   const block = getBlock(content.id, contents)
   if (block) {
     return blockLinesCache.get(block, content, () => {
@@ -140,7 +140,7 @@ function getBlockReferenceLines(content: Omit<BlockReferenceContent, "type">, co
       block.contents.forEach((c) => {
         const extracted = extractContentInBlockReference(c, content, block, contents)
         if (extracted) {
-          const r = getModel(c.type)?.getLines?.(extracted)
+          const r = getModel(c.type)?.getGeometries?.(extracted)
           if (r) {
             lines.push(...r.lines)
             points.push(...r.points)

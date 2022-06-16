@@ -1,7 +1,7 @@
-import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, Region, rotatePositionByCenter } from '../../src'
+import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
-import { iteratePolygonLines, renderPolygon } from './polygon-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { renderPolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
   angle: number
@@ -21,11 +21,11 @@ export const rectModel: Model<RectContent> = {
     content.angle += angle
   },
   explode(content) {
-    const { lines } = getRectLines(content)
+    const { lines } = getRectGeometries(content)
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   break(content, intersectionPoints) {
-    const { lines } = getRectLines(content)
+    const { lines } = getRectGeometries(content)
     return breakPolyline(lines, intersectionPoints)
   },
   mirror(content, line, angle) {
@@ -36,13 +36,13 @@ export const rectModel: Model<RectContent> = {
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
     if (content.dashArray || partsStyles.length > 0) {
-      const { points } = getRectLines(content)
+      const { points } = getRectGeometries(content)
       return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
     }
     return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
   },
   getOperatorRenderPosition(content) {
-    const { points } = getRectLines(content)
+    const { points } = getRectGeometries(content)
     return points[0]
   },
   getDefaultColor(content) {
@@ -50,7 +50,7 @@ export const rectModel: Model<RectContent> = {
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
-      const { points, lines } = getRectLines(content)
+      const { points, lines } = getRectGeometries(content)
       return {
         editPoints: [
           { x: content.x, y: content.y, direction: 'center' as const },
@@ -86,7 +86,7 @@ export const rectModel: Model<RectContent> = {
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
-      const { points, lines } = getRectLines(content)
+      const { points, lines } = getRectGeometries(content)
       return [
         { x: content.x, y: content.y, type: 'center' },
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
@@ -98,12 +98,12 @@ export const rectModel: Model<RectContent> = {
       ]
     })
   },
-  getLines: getRectLines,
+  getGeometries: getRectGeometries,
   canSelectPart: true,
 }
 
-function getRectLines(content: Omit<RectContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+function getRectGeometries(content: Omit<RectContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     const points = [
       { x: content.x - content.width / 2, y: content.y - content.height / 2 },
       { x: content.x + content.width / 2, y: content.y - content.height / 2 },

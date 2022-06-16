@@ -1,12 +1,12 @@
 import { Position, ReactRenderTarget } from '../../src'
 import { BaseContent, getEditPointsFromCache, Model } from './model'
-import { getPolylineEditPoints, getPolylineLines, LineContent, lineModel } from './line-model'
+import { getPolylineEditPoints, getPolylineGeometries, LineContent, lineModel } from './line-model'
 
 export const polylineModel: Model<LineContent> = {
   ...lineModel,
   type: 'polyline',
   explode(content) {
-    const { lines } = getPolylineLines(content)
+    const { lines } = getPolylineGeometries(content)
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   render({ content, color, target, strokeWidth, partsStyles }) {

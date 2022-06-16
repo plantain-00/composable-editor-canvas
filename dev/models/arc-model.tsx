@@ -1,7 +1,7 @@
-import { Arc, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
+import { Arc, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolylineLines, normalizeAngleInRange, normalizeAngleRange, Position, rotatePositionByCenter } from '../../src'
 import { angleDelta } from './ellipse-model'
-import { iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { LineContent } from './line-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
@@ -65,17 +65,17 @@ export const arcModel: Model<ArcContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
-      const { points } = getArcLines(content)
+      const { points } = getArcGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth })
   },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
-    const { points } = getArcLines({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
+    const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
     return target.renderPolyline(points, { strokeColor: color, dashArray: [4 / scale], strokeWidth })
   },
   getOperatorRenderPosition(content) {
-    const { points } = getArcLines(content)
+    const { points } = getArcGeometries(content)
     return points[0]
   },
   getDefaultColor(content) {
@@ -159,11 +159,11 @@ export const arcModel: Model<ArcContent> = {
       ]
     })
   },
-  getLines: getArcLines,
+  getGeometries: getArcGeometries,
 }
 
-export function getArcLines(content: Omit<ArcContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+export function getArcGeometries(content: Omit<ArcContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     const points: Position[] = []
     const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
     let i = content.startAngle
