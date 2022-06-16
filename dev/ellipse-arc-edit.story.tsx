@@ -1,7 +1,7 @@
 import produce from "immer"
 import React from "react"
 import { EllipseArc, EllipseArcEditBar, normalizeAngleRange, useEllipseArcEdit } from "../src"
-import { getEllipseArcLines } from "./models/ellipse-arc-model"
+import { getEllipseArcGeometries } from "./models/ellipse-arc-model"
 
 export default () => {
   const [content, setContent] = React.useState<EllipseArc>({ cx: 200, cy: 200, rx: 100, ry: 150, angle: 45, startAngle: -30, endAngle: 120 })
@@ -17,7 +17,7 @@ export default () => {
       normalizeAngleRange(draft)
     }
   })
-  const { points } = getEllipseArcLines(ellipseArc)
+  const { points } = getEllipseArcGeometries(ellipseArc)
   return (
     <>
       <svg

@@ -299,7 +299,7 @@ const CADEditor = React.forwardRef((props: {
     } else {
       for (const f of selected) {
         if (f.length === 2 && f[0] === i) {
-          const line = getModel(s.type)?.getLines?.(s)?.lines?.[f[1]]
+          const line = getModel(s.type)?.getGeometries?.(s)?.lines?.[f[1]]
           if (line) {
             selectedContents.push({ content: { type: 'line', points: line } as LineContent, path: f })
           }
@@ -370,8 +370,8 @@ const CADEditor = React.forwardRef((props: {
         if (model?.getCircle) {
           const { bounding } = model.getCircle(c)
           points.push(bounding.start, bounding.end)
-        } else if (model?.getLines) {
-          const { bounding } = model.getLines(c, state)
+        } else if (model?.getGeometries) {
+          const { bounding } = model.getGeometries(c, state)
           if (bounding) {
             points.push(bounding.start, bounding.end)
           }

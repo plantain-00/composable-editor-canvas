@@ -1,6 +1,6 @@
-import { getPointsBounding, getSymmetryPoint, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
-import { breakPolyline, getPolylineEditPoints, iteratePolylineLines, LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { getPointsBounding, getSymmetryPoint, iteratePolygonLines, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
+import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 import { renderPolyline } from './polyline-model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
@@ -22,11 +22,11 @@ export const polygonModel: Model<PolygonContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   explode(content) {
-    const { lines } = getPolygonLines(content)
+    const { lines } = getPolygonGeometries(content)
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
   break(content, intersectionPoints) {
-    const { lines } = getPolygonLines(content)
+    const { lines } = getPolygonGeometries(content)
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
@@ -43,7 +43,7 @@ export const polygonModel: Model<PolygonContent> = {
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
-      const { points, lines } = getPolygonLines(content)
+      const { points, lines } = getPolygonGeometries(content)
       return [
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
         ...lines.map(([start, end]) => ({
@@ -54,23 +54,18 @@ export const polygonModel: Model<PolygonContent> = {
       ]
     })
   },
-  getLines: getPolygonLines,
+  getGeometries: getPolygonGeometries,
   canSelectPart: true,
 }
 
-function getPolygonLines(content: Omit<PolygonContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     return {
       lines: Array.from(iteratePolygonLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
     }
   })
-}
-
-export function* iteratePolygonLines(points: Position[]) {
-  yield* iteratePolylineLines(points)
-  yield [points[points.length - 1], points[0]] as [Position, Position]
 }
 
 export function isPolygonContent(content: BaseContent): content is PolygonContent {

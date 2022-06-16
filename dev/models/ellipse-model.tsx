@@ -1,8 +1,8 @@
-import { Ellipse, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
+import { Ellipse, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
-import { iteratePolygonLines, renderPolygon } from './polygon-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { renderPolygon } from './polygon-model'
 
 export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
 
@@ -39,7 +39,7 @@ export const ellipseModel: Model<EllipseContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
-      const { points } = getEllipseLines(content)
+      const { points } = getEllipseGeometries(content)
       return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
@@ -135,11 +135,11 @@ export const ellipseModel: Model<EllipseContent> = {
       { ...rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content), type: 'endpoint' },
     ])
   },
-  getLines: getEllipseLines,
+  getGeometries: getEllipseGeometries,
 }
 
-function getEllipseLines(content: Omit<EllipseContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     const points: Position[] = []
     for (let i = 0; i < lineSegmentCount; i++) {
       const angle = angleDelta * i * Math.PI / 180

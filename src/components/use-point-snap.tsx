@@ -7,7 +7,7 @@ export function usePointSnap<T>(
   types: readonly SnapPointType[],
   getModel: (content: T) => {
     getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[]
-    getLines?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
+    getGeometries?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
     getCircle?: (content: T) => { circle: Circle, bounding?: TwoPointsFormRegion }
   } | undefined,
   scale = 1,
@@ -144,8 +144,8 @@ export function usePointSnap<T>(
                   }
                 }
               }
-            } else if (model.getLines) {
-              const { bounding, lines } = model.getLines(content, contents)
+            } else if (model.getGeometries) {
+              const { bounding, lines } = model.getGeometries(content, contents)
               if (
                 bounding &&
                 pointIsInRegion(

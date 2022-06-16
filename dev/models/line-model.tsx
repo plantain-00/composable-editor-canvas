@@ -1,5 +1,5 @@
-import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding } from '../../src'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines } from '../../src'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -20,7 +20,7 @@ export const lineModel: Model<LineContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   break(content, intersectionPoints) {
-    const { lines } = getPolylineLines(content)
+    const { lines } = getPolylineGeometries(content)
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth }) {
@@ -37,7 +37,7 @@ export const lineModel: Model<LineContent> = {
   },
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => {
-      const { points, lines } = getPolylineLines(content)
+      const { points, lines } = getPolylineGeometries(content)
       return [
         ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
         ...lines.map(([start, end]) => ({
@@ -48,23 +48,17 @@ export const lineModel: Model<LineContent> = {
       ]
     })
   },
-  getLines: getPolylineLines,
+  getGeometries: getPolylineGeometries,
 }
 
-export function getPolylineLines(content: Omit<LineContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+export function getPolylineGeometries(content: Omit<LineContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     return {
       lines: Array.from(iteratePolylineLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
     }
   })
-}
-
-export function* iteratePolylineLines(points: Position[]) {
-  for (let i = 1; i < points.length; i++) {
-    yield [points[i - 1], points[i]] as [Position, Position]
-  }
 }
 
 export function breakPolyline(

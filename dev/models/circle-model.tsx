@@ -1,7 +1,7 @@
 import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
-import { ArcContent, getArcLines } from './arc-model'
+import { ArcContent, getArcGeometries } from './arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & Circle
 
@@ -36,7 +36,7 @@ export const circleModel: Model<CircleContent> = {
   },
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
-      const { points } = getCircleLines(content)
+      const { points } = getCircleGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderCircle(content.x, content.y, content.r, { strokeColor: color, strokeWidth })
@@ -120,12 +120,12 @@ export const circleModel: Model<CircleContent> = {
       }
     }
   },
-  getLines: getCircleLines,
+  getGeometries: getCircleGeometries,
 }
 
-export function getCircleLines(content: Omit<CircleContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
-    return getArcLines({ ...content, startAngle: 0, endAngle: 360 })
+export function getCircleGeometries(content: Omit<CircleContent, "type">) {
+  return getGeometriesFromCache(content, () => {
+    return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
   })
 }
 

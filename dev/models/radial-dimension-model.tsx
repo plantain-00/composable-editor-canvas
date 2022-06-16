@@ -1,12 +1,8 @@
-import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTextSize, getTwoPointsDistance, MapCache2, Position, rotatePosition, rotatePositionByCenter, Size, WeakmapCache } from "../../src"
-import { iteratePolylineLines, LineContent } from "./line-model"
-import { getLinesAndPointsFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
-import { iteratePolygonLines } from "./polygon-model"
-import { TextStyle } from "./text-model"
+import { Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, Position, RadialDimension, Size, WeakmapCache } from "../../src"
+import { LineContent } from "./line-model"
+import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
 
-export type RadialDimensionContent = StrokeBaseContent<'radial dimension'> & Circle & TextStyle & {
-  position: Position
-}
+export type RadialDimensionContent = StrokeBaseContent<'radial dimension'> & Circle & RadialDimension
 
 export const radialDimensionModel: Model<RadialDimensionContent> = {
   type: 'radial dimension',
@@ -17,7 +13,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     content.position.y += offset.y
   },
   render({ content, target, color, strokeWidth }) {
-    const { regions, lines } = getRadialDimensionLines(content)
+    const { regions, lines } = getRadialDimensionGeometriesFromCache(content)
     const children: ReturnType<typeof target.renderGroup>[] = []
     for (const line of lines) {
       children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
@@ -25,13 +21,13 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     if (regions && regions.length > 0) {
       children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
     }
-    const { textPosition, rotation, text } = getTextPosition(content)
+    const { textPosition, textRotation, text } = getTextPosition(content)
     children.push(target.renderGroup(
       [
         target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily),
       ],
       {
-        rotation,
+        rotation: textRotation,
         base: textPosition,
       },
     ))
@@ -64,44 +60,12 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
       }
     })
   },
-  getLines: getRadialDimensionLines,
+  getGeometries: getRadialDimensionGeometriesFromCache,
 }
 
-export function getRadialDimensionLines(content: Omit<RadialDimensionContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
-    const edgePoint = getPointByLengthAndDirection(content, content.r, content.position)
-    const distance = getTwoPointsDistance(content, content.position)
-    const arrowPoint = getPointByLengthAndDirection(edgePoint, dimensionStyle.arrowSize, content.position)
-    const arrowTail1 = rotatePositionByCenter(arrowPoint, edgePoint, dimensionStyle.arrowAngle)
-    const arrowTail2 = rotatePositionByCenter(arrowPoint, edgePoint, -dimensionStyle.arrowAngle)
-    const linePoints = [distance > content.r ? content : edgePoint, content.position]
-    const arrowPoints = [edgePoint, arrowTail1, arrowTail2]
-    let textPoints: Position[] = []
-    const { textPosition, rotation, size } = getTextPosition(content)
-    if (size) {
-      textPoints = [
-        { x: textPosition.x, y: textPosition.y - size.height },
-        { x: textPosition.x + size.width, y: textPosition.y - size.height },
-        { x: textPosition.x + size.width, y: textPosition.y },
-        { x: textPosition.x, y: textPosition.y },
-      ].map((p) => rotatePosition(p, textPosition, rotation))
-    }
-    const points = [...linePoints, ...arrowPoints, ...textPoints]
-    return {
-      lines: Array.from(iteratePolylineLines(linePoints)),
-      regions: [
-        {
-          points: arrowPoints,
-          lines: Array.from(iteratePolygonLines(arrowPoints)),
-        },
-        {
-          points: textPoints,
-          lines: Array.from(iteratePolygonLines(textPoints)),
-        },
-      ],
-      points,
-      bounding: getPointsBounding(points),
-    }
+export function getRadialDimensionGeometriesFromCache(content: Omit<RadialDimensionContent, "type">) {
+  return getGeometriesFromCache(content, () => {
+    return getRadialDimensionGeometries(content, dimensionStyle, getTextPosition)
   })
 }
 
@@ -116,41 +80,18 @@ export function getTextSizeFromCache(font: string, text: string) {
 
 const textPositionMap = new WeakmapCache<Omit<RadialDimensionContent, 'type'>, {
   textPosition: Position
-  rotation: number
+  textRotation: number
   size?: Size
   text: string
 }>()
 function getTextPosition(content: Omit<RadialDimensionContent, 'type'>) {
   return textPositionMap.get(content, () => {
-    let textPosition = content.position
-    const text = `R${formatNumber(content.r)}`
-    const size = getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)
-    let rotation = Math.atan2(content.position.y - content.y, content.position.x - content.x)
-    if (size) {
-      const distance = getTwoPointsDistance(content, content.position)
-      if (distance > content.r) {
-        if (content.position.x > content.x) {
-          textPosition = getPointByLengthAndDirection(content.position, size.width, content)
-        } else {
-          rotation = rotation - Math.PI
-        }
-      } else if (content.position.x < content.x) {
-        textPosition = getPointByLengthAndDirection(content.position, -size.width, content)
-        rotation = rotation + Math.PI
-      }
-    }
-    textPosition = getPointByLengthAndAngle(textPosition, dimensionStyle.textDistance, rotation - Math.PI / 2)
-    return {
-      textPosition,
-      rotation,
-      size,
-      text,
-    }
+    return getRadialDimensionTextPosition(content, dimensionStyle.margin, getTextSizeFromCache)
   })
 }
 
 export const dimensionStyle = {
-  textDistance: 5,
+  margin: 5,
   arrowAngle: 15,
   arrowSize: 10,
 }

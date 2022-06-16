@@ -35,7 +35,7 @@ export interface Model<T> {
     angleSnapStartPoint?: Position
   } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
-  getLines?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
+  getGeometries?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
     lines: [Position, Position][]
     points: Position[]
     bounding?: TwoPointsFormRegion
@@ -56,7 +56,7 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
+const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
   lines: [Position, Position][]
   points: Position[]
   bounding?: TwoPointsFormRegion
@@ -68,7 +68,7 @@ const linesAndPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 
-export const getLinesAndPointsFromCache = linesAndPointsCache.get.bind(linesAndPointsCache)
+export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
 export const getEditPointsFromCache = editPointsCache.get.bind(editPointsCache)
 
@@ -101,7 +101,7 @@ export function getContentByIndex(state: readonly BaseContent[], index: readonly
   if (index.length === 1) {
     return content
   }
-  const line = getModel(content.type)?.getLines?.(content)?.lines?.[index[1]]
+  const line = getModel(content.type)?.getGeometries?.(content)?.lines?.[index[1]]
   if (line) {
     return { type: 'line', points: line } as LineContent
   }

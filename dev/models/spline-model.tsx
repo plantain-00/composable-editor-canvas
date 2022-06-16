@@ -1,7 +1,7 @@
 import bspline from 'b-spline'
-import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, Position, rotatePositionByCenter } from '../../src'
-import { getPolylineEditPoints, iteratePolylineLines } from './line-model'
-import { StrokeBaseContent, getLinesAndPointsFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, Position, rotatePositionByCenter } from '../../src'
+import { getPolylineEditPoints } from './line-model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
@@ -23,7 +23,7 @@ export const splineModel: Model<SplineContent> = {
     content.points = content.points.map((p) => getSymmetryPoint(p, line))
   },
   render({ content, color, target, strokeWidth }) {
-    const { points } = getSplineLines(content)
+    const { points } = getSplineGeometries(content)
     return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
@@ -41,11 +41,11 @@ export const splineModel: Model<SplineContent> = {
   getSnapPoints(content) {
     return getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
   },
-  getLines: getSplineLines,
+  getGeometries: getSplineGeometries,
 }
 
-function getSplineLines(content: Omit<SplineContent, "type">) {
-  return getLinesAndPointsFromCache(content, () => {
+function getSplineGeometries(content: Omit<SplineContent, "type">) {
+  return getGeometriesFromCache(content, () => {
     const inputPoints = content.points.map((p) => [p.x, p.y])
     let points: Position[] = []
     if (inputPoints.length > 2) {
