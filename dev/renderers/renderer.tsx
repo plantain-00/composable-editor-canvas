@@ -21,6 +21,7 @@ export function Renderer(props: {
   if (!target) {
     return null
   }
+  const now = Date.now()
   const strokeWidth = 1 / (props.transform?.scale ?? 1)
   const backgroundColor = getColorString(props.backgroundColor)
   const r = +`0x${backgroundColor.substring(1, 3)}`
@@ -83,6 +84,7 @@ export function Renderer(props: {
       }
     }
   })
+  console.info(Date.now() - now)
   return target.renderResult(children, props.width, props.height, {
     attributes: {
       style: {
