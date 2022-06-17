@@ -105,6 +105,7 @@ const key = 'combination-2.json'
 
 export default () => {
   const [initialState, setInitialState] = React.useState<BaseContent[]>()
+  const [coEdit, setCoEdit] = React.useState(true)
   React.useEffect(() => {
     (async () => {
       try {
@@ -125,15 +126,35 @@ export default () => {
   }, [])
 
   const onApplyPatches = (patches: Patch[], reversePatches: Patch[]) => {
-    if (ws.current && ws.current.readyState === ws.current.OPEN) {
+    if (ws.current && ws.current.readyState === ws.current.OPEN && coEdit) {
       const operations = patches.map((p) => ({ ...p, path: p.path.map((c) => `/${c}`).join('') }))
       ws.current.send(JSON.stringify({ method: 'patch', operations, reversePatches, operator: me }))
     }
   }
   const onSendSelection = (selectedContents: readonly number[]) => {
-    if (ws.current && ws.current.readyState === ws.current.OPEN) {
+    if (ws.current && ws.current.readyState === ws.current.OPEN && coEdit) {
       ws.current.send(JSON.stringify({ method: 'selection', selectedContents, operator: me }))
     }
+  }
+
+  const addMockData = () => {
+    setInitialState(undefined)
+    setCoEdit(false)
+    setTimeout(() => {
+      const json: CircleContent[] = []
+      const max = 100
+      for (let i = 0; i < max; i++) {
+        for (let j = 0; j < max; j++) {
+          json.push({
+            type: 'circle',
+            x: i * 100,
+            y: j * 100,
+            r: Math.random() * 50 + 50,
+          })
+        }
+      }
+      setInitialState(json)
+    }, 0)
   }
 
   const editorRef = React.useRef<CADEditorRef | null>(null)
@@ -142,7 +163,7 @@ export default () => {
       return
     }
     ws.current.onmessage = (data: MessageEvent<unknown>) => {
-      if (editorRef.current && typeof data.data === 'string' && data.data) {
+      if (editorRef.current && typeof data.data === 'string' && data.data && coEdit) {
         const json = JSON.parse(data.data) as
           | { method: 'patch', operations: (Omit<Patch, 'path'> & { path: string })[], reversePatches: Patch[], operator: string }
           | { method: 'selection', selectedContents: number[], operator: string }
@@ -189,6 +210,7 @@ export default () => {
       )}
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
@@ -234,6 +256,7 @@ const CADEditor = React.forwardRef((props: {
   setOperation: (operations: string | undefined) => void
   backgroundColor: number
 }, ref: React.ForwardedRef<CADEditorRef>) => {
+  const now = Date.now()
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
     {},
     (p, s) => {
@@ -395,7 +418,7 @@ const CADEditor = React.forwardRef((props: {
     ),
     ...commandAssistentContents,
   ]
-  const previewContents = produce(editingContent, (draft) => {
+  const previewContents = !readOnly ? produce(editingContent, (draft) => {
     const newContents: BaseContent[] = []
     draft.forEach((content, i) => {
       if (isSelected([i])) {
@@ -421,7 +444,7 @@ const CADEditor = React.forwardRef((props: {
   }, (patches, reversePatches) => {
     previewPatches.push(...prependPatchPath(patches))
     previewReversePatches.push(...prependPatchPath(reversePatches))
-  })
+  }) : editingContent
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
     undo(e)
@@ -574,13 +597,15 @@ const CADEditor = React.forwardRef((props: {
     }
     e.preventDefault()
   }
+  const renderContents = assistentContents.length === 0 ? previewContents : [...previewContents, ...assistentContents]
+  console.info(Date.now() - now)
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
       <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
-          contents={[...previewContents, ...assistentContents]}
+          contents={renderContents}
           selected={selected}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
