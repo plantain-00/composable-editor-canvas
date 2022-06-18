@@ -1,6 +1,6 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding } from '../src'
-import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath } from '../src'
+import produce, { applyPatches, enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
 import { LineContent, lineModel } from './models/line-model'
@@ -332,7 +332,7 @@ const CADEditor = React.forwardRef((props: {
   })
 
   const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, number[]>(
-    () => applyPatchFromSelf(previewPatches, previewReversePatches),
+    () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
     (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
     {
       scale: transform.scale,
@@ -351,15 +351,18 @@ const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateContent, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
-    (updateContents, nextCommand) => {
+  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
+    ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
         })
         applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
       } else {
-        applyPatchFromSelf(previewPatches, previewReversePatches)
+        applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
+      }
+      if (repeatedly) {
+        return
       }
       resetOperation()
       setSelected()
@@ -409,7 +412,6 @@ const CADEditor = React.forwardRef((props: {
     }
   })
 
-  // content data -> preview data / assistent data
   const assistentContents: BaseContent[] = [
     ...getSnapAssistentContents(
       (circle) => ({ type: 'circle', ...circle, strokeColor: 0x00ff00 } as CircleContent),
@@ -418,33 +420,37 @@ const CADEditor = React.forwardRef((props: {
     ),
     ...commandAssistentContents,
   ]
-  const previewContents = !readOnly ? produce(editingContent, (draft) => {
-    const newContents: BaseContent[] = []
-    draft.forEach((content, i) => {
-      if (isSelected([i])) {
-        const result = updateContent(content, state)
-        if (result.assistentContents) {
-          assistentContents.push(...result.assistentContents)
-        }
-        if (result.newContents) {
-          newContents.push(...result.newContents)
-        }
+
+  let updatedContents: readonly BaseContent[] | undefined
+  if (updateEditPreview) {
+    const [r, patches, reversePatches] = produceWithPatches(editingContent, (draft) => {
+      const result = updateEditPreview((path) => getContentByIndex(draft, path))
+      if (result?.assistentContents) {
+        assistentContents.push(...result.assistentContents)
       }
     })
-    draft.push(...newContents)
-    const result = updateEditPreview((path) => getContentByIndex(draft, path))
-    if (result?.assistentContents) {
-      assistentContents.push(...result.assistentContents)
+    updatedContents = r
+    previewPatches.push(...patches)
+    previewReversePatches.push(...reversePatches)
+  }
+
+  const r = updateSelectedContents(state)
+  assistentContents.push(...r.assistentContents)
+  for (const [patches, reversePatches] of r.patches) {
+    previewPatches.push(...patches)
+    previewReversePatches.push(...reversePatches)
+  }
+
+  for (const { content, path } of selectedContents) {
+    if (path.length === 1) {
+      let c = content
+      if (editPoint && isSamePath(editPoint.path, path) && updatedContents) {
+        c = getContentByIndex(updatedContents, path) ?? content
+      }
+      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent)))
     }
-    draft.forEach((content, i) => {
-      if (isSelected([i])) {
-        assistentContents.push(...getEditAssistentContents(content, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent)))
-      }
-    })
-  }, (patches, reversePatches) => {
-    previewPatches.push(...prependPatchPath(patches))
-    previewReversePatches.push(...prependPatchPath(reversePatches))
-  }) : editingContent
+  }
+  const previewContents = previewPatches.length > 0 ? applyPatches(editingContent, previewPatches) : editingContent
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
     undo(e)

@@ -45,8 +45,10 @@ export const createTangentTangentRadiusCircleCommand: Command = {
       onStart(p) {
         setCursorPosition(p)
         if (result) {
-          onEnd((contents) => {
-            contents.push({ type: 'circle', ...result } as CircleContent)
+          onEnd({
+            updateContents: (contents) => {
+              contents.push({ type: 'circle', ...result } as CircleContent)
+            }
           })
           setCandidates([])
         }

@@ -16,7 +16,9 @@ export const createCircleCommand: Command = {
   useCommand({ onEnd, scale, getAngleSnap, type }) {
     const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
-      (c) => onEnd((contents) => contents.push({ ...c, type: 'circle' })),
+      (c) => onEnd({
+        updateContents: (contents) => contents.push({ ...c, type: 'circle' })
+      }),
       {
         getAngleSnap,
       },

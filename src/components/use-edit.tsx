@@ -56,14 +56,12 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       return assistentContents
     },
-    updateEditPreview(getContentByPath: (path: TPath) => Draft<T> | undefined) {
-      if (editPoint && startPosition && cursorPosition) {
-        const content = getContentByPath(editPoint.path)
-        if (content) {
-          return editPoint.update(content, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
-        }
+    updateEditPreview: editPoint && startPosition && cursorPosition ? (getContentByPath: (path: TPath) => Draft<T> | undefined) => {
+      const content = getContentByPath(editPoint.path)
+      if (content) {
+        return editPoint.update(content, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
       }
-    },
+    } : undefined,
     onEditMove(p: Position, selectedContents: readonly { content: T, path: TPath }[]) {
       if (readOnly) {
         return

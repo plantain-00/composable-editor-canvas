@@ -15,7 +15,7 @@ export function usePartialEdit<T>(content: T) {
   }
 }
 
-function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
+export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   if (path && path.length > 0) {
     return patches.map((p) => ({ ...p, path: [...path, ...p.path] }))
   }

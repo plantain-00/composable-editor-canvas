@@ -1,3 +1,4 @@
+import { produceWithPatches } from 'immer'
 import { useCursorInput, useDragMove } from "../../src"
 import { getModel } from "../models/model"
 import { Command } from "./command"
@@ -25,7 +26,12 @@ export const moveCommand: Command = {
       },
       updateContent(content) {
         if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
-          getModel(content.type)?.move?.(content, offset)
+          const [, ...patches] = produceWithPatches(content, (draft) => {
+            getModel(content.type)?.move?.(draft, offset)
+          })
+          return {
+            patches,
+          }
         }
         return {}
       },

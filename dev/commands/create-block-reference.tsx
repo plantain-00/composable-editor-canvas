@@ -14,18 +14,20 @@ export const createBlockReferenceCommand: Command = {
     return {
       onStart(p) {
         resetInput()
-        onEnd((contents, selected) => {
-          contents.push(...contents
-            .filter((c, i): c is BlockContent => isSelected([i], selected) && isBlockContent(c))
-            .map((block) => ({
-              type: 'block reference',
-              id: block.id,
-              x: p.x - block.base.x,
-              y: p.y - block.base.y,
-              angle: 0,
-            }))
-          )
-          setCursorPosition(undefined)
+        onEnd({
+          updateContents: (contents, selected) => {
+            contents.push(...contents
+              .filter((c, i): c is BlockContent => isSelected([i], selected) && isBlockContent(c))
+              .map((block) => ({
+                type: 'block reference',
+                id: block.id,
+                x: p.x - block.base.x,
+                y: p.y - block.base.y,
+                angle: 0,
+              }))
+            )
+            setCursorPosition(undefined)
+          }
         })
       },
       input,
