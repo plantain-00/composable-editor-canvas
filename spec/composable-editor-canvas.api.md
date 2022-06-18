@@ -546,6 +546,9 @@ export interface Position {
 }
 
 // @public (undocumented)
+export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[];
+
+// @public (undocumented)
 export interface RadialDimension extends Circle, TextStyle {
     // (undocumented)
     position: Position;
@@ -881,9 +884,9 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
         angleSnapStartPoint?: Position | undefined;
     }) | undefined;
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
-    updateEditPreview(getContentByPath: (path: TPath) => Draft<T> | undefined): void | {
+    updateEditPreview: ((getContentByPath: (path: TPath) => Draft<T> | undefined) => void | {
         assistentContents?: T[] | undefined;
-    };
+    }) | undefined;
     onEditMove(p: Position, selectedContents: readonly {
         content: T;
         path: TPath;

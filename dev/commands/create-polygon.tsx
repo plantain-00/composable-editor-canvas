@@ -10,7 +10,9 @@ export const createPolygonCommand: Command = {
     const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
     const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
       type === 'create polygon',
-      (c) => onEnd((contents) => contents.push({ points: c, type: 'polygon' } as PolygonContent)),
+      (c) => onEnd({
+        updateContents: (contents) => contents.push({ points: c, type: 'polygon' } as PolygonContent)
+      }),
       {
         getAngleSnap,
         toEdge: createType === 'edge',

@@ -1,15 +1,17 @@
+import { Patch } from "immer"
 import React from "react"
-import { Position, SelectPath } from "../../src"
+import { Position, prependPatchPath, SelectPath } from "../../src"
 import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 
 export interface Command {
   name: string
   type?: { name: string, hotkey?: string }[]
   useCommand?(props: {
-    onEnd: (
+    onEnd: (options?: Partial<{
       updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
       nextCommand?: string,
-    ) => void,
+      repeatedly?: boolean,
+    }>) => void,
     transform: (p: Position) => Position,
     getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
@@ -21,9 +23,10 @@ export interface Command {
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
-    updateContent?(content: BaseContent, contents: readonly BaseContent[]): {
+    updateContent?(content: Readonly<BaseContent>, contents: readonly BaseContent[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
+      patches?: [Patch[], Patch[]]
     }
     assistentContents?: BaseContent[]
   }
@@ -46,8 +49,11 @@ export function getCommand(name: string): Command | undefined {
 
 export function useCommands(
   onEnd: (
-    updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
-    nextCommand?: string,
+    options?: Partial<{
+      updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
+      nextCommand?: string,
+      repeatedly?: boolean,
+    }>
   ) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
@@ -62,6 +68,7 @@ export function useCommands(
   const updateContents: ((content: BaseContent, contents: readonly BaseContent[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
+    patches?: [Patch[], Patch[]]
   })[] = []
   const commandAssistentContents: BaseContent[] = []
   const onStartMap: Record<string, ((p: Position) => void)> = {}
@@ -138,21 +145,36 @@ export function useCommands(
   return {
     commandMasks: masks,
     commandInputs,
-    updateContent(content: BaseContent, contents: readonly BaseContent[]) {
+    updateSelectedContents(contents: readonly BaseContent[]) {
       const assistentContents: BaseContent[] = []
-      const newContents: BaseContent[] = []
-      for (const updateContent of updateContents) {
-        const result = updateContent(content, contents)
-        if (result.assistentContents) {
-          assistentContents.push(...result.assistentContents)
-        }
-        if (result.newContents) {
-          newContents.push(...result.newContents)
+      const patches: [Patch[], Patch[]][] = []
+      for (const { content, path } of selected) {
+        for (const updateContent of updateContents) {
+          const result = updateContent(content, contents)
+          if (result.assistentContents) {
+            assistentContents.push(...result.assistentContents)
+          }
+          if (result.patches) {
+            patches.push([prependPatchPath(result.patches[0], path), prependPatchPath(result.patches[1], path)])
+          }
+          if (result.newContents) {
+            patches.push(...result.newContents.map((c, i) => [
+              [{
+                op: 'add',
+                path: [contents.length + i],
+                value: c,
+              }],
+              [{
+                op: 'remove',
+                path: [contents.length + i],
+              }]
+            ] as [Patch[], Patch[]]))
+          }
         }
       }
       return {
         assistentContents,
-        newContents,
+        patches,
       }
     },
     commandAssistentContents,

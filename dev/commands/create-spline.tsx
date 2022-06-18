@@ -12,7 +12,9 @@ export const createSplineCommand: Command = {
   useCommand({ onEnd, getAngleSnap, type, scale }) {
     const { line, onClick, onMove, input } = useLineClickCreate(
       type === 'spline' || type === 'spline fitting',
-      (c) => onEnd((contents) => contents.push({ points: c, type: 'spline', fitting: type === 'spline fitting' } as SplineContent)),
+      (c) => onEnd({
+        updateContents: (contents) => contents.push({ points: c, type: 'spline', fitting: type === 'spline fitting' } as SplineContent)
+      }),
       {
         getAngleSnap,
       },

@@ -11,7 +11,9 @@ export const createArcCommand: Command = {
   useCommand({ onEnd, getAngleSnap, type, scale }) {
     const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleArcClickCreate(
       type === 'create arc' ? 'center radius' : undefined,
-      (c) => onEnd((contents) => contents.push({ ...c, type: 'arc' })),
+      (c) => onEnd({
+        updateContents: (contents) => contents.push({ ...c, type: 'arc' })
+      }),
       {
         getAngleSnap,
       },

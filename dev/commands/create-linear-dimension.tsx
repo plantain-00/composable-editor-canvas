@@ -32,12 +32,12 @@ export const createLinearDimensionCommand: Command = {
         } else if (!p2) {
           setP2(p)
         } else if (result) {
-          onEnd(
-            (contents) => {
+          onEnd({
+            updateContents: (contents) => {
               contents.push(result)
             },
-            type,
-          )
+            nextCommand: type,
+          })
           reset()
         }
       },

@@ -44,8 +44,10 @@ export const filletCommand: Command = {
       onStart(p) {
         setCursorPosition(p)
         if (result) {
-          onEnd((contents) => {
-            contents.push({ type: 'arc', ...result } as ArcContent)
+          onEnd({
+            updateContents: (contents) => {
+              contents.push({ type: 'arc', ...result } as ArcContent)
+            }
           })
           setCandidates([])
         }

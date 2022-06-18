@@ -15,31 +15,33 @@ export const createBlockCommand: Command = {
 
     return {
       onStart(p) {
-        onEnd((contents, selected) => {
-          let id = 1
-          const removedContents: number[] = []
-          contents.forEach((content, i) => {
-            if (isBlockContent(content)) {
-              id = Math.max(id, content.id + 1)
+        onEnd({
+          updateContents: (contents, selected) => {
+            let id = 1
+            const removedContents: number[] = []
+            contents.forEach((content, i) => {
+              if (isBlockContent(content)) {
+                id = Math.max(id, content.id + 1)
+              }
+              if (isSelected([i], selected)) {
+                removedContents.push(i)
+              }
+            })
+            const newContents: BlockContent[] = [
+              {
+                type: 'block',
+                id,
+                contents: contents.filter((c, i) => isSelected([i], selected) && contentSelectable(c)),
+                base: p,
+              },
+            ]
+            for (let i = contents.length; i >= 0; i--) {
+              if (removedContents.includes(i)) {
+                contents.splice(i, 1)
+              }
             }
-            if (isSelected([i], selected)) {
-              removedContents.push(i)
-            }
-          })
-          const newContents: BlockContent[] = [
-            {
-              type: 'block',
-              id,
-              contents: contents.filter((c, i) => isSelected([i], selected) && contentSelectable(c)),
-              base: p,
-            },
-          ]
-          for (let i = contents.length; i >= 0; i--) {
-            if (removedContents.includes(i)) {
-              contents.splice(i, 1)
-            }
+            contents.push(...newContents)
           }
-          contents.push(...newContents)
         })
       },
       input,

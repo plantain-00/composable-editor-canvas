@@ -26,7 +26,7 @@ export default () => {
   )
   const assistentContents: Region[] = []
   const circle = produce(content, (draft) => {
-    updateEditPreview(() => draft)
+    updateEditPreview?.(() => draft)
     assistentContents.push(...getEditAssistentContents(draft, (rect) => rect))
   })
 

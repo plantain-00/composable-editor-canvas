@@ -1,4 +1,4 @@
-import produce from "immer"
+import produce, { produceWithPatches } from "immer"
 import React from "react"
 import { twoPointLineToGeneralFormLine, useCursorInput, useDragMove } from "../../src"
 import { getModel } from "../models/model"
@@ -45,15 +45,19 @@ export const mirrorCommand: Command = {
           const line = twoPointLineToGeneralFormLine(startPosition, end)
           const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI
           if (changeOriginal) {
-            getModel(content.type)?.mirror?.(content, line, angle, contents)
+            const [, ...patches] = produceWithPatches(content, (draft) => {
+              getModel(content.type)?.mirror?.(draft, line, angle, contents)
+            })
+            return {
+              patches,
+            }
           }
           return {
-            newContents: !changeOriginal ? [
+            newContents: [
               produce(content, (d) => {
                 getModel(d.type)?.mirror?.(d, line, angle, contents)
               }),
-            ] : undefined,
-
+            ]
           }
         }
         return {}

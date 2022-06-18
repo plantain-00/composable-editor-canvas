@@ -19,12 +19,12 @@ export const createRadialDimensionCommand: Command = {
     return {
       onStart() {
         if (result) {
-          onEnd(
-            (contents) => {
+          onEnd({
+            updateContents: (contents) => {
               contents.push(result)
             },
-            type,
-          )
+            nextCommand: type,
+          })
           reset()
         }
       },

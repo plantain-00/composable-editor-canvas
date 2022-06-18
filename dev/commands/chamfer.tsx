@@ -53,8 +53,10 @@ export const chamferCommand: Command = {
       onStart(p) {
         setCursorPosition(p)
         if (result) {
-          onEnd((contents) => {
-            contents.push({ type: 'line', points: result } as LineContent)
+          onEnd({
+            updateContents: (contents) => {
+              contents.push({ type: 'line', points: result } as LineContent)
+            }
           })
           setCandidates([])
         }

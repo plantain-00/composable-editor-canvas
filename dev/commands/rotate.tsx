@@ -1,3 +1,4 @@
+import { produceWithPatches } from "immer"
 import { getTwoPointsDistance, useCursorInput, useDragRotate } from "../../src"
 import { ArcContent } from "../models/arc-model"
 import { LineContent } from "../models/line-model"
@@ -56,7 +57,13 @@ export const rotateCommand: Command = {
       },
       updateContent(content, contents) {
         if (startPosition && offset?.angle !== undefined) {
-          getModel(content.type)?.rotate?.(content, startPosition, offset.angle, contents)
+          const angle = offset.angle
+          const [, ...patches] = produceWithPatches(content, (draft) => {
+            getModel(content.type)?.rotate?.(draft, startPosition, angle, contents)
+          })
+          return {
+            patches,
+          }
         }
         return {}
       },
