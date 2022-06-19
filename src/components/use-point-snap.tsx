@@ -76,12 +76,20 @@ export function usePointSnap<T>(
       }
       return assistentContents
     },
-    getSnapPoint(p: Position, contents: readonly T[]) {
+    getSnapPoint(
+      p: Position,
+      contents: readonly T[],
+      getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
+    ) {
       if (!enabled) {
         setSnapPoint(undefined)
         return p
       }
-      for (const content of contents) {
+      let contentsInRange = contents
+      if (getContentsInRange) {
+        contentsInRange = getContentsInRange({ start: { x: p.x - delta, y: p.y - delta }, end: { x: p.x + delta, y: p.y + delta } })
+      }
+      for (const content of contentsInRange) {
         const snapPoints = getModel(content)?.getSnapPoints?.(content, contents)
         if (snapPoints) {
           for (const point of snapPoints) {
@@ -97,10 +105,10 @@ export function usePointSnap<T>(
         }
       }
       if (types.includes('intersection')) {
-        for (let i = 0; i < contents.length; i++) {
-          const content1 = contents[i]
-          for (let j = i + 1; j < contents.length; j++) {
-            const content2 = contents[j]
+        for (let i = 0; i < contentsInRange.length; i++) {
+          const content1 = contentsInRange[i]
+          for (let j = i + 1; j < contentsInRange.length; j++) {
+            const content2 = contentsInRange[j]
             for (const point of getIntersectionPoints(content1, content2, contents)) {
               if (
                 getTwoNumbersDistance(p.x, point.x) <= delta &&
@@ -114,7 +122,7 @@ export function usePointSnap<T>(
         }
       }
       if (types.includes('nearest')) {
-        for (const content of contents) {
+        for (const content of contentsInRange) {
           const model = getModel(content)
           if (model) {
             if (model.getCircle) {

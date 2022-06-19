@@ -16,8 +16,8 @@ export const blockModel: Model<BlockContent> = {
   explode(content) {
     return content.contents
   },
-  render({ content, target, color, strokeWidth, contents }) {
-    const children = renderBlockChildren(content, target, strokeWidth, contents, color)
+  render({ content, target, color, strokeWidth, contents, scale }) {
+    const children = renderBlockChildren(content, target, strokeWidth, contents, color, scale)
     return target.renderGroup(children)
   },
   getOperatorRenderPosition(content) {
@@ -40,13 +40,13 @@ export function getBlockSnapPoints(content: Omit<BlockContent, 'type' | 'id' | '
   })
 }
 
-export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' | 'base'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color: number) {
+export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' | 'base'>, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly BaseContent[], color: number, scale: number) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
   block.contents.forEach((blockContent) => {
     const model = getModel(blockContent.type)
     if (model?.render) {
       const ContentRender = model.render
-      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents, partsStyles: [] }))
+      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents, partsStyles: [], scale }))
     }
   })
   return children

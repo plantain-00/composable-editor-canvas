@@ -47,10 +47,10 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
       content.angle = 2 * angle - content.angle
     }
   },
-  render({ content, target, color, strokeWidth, contents }) {
+  render({ content, target, color, strokeWidth, contents, scale }) {
     const block = getBlock(content.id, contents)
     if (block) {
-      const children = renderBlockChildren(block, target, strokeWidth, contents, color)
+      const children = renderBlockChildren(block, target, strokeWidth, contents, color, scale)
       return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
     }
     return target.renderEmpty()

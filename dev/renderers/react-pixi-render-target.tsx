@@ -48,7 +48,7 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
     const translateX = options?.translate?.x ?? 0
     const translateY = options?.translate?.y ?? 0
     return (
-      <PixiContainer position={[baseX + translateX, baseY + translateY]} pivot={[baseX, baseY]} angle={options?.angle} rotation={options?.rotation} >
+      <PixiContainer position={[baseX + translateX, baseY + translateY]} pivot={[baseX, baseY]} angle={options?.angle ?? 0} rotation={options?.rotation ?? 0} >
         {children}
       </PixiContainer>
     )

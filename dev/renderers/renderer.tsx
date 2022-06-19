@@ -1,5 +1,5 @@
 import React from "react"
-import { getColorString, isSelected, ReactRenderTarget } from "../../src"
+import { getColorString, isSelected, ReactRenderTarget, WeaksetCache } from "../../src"
 import { BaseContent, getModel } from "../models/model"
 
 export function Renderer(props: {
@@ -35,11 +35,21 @@ export function Renderer(props: {
     return color === 0xffffff ? 0 : color
   }
   const children: unknown[] = []
+  const scale = props.transform?.scale ?? 1
+  let count = 0
   props.contents.forEach((content, i) => {
+    if (!visibleContents.has(content)) {
+      return
+    }
     const model = getModel(content.type)
     if (!model) {
       return
     }
+    const bounding = model.getCircle?.(content).bounding ?? model.getGeometries?.(content, props.contents).bounding
+    if (bounding && ((bounding.end.x - bounding.start.x) * scale < 3 || (bounding.end.y - bounding.start.y) * scale < 3)) {
+      return
+    }
+    count++
     let color: number | undefined
     const partsStyles: { index: number, color: number }[] = []
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
@@ -75,16 +85,16 @@ export function Renderer(props: {
     }
     const ContentRender = model.render
     if (ContentRender) {
-      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles }))
+      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
-        children.push(RenderIfSelected({ content, color, target, strokeWidth, scale: props.transform?.scale ?? 1 }))
+        children.push(RenderIfSelected({ content, color, target, strokeWidth, scale }))
       }
     }
   })
-  console.info(Date.now() - now)
+  console.info(Date.now() - now, count)
   return target.renderResult(children, props.width, props.height, {
     attributes: {
       style: {
@@ -109,3 +119,7 @@ export function registerRenderer<T>(renderer: ReactRenderTarget<T>) {
 export function getAllRendererTypes() {
   return Object.keys(rendererCenter)
 }
+
+export const visibleContents = new WeaksetCache<BaseContent>()
+
+export const contentVisible = (c: BaseContent) => visibleContents.has(c)
