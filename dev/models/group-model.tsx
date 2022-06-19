@@ -25,8 +25,8 @@ export const groupModel: Model<GroupContent> = {
       getModel(c.type)?.mirror?.(c, line, angle, contents)
     })
   },
-  render({ content, target, color, strokeWidth, contents }) {
-    const children = renderBlockChildren(content, target, strokeWidth, contents, color)
+  render({ content, target, color, strokeWidth, contents, scale }) {
+    const children = renderBlockChildren(content, target, strokeWidth, contents, color, scale)
     return target.renderGroup(children)
   },
   getSnapPoints: getBlockSnapPoints,

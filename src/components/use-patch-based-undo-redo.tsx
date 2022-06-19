@@ -6,7 +6,8 @@ export function usePatchBasedUndoRedo<T, P>(
   defaultState: Readonly<T>,
   operator: P,
   options?: Partial<{
-    onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void
+    onApplyPatchesFromSelf: (patches: Patch[], reversePatches: Patch[]) => void
+    onChange: (data: { patches: Patch[], oldState: Readonly<T>, newState: Readonly<T> }) => void
   }>,
 ) {
   const [history, setHistory] = React.useState({
@@ -22,6 +23,7 @@ export function usePatchBasedUndoRedo<T, P>(
 
   const applyPatchFromOtherOperators = (patches: Patch[], reversePatches: Patch[], operator: P) => {
     const s = applyPatches(history.state, patches)
+    options?.onChange?.({ patches, oldState: history.state, newState: s })
     const newStateIndex = history.patchIndex + 1
     setHistory(produce(history, (draft) => {
       draft.patches.splice(newStateIndex, draft.patches.length, [patches, reversePatches, castDraft(operator)])
@@ -31,7 +33,7 @@ export function usePatchBasedUndoRedo<T, P>(
     return s
   }
   const applyPatchFromSelf = (patches: Patch[], reversePatches: Patch[]) => {
-    options?.onApplyPatches?.(patches, reversePatches)
+    options?.onApplyPatchesFromSelf?.(patches, reversePatches)
     return applyPatchFromOtherOperators(patches, reversePatches, operator)
   }
 
@@ -55,8 +57,10 @@ export function usePatchBasedUndoRedo<T, P>(
         setHistory(produce(history, (draft) => {
           draft.patchIndex = undoCurrentIndex - 1
           const [patches, reversePatches] = history.patches[undoCurrentIndex]
-          options?.onApplyPatches?.(reversePatches, patches)
-          draft.state = castDraft(applyPatches(history.state, reversePatches))
+          const newState = applyPatches(history.state, reversePatches)
+          options?.onApplyPatchesFromSelf?.(reversePatches, patches)
+          options?.onChange?.({ patches: reversePatches, oldState: history.state, newState })
+          draft.state = castDraft(newState)
         }))
       }
     },
@@ -66,8 +70,10 @@ export function usePatchBasedUndoRedo<T, P>(
         setHistory(produce(history, (draft) => {
           draft.patchIndex = redoNextIndex
           const [patches, reversePatches] = history.patches[redoNextIndex]
-          options?.onApplyPatches?.(patches, reversePatches)
-          draft.state = castDraft(applyPatches(history.state, patches))
+          const newState = applyPatches(history.state, patches)
+          options?.onApplyPatchesFromSelf?.(patches, reversePatches)
+          options?.onChange?.({ patches, oldState: history.state, newState })
+          draft.state = castDraft(newState)
         }))
       }
     },

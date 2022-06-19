@@ -27,6 +27,7 @@ export interface Model<T> {
     strokeWidth: number
     contents: readonly BaseContent[]
     partsStyles: readonly { index: number, color: number }[]
+    scale: number
   }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, scale: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position

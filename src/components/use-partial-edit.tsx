@@ -2,12 +2,17 @@ import type { Patch } from "immer/dist/types/types-external"
 import * as React from "react"
 import { SelectPath } from "./use-selected"
 
-export function usePartialEdit<T>(content: T) {
+export function usePartialEdit<T>(content: T, options?: Partial<{
+  onEditingContentPathChange: (content: T) => void
+}>) {
   const [editingContentPath, setEditingContentPath] = React.useState<SelectPath>()
   const editingContent = getByPath(content, editingContentPath)
   return {
     editingContent,
-    setEditingContentPath,
+    setEditingContentPath: (path: SelectPath | undefined) => {
+      options?.onEditingContentPathChange?.(getByPath(content, path))
+      setEditingContentPath(path)
+    },
     prependPatchPath: (patches: Patch[]) => prependPatchPath(patches, editingContentPath),
     getContentByPath<V>(content: V) {
       return getByPath(content, editingContentPath)

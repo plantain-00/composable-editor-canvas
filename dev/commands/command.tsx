@@ -33,7 +33,7 @@ export interface Command {
   execute?(
     contents: BaseContent[],
     selected: readonly number[][],
-    setEditingContentPath: (value: React.SetStateAction<SelectPath | undefined>) => void
+    setEditingContentPath: (path: SelectPath | undefined) => void
   ): void
   contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
   selectCount?: number

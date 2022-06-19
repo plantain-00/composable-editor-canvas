@@ -211,7 +211,7 @@ export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Posit
 export function getColorString(color: number): string;
 
 // @public (undocumented)
-export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (index: number[]) => boolean, getModel: (content: T) => {
+export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (path: number[]) => boolean, getModel: (content: T) => {
     getCircle?: (content: T) => {
         circle: Circle;
     };
@@ -222,7 +222,7 @@ export function getContentByClickPosition<T>(contents: readonly T[], position: P
         }[];
     };
     canSelectPart?: boolean;
-} | undefined, part?: boolean, delta?: number): number[] | undefined;
+} | undefined, part?: boolean, contentVisible?: (content: T) => boolean, delta?: number): number[] | undefined;
 
 // @public (undocumented)
 export function getContentsByClickTwoPositions<T>(contents: readonly T[], startPosition: Position, endPosition: Position, getModel: (content: T) => {
@@ -238,7 +238,7 @@ export function getContentsByClickTwoPositions<T>(contents: readonly T[], startP
             lines: [Position, Position][];
         }[];
     };
-} | undefined, contentSelectable?: (index: number[]) => boolean): number[][];
+} | undefined, contentSelectable?: (index: number[]) => boolean, contentVisible?: (content: T) => boolean): number[][];
 
 // @public (undocumented)
 export function getDefaultZoomOption(options?: Partial<ZoomOptions>): {
@@ -975,16 +975,23 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
-export function usePartialEdit<T>(content: T): {
+export function usePartialEdit<T>(content: T, options?: Partial<{
+    onEditingContentPathChange: (content: T) => void;
+}>): {
     editingContent: T;
-    setEditingContentPath: React_2.Dispatch<React_2.SetStateAction<SelectPath | undefined>>;
+    setEditingContentPath: (path: SelectPath | undefined) => void;
     prependPatchPath: (patches: Patch[]) => Patch[];
     getContentByPath<V>(content: V): V;
 };
 
 // @public (undocumented)
 export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator: P, options?: Partial<{
-    onApplyPatches: (patches: Patch[], reversePatches: Patch[]) => void;
+    onApplyPatchesFromSelf: (patches: Patch[], reversePatches: Patch[]) => void;
+    onChange: (data: {
+        patches: Patch[];
+        oldState: Readonly<T>;
+        newState: Readonly<T>;
+    }) => void;
 }>): {
     state: Readonly<T>;
     applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => Readonly<T>;
@@ -1015,7 +1022,7 @@ export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (conten
 } | undefined, scale?: number, delta?: number): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
-    getSnapPoint(p: Position, contents: readonly T[]): Position;
+    getSnapPoint(p: Position, contents: readonly T[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined): Position;
 };
 
 // @public (undocumented)
@@ -1177,6 +1184,18 @@ export class WeakmapCache<TKey extends object, TValue> {
 export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
     // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeaksetCache<T extends object> {
+    // (undocumented)
+    add(...values: T[]): void;
+    // (undocumented)
+    clear(): void;
+    // (undocumented)
+    delete(value: T): boolean;
+    // (undocumented)
+    has(value: T): boolean;
 }
 
 // @public (undocumented)

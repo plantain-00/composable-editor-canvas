@@ -6,7 +6,7 @@ import { Circle, getPointAndLineSegmentMinimumDistance, getPointAndRegionMaximum
 export function getContentByClickPosition<T>(
   contents: readonly T[],
   position: Position,
-  contentSelectable: (index: number[]) => boolean,
+  contentSelectable: (path: number[]) => boolean,
   getModel: (content: T) => {
     getCircle?: (content: T) => { circle: Circle },
     getGeometries?: (content: T, contents: readonly T[]) => {
@@ -18,10 +18,14 @@ export function getContentByClickPosition<T>(
     canSelectPart?: boolean,
   } | undefined,
   part = false,
+  contentVisible?: (content: T) => boolean,
   delta = 3,
 ): number[] | undefined {
   for (let i = 0; i < contents.length; i++) {
     const content = contents[i]
+    if (contentVisible && !contentVisible(content)) {
+      continue
+    }
     const model = getModel(content)
     if (model?.getCircle) {
       const { circle } = model.getCircle(content)
@@ -78,11 +82,15 @@ export function getContentsByClickTwoPositions<T>(
     },
   } | undefined,
   contentSelectable?: (index: number[]) => boolean,
+  contentVisible?: (content: T) => boolean,
 ) {
   const result: number[][] = []
   const region = getTwoPointsFormRegion(startPosition, endPosition)
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
+    if (contentVisible && !contentVisible(content)) {
+      return
+    }
     if (contentSelectable?.([i])) {
       const model = getModel(content)
       if (model?.getCircle) {

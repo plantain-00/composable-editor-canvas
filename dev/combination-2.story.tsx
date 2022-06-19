@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion } from '../src'
 import produce, { applyPatches, enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
@@ -14,7 +14,7 @@ import { mirrorCommand } from './commands/mirror'
 import { cloneCommand } from './commands/clone'
 import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
-import { getAllRendererTypes, registerRenderer, Renderer } from './renderers/renderer'
+import { getAllRendererTypes, registerRenderer, Renderer, visibleContents, contentVisible } from './renderers/renderer'
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
@@ -47,6 +47,7 @@ import { createLinearDimensionCommand } from './commands/create-linear-dimension
 import { linearDimensionModel } from './models/linear-dimension-model'
 import { groupModel } from './models/group-model'
 import { createGroupCommand } from './commands/create-group'
+import RTree from 'rtree'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -125,7 +126,7 @@ export default () => {
     return () => ws.current?.close()
   }, [])
 
-  const onApplyPatches = (patches: Patch[], reversePatches: Patch[]) => {
+  const onApplyPatchesFromSelf = (patches: Patch[], reversePatches: Patch[]) => {
     if (ws.current && ws.current.readyState === ws.current.OPEN && coEdit) {
       const operations = patches.map((p) => ({ ...p, path: p.path.map((c) => `/${c}`).join('') }))
       ws.current.send(JSON.stringify({ method: 'patch', operations, reversePatches, operator: me }))
@@ -141,16 +142,27 @@ export default () => {
     setInitialState(undefined)
     setCoEdit(false)
     setTimeout(() => {
-      const json: CircleContent[] = []
+      const json: (CircleContent | RectContent)[] = []
       const max = 100
       for (let i = 0; i < max; i++) {
         for (let j = 0; j < max; j++) {
-          json.push({
-            type: 'circle',
-            x: i * 100,
-            y: j * 100,
-            r: Math.random() * 50 + 50,
-          })
+          if (Math.random() < 0.5) {
+            json.push({
+              type: 'circle',
+              x: i * 100 + (Math.random() - 0.5) * 50,
+              y: j * 100 + (Math.random() - 0.5) * 50,
+              r: Math.random() * 100,
+            })
+          } else {
+            json.push({
+              type: 'rect',
+              x: i * 100 + (Math.random() - 0.5) * 50,
+              y: j * 100 + (Math.random() - 0.5) * 50,
+              width: Math.random() * 100,
+              height: Math.random() * 100,
+              angle: Math.random() * 360 - 180,
+            })
+          }
         }
       }
       setInitialState(json)
@@ -195,7 +207,7 @@ export default () => {
         <CADEditor
           ref={editorRef}
           initialState={initialState}
-          onApplyPatches={onApplyPatches}
+          onApplyPatchesFromSelf={onApplyPatchesFromSelf}
           onSendSelection={onSendSelection}
           readOnly={readOnly}
           angleSnapEnabled={angleSnapEnabled}
@@ -243,8 +255,8 @@ export default () => {
 }
 
 const CADEditor = React.forwardRef((props: {
-  initialState: BaseContent<string>[]
-  onApplyPatches: ((patches: Patch[], reversePatches: Patch[]) => void)
+  initialState: readonly BaseContent<string>[]
+  onApplyPatchesFromSelf: ((patches: Patch[], reversePatches: Patch[]) => void)
   onSendSelection: (selectedContents: readonly number[]) => void
   readOnly: boolean
   angleSnapEnabled: boolean
@@ -279,23 +291,63 @@ const CADEditor = React.forwardRef((props: {
   )
   const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
-    onApplyPatches: props.onApplyPatches,
+    onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
+    onChange({ patches, oldState, newState }) {
+      const newContents = new Set<BaseContent>()
+      const removedContents = new Set<BaseContent>()
+      for (const patch of patches) {
+        const index = patch.path[0] as number
+        if (patch.op !== 'remove' || patch.path.length > 1) {
+          newContents.add(newState[index])
+        }
+        if (patch.op !== 'add' || patch.path.length > 1) {
+          removedContents.add(oldState[index])
+        }
+      }
+      for (const content of newContents) {
+        const geometries = getModel(content.type)?.getGeometries?.(content, newState)
+        if (geometries?.bounding) {
+          rtree.insert({
+            x: geometries.bounding.start.x,
+            y: geometries.bounding.start.y,
+            w: geometries.bounding.end.x - geometries.bounding.start.x,
+            h: geometries.bounding.end.y - geometries.bounding.start.y,
+          }, content)
+        }
+      }
+      for (const content of removedContents) {
+        const geometries = getModel(content.type)?.getGeometries?.(content, oldState)
+        if (geometries?.bounding) {
+          rtree.remove({
+            x: geometries.bounding.start.x,
+            y: geometries.bounding.start.y,
+            w: geometries.bounding.end.x - geometries.bounding.start.x,
+            h: geometries.bounding.end.y - geometries.bounding.start.y,
+          }, content)
+        }
+      }
+    },
   })
   const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
-  const { editingContent, getContentByPath, setEditingContentPath, prependPatchPath } = usePartialEdit(state)
+  const { editingContent, getContentByPath, setEditingContentPath, prependPatchPath } = usePartialEdit(state, {
+    onEditingContentPathChange(contents) {
+      rebuildRTree(contents)
+    }
+  })
   const [position, setPosition] = React.useState<Position>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
+    min: 0.01,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
       setX(result.setX)
       setY(result.setY)
     }
   })
-  const { zoomIn, zoomOut } = useZoom(scale, setScale)
+  const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.01 })
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
@@ -370,7 +422,7 @@ const CADEditor = React.forwardRef((props: {
         startOperation({ type: 'command', name: nextCommand }, [])
       }
     },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent),
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange),
     angleSnapEnabled && !snapPoint,
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
@@ -387,6 +439,7 @@ const CADEditor = React.forwardRef((props: {
         reverseTransformPosition(end, transform),
         getContentModel,
         isSelectable,
+        contentVisible,
       ))
     } else {
       // double click
@@ -450,7 +503,6 @@ const CADEditor = React.forwardRef((props: {
       assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent)))
     }
   }
-  const previewContents = previewPatches.length > 0 ? applyPatches(editingContent, previewPatches) : editingContent
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
     undo(e)
@@ -527,7 +579,7 @@ const CADEditor = React.forwardRef((props: {
 
   const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
-    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent)
+    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p)
@@ -557,12 +609,12 @@ const CADEditor = React.forwardRef((props: {
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      onCommandMove(getSnapPoint(p, editingContent), viewportPosition)
+      onCommandMove(getSnapPoint(p, editingContent, getContentsInRange), viewportPosition)
     }
     if (operations.type !== 'operate') {
-      onEditMove(getSnapPoint(p, editingContent), selectedContents)
+      onEditMove(getSnapPoint(p, editingContent, getContentsInRange), selectedContents)
       // hover by position
-      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part))
+      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible))
     }
   }
   const [lastOperation, setLastOperation] = React.useState<Operation>()
@@ -594,7 +646,7 @@ const CADEditor = React.forwardRef((props: {
     }
     operate(p)
     if (position) {
-      onCommandMove(getSnapPoint(position, editingContent), inputPosition)
+      onCommandMove(getSnapPoint(position, editingContent, getContentsInRange), inputPosition)
     }
   }
   const onContextMenu = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
@@ -603,8 +655,41 @@ const CADEditor = React.forwardRef((props: {
     }
     e.preventDefault()
   }
+  const [rtree, setRTree] = React.useState(RTree())
+  const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
+    return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
+  }
+  const searchResult = getContentsInRange({
+    start: reverseTransformPosition({ x: 0, y: 0 }, transform),
+    end: reverseTransformPosition({ x: width, y: height }, transform),
+  })
+  visibleContents.clear()
+  visibleContents.add(...searchResult)
+  visibleContents.add(...assistentContents)
+  const previewContents = previewPatches.length > 0 ? applyPatches(editingContent, previewPatches) : editingContent
+  const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
+  visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
   const renderContents = assistentContents.length === 0 ? previewContents : [...previewContents, ...assistentContents]
-  console.info(Date.now() - now)
+  const rebuildRTree = (contents: readonly BaseContent[]) => {
+    const newRTree = RTree()
+    for (const content of contents) {
+      const geometries = getModel(content.type)?.getGeometries?.(content, contents)
+      if (geometries?.bounding) {
+        newRTree.insert({
+          x: geometries.bounding.start.x,
+          y: geometries.bounding.start.y,
+          w: geometries.bounding.end.x - geometries.bounding.start.x,
+          h: geometries.bounding.end.y - geometries.bounding.start.y,
+        }, content)
+      }
+    }
+    setRTree(newRTree)
+  }
+
+  React.useEffect(() => {
+    rebuildRTree(props.initialState)
+  }, [props.initialState])
+  console.info(Date.now() - now, searchResult.length)
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
