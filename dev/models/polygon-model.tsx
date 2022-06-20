@@ -1,7 +1,6 @@
-import { getPointsBounding, getSymmetryPoint, iteratePolygonLines, Position, ReactRenderTarget, rotatePositionByCenter } from '../../src'
+import { getPointsBounding, getSymmetryPoint, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
-import { renderPolyline } from './polyline-model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & {
   points: Position[]
@@ -30,7 +29,7 @@ export const polygonModel: Model<PolygonContent> = {
     return breakPolyline(lines, intersectionPoints)
   },
   render({ content, color, target, strokeWidth, partsStyles }) {
-    return renderPolygon(target, content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
+    return target.renderPolygon(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
@@ -70,17 +69,4 @@ function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
 
 export function isPolygonContent(content: BaseContent): content is PolygonContent {
   return content.type === 'polygon'
-}
-
-export function renderPolygon<T>(
-  target: ReactRenderTarget<T>,
-  points: Position[],
-  options?: Partial<{
-    strokeColor: number,
-    dashArray: number[],
-    strokeWidth: number,
-    partsStyles: readonly { index: number, color: number }[],
-  }>,
-) {
-  return renderPolyline(target, [...points, points[0]], options)
 }

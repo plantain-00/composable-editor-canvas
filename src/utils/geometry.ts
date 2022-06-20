@@ -906,6 +906,9 @@ export function* iteratePolylineLines(points: Position[]) {
 }
 
 export function* iteratePolygonLines(points: Position[]) {
-  yield* iteratePolylineLines(points)
-  yield [points[points.length - 1], points[0]] as [Position, Position]
+  yield* iteratePolylineLines(polygonToPolyline(points))
+}
+
+export function polygonToPolyline(points: Position[]) {
+  return [...points, points[0]]
 }

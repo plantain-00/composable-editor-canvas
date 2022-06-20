@@ -1,5 +1,6 @@
 import * as React from "react"
-import { getColorString, ReactRenderTarget } from ".."
+import { getColorString, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { polygonToPolyline } from "../../utils"
 
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',
@@ -67,6 +68,10 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderPolyline(points, options) {
+    const { partsStyles, ...restOptions } = options ?? {}
+    if (partsStyles && partsStyles.length > 0) {
+      return renderPartStyledPolyline(this, partsStyles, points, restOptions)
+    }
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
@@ -89,6 +94,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       }
       ctx.restore()
     }
+  },
+  renderPolygon(points, options) {
+    return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
     return (ctx) => {
