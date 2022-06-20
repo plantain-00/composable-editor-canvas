@@ -1,5 +1,6 @@
 import * as React from "react"
-import { ReactRenderTarget } from ".."
+import { ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { polygonToPolyline } from "../../utils"
 
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
@@ -65,6 +66,10 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
     />
   },
   renderPolyline(points, options) {
+    const { partsStyles, ...restOptions } = options ?? {}
+    if (partsStyles && partsStyles.length > 0) {
+      return renderPartStyledPolyline(this, partsStyles, points, restOptions)
+    }
     const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
@@ -87,6 +92,9 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       strokeDasharray={options?.dashArray?.join(' ')}
       fill={fill}
     />
+  },
+  renderPolygon(points, options) {
+    return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
     return <circle stroke={getColorString(options?.strokeColor ?? 0)} strokeWidth={options?.strokeWidth} cx={cx} cy={cy} r={r} fill="none" />

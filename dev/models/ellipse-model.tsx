@@ -2,7 +2,6 @@ import { Ellipse, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmet
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
-import { renderPolygon } from './polygon-model'
 
 export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
 
@@ -40,7 +39,7 @@ export const ellipseModel: Model<EllipseContent> = {
   render({ content, color, target, strokeWidth }) {
     if (content.dashArray) {
       const { points } = getEllipseGeometries(content)
-      return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+      return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
   },
@@ -138,7 +137,7 @@ export const ellipseModel: Model<EllipseContent> = {
   getGeometries: getEllipseGeometries,
 }
 
-function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
+export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
   return getGeometriesFromCache(content, () => {
     const points: Position[] = []
     for (let i = 0; i < lineSegmentCount; i++) {

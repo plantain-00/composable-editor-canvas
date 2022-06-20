@@ -1,7 +1,6 @@
 import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
-import { renderPolygon } from './polygon-model'
 
 export type RectContent = StrokeBaseContent<'rect'> & Region & {
   angle: number
@@ -37,7 +36,7 @@ export const rectModel: Model<RectContent> = {
   render({ content, color, target, strokeWidth, partsStyles }) {
     if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectGeometries(content)
-      return renderPolygon(target, points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
+      return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
     }
     return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
   },
@@ -102,7 +101,7 @@ export const rectModel: Model<RectContent> = {
   canSelectPart: true,
 }
 
-function getRectGeometries(content: Omit<RectContent, "type">) {
+export function getRectGeometries(content: Omit<RectContent, "type">) {
   return getGeometriesFromCache(content, () => {
     const points = [
       { x: content.x - content.width / 2, y: content.y - content.height / 2 },

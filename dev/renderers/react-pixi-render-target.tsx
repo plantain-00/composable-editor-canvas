@@ -1,7 +1,7 @@
 import { Graphics, Stage, Text, Container, _ReactPixi } from "@inlet/react-pixi"
 import * as PIXI from "pixi.js"
 import React, { PropsWithChildren } from "react"
-import { drawDashedPolyline, getColorString, Position, ReactRenderTarget } from "../../src"
+import { drawDashedPolyline, getColorString, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline } from "../../src"
 
 const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Container
 
@@ -57,7 +57,14 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
     return <RectGraphic x={x} y={y} width={width} height={height} strokeColor={options?.strokeColor} angle={options?.angle} rotation={options?.rotation} strokeWidth={options?.strokeWidth} fillColor={options?.fillColor} />
   },
   renderPolyline(points, options) {
+    const { partsStyles, ...restOptions } = options ?? {}
+    if (partsStyles && partsStyles.length > 0) {
+      return renderPartStyledPolyline(this, partsStyles, points, restOptions)
+    }
     return <PolylineGraphic points={points} strokeColor={options?.strokeColor} dashArray={options?.dashArray} strokeWidth={options?.strokeWidth} skippedLines={options?.skippedLines} fillColor={options?.fillColor} />
+  },
+  renderPolygon(points, options) {
+    return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
     return <CircleGraphic cx={cx} cy={cy} r={r} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} />

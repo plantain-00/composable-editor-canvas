@@ -524,6 +524,9 @@ export function polarToCartesian(cx: number, cy: number, radius: number, angleIn
 };
 
 // @public (undocumented)
+export function polygonToPolyline(points: Position[]): Position[];
+
+// @public (undocumented)
 export function PolylineEditBar(props: {
     points: Position[];
     offset?: Position & {
@@ -586,12 +589,28 @@ export interface ReactRenderTarget<T = JSX.Element> {
         rotation: number;
     }>): T;
     // (undocumented)
+    renderPolygon(points: Position[], options?: Partial<{
+        strokeColor: number;
+        dashArray: number[];
+        strokeWidth: number;
+        skippedLines: number[];
+        fillColor: number;
+        partsStyles: readonly {
+            index: number;
+            color: number;
+        }[];
+    }>): T;
+    // (undocumented)
     renderPolyline(points: Position[], options?: Partial<{
         strokeColor: number;
         dashArray: number[];
         strokeWidth: number;
         skippedLines: number[];
         fillColor: number;
+        partsStyles: readonly {
+            index: number;
+            color: number;
+        }[];
     }>): T;
     // (undocumented)
     renderRect(x: number, y: number, width: number, height: number, options?: Partial<{
@@ -625,6 +644,16 @@ export const reactSvgRenderTarget: ReactRenderTarget;
 // @public (undocumented)
 export interface Region extends Position, Size {
 }
+
+// @public (undocumented)
+export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly {
+    index: number;
+    color: number;
+}[], points: Position[], options?: Partial<{
+    strokeColor: number;
+    dashArray?: number[];
+    strokeWidth?: number;
+}>): T;
 
 // @public (undocumented)
 export function ResizeBar(props: {
