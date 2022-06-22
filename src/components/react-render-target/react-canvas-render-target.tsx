@@ -13,6 +13,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         draws={children}
         transform={options?.transform}
         backgroundColor={options?.backgroundColor}
+        debug={options?.debug}
       />
     )
   },
@@ -156,6 +157,7 @@ function Canvas(props: {
     scale: number
   }
   backgroundColor?: number
+  debug?: boolean
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   React.useEffect(() => {
@@ -168,6 +170,7 @@ function Canvas(props: {
     if (ref.current) {
       const ctx = ref.current.getContext('2d')
       if (ctx) {
+        const now = Date.now()
         ctx.fillStyle = getColorString(props.backgroundColor ?? 0xffffff)
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         ctx.save()
@@ -183,6 +186,9 @@ function Canvas(props: {
           draw(ctx)
         }
         ctx.restore()
+        if (props.debug) {
+          console.info(Date.now() - now)
+        }
       }
     }
   }, [props.draws, ref.current, props.transform, props.backgroundColor])

@@ -16,6 +16,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         scale: number
       },
       backgroundColor: number,
+      debug: boolean
     }>
   ): JSX.Element
   renderEmpty(): T
