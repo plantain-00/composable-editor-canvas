@@ -1225,6 +1225,8 @@ export class WeaksetCache<T extends object> {
     delete(value: T): boolean;
     // (undocumented)
     has(value: T): boolean;
+    // (undocumented)
+    get size(): number;
 }
 
 // @public (undocumented)

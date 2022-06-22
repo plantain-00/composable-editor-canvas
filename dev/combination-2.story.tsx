@@ -500,7 +500,7 @@ const CADEditor = React.forwardRef((props: {
       if (editPoint && isSamePath(editPoint.path, path) && updatedContents) {
         c = getContentByIndex(updatedContents, path) ?? content
       }
-      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff } as RectContent)))
+      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
     }
   }
 

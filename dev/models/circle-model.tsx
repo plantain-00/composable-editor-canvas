@@ -34,8 +34,8 @@ export const circleModel: Model<CircleContent> = {
       endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
     }) as ArcContent)
   },
-  render({ content, color, target, strokeWidth }) {
-    if (content.dashArray) {
+  render({ content, color, target, strokeWidth, fallbackEnabled }) {
+    if (content.dashArray || fallbackEnabled) {
       const { points } = getCircleGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }

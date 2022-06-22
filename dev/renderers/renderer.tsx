@@ -36,6 +36,7 @@ export function Renderer(props: {
   }
   const children: unknown[] = []
   const scale = props.transform?.scale ?? 1
+  const fallbackEnabled = visibleContents.size > 1000
   let count = 0
   props.contents.forEach((content, i) => {
     if (!visibleContents.has(content)) {
@@ -85,7 +86,7 @@ export function Renderer(props: {
     }
     const ContentRender = model.render
     if (ContentRender) {
-      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
+      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale, fallbackEnabled }))
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
