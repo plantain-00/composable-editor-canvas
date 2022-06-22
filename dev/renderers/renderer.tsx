@@ -1,6 +1,8 @@
 import React from "react"
 import { getColorString, isSelected, ReactRenderTarget, WeaksetCache } from "../../src"
+import { isLineContent, lineModel } from "../models/line-model"
 import { BaseContent, getModel } from "../models/model"
+import { isPolyLineContent } from "../models/polyline-model"
 
 export function Renderer(props: {
   type?: string
@@ -46,11 +48,6 @@ export function Renderer(props: {
     if (!model) {
       return
     }
-    const bounding = model.getCircle?.(content).bounding ?? model.getGeometries?.(content, props.contents).bounding
-    if (bounding && ((bounding.end.x - bounding.start.x) * scale < 3 || (bounding.end.y - bounding.start.y) * scale < 3)) {
-      return
-    }
-    count++
     let color: number | undefined
     const partsStyles: { index: number, color: number }[] = []
     const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
@@ -84,6 +81,22 @@ export function Renderer(props: {
       const renderPosition = model.getOperatorRenderPosition(content, props.contents)
       children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
     }
+    if (!isLineContent(content) && !isPolyLineContent(content)) {
+      const bounding = model.getCircle?.(content).bounding ?? model.getGeometries?.(content, props.contents).bounding
+      if (bounding) {
+        const x = bounding.end.x - bounding.start.x
+        const y = bounding.end.y - bounding.start.y
+        if (x <= strokeWidth || y <= strokeWidth) {
+          const ContentRender = lineModel.render
+          if (ContentRender) {
+            const strokeWidth = Math.min(x, y)
+            children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, partsStyles, scale, fallbackEnabled }))
+          }
+          return
+        }
+      }
+    }
+    count++
     const ContentRender = model.render
     if (ContentRender) {
       children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale, fallbackEnabled }))

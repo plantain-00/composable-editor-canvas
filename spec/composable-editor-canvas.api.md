@@ -631,6 +631,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
             scale: number;
         };
         backgroundColor: number;
+        debug: boolean;
     }>): JSX.Element;
     // (undocumented)
     renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string): T;

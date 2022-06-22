@@ -340,14 +340,14 @@ const CADEditor = React.forwardRef((props: {
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
-    min: 0.01,
+    min: 0.001,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
       setX(result.setX)
       setY(result.setY)
     }
   })
-  const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.01 })
+  const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
   useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
   useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
