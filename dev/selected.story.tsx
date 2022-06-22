@@ -6,7 +6,7 @@ export default () => {
 
   return (
     <div>
-      {new Array(10).fill(1).map((_, i) => (
+      {new Array<unknown>(10).fill(1).map((_, i) => (
         <button
           key={i}
           style={{ backgroundColor: isSelected([i]) ? 'green' : undefined, width: '50px', height: '50px' }}

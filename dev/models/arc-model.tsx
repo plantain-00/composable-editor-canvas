@@ -63,8 +63,8 @@ export const arcModel: Model<ArcContent> = {
     })
     return result.length > 1 ? result : undefined
   },
-  render({ content, color, target, strokeWidth }) {
-    if (content.dashArray) {
+  render({ content, color, target, strokeWidth, fallbackEnabled }) {
+    if (content.dashArray || fallbackEnabled) {
       const { points } = getArcGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }

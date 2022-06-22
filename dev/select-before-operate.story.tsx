@@ -22,7 +22,7 @@ export default () => {
       <button onClick={() => startOperation(3)}>select count = 3</button>
       <button onClick={() => startOperation(undefined, ([i]) => i % 2 === 1)}>select count {">"} 0 && i % 2 === 1</button>
       <button onClick={() => startOperation(3, ([i]) => i % 2 === 1)}>select count = 3 && i % 2 === 1</button>
-      {new Array(10).fill(1).map((_, i) => (
+      {new Array<unknown>(10).fill(1).map((_, i) => (
         <button
           key={i}
           style={{ backgroundColor: isSelected([i]) ? 'green' : undefined, width: '50px', height: '50px' }}
