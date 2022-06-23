@@ -6,7 +6,7 @@ import { drawDashedPolyline, getColorString, polygonToPolyline, Position, ReactR
 const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Container
 
 export const reactPixiRenderTarget: ReactRenderTarget = {
-  type: 'pixi',
+  type: '@inlet/react-pixi',
   renderResult(children, width, height, options) {
     children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const x = options?.transform?.x ?? 0
@@ -77,6 +77,9 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   },
   renderText(x, y, text, fillColor, fontSize, fontFamily) {
     return <Text x={x} y={y - fontSize} text={text} style={{ fill: getColorString(fillColor), fontSize, fontFamily }} />
+  },
+  renderPath(lines, options) {
+    return <PathGraphic lines={lines} strokeColor={options?.strokeColor} dashArray={options?.dashArray} strokeWidth={options?.strokeWidth} />
   },
 }
 
@@ -191,5 +194,32 @@ function ArcGraphic(props: {
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
     g.arc(props.cx, props.cy, props.r, props.startAngle * Math.PI / 180, props.endAngle * Math.PI / 180)
   }, [props.cx, props.cy, props.r, props.startAngle, props.endAngle, props.strokeColor, props.strokeWidth])
+  return <Graphics draw={draw} />
+}
+
+function PathGraphic(props: {
+  lines: Position[][]
+  strokeColor?: number
+  dashArray?: number[]
+  strokeWidth?: number
+}) {
+  const draw = React.useCallback((g: PIXI.Graphics) => {
+    g.clear()
+    g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
+    for (const points of props.lines) {
+      if (props.dashArray) {
+        drawDashedPolyline(g, points, props.dashArray)
+      } else {
+        points.forEach((p, i) => {
+          if (i === 0) {
+            g.moveTo(p.x, p.y)
+          } else {
+            g.lineTo(p.x, p.y)
+          }
+        })
+      }
+    }
+
+  }, [props.lines, props.strokeColor, props.dashArray, props.strokeWidth])
   return <Graphics draw={draw} />
 }

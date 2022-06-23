@@ -3,6 +3,7 @@ import { getColorString, isSelected, ReactRenderTarget, WeaksetCache } from "../
 import { isLineContent, lineModel } from "../models/line-model"
 import { BaseContent, getModel } from "../models/model"
 import { isPolyLineContent } from "../models/polyline-model"
+import { RenderingLinesMerger } from "./rendering-lines-merger"
 
 export function Renderer(props: {
   type?: string
@@ -39,7 +40,14 @@ export function Renderer(props: {
   const children: unknown[] = []
   const scale = props.transform?.scale ?? 1
   const fallbackEnabled = visibleContents.size > 1000
-  let count = 0
+  const merger = new RenderingLinesMerger(
+    (last) => children.push(target.renderPath(last.line, {
+      strokeColor: last.strokeColor,
+      dashArray: last.dashArray,
+      strokeWidth: last.strokeWidth,
+    }))
+  )
+
   props.contents.forEach((content, i) => {
     if (!visibleContents.has(content)) {
       return
@@ -79,6 +87,7 @@ export function Renderer(props: {
     }
     if (model.getOperatorRenderPosition && operators.length > 0) {
       const renderPosition = model.getOperatorRenderPosition(content, props.contents)
+      merger.flushLast()
       children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
     }
     if (!isLineContent(content) && !isPolyLineContent(content)) {
@@ -89,26 +98,47 @@ export function Renderer(props: {
         if (x <= strokeWidth || y <= strokeWidth) {
           const ContentRender = lineModel.render
           if (ContentRender) {
-            const strokeWidth = Math.min(x, y)
-            children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, partsStyles, scale, fallbackEnabled }))
+            if (fallbackEnabled) {
+              merger.push({
+                line: [bounding.start, bounding.end],
+                strokeColor: color,
+                strokeWidth,
+              })
+            } else {
+              merger.flushLast()
+              children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
+            }
           }
           return
         }
       }
     }
-    count++
-    const ContentRender = model.render
-    if (ContentRender) {
-      children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale, fallbackEnabled }))
+    if (fallbackEnabled && model.toRenderingLine && partsStyles.length === 0) {
+      const line = model.toRenderingLine(content)
+      if (line) {
+        merger.push({
+          line,
+          strokeColor: color,
+          strokeWidth,
+        })
+      }
+    } else {
+      const ContentRender = model.render
+      if (ContentRender) {
+        merger.flushLast()
+        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
+      }
     }
     if (selected) {
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
+        merger.flushLast()
         children.push(RenderIfSelected({ content, color, target, strokeWidth, scale }))
       }
     }
   })
-  console.info(Date.now() - now, count)
+  merger.flushLast()
+  console.info(Date.now() - now, children.length)
   return target.renderResult(children, props.width, props.height, {
     attributes: {
       style: {

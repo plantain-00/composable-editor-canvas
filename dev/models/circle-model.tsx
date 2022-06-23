@@ -34,12 +34,16 @@ export const circleModel: Model<CircleContent> = {
       endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
     }) as ArcContent)
   },
-  render({ content, color, target, strokeWidth, fallbackEnabled }) {
-    if (content.dashArray || fallbackEnabled) {
+  render({ content, color, target, strokeWidth }) {
+    if (content.dashArray) {
       const { points } = getCircleGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderCircle(content.x, content.y, content.r, { strokeColor: color, strokeWidth })
+  },
+  toRenderingLine(content) {
+    const { points } = getCircleGeometries(content)
+    return points
   },
   getOperatorRenderPosition(content) {
     return content

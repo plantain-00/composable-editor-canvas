@@ -26,6 +26,9 @@ export const lineModel: Model<LineContent> = {
   render({ content, color, target, strokeWidth }) {
     return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
+  toRenderingLine(content) {
+    return content.points
+  },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },

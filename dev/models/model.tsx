@@ -28,8 +28,8 @@ export interface Model<T> {
     contents: readonly BaseContent[]
     partsStyles: readonly { index: number, color: number }[]
     scale: number
-    fallbackEnabled?: boolean
   }): V
+  toRenderingLine?(content: Omit<T, 'type'>): Position[] | undefined
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, scale: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {

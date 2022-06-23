@@ -142,6 +142,26 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
+  renderPath(lines, options) {
+    return (ctx) => {
+      ctx.beginPath()
+      ctx.lineWidth = options?.strokeWidth ?? 1
+      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
+      for (const points of lines) {
+        for (let i = 0; i < points.length; i++) {
+          if (i === 0) {
+            ctx.moveTo(points[i].x, points[i].y)
+          } else {
+            ctx.lineTo(points[i].x, points[i].y)
+          }
+        }
+      }
+      ctx.stroke()
+    }
+  },
 }
 
 function Canvas(props: {

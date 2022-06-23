@@ -104,6 +104,14 @@ export interface ReactRenderTarget<T = JSX.Element> {
     fontSize: number,
     fontFamily: string,
   ): T
+  renderPath(
+    lines: Position[][],
+    options?: Partial<{
+      strokeColor: number
+      dashArray: number[]
+      strokeWidth: number
+    }>,
+  ): T
 }
 
 export function renderPartStyledPolyline<T>(

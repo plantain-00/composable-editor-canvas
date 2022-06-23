@@ -1,4 +1,4 @@
-import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, Region, rotatePositionByCenter } from '../../src'
+import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
@@ -33,12 +33,16 @@ export const rectModel: Model<RectContent> = {
     content.y = p.y
     content.angle = 2 * angle - content.angle
   },
-  render({ content, color, target, strokeWidth, partsStyles, fallbackEnabled }) {
-    if (content.dashArray || partsStyles.length > 0 || fallbackEnabled) {
+  render({ content, color, target, strokeWidth, partsStyles }) {
+    if (content.dashArray || partsStyles.length > 0) {
       const { points } = getRectGeometries(content)
       return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
     }
     return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
+  },
+  toRenderingLine(content) {
+    const { points } = getRectGeometries(content)
+    return polygonToPolyline(points)
   },
   getOperatorRenderPosition(content) {
     const { points } = getRectGeometries(content)
