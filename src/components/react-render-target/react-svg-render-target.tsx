@@ -125,6 +125,18 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
   renderText(x, y, text, fillColor, fontSize, fontFamily) {
     return <text x={x} y={y} style={{ fill: getColorString(fillColor), fontSize: `${fontSize}px`, fontFamily }}>{text}</text>
   },
+  renderPath(lines, options) {
+    const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
+    return (
+      <path
+        d={d}
+        strokeWidth={options?.strokeWidth}
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeDasharray={options?.dashArray?.join(' ')}
+        fill='none'
+      />
+    )
+  },
 }
 
 export function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {

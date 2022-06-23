@@ -589,6 +589,12 @@ export interface ReactRenderTarget<T = JSX.Element> {
         rotation: number;
     }>): T;
     // (undocumented)
+    renderPath(lines: Position[][], options?: Partial<{
+        strokeColor: number;
+        dashArray: number[];
+        strokeWidth: number;
+    }>): T;
+    // (undocumented)
     renderPolygon(points: Position[], options?: Partial<{
         strokeColor: number;
         dashArray: number[];

@@ -36,12 +36,16 @@ export const ellipseModel: Model<EllipseContent> = {
       endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
     }) as EllipseArcContent)
   },
-  render({ content, color, target, strokeWidth, fallbackEnabled }) {
-    if (content.dashArray || fallbackEnabled) {
+  render({ content, color, target, strokeWidth }) {
+    if (content.dashArray) {
       const { points } = getEllipseGeometries(content)
       return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
+  },
+  toRenderingLine(content) {
+    const { points } = getEllipseGeometries(content)
+    return points
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }

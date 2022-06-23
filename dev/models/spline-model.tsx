@@ -26,6 +26,10 @@ export const splineModel: Model<SplineContent> = {
     const { points } = getSplineGeometries(content)
     return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
+  toRenderingLine(content) {
+    const { points } = getSplineGeometries(content)
+    return points
+  },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
     return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4 / scale], strokeWidth })
   },

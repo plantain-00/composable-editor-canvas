@@ -50,6 +50,10 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     const { points } = getEllipseArcGeometries(content)
     return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
+  toRenderingLine(content) {
+    const { points } = getEllipseArcGeometries(content)
+    return points
+  },
   renderIfSelected({ content, color, target, strokeWidth, scale }) {
     const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
     return target.renderPolyline(points, { strokeColor: color, dashArray: [4 / scale], strokeWidth })
