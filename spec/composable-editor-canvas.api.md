@@ -1213,11 +1213,15 @@ export function useZoom(value: number, onChange: (value: number) => void, option
 // @public (undocumented)
 export class WeakmapCache<TKey extends object, TValue> {
     // (undocumented)
+    clear(): void;
+    // (undocumented)
     get(key: TKey, func: () => TValue): TValue;
 }
 
 // @public (undocumented)
 export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
+    // (undocumented)
+    clear(): void;
     // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
 }

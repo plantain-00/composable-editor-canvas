@@ -8,8 +8,8 @@ export const polylineModel: Model<LineContent> = {
     const { lines } = getPolylineGeometries(content)
     return lines.map((line) => ({ type: 'line', points: line } as LineContent))
   },
-  render({ content, color, target, strokeWidth, partsStyles }) {
-    return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
+  render({ content, color, target, strokeWidth }) {
+    return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
   toRenderingLine(content) {
     return content.points

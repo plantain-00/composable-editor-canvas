@@ -28,8 +28,8 @@ export const polygonModel: Model<PolygonContent> = {
     const { lines } = getPolygonGeometries(content)
     return breakPolyline(lines, intersectionPoints)
   },
-  render({ content, color, target, strokeWidth, partsStyles }) {
-    return target.renderPolygon(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
+  render({ content, color, target, strokeWidth }) {
+    return target.renderPolygon(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
   toRenderingLine(content) {
     return polygonToPolyline(content.points)

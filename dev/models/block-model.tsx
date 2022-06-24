@@ -46,7 +46,7 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' |
     const model = getModel(blockContent.type)
     if (model?.render) {
       const ContentRender = model.render
-      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents, partsStyles: [], scale }))
+      children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents, scale }))
     }
   })
   return children

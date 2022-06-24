@@ -33,10 +33,10 @@ export const rectModel: Model<RectContent> = {
     content.y = p.y
     content.angle = 2 * angle - content.angle
   },
-  render({ content, color, target, strokeWidth, partsStyles }) {
-    if (content.dashArray || partsStyles.length > 0) {
+  render({ content, color, target, strokeWidth }) {
+    if (content.dashArray) {
       const { points } = getRectGeometries(content)
-      return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth, partsStyles })
+      return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
     return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
   },

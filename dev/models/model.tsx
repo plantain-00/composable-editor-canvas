@@ -26,7 +26,6 @@ export interface Model<T> {
     target: ReactRenderTarget<V>
     strokeWidth: number
     contents: readonly BaseContent[]
-    partsStyles: readonly { index: number, color: number }[]
     scale: number
   }): V
   toRenderingLine?(content: Omit<T, 'type'>): Position[] | undefined

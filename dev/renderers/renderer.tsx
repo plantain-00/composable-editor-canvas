@@ -1,21 +1,22 @@
+import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, ReactRenderTarget, WeaksetCache } from "../../src"
 import { isLineContent, lineModel } from "../models/line-model"
-import { BaseContent, getModel } from "../models/model"
+import { BaseContent, getContentByIndex, getModel } from "../models/model"
 import { isPolyLineContent } from "../models/polyline-model"
 import { RenderingLinesMerger } from "./rendering-lines-merger"
 
 export function Renderer(props: {
   type?: string
   contents: readonly BaseContent[]
+  previewPatches: Patch[]
+  assistentContents: readonly BaseContent[]
   selected: readonly number[][]
   othersSelectedContents: readonly { selection: number[], operator: string }[]
   hovering: readonly number[][]
-  transform?: {
-    x: number
-    y: number
-    scale: number
-  }
+  x: number
+  y: number
+  scale: number
   width: number
   height: number
   backgroundColor: number
@@ -25,20 +26,24 @@ export function Renderer(props: {
     return null
   }
   const now = Date.now()
-  const strokeWidth = 1 / (props.transform?.scale ?? 1)
+
+  const previewContents = props.previewPatches.length > 0 ? applyPatches(props.contents, props.previewPatches) : props.contents
+  const previewContentIndexes = new Set(props.previewPatches.map((p) => p.path[0] as number))
+  visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
+
+  const scale = props.scale
   const backgroundColor = getColorString(props.backgroundColor)
   const r = +`0x${backgroundColor.substring(1, 3)}`
   const b = +`0x${backgroundColor.substring(3, 5)}`
   const g = +`0x${backgroundColor.substring(5)}`
-  const light = (Math.max(r, g, b) + Math.min(r, g, b)) / 2
+  const lightness = (Math.max(r, g, b) + Math.min(r, g, b)) / 2
   const transformColor = (color: number) => {
-    if (light < 128) {
+    if (lightness < 128) {
       return color === 0 ? 0xffffff : color
     }
     return color === 0xffffff ? 0 : color
   }
   const children: unknown[] = []
-  const scale = props.transform?.scale ?? 1
   const fallbackEnabled = visibleContents.size > 1000
   const merger = new RenderingLinesMerger(
     (last) => children.push(target.renderPath(last.line, {
@@ -48,48 +53,12 @@ export function Renderer(props: {
     }))
   )
 
-  props.contents.forEach((content, i) => {
-    if (!visibleContents.has(content)) {
-      return
-    }
+  const renderContent = (content: BaseContent, color: number, strokeWidth: number) => {
     const model = getModel(content.type)
     if (!model) {
       return
     }
-    let color: number | undefined
-    const partsStyles: { index: number, color: number }[] = []
-    const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
-    let selected = false
-    if (isSelected([i], props.selected)) {
-      color = 0xff0000
-      selected = true
-    } else {
-      if (isSelected([i], props.hovering)) {
-        color = 0x00ff00
-      } else if (operators.length > 0) {
-        color = 0x0000ff
-      } else {
-        color = model.getDefaultColor?.(content) ?? 0x000000
-      }
-      const selectedPart = props.selected.filter((v) => v.length === 2 && v[0] === i)
-      if (selectedPart.length > 0) {
-        partsStyles.push(...selectedPart.map((s) => ({ index: s[1], color: 0xff0000 })))
-        selected = true
-      }
-      const hoveringPart = props.hovering.find((v) => v.length === 2 && v[0] === i)
-      if (hoveringPart) {
-        partsStyles.push({ index: hoveringPart[1], color: 0x00ff00 })
-      }
-    }
     color = transformColor(color)
-    if (selected) {
-      operators.unshift('me')
-    }
-    if (model.getOperatorRenderPosition && operators.length > 0) {
-      const renderPosition = model.getOperatorRenderPosition(content, props.contents)
-      merger.flushLast()
-      children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
-    }
     if (!isLineContent(content) && !isPolyLineContent(content)) {
       const bounding = model.getCircle?.(content).bounding ?? model.getGeometries?.(content, props.contents).bounding
       if (bounding) {
@@ -106,14 +75,14 @@ export function Renderer(props: {
               })
             } else {
               merger.flushLast()
-              children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
+              children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, scale }))
             }
           }
           return
         }
       }
     }
-    if (fallbackEnabled && model.toRenderingLine && partsStyles.length === 0) {
+    if (fallbackEnabled && model.toRenderingLine) {
       const line = model.toRenderingLine(content)
       if (line) {
         merger.push({
@@ -126,19 +95,72 @@ export function Renderer(props: {
       const ContentRender = model.render
       if (ContentRender) {
         merger.flushLast()
-        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, partsStyles, scale }))
+        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, scale }))
       }
     }
-    if (selected) {
+  }
+
+  const strokeWidth = 1 / scale
+
+  previewContents.forEach((content) => {
+    if (!visibleContents.has(content)) {
+      return
+    }
+    const model = getModel(content.type)
+    if (!model) {
+      return
+    }
+    renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, strokeWidth)
+  })
+
+  if (props.othersSelectedContents.length > 0) {
+    props.contents.forEach((content, i) => {
+      const model = getModel(content.type)
+      if (!model) {
+        return
+      }
+      const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
+      if (isSelected([i], props.selected)) {
+        operators.unshift('me')
+      }
+      if (model.getOperatorRenderPosition && operators.length > 0) {
+        const renderPosition = model.getOperatorRenderPosition(content, props.contents)
+        merger.flushLast()
+        children.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
+      }
+    })
+  }
+
+  for (const index of props.hovering) {
+    const content = getContentByIndex(props.contents, index)
+    if (content) {
+      renderContent(content, 0x00ff00, strokeWidth * 2)
+    }
+  }
+
+  for (const index of props.selected) {
+    const content = getContentByIndex(props.contents, index)
+    if (content) {
+      renderContent(content, 0xff0000, strokeWidth * 2)
       const RenderIfSelected = getModel(content.type)?.renderIfSelected
       if (RenderIfSelected) {
         merger.flushLast()
-        children.push(RenderIfSelected({ content, color, target, strokeWidth, scale }))
+        children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth, scale }))
       }
     }
+  }
+
+  props.assistentContents.forEach((content) => {
+    const model = getModel(content.type)
+    if (!model) {
+      return
+    }
+    renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, strokeWidth)
   })
+
   merger.flushLast()
   console.info(Date.now() - now, children.length)
+
   return target.renderResult(children, props.width, props.height, {
     attributes: {
       style: {
@@ -149,7 +171,11 @@ export function Renderer(props: {
       onMouseDown: props.onMouseDown,
       onContextMenu: props.onContextMenu,
     },
-    transform: props.transform,
+    transform: {
+      x: props.x,
+      y: props.y,
+      scale: props.scale,
+    },
     backgroundColor: props.backgroundColor,
   })
 }

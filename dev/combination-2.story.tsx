@@ -1,6 +1,6 @@
 import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion } from '../src'
-import produce, { applyPatches, enablePatches, Patch, produceWithPatches } from 'immer'
+import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
 import { LineContent, lineModel } from './models/line-model'
@@ -357,7 +357,7 @@ const CADEditor = React.forwardRef((props: {
   const size = useWindowSize()
   const width = size.width / 2
   const height = size.height
-  const transform: Transform | undefined = {
+  const transform: Transform = {
     x: x + offset.x,
     y: y + offset.y,
     scale,
@@ -666,10 +666,7 @@ const CADEditor = React.forwardRef((props: {
   visibleContents.clear()
   visibleContents.add(...searchResult)
   visibleContents.add(...assistentContents)
-  const previewContents = previewPatches.length > 0 ? applyPatches(editingContent, previewPatches) : editingContent
-  const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
-  visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
-  const renderContents = assistentContents.length === 0 ? previewContents : [...previewContents, ...assistentContents]
+  
   const rebuildRTree = (contents: readonly BaseContent[]) => {
     const newRTree = RTree()
     for (const content of contents) {
@@ -696,14 +693,16 @@ const CADEditor = React.forwardRef((props: {
       <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         <Renderer
           type={renderTarget}
-          contents={renderContents}
+          contents={editingContent}
+          previewPatches={previewPatches}
+          assistentContents={assistentContents}
           selected={selected}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
-          transform={transform}
+          {...transform}
           width={width}
           height={height}
           backgroundColor={props.backgroundColor}
