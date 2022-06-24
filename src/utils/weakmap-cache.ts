@@ -12,6 +12,10 @@ export class WeakmapCache<TKey extends object, TValue> {
     }
     return result
   }
+
+  public clear() {
+    this.cache = new WeakMap<TKey, TValue>()
+  }
 }
 
 /**
@@ -32,6 +36,10 @@ export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
       map.set(key2, result)
     }
     return result
+  }
+
+  public clear() {
+    this.cache = new WeakMap<TKey1, WeakMap<TKey2, TValue>>()
   }
 }
 
