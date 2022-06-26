@@ -3,6 +3,9 @@ import * as React from "react"
 import { getAngleSnapPosition, Position } from "../.."
 import { EditOptions, useEdit } from "./use-edit"
 
+/**
+ * @public
+ */
 export function usePolylineEdit<T = void>(
   onEnd: () => void,
   options?: EditOptions,

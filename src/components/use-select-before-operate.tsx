@@ -2,6 +2,9 @@ import * as React from "react"
 import { useKey } from "./use-key"
 import { SelectPath, useSelected, UseSelectedOptions } from "./use-selected"
 
+/**
+ * @public
+ */
 export function useSelectBeforeOperate<TSelect extends { count?: number, selectable?: (index: TPath) => boolean }, TOperate, TPath extends SelectPath = SelectPath>(
   defaultOperation: TSelect,
   executeOperation: (operation: TOperate, selected: readonly TPath[]) => boolean,

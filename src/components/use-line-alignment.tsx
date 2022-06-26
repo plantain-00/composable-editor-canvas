@@ -1,6 +1,9 @@
 import * as React from "react"
 import { Region, ResizeDirection } from ".."
 
+/**
+ * @public
+ */
 export function useLineAlignment(delta: number) {
   const [lineAlignmentX, setLineAlignmentX] = React.useState<number>()
   const [lineAlignmentY, setLineAlignmentY] = React.useState<number>()

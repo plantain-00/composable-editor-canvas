@@ -67,6 +67,9 @@
     "immer": "9.0.15",
     "tslib": "1 || 2"
   },
+  "peerDependencies": {
+    "react": "18"
+  },
   "module": "browser/index.js",
   "unpkg": "composable-editor-canvas.min.js",
   "jsdelivr": "composable-editor-canvas.min.js",

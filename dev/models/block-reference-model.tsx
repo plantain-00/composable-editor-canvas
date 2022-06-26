@@ -137,6 +137,7 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
     return blockLinesCache.get(block, content, () => {
       const lines: [Position, Position][] = []
       const points: Position[] = []
+      const renderingLines: Position[][] = []
       block.contents.forEach((c) => {
         const extracted = extractContentInBlockReference(c, content, block, contents)
         if (extracted) {
@@ -144,6 +145,9 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
           if (r) {
             lines.push(...r.lines)
             points.push(...r.points)
+            if (r.renderingLines) {
+              renderingLines.push(...r.renderingLines)
+            }
           }
         }
       })
@@ -151,6 +155,7 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
         lines,
         points,
         bounding: getPointsBounding(points),
+        renderingLines,
       }
     })
   }

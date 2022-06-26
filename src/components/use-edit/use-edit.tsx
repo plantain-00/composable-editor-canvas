@@ -2,6 +2,9 @@ import * as React from "react"
 import { DragMask, useKey } from ".."
 import { Position } from "../.."
 
+/**
+ * @public
+ */
 export type EditData<T, V> = V & {
   data?: T
   cursor: React.CSSProperties['cursor']

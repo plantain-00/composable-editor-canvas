@@ -1,6 +1,9 @@
 import * as React from "react"
 import { EditBar } from "./edit-bar"
 
+/**
+ * @public
+ */
 export function CircleEditBar(props: {
   x: number,
   y: number

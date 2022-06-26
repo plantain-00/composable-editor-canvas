@@ -1,18 +1,22 @@
-import { isSamePath, Position } from "../../src"
+import { Position } from "../../utils"
+import { isSamePath } from "../use-selected"
 
+/**
+ * @public
+ */
 export class RenderingLinesMerger {
   private last: LastRenderingLines | undefined
 
   constructor(private flush: (lines: LastRenderingLines) => void) { }
 
-  flushLast() {
+  public flushLast() {
     if (this.last && this.last.line.length > 0) {
       this.flush(this.last)
       this.last = undefined
     }
   }
 
-  push(line: {
+  public push(line: {
     line: Position[]
     strokeColor: number
     dashArray?: number[]
@@ -36,7 +40,10 @@ export class RenderingLinesMerger {
   }
 }
 
-interface LastRenderingLines {
+/**
+ * @public
+ */
+export interface LastRenderingLines {
   line: Position[][]
   strokeColor: number
   dashArray?: number[]

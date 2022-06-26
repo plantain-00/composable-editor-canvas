@@ -41,10 +41,6 @@ export const circleModel: Model<CircleContent> = {
     }
     return target.renderCircle(content.x, content.y, content.r, { strokeColor: color, strokeWidth })
   },
-  toRenderingLine(content) {
-    const { points } = getCircleGeometries(content)
-    return points
-  },
   getOperatorRenderPosition(content) {
     return content
   },

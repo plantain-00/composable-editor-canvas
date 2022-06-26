@@ -584,7 +584,7 @@ const CADEditor = React.forwardRef((props: {
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p)
     }
-    if (operations.type !== 'operate') {
+    if (operations.type !== 'operate' && !simplified) {
       if (editPoint) {
         onEditClick(p)
       } else if (hovering.length > 0) {
@@ -611,7 +611,7 @@ const CADEditor = React.forwardRef((props: {
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       onCommandMove(getSnapPoint(p, editingContent, getContentsInRange), viewportPosition)
     }
-    if (operations.type !== 'operate') {
+    if (operations.type !== 'operate' && !simplified) {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange), selectedContents)
       // hover by position
       setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible))
@@ -666,6 +666,7 @@ const CADEditor = React.forwardRef((props: {
   visibleContents.clear()
   visibleContents.add(...searchResult)
   visibleContents.add(...assistentContents)
+  const simplified = searchResult.length > 1000
   
   const rebuildRTree = (contents: readonly BaseContent[]) => {
     const newRTree = RTree()
@@ -706,6 +707,7 @@ const CADEditor = React.forwardRef((props: {
           width={width}
           height={height}
           backgroundColor={props.backgroundColor}
+          simplified={simplified}
         />
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
         {commandMasks}

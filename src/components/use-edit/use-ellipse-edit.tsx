@@ -3,6 +3,9 @@ import { Ellipse, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
 import { EditOptions, useEdit } from "./use-edit"
 
+/**
+ * @public
+ */
 export function useEllipseEdit<T = void>(
   onEnd: () => void,
   options?: EditOptions,

@@ -3,6 +3,9 @@ import * as React from "react"
 import { getAngleSnapPosition, useCursorInput, useKey } from ".."
 import { getPointByLengthAndDirection, getPolygonPoints, Position } from "../../utils"
 
+/**
+ * @public
+ */
 export function usePolygonClickCreate(
   enabled: boolean,
   onEnd: (polygon: Position[]) => void,

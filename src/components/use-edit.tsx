@@ -5,6 +5,9 @@ import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
 import { useKey } from "./use-key"
 import { SelectPath } from "./use-selected"
 
+/**
+ * @public
+ */
 export function useEdit<T, TPath extends SelectPath = SelectPath>(
   onEnd: () => void,
   getEditPoints?: (content: T) => {
@@ -101,6 +104,9 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
   }
 }
 
+/**
+ * @public
+ */
 export type EditPoint<T> = Position & {
   cursor: string
   update: (content: Draft<T>, props: { cursor: Position, start: Position, scale: number }) => { assistentContents?: T[] } | void

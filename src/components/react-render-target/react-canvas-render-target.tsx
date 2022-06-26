@@ -2,6 +2,9 @@ import * as React from "react"
 import { getColorString, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { polygonToPolyline } from "../../utils"
 
+/**
+ * @public
+ */
 export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
   type: 'canvas',
   renderResult(children, width, height, options) {

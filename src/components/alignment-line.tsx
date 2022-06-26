@@ -1,5 +1,8 @@
 import * as React from "react"
 
+/**
+ * @public
+ */
 export function AlignmentLine(props: {
   value?: number
   type: 'x' | 'y'

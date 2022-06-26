@@ -1,6 +1,9 @@
 import * as React from "react"
 import { Circle, getLineCircleIntersectionPoints, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, Position, Region, TwoPointsFormRegion } from "../utils"
 
+/**
+ * @public
+ */
 export function usePointSnap<T>(
   enabled: boolean,
   getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[],
@@ -188,6 +191,17 @@ export function usePointSnap<T>(
   }
 }
 
+/**
+ * @public
+ */
 export type SnapPoint = Position & { type: SnapPointType }
+
+/**
+ * @public
+ */
 export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest'] as const
+
+/**
+ * @public
+ */
 export type SnapPointType = typeof allSnapTypes[number]

@@ -2,6 +2,9 @@ import * as React from "react"
 import produce, { castDraft } from "immer"
 import type { WritableDraft } from "immer/dist/types/types-external"
 
+/**
+ * @public
+ */
 export function useUndoRedo<T>(defaultState: T) {
   const [history, setHistory] = React.useState({
     states: [defaultState] as readonly T[],

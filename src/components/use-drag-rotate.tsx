@@ -3,6 +3,9 @@ import * as React from "react"
 import { DragMask, getAngleSnapPosition, useKey } from "."
 import { Position } from ".."
 
+/**
+ * @public
+ */
 export function useDragRotate(
   onDragEnd: () => void,
   options?: Partial<{

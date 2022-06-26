@@ -2,6 +2,9 @@ import * as React from "react"
 import { EllipseArc, getResizeCursor, rotatePositionByCenter } from "../../utils"
 import { EditBar } from "./edit-bar"
 
+/**
+ * @public
+ */
 export function EllipseArcEditBar(props: EllipseArc & {
   scale?: number
   resizeSize?: number

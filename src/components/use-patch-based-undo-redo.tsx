@@ -2,6 +2,9 @@ import * as React from "react"
 import produce, { applyPatches, castDraft } from "immer"
 import type { Patch, WritableDraft } from "immer/dist/types/types-external"
 
+/**
+ * @public
+ */
 export function usePatchBasedUndoRedo<T, P>(
   defaultState: Readonly<T>,
   operator: P,

@@ -2,6 +2,9 @@ import * as React from "react"
 import { getResizeCursor } from "../../utils"
 import { EditBar } from "./edit-bar"
 
+/**
+ * @public
+ */
 export function CircleArcEditBar(props: {
   x: number,
   y: number

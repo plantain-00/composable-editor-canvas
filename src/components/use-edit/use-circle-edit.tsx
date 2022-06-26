@@ -4,6 +4,9 @@ import { Circle, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
 import { EditOptions, useEdit } from "./use-edit"
 
+/**
+ * @public
+ */
 export function useCircleEdit<T = void>(
   onEnd: () => void,
   options?: EditOptions,

@@ -1,5 +1,8 @@
 import * as React from "react"
 
+/**
+ * @public
+ */
 export function useWindowSize() {
   const [size, setSize] = React.useState({
     width: window.innerWidth,

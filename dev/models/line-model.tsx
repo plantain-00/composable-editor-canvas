@@ -26,9 +26,6 @@ export const lineModel: Model<LineContent> = {
   render({ content, color, target, strokeWidth }) {
     return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
-  toRenderingLine(content) {
-    return content.points
-  },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
@@ -60,6 +57,7 @@ export function getPolylineGeometries(content: Omit<LineContent, "type">) {
       lines: Array.from(iteratePolylineLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
+      renderingLines: [content.points],
     }
   })
 }
