@@ -479,6 +479,18 @@ export function iteratePolygonLines(points: Position[]): Generator<[Position, Po
 export function iteratePolylineLines(points: Position[]): Generator<[Position, Position], void, unknown>;
 
 // @public (undocumented)
+export interface LastRenderingLines {
+    // (undocumented)
+    dashArray?: number[];
+    // (undocumented)
+    line: Position[][];
+    // (undocumented)
+    strokeColor: number;
+    // (undocumented)
+    strokeWidth: number;
+}
+
+// @public (undocumented)
 export interface LinearDimension extends TextStyle {
     // (undocumented)
     direct?: boolean;
@@ -650,6 +662,20 @@ export const reactSvgRenderTarget: ReactRenderTarget;
 
 // @public (undocumented)
 export interface Region extends Position, Size {
+}
+
+// @public (undocumented)
+export class RenderingLinesMerger {
+    constructor(flush: (lines: LastRenderingLines) => void);
+    // (undocumented)
+    flushLast(): void;
+    // (undocumented)
+    push(line: {
+        line: Position[];
+        strokeColor: number;
+        dashArray?: number[];
+        strokeWidth: number;
+    }): void;
 }
 
 // @public (undocumented)
@@ -1171,6 +1197,9 @@ export function useUndoRedo<T>(defaultState: T): {
 };
 
 // @public (undocumented)
+export function useValueChanged<T>(value: T, callback: (lastValue: T) => true | void): void;
+
+// @public (undocumented)
 export function useWheelScroll<T extends HTMLElement>(maxOffsetX?: number, maxOffsetY?: number): {
     ref: React_2.MutableRefObject<T | null>;
     x: number;
@@ -1257,7 +1286,7 @@ export function zoomToFit(bounding: TwoPointsFormRegion | undefined, { width, he
 
 // Warnings were encountered during analysis:
 //
-// dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:9:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
+// dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:12:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

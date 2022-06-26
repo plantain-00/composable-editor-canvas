@@ -1,5 +1,8 @@
 import * as React from "react"
 
+/**
+ * @public
+ */
 export function useWheelScroll<T extends HTMLElement>(
   maxOffsetX = -1,
   maxOffsetY = -1,

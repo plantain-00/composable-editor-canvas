@@ -31,9 +31,6 @@ export const polygonModel: Model<PolygonContent> = {
   render({ content, color, target, strokeWidth }) {
     return target.renderPolygon(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
-  toRenderingLine(content) {
-    return polygonToPolyline(content.points)
-  },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
@@ -66,6 +63,7 @@ function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
       lines: Array.from(iteratePolygonLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
+      renderingLines: [polygonToPolyline(content.points)],
     }
   })
 }

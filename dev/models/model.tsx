@@ -28,7 +28,6 @@ export interface Model<T> {
     contents: readonly BaseContent[]
     scale: number
   }): V
-  toRenderingLine?(content: Omit<T, 'type'>): Position[] | undefined
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, scale: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {
@@ -36,11 +35,7 @@ export interface Model<T> {
     angleSnapStartPoint?: Position
   } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
-  getGeometries?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): {
-    lines: [Position, Position][]
-    points: Position[]
-    bounding?: TwoPointsFormRegion
-  }
+  getGeometries?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
 }
@@ -57,7 +52,7 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
+interface Geometries {
   lines: [Position, Position][]
   points: Position[]
   bounding?: TwoPointsFormRegion
@@ -65,7 +60,10 @@ const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, {
     points: Position[]
     lines: [Position, Position][]
   }[]
-}>()
+  renderingLines?: Position[][]
+}
+
+const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, Geometries>()
 const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 

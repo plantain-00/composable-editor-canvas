@@ -3,6 +3,9 @@ import { EllipseArc, Position, rotatePositionByCenter } from "../../utils"
 import { getAngleSnapPosition } from "../use-create/use-circle-click-create"
 import { EditOptions, useEdit } from "./use-edit"
 
+/**
+ * @public
+ */
 export function useEllipseArcEdit<T = void>(
   onEnd: () => void,
   options?: EditOptions,

@@ -3,6 +3,9 @@ import * as React from "react"
 import { getAngleSnapPosition, useEllipseClickCreate, useKey } from ".."
 import { EllipseArc, getEllipseAngle, Position } from "../../utils"
 
+/**
+ * @public
+ */
 export function useEllipseArcClickCreate(
   type: 'ellipse center' | 'ellipse endpoint' | undefined,
   onEnd: (arc: EllipseArc) => void,

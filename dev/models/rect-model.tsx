@@ -40,10 +40,6 @@ export const rectModel: Model<RectContent> = {
     }
     return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { strokeColor: color, angle: content.angle, strokeWidth, fillColor: content.fillColor })
   },
-  toRenderingLine(content) {
-    const { points } = getRectGeometries(content)
-    return polygonToPolyline(points)
-  },
   getOperatorRenderPosition(content) {
     const { points } = getRectGeometries(content)
     return points[0]
@@ -117,6 +113,7 @@ export function getRectGeometries(content: Omit<RectContent, "type">) {
       lines: Array.from(iteratePolygonLines(points)),
       points,
       bounding: getPointsBounding(points),
+      renderingLines: [polygonToPolyline(points)],
     }
   })
 }

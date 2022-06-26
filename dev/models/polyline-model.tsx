@@ -11,9 +11,6 @@ export const polylineModel: Model<LineContent> = {
   render({ content, color, target, strokeWidth }) {
     return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
   },
-  toRenderingLine(content) {
-    return content.points
-  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolyLineContent) }))
   },

@@ -1,5 +1,8 @@
 import * as React from "react"
 
+/**
+ * @public
+ */
 export function RotationBar(props: {
   scale?: number
   rotateStickLength?: number

@@ -3,6 +3,9 @@ import * as React from "react"
 import { getAngleSnapPosition, useCursorInput, useKey } from ".."
 import { getPointByLengthAndDirection, getTwoPointsDistance, Position } from "../../utils"
 
+/**
+ * @public
+ */
 export function useLineClickCreate(
   enabled: boolean,
   onEnd: (line: Position[]) => void,

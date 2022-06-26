@@ -4,6 +4,9 @@ import { useKey } from ".."
 import { Arc, Position } from "../../utils"
 import { getAngleSnapPosition, useCircleClickCreate } from "./use-circle-click-create"
 
+/**
+ * @public
+ */
 export function useCircleArcClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
   onEnd: (arc: Arc) => void,

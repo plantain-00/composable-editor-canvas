@@ -43,10 +43,6 @@ export const ellipseModel: Model<EllipseContent> = {
     }
     return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
   },
-  toRenderingLine(content) {
-    const { points } = getEllipseGeometries(content)
-    return points
-  },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }
   },
@@ -154,6 +150,7 @@ export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
       lines: Array.from(iteratePolygonLines(points)),
       points,
       bounding: getPointsBounding(points),
+      renderingLines: [points],
     }
   })
 }

@@ -2,6 +2,9 @@ import * as React from "react"
 import { isSamePoint, Position } from "../../utils"
 import { EditBar, EditBarPosition } from "./edit-bar"
 
+/**
+ * @public
+ */
 export function PolylineEditBar(props: {
   points: Position[],
   offset?: Position & { pointIndexes: number[] }

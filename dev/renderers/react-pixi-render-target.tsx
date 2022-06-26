@@ -8,34 +8,10 @@ const PixiContainer: React.FC<PropsWithChildren<_ReactPixi.IContainer>> = Contai
 export const reactPixiRenderTarget: ReactRenderTarget = {
   type: '@inlet/react-pixi',
   renderResult(children, width, height, options) {
-    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
-    const x = options?.transform?.x ?? 0
-    const y = options?.transform?.y ?? 0
-    const scale = options?.transform?.scale ?? 1
-    const backgroundColor = options?.backgroundColor ?? 0xffffff
-    const ref = React.useRef<Stage & { app: PIXI.Application } | null>(null)
-    React.useEffect(() => {
-      if (ref.current) {
-        ref.current.app.renderer.backgroundColor = backgroundColor
-      }
-    }, [backgroundColor])
     return (
-      <Stage
-        options={{
-          backgroundColor,
-          width,
-          height,
-          antialias: true,
-        }}
-        ref={ref}
-        width={width}
-        height={height}
-        {...options?.attributes}
-      >
-        <PixiContainer position={[width / 2 + x, height / 2 + y]} pivot={[width / 2, height / 2]} scale={scale} >
-          {children}
-        </PixiContainer>
-      </Stage>
+      <RenderResult width={width} height={height} options={options}>
+        {children}
+      </RenderResult>
     )
   },
   renderEmpty() {
@@ -47,8 +23,15 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
     const baseY = options?.base?.y ?? 0
     const translateX = options?.translate?.x ?? 0
     const translateY = options?.translate?.y ?? 0
+    const p: { angle?: number, rotation?: number } = {}
+    if (options?.angle) {
+      p.angle = options.angle
+    }
+    if (options?.rotation) {
+      p.rotation = options.rotation
+    }
     return (
-      <PixiContainer position={[baseX + translateX, baseY + translateY]} pivot={[baseX, baseY]} angle={options?.angle ?? 0} rotation={options?.rotation ?? 0} >
+      <PixiContainer position={[baseX + translateX, baseY + translateY]} pivot={[baseX, baseY]} {...p}>
         {children}
       </PixiContainer>
     )
@@ -83,6 +66,55 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
   },
 }
 
+function RenderResult(props: {
+  children: JSX.Element[]
+  width: number
+  height: number
+  options?: Partial<{
+    attributes: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
+      style: React.CSSProperties;
+    }>;
+    transform: {
+      x: number;
+      y: number;
+      scale: number;
+    };
+    backgroundColor: number;
+    debug: boolean;
+  }>,
+}) {
+  const children = props.children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
+  const { options, width, height } = props
+  const x = options?.transform?.x ?? 0
+  const y = options?.transform?.y ?? 0
+  const scale = options?.transform?.scale ?? 1
+  const backgroundColor = options?.backgroundColor ?? 0xffffff
+  const ref = React.useRef<Stage & { app: PIXI.Application } | null>(null)
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.app.renderer.backgroundColor = backgroundColor
+    }
+  }, [backgroundColor])
+  return (
+    <Stage
+      options={{
+        backgroundColor,
+        width,
+        height,
+        antialias: true,
+      }}
+      ref={ref}
+      width={width}
+      height={height}
+      {...options?.attributes}
+    >
+      <PixiContainer position={[width / 2 + x, height / 2 + y]} pivot={[width / 2, height / 2]} scale={scale} >
+        {children}
+      </PixiContainer>
+    </Stage>
+  )
+}
+
 function RectGraphic(props: {
   x: number
   y: number
@@ -99,6 +131,9 @@ function RectGraphic(props: {
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
     if (props.angle !== undefined) {
       g.angle = props.angle
+    }
+    if (props.rotation !== undefined) {
+      g.rotation = props.rotation
     }
     g.position.x = props.x + props.width / 2
     g.position.y = props.y + props.height / 2

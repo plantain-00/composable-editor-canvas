@@ -1,6 +1,9 @@
 import * as React from "react"
 import { allDirections, getResizeCursor, ResizeDirection } from "../.."
 
+/**
+ * @public
+ */
 export function ResizeBar(props: {
   scale?: number
   resizeSize?: number

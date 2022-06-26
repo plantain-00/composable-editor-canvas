@@ -1,6 +1,9 @@
 import * as React from "react"
 import { Position, Region } from "../utils"
 
+/**
+ * @public
+ */
 export function useRegionAlignment(delta: number) {
   const [regionAlignmentX, setRegionAlignmentX] = React.useState<number>()
   const [regionAlignmentY, setRegionAlignmentY] = React.useState<number>()

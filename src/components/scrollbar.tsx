@@ -2,6 +2,9 @@ import * as React from "react"
 
 import { useDragMove } from "."
 
+/**
+ * @public
+ */
 export function Scrollbar(props: {
   value: number
   type: 'horizontal' | 'vertical'

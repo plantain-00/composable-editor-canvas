@@ -27,7 +27,7 @@ export default {
   },
   lint: {
     ts: `eslint --ext .js,.ts ${tsFiles}`,
-    export: `no-unused-export "src/**/*.ts" --strict --need-module tslib`,
+    export: `no-unused-export "src/**/*.ts" "src/**/*.tsx" --strict --need-module tslib`,
     markdown: `markdownlint README.md`,
     typeCoverage: 'type-coverage -p src/tsconfig.nodejs.json --strict',
     typeCoverageDev: 'type-coverage -p dev --strict'

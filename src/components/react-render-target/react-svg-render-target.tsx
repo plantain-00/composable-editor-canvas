@@ -2,6 +2,9 @@ import * as React from "react"
 import { ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { polygonToPolyline } from "../../utils"
 
+/**
+ * @public
+ */
 export const reactSvgRenderTarget: ReactRenderTarget = {
   type: 'svg',
   renderResult(children, width, height, options) {
@@ -139,6 +142,9 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
   },
 }
 
+/**
+ * @public
+ */
 export function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
   const angleInRadians = angleInDegrees * Math.PI / 180
   return {
@@ -147,15 +153,24 @@ export function polarToCartesian(cx: number, cy: number, radius: number, angleIn
   }
 }
 
+/**
+ * @public
+ */
 export function getColorString(color: number) {
   const s = color.toString(16)
   return `#${'0'.repeat(6 - s.length)}${s}`
 }
 
+/**
+ * @public
+ */
 export function colorStringToNumber(color: string) {
   return +`0x${color.slice(1)}`
 }
 
+/**
+ * @public
+ */
 export function getRotateTransform(
   x: number,
   y: number,

@@ -3,6 +3,9 @@ import * as React from "react"
 import { getDefaultZoomOption, ZoomOptions } from "."
 import { Position } from "../utils"
 
+/**
+ * @public
+ */
 export function useWheelZoom<T extends HTMLElement>(
   options?: Partial<ZoomOptions & {
     onChange(oldScale: number, newScale: number, cursor: Position): void

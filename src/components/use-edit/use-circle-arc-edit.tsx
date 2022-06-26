@@ -3,6 +3,9 @@ import { Arc, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
 import { EditOptions, useEdit } from "./use-edit"
 
+/**
+ * @public
+ */
 export function useCircleArcEdit<T = void>(
   onEnd: () => void,
   options?: EditOptions,

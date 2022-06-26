@@ -56,17 +56,22 @@ export function getBlockGeometries(content: Omit<BlockContent, "type" | 'id' | '
   return getGeometriesFromCache(content, () => {
     const lines: [Position, Position][] = []
     const points: Position[] = []
+    const renderingLines: Position[][] = []
     content.contents.forEach((c) => {
       const r = getModel(c.type)?.getGeometries?.(c)
       if (r) {
         lines.push(...r.lines)
         points.push(...r.points)
+        if (r.renderingLines) {
+          renderingLines.push(...r.renderingLines)
+        }
       }
     })
     return {
       lines,
       points,
       bounding: getPointsBounding(points),
+      renderingLines,
     }
   })
 }

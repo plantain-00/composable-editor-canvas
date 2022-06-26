@@ -59,6 +59,9 @@ export interface UseSelectedOptions<T> {
   maxCount: number
 }
 
+/**
+ * @public
+ */
 export function isSelected<T extends SelectPath = SelectPath>(value: T, selected: readonly T[]) {
   return selected.some((v) => isSamePath(value, v))
 }

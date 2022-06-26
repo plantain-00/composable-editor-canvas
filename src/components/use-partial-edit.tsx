@@ -2,6 +2,9 @@ import type { Patch } from "immer/dist/types/types-external"
 import * as React from "react"
 import { SelectPath } from "./use-selected"
 
+/**
+ * @public
+ */
 export function usePartialEdit<T>(content: T, options?: Partial<{
   onEditingContentPathChange: (content: T) => void
 }>) {
@@ -20,6 +23,9 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
   }
 }
 
+/**
+ * @public
+ */
 export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   if (path && path.length > 0) {
     return patches.map((p) => ({ ...p, path: [...path, ...p.path] }))

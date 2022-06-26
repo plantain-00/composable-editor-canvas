@@ -3,6 +3,9 @@ import * as React from "react"
 import { DragMask, getAngleSnapPosition, useKey } from "."
 import { getResizeCursor, Position, Region, ResizeDirection } from ".."
 
+/**
+ * @public
+ */
 export function useDragResize(
   onDragEnd: () => void,
   options?: Partial<{
@@ -64,6 +67,9 @@ export function useDragResize(
   }
 }
 
+/**
+ * @public
+ */
 export function getResizeOffset(
   startPosition: Position,
   cursorPosition: Position,
