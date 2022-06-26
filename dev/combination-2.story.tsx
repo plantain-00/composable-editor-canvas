@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion, useEvent } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
@@ -14,7 +14,7 @@ import { mirrorCommand } from './commands/mirror'
 import { cloneCommand } from './commands/clone'
 import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
-import { getAllRendererTypes, registerRenderer, Renderer, visibleContents, contentVisible } from './renderers/renderer'
+import { getAllRendererTypes, registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
@@ -48,6 +48,7 @@ import { linearDimensionModel } from './models/linear-dimension-model'
 import { groupModel } from './models/group-model'
 import { createGroupCommand } from './commands/create-group'
 import RTree from 'rtree'
+import { fillCommand } from './commands/fill'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -97,6 +98,7 @@ registerCommand(measureCommand)
 registerCommand(createRadialDimensionCommand)
 registerCommand(createLinearDimensionCommand)
 registerCommand(createGroupCommand)
+registerCommand(fillCommand)
 
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
@@ -223,7 +225,7 @@ export default () => {
       <div style={{ position: 'fixed', width: '50%' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -307,7 +309,7 @@ const CADEditor = React.forwardRef((props: {
       for (const content of newContents) {
         const geometries = getModel(content.type)?.getGeometries?.(content, newState)
         if (geometries?.bounding) {
-          rtree.insert({
+          rtree?.insert({
             x: geometries.bounding.start.x,
             y: geometries.bounding.start.y,
             w: geometries.bounding.end.x - geometries.bounding.start.x,
@@ -318,7 +320,7 @@ const CADEditor = React.forwardRef((props: {
       for (const content of removedContents) {
         const geometries = getModel(content.type)?.getGeometries?.(content, oldState)
         if (geometries?.bounding) {
-          rtree.remove({
+          rtree?.remove({
             x: geometries.bounding.start.x,
             y: geometries.bounding.start.y,
             w: geometries.bounding.end.x - geometries.bounding.start.x,
@@ -577,7 +579,7 @@ const CADEditor = React.forwardRef((props: {
     }
   }
 
-  const onClick = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+  const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange)
     // if the operation is command, start it
@@ -596,13 +598,13 @@ const CADEditor = React.forwardRef((props: {
         onStartSelect(e)
       }
     }
-  }
-  const onMouseDown = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+  })
+  const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     }
-  }
-  const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+  })
+  const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
     const p = reverseTransformPosition(viewportPosition, transform)
@@ -616,7 +618,7 @@ const CADEditor = React.forwardRef((props: {
       // hover by position
       setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible))
     }
-  }
+  })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected) => {
     setLastOperation(p)
@@ -649,14 +651,17 @@ const CADEditor = React.forwardRef((props: {
       onCommandMove(getSnapPoint(position, editingContent, getContentsInRange), inputPosition)
     }
   }
-  const onContextMenu = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+  const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (lastOperation) {
       startOperation(lastOperation)
     }
     e.preventDefault()
-  }
-  const [rtree, setRTree] = React.useState(RTree())
+  })
+  const [rtree, setRTree] = React.useState<ReturnType<typeof RTree>>()
   const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
+    if (!rtree) {
+      return []
+    }
     return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
   }
   const searchResult = getContentsInRange({
@@ -667,7 +672,7 @@ const CADEditor = React.forwardRef((props: {
   visibleContents.add(...searchResult)
   visibleContents.add(...assistentContents)
   const simplified = searchResult.length > 1000
-  
+
   const rebuildRTree = (contents: readonly BaseContent[]) => {
     const newRTree = RTree()
     for (const content of contents) {
@@ -692,23 +697,25 @@ const CADEditor = React.forwardRef((props: {
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
       <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
-        <Renderer
+        {rtree && <MemoizedRenderer
           type={renderTarget}
           contents={editingContent}
-          previewPatches={previewPatches}
-          assistentContents={assistentContents}
+          previewPatches={previewPatches.length === 0 ? undefined : previewPatches}
+          assistentContents={assistentContents.length === 0 ? undefined : assistentContents}
           selected={selected}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
-          {...transform}
+          x={transform.x}
+          y={transform.y}
+          scale={transform.scale}
           width={width}
           height={height}
           backgroundColor={props.backgroundColor}
           simplified={simplified}
-        />
+        />}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
         {commandMasks}
         {selectionInput}

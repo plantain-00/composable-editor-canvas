@@ -50,10 +50,10 @@ export const reactPixiRenderTarget: ReactRenderTarget = {
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
-    return <CircleGraphic cx={cx} cy={cy} r={r} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} />
+    return <CircleGraphic cx={cx} cy={cy} r={r} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} fillColor={options?.fillColor} />
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return <EllipseGraphic cx={cx} cy={cy} rx={rx} ry={ry} strokeColor={options?.strokeColor} angle={options?.angle} rotation={options?.rotation} strokeWidth={options?.strokeWidth} />
+    return <EllipseGraphic cx={cx} cy={cy} rx={rx} ry={ry} strokeColor={options?.strokeColor} angle={options?.angle} rotation={options?.rotation} strokeWidth={options?.strokeWidth} fillColor={options?.fillColor} />
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     return <ArcGraphic cx={cx} cy={cy} r={r} startAngle={startAngle} endAngle={endAngle} strokeColor={options?.strokeColor} strokeWidth={options?.strokeWidth} />
@@ -129,6 +129,9 @@ function RectGraphic(props: {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
+    if (props.fillColor !== undefined) {
+      g.beginFill(props.fillColor)
+    }
     if (props.angle !== undefined) {
       g.angle = props.angle
     }
@@ -137,9 +140,6 @@ function RectGraphic(props: {
     }
     g.position.x = props.x + props.width / 2
     g.position.y = props.y + props.height / 2
-    if (props.fillColor) {
-      g.beginFill(props.fillColor)
-    }
     g.drawRect(-props.width / 2, -props.height / 2, props.width, props.height)
   }, [props.x, props.y, props.width, props.height, props.strokeColor, props.angle, props.rotation, props.strokeWidth, props.fillColor])
   return <Graphics draw={draw} />
@@ -180,12 +180,16 @@ function CircleGraphic(props: {
   r: number
   strokeColor?: number
   strokeWidth?: number
+  fillColor?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
+    if (props.fillColor !== undefined) {
+      g.beginFill(props.fillColor)
+    }
     g.drawCircle(props.cx, props.cy, props.r)
-  }, [props.cx, props.cy, props.r, props.strokeColor, props.strokeWidth])
+  }, [props.cx, props.cy, props.r, props.strokeColor, props.strokeWidth, props.fillColor])
   return <Graphics draw={draw} />
 }
 
@@ -198,10 +202,14 @@ function EllipseGraphic(props: {
   rotation?: number
   strokeColor?: number
   strokeWidth?: number
+  fillColor?: number
 }) {
   const draw = React.useCallback((g: PIXI.Graphics) => {
     g.clear()
     g.lineStyle(props.strokeWidth ?? 1, props.strokeColor)
+    if (props.fillColor !== undefined) {
+      g.beginFill(props.fillColor)
+    }
     if (props.angle !== undefined) {
       g.angle = props.angle
     }
@@ -211,7 +219,7 @@ function EllipseGraphic(props: {
     g.position.x = props.cx
     g.position.y = props.cy
     g.drawEllipse(0, 0, props.rx, props.ry)
-  }, [props.cx, props.cy, props.rx, props.ry, props.angle, props.rotation, props.strokeColor, props.strokeWidth])
+  }, [props.cx, props.cy, props.rx, props.ry, props.angle, props.rotation, props.strokeColor, props.strokeWidth, props.fillColor])
   return <Graphics draw={draw} />
 }
 

@@ -1,9 +1,9 @@
 import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
 import { ArcContent, getArcGeometries } from './arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
 
-export type CircleContent = StrokeBaseContent<'circle'> & Circle
+export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle
 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
@@ -21,6 +21,9 @@ export const circleModel: Model<CircleContent> = {
     content.x = p.x
     content.y = p.y
   },
+  fill(content, color) {
+    content.fillColor = color
+  },
   break(content, points) {
     if (points.length < 2) {
       return
@@ -35,17 +38,21 @@ export const circleModel: Model<CircleContent> = {
     }) as ArcContent)
   },
   render({ content, color, target, strokeWidth }) {
+    const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+    if (content.fillColor !== undefined) {
+      strokeWidth = 0
+    }
     if (content.dashArray) {
       const { points } = getCircleGeometries(content)
-      return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+      return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderCircle(content.x, content.y, content.r, { strokeColor: color, strokeWidth })
+    return target.renderCircle(content.x, content.y, content.r, { [colorField]: color, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return content
   },
   getDefaultColor(content) {
-    return content.strokeColor
+    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -114,6 +121,7 @@ export const circleModel: Model<CircleContent> = {
   getCircle(content) {
     return {
       circle: content,
+      fill: content.fillColor !== undefined,
       bounding: {
         start: { x: content.x - content.r, y: content.y - content.r },
         end: { x: content.x + content.r, y: content.y + content.r },

@@ -100,9 +100,11 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
-    return <circle stroke={getColorString(options?.strokeColor ?? 0)} strokeWidth={options?.strokeWidth} cx={cx} cy={cy} r={r} fill="none" />
+    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    return <circle stroke={getColorString(options?.strokeColor ?? 0)} strokeWidth={options?.strokeWidth} cx={cx} cy={cy} r={r} fill={fill} />
   },
   renderEllipse(cx, cy, rx, ry, options) {
+    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     return <ellipse
       stroke={getColorString(options?.strokeColor ?? 0)}
       strokeWidth={options?.strokeWidth}
@@ -110,7 +112,7 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       cy={cy}
       rx={rx}
       ry={ry}
-      fill="none"
+      fill={fill}
       transform={getRotateTransform(cx, cy, options)}
     />
   },

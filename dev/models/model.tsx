@@ -11,6 +11,10 @@ export interface StrokeBaseContent<T extends string = string> extends BaseConten
   strokeColor?: number
 }
 
+export interface FillFields {
+  fillColor?: number
+}
+
 export interface Model<T> {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
@@ -38,6 +42,7 @@ export interface Model<T> {
   getGeometries?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
+  fill?(content: Omit<T, 'type'>, color: number): void
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
