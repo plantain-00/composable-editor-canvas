@@ -8,8 +8,8 @@ import { isPolyLineContent } from "../models/polyline-model"
 export function Renderer(props: {
   type?: string
   contents: readonly BaseContent[]
-  previewPatches: Patch[]
-  assistentContents: readonly BaseContent[]
+  previewPatches?: Patch[]
+  assistentContents?: readonly BaseContent[]
   selected: readonly number[][]
   othersSelectedContents: readonly { selection: number[], operator: string }[]
   hovering: readonly number[][]
@@ -39,8 +39,9 @@ export function Renderer(props: {
   }
   const now = Date.now()
 
-  const previewContents = props.previewPatches.length > 0 ? applyPatches(props.contents, props.previewPatches) : props.contents
-  const previewContentIndexes = new Set(props.previewPatches.map((p) => p.path[0] as number))
+  const previewPatches = props.previewPatches ?? []
+  const previewContents = previewPatches.length > 0 ? applyPatches(props.contents, previewPatches) : props.contents
+  const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
   visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
 
   const backgroundColor = getColorString(props.backgroundColor)
@@ -120,7 +121,7 @@ export function Renderer(props: {
 
   const strokeWidth = 1 / scale
 
-  if (props.previewPatches.length === 0 && props.simplified) {
+  if (previewPatches.length === 0 && props.simplified) {
     children = renderCache.get(props.contents, () => {
       props.contents.forEach((content) => {
         const model = getModel(content.type)
@@ -182,7 +183,7 @@ export function Renderer(props: {
       }
     }
 
-    props.assistentContents.forEach((content) => {
+    props.assistentContents?.forEach((content) => {
       const model = getModel(content.type)
       if (!model) {
         return
@@ -212,6 +213,8 @@ export function Renderer(props: {
     backgroundColor: props.backgroundColor,
   })
 }
+
+export const MemoizedRenderer = React.memo(Renderer)
 
 const rendererCenter: Record<string, ReactRenderTarget<unknown>> = {}
 

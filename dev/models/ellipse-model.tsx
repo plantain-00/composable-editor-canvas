@@ -1,9 +1,9 @@
 import { Ellipse, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
 
-export type EllipseContent = StrokeBaseContent<'ellipse'> & Ellipse
+export type EllipseContent = StrokeBaseContent<'ellipse'> & FillFields & Ellipse
 
 export const ellipseModel: Model<EllipseContent> = {
   type: 'ellipse',
@@ -23,6 +23,9 @@ export const ellipseModel: Model<EllipseContent> = {
     content.cy = p.y
     content.angle = 2 * angle - (content.angle ?? 0)
   },
+  fill(content, color) {
+    content.fillColor = color
+  },
   break(content, points) {
     if (points.length < 2) {
       return
@@ -37,17 +40,21 @@ export const ellipseModel: Model<EllipseContent> = {
     }) as EllipseArcContent)
   },
   render({ content, color, target, strokeWidth }) {
+    const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+    if (content.fillColor !== undefined) {
+      strokeWidth = 0
+    }
     if (content.dashArray) {
       const { points } = getEllipseGeometries(content)
-      return target.renderPolygon(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+      return target.renderPolygon(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { strokeColor: color, angle: content.angle, strokeWidth })
+    return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { [colorField]: color, angle: content.angle, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }
   },
   getDefaultColor(content) {
-    return content.strokeColor
+    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -146,11 +153,18 @@ export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
       const y = content.cy + content.ry * Math.sin(angle)
       points.push(rotatePositionByEllipseCenter({ x, y }, content))
     }
+    const lines = Array.from(iteratePolygonLines(points))
     return {
-      lines: Array.from(iteratePolygonLines(points)),
+      lines,
       points,
       bounding: getPointsBounding(points),
       renderingLines: [points],
+      regions: content.fillColor !== undefined ? [
+        {
+          lines,
+          points,
+        },
+      ] : undefined,
     }
   })
 }

@@ -49,7 +49,10 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     },
     addSelection,
     setSelected(...value: readonly (T | undefined)[]) {
-      setSelected(value.filter((v): v is T => v !== undefined))
+      const s = value.filter((v): v is T => v !== undefined)
+      if (s.length !== 0 || selected.length !== 0) {
+        setSelected(s)
+      }
     },
   }
 }

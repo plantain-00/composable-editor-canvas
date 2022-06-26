@@ -1,8 +1,8 @@
 import { getPointsBounding, getSymmetryPoint, iteratePolygonLines, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
 
-export type PolygonContent = StrokeBaseContent<'polygon'> & {
+export type PolygonContent = StrokeBaseContent<'polygon'> & FillFields & {
   points: Position[]
 }
 
@@ -28,14 +28,21 @@ export const polygonModel: Model<PolygonContent> = {
     const { lines } = getPolygonGeometries(content)
     return breakPolyline(lines, intersectionPoints)
   },
+  fill(content, color) {
+    content.fillColor = color
+  },
   render({ content, color, target, strokeWidth }) {
-    return target.renderPolygon(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+    const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+    if (content.fillColor !== undefined) {
+      strokeWidth = 0
+    }
+    return target.renderPolygon(content.points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
   },
   getDefaultColor(content) {
-    return content.strokeColor
+    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolygonContent, true) }))
@@ -59,11 +66,18 @@ export const polygonModel: Model<PolygonContent> = {
 
 function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
   return getGeometriesFromCache(content, () => {
+    const lines = Array.from(iteratePolygonLines(content.points))
     return {
-      lines: Array.from(iteratePolygonLines(content.points)),
+      lines,
       points: content.points,
       bounding: getPointsBounding(content.points),
       renderingLines: [polygonToPolyline(content.points)],
+      regions: content.fillColor !== undefined ? [
+        {
+          lines,
+          points: content.points,
+        },
+      ] : undefined,
     }
   })
 }

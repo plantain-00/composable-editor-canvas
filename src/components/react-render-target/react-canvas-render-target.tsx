@@ -51,7 +51,6 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
       if (options?.angle) {
         ctx.translate(x + width / 2, y + height / 2)
         ctx.rotate(options.angle / 180 * Math.PI)
@@ -66,8 +65,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.fillStyle = getColorString(options.fillColor)
         ctx.fillRect(x, y, width, height)
       }
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-      ctx.strokeRect(x, y, width, height)
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.strokeRect(x, y, width, height)
+      }
       ctx.restore()
     }
   },
@@ -79,8 +82,6 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       if (options?.dashArray) {
         ctx.setLineDash(options.dashArray)
       }
@@ -91,7 +92,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
           ctx.lineTo(points[i].x, points[i].y)
         }
       }
-      ctx.stroke()
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.stroke()
+      }
       if (options?.fillColor !== undefined) {
         ctx.fillStyle = getColorString(options.fillColor)
         ctx.fill()
@@ -106,10 +112,17 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-      ctx.stroke()
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.lineWidth = strokeWidth
+        ctx.stroke()
+      }
+      if (options?.fillColor !== undefined) {
+        ctx.fillStyle = getColorString(options.fillColor)
+        ctx.fill()
+      }
       ctx.restore()
     }
   },
@@ -117,11 +130,18 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
-      ctx.stroke()
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.stroke()
+      }
+      if (options?.fillColor !== undefined) {
+        ctx.fillStyle = getColorString(options.fillColor)
+        ctx.fill()
+      }
       ctx.restore()
     }
   },
@@ -129,10 +149,13 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return (ctx) => {
       ctx.save()
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
-      ctx.stroke()
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.stroke()
+      }
       ctx.restore()
     }
   },
@@ -148,8 +171,6 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
   renderPath(lines, options) {
     return (ctx) => {
       ctx.beginPath()
-      ctx.lineWidth = options?.strokeWidth ?? 1
-      ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
       if (options?.dashArray) {
         ctx.setLineDash(options.dashArray)
       }
@@ -162,7 +183,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
           }
         }
       }
-      ctx.stroke()
+      const strokeWidth = options?.strokeWidth ?? 1
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.stroke()
+      }
     }
   },
 }

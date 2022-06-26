@@ -71,6 +71,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     options?: Partial<{
       strokeColor: number
       strokeWidth: number
+      fillColor: number
     }>,
   ): T
   renderEllipse(
@@ -83,6 +84,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       angle: number
       rotation: number
       strokeWidth: number
+      fillColor: number
     }>,
   ): T
   renderArc(

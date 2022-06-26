@@ -8,7 +8,7 @@ export function getContentByClickPosition<T>(
   position: Position,
   contentSelectable: (path: number[]) => boolean,
   getModel: (content: T) => {
-    getCircle?: (content: T) => { circle: Circle },
+    getCircle?: (content: T) => { circle: Circle, fill?: boolean },
     getGeometries?: (content: T, contents: readonly T[]) => {
       lines: [Position, Position][]
       regions?: {
@@ -28,7 +28,10 @@ export function getContentByClickPosition<T>(
     }
     const model = getModel(content)
     if (model?.getCircle) {
-      const { circle } = model.getCircle(content)
+      const { circle, fill } = model.getCircle(content)
+      if (fill && contentSelectable([i]) && getTwoPointsDistance(circle, position) <= circle.r) {
+        return [i]
+      }
       if (contentSelectable([i]) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
         return [i]
       }

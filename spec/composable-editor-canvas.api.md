@@ -214,6 +214,7 @@ export function getColorString(color: number): string;
 export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (path: number[]) => boolean, getModel: (content: T) => {
     getCircle?: (content: T) => {
         circle: Circle;
+        fill?: boolean;
     };
     getGeometries?: (content: T, contents: readonly T[]) => {
         lines: [Position, Position][];
@@ -583,6 +584,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     renderCircle(cx: number, cy: number, r: number, options?: Partial<{
         strokeColor: number;
         strokeWidth: number;
+        fillColor: number;
     }>): T;
     // (undocumented)
     renderEllipse(cx: number, cy: number, rx: number, ry: number, options?: Partial<{
@@ -590,6 +592,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         angle: number;
         rotation: number;
         strokeWidth: number;
+        fillColor: number;
     }>): T;
     // (undocumented)
     renderEmpty(): T;
@@ -1011,6 +1014,9 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
     mask: JSX.Element | undefined;
     cursorPosition: Position | undefined;
 };
+
+// @public (undocumented)
+export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
