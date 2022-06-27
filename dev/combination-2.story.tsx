@@ -49,6 +49,7 @@ import { groupModel } from './models/group-model'
 import { createGroupCommand } from './commands/create-group'
 import RTree from 'rtree'
 import { fillCommand } from './commands/fill'
+import { OffsetXContext } from './story-app'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -202,6 +203,7 @@ export default () => {
   const [operation, setOperation] = React.useState<string>()
   const [inputFixed, setInputFixed] = React.useState(false)
   const [backgroundColor, setBackgroundColor] = React.useState(0xffffff)
+  const offsetX = React.useContext(OffsetXContext)
 
   return (
     <div style={{ height: '100%' }}>
@@ -222,7 +224,7 @@ export default () => {
           backgroundColor={backgroundColor}
         />
       )}
-      <div style={{ position: 'fixed', width: '50%' }}>
+      <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
@@ -357,7 +359,8 @@ const CADEditor = React.forwardRef((props: {
     setY((v) => v + offset.y)
   })
   const size = useWindowSize()
-  const width = size.width / 2
+  const offsetX = React.useContext(OffsetXContext)
+  const width = size.width / 2 + offsetX
   const height = size.height
   const transform: Transform = {
     x: x + offset.x,
