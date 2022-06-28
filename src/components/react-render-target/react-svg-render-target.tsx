@@ -5,10 +5,9 @@ import { polygonToPolyline } from "../../utils"
 /**
  * @public
  */
-export const reactSvgRenderTarget: ReactRenderTarget = {
+export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidthScale: number) => JSX.Element> = {
   type: 'svg',
   renderResult(children, width, height, options) {
-    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const x = options?.transform?.x ?? 0
     const y = options?.transform?.y ?? 0
     const scale = options?.transform?.scale ?? 1
@@ -31,15 +30,14 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
           backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
-        {children}
+        {children.map((child, i) => child(i, options?.strokeWidthScale ?? 1))}
       </svg>
     )
   },
   renderEmpty() {
-    return <></>
+    return () => <></>
   },
   renderGroup(children, options) {
-    children = children.map((child, i) => child.key ? child : React.cloneElement(child, { key: i }))
     const transform: string[] = []
     if (options?.translate) {
       transform.push(`translate(${options.translate.x}, ${options.translate.y})`)
@@ -50,23 +48,26 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
         transform.push(rotateTransform)
       }
     }
-    return (
-      <g transform={transform.join(' ')}>
-        {children}
+    return (key, strokeWidthScale) => (
+      <g transform={transform.join(' ')} key={key}>
+        {children.map((child, i) => child(i, strokeWidthScale))}
       </g>
     )
   },
   renderRect(x, y, width, height, options) {
-    return <rect
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      stroke={getColorString(options?.strokeColor ?? 0)}
-      strokeWidth={options?.strokeWidth}
-      fill={options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'}
-      transform={getRotateTransform(x + width / 2, y + height / 2, options)}
-    />
+    return (key, strokeWidthScale) => (
+      <rect
+        key={key}
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+        fill={options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'}
+        transform={getRotateTransform(x + width / 2, y + height / 2, options)}
+      />
+    )
   },
   renderPolyline(points, options) {
     const { partsStyles, ...restOptions } = options ?? {}
@@ -77,10 +78,11 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return (
+      return (key, strokeWidthScale) => (
         <path
           d={d}
-          strokeWidth={options?.strokeWidth}
+          key={key}
+          strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
           stroke={getColorString(options?.strokeColor ?? 0)}
           strokeDasharray={options?.dashArray?.join(' ')}
           fill={fill}
@@ -88,54 +90,85 @@ export const reactSvgRenderTarget: ReactRenderTarget = {
       )
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return <polyline
-      points={pointsText}
-      stroke={getColorString(options?.strokeColor ?? 0)}
-      strokeWidth={options?.strokeWidth}
-      strokeDasharray={options?.dashArray?.join(' ')}
-      fill={fill}
-    />
+    return (key, strokeWidthScale) => (
+      <polyline
+        key={key}
+        points={pointsText}
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+        strokeDasharray={options?.dashArray?.join(' ')}
+        fill={fill}
+      />
+    )
   },
   renderPolygon(points, options) {
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
     const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
-    return <circle stroke={getColorString(options?.strokeColor ?? 0)} strokeWidth={options?.strokeWidth} cx={cx} cy={cy} r={r} fill={fill} />
+    return (key, strokeWidthScale) => (
+      <circle
+        key={key}
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill={fill}
+      />
+    )
   },
   renderEllipse(cx, cy, rx, ry, options) {
     const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
-    return <ellipse
-      stroke={getColorString(options?.strokeColor ?? 0)}
-      strokeWidth={options?.strokeWidth}
-      cx={cx}
-      cy={cy}
-      rx={rx}
-      ry={ry}
-      fill={fill}
-      transform={getRotateTransform(cx, cy, options)}
-    />
+    return (key, strokeWidthScale) => (
+      <ellipse
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        key={key}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+        cx={cx}
+        cy={cy}
+        rx={rx}
+        ry={ry}
+        fill={fill}
+        transform={getRotateTransform(cx, cy, options)}
+      />
+    )
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
-    return <path
-      d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
-      strokeWidth={options?.strokeWidth}
-      stroke={getColorString(options?.strokeColor ?? 0)}
-      fill="none"
-    />
+    return (key, strokeWidthScale) => (
+      <path
+        key={key}
+        d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        fill="none"
+      />
+    )
   },
   renderText(x, y, text, fillColor, fontSize, fontFamily) {
-    return <text x={x} y={y} style={{ fill: getColorString(fillColor), fontSize: `${fontSize}px`, fontFamily }}>{text}</text>
+    return (key) => (
+      <text
+        key={key}
+        x={x}
+        y={y}
+        style={{
+          fill: getColorString(fillColor),
+          fontSize: `${fontSize}px`, fontFamily
+        }}>
+        {text}
+      </text>
+    )
   },
   renderPath(lines, options) {
     const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
-    return (
+    return (key, strokeWidthScale) => (
       <path
         d={d}
-        strokeWidth={options?.strokeWidth}
+        key={key}
+        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeDasharray={options?.dashArray?.join(' ')}
         fill='none'

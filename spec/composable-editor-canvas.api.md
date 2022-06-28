@@ -571,7 +571,7 @@ export interface RadialDimension extends Circle, TextStyle {
 }
 
 // @public (undocumented)
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void>;
+export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void>;
 
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -653,6 +653,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         };
         backgroundColor: number;
         debug: boolean;
+        strokeWidthScale: number;
     }>): JSX.Element;
     // (undocumented)
     renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string): T;
@@ -661,7 +662,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
 }
 
 // @public (undocumented)
-export const reactSvgRenderTarget: ReactRenderTarget;
+export const reactSvgRenderTarget: ReactRenderTarget<(key: React_2.Key, strokeWidthScale: number) => JSX.Element>;
 
 // @public (undocumented)
 export interface Region extends Position, Size {
@@ -1020,6 +1021,9 @@ export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
+
+// @public (undocumented)
+export function useLastValidValue<T>(value: T, isValid: (value: T) => boolean, defaultValue?: T): T;
 
 // @public (undocumented)
 export function useLineAlignment(delta: number): {

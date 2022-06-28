@@ -38,8 +38,8 @@ export function useCursorInput(
       <span
         style={{
           position: 'absolute',
-          left: `${inputPosition.x + 10}px`,
-          top: `${inputPosition.y - 5}px`,
+          left: `${Math.min(inputPosition.x + 10, window.innerWidth - 54)}px`,
+          top: `${Math.min(inputPosition.y - 5, window.innerHeight - 22)}px`,
         }}
       >
         {message && <span>{message}</span>}

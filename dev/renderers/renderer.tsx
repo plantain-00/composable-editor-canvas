@@ -1,9 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { getColorString, isSelected, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { isLineContent, lineModel } from "../models/line-model"
+import { getColorString, isSelected, ReactRenderTarget, RenderingLinesMerger, useLastValidValue, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
 import { BaseContent, getContentByIndex, getModel } from "../models/model"
-import { isPolyLineContent } from "../models/polyline-model"
 
 export function Renderer(props: {
   type?: string
@@ -21,19 +19,12 @@ export function Renderer(props: {
   backgroundColor: number
   simplified: boolean
 } & React.DOMAttributes<HTMLOrSVGElement>) {
-  const scale = props.scale
-  useValueChanged(props.scale, (lastScale) => {
-    const r = lastScale < scale ? scale / lastScale : lastScale / scale
-    if (r < 2) {
-      return true
-    }
-    renderCache.clear()
-    return
-  })
+  const target = rendererCenter[props.type || getAllRendererTypes()[0]]
+
+  const strokeWidthScale = useLastValidValue(1 / props.scale, () => !props.simplified, 1)
   useValueChanged(props.type, () => renderCache.clear())
   useValueChanged(props.backgroundColor, () => renderCache.clear())
 
-  const target = rendererCenter[props.type || getAllRendererTypes()[0]]
   if (!target) {
     return null
   }
@@ -70,29 +61,6 @@ export function Renderer(props: {
       return
     }
     color = transformColor(color)
-    if (!isLineContent(content) && !isPolyLineContent(content)) {
-      const bounding = model.getCircle?.(content).bounding ?? model.getGeometries?.(content, props.contents).bounding
-      if (bounding) {
-        const x = bounding.end.x - bounding.start.x
-        const y = bounding.end.y - bounding.start.y
-        if (x <= strokeWidth || y <= strokeWidth) {
-          const ContentRender = lineModel.render
-          if (ContentRender) {
-            if (props.simplified) {
-              merger.push({
-                line: [bounding.start, bounding.end],
-                strokeColor: color,
-                strokeWidth,
-              })
-            } else {
-              merger.flushLast()
-              children.push(ContentRender({ content: { points: [bounding.start, bounding.end] }, color, target, strokeWidth, contents: props.contents, scale }))
-            }
-          }
-          return
-        }
-      }
-    }
     if (props.simplified && model.getGeometries) {
       const { renderingLines } = model.getGeometries(content, props.contents)
       if (renderingLines) {
@@ -107,19 +75,19 @@ export function Renderer(props: {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, scale }))
+          children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
         }
       }
     } else {
       const ContentRender = model.render
       if (ContentRender) {
         merger.flushLast()
-        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents, scale }))
+        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
       }
     }
   }
 
-  const strokeWidth = 1 / scale
+  const strokeWidth = 1
 
   if (previewPatches.length === 0 && props.simplified) {
     children = renderCache.get(props.contents, () => {
@@ -178,7 +146,7 @@ export function Renderer(props: {
         const RenderIfSelected = getModel(content.type)?.renderIfSelected
         if (RenderIfSelected) {
           merger.flushLast()
-          children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth, scale }))
+          children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth }))
         }
       }
     }
@@ -211,6 +179,8 @@ export function Renderer(props: {
       scale: props.scale,
     },
     backgroundColor: props.backgroundColor,
+    debug: true,
+    strokeWidthScale,
   })
 }
 

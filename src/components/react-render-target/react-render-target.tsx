@@ -17,6 +17,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       },
       backgroundColor: number,
       debug: boolean
+      strokeWidthScale: number
     }>
   ): JSX.Element
   renderEmpty(): T

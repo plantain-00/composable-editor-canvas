@@ -30,9 +30,8 @@ export interface Model<T> {
     target: ReactRenderTarget<V>
     strokeWidth: number
     contents: readonly BaseContent[]
-    scale: number
   }): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, scale: number }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {
     editPoints: EditPoint<BaseContent>[]

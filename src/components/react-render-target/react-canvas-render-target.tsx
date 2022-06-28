@@ -5,7 +5,7 @@ import { polygonToPolyline } from "../../utils"
 /**
  * @public
  */
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D) => void> = {
+export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void> = {
   type: 'canvas',
   renderResult(children, width, height, options) {
     return (
@@ -17,6 +17,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         transform={options?.transform}
         backgroundColor={options?.backgroundColor}
         debug={options?.debug}
+        strokeWidthScale={options?.strokeWidthScale}
       />
     )
   },
@@ -26,7 +27,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderGroup(children, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       if (options?.translate) {
         ctx.translate(options.translate.x, options.translate.y)
@@ -42,13 +43,13 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.translate(-options.base.x, - options.base.y)
       }
       children.forEach((c) => {
-        c(ctx)
+        c(ctx, strokeWidthScale)
       })
       ctx.restore()
     }
   },
   renderRect(x, y, width, height, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       ctx.beginPath()
       if (options?.angle) {
@@ -65,7 +66,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.fillStyle = getColorString(options.fillColor)
         ctx.fillRect(x, y, width, height)
       }
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
@@ -79,7 +80,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -92,7 +93,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
           ctx.lineTo(points[i].x, points[i].y)
         }
       }
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
@@ -109,11 +110,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.lineWidth = strokeWidth
@@ -127,12 +128,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       ctx.beginPath()
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
@@ -146,11 +147,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
@@ -169,7 +170,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderPath(lines, options) {
-    return (ctx) => {
+    return (ctx, strokeWidthScale) => {
       ctx.beginPath()
       if (options?.dashArray) {
         ctx.setLineDash(options.dashArray)
@@ -183,7 +184,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
           }
         }
       }
-      const strokeWidth = options?.strokeWidth ?? 1
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
@@ -199,7 +200,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  draws: ((ctx: CanvasRenderingContext2D) => void)[]
+  draws: ((ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void)[]
   transform?: {
     x: number
     y: number
@@ -207,6 +208,7 @@ function Canvas(props: {
   }
   backgroundColor?: number
   debug?: boolean
+  strokeWidthScale?: number
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   React.useEffect(() => {
@@ -232,7 +234,7 @@ function Canvas(props: {
           )
         }
         for (const draw of props.draws) {
-          draw(ctx)
+          draw(ctx, props.strokeWidthScale ?? 1)
         }
         ctx.restore()
         if (props.debug) {
