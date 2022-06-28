@@ -17,7 +17,7 @@ import { deleteCommand } from './commands/delete'
 import { getAllRendererTypes, registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
-import { ellipseModel } from './models/ellipse-model'
+import { EllipseContent, ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
@@ -145,24 +145,34 @@ export default () => {
     setInitialState(undefined)
     setCoEdit(false)
     setTimeout(() => {
-      const json: (CircleContent | RectContent)[] = []
+      const json: (CircleContent | RectContent | EllipseContent)[] = []
       const max = 100
       for (let i = 0; i < max; i++) {
         for (let j = 0; j < max; j++) {
-          if (Math.random() < 0.5) {
+          const r = Math.random()
+          if (r < 0.3) {
             json.push({
               type: 'circle',
               x: i * 100 + (Math.random() - 0.5) * 50,
               y: j * 100 + (Math.random() - 0.5) * 50,
               r: Math.random() * 100,
             })
-          } else {
+          } else if (r < 0.7) {
             json.push({
               type: 'rect',
               x: i * 100 + (Math.random() - 0.5) * 50,
               y: j * 100 + (Math.random() - 0.5) * 50,
               width: Math.random() * 100,
               height: Math.random() * 100,
+              angle: Math.random() * 360 - 180,
+            })
+          } else {
+            json.push({
+              type: 'ellipse',
+              cx: i * 100 + (Math.random() - 0.5) * 50,
+              cy: j * 100 + (Math.random() - 0.5) * 50,
+              rx: Math.random() * 100,
+              ry: Math.random() * 100,
               angle: Math.random() * 360 - 180,
             })
           }
@@ -371,6 +381,22 @@ const CADEditor = React.forwardRef((props: {
       y: height / 2,
     },
   }
+  useKey((k) => k.key === 'ArrowLeft' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+    setX((v) => v + width / 10)
+    e.preventDefault()
+  })
+  useKey((k) => k.key === 'ArrowRight' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+    setX((v) => v - width / 10)
+    e.preventDefault()
+  })
+  useKey((k) => k.key === 'ArrowUp' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+    setY((v) => v + height / 10)
+    e.preventDefault()
+  })
+  useKey((k) => k.key === 'ArrowDown' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+    setY((v) => v - height / 10)
+    e.preventDefault()
+  })
 
   const selectedContents: { content: BaseContent, path: number[] }[] = []
   editingContent.forEach((s, i) => {
