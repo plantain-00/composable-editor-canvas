@@ -1,11 +1,11 @@
 import produce from "immer"
-import { getPointsBounding, getSymmetryPoint, Position, rotatePositionByCenter, TwoPointsFormRegion, WeakmapCache2 } from "../../src"
+import { getPointsBounding, getSymmetryPoint, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
-import { BaseContent, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
+import { BaseContent, Geometries, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
 
 export type BlockReferenceContent = BaseContent<'block reference'> & Position & {
-  id: number
+  refId: number
   angle: number
 }
 
@@ -16,7 +16,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     content.y += offset.y
   },
   rotate(content, center, angle, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       const p = rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle)
       content.x = p.x - block.base.x
@@ -25,7 +25,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     }
   },
   explode(content, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       const result: BaseContent[] = []
       block.contents.forEach((c) => {
@@ -39,7 +39,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     return []
   },
   mirror(content, line, angle, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       const p = getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
       content.x = p.x - block.base.x
@@ -48,7 +48,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     }
   },
   render({ content, target, color, strokeWidth, contents }) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       const children = renderBlockChildren(block, target, strokeWidth, contents, color)
       return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
@@ -56,14 +56,14 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     return target.renderEmpty()
   },
   getOperatorRenderPosition(content, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       return { x: content.x + block.base.x, y: content.y + block.base.y }
     }
     return content
   },
   getEditPoints(content, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (!block) {
       return
     }
@@ -89,7 +89,7 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     })
   },
   getSnapPoints(content, contents) {
-    const block = getBlock(content.id, contents)
+    const block = getBlock(content.refId, contents)
     if (block) {
       return blockSnapPointsCache.get(block, content, () => {
         const result: SnapPoint[] = []
@@ -132,7 +132,7 @@ function getBlock(id: number, contents: readonly BaseContent[]) {
 }
 
 function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly BaseContent[]) {
-  const block = getBlock(content.id, contents)
+  const block = getBlock(content.refId, contents)
   if (block) {
     return blockLinesCache.get(block, content, () => {
       const lines: [Position, Position][] = []
@@ -162,7 +162,7 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
   return { lines: [], points: [] }
 }
 
-const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, { lines: [Position, Position][], points: Position[], bounding?: TwoPointsFormRegion }>()
+const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, Geometries>()
 const blockSnapPointsCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, SnapPoint[]>()
 
 export function isBlockReferenceContent(content: BaseContent): content is BlockReferenceContent {

@@ -1,7 +1,7 @@
 import { isSelected, useCursorInput } from "../../src"
 import { BlockContent, isBlockContent } from "../models/block-model"
 import { isBlockReferenceContent } from "../models/block-reference-model"
-import { BaseContent } from "../models/model"
+import { BaseContent, getNextId } from "../models/model"
 import { Command } from "./command"
 
 export const createBlockCommand: Command = {
@@ -17,12 +17,9 @@ export const createBlockCommand: Command = {
       onStart(p) {
         onEnd({
           updateContents: (contents, selected) => {
-            let id = 1
+            const id = getNextId(contents)
             const removedContents: number[] = []
-            contents.forEach((content, i) => {
-              if (isBlockContent(content)) {
-                id = Math.max(id, content.id + 1)
-              }
+            contents.forEach((_, i) => {
               if (isSelected([i], selected)) {
                 removedContents.push(i)
               }

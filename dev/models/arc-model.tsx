@@ -2,11 +2,17 @@ import { Arc, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getT
 import { angleDelta } from './ellipse-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
-export type ArcContent = StrokeBaseContent<'arc'> & Arc
+export type ArcContent = StrokeBaseContent<'arc'> & Arc & {
+  id?: number
+}
 
 export const arcModel: Model<ArcContent> = {
   type: 'arc',
+  deletable(content, contents) {
+    return !contents.some((c) => isRadialDimensionReferenceContent(c) && c.refId === content.id)
+  },
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y

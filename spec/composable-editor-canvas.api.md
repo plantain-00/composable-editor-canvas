@@ -343,11 +343,11 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
-export function getRadialDimensionGeometries(content: RadialDimension, dimensionStyle: {
+export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
     margin: number;
     arrowAngle: number;
     arrowSize: number;
-}, getTextPosition: (content: RadialDimension) => {
+}, getTextPosition: (content: RadialDimension, circle: Circle) => {
     textPosition: Position;
     textRotation: number;
     size?: Size;
@@ -363,7 +363,7 @@ export function getRadialDimensionGeometries(content: RadialDimension, dimension
 };
 
 // @public (undocumented)
-export function getRadialDimensionTextPosition(content: RadialDimension, margin: number, getTextSize: (font: string, text: string) => Size | undefined): {
+export function getRadialDimensionTextPosition(content: RadialDimension, circle: Circle, margin: number, getTextSize: (font: string, text: string) => Size | undefined): {
     textPosition: Position;
     textRotation: number;
     size: Size | undefined;
@@ -565,7 +565,7 @@ export interface Position {
 export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[];
 
 // @public (undocumented)
-export interface RadialDimension extends Circle, TextStyle {
+export interface RadialDimension extends TextStyle {
     // (undocumented)
     position: Position;
 }

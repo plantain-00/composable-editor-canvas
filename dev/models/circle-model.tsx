@@ -2,11 +2,17 @@ import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositio
 import { ArcContent, getArcGeometries } from './arc-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
+import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
-export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle
+export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle & {
+  id?: number
+}
 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
+  deletable(content, contents) {
+    return !contents.some((c) => isRadialDimensionReferenceContent(c) && c.refId === content.id)
+  },
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y

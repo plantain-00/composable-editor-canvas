@@ -50,6 +50,7 @@ import { createGroupCommand } from './commands/create-group'
 import RTree from 'rtree'
 import { fillCommand } from './commands/fill'
 import { OffsetXContext } from './story-app'
+import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -70,6 +71,7 @@ registerModel(textModel)
 registerModel(blockModel)
 registerModel(blockReferenceModel)
 registerModel(radialDimensionModel)
+registerModel(radialDimensionReferenceModel)
 registerModel(linearDimensionModel)
 registerModel(groupModel)
 
@@ -414,7 +416,7 @@ const CADEditor = React.forwardRef((props: {
     }
   })
 
-  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, number[]>(
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
     () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
     (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
     {
