@@ -1,5 +1,8 @@
 import React from 'react'
 import { Circle, EditPoint, GeneralFormLine, iterateIntersectionPoints, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2 } from '../../src'
+import { isArcContent } from './arc-model'
+import { isBlockContent } from './block-model'
+import { isCircleContent } from './circle-model'
 import { LineContent } from './line-model'
 
 export interface BaseContent<T extends string = string> {
@@ -56,7 +59,7 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-interface Geometries {
+export interface Geometries {
   lines: [Position, Position][]
   points: Position[]
   bounding?: TwoPointsFormRegion
@@ -109,4 +112,18 @@ export function getContentByIndex(state: readonly BaseContent[], index: readonly
     return { type: 'line', points: line } as LineContent
   }
   return undefined
+}
+
+export function getNextId(contents: BaseContent[]) {
+  let id = 1
+  contents.forEach((content) => {
+    if (isBlockContent(content)) {
+      id = Math.max(id, content.id + 1)
+    } else if (isCircleContent(content) || isArcContent(content)) {
+      if (content.id) {
+        id = Math.max(id, content.id + 1)
+      }
+    }
+  })
+  return id
 }

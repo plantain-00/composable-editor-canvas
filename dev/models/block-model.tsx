@@ -11,7 +11,7 @@ export type BlockContent = BaseContent<'block'> & {
 export const blockModel: Model<BlockContent> = {
   type: 'block',
   deletable(content, contents) {
-    return !contents.some((c) => isBlockReferenceContent(c) && c.id === content.id)
+    return !contents.some((c) => isBlockReferenceContent(c) && c.refId === content.id)
   },
   explode(content) {
     return content.contents

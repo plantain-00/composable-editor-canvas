@@ -1,4 +1,4 @@
-import { Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, Position, RadialDimension, Size, WeakmapCache } from "../../src"
+import { Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, Position, RadialDimension, Size, WeakmapCache2 } from "../../src"
 import { LineContent } from "./line-model"
 import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
 
@@ -21,7 +21,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     if (regions && regions.length > 0) {
       children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
     }
-    const { textPosition, textRotation, text } = getTextPosition(content)
+    const { textPosition, textRotation, text } = getTextPosition(content, content)
     children.push(target.renderGroup(
       [
         target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily),
@@ -65,7 +65,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
 
 export function getRadialDimensionGeometriesFromCache(content: Omit<RadialDimensionContent, "type">) {
   return getGeometriesFromCache(content, () => {
-    return getRadialDimensionGeometries(content, dimensionStyle, getTextPosition)
+    return getRadialDimensionGeometries(content, content, dimensionStyle, getTextPosition)
   })
 }
 
@@ -78,15 +78,15 @@ export function getTextSizeFromCache(font: string, text: string) {
   return textSizeMap.get(font, text, () => getTextSize(font, text))
 }
 
-const textPositionMap = new WeakmapCache<Omit<RadialDimensionContent, 'type'>, {
+const textPositionMap = new WeakmapCache2<RadialDimension, Circle, {
   textPosition: Position
   textRotation: number
   size?: Size
   text: string
 }>()
-function getTextPosition(content: Omit<RadialDimensionContent, 'type'>) {
-  return textPositionMap.get(content, () => {
-    return getRadialDimensionTextPosition(content, dimensionStyle.margin, getTextSizeFromCache)
+export function getTextPosition(content: RadialDimension, circle: Circle) {
+  return textPositionMap.get(content, circle, () => {
+    return getRadialDimensionTextPosition(content, circle, dimensionStyle.margin, getTextSizeFromCache)
   })
 }
 

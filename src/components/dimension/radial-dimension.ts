@@ -5,27 +5,28 @@ import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDire
  */
 export function getRadialDimensionGeometries(
   content: RadialDimension,
+  circle: Circle,
   dimensionStyle: {
     margin: number
     arrowAngle: number
     arrowSize: number
   },
-  getTextPosition: (content: RadialDimension) => {
+  getTextPosition: (content: RadialDimension, circle: Circle) => {
     textPosition: Position
     textRotation: number
     size?: Size
     text: string
   }
 ) {
-  const edgePoint = getPointByLengthAndDirection(content, content.r, content.position)
-  const distance = getTwoPointsDistance(content, content.position)
+  const edgePoint = getPointByLengthAndDirection(circle, circle.r, content.position)
+  const distance = getTwoPointsDistance(circle, content.position)
   const arrowPoint = getPointByLengthAndDirection(edgePoint, dimensionStyle.arrowSize, content.position)
   const arrowTail1 = rotatePositionByCenter(arrowPoint, edgePoint, dimensionStyle.arrowAngle)
   const arrowTail2 = rotatePositionByCenter(arrowPoint, edgePoint, -dimensionStyle.arrowAngle)
-  const linePoints = [distance > content.r ? content : edgePoint, content.position]
+  const linePoints = [distance > circle.r ? circle : edgePoint, content.position]
   const arrowPoints = [edgePoint, arrowTail1, arrowTail2]
   let textPoints: Position[] = []
-  const { textPosition, textRotation, size } = getTextPosition(content)
+  const { textPosition, textRotation, size } = getTextPosition(content, circle)
   if (size) {
     textPoints = [
       { x: textPosition.x, y: textPosition.y - size.height },
@@ -57,23 +58,24 @@ export function getRadialDimensionGeometries(
  */
 export function getRadialDimensionTextPosition(
   content: RadialDimension,
+  circle: Circle,
   margin: number,
   getTextSize: (font: string, text: string) => Size | undefined
 ) {
   let textPosition = content.position
-  const text = `R${formatNumber(content.r)}`
+  const text = `R${formatNumber(circle.r)}`
   const size = getTextSize(`${content.fontSize}px ${content.fontFamily}`, text)
-  let textRotation = Math.atan2(content.position.y - content.y, content.position.x - content.x)
+  let textRotation = Math.atan2(content.position.y - circle.y, content.position.x - circle.x)
   if (size) {
-    const distance = getTwoPointsDistance(content, content.position)
-    if (distance > content.r) {
-      if (content.position.x > content.x) {
-        textPosition = getPointByLengthAndDirection(content.position, size.width, content)
+    const distance = getTwoPointsDistance(circle, content.position)
+    if (distance > circle.r) {
+      if (content.position.x > circle.x) {
+        textPosition = getPointByLengthAndDirection(content.position, size.width, circle)
       } else {
         textRotation = textRotation - Math.PI
       }
-    } else if (content.position.x < content.x) {
-      textPosition = getPointByLengthAndDirection(content.position, -size.width, content)
+    } else if (content.position.x < circle.x) {
+      textPosition = getPointByLengthAndDirection(content.position, -size.width, circle)
       textRotation = textRotation + Math.PI
     }
   }
@@ -89,7 +91,7 @@ export function getRadialDimensionTextPosition(
 /**
  * @public
  */
-export interface RadialDimension extends Circle, TextStyle {
+export interface RadialDimension extends TextStyle {
   position: Position
 }
 

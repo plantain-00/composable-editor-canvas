@@ -9,7 +9,6 @@ export default () => {
     r: 100,
   }
   const dimension: RadialDimension = {
-    ...circle,
     position: {
       x: 400,
       y: 300,
@@ -19,10 +18,11 @@ export default () => {
   }
   const { regions, lines } = getRadialDimensionGeometries(
     dimension,
+    circle,
     dimensionStyle,
-    (c) => getRadialDimensionTextPosition(c, dimensionStyle.margin, getTextSize)
+    (d, c) => getRadialDimensionTextPosition(d, c, dimensionStyle.margin, getTextSize)
   )
-  const { textPosition, textRotation, text } = getRadialDimensionTextPosition(dimension, dimensionStyle.margin, getTextSize)
+  const { textPosition, textRotation, text } = getRadialDimensionTextPosition(dimension, circle, dimensionStyle.margin, getTextSize)
   return (
     <svg
       viewBox="0 0 800 600"
