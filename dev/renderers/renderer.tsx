@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { getColorString, isSelected, ReactRenderTarget, RenderingLinesMerger, useLastValidValue, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
+import { getColorString, isSelected, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
 import { BaseContent, getContentByIndex, getModel } from "../models/model"
 
 export function Renderer(props: {
@@ -21,7 +21,7 @@ export function Renderer(props: {
 } & React.DOMAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
-  const strokeWidthScale = useLastValidValue(1 / props.scale, () => !props.simplified, 1)
+  const strokeWidthScale = 1 / props.scale
   useValueChanged(props.type, () => renderCache.clear())
   useValueChanged(props.backgroundColor, () => renderCache.clear())
 

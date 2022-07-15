@@ -233,8 +233,9 @@ function Canvas(props: {
             props.transform.y / props.transform.scale - props.height / 2,
           )
         }
+        const scale = props.strokeWidthScale ?? 1
         for (const draw of props.draws) {
-          draw(ctx, props.strokeWidthScale ?? 1)
+          draw(ctx, scale)
         }
         ctx.restore()
         if (props.debug) {
