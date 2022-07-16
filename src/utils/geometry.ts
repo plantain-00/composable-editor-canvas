@@ -762,14 +762,65 @@ export function getCirclesTangentTo2Circles(circle1: Circle, circle2: Circle, ra
       result.push(...getTwoCircleIntersectionPoints({ ...circle1, r: r1 }, { ...circle2, r: r2 }))
     }
   }
-  // for (const [r1, r2] of [
-  //   [radius + circle1.r, radius + circle2.r],
-  //   [radius + circle1.r, radius - circle2.r],
-  //   [radius - circle1.r, radius + circle2.r],
-  //   [radius - circle1.r, radius - circle2.r],
-  // ] as const) {
-  //   result.push(...getTwoCircleIntersectionPoints({ ...circle1, r: Math.abs(r1) }, { ...circle2, r: Math.abs(r2) }))
-  // }
+  return result
+}
+
+/**
+ * @public
+ */
+export function getPerpendicular(point: Position, line: GeneralFormLine) {
+  return {
+    a: -line.b,
+    b: line.a,
+    c: point.x * line.b - line.a * point.y,
+  }
+}
+
+/**
+ * @public
+ */
+export function getPolylineTriangles(points: Position[], width: number) {
+  const radius = width / 2
+  const result: number[] = []
+  for (let i = 1; i < points.length; i++) {
+    const p1 = points[i - 1]
+    const p2 = points[i]
+    const line = twoPointLineToGeneralFormLine(p1, p2)
+    const lines1 = getParallelLinesByDistance(line, radius)
+    const line2 = getPerpendicular(p1, line)
+    const line3 = getPerpendicular(p2, line)
+    for (const line1 of lines1) {
+      const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+      if (point2) {
+        result.push(point2.x, point2.y)
+      }
+      const point3 = getTwoGeneralFormLinesIntersectionPoint(line1, line3)
+      if (point3) {
+        result.push(point3.x, point3.y)
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * @public
+ */
+export function combineStripTriangles(triangles: number[][]) {
+  const result: number[] = []
+  for (let i = 0; i < triangles.length; i++) {
+    const triangle = triangles[i]
+    if (i !== 0) {
+      const lastTriangle = triangles[i - 1]
+      result.push(
+        lastTriangle[lastTriangle.length - 2], lastTriangle[lastTriangle.length - 1],
+        triangle[0], triangle[1],
+        triangle[0], triangle[1],
+        triangle[2], triangle[3],
+      )
+    }
+    result.push(...triangle)
+  }
   return result
 }
 

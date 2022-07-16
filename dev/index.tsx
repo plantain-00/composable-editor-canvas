@@ -1,5 +1,5 @@
 import React from 'react'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size, useSelected, isSamePath } from '../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size, useSelected, isSamePath, metaKeyIfMacElseCtrlKey } from '../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuide } from './model'
@@ -46,12 +46,11 @@ export function App() {
     (contentSize.height - containerSize.height) / 2,
   )
 
-  const isMacKeyboard = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), undo)
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), redo)
+  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), undo)
+  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), redo)
   const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)
-  useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
-  useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
+  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
+  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
 
   const { selected: [selected], setSelected } = useSelected<number[]>({ maxCount: 1 })
   const { selected: [hovered], setSelected: setHovered } = useSelected<number[]>({ maxCount: 1 })

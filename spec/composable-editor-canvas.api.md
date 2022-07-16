@@ -75,6 +75,9 @@ export function CircleEditBar(props: {
 export function colorStringToNumber(color: string): number;
 
 // @public (undocumented)
+export function combineStripTriangles(triangles: number[][]): number[];
+
+// @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
 
 // @public (undocumented)
@@ -304,6 +307,13 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
 }[];
 
 // @public (undocumented)
+export function getPerpendicular(point: Position, line: GeneralFormLine): {
+    a: number;
+    b: number;
+    c: number;
+};
+
+// @public (undocumented)
 export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position): number;
 
 // @public (undocumented)
@@ -341,6 +351,9 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 
 // @public (undocumented)
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
+
+// @public (undocumented)
+export function getPolylineTriangles(points: Position[], width: number): number[];
 
 // @public (undocumented)
 export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
@@ -452,6 +465,9 @@ export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFor
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
+export const isMacKeyboard: boolean;
+
+// @public (undocumented)
 export function isSamePath<T extends SelectPath = SelectPath>(path1: T | undefined, path2: T | undefined): boolean;
 
 // @public (undocumented)
@@ -511,6 +527,9 @@ export class MapCache2<TKey1, TKey2, TValue> {
     // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
 }
+
+// @public (undocumented)
+export function metaKeyIfMacElseCtrlKey(e: React_2.KeyboardEvent | KeyboardEvent): boolean;
 
 // @public (undocumented)
 export function normalizeAngleInRange(angle: number, range: AngleRange): number;
