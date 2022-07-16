@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion, useEvent } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
@@ -53,8 +53,6 @@ import { OffsetXContext } from './story-app'
 import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
-
-const isMacKeyboard = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
 
 enablePatches()
 
@@ -364,8 +362,8 @@ const CADEditor = React.forwardRef((props: {
     }
   })
   const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
-  useKey((k) => k.code === 'Minus' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomOut)
-  useKey((k) => k.code === 'Equal' && (isMacKeyboard ? k.metaKey : k.ctrlKey), zoomIn)
+  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
+  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
@@ -383,19 +381,19 @@ const CADEditor = React.forwardRef((props: {
       y: height / 2,
     },
   }
-  useKey((k) => k.key === 'ArrowLeft' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.key === 'ArrowLeft' && metaKeyIfMacElseCtrlKey(k), (e) => {
     setX((v) => v + width / 10)
     e.preventDefault()
   })
-  useKey((k) => k.key === 'ArrowRight' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.key === 'ArrowRight' && metaKeyIfMacElseCtrlKey(k), (e) => {
     setX((v) => v - width / 10)
     e.preventDefault()
   })
-  useKey((k) => k.key === 'ArrowUp' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.key === 'ArrowUp' && metaKeyIfMacElseCtrlKey(k), (e) => {
     setY((v) => v + height / 10)
     e.preventDefault()
   })
-  useKey((k) => k.key === 'ArrowDown' && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.key === 'ArrowDown' && metaKeyIfMacElseCtrlKey(k), (e) => {
     setY((v) => v - height / 10)
     e.preventDefault()
   })
@@ -537,19 +535,19 @@ const CADEditor = React.forwardRef((props: {
     }
   }
 
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
     undo(e)
     setSelected()
   })
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
     redo(e)
     setSelected()
   })
-  useKey((k) => k.code === 'KeyA' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.code === 'KeyA' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
     addSelection(...editingContent.map((_, i) => [i]))
     e.preventDefault()
   })
-  useKey((k) => k.code === 'Digit0' && !k.shiftKey && (isMacKeyboard ? k.metaKey : k.ctrlKey), (e) => {
+  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
     setScale(1)
     setX(0)
     setY(0)
