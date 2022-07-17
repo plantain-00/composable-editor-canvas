@@ -21,7 +21,7 @@ export function Renderer(props: {
 } & React.DOMAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
-  const strokeWidthScale = 1 / props.scale
+  const strokeWidthScale = props.simplified ? 1 : 1 / props.scale
   useValueChanged(props.type, () => renderCache.clear())
   useValueChanged(props.backgroundColor, () => renderCache.clear())
 
@@ -61,9 +61,9 @@ export function Renderer(props: {
       return
     }
     color = transformColor(color)
-    if (props.simplified && model.getGeometries) {
-      const { renderingLines } = model.getGeometries(content, props.contents)
-      if (renderingLines) {
+    if ((props.simplified || target.type === 'webgl') && model.getGeometries) {
+      const { renderingLines, regions } = model.getGeometries(content, props.contents)
+      if (renderingLines && !regions) {
         for (const line of renderingLines) {
           merger.push({
             line,

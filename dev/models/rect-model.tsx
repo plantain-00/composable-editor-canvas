@@ -1,4 +1,4 @@
-import { getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
+import { dashedPolylineToLines, getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
 
@@ -120,7 +120,7 @@ export function getRectGeometries(content: Omit<RectContent, "type">) {
       lines,
       points,
       bounding: getPointsBounding(points),
-      renderingLines: [polygonToPolyline(points)],
+      renderingLines: content.dashArray ? dashedPolylineToLines(polygonToPolyline(points), content.dashArray) : [polygonToPolyline(points)],
       regions: content.fillColor !== undefined ? [
         {
           lines,

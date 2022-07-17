@@ -1,5 +1,6 @@
 import React from "react"
 import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget } from "../src"
+import { reactWebglRenderTarget } from "./renderers/react-webgl-render-target"
 
 export default () => {
   function render<T>(target: ReactRenderTarget<T>) {
@@ -20,6 +21,7 @@ export default () => {
     <div>
       {render(reactSvgRenderTarget)}
       {render(reactCanvasRenderTarget)}
+      {render(reactWebglRenderTarget)}
     </div>
   )
 }

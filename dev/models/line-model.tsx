@@ -1,4 +1,4 @@
-import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines } from '../../src'
+import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines, dashedPolylineToLines } from '../../src'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
@@ -57,7 +57,7 @@ export function getPolylineGeometries(content: Omit<LineContent, "type">) {
       lines: Array.from(iteratePolylineLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
-      renderingLines: [content.points],
+      renderingLines: content.dashArray ? dashedPolylineToLines(content.points, content.dashArray) : [content.points],
     }
   })
 }

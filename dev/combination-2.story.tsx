@@ -51,6 +51,7 @@ import RTree from 'rtree'
 import { fillCommand } from './commands/fill'
 import { OffsetXContext } from './story-app'
 import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
+import { reactWebglRenderTarget } from './renderers/react-webgl-render-target'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -104,6 +105,7 @@ registerCommand(fillCommand)
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactPixiRenderTarget)
 registerRenderer(reactCanvasRenderTarget)
+registerRenderer(reactWebglRenderTarget)
 
 const key = 'combination-2.json'
 
