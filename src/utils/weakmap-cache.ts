@@ -46,6 +46,31 @@ export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
 /**
  * @public
  */
+export class WeakmapMapCache<TKey1 extends object, TKey2, TValue> {
+  private cache = new WeakMap<TKey1, Map<TKey2, TValue>>()
+
+  public get(key1: TKey1, key2: TKey2, func: () => TValue) {
+    let map = this.cache.get(key1)
+    if (!map) {
+      map = new Map<TKey2, TValue>()
+      this.cache.set(key1, map)
+    }
+    let result = map.get(key2)
+    if (!result) {
+      result = func()
+      map.set(key2, result)
+    }
+    return result
+  }
+
+  public clear() {
+    this.cache = new WeakMap<TKey1, Map<TKey2, TValue>>()
+  }
+}
+
+/**
+ * @public
+ */
 export class MapCache2<TKey1, TKey2, TValue> {
   private cache = new Map<TKey1, Map<TKey2, TValue>>()
 

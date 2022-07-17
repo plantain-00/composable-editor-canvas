@@ -39,6 +39,9 @@ export interface Arc extends Circle, AngleRange {
 }
 
 // @public (undocumented)
+export function arcToPolyline(content: Arc, angleDelta: number): Position[];
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
@@ -76,6 +79,9 @@ export function colorStringToNumber(color: string): number;
 
 // @public (undocumented)
 export function combineStripTriangles(triangles: number[][]): number[];
+
+// @public (undocumented)
+export function dashedPolylineToLines(points: Position[], dashArray: number[], skippedLines?: number[]): Position[][];
 
 // @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
@@ -158,6 +164,9 @@ export function EllipseArcEditBar(props: EllipseArc & {
 }): JSX.Element;
 
 // @public (undocumented)
+export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number): Position[];
+
+// @public (undocumented)
 export function EllipseEditBar(props: {
     cx: number;
     cy: number;
@@ -169,6 +178,9 @@ export function EllipseEditBar(props: {
     onClick?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
     onMouseDown?: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'major axis' | 'minor axis', cursor: React_2.CSSProperties['cursor']) => void;
 }): JSX.Element;
+
+// @public (undocumented)
+export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
 
 // @public (undocumented)
 export function equals(a: number, b: number): boolean;
@@ -521,6 +533,14 @@ export interface LinearDimension extends TextStyle {
 
 // @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export const m3: {
+    identity(): number[];
+    translation(tx: number, ty: number): number[];
+    scaling(sx: number, sy: number): number[];
+    multiply: (a: number[], b: number[]) => number[];
+};
 
 // @public (undocumented)
 export class MapCache2<TKey1, TKey2, TValue> {
@@ -1278,6 +1298,14 @@ export class WeakmapCache<TKey extends object, TValue> {
 
 // @public (undocumented)
 export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
+    // (undocumented)
+    clear(): void;
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeakmapMapCache<TKey1 extends object, TKey2, TValue> {
     // (undocumented)
     clear(): void;
     // (undocumented)

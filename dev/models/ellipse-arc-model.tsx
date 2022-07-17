@@ -1,4 +1,4 @@
-import { EllipseArc, Position, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines } from '../../src'
+import { EllipseArc, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines, ellipseArcToPolyline, dashedPolylineToLines } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
@@ -131,26 +131,12 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
 
 export function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
   return getGeometriesFromCache(content, () => {
-    const points: Position[] = []
-    const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
-    let i = content.startAngle
-    for (; i <= endAngle; i += angleDelta) {
-      const angle = i * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      points.push(rotatePositionByEllipseCenter({ x, y }, content))
-    }
-    if (i !== endAngle) {
-      const angle = endAngle * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      points.push(rotatePositionByEllipseCenter({ x, y }, content))
-    }
+    const points = ellipseArcToPolyline(content, angleDelta)
     return {
       lines: Array.from(iteratePolylineLines(points)),
       points,
       bounding: getPointsBounding(points),
-      renderingLines: [points],
+      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
     }
   })
 }

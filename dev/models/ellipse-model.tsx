@@ -1,4 +1,4 @@
-import { Ellipse, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
+import { dashedPolylineToLines, Ellipse, ellipseToPolygon, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
@@ -146,19 +146,13 @@ export const ellipseModel: Model<EllipseContent> = {
 
 export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
   return getGeometriesFromCache(content, () => {
-    const points: Position[] = []
-    for (let i = 0; i < lineSegmentCount; i++) {
-      const angle = angleDelta * i * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      points.push(rotatePositionByEllipseCenter({ x, y }, content))
-    }
+    const points = ellipseToPolygon(content, angleDelta)
     const lines = Array.from(iteratePolygonLines(points))
     return {
       lines,
       points,
       bounding: getPointsBounding(points),
-      renderingLines: [points],
+      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
       regions: content.fillColor !== undefined ? [
         {
           lines,
@@ -173,8 +167,7 @@ export function rotatePositionByEllipseCenter(p: Position, content: Omit<Ellipse
   return rotatePositionByCenter(p, { x: content.cx, y: content.cy }, -(content.angle ?? 0))
 }
 
-const lineSegmentCount = 72
-export const angleDelta = 360 / lineSegmentCount
+export const angleDelta = 5
 
 export function isEllipseContent(content: BaseContent): content is EllipseContent {
   return content.type === 'ellipse'

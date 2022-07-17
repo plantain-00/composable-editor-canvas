@@ -546,6 +546,37 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number) {
 /**
  * @public
  */
+export function dashedPolylineToLines(
+  points: Position[],
+  dashArray: number[],
+  skippedLines?: number[],
+) {
+  const result: Position[][] = []
+  let last: Position[] = []
+  const g = {
+    moveTo(x: number, y: number) {
+      if (last.length > 1) {
+        result.push(last)
+      }
+      last = [{ x, y }]
+    },
+    lineTo(x: number, y: number) {
+      if (last.length === 0) {
+        last.push({ x: 0, y: 0 })
+      }
+      last.push({ x, y })
+    },
+  }
+  drawDashedPolyline(g, points, dashArray, skippedLines)
+  if (last.length > 1) {
+    result.push(last)
+  }
+  return result
+}
+
+/**
+ * @public
+ */
 export function drawDashedPolyline(
   g: { moveTo: (x: number, y: number) => void, lineTo: (x: number, y: number) => void },
   points: Position[],
@@ -962,4 +993,79 @@ export function* iteratePolygonLines(points: Position[]) {
 
 export function polygonToPolyline(points: Position[]) {
   return [...points, points[0]]
+}
+
+/**
+ * @public
+ */
+export function arcToPolyline(content: Arc, angleDelta: number) {
+  const points: Position[] = []
+  const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
+  let i = content.startAngle
+  for (; i <= endAngle; i += angleDelta) {
+    const angle = i * Math.PI / 180
+    points.push({
+      x: content.x + content.r * Math.cos(angle),
+      y: content.y + content.r * Math.sin(angle),
+    })
+  }
+  if (i !== endAngle) {
+    const angle = endAngle * Math.PI / 180
+    points.push({
+      x: content.x + content.r * Math.cos(angle),
+      y: content.y + content.r * Math.sin(angle),
+    })
+  }
+  return points
+}
+
+/**
+ * @public
+ */
+export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
+  const lineSegmentCount = 360 / angleDelta
+  const center = { x: content.cx, y: content.cy }
+  const points: Position[] = []
+  for (let i = 0; i < lineSegmentCount; i++) {
+    const angle = angleDelta * i * Math.PI / 180
+    const x = content.cx + content.rx * Math.cos(angle)
+    const y = content.cy + content.ry * Math.sin(angle)
+    if (content.angle) {
+      points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
+    } else {
+      points.push({ x, y })
+    }
+  }
+  return points
+}
+
+/**
+ * @public
+ */
+export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
+  const points: Position[] = []
+  const center = { x: content.cx, y: content.cy }
+  const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
+  let i = content.startAngle
+  for (; i <= endAngle; i += angleDelta) {
+    const angle = i * Math.PI / 180
+    const x = content.cx + content.rx * Math.cos(angle)
+    const y = content.cy + content.ry * Math.sin(angle)
+    if (content.angle) {
+      points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
+    } else {
+      points.push({ x, y })
+    }
+  }
+  if (i !== endAngle) {
+    const angle = endAngle * Math.PI / 180
+    const x = content.cx + content.rx * Math.cos(angle)
+    const y = content.cy + content.ry * Math.sin(angle)
+    if (content.angle) {
+      points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
+    } else {
+      points.push({ x, y })
+    }
+  }
+  return points
 }

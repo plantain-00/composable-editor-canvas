@@ -1,4 +1,4 @@
-import { getPointsBounding, getSymmetryPoint, iteratePolygonLines, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
+import { dashedPolylineToLines, getPointsBounding, getSymmetryPoint, iteratePolygonLines, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
 
@@ -71,7 +71,7 @@ function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
       lines,
       points: content.points,
       bounding: getPointsBounding(content.points),
-      renderingLines: [polygonToPolyline(content.points)],
+      renderingLines: content.dashArray ? dashedPolylineToLines(polygonToPolyline(content.points), content.dashArray) : [polygonToPolyline(content.points)],
       regions: content.fillColor !== undefined ? [
         {
           lines,

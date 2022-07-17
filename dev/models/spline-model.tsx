@@ -1,5 +1,5 @@
 import bspline from 'b-spline'
-import { getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, Position, rotatePositionByCenter } from '../../src'
+import { dashedPolylineToLines, getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, Position, rotatePositionByCenter } from '../../src'
 import { getPolylineEditPoints } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
 
@@ -82,7 +82,7 @@ function getSplineGeometries(content: Omit<SplineContent, "type">) {
       lines: Array.from(iteratePolylineLines(points)),
       points,
       bounding: getPointsBounding(points),
-      renderingLines: [points],
+      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
     }
   })
 }
