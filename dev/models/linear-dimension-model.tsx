@@ -29,7 +29,7 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
     const { textPosition, text, textRotation } = getTextPosition(content)
     children.push(target.renderGroup(
       [
-        target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily),
+        target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily, { cacheKey: content }),
       ],
       {
         rotation: textRotation,

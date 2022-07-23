@@ -12,6 +12,6 @@ export const textModel: Model<TextContent> = {
     return content.color
   },
   render({ content, target, color }) {
-    return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize, content.fontFamily)
+    return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize, content.fontFamily, { cacheKey: content })
   },
 }

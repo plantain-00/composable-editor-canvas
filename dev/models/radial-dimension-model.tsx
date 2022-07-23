@@ -24,7 +24,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     const { textPosition, textRotation, text } = getTextPosition(content, content)
     children.push(target.renderGroup(
       [
-        target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily),
+        target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily, { cacheKey: content }),
       ],
       {
         rotation: textRotation,
