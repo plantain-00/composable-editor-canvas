@@ -3,7 +3,18 @@ import * as twgl from 'twgl.js'
 import earcut from 'earcut'
 import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, WeakmapCache, WeakmapMapCache } from "../../src"
 
-type Graphic = { points: number[], color: [number, number, number, number], strip: boolean }
+type Graphic = {
+  type: 'triangles'
+  points: number[]
+  color: [number, number, number, number]
+  strip: boolean
+} | {
+  type: 'text'
+  color: [number, number, number, number]
+  x: number
+  y: number
+  canvas: HTMLCanvasElement
+}
 
 export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number) => Graphic[]> = {
   type: 'webgl',
@@ -69,6 +80,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
       if (strokeWidth) {
         if (options?.dashArray) {
           graphics.push({
+            type: 'triangles',
             points: combineStripTriangles(
               dashedPolylineToLines(points, options.dashArray, options.skippedLines)
                 .map(p => getPolylineTriangles(p, strokeWidth))
@@ -78,6 +90,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           })
         } else {
           graphics.push({
+            type: 'triangles',
             points: getPolylineTriangles(points, strokeWidth),
             color: strokeColor,
             strip: true,
@@ -91,6 +104,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           triangles.push(points[index[i]].x, points[index[i]].y, points[index[i + 1]].x, points[index[i + 1]].y, points[index[i + 2]].x, points[index[i + 2]].y)
         }
         graphics.push({
+          type: 'triangles',
           points: triangles,
           strip: false,
           color: colorNumberToRec(options.fillColor),
@@ -124,9 +138,33 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
     const points = arcToPolyline({ x: cx, y: cy, r, startAngle, endAngle }, 5)
     return this.renderPolyline(points, options)
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily) {
+  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
     return () => {
-      return []
+      const getCanvas = () => {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+        if (ctx) {
+          const font = `${fontSize}px ${fontFamily}`
+          ctx.font = font
+          const t = ctx.measureText(text);
+          ctx.canvas.width = Math.ceil(t.width) + 2;
+          ctx.canvas.height = fontSize
+          ctx.font = font
+          ctx.fillStyle = 'white';
+          ctx.fillText(text, 0, ctx.canvas.height);
+        }
+        return canvas
+      }
+      const canvas = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getCanvas) : getCanvas()
+      return [
+        {
+          type: 'text',
+          x,
+          y: y - canvas.height,
+          color: colorNumberToRec(fillColor),
+          canvas,
+        }
+      ]
     }
   },
   renderPath(points, options) {
@@ -139,6 +177,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
       }
       return [
         {
+          type: 'triangles',
           points: combinedTrianglesCache.get(points, strokeWidth, () => {
             return combineStripTriangles(points.map(p => {
               return polylineTrianglesCache.get(p, strokeWidth, () => getPolylineTriangles(p, strokeWidth))
@@ -155,6 +194,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
 const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>()
 const combinedTrianglesCache = new WeakmapMapCache<Position[][], number, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
+const textCanvasCache = new WeakmapCache<object, HTMLCanvasElement>()
 
 function Canvas(props: {
   width: number,
@@ -195,6 +235,8 @@ function Canvas(props: {
     if (!gl) {
       return
     }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     const programInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform vec2 resolution;
@@ -208,14 +250,40 @@ function Canvas(props: {
     void main() {
       gl_FragColor = color;
     }`]);
+    const textProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    attribute vec2 texcoord;
+    uniform mat3 matrix;
+    varying vec2 v_texcoord;
+    
+    void main() {
+      v_texcoord = texcoord;
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 v_texcoord;
+    uniform sampler2D texture;
+    uniform vec4 color;
+
+    void main() {
+      vec4 color = texture2D(texture, v_texcoord) * color;
+      if (color.a < 0.1) {
+        discard;
+      }
+      gl_FragColor = color;
+    }`]);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    const textBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 1, 1, 1, 1, twgl.m4.rotationX(Math.PI * 0.5));
 
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
       const now = Date.now()
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-      gl.useProgram(programInfo.program);
       twgl.resizeCanvasToDisplaySize(gl.canvas);
       gl.clearColor(...backgroundColor)
       gl.clear(gl.COLOR_BUFFER_BIT)
+      let lastProgram: WebGLProgram | undefined
 
       let matrix = m3.translation(x, y)
       if (scale !== 1) {
@@ -227,18 +295,43 @@ function Canvas(props: {
       for (const g of graphics) {
         const lines = g(strokeWidthScale)
         for (const line of lines) {
+          if (line.type === 'text') {
+            const scaleX = line.canvas.width / gl.canvas.width * scale
+            const scaleY = line.canvas.height / gl.canvas.height * scale
+            let textMatrix = m3.translation(
+              (x + line.x * scale) / gl.canvas.width * 2 - scale + scaleX,
+              -(y + line.y * scale) / gl.canvas.height * 2 + scale - scaleY,
+            )
+            textMatrix = m3.multiply(textMatrix, m3.scaling(scaleX * 2, scaleY * 2))
+            const uniforms = {
+              texture: twgl.createTexture(gl, { src: line.canvas }),
+              color: line.color,
+              matrix: textMatrix,
+            };
+            twgl.drawObjectList(gl, [{
+              programInfo: textProgramInfo,
+              bufferInfo: textBufferInfo,
+              uniforms: uniforms,
+            }]);
+            lastProgram = textProgramInfo.program
+            continue
+          }
           const bufferInfo = bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
             position: {
               numComponents: 2,
               data: line.points
             },
           }))
+          if (lastProgram !== programInfo.program) {
+            gl.useProgram(programInfo.program);
+          }
           twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
           twgl.setUniforms(programInfo, {
             resolution: [gl.canvas.width, gl.canvas.height],
             color: line.color,
             matrix,
           });
+          lastProgram = programInfo.program
           twgl.drawBufferInfo(gl, bufferInfo, line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES);
         }
       }

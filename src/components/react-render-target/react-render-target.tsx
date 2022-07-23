@@ -106,6 +106,9 @@ export interface ReactRenderTarget<T = JSX.Element> {
     fillColor: number,
     fontSize: number,
     fontFamily: string,
+    options?: Partial<{
+      cacheKey: object
+    }>,
   ): T
   renderPath(
     lines: Position[][],

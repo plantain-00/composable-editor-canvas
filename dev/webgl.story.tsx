@@ -4,6 +4,7 @@ import { bindMultipleRefs, combineStripTriangles, getPolylineTriangles, m3, meta
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
+  const ref2 = React.useRef<HTMLCanvasElement | null>(null)
   const render = React.useRef<(g: typeof graphics, x: number, y: number, scale: number) => void>()
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
@@ -24,6 +25,30 @@ export default () => {
   const width = size.width / 2
   const height = size.height
   const generateGraphics = () => {
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    if (ctx) {
+      ctx.font = "50px monospace";
+      const t = ctx.measureText('abc');
+      ctx.canvas.width = Math.ceil(t.width) + 2;
+      ctx.canvas.height = 50;
+      ctx.font = "50px monospace";
+      ctx.fillStyle = 'white';
+      ctx.fillText('abc', 0, ctx.canvas.height);
+    }
+    if (ref2.current) {
+      const ctx = ref2.current.getContext("2d")
+      if (ctx) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        ctx.font = "50px monospace";
+        const t = ctx.measureText('abc');
+        ctx.canvas.width = Math.ceil(t.width) + 2;
+        ctx.canvas.height = 50;
+        ctx.font = "50px monospace";
+        ctx.fillStyle = 'white';
+        ctx.fillText('abc', 0, ctx.canvas.height);
+      }
+    }
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
       lines: [
@@ -62,6 +87,9 @@ export default () => {
           color: [Math.random(), Math.random(), Math.random(), 1],
         },
       ],
+      canvas,
+      color: [Math.random(), Math.random(), Math.random(), 1],
+      position: { x: Math.random() * 600, y: Math.random() * 400 },
     }
   }
   const [graphics, setGraphics] = React.useState(generateGraphics())
@@ -74,6 +102,8 @@ export default () => {
     if (!gl) {
       return
     }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     const programInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform vec2 resolution;
@@ -87,6 +117,32 @@ export default () => {
     void main() {
       gl_FragColor = color;
     }`]);
+    const programInfo2 = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    attribute vec2 texcoord;
+    uniform mat3 matrix;
+    varying vec2 v_texcoord;
+    
+    void main() {
+      v_texcoord = texcoord;
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 v_texcoord;
+    uniform sampler2D texture;
+    uniform vec4 color;
+
+    void main() {
+      vec4 color = texture2D(texture, v_texcoord) * color;
+      if (color.a < 0.1) {
+        discard;
+      }
+      gl_FragColor = color;
+    }`]);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    const textBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 1, 1, 1, 1, twgl.m4.rotationX(Math.PI * 0.5));
 
     render.current = (gs, x, y, scale) => {
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -119,6 +175,24 @@ export default () => {
         twgl.setUniforms(programInfo, uniforms);
         twgl.drawBufferInfo(gl, bufferInfo, gl.TRIANGLE_STRIP);
       }
+
+      const scaleX = gs.canvas.width / gl.canvas.width * scale
+      const scaleY = gs.canvas.height / gl.canvas.height * scale
+      let textMatrix = m3.translation(
+        (x + gs.position.x * scale) / gl.canvas.width * 2 - scale + scaleX,
+        -(y + gs.position.y * scale) / gl.canvas.height * 2 + scale - scaleY,
+      )
+      textMatrix = m3.multiply(textMatrix, m3.scaling(scaleX * 2, scaleY * 2))
+      const uniforms = {
+        texture: twgl.createTexture(gl, { src: gs.canvas }),
+        color: gs.color,
+        matrix: textMatrix,
+      };
+      twgl.drawObjectList(gl, [{
+        programInfo: programInfo2,
+        bufferInfo: textBufferInfo,
+        uniforms: uniforms,
+      }]);
     }
   }, [ref.current])
 
@@ -141,6 +215,10 @@ export default () => {
         width={width}
         height={height}
         onMouseDown={e => onStartMoveCanvas({ x: e.clientX, y: e.clientY })}
+      />
+      <canvas
+        ref={ref2}
+        style={{ position: 'absolute', left: 0 }}
       />
       <button style={{ position: 'fixed' }} onClick={() => setGraphics(generateGraphics())}>update</button>
       {moveCanvasMask}

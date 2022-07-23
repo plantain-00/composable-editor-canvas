@@ -695,7 +695,9 @@ export interface ReactRenderTarget<T = JSX.Element> {
         strokeWidthScale: number;
     }>): JSX.Element;
     // (undocumented)
-    renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string): T;
+    renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string, options?: Partial<{
+        cacheKey: object;
+    }>): T;
     // (undocumented)
     type: string;
 }
