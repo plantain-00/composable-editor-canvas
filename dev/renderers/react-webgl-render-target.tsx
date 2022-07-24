@@ -10,7 +10,7 @@ type Graphic = {
   strip: boolean
   matrix?: number[]
 } | {
-  type: 'text'
+  type: 'texture'
   color: [number, number, number, number]
   x: number
   y: number
@@ -64,7 +64,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
         if (g) {
           graphics.push(...g.map(h => ({
             ...h,
-            matrix: h.matrix ? (matrix ? m3.multiply(matrix, h.matrix) : undefined) : matrix,
+            matrix: h.matrix ? (matrix ? m3.multiply(matrix, h.matrix) : h.matrix) : matrix,
           })))
         }
       })
@@ -180,7 +180,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
       const canvas = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getCanvas) : getCanvas()
       return [
         {
-          type: 'text',
+          type: 'texture',
           x,
           y: y - canvas.height,
           color: colorNumberToRec(fillColor),
@@ -271,32 +271,35 @@ function Canvas(props: {
     void main() {
       gl_FragColor = color;
     }`]);
-    const textProgramInfo = twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
-    attribute vec2 texcoord;
+    const textureProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;   
     uniform mat3 matrix;
-    varying vec2 v_texcoord;
-    
-    void main() {
-      v_texcoord = texcoord;
+    varying vec2 texcoord;
+
+    void main () {
       gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      texcoord = position.xy;
     }
     `, `
     precision mediump float;
 
-    varying vec2 v_texcoord;
+    varying vec2 texcoord;
     uniform sampler2D texture;
     uniform vec4 color;
 
     void main() {
-      vec4 color = texture2D(texture, v_texcoord) * color;
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
+          texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      vec4 color = texture2D(texture, texcoord) * color;
       if (color.a < 0.1) {
         discard;
       }
       gl_FragColor = color;
     }`]);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    const textBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 1, 1, 1, 1, twgl.m4.rotationX(Math.PI * 0.5));
+    const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
     const canvasTextureCache = new WeakmapCache<HTMLCanvasElement, WebGLTexture>()
 
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
@@ -305,56 +308,47 @@ function Canvas(props: {
       twgl.resizeCanvasToDisplaySize(gl.canvas);
       gl.clearColor(...backgroundColor)
       gl.clear(gl.COLOR_BUFFER_BIT)
-      let lastProgram: WebGLProgram | undefined
 
-      let matrix = m3.projection(gl.canvas.width, gl.canvas.height)
-      matrix = m3.multiply(matrix, m3.translation(x, y))
+      let worldMatrix = m3.projection(gl.canvas.width, gl.canvas.height)
+      worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
       if (scale !== 1) {
-        matrix = m3.multiply(matrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
-        matrix = m3.multiply(matrix, m3.scaling(scale, scale));
-        matrix = m3.multiply(matrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
+        worldMatrix = m3.multiply(worldMatrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
+        worldMatrix = m3.multiply(worldMatrix, m3.scaling(scale, scale));
+        worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
       }
 
       for (const g of graphics) {
         const lines = g(strokeWidthScale)
         for (const line of lines) {
-          if (line.type === 'text') {
-            const scaleX = line.canvas.width / gl.canvas.width * scale
-            const scaleY = line.canvas.height / gl.canvas.height * scale
-            let textMatrix = m3.translation(
-              (x + line.x * scale) / gl.canvas.width * 2 - scale + scaleX,
-              -(y + line.y * scale) / gl.canvas.height * 2 + scale - scaleY,
-            )
-            textMatrix = m3.multiply(textMatrix, m3.scaling(scaleX * 2, scaleY * 2))
-            const uniforms = {
-              texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
-              color: line.color,
-              matrix: textMatrix,
-            };
+          let matrix = line.matrix ? m3.multiply(worldMatrix, line.matrix) : worldMatrix
+          if (line.type === 'texture') {
+            matrix = m3.multiply(matrix, m3.translation(line.x, line.y))
+            matrix = m3.multiply(matrix, m3.scaling(line.canvas.width, line.canvas.height))
             twgl.drawObjectList(gl, [{
-              programInfo: textProgramInfo,
-              bufferInfo: textBufferInfo,
-              uniforms: uniforms,
+              programInfo: textureProgramInfo,
+              bufferInfo: textureBufferInfo,
+              uniforms: {
+                matrix,
+                color: line.color,
+                texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
+              },
             }]);
-            lastProgram = textProgramInfo.program
             continue
           }
-          const bufferInfo = bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
-            position: {
-              numComponents: 2,
-              data: line.points
+          twgl.drawObjectList(gl, [{
+            programInfo,
+            bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
+              position: {
+                numComponents: 2,
+                data: line.points
+              },
+            })),
+            uniforms: {
+              color: line.color,
+              matrix,
             },
-          }))
-          if (lastProgram !== programInfo.program) {
-            gl.useProgram(programInfo.program);
-          }
-          twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
-          twgl.setUniforms(programInfo, {
-            color: line.color,
-            matrix: line.matrix ? m3.multiply(matrix, line.matrix) : matrix,
-          });
-          lastProgram = programInfo.program
-          twgl.drawBufferInfo(gl, bufferInfo, line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES);
+            type: line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
+          }]);
         }
       }
       if (props.debug) {
