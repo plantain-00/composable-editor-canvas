@@ -317,6 +317,7 @@ function Canvas(props: {
         worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
       }
 
+      const objectsToDraw: twgl.DrawObject[] = []
       for (const g of graphics) {
         const lines = g(strokeWidthScale)
         for (const line of lines) {
@@ -324,7 +325,7 @@ function Canvas(props: {
           if (line.type === 'texture') {
             matrix = m3.multiply(matrix, m3.translation(line.x, line.y))
             matrix = m3.multiply(matrix, m3.scaling(line.canvas.width, line.canvas.height))
-            twgl.drawObjectList(gl, [{
+            objectsToDraw.push({
               programInfo: textureProgramInfo,
               bufferInfo: textureBufferInfo,
               uniforms: {
@@ -332,10 +333,10 @@ function Canvas(props: {
                 color: line.color,
                 texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
               },
-            }]);
+            })
             continue
           }
-          twgl.drawObjectList(gl, [{
+          objectsToDraw.push({
             programInfo,
             bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
               position: {
@@ -348,9 +349,10 @@ function Canvas(props: {
               matrix,
             },
             type: line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
-          }]);
+          })
         }
       }
+      twgl.drawObjectList(gl, objectsToDraw)
       if (props.debug) {
         console.info(Date.now() - now)
       }
