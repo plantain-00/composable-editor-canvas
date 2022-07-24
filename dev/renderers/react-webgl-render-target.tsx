@@ -8,15 +8,17 @@ type Graphic = {
   points: number[]
   color: [number, number, number, number]
   strip: boolean
+  matrix?: number[]
 } | {
   type: 'text'
   color: [number, number, number, number]
   x: number
   y: number
   canvas: HTMLCanvasElement
+  matrix?: number[]
 }
 
-export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number) => Graphic[]> = {
+export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number, matrix?: number[]) => Graphic[]> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
     return (
@@ -37,13 +39,33 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
       return []
     }
   },
-  renderGroup(children) {
-    return (strokeWidthScale) => {
+  renderGroup(children, options) {
+    return (strokeWidthScale, matrix) => {
+      if (options) {
+        if (!matrix) {
+          matrix = m3.identity()
+        }
+        if (options.translate) {
+          matrix = m3.multiply(matrix, m3.translation(options.translate.x, options.translate.y))
+        }
+        if (options.base && (options.angle || options.rotation)) {
+          matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
+          if (options.angle) {
+            matrix = m3.multiply(matrix, m3.rotation(-options.angle / 180 * Math.PI))
+          } else if (options.rotation) {
+            matrix = m3.multiply(matrix, m3.rotation(-options.rotation))
+          }
+          matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
+        }
+      }
       const graphics: Graphic[] = []
       children.forEach(c => {
         const g = c(strokeWidthScale)
         if (g) {
-          graphics.push(...g)
+          graphics.push(...g.map(h => ({
+            ...h,
+            matrix: h.matrix ? (matrix ? m3.multiply(matrix, h.matrix) : undefined) : matrix,
+          })))
         }
       })
       return graphics
@@ -239,10 +261,9 @@ function Canvas(props: {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     const programInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
-    uniform vec2 resolution;
     uniform mat3 matrix;
     void main() {
-      gl_Position = vec4((((matrix * vec3(position.xy, 1)).xy / resolution) * 2.0 - 1.0) * vec2(1, -1), 0, 1);
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
     }
     `, `
     precision mediump float;
@@ -276,6 +297,7 @@ function Canvas(props: {
     }`]);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     const textBufferInfo = twgl.primitives.createPlaneBufferInfo(gl, 1, 1, 1, 1, twgl.m4.rotationX(Math.PI * 0.5));
+    const canvasTextureCache = new WeakmapCache<HTMLCanvasElement, WebGLTexture>()
 
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
       const now = Date.now()
@@ -285,7 +307,8 @@ function Canvas(props: {
       gl.clear(gl.COLOR_BUFFER_BIT)
       let lastProgram: WebGLProgram | undefined
 
-      let matrix = m3.translation(x, y)
+      let matrix = m3.projection(gl.canvas.width, gl.canvas.height)
+      matrix = m3.multiply(matrix, m3.translation(x, y))
       if (scale !== 1) {
         matrix = m3.multiply(matrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
         matrix = m3.multiply(matrix, m3.scaling(scale, scale));
@@ -304,7 +327,7 @@ function Canvas(props: {
             )
             textMatrix = m3.multiply(textMatrix, m3.scaling(scaleX * 2, scaleY * 2))
             const uniforms = {
-              texture: twgl.createTexture(gl, { src: line.canvas }),
+              texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
               color: line.color,
               matrix: textMatrix,
             };
@@ -327,9 +350,8 @@ function Canvas(props: {
           }
           twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo)
           twgl.setUniforms(programInfo, {
-            resolution: [gl.canvas.width, gl.canvas.height],
             color: line.color,
-            matrix,
+            matrix: line.matrix ? m3.multiply(matrix, line.matrix) : matrix,
           });
           lastProgram = programInfo.program
           twgl.drawBufferInfo(gl, bufferInfo, line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES);

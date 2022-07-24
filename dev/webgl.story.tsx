@@ -106,10 +106,9 @@ export default () => {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     const programInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
-    uniform vec2 resolution;
     uniform mat3 matrix;
     void main() {
-      gl_Position = vec4((((matrix * vec3(position.xy, 1)).xy / resolution) * 2.0 - 1.0) * vec2(1, -1), 0, 1);
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
     }
     `, `
     precision mediump float;
@@ -151,7 +150,8 @@ export default () => {
       gl.clearColor(...gs.backgroundColor)
       gl.clear(gl.COLOR_BUFFER_BIT)
 
-      let matrix = m3.translation(x, y)
+      let matrix = m3.projection(gl.canvas.width, gl.canvas.height)
+      matrix = m3.multiply(matrix, m3.translation(x, y))
       if (scale !== 1) {
         matrix = m3.multiply(matrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
         matrix = m3.multiply(matrix, m3.scaling(scale, scale));
@@ -166,7 +166,6 @@ export default () => {
           },
         };
         const uniforms = {
-          resolution: [gl.canvas.width, gl.canvas.height],
           color: line.color,
           matrix,
         };

@@ -536,8 +536,10 @@ export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position,
 
 // @public (undocumented)
 export const m3: {
+    projection(width: number, height: number): number[];
     identity(): number[];
     translation(tx: number, ty: number): number[];
+    rotation(angleInRadians: number): number[];
     scaling(sx: number, sy: number): number[];
     multiply: (a: number[], b: number[]) => number[];
 };
