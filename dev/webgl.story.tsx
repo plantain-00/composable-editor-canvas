@@ -147,8 +147,9 @@ export default () => {
         matrix = m3.multiply(matrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
       }
 
+      const objectsToDraw: twgl.DrawObject[] = []
       for (const line of gs.lines) {
-        twgl.drawObjectList(gl, [{
+        objectsToDraw.push({
           programInfo,
           bufferInfo: twgl.createBufferInfoFromArrays(gl, {
             position: {
@@ -161,12 +162,12 @@ export default () => {
             matrix,
           },
           type: gl.TRIANGLE_STRIP,
-        }]);
+        })
       }
 
       matrix = m3.multiply(matrix, m3.translation(gs.position.x, gs.position.y))
       matrix = m3.multiply(matrix, m3.scaling(gs.canvas.width, gs.canvas.height))
-      twgl.drawObjectList(gl, [{
+      objectsToDraw.push({
         programInfo: programInfo2,
         bufferInfo: textBufferInfo,
         uniforms: {
@@ -174,7 +175,8 @@ export default () => {
           color: gs.color,
           texture: twgl.createTexture(gl, { src: gs.canvas }),
         },
-      }]);
+      })
+      twgl.drawObjectList(gl, objectsToDraw)
     }
   }, [ref.current])
 
