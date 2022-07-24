@@ -3,6 +3,13 @@
  * @public
  */
 export const m3 = {
+  projection(width: number, height: number) {
+    return [
+      2 / width, 0, 0,
+      0, -2 / height, 0,
+      -1, 1, 1
+    ];
+  },
   identity() {
     return [
       1, 0, 0,
@@ -15,6 +22,15 @@ export const m3 = {
       1, 0, 0,
       0, 1, 0,
       tx, ty, 1,
+    ];
+  },
+  rotation(angleInRadians: number) {
+    const c = Math.cos(angleInRadians);
+    const s = Math.sin(angleInRadians);
+    return [
+      c, -s, 0,
+      s, c, 0,
+      0, 0, 1,
     ];
   },
   scaling(sx: number, sy: number) {

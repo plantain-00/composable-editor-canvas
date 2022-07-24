@@ -1,5 +1,6 @@
 import { isSelected, useCursorInput } from "../../src"
 import { BlockContent, isBlockContent } from "../models/block-model"
+import { BlockReferenceContent } from "../models/block-reference-model"
 import { Command } from "./command"
 
 export const createBlockReferenceCommand: Command = {
@@ -20,11 +21,11 @@ export const createBlockReferenceCommand: Command = {
               .filter((c, i): c is BlockContent => isSelected([i], selected) && isBlockContent(c))
               .map((block) => ({
                 type: 'block reference',
-                id: block.id,
+                refId: block.id,
                 x: p.x - block.base.x,
                 y: p.y - block.base.y,
                 angle: 0,
-              }))
+              } as BlockReferenceContent))
             )
             setCursorPosition(undefined)
           }
@@ -47,11 +48,11 @@ export const createBlockReferenceCommand: Command = {
             newContents: [
               {
                 type: 'block reference',
-                id: content.id,
+                refId: content.id,
                 x: cursorPosition.x - content.base.x,
                 y: cursorPosition.y - content.base.y,
                 angle: 0,
-              },
+              } as BlockReferenceContent,
             ],
             assistentContents: [
               {
