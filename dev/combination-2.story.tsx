@@ -15,7 +15,6 @@ import { cloneCommand } from './commands/clone'
 import { explodeCommand } from './commands/explode'
 import { deleteCommand } from './commands/delete'
 import { getAllRendererTypes, registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
-import { reactPixiRenderTarget } from './renderers/react-pixi-render-target'
 import { polygonModel } from './models/polygon-model'
 import { EllipseContent, ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
@@ -103,7 +102,6 @@ registerCommand(createGroupCommand)
 registerCommand(fillCommand)
 
 registerRenderer(reactSvgRenderTarget)
-registerRenderer(reactPixiRenderTarget)
 registerRenderer(reactCanvasRenderTarget)
 registerRenderer(reactWebglRenderTarget)
 
