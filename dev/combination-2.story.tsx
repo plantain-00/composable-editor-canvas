@@ -310,6 +310,7 @@ const CADEditor = React.forwardRef((props: {
       const newContents = new Set<BaseContent>()
       const removedContents = new Set<BaseContent>()
       for (const patch of patches) {
+        // type-coverage:ignore-next-line
         const index = patch.path[0] as number
         if (patch.op !== 'remove' || patch.path.length > 1) {
           newContents.add(newState[index])

@@ -79,6 +79,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "typeCoverage": {
-    "atLeast": 99.97
+    "atLeast": 100
   }
 }

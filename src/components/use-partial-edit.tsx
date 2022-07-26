@@ -35,8 +35,10 @@ export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
 
 function getByPath<T>(target: T, path?: SelectPath) {
   if (path) {
+    // type-coverage:ignore-next-line
     let result: any = target
     for (const p of path) {
+      // type-coverage:ignore-next-line
       result = result[p]
     }
     return result as T

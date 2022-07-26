@@ -58,10 +58,10 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
               c.position.x += cursor.x - start.x
               c.position.y += cursor.y - start.y
               const target = getRadialDimensionReferenceTarget(c.refId, contents)
-              if (target && getTwoPointsDistance(target, c.position) > target.r) {
+              if (!target || getTwoPointsDistance(target, c.position) > target.r) {
                 return
               }
-              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [target, cursor] } as LineContent] }
             },
           }
         ]

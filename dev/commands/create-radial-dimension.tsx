@@ -26,6 +26,7 @@ export const createRadialDimensionCommand: Command = {
                 const content = selected[0].content
                 if (contentSelectable(content)) {
                   result.refId = getNextId(contents);
+                  // type-coverage:ignore-next-line
                   (contents[selected[0].path[0]] as CircleContent | ArcContent).id = result.refId
                 }
               }
