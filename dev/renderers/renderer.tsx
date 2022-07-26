@@ -32,6 +32,7 @@ export function Renderer(props: {
 
   const previewPatches = props.previewPatches ?? []
   const previewContents = previewPatches.length > 0 ? applyPatches(props.contents, previewPatches) : props.contents
+  // type-coverage:ignore-next-line
   const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
   visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
 
