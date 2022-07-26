@@ -116,6 +116,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       strokeColor: number
       dashArray: number[]
       strokeWidth: number
+      fillColor: number
     }>,
   ): T
 }
