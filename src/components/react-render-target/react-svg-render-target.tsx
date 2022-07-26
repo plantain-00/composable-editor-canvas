@@ -163,19 +163,40 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidt
     )
   },
   renderPath(lines, options) {
-    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
-    return (key, strokeWidthScale) => (
-      <path
-        d={d}
-        key={key}
-        strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeDasharray={options?.dashArray?.join(' ')}
-        fill={fill}
-        fillRule='evenodd'
-      />
-    )
+    return (key, strokeWidthScale) => {
+      let defs: JSX.Element | undefined
+      if (options?.fillPattern) {
+        const id = `${key}-pattern`
+        defs = (
+          <pattern
+            id={id}
+            patternUnits="userSpaceOnUse"
+            patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
+            width={options.fillPattern.width}
+            height={options.fillPattern.height}
+          >
+            {options.fillPattern.path.map((p, i) => this.renderPath(p.lines, p.options)(i, strokeWidthScale))}
+          </pattern>
+        )
+        fill = `url(#${id})`
+      }
+      return (
+        <>
+          {defs}
+          <path
+            d={d}
+            key={key}
+            strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
+            stroke={getColorString(options?.strokeColor ?? 0)}
+            strokeDasharray={options?.dashArray?.join(' ')}
+            fill={fill}
+            fillRule='evenodd'
+          />
+        </>
+      )
+    }
   },
 }
 
