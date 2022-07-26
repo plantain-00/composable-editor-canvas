@@ -1,4 +1,4 @@
-import { Position } from "../../utils"
+import { Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -117,8 +117,24 @@ export interface ReactRenderTarget<T = JSX.Element> {
       dashArray: number[]
       strokeWidth: number
       fillColor: number
+      fillPattern: Pattern
     }>,
   ): T
+}
+
+/**
+ * @public
+ */
+export interface Pattern extends Size {
+  path: {
+    lines: Position[][],
+    options?: Partial<{
+      strokeColor: number
+      strokeWidth: number
+      fillColor: number
+    }>
+  }[]
+  rotate?: number
 }
 
 export function renderPartStyledPolyline<T>(

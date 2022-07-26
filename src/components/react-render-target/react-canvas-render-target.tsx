@@ -190,8 +190,30 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.stroke()
       }
-      if (options?.fillColor !== undefined) {
-        ctx.fillStyle = getColorString(options.fillColor)
+      if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
+        if (options.fillPattern !== undefined) {
+          const canvas = document.createElement("canvas")
+          canvas.width = options.fillPattern.width
+          canvas.height = options.fillPattern.height
+          const patternCtx = canvas.getContext('2d')
+          if (patternCtx) {
+            options.fillPattern.path.forEach((p) => {
+              this.renderPath(p.lines, p.options)(patternCtx, strokeWidthScale)
+            })
+            const pattern = ctx.createPattern(canvas, null)
+            if (pattern) {
+              if (options.fillPattern.rotate) {
+                const rotate = options.fillPattern.rotate * Math.PI / 180
+                const c = Math.cos(rotate)
+                const s = Math.sin(rotate)
+                pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
+              }
+              ctx.fillStyle = pattern
+            }
+          }
+        } else if (options.fillColor !== undefined) {
+          ctx.fillStyle = getColorString(options.fillColor)
+        }
         ctx.fill('evenodd')
       }
     }

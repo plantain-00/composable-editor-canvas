@@ -24,6 +24,35 @@ export default () => {
             [{ x: 10, y: 110 }, { x: 50, y: 250 }, { x: 50, y: 110 }],
             [{ x: 30, y: 130 }, { x: 30, y: 170 }, { x: 40, y: 170 }, { x: 40, y: 130 }]
           ], { fillColor: 0xff00ff, strokeWidth: 0 }),
+        target.renderPath(
+          [
+            [{ x: 240, y: 10 }, { x: 280, y: 150 }, { x: 280, y: 10 }],
+            [{ x: 260, y: 30 }, { x: 260, y: 70 }, { x: 270, y: 70 }, { x: 270, y: 30 }]
+          ],
+          {
+            fillPattern: {
+              width: 5,
+              height: 5,
+              rotate: 45,
+              path: [{
+                lines: [[
+                  {
+                    x: 0,
+                    y: 0,
+                  },
+                  {
+                    x: 0,
+                    y: 5,
+                  },
+                ]],
+                options: {
+                  strokeColor: 0x0000ff,
+                }
+              }]
+            },
+            strokeWidth: 0,
+          },
+        ),
         target.renderRect(50, 50, 100, 80, { strokeColor: 0xff00ff, angle: 60 }),
       ],
       300,

@@ -35,6 +35,7 @@ export default () => {
       ctx.fillStyle = 'white';
       ctx.fillText('abc', 0, ctx.canvas.height);
     }
+    const lineWidth = 1
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
       lines: [
@@ -45,13 +46,13 @@ export default () => {
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], 10),
+            ], lineWidth),
             getPolylineTriangles([
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], 10),
+            ], lineWidth),
           ]),
           color: [Math.random(), Math.random(), Math.random(), 1],
         },
@@ -62,16 +63,24 @@ export default () => {
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], 10),
+            ], lineWidth),
             getPolylineTriangles([
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], 10),
+            ], lineWidth),
           ]),
           color: [Math.random(), Math.random(), Math.random(), 1],
         },
+      ],
+      line: [
+        Math.random() * 600,
+        Math.random() * 400,
+        Math.random() * 600,
+        Math.random() * 400,
+        Math.random() * 600,
+        Math.random() * 400,
       ],
       canvas,
       color: [Math.random(), Math.random(), Math.random(), 1],
@@ -164,6 +173,20 @@ export default () => {
           type: gl.TRIANGLE_STRIP,
         })
       }
+      objectsToDraw.push({
+        programInfo,
+        bufferInfo: twgl.createBufferInfoFromArrays(gl, {
+          position: {
+            numComponents: 2,
+            data: gs.line
+          },
+        }),
+        uniforms: {
+          color: gs.color,
+          matrix,
+        },
+        type: gl.LINE_STRIP,
+      })
 
       matrix = m3.multiply(matrix, m3.translation(gs.position.x, gs.position.y))
       matrix = m3.multiply(matrix, m3.scaling(gs.canvas.width, gs.canvas.height))

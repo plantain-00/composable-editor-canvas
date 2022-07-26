@@ -560,6 +560,21 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
+export interface Pattern extends Size {
+    // (undocumented)
+    path: {
+        lines: Position[][];
+        options?: Partial<{
+            strokeColor: number;
+            strokeWidth: number;
+            fillColor: number;
+        }>;
+    }[];
+    // (undocumented)
+    rotate?: number;
+}
+
+// @public (undocumented)
 export function pointInPolygon({ x, y }: Position, polygon: Position[]): boolean;
 
 // @public (undocumented)
@@ -650,6 +665,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         dashArray: number[];
         strokeWidth: number;
         fillColor: number;
+        fillPattern: Pattern;
     }>): T;
     // (undocumented)
     renderPolygon(points: Position[], options?: Partial<{
