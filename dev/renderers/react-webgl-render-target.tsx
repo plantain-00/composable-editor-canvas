@@ -95,45 +95,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    return (strokeWidthScale) => {
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
-      const graphics: Graphic[] = []
-      if (strokeWidth) {
-        if (options?.dashArray) {
-          graphics.push({
-            type: 'triangles',
-            points: combineStripTriangles(
-              dashedPolylineToLines(points, options.dashArray, options.skippedLines)
-                .map(p => getPolylineTriangles(p, strokeWidth))
-            ),
-            color: strokeColor,
-            strip: true,
-          })
-        } else {
-          graphics.push({
-            type: 'triangles',
-            points: getPolylineTriangles(points, strokeWidth),
-            color: strokeColor,
-            strip: true,
-          })
-        }
-      }
-      if (options?.fillColor !== undefined) {
-        const index = earcut(points.map(p => [p.x, p.y]).flat())
-        const triangles: number[] = []
-        for (let i = 0; i < index.length; i += 3) {
-          triangles.push(points[index[i]].x, points[index[i]].y, points[index[i + 1]].x, points[index[i + 1]].y, points[index[i + 2]].x, points[index[i + 2]].y)
-        }
-        graphics.push({
-          type: 'triangles',
-          points: triangles,
-          strip: false,
-          color: colorNumberToRec(options.fillColor),
-        })
-      }
-      return graphics
-    }
+    const { dashArray, ...restOptions2 } = options ?? {}
+    const path = dashArray ? dashedPolylineToLines(points, dashArray, options?.skippedLines) : [points]
+    return this.renderPath(path, restOptions2)
   },
   renderPolygon(points, options) {
     return this.renderPolyline(polygonToPolyline(points), options)
@@ -193,12 +157,13 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
     return (strokeWidthScale) => {
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
-      if (options?.dashArray) {
-        const dashArray = options.dashArray
-        points = points.map(p => dashedPolylineToLines(p, dashArray)).flat()
-      }
-      return [
-        {
+      const graphics: Graphic[] = []
+      if (strokeWidth) {
+        if (options?.dashArray) {
+          const dashArray = options.dashArray
+          points = points.map(p => dashedPolylineToLines(p, dashArray)).flat()
+        }
+        graphics.push({
           type: 'triangles',
           points: combinedTrianglesCache.get(points, strokeWidth, () => {
             return combineStripTriangles(points.map(p => {
@@ -207,8 +172,34 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           }),
           color: strokeColor,
           strip: true,
-        },
-      ]
+        })
+      }
+      if (options?.fillColor !== undefined) {
+        const vertices: number[] = []
+        const holes: number[] = []
+        for (let i = 0; i < points.length; i++) {
+          if (i !== 0) {
+            holes.push(vertices.length / 2)
+          }
+          vertices.push(...points[i].map(p => [p.x, p.y]).flat())
+        }
+        const index = earcut(vertices, holes)
+        const triangles: number[] = []
+        for (let i = 0; i < index.length; i += 3) {
+          triangles.push(
+            vertices[index[i] * 2], vertices[index[i] * 2 + 1],
+            vertices[index[i + 1] * 2], vertices[index[i + 1] * 2 + 1],
+            vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1]
+          )
+        }
+        graphics.push({
+          type: 'triangles',
+          points: triangles,
+          strip: false,
+          color: colorNumberToRec(options.fillColor),
+        })
+      }
+      return graphics
     }
   },
 }

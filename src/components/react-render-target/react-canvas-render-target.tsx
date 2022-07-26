@@ -190,6 +190,10 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.stroke()
       }
+      if (options?.fillColor !== undefined) {
+        ctx.fillStyle = getColorString(options.fillColor)
+        ctx.fill('evenodd')
+      }
     }
   },
 }

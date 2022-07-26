@@ -163,6 +163,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidt
     )
   },
   renderPath(lines, options) {
+    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
     return (key, strokeWidthScale) => (
       <path
@@ -171,7 +172,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidt
         strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeDasharray={options?.dashArray?.join(' ')}
-        fill='none'
+        fill={fill}
+        fillRule='evenodd'
       />
     )
   },
