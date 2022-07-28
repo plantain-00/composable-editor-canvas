@@ -173,7 +173,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidt
           <pattern
             id={id}
             patternUnits="userSpaceOnUse"
-            patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
+            // patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
             width={options.fillPattern.width}
             height={options.fillPattern.height}
           >
@@ -183,18 +183,18 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key, strokeWidt
         fill = `url(#${id})`
       }
       return (
-        <>
+        <React.Fragment key={key}>
           {defs}
           <path
             d={d}
-            key={key}
             strokeWidth={(options?.strokeWidth ?? 1) * strokeWidthScale}
             stroke={getColorString(options?.strokeColor ?? 0)}
             strokeDasharray={options?.dashArray?.join(' ')}
             fill={fill}
             fillRule='evenodd'
+            // strokeLinecap={options?.lineCap}
           />
-        </>
+        </React.Fragment>
       )
     }
   },

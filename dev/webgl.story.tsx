@@ -35,7 +35,7 @@ export default () => {
       ctx.fillStyle = 'white';
       ctx.fillText('abc', 0, ctx.canvas.height);
     }
-    const lineWidth = 1
+    const lineWidth = 10
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
       lines: [
@@ -93,7 +93,7 @@ export default () => {
     if (!ref.current) {
       return
     }
-    const gl = ref.current.getContext("webgl", { antialias: true });
+    const gl = ref.current.getContext("webgl", { antialias: true, stencil: true });
     if (!gl) {
       return
     }
@@ -140,13 +140,33 @@ export default () => {
     }`]);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     const textBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
+    const programInfo3 = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    varying vec2 texcoord;
+    void main() {
+      gl_Position = position;
+      texcoord = position.xy * .5 + .5;
+    }
+    `, `
+    precision mediump float;
+    varying vec2 texcoord;
+    uniform sampler2D texture;
+    void main() {
+      gl_FragColor = texture2D(texture, texcoord);  
+    }
+    `]);
+    const imageBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
+    const imageTexture = twgl.createTexture(gl, {
+      src: "https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg",
+      crossOrigin: "",
+    });
 
     render.current = (gs, x, y, scale) => {
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
       gl.useProgram(programInfo.program);
       twgl.resizeCanvasToDisplaySize(gl.canvas);
       gl.clearColor(...gs.backgroundColor)
-      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
       let matrix = m3.projection(gl.canvas.width, gl.canvas.height)
       matrix = m3.multiply(matrix, m3.translation(x, y))
@@ -173,7 +193,7 @@ export default () => {
           type: gl.TRIANGLE_STRIP,
         })
       }
-      objectsToDraw.push({
+      const objectsToDraw2 = [{
         programInfo,
         bufferInfo: twgl.createBufferInfoFromArrays(gl, {
           position: {
@@ -186,20 +206,57 @@ export default () => {
           matrix,
         },
         type: gl.LINE_STRIP,
-      })
+      }]
 
       matrix = m3.multiply(matrix, m3.translation(gs.position.x, gs.position.y))
       matrix = m3.multiply(matrix, m3.scaling(gs.canvas.width, gs.canvas.height))
-      objectsToDraw.push({
-        programInfo: programInfo2,
-        bufferInfo: textBufferInfo,
-        uniforms: {
-          matrix,
-          color: gs.color,
-          texture: twgl.createTexture(gl, { src: gs.canvas }),
-        },
-      })
       twgl.drawObjectList(gl, objectsToDraw)
+
+      gl.enable(gl.STENCIL_TEST);
+      gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+      gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+      twgl.drawObjectList(gl, [
+        {
+          programInfo: programInfo2,
+          bufferInfo: textBufferInfo,
+          uniforms: {
+            matrix,
+            color: gs.color,
+            texture: twgl.createTexture(gl, { src: gs.canvas }),
+          },
+        },
+        {
+          programInfo: programInfo2,
+          bufferInfo: textBufferInfo,
+          uniforms: {
+            matrix: m3.multiply(matrix, m3.translation(1, 0)),
+            color: gs.color,
+            texture: twgl.createTexture(gl, { src: gs.canvas }),
+          },
+        },
+        {
+          programInfo: programInfo2,
+          bufferInfo: textBufferInfo,
+          uniforms: {
+            matrix: m3.multiply(matrix, m3.translation(1, 1)),
+            color: gs.color,
+            texture: twgl.createTexture(gl, { src: gs.canvas }),
+          },
+        }
+      ])
+
+      gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+      gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+      twgl.drawObjectList(gl, [{
+        programInfo: programInfo3,
+        bufferInfo: imageBufferInfo,
+        uniforms: {
+          texture: imageTexture
+        },
+      }])
+      gl.disable(gl.STENCIL_TEST);
+
+      twgl.drawObjectList(gl, objectsToDraw2)
     }
   }, [ref.current])
 
