@@ -1,7 +1,7 @@
 import React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, WeakmapCache, WeakmapMapCache } from "../../src"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../src"
 
 type Graphic = {
   type: 'triangles'
@@ -9,6 +9,9 @@ type Graphic = {
   color: [number, number, number, number]
   strip: boolean
   matrix?: number[]
+  pattern?: {
+    graphics: Graphic[]
+  } & Size
 } | {
   type: 'texture'
   color: [number, number, number, number]
@@ -174,7 +177,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           strip: true,
         })
       }
-      if (options?.fillColor !== undefined) {
+      if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
         const vertices: number[] = []
         const holes: number[] = []
         for (let i = 0; i < points.length; i++) {
@@ -192,12 +195,29 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
             vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1]
           )
         }
-        graphics.push({
-          type: 'triangles',
-          points: triangles,
-          strip: false,
-          color: colorNumberToRec(options.fillColor),
-        })
+        if (options?.fillPattern !== undefined) {
+          const pathGraphics = options.fillPattern.path.map((p) => {
+            return this.renderPath(p.lines, p.options)(strokeWidthScale)
+          }).flat()
+          graphics.push({
+            type: 'triangles',
+            points: triangles,
+            strip: false,
+            color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
+            pattern: {
+              graphics: pathGraphics,
+              width: options.fillPattern.width,
+              height: options.fillPattern.height,
+            },
+          })
+        } else if (options?.fillColor !== undefined) {
+          graphics.push({
+            type: 'triangles',
+            points: triangles,
+            strip: false,
+            color: colorNumberToRec(options.fillColor),
+          })
+        }
       }
       return graphics
     }
@@ -244,7 +264,7 @@ function Canvas(props: {
     if (!ref.current) {
       return
     }
-    const gl = ref.current.getContext("webgl", { antialias: true });
+    const gl = ref.current.getContext("webgl", { antialias: true, stencil: true });
     if (!gl) {
       return
     }
@@ -298,7 +318,7 @@ function Canvas(props: {
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
       twgl.resizeCanvasToDisplaySize(gl.canvas);
       gl.clearColor(...backgroundColor)
-      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
       let worldMatrix = m3.projection(gl.canvas.width, gl.canvas.height)
       worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
@@ -308,7 +328,7 @@ function Canvas(props: {
         worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
       }
 
-      const objectsToDraw: twgl.DrawObject[] = []
+      let objectsToDraw: twgl.DrawObject[] = []
       for (const g of graphics) {
         const lines = g(strokeWidthScale)
         for (const line of lines) {
@@ -325,6 +345,78 @@ function Canvas(props: {
                 texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
               },
             })
+            continue
+          }
+          if (line.pattern) {
+            twgl.drawObjectList(gl, objectsToDraw)
+            objectsToDraw = []
+
+            gl.enable(gl.STENCIL_TEST);
+            gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+            gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+            twgl.drawObjectList(gl, [{
+              programInfo,
+              bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
+                position: {
+                  numComponents: 2,
+                  data: line.points
+                },
+              })),
+              uniforms: {
+                color: line.color,
+                matrix,
+              },
+              type: line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
+            }])
+
+            gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+            gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+            let xMin = Infinity
+            let yMin = Infinity
+            let xMax = -Infinity
+            let yMax = -Infinity
+            for (let i = 0; i < line.points.length; i += 2) {
+              if (line.points[i] < xMin) {
+                xMin = line.points[i]
+              } else if (line.points[i] > xMax) {
+                xMax = line.points[i]
+              }
+              if (line.points[i + 1] < yMin) {
+                yMin = line.points[i + 1]
+              } else if (line.points[i + 1] > yMax) {
+                yMax = line.points[i + 1]
+              }
+            }
+            const columns = Math.ceil((xMax - xMin) / line.pattern.width)
+            const rows = Math.ceil((yMax - yMin) / line.pattern.height)
+            for (let i = 0; i < columns; i++) {
+              for (let j = 0; j < rows; j++) {
+                const baseMatrix = m3.multiply(matrix, m3.translation(xMin + i * line.pattern.width, yMin + j * line.pattern.height))
+                for (const p of line.pattern.graphics) {
+                  if (p.type === 'triangles') {
+                    objectsToDraw.push({
+                      programInfo,
+                      bufferInfo: bufferInfoCache.get(p.points, () => twgl.createBufferInfoFromArrays(gl, {
+                        position: {
+                          numComponents: 2,
+                          data: p.points
+                        },
+                      })),
+                      uniforms: {
+                        color: p.color,
+                        matrix: baseMatrix,
+                      },
+                      type: p.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
+                    })
+                  }
+                }
+              }
+            }
+            twgl.drawObjectList(gl, objectsToDraw)
+            objectsToDraw = []
+
+            gl.disable(gl.STENCIL_TEST);
             continue
           }
           objectsToDraw.push({

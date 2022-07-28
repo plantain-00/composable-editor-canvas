@@ -31,22 +31,16 @@ export default () => {
           ],
           {
             fillPattern: {
-              width: 5,
-              height: 5,
-              rotate: 45,
+              width: 10,
+              height: 10,
               path: [{
-                lines: [[
-                  {
-                    x: 0,
-                    y: 0,
-                  },
-                  {
-                    x: 0,
-                    y: 5,
-                  },
-                ]],
+                lines: [
+                  [{ x: 0, y: 5 }, { x: 5, y: 0 }],
+                  [{ x: 10, y: 5 }, { x: 5, y: 10 }],
+                ],
                 options: {
                   strokeColor: 0x0000ff,
+                  // lineCap: 'square',
                 }
               }]
             },

@@ -570,8 +570,6 @@ export interface Pattern extends Size {
             fillColor: number;
         }>;
     }[];
-    // (undocumented)
-    rotate?: number;
 }
 
 // @public (undocumented)

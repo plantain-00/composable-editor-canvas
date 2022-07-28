@@ -188,6 +188,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        // ctx.lineCap = options?.lineCap ?? 'butt'
         ctx.stroke()
       }
       if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
@@ -202,12 +203,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
             })
             const pattern = ctx.createPattern(canvas, null)
             if (pattern) {
-              if (options.fillPattern.rotate) {
-                const rotate = options.fillPattern.rotate * Math.PI / 180
-                const c = Math.cos(rotate)
-                const s = Math.sin(rotate)
-                pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
-              }
+              // if (options.fillPattern.rotate) {
+              //   const rotate = options.fillPattern.rotate * Math.PI / 180
+              //   const c = Math.cos(rotate)
+              //   const s = Math.sin(rotate)
+              //   pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
+              // }
               ctx.fillStyle = pattern
             }
           }

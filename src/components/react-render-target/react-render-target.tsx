@@ -117,6 +117,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       dashArray: number[]
       strokeWidth: number
       fillColor: number
+      // lineCap?: 'butt' | 'round' | 'square'
       fillPattern: Pattern
     }>,
   ): T
@@ -132,9 +133,10 @@ export interface Pattern extends Size {
       strokeColor: number
       strokeWidth: number
       fillColor: number
+      // lineCap?: 'butt' | 'round' | 'square'
     }>
   }[]
-  rotate?: number
+  // rotate?: number
 }
 
 export function renderPartStyledPolyline<T>(
