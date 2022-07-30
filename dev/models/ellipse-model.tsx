@@ -1,4 +1,4 @@
-import { dashedPolylineToLines, Ellipse, ellipseToPolygon, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, Position, rotatePositionByCenter } from '../../src'
+import { dashedPolylineToLines, Ellipse, ellipseToPolygon, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
@@ -148,11 +148,12 @@ export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
   return getGeometriesFromCache(content, () => {
     const points = ellipseToPolygon(content, angleDelta)
     const lines = Array.from(iteratePolygonLines(points))
+    const polylinePoints = polygonToPolyline(points)
     return {
       lines,
       points,
       bounding: getPointsBounding(points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
+      renderingLines: content.dashArray ? dashedPolylineToLines(polylinePoints, content.dashArray) : [polylinePoints],
       regions: content.fillColor !== undefined ? [
         {
           lines,

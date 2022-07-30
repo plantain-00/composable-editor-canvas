@@ -4,7 +4,7 @@ import earcut from 'earcut'
 import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../src"
 
 type Graphic = {
-  type: 'triangles'
+  type: 'triangles' | 'lines'
   points: number[]
   color: [number, number, number, number]
   strip: boolean
@@ -158,7 +158,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
   },
   renderPath(points, options) {
     return (strokeWidthScale) => {
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
+      let strokeWidth = options?.strokeWidth ?? 1
+
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
       const graphics: Graphic[] = []
       if (strokeWidth) {
@@ -166,16 +167,37 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           const dashArray = options.dashArray
           points = points.map(p => dashedPolylineToLines(p, dashArray)).flat()
         }
-        graphics.push({
-          type: 'triangles',
-          points: combinedTrianglesCache.get(points, strokeWidth, () => {
-            return combineStripTriangles(points.map(p => {
-              return polylineTrianglesCache.get(p, strokeWidth, () => getPolylineTriangles(p, strokeWidth))
-            }))
-          }),
-          color: strokeColor,
-          strip: true,
-        })
+
+        if (strokeWidth === 1) {
+          graphics.push({
+            type: 'lines',
+            points: combinedLinesCache.get(points, () => {
+              return points.map(p => {
+                return polylineLinesCache.get(p, () => {
+                  const result: number[] = []
+                  for (let i = 1; i < p.length; i++) {
+                    result.push(p[i - 1].x, p[i - 1].y, p[i].x, p[i].y)
+                  }
+                  return result
+                })
+              }).flat()
+            }),
+            color: strokeColor,
+            strip: false,
+          })
+        } else {
+          strokeWidth *= strokeWidthScale
+          graphics.push({
+            type: 'triangles',
+            points: combinedTrianglesCache.get(points, strokeWidth, () => {
+              return combineStripTriangles(points.map(p => {
+                return polylineTrianglesCache.get(p, strokeWidth, () => getPolylineTriangles(p, strokeWidth))
+              }))
+            }),
+            color: strokeColor,
+            strip: true,
+          })
+        }
       }
       if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
         const vertices: number[] = []
@@ -228,6 +250,8 @@ const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>
 const combinedTrianglesCache = new WeakmapMapCache<Position[][], number, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 const textCanvasCache = new WeakmapCache<object, HTMLCanvasElement>()
+const polylineLinesCache = new WeakmapCache<Position[], number[]>()
+const combinedLinesCache = new WeakmapCache<Position[][], number[]>()
 
 function Canvas(props: {
   width: number,
@@ -394,7 +418,7 @@ function Canvas(props: {
               for (let j = 0; j < rows; j++) {
                 const baseMatrix = m3.multiply(matrix, m3.translation(xMin + i * line.pattern.width, yMin + j * line.pattern.height))
                 for (const p of line.pattern.graphics) {
-                  if (p.type === 'triangles') {
+                  if (p.type === 'triangles' || p.type === 'lines') {
                     objectsToDraw.push({
                       programInfo,
                       bufferInfo: bufferInfoCache.get(p.points, () => twgl.createBufferInfoFromArrays(gl, {
@@ -407,7 +431,7 @@ function Canvas(props: {
                         color: p.color,
                         matrix: baseMatrix,
                       },
-                      type: p.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
+                      type: getDrawType(p, gl),
                     })
                   }
                 }
@@ -431,7 +455,7 @@ function Canvas(props: {
               color: line.color,
               matrix,
             },
-            type: line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
+            type: getDrawType(line, gl),
           })
         }
       }
@@ -460,6 +484,18 @@ function Canvas(props: {
       {...props.attributes}
     />
   )
+}
+
+function getDrawType(
+  graphic: {
+    type: 'triangles' | 'lines'
+    strip: boolean
+  },
+  gl: WebGLRenderingContext,
+) {
+  return graphic.type === 'triangles'
+    ? (graphic.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES)
+    : (graphic.strip ? gl.LINE_STRIP : gl.LINES)
 }
 
 function colorNumberToRec(n: number, alpha = 1) {

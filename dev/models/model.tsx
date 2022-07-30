@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, EditPoint, GeneralFormLine, iterateIntersectionPoints, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2 } from '../../src'
+import { Circle, EditPoint, GeneralFormLine, getPointsBounding, iterateIntersectionPoints, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { isArcContent } from './arc-model'
 import { isBlockContent } from './block-model'
 import { isCircleContent } from './circle-model'
@@ -126,4 +126,38 @@ export function getNextId(contents: BaseContent[]) {
     }
   })
   return id
+}
+
+export function zoomContentsToFit(
+  width: number,
+  height: number,
+  editingContent: readonly BaseContent[],
+  state: readonly BaseContent[],
+  paddingScale = 0.8,
+) {
+  const points: Position[] = []
+  editingContent.forEach((c) => {
+    const model = getModel(c.type)
+    if (model?.getCircle) {
+      const { bounding } = model.getCircle(c)
+      points.push(bounding.start, bounding.end)
+    } else if (model?.getGeometries) {
+      const { bounding } = model.getGeometries(c, state)
+      if (bounding) {
+        points.push(bounding.start, bounding.end)
+      }
+    }
+  })
+  const bounding = getPointsBounding(points)
+  if (!bounding) {
+    return
+  }
+  const result = zoomToFit(bounding, { width, height }, { x: width / 2, y: height / 2 }, paddingScale)
+  if (!result) {
+    return
+  }
+  return {
+    bounding,
+    ...result,
+  }
 }
