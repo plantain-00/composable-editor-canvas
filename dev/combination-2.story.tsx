@@ -1,8 +1,8 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, zoomToFit, scaleByCursorPosition, colorStringToNumber, getColorString, getPointsBounding, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, scaleByCursorPosition, colorStringToNumber, getColorString, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel } from './models/model'
+import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
 import { LineContent, lineModel } from './models/line-model'
 import { CircleContent, circleModel } from './models/circle-model'
 import { polylineModel } from './models/polyline-model'
@@ -101,9 +101,9 @@ registerCommand(createLinearDimensionCommand)
 registerCommand(createGroupCommand)
 registerCommand(fillCommand)
 
+registerRenderer(reactWebglRenderTarget)
 registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactCanvasRenderTarget)
-registerRenderer(reactWebglRenderTarget)
 
 const key = 'combination-2.json'
 
@@ -341,6 +341,7 @@ const CADEditor = React.forwardRef((props: {
           }, content)
         }
       }
+      setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
     },
   })
   const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
@@ -475,20 +476,7 @@ const CADEditor = React.forwardRef((props: {
       ))
     } else {
       // double click
-      const points: Position[] = []
-      editingContent.forEach((c) => {
-        const model = getModel(c.type)
-        if (model?.getCircle) {
-          const { bounding } = model.getCircle(c)
-          points.push(bounding.start, bounding.end)
-        } else if (model?.getGeometries) {
-          const { bounding } = model.getGeometries(c, state)
-          if (bounding) {
-            points.push(bounding.start, bounding.end)
-          }
-        }
-      })
-      const result = zoomToFit(getPointsBounding(points), { width, height }, transform.center)
+      const result = zoomContentsToFit(width, height, editingContent, state)
       if (result) {
         setScale(result.scale)
         setX(result.x)
@@ -694,9 +682,11 @@ const CADEditor = React.forwardRef((props: {
     }
     return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
   }
+  const start = reverseTransformPosition({ x: 0, y: 0 }, transform)
+  const end = reverseTransformPosition({ x: width, y: height }, transform)
   const searchResult = getContentsInRange({
-    start: reverseTransformPosition({ x: 0, y: 0 }, transform),
-    end: reverseTransformPosition({ x: width, y: height }, transform),
+    start,
+    end,
   })
   visibleContents.clear()
   visibleContents.add(...searchResult)
@@ -719,9 +709,63 @@ const CADEditor = React.forwardRef((props: {
     setRTree(newRTree)
   }
 
+  const minimapHeight = 100
+  const minimapWidth = 100
+  const [minimapTransform, setMinimapTransform] = React.useState<{ x: number, y: number, scale: number, bounding: TwoPointsFormRegion }>()
   React.useEffect(() => {
     rebuildRTree(props.initialState)
+    setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, state, state, 1))
   }, [props.initialState])
+  let minimap: JSX.Element | undefined
+  if (minimapTransform) {
+    const contentWidth = minimapTransform.bounding.end.x - minimapTransform.bounding.start.x
+    const contentHeight = minimapTransform.bounding.end.y - minimapTransform.bounding.start.y
+    const xRatio = minimapWidth / contentWidth
+    const yRatio = minimapHeight / contentHeight
+    let xOffset = 0
+    let yOffset = 0
+    let ratio: number
+    if (xRatio < yRatio) {
+      ratio = xRatio
+      yOffset = (minimapHeight - ratio * contentHeight) / 2
+    } else {
+      ratio = yRatio
+      xOffset = (minimapWidth - ratio * contentWidth) / 2
+    }
+    minimap = (
+      <div
+        style={{
+          position: 'absolute',
+          left: '1px',
+          bottom: '1px',
+          width: `${minimapWidth}px`,
+          height: `${minimapHeight}px`,
+          clipPath: 'inset(0)',
+          border: '1px solid blue',
+        }}
+      >
+        <MemoizedRenderer
+          type={renderTarget}
+          contents={editingContent}
+          x={minimapTransform.x}
+          y={minimapTransform.y}
+          scale={minimapTransform.scale}
+          width={minimapWidth}
+          height={minimapHeight}
+          backgroundColor={props.backgroundColor}
+          simplified
+        />
+        <div style={{
+          position: 'absolute',
+          border: '1px solid red',
+          left: `${xOffset + ratio * (start.x - minimapTransform.bounding.start.x)}px`,
+          top: `${yOffset + ratio * (start.y - minimapTransform.bounding.start.y)}px`,
+          width: `${ratio * (end.x - start.x)}px`,
+          height: `${ratio * (end.y - start.y)}px`,
+        }}></div>
+      </div>
+    )
+  }
   console.info(Date.now() - now, searchResult.length)
 
   return (
@@ -746,6 +790,7 @@ const CADEditor = React.forwardRef((props: {
           backgroundColor={props.backgroundColor}
           simplified={simplified}
         />}
+        {minimap}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
         {commandMasks}
         {selectionInput}

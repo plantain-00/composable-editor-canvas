@@ -720,7 +720,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
 }
 
 // @public (undocumented)
-export const reactSvgRenderTarget: ReactRenderTarget<(key: React_2.Key, strokeWidthScale: number) => JSX.Element>;
+export const reactSvgRenderTarget: ReactRenderTarget<(key: React_2.Key) => JSX.Element>;
 
 // @public (undocumented)
 export interface Region extends Position, Size {

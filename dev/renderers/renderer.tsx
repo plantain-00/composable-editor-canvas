@@ -8,9 +8,9 @@ export function Renderer(props: {
   contents: readonly BaseContent[]
   previewPatches?: Patch[]
   assistentContents?: readonly BaseContent[]
-  selected: readonly number[][]
-  othersSelectedContents: readonly { selection: number[], operator: string }[]
-  hovering: readonly number[][]
+  selected?: readonly number[][]
+  othersSelectedContents?: readonly { selection: number[], operator: string }[]
+  hovering?: readonly number[][]
   x: number
   y: number
   scale: number
@@ -18,10 +18,10 @@ export function Renderer(props: {
   height: number
   backgroundColor: number
   simplified: boolean
-} & React.DOMAttributes<HTMLOrSVGElement>) {
+} & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
-  const strokeWidthScale = props.simplified ? 1 : 1 / props.scale
+  const strokeWidthScale = 1 / props.scale
   useValueChanged(props.type, () => renderCache.clear())
   useValueChanged(props.backgroundColor, () => renderCache.clear())
 
@@ -115,14 +115,16 @@ export function Renderer(props: {
   }
 
   if (!props.simplified) {
-    if (props.othersSelectedContents.length > 0) {
+    const selected = props.selected || []
+    const othersSelectedContents = props.othersSelectedContents || []
+    if (othersSelectedContents.length > 0) {
       props.contents.forEach((content, i) => {
         const model = getModel(content.type)
         if (!model) {
           return
         }
-        const operators = props.othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
-        if (isSelected([i], props.selected)) {
+        const operators = othersSelectedContents.filter((s) => s.selection.includes(i)).map((c) => c.operator)
+        if (isSelected([i], selected)) {
           operators.unshift('me')
         }
         if (model.getOperatorRenderPosition && operators.length > 0) {
@@ -133,14 +135,14 @@ export function Renderer(props: {
       })
     }
 
-    for (const index of props.hovering) {
+    for (const index of (props.hovering || [])) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
         renderContent(content, 0x00ff00, strokeWidth * 2)
       }
     }
 
-    for (const index of props.selected) {
+    for (const index of selected) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
         renderContent(content, 0xff0000, strokeWidth * 2)
@@ -169,6 +171,7 @@ export function Renderer(props: {
       style: {
         position: 'absolute',
         boxSizing: 'border-box',
+        ...props.style,
       },
       onClick: props.onClick,
       onMouseDown: props.onMouseDown,
