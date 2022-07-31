@@ -1,11 +1,11 @@
 import * as React from "react"
-import { getColorString, loadImage, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { getColorString, loadImage, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { polygonToPolyline } from "../../utils"
 
 /**
  * @public
  */
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void> = {
+export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   type: 'canvas',
   renderResult(children, width, height, options) {
     return (
@@ -49,7 +49,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderRect(x, y, width, height, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
       if (options?.angle) {
@@ -72,6 +72,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.strokeRect(x, y, width, height)
       }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -80,7 +81,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -99,10 +100,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.stroke()
       }
-      if (options?.fillColor !== undefined) {
-        ctx.fillStyle = getColorString(options.fillColor)
-        ctx.fill()
-      }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -110,7 +108,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
@@ -120,15 +118,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.lineWidth = strokeWidth
         ctx.stroke()
       }
-      if (options?.fillColor !== undefined) {
-        ctx.fillStyle = getColorString(options.fillColor)
-        ctx.fill()
-      }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
@@ -139,15 +134,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.stroke()
       }
-      if (options?.fillColor !== undefined) {
-        ctx.fillStyle = getColorString(options.fillColor)
-        ctx.fill()
-      }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
@@ -157,6 +149,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.stroke()
       }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -207,37 +200,46 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         // ctx.lineCap = options?.lineCap ?? 'butt'
         ctx.stroke()
       }
-      if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
-        if (options.fillPattern !== undefined) {
-          const canvas = document.createElement("canvas")
-          canvas.width = options.fillPattern.width
-          canvas.height = options.fillPattern.height
-          const patternCtx = canvas.getContext('2d')
-          if (patternCtx) {
-            options.fillPattern.path.forEach((p) => {
-              this.renderPath(p.lines, p.options)(patternCtx, strokeWidthScale, setImageLoadStatus)
-            })
-            const pattern = ctx.createPattern(canvas, null)
-            if (pattern) {
-              // if (options.fillPattern.rotate) {
-              //   const rotate = options.fillPattern.rotate * Math.PI / 180
-              //   const c = Math.cos(rotate)
-              //   const s = Math.sin(rotate)
-              //   pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
-              // }
-              ctx.fillStyle = pattern
-            }
-          }
-        } else if (options.fillColor !== undefined) {
-          ctx.fillStyle = getColorString(options.fillColor)
-        }
-        ctx.fill('evenodd')
-      }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
     }
   },
 }
 
 const images = new Map<string, HTMLImageElement | undefined>()
+
+function renderFillPattern(
+  ctx: CanvasRenderingContext2D,
+  strokeWidthScale: number,
+  setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>,
+  options?: Partial<PathOptions<Draw>>,
+) {
+  if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
+    if (options.fillPattern !== undefined) {
+      const canvas = document.createElement("canvas")
+      canvas.width = options.fillPattern.width
+      canvas.height = options.fillPattern.height
+      const patternCtx = canvas.getContext('2d')
+      if (patternCtx) {
+        options.fillPattern.pattern()(patternCtx, strokeWidthScale, setImageLoadStatus)
+        const pattern = ctx.createPattern(canvas, null)
+        if (pattern) {
+          // if (options.fillPattern.rotate) {
+          //   const rotate = options.fillPattern.rotate * Math.PI / 180
+          //   const c = Math.cos(rotate)
+          //   const s = Math.sin(rotate)
+          //   pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
+          // }
+          ctx.fillStyle = pattern
+        }
+      }
+    } else if (options.fillColor !== undefined) {
+      ctx.fillStyle = getColorString(options.fillColor)
+    }
+    ctx.fill('evenodd')
+  }
+}
+
+type Draw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void
 
 function Canvas(props: {
   width: number,
@@ -245,7 +247,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  draws: ((ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void)[]
+  draws: Draw[]
   transform?: {
     x: number
     y: number

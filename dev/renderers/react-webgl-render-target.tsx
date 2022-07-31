@@ -23,7 +23,7 @@ type Graphic = {
   matrix?: number[]
 }
 
-export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: number[]) => Graphic[]> = {
+export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
     return (
@@ -246,9 +246,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           )
         }
         if (options?.fillPattern !== undefined) {
-          const pathGraphics = options.fillPattern.path.map((p) => {
-            return this.renderPath(p.lines, p.options)(strokeWidthScale, setImageLoadStatus)
-          }).flat()
+          const pathGraphics = options.fillPattern.pattern()(strokeWidthScale, setImageLoadStatus)
           graphics.push({
             type: 'triangles',
             points: triangles,
@@ -274,6 +272,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
   },
 }
 
+type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: number[]) => Graphic[]
+
 const images = new Map<string, HTMLImageElement | undefined>()
 
 const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>()
@@ -289,7 +289,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  graphics: ((strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => Graphic[])[]
+  graphics: Draw[]
   transform?: {
     x: number
     y: number
@@ -476,11 +476,13 @@ function Canvas(props: {
                 yMax = line.points[i + 1]
               }
             }
-            const columns = Math.ceil((xMax - xMin) / line.pattern.width)
-            const rows = Math.ceil((yMax - yMin) / line.pattern.height)
-            for (let i = 0; i < columns; i++) {
-              for (let j = 0; j < rows; j++) {
-                const baseMatrix = m3.multiply(matrix, m3.translation(xMin + i * line.pattern.width, yMin + j * line.pattern.height))
+            const columnStartIndex = Math.floor(xMin / line.pattern.width)
+            const columnEndIndex = Math.floor(xMax / line.pattern.width)
+            const rowStartIndex = Math.floor(yMin / line.pattern.height)
+            const rowEndIndex = Math.floor(yMax / line.pattern.height)
+            for (let i = columnStartIndex; i <= columnEndIndex; i++) {
+              for (let j = rowStartIndex; j <= rowEndIndex; j++) {
+                const baseMatrix = m3.multiply(matrix, m3.translation(i * line.pattern.width, j * line.pattern.height))
                 for (const p of line.pattern.graphics) {
                   if (p.type === 'triangles' || p.type === 'lines') {
                     objectsToDraw.push({
@@ -496,6 +498,29 @@ function Canvas(props: {
                         matrix: baseMatrix,
                       },
                       type: getDrawType(p, gl),
+                    })
+                  } else if (p.type === 'texture') {
+                    let textureMatrix = m3.multiply(baseMatrix, m3.translation(p.x, p.y))
+                    textureMatrix = m3.multiply(textureMatrix, m3.scaling(p.width ?? p.src.width, p.height ?? p.src.height))
+                    if (!p.color) {
+                      objectsToDraw.push({
+                        programInfo: textureProgramInfo,
+                        bufferInfo: textureBufferInfo,
+                        uniforms: {
+                          matrix: textureMatrix,
+                          texture: canvasTextureCache.get(p.src, () => twgl.createTexture(gl, { src: p.src })),
+                        },
+                      })
+                      continue
+                    }
+                    objectsToDraw.push({
+                      programInfo: coloredTextureProgramInfo,
+                      bufferInfo: textureBufferInfo,
+                      uniforms: {
+                        matrix: textureMatrix,
+                        color: p.color,
+                        texture: canvasTextureCache.get(p.src, () => twgl.createTexture(gl, { src: p.src })),
+                      },
                     })
                   }
                 }

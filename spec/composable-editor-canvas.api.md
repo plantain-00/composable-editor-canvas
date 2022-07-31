@@ -563,16 +563,23 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
-export interface Pattern extends Size {
+export interface PathOptions<T> {
     // (undocumented)
-    path: {
-        lines: Position[][];
-        options?: Partial<{
-            strokeColor: number;
-            strokeWidth: number;
-            fillColor: number;
-        }>;
-    }[];
+    dashArray: number[];
+    // (undocumented)
+    fillColor: number;
+    // (undocumented)
+    fillPattern: Pattern<T>;
+    // (undocumented)
+    strokeColor: number;
+    // (undocumented)
+    strokeWidth: number;
+}
+
+// @public (undocumented)
+export interface Pattern<T> extends Size {
+    // (undocumented)
+    pattern: () => T;
 }
 
 // @public (undocumented)
@@ -627,29 +634,21 @@ export interface RadialDimension extends TextStyle {
     position: Position;
 }
 
+// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React_2.Dispatch<React_2.SetStateAction<number>>) => void>;
+export const reactCanvasRenderTarget: ReactRenderTarget<Draw_2>;
 
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
-    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, options?: Partial<{
-        strokeColor: number;
-        strokeWidth: number;
-    }>): T;
+    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, options?: Partial<PathOptions<T>>): T;
     // (undocumented)
-    renderCircle(cx: number, cy: number, r: number, options?: Partial<{
-        strokeColor: number;
-        strokeWidth: number;
-        fillColor: number;
-    }>): T;
+    renderCircle(cx: number, cy: number, r: number, options?: Partial<PathOptions<T>>): T;
     // (undocumented)
-    renderEllipse(cx: number, cy: number, rx: number, ry: number, options?: Partial<{
-        strokeColor: number;
+    renderEllipse(cx: number, cy: number, rx: number, ry: number, options?: Partial<PathOptions<T> & {
         angle: number;
         rotation: number;
-        strokeWidth: number;
-        fillColor: number;
     }>): T;
     // (undocumented)
     renderEmpty(): T;
@@ -665,44 +664,27 @@ export interface ReactRenderTarget<T = JSX.Element> {
         crossOrigin: "anonymous" | "use-credentials" | "";
     }>): T;
     // (undocumented)
-    renderPath(lines: Position[][], options?: Partial<{
-        strokeColor: number;
-        dashArray: number[];
-        strokeWidth: number;
-        fillColor: number;
-        fillPattern: Pattern;
-    }>): T;
+    renderPath(lines: Position[][], options?: Partial<PathOptions<T>>): T;
     // (undocumented)
-    renderPolygon(points: Position[], options?: Partial<{
-        strokeColor: number;
-        dashArray: number[];
-        strokeWidth: number;
+    renderPolygon(points: Position[], options?: Partial<PathOptions<T> & {
         skippedLines: number[];
-        fillColor: number;
         partsStyles: readonly {
             index: number;
             color: number;
         }[];
     }>): T;
     // (undocumented)
-    renderPolyline(points: Position[], options?: Partial<{
-        strokeColor: number;
-        dashArray: number[];
-        strokeWidth: number;
+    renderPolyline(points: Position[], options?: Partial<PathOptions<T> & {
         skippedLines: number[];
-        fillColor: number;
         partsStyles: readonly {
             index: number;
             color: number;
         }[];
     }>): T;
     // (undocumented)
-    renderRect(x: number, y: number, width: number, height: number, options?: Partial<{
-        strokeColor: number;
+    renderRect(x: number, y: number, width: number, height: number, options?: Partial<PathOptions<T> & {
         angle: number;
         rotation: number;
-        strokeWidth: number;
-        fillColor: number;
     }>): T;
     // (undocumented)
     renderResult(children: T[], width: number, height: number, options?: Partial<{
@@ -726,8 +708,10 @@ export interface ReactRenderTarget<T = JSX.Element> {
     type: string;
 }
 
+// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
-export const reactSvgRenderTarget: ReactRenderTarget<(key: React_2.Key) => JSX.Element>;
+export const reactSvgRenderTarget: ReactRenderTarget<Draw>;
 
 // @public (undocumented)
 export interface Region extends Position, Size {
