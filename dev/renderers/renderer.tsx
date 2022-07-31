@@ -22,8 +22,9 @@ export function Renderer(props: {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
   const strokeWidthScale = 1 / props.scale
-  useValueChanged(props.type, () => renderCache.clear())
-  useValueChanged(props.backgroundColor, () => renderCache.clear())
+  const renderCache = React.useRef(new WeakmapCache<readonly BaseContent[], unknown[]>())
+  useValueChanged(props.type, () => renderCache.current.clear())
+  useValueChanged(props.backgroundColor, () => renderCache.current.clear())
 
   if (!target) {
     return null
@@ -91,7 +92,7 @@ export function Renderer(props: {
   const strokeWidth = 1
 
   if (previewPatches.length === 0 && props.simplified) {
-    children = renderCache.get(props.contents, () => {
+    children = renderCache.current.get(props.contents, () => {
       props.contents.forEach((content) => {
         const model = getModel(content.type)
         if (!model) {
@@ -203,5 +204,3 @@ export function getAllRendererTypes() {
 export const visibleContents = new WeaksetCache<BaseContent>()
 
 export const contentVisible = (c: BaseContent) => visibleContents.has(c)
-
-const renderCache = new WeakmapCache<readonly BaseContent[], unknown[]>()
