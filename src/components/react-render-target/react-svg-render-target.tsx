@@ -1,11 +1,11 @@
 import * as React from "react"
-import { ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { polygonToPolyline } from "../../utils"
 
 /**
  * @public
  */
-export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Element> = {
+export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   type: 'svg',
   renderResult(children, width, height, options) {
     const x = options?.transform?.x ?? 0
@@ -55,9 +55,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
     )
   },
   renderRect(x, y, width, height, options) {
-    return (key) => (
+    return renderFillPattern(fill => (
       <rect
-        key={key}
         x={x}
         y={y}
         width={width}
@@ -65,36 +64,33 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
-        fill={options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'}
+        fill={fill}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
       />
-    )
+    ), options)
   },
   renderPolyline(points, options) {
     const { partsStyles, ...restOptions } = options ?? {}
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return (key) => (
+      return renderFillPattern(fill => (
         <path
           d={d}
-          key={key}
           strokeWidth={options?.strokeWidth ?? 1}
           vectorEffect='non-scaling-stroke'
           stroke={getColorString(options?.strokeColor ?? 0)}
           strokeDasharray={options?.dashArray?.join(' ')}
           fill={fill}
         />
-      )
+      ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return (key) => (
+    return renderFillPattern(fill => (
       <polyline
-        key={key}
         points={pointsText}
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeWidth={options?.strokeWidth ?? 1}
@@ -102,16 +98,14 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
         strokeDasharray={options?.dashArray?.join(' ')}
         fill={fill}
       />
-    )
+    ), options)
   },
   renderPolygon(points, options) {
     return this.renderPolyline(polygonToPolyline(points), options)
   },
   renderCircle(cx, cy, r, options) {
-    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
-    return (key) => (
+    return renderFillPattern(fill => (
       <circle
-        key={key}
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
@@ -120,14 +114,12 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
         r={r}
         fill={fill}
       />
-    )
+    ), options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
-    return (key) => (
+    return renderFillPattern(fill => (
       <ellipse
         stroke={getColorString(options?.strokeColor ?? 0)}
-        key={key}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
         cx={cx}
@@ -137,22 +129,21 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
         fill={fill}
         transform={getRotateTransform(cx, cy, options)}
       />
-    )
+    ), options)
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
-    return (key) => (
+    return renderFillPattern(fill => (
       <path
-        key={key}
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
         stroke={getColorString(options?.strokeColor ?? 0)}
-        fill="none"
+        fill={fill}
       />
-    )
+    ), options)
   },
   renderText(x, y, text, fillColor, fontSize, fontFamily) {
     return (key) => (
@@ -183,42 +174,53 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
     )
   },
   renderPath(lines, options) {
-    let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
-    return (key) => {
-      let defs: JSX.Element | undefined
-      if (options?.fillPattern) {
-        const id = `${key}-pattern`
-        defs = (
-          <pattern
-            id={id}
-            patternUnits="userSpaceOnUse"
-            // patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
-            width={options.fillPattern.width}
-            height={options.fillPattern.height}
-          >
-            {options.fillPattern.path.map((p, i) => this.renderPath(p.lines, p.options)(i))}
-          </pattern>
-        )
-        fill = `url(#${id})`
-      }
-      return (
-        <React.Fragment key={key}>
-          {defs}
-          <path
-            d={d}
-            strokeWidth={options?.strokeWidth ?? 1}
-            vectorEffect='non-scaling-stroke'
-            stroke={getColorString(options?.strokeColor ?? 0)}
-            strokeDasharray={options?.dashArray?.join(' ')}
-            fill={fill}
-            fillRule='evenodd'
-          // strokeLinecap={options?.lineCap}
-          />
-        </React.Fragment>
-      )
-    }
+    return renderFillPattern(fill => (
+      <path
+        d={d}
+        strokeWidth={options?.strokeWidth ?? 1}
+        vectorEffect='non-scaling-stroke'
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeDasharray={options?.dashArray?.join(' ')}
+        fill={fill}
+        fillRule='evenodd'
+      // strokeLinecap={options?.lineCap}
+      />
+    ), options)
   },
+}
+
+type Draw = (key: React.Key) => JSX.Element
+
+function renderFillPattern(
+  children: (fill: string) => JSX.Element,
+  options?: Partial<PathOptions<Draw>>,
+) {
+  return (key: React.Key) => {
+    let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    let defs: JSX.Element | undefined
+    if (options?.fillPattern) {
+      const id = `${key}-pattern`
+      defs = (
+        <pattern
+          id={id}
+          patternUnits="userSpaceOnUse"
+          // patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
+          width={options.fillPattern.width}
+          height={options.fillPattern.height}
+        >
+          {options.fillPattern.pattern()(id)}
+        </pattern>
+      )
+      fill = `url(#${id})`
+    }
+    return (
+      <React.Fragment key={key}>
+        {defs}
+        {children(fill)}
+      </React.Fragment>
+    )
+  }
 }
 
 /**

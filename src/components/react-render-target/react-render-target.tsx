@@ -35,33 +35,22 @@ export interface ReactRenderTarget<T = JSX.Element> {
     y: number,
     width: number,
     height: number,
-    options?: Partial<{
-      strokeColor: number
+    options?: Partial<PathOptions<T> & {
       angle: number
       rotation: number
-      strokeWidth: number
-      fillColor: number
     }>,
   ): T
   renderPolyline(
     points: Position[],
-    options?: Partial<{
-      strokeColor: number
-      dashArray: number[]
-      strokeWidth: number
+    options?: Partial<PathOptions<T> & {
       skippedLines: number[]
-      fillColor: number
       partsStyles: readonly { index: number, color: number }[]
     }>,
   ): T
   renderPolygon(
     points: Position[],
-    options?: Partial<{
-      strokeColor: number
-      dashArray: number[]
-      strokeWidth: number
+    options?: Partial<PathOptions<T> & {
       skippedLines: number[]
-      fillColor: number
       partsStyles: readonly { index: number, color: number }[]
     }>,
   ): T
@@ -69,23 +58,16 @@ export interface ReactRenderTarget<T = JSX.Element> {
     cx: number,
     cy: number,
     r: number,
-    options?: Partial<{
-      strokeColor: number
-      strokeWidth: number
-      fillColor: number
-    }>,
+    options?: Partial<PathOptions<T>>,
   ): T
   renderEllipse(
     cx: number,
     cy: number,
     rx: number,
     ry: number,
-    options?: Partial<{
-      strokeColor: number
+    options?: Partial<PathOptions<T> & {
       angle: number
       rotation: number
-      strokeWidth: number
-      fillColor: number
     }>,
   ): T
   renderArc(
@@ -94,10 +76,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     r: number,
     startAngle: number,
     endAngle: number,
-    options?: Partial<{
-      strokeColor: number
-      strokeWidth: number
-    }>,
+    options?: Partial<PathOptions<T>>,
   ): T
   renderText(
     x: number,
@@ -122,30 +101,27 @@ export interface ReactRenderTarget<T = JSX.Element> {
   ): T
   renderPath(
     lines: Position[][],
-    options?: Partial<{
-      strokeColor: number
-      dashArray: number[]
-      strokeWidth: number
-      fillColor: number
-      // lineCap?: 'butt' | 'round' | 'square'
-      fillPattern: Pattern
-    }>,
+    options?: Partial<PathOptions<T>>,
   ): T
 }
 
 /**
  * @public
  */
-export interface Pattern extends Size {
-  path: {
-    lines: Position[][],
-    options?: Partial<{
-      strokeColor: number
-      strokeWidth: number
-      fillColor: number
-      // lineCap?: 'butt' | 'round' | 'square'
-    }>
-  }[]
+export interface PathOptions<T> {
+  strokeColor: number
+  strokeWidth: number
+  dashArray: number[]
+  fillColor: number
+  fillPattern: Pattern<T>
+  // lineCap?: 'butt' | 'round' | 'square'
+}
+
+/**
+ * @public
+ */
+export interface Pattern<T> extends Size {
+  pattern: () => T
   // rotate?: number
 }
 

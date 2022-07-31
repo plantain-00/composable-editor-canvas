@@ -10,7 +10,17 @@ export default () => {
         target.renderCircle(150, 150, 80, { strokeColor: 0x00ff00 }),
         target.renderGroup(
           [
-            target.renderPolygon([{ x: 100, y: 100 }, { x: 100, y: 200 }, { x: 200, y: 150 }], { strokeColor: 0xff0000 }),
+            target.renderPolygon([{ x: 100, y: 100 }, { x: 100, y: 200 }, { x: 200, y: 150 }], {
+              strokeColor: 0xff0000,
+              fillPattern: {
+                width: 500,
+                height: 500,
+                pattern: () => target.renderGroup([
+                  target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', -120, -150, 500, 500, { crossOrigin: '' }),
+                  target.renderText(150, 150, 'EEE', 0xffff00, 30, 'monospace'),
+                ]),
+              }
+            }),
             target.renderText(50, 100, 'aaa', 0xffff00, 30, 'monospace'),
           ],
           { translate: { x: 100, y: 100 }, angle: 45, base: { x: 200, y: 150 } },
@@ -33,22 +43,19 @@ export default () => {
             fillPattern: {
               width: 10,
               height: 10,
-              path: [{
-                lines: [
-                  [{ x: 0, y: 5 }, { x: 5, y: 0 }],
-                  [{ x: 10, y: 5 }, { x: 5, y: 10 }],
-                ],
-                options: {
-                  strokeColor: 0x0000ff,
-                  // lineCap: 'square',
-                }
-              }]
+              pattern: () => target.renderPath([
+                [{ x: 0, y: 5 }, { x: 5, y: 0 }],
+                [{ x: 10, y: 5 }, { x: 5, y: 10 }],
+              ], {
+                strokeColor: 0x0000ff,
+                // lineCap: 'square',
+              }),
             },
             strokeWidth: 0,
           },
         ),
         target.renderRect(50, 50, 100, 80, { strokeColor: 0xff00ff, angle: 60 }),
-        target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 50, 250, 50, 50, { crossOrigin: '' })
+        target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 50, 250, 50, 50, { crossOrigin: '' }),
       ],
       300,
       300,
