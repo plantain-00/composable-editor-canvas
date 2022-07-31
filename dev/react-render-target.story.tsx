@@ -48,6 +48,7 @@ export default () => {
           },
         ),
         target.renderRect(50, 50, 100, 80, { strokeColor: 0xff00ff, angle: 60 }),
+        target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 50, 250, 50, 50, { crossOrigin: '' })
       ],
       300,
       300,

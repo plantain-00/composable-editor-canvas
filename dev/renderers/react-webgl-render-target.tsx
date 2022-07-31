@@ -1,7 +1,7 @@
 import React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../src"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, loadImage, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../src"
 
 type Graphic = {
   type: 'triangles' | 'lines'
@@ -14,14 +14,16 @@ type Graphic = {
   } & Size
 } | {
   type: 'texture'
-  color: [number, number, number, number]
+  color?: [number, number, number, number]
   x: number
   y: number
-  canvas: HTMLCanvasElement
+  width?: number
+  height?: number
+  src: HTMLCanvasElement | HTMLImageElement
   matrix?: number[]
 }
 
-export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number, matrix?: number[]) => Graphic[]> = {
+export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: number[]) => Graphic[]> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
     return (
@@ -43,7 +45,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
     }
   },
   renderGroup(children, options) {
-    return (strokeWidthScale, matrix) => {
+    return (strokeWidthScale, setImageLoadStatus, matrix) => {
       if (options) {
         if (!matrix) {
           matrix = m3.identity()
@@ -63,7 +65,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
       }
       const graphics: Graphic[] = []
       children.forEach(c => {
-        const g = c(strokeWidthScale)
+        const g = c(strokeWidthScale, setImageLoadStatus)
         if (g) {
           graphics.push(...g.map(h => ({
             ...h,
@@ -151,13 +153,39 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
           x,
           y: y - canvas.height,
           color: colorNumberToRec(fillColor),
-          canvas,
+          src: canvas,
         }
       ]
     }
   },
+  renderImage(url, x, y, width, height, options) {
+    return (_, setImageLoadStatus) => {
+      if (!images.has(url)) {
+        images.set(url, undefined)
+        // eslint-disable-next-line plantain/promise-not-await
+        loadImage(url, options?.crossOrigin).then(image => {
+          images.set(url, image)
+          setImageLoadStatus(c => c + 1)
+        })
+      }
+      const image = images.get(url)
+      if (!image) {
+        return []
+      }
+      return [
+        {
+          type: 'texture',
+          x,
+          y,
+          width,
+          height,
+          src: image,
+        },
+      ]
+    }
+  },
   renderPath(points, options) {
-    return (strokeWidthScale) => {
+    return (strokeWidthScale, setImageLoadStatus) => {
       let strokeWidth = options?.strokeWidth ?? 1
 
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
@@ -219,7 +247,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
         }
         if (options?.fillPattern !== undefined) {
           const pathGraphics = options.fillPattern.path.map((p) => {
-            return this.renderPath(p.lines, p.options)(strokeWidthScale)
+            return this.renderPath(p.lines, p.options)(strokeWidthScale, setImageLoadStatus)
           }).flat()
           graphics.push({
             type: 'triangles',
@@ -246,6 +274,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<(strokeWidthScale: number
   },
 }
 
+const images = new Map<string, HTMLImageElement | undefined>()
+
 const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>()
 const combinedTrianglesCache = new WeakmapMapCache<Position[][], number, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
@@ -259,7 +289,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  graphics: ((strokeWidthScale: number) => Graphic[])[]
+  graphics: ((strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => Graphic[])[]
   transform?: {
     x: number
     y: number
@@ -270,8 +300,9 @@ function Canvas(props: {
   strokeWidthScale?: number
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
+  const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   const render = React.useRef<(
-    graphics: ((strokeWidthScale: number) => Graphic[])[],
+    graphics: ((strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => Graphic[])[],
     backgroundColor: [number, number, number, number],
     x: number,
     y: number,
@@ -306,7 +337,7 @@ function Canvas(props: {
     void main() {
       gl_FragColor = color;
     }`]);
-    const textureProgramInfo = twgl.createProgramInfo(gl, [`
+    const coloredTextureProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;   
     uniform mat3 matrix;
     varying vec2 texcoord;
@@ -333,9 +364,31 @@ function Canvas(props: {
       }
       gl_FragColor = color;
     }`]);
+    const textureProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;   
+    uniform mat3 matrix;
+    varying vec2 texcoord;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      texcoord = position.xy;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 texcoord;
+    uniform sampler2D texture;
+
+    void main() {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
+          texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      gl_FragColor = texture2D(texture, texcoord);
+    }`]);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
-    const canvasTextureCache = new WeakmapCache<HTMLCanvasElement, WebGLTexture>()
+    const canvasTextureCache = new WeakmapCache<HTMLCanvasElement | HTMLImageElement, WebGLTexture>()
 
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
       const now = Date.now()
@@ -354,19 +407,30 @@ function Canvas(props: {
 
       let objectsToDraw: twgl.DrawObject[] = []
       for (const g of graphics) {
-        const lines = g(strokeWidthScale)
+        const lines = g(strokeWidthScale, setImageLoadStatus)
         for (const line of lines) {
           let matrix = line.matrix ? m3.multiply(worldMatrix, line.matrix) : worldMatrix
           if (line.type === 'texture') {
             matrix = m3.multiply(matrix, m3.translation(line.x, line.y))
-            matrix = m3.multiply(matrix, m3.scaling(line.canvas.width, line.canvas.height))
+            matrix = m3.multiply(matrix, m3.scaling(line.width ?? line.src.width, line.height ?? line.src.height))
+            if (!line.color) {
+              objectsToDraw.push({
+                programInfo: textureProgramInfo,
+                bufferInfo: textureBufferInfo,
+                uniforms: {
+                  matrix,
+                  texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
+                },
+              })
+              continue
+            }
             objectsToDraw.push({
-              programInfo: textureProgramInfo,
+              programInfo: coloredTextureProgramInfo,
               bufferInfo: textureBufferInfo,
               uniforms: {
                 matrix,
                 color: line.color,
-                texture: canvasTextureCache.get(line.canvas, () => twgl.createTexture(gl, { src: line.canvas })),
+                texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
               },
             })
             continue
@@ -475,7 +539,7 @@ function Canvas(props: {
       const strokeWidthScale = props.strokeWidthScale ?? 1
       render.current(props.graphics, color, x, y, scale, strokeWidthScale)
     }
-  }, [props.graphics, props.backgroundColor, render.current, props.transform])
+  }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus])
   return (
     <canvas
       ref={ref}

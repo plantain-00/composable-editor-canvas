@@ -1,11 +1,11 @@
 import * as React from "react"
-import { getColorString, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { getColorString, loadImage, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { polygonToPolyline } from "../../utils"
 
 /**
  * @public
  */
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void> = {
+export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void> = {
   type: 'canvas',
   renderResult(children, width, height, options) {
     return (
@@ -27,7 +27,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
     }
   },
   renderGroup(children, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       if (options?.translate) {
         ctx.translate(options.translate.x, options.translate.y)
@@ -43,7 +43,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
         ctx.translate(-options.base.x, - options.base.y)
       }
       children.forEach((c) => {
-        c(ctx, strokeWidthScale)
+        c(ctx, strokeWidthScale, setImageLoadStatus)
       })
       ctx.restore()
     }
@@ -169,8 +169,24 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
       ctx.restore()
     }
   },
+  renderImage(url, x, y, width, height, options) {
+    return (ctx, _, setImageLoadStatus) => {
+      if (!images.has(url)) {
+        images.set(url, undefined)
+        loadImage(url, options?.crossOrigin).then(image => {
+          images.set(url, image)
+          setImageLoadStatus(c => c + 1)
+        })
+      }
+      const image = images.get(url)
+      if (!image) {
+        return
+      }
+      ctx.drawImage(image, x, y, width, height)
+    }
+  },
   renderPath(lines, options) {
-    return (ctx, strokeWidthScale) => {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.beginPath()
       if (options?.dashArray) {
         ctx.setLineDash(options.dashArray)
@@ -199,7 +215,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
           const patternCtx = canvas.getContext('2d')
           if (patternCtx) {
             options.fillPattern.path.forEach((p) => {
-              this.renderPath(p.lines, p.options)(patternCtx, strokeWidthScale)
+              this.renderPath(p.lines, p.options)(patternCtx, strokeWidthScale, setImageLoadStatus)
             })
             const pattern = ctx.createPattern(canvas, null)
             if (pattern) {
@@ -221,13 +237,15 @@ export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingCon
   },
 }
 
+const images = new Map<string, HTMLImageElement | undefined>()
+
 function Canvas(props: {
   width: number,
   height: number,
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  draws: ((ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void)[]
+  draws: ((ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void)[]
   transform?: {
     x: number
     y: number
@@ -238,6 +256,7 @@ function Canvas(props: {
   strokeWidthScale?: number
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
+  const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   React.useEffect(() => {
     if (ref.current) {
       ref.current.width = props.width
@@ -262,7 +281,7 @@ function Canvas(props: {
         }
         const scale = props.strokeWidthScale ?? 1
         for (const draw of props.draws) {
-          draw(ctx, scale)
+          draw(ctx, scale, setImageLoadStatus)
         }
         ctx.restore()
         if (props.debug) {
@@ -270,7 +289,7 @@ function Canvas(props: {
         }
       }
     }
-  }, [props.draws, ref.current, props.transform, props.backgroundColor])
+  }, [props.draws, ref.current, props.transform, props.backgroundColor, imageLoadStatus])
   return (
     <canvas
       ref={ref}

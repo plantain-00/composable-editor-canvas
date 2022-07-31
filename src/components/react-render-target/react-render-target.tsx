@@ -110,6 +110,16 @@ export interface ReactRenderTarget<T = JSX.Element> {
       cacheKey: object
     }>,
   ): T
+  renderImage(
+    url: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    options?: Partial<{
+      crossOrigin: "anonymous" | "use-credentials" | ""
+    }>,
+  ): T
   renderPath(
     lines: Position[][],
     options?: Partial<{
@@ -153,4 +163,20 @@ export function renderPartStyledPolyline<T>(
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
     ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color })),
   ])
+}
+
+export function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | "") {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    if (crossOrigin !== undefined) {
+      image.crossOrigin = crossOrigin
+    }
+    image.onload = () => {
+      resolve(image)
+    }
+    image.onerror = () => {
+      reject()
+    }
+    image.src = url
+  })
 }

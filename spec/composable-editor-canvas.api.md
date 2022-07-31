@@ -535,6 +535,9 @@ export interface LinearDimension extends TextStyle {
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
+export function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | ""): Promise<HTMLImageElement>;
+
+// @public (undocumented)
 export const m3: {
     projection(width: number, height: number): number[];
     identity(): number[];
@@ -625,7 +628,7 @@ export interface RadialDimension extends TextStyle {
 }
 
 // @public (undocumented)
-export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number) => void>;
+export const reactCanvasRenderTarget: ReactRenderTarget<(ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React_2.Dispatch<React_2.SetStateAction<number>>) => void>;
 
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -656,6 +659,10 @@ export interface ReactRenderTarget<T = JSX.Element> {
         base: Position;
         angle: number;
         rotation: number;
+    }>): T;
+    // (undocumented)
+    renderImage(url: string, x: number, y: number, width: number, height: number, options?: Partial<{
+        crossOrigin: "anonymous" | "use-credentials" | "";
     }>): T;
     // (undocumented)
     renderPath(lines: Position[][], options?: Partial<{
