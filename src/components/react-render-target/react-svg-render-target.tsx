@@ -168,6 +168,20 @@ export const reactSvgRenderTarget: ReactRenderTarget<(key: React.Key) => JSX.Ele
       </text>
     )
   },
+  renderImage(url, x, y, width, height, options) {
+    return (key) => (
+      <image
+        key={key}
+        href={url}
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        preserveAspectRatio='none'
+        crossOrigin={options?.crossOrigin}
+      />
+    )
+  },
   renderPath(lines, options) {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
