@@ -64,6 +64,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         stroke={getColorString(options?.strokeColor ?? 0)}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
+        strokeDasharray={options?.dashArray?.join(' ')}
         fill={fill}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
       />
@@ -112,6 +113,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         cx={cx}
         cy={cy}
         r={r}
+        strokeDasharray={options?.dashArray?.join(' ')}
         fill={fill}
       />
     ), options)
@@ -126,6 +128,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         cy={cy}
         rx={rx}
         ry={ry}
+        strokeDasharray={options?.dashArray?.join(' ')}
         fill={fill}
         transform={getRotateTransform(cx, cy, options)}
       />
@@ -141,6 +144,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
         stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeDasharray={options?.dashArray?.join(' ')}
         fill={fill}
       />
     ), options)

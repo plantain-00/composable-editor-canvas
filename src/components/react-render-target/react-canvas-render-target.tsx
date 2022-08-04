@@ -52,6 +52,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
       if (options?.angle) {
         ctx.translate(x + width / 2, y + height / 2)
         ctx.rotate(options.angle / 180 * Math.PI)
@@ -111,6 +114,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
@@ -126,6 +132,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
@@ -142,6 +151,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
       ctx.beginPath()
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
