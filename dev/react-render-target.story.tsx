@@ -2,10 +2,17 @@ import React from "react"
 import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget } from "../src"
 
 export default () => {
+  const renderArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
+    target.renderArc(40, 20, 50, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
+    target.renderArc(40, 40, 80, 0, 120, { fillColor: 0xff0000, strokeWidth: 0 }),
+    target.renderArc(50, 50, 100, 0, 120, { strokeColor: 0x00ff00 }),
+    target.renderArc(60, 60, 100, 0, 120, { strokeWidth: 5 }),
+    target.renderArc(70, 70, 100, 0, 120, { dashArray: [4] }),
+  ], 230, 250)
+
   function render<T>(target: ReactRenderTarget<T>) {
     return target.renderResult(
       [
-        target.renderArc(150, 150, 100, 0, 120, { strokeColor: 0x000000 }),
         target.renderCircle(150, 150, 80, { strokeColor: 0x00ff00 }),
         target.renderGroup(
           [
@@ -60,8 +67,12 @@ export default () => {
       300,
     )
   }
+
   return (
     <div>
+      {renderArcs(reactSvgRenderTarget)}
+      {renderArcs(reactCanvasRenderTarget)}
+      {renderArcs(reactWebglRenderTarget)}
       {render(reactSvgRenderTarget)}
       {render(reactCanvasRenderTarget)}
       {render(reactWebglRenderTarget)}
