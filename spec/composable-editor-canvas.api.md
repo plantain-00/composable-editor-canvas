@@ -713,6 +713,11 @@ export interface ReactRenderTarget<T = JSX.Element> {
 // @public (undocumented)
 export const reactSvgRenderTarget: ReactRenderTarget<Draw>;
 
+// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export const reactWebglRenderTarget: ReactRenderTarget<Draw_3>;
+
 // @public (undocumented)
 export interface Region extends Position, Size {
 }
