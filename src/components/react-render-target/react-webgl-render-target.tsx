@@ -1,7 +1,8 @@
-import React from "react"
+import * as React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, loadImage, m3, polygonToPolyline, Position, ReactRenderTarget, renderPartStyledPolyline, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../src"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
+import { loadImage, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 
 type Graphic = {
   type: 'triangles' | 'lines'
@@ -23,6 +24,9 @@ type Graphic = {
   matrix?: number[]
 }
 
+/**
+ * @public
+ */
 export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
@@ -530,6 +534,7 @@ function Canvas(props: {
             objectsToDraw = []
 
             gl.disable(gl.STENCIL_TEST);
+            gl.clear(gl.STENCIL_BUFFER_BIT)
             continue
           }
           objectsToDraw.push({

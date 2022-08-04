@@ -1,6 +1,5 @@
 import React from "react"
-import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget } from "../src"
-import { reactWebglRenderTarget } from "./renderers/react-webgl-render-target"
+import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget } from "../src"
 
 export default () => {
   function render<T>(target: ReactRenderTarget<T>) {
