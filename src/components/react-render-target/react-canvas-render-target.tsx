@@ -154,7 +154,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.dashArray) {
         ctx.setLineDash(options.dashArray)
       }
-      ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI)
+      ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth
@@ -165,11 +165,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.restore()
     }
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily) {
+  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
     return (ctx) => {
       ctx.save()
       ctx.fillStyle = getColorString(fillColor)
-      ctx.font = `${fontSize}px ${fontFamily}`
+      ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
       ctx.fillText(text, x, y)
       ctx.restore()
     }

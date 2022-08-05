@@ -8,12 +8,24 @@ export default () => {
     target.renderArc(50, 50, 100, 0, 120, { strokeColor: 0x00ff00 }),
     target.renderArc(60, 60, 100, 0, 120, { strokeWidth: 5 }),
     target.renderArc(70, 70, 100, 0, 120, { dashArray: [4] }),
+    target.renderArc(170, 170, 30, 0, 120, { counterclockwise: true }),
+  ], 230, 250)
+  const renderCircles = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
+    target.renderCircle(110, 110, 50, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
+    target.renderCircle(110, 110, 80, { fillColor: 0xff0000, strokeWidth: 0 }),
+    target.renderCircle(110, 110, 90, { strokeColor: 0x00ff00 }),
+    target.renderCircle(110, 110, 100, { strokeWidth: 5 }),
+    target.renderCircle(110, 110, 110, { dashArray: [4] }),
+  ], 230, 250)
+  const renderTexts = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
+    target.renderText(10, 30, 'Hello World!', 0xff0000, 30, 'monospace'),
+    target.renderText(10, 60, 'Hello World!', 0xff0000, 30, 'monospace', { fontWeight: 'bold' }),
+    target.renderText(10, 90, 'Hello World!', 0xff0000, 30, 'monospace', { fontStyle: 'italic' }),
   ], 230, 250)
 
   function render<T>(target: ReactRenderTarget<T>) {
     return target.renderResult(
       [
-        target.renderCircle(150, 150, 80, { strokeColor: 0x00ff00 }),
         target.renderGroup(
           [
             target.renderPolygon([{ x: 100, y: 100 }, { x: 100, y: 200 }, { x: 200, y: 150 }], {
@@ -31,10 +43,8 @@ export default () => {
           ],
           { translate: { x: 100, y: 100 }, angle: 45, base: { x: 200, y: 150 } },
         ),
-        target.renderCircle(250, 250, 30, { fillColor: 0x0000ff, strokeWidth: 0 }),
         target.renderEllipse(150, 150, 50, 100, { strokeColor: 0xff0000, angle: 30 }),
         target.renderPolyline([{ x: 10, y: 10 }, { x: 150, y: 150 }, { x: 100, y: 200 }, { x: 200, y: 200 }], { strokeColor: 0x0000ff, dashArray: [4] }),
-        target.renderText(50, 100, 'Hello World!', 0xffff00, 30, 'monospace'),
         target.renderPath(
           [
             [{ x: 10, y: 110 }, { x: 50, y: 250 }, { x: 50, y: 110 }],
@@ -73,6 +83,12 @@ export default () => {
       {renderArcs(reactSvgRenderTarget)}
       {renderArcs(reactCanvasRenderTarget)}
       {renderArcs(reactWebglRenderTarget)}
+      {renderCircles(reactSvgRenderTarget)}
+      {renderCircles(reactCanvasRenderTarget)}
+      {renderCircles(reactWebglRenderTarget)}
+      {renderTexts(reactSvgRenderTarget)}
+      {renderTexts(reactCanvasRenderTarget)}
+      {renderTexts(reactWebglRenderTarget)}
       {render(reactSvgRenderTarget)}
       {render(reactCanvasRenderTarget)}
       {render(reactWebglRenderTarget)}

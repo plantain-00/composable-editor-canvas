@@ -1,3 +1,4 @@
+import React from "react"
 import { Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -76,7 +77,9 @@ export interface ReactRenderTarget<T = JSX.Element> {
     r: number,
     startAngle: number,
     endAngle: number,
-    options?: Partial<PathOptions<T>>,
+    options?: Partial<PathOptions<T> & {
+      counterclockwise: boolean
+    }>,
   ): T
   renderText(
     x: number,
@@ -86,6 +89,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     fontSize: number,
     fontFamily: string,
     options?: Partial<{
+      fontWeight: React.CSSProperties['fontWeight']
+      fontStyle: React.CSSProperties['fontStyle']
       cacheKey: object
     }>,
   ): T

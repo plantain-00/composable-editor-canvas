@@ -130,7 +130,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     return this.renderPolygon(points, options)
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
-    const points = arcToPolyline({ x: cx, y: cy, r, startAngle, endAngle }, 5)
+    const points = arcToPolyline({ x: cx, y: cy, r, startAngle, endAngle, counterclockwise: options?.counterclockwise }, 5)
     return this.renderPolyline(points, options)
   },
   renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
@@ -139,7 +139,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
         if (ctx) {
-          const font = `${fontSize}px ${fontFamily}`
+          const font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
           ctx.font = font
           const t = ctx.measureText(text);
           ctx.canvas.width = Math.ceil(t.width) + 2;

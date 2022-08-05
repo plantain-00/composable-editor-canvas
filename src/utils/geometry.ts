@@ -779,6 +779,7 @@ export interface EllipseArc extends Ellipse, AngleRange {
 export interface AngleRange {
   startAngle: number
   endAngle: number
+  counterclockwise?: boolean
 }
 
 /**
@@ -1000,14 +1001,29 @@ export function polygonToPolyline(points: Position[]) {
  */
 export function arcToPolyline(content: Arc, angleDelta: number) {
   const points: Position[] = []
-  const endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
+  let endAngle: number
+  if (content.counterclockwise) {
+    endAngle = content.startAngle < content.endAngle ? content.endAngle - 360 : content.endAngle
+  } else {
+    endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
+  }
   let i = content.startAngle
-  for (; i <= endAngle; i += angleDelta) {
-    const angle = i * Math.PI / 180
-    points.push({
-      x: content.x + content.r * Math.cos(angle),
-      y: content.y + content.r * Math.sin(angle),
-    })
+  if (content.counterclockwise) {
+    for (; i >= endAngle; i -= angleDelta) {
+      const angle = i * Math.PI / 180
+      points.push({
+        x: content.x + content.r * Math.cos(angle),
+        y: content.y + content.r * Math.sin(angle),
+      })
+    }
+  } else {
+    for (; i <= endAngle; i += angleDelta) {
+      const angle = i * Math.PI / 180
+      points.push({
+        x: content.x + content.r * Math.cos(angle),
+        y: content.y + content.r * Math.sin(angle),
+      })
+    }
   }
   if (i !== endAngle) {
     const angle = endAngle * Math.PI / 180
