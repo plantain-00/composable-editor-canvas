@@ -137,10 +137,12 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1"
+    const b = endAngle - startAngle <= 180
+    const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
+    const clockwiseFlag = options?.counterclockwise ? "1" : "0"
     return renderFillPattern(fill => (
       <path
-        d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`}
+        d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
         strokeWidth={options?.strokeWidth ?? 1}
         vectorEffect='non-scaling-stroke'
         stroke={getColorString(options?.strokeColor ?? 0)}
@@ -149,7 +151,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       />
     ), options)
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily) {
+  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
     return (key) => (
       <text
         key={key}
@@ -157,7 +159,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         y={y}
         style={{
           fill: getColorString(fillColor),
-          fontSize: `${fontSize}px`, fontFamily
+          fontWeight: options?.fontWeight,
+          fontSize: `${fontSize}px`,
+          fontStyle: options?.fontStyle,
+          fontFamily
         }}>
         {text}
       </text>
@@ -201,10 +206,10 @@ function renderFillPattern(
   options?: Partial<PathOptions<Draw>>,
 ) {
   return (key: React.Key) => {
+    const id = React.useId()
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let defs: JSX.Element | undefined
     if (options?.fillPattern) {
-      const id = `${key}-pattern`
       defs = (
         <pattern
           id={id}

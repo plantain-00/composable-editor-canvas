@@ -9,6 +9,7 @@
 import type { Draft } from 'immer/dist/types/types-external';
 import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
+import { default as React_3 } from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
 
 // @public (undocumented)
@@ -28,6 +29,8 @@ export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersec
 
 // @public (undocumented)
 export interface AngleRange {
+    // (undocumented)
+    counterclockwise?: boolean;
     // (undocumented)
     endAngle: number;
     // (undocumented)
@@ -642,7 +645,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw_2>;
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
-    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, options?: Partial<PathOptions<T>>): T;
+    renderArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, options?: Partial<PathOptions<T> & {
+        counterclockwise: boolean;
+    }>): T;
     // (undocumented)
     renderCircle(cx: number, cy: number, r: number, options?: Partial<PathOptions<T>>): T;
     // (undocumented)
@@ -688,8 +693,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     }>): T;
     // (undocumented)
     renderResult(children: T[], width: number, height: number, options?: Partial<{
-        attributes: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
-            style: React.CSSProperties;
+        attributes: Partial<React_3.DOMAttributes<HTMLOrSVGElement> & {
+            style: React_3.CSSProperties;
         }>;
         transform: {
             x: number;
@@ -702,6 +707,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     }>): JSX.Element;
     // (undocumented)
     renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string, options?: Partial<{
+        fontWeight: React_3.CSSProperties['fontWeight'];
+        fontStyle: React_3.CSSProperties['fontStyle'];
         cacheKey: object;
     }>): T;
     // (undocumented)
