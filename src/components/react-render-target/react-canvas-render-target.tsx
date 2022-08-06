@@ -1,6 +1,6 @@
 import * as React from "react"
 import { getColorString, loadImage, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { polygonToPolyline } from "../../utils"
+import { m3, polygonToPolyline } from "../../utils"
 
 /**
  * @public
@@ -42,6 +42,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.rotate(options.rotation)
         ctx.translate(-options.base.x, - options.base.y)
       }
+      if (options?.matrix) {
+        ctx.setTransform(...m3.getTransform(options.matrix))
+      }
       children.forEach((c) => {
         c(ctx, strokeWidthScale, setImageLoadStatus)
       })
@@ -65,10 +68,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.rotate(options.rotation)
         ctx.translate(-(x + width / 2), -(y + height / 2))
       }
-      if (options?.fillColor !== undefined) {
-        ctx.fillStyle = getColorString(options.fillColor)
-        ctx.fillRect(x, y, width, height)
-      }
+      ctx.rect(x, y, width, height)
       const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
       if (strokeWidth) {
         ctx.lineWidth = strokeWidth

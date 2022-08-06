@@ -542,12 +542,13 @@ export function loadImage(url: string, crossOrigin?: "anonymous" | "use-credenti
 
 // @public (undocumented)
 export const m3: {
-    projection(width: number, height: number): number[];
-    identity(): number[];
-    translation(tx: number, ty: number): number[];
-    rotation(angleInRadians: number): number[];
-    scaling(sx: number, sy: number): number[];
-    multiply: (a: number[], b: number[]) => number[];
+    projection(width: number, height: number): Matrix;
+    identity(): Matrix;
+    translation(tx: number, ty: number): Matrix;
+    rotation(angleInRadians: number): Matrix;
+    scaling(sx: number, sy: number): Matrix;
+    multiply(a: Matrix, b: Matrix): Matrix;
+    getTransform(m: Matrix): readonly [number, number, number, number, number, number];
 };
 
 // @public (undocumented)
@@ -555,6 +556,9 @@ export class MapCache2<TKey1, TKey2, TValue> {
     // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
 }
+
+// @public (undocumented)
+export type Matrix = readonly [number, number, number, number, number, number, number, number, number];
 
 // @public (undocumented)
 export function metaKeyIfMacElseCtrlKey(e: React_2.KeyboardEvent | KeyboardEvent): boolean;
@@ -663,6 +667,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         base: Position;
         angle: number;
         rotation: number;
+        matrix: Matrix;
     }>): T;
     // (undocumented)
     renderImage(url: string, x: number, y: number, width: number, height: number, options?: Partial<{

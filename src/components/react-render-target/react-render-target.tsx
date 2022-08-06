@@ -1,5 +1,5 @@
 import React from "react"
-import { Position, Size } from "../../utils"
+import { Matrix, Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -29,6 +29,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       base: Position
       angle: number
       rotation: number
+      matrix: Matrix
     }>,
   ): T
   renderRect(
