@@ -151,14 +151,13 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       />
     ), options)
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
-    return (key) => (
+  renderText(x, y, text, fill, fontSize, fontFamily, options) {
+    return renderFillPattern(fill => (
       <text
-        key={key}
         x={x}
         y={y}
         style={{
-          fill: getColorString(fillColor),
+          fill,
           fontWeight: options?.fontWeight,
           fontSize: `${fontSize}px`,
           fontStyle: options?.fontStyle,
@@ -166,7 +165,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         }}>
         {text}
       </text>
-    )
+    ), {
+      fillColor: typeof fill === 'number' ? fill : undefined,
+      fillPattern: fill !== undefined && typeof fill !== 'number' ? fill : undefined,
+    })
   },
   renderImage(url, x, y, width, height, options) {
     return (key) => (
