@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
 import { loadImage, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 
 interface LineOrTriangleGraphic {
@@ -22,7 +22,7 @@ interface TextureGraphic {
 }
 
 type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
-  matrix?: number[]
+  matrix?: Matrix
   pattern?: {
     graphics: Graphic[]
   } & Size
@@ -69,6 +69,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
             matrix = m3.multiply(matrix, m3.rotation(-options.rotation))
           }
           matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
+        }
+        if (options.matrix) {
+          matrix = m3.multiply(matrix, options.matrix)
         }
       }
       const graphics: Graphic[] = []
@@ -296,7 +299,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: number[]) => Graphic[]
+type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: Matrix) => Graphic[]
 
 const images = new Map<string, HTMLImageElement | undefined>()
 
@@ -445,7 +448,7 @@ function Canvas(props: {
     let objectsToDraw: twgl.DrawObject[] = []
     const drawPattern = (
       pattern: { graphics: Graphic[] } & Size,
-      matrix: number[],
+      matrix: Matrix,
       bounding: { xMin: number, xMax: number, yMin: number, yMax: number },
       drawObject: twgl.DrawObject,
     ) => {
@@ -469,7 +472,7 @@ function Canvas(props: {
         for (let j = rowStartIndex; j <= rowEndIndex; j++) {
           const baseMatrix = m3.multiply(matrix, m3.translation(i * pattern.width, j * pattern.height))
           for (const p of pattern.graphics) {
-            drawGraphic(p, baseMatrix)
+            drawGraphic(p, p.matrix ? m3.multiply(baseMatrix, p.matrix) : baseMatrix)
           }
         }
       }
@@ -479,7 +482,7 @@ function Canvas(props: {
       gl.disable(gl.STENCIL_TEST);
       gl.clear(gl.STENCIL_BUFFER_BIT)
     }
-    const drawGraphic = (line: Graphic, matrix: number[]) => {
+    const drawGraphic = (line: Graphic, matrix: Matrix) => {
       if (line.type === 'texture') {
         let textureMatrix = m3.multiply(matrix, m3.translation(line.x, line.y))
         const width = line.width ?? line.src.width

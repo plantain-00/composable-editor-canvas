@@ -1,6 +1,6 @@
 import * as React from "react"
 import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { polygonToPolyline } from "../../utils"
+import { m3, polygonToPolyline } from "../../utils"
 
 /**
  * @public
@@ -47,6 +47,9 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       if (rotateTransform) {
         transform.push(rotateTransform)
       }
+    }
+    if (options?.matrix) {
+      transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
     return (key) => (
       <g transform={transform.join(' ')} key={key}>

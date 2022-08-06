@@ -3,28 +3,28 @@
  * @public
  */
 export const m3 = {
-  projection(width: number, height: number) {
+  projection(width: number, height: number): Matrix {
     return [
       2 / width, 0, 0,
       0, -2 / height, 0,
       -1, 1, 1
     ];
   },
-  identity() {
+  identity(): Matrix {
     return [
       1, 0, 0,
       0, 1, 0,
       0, 0, 1,
     ];
   },
-  translation(tx: number, ty: number) {
+  translation(tx: number, ty: number): Matrix {
     return [
       1, 0, 0,
       0, 1, 0,
       tx, ty, 1,
     ];
   },
-  rotation(angleInRadians: number) {
+  rotation(angleInRadians: number): Matrix {
     const c = Math.cos(angleInRadians);
     const s = Math.sin(angleInRadians);
     return [
@@ -33,14 +33,14 @@ export const m3 = {
       0, 0, 1,
     ];
   },
-  scaling(sx: number, sy: number) {
+  scaling(sx: number, sy: number): Matrix {
     return [
       sx, 0, 0,
       0, sy, 0,
       0, 0, 1,
-    ];
+    ]
   },
-  multiply: function (a: number[], b: number[]) {
+  multiply(a: Matrix, b: Matrix): Matrix {
     const a00 = a[0 * 3 + 0];
     const a01 = a[0 * 3 + 1];
     const a02 = a[0 * 3 + 2];
@@ -71,4 +71,9 @@ export const m3 = {
       b20 * a02 + b21 * a12 + b22 * a22,
     ];
   },
+  getTransform(m: Matrix) {
+    return [m[0], m[1], m[3], m[4], m[6], m[7]] as const
+  },
 };
+
+export type Matrix = readonly [number, number, number, number, number, number, number, number, number]

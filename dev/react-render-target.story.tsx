@@ -1,5 +1,5 @@
 import React from "react"
-import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget } from "../src"
+import { m3, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget } from "../src"
 
 export default () => {
   const renderArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
@@ -22,6 +22,27 @@ export default () => {
     target.renderText(10, 60, 'Hello World!', 0xff0000, 30, 'monospace', { fontWeight: 'bold' }),
     target.renderText(10, 90, 'Hello World!', 0xff0000, 30, 'monospace', { fontStyle: 'italic' }),
     target.renderText(10, 150, 'Hello', { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, 70, 'monospace'),
+  ], 230, 250)
+
+  const renderViewports = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
+    target.renderCircle(50, 50, 20),
+    target.renderCircle(50, 50, 35),
+    target.renderRect(120, 10, 80, 80, {
+      fillPattern: {
+        width: 1000, height: 1000, pattern: () => target.renderGroup([
+          target.renderCircle(50, 50, 20),
+          target.renderCircle(50, 50, 35),
+        ], { translate: { x: 100, y: 0 } })
+      }
+    }),
+    target.renderCircle(180, 150, 50, {
+      fillPattern: {
+        width: 1000, height: 1000, pattern: () => target.renderGroup([
+          target.renderCircle(50, 50, 20),
+          target.renderCircle(50, 50, 35),
+        ], { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) })
+      }
+    }),
   ], 230, 250)
 
   function render<T>(target: ReactRenderTarget<T>) {
@@ -90,6 +111,9 @@ export default () => {
       {renderTexts(reactSvgRenderTarget)}
       {renderTexts(reactCanvasRenderTarget)}
       {renderTexts(reactWebglRenderTarget)}
+      {renderViewports(reactSvgRenderTarget)}
+      {renderViewports(reactCanvasRenderTarget)}
+      {renderViewports(reactWebglRenderTarget)}
       {render(reactSvgRenderTarget)}
       {render(reactCanvasRenderTarget)}
       {render(reactWebglRenderTarget)}
