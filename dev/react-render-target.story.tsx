@@ -11,8 +11,8 @@ export default () => {
     target.renderArc(170, 170, 30, 0, 120, { counterclockwise: true }),
   ], 230, 250)
   const renderCircles = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
-    target.renderCircle(110, 110, 50, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
-    target.renderCircle(110, 110, 80, { fillColor: 0xff0000, strokeWidth: 0 }),
+    target.renderCircle(70, 110, 40, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
+    target.renderCircle(150, 110, 40, { fillColor: 0xff0000, strokeWidth: 0 }),
     target.renderCircle(110, 110, 90, { strokeColor: 0x00ff00 }),
     target.renderCircle(110, 110, 100, { strokeWidth: 5 }),
     target.renderCircle(110, 110, 110, { dashArray: [4] }),
@@ -21,6 +21,7 @@ export default () => {
     target.renderText(10, 30, 'Hello World!', 0xff0000, 30, 'monospace'),
     target.renderText(10, 60, 'Hello World!', 0xff0000, 30, 'monospace', { fontWeight: 'bold' }),
     target.renderText(10, 90, 'Hello World!', 0xff0000, 30, 'monospace', { fontStyle: 'italic' }),
+    target.renderText(10, 150, 'Hello', { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, 70, 'monospace'),
   ], 230, 250)
 
   function render<T>(target: ReactRenderTarget<T>) {

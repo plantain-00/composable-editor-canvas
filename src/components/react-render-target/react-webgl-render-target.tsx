@@ -4,16 +4,14 @@ import earcut from 'earcut'
 import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
 import { loadImage, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 
-type Graphic = {
+interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines'
   points: number[]
   color: [number, number, number, number]
   strip: boolean
-  matrix?: number[]
-  pattern?: {
-    graphics: Graphic[]
-  } & Size
-} | {
+}
+
+interface TextureGraphic {
   type: 'texture'
   color?: [number, number, number, number]
   x: number
@@ -21,7 +19,13 @@ type Graphic = {
   width?: number
   height?: number
   src: HTMLCanvasElement | HTMLImageElement
+}
+
+type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
   matrix?: number[]
+  pattern?: {
+    graphics: Graphic[]
+  } & Size
 }
 
 /**
@@ -133,8 +137,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     const points = arcToPolyline({ x: cx, y: cy, r, startAngle, endAngle, counterclockwise: options?.counterclockwise }, 5)
     return this.renderPolyline(points, options)
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
-    return () => {
+  renderText(x, y, text, fill, fontSize, fontFamily, options) {
+    return (strokeWidthScale, setImageLoadStatus) => {
       const getCanvas = () => {
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
@@ -151,12 +155,28 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
         return canvas
       }
       const canvas = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getCanvas) : getCanvas()
+      if (fill !== undefined && typeof fill !== 'number') {
+        return [
+          {
+            type: 'texture',
+            x,
+            y: y - canvas.height,
+            src: canvas,
+            color: [0, 0, 0, 1],
+            pattern: {
+              graphics: fill.pattern()(strokeWidthScale, setImageLoadStatus),
+              width: fill.width,
+              height: fill.height,
+            },
+          }
+        ]
+      }
       return [
         {
           type: 'texture',
           x,
           y: y - canvas.height,
-          color: colorNumberToRec(fillColor),
+          color: colorNumberToRec(fill),
           src: canvas,
         }
       ]
@@ -390,9 +410,134 @@ function Canvas(props: {
       }
       gl_FragColor = texture2D(texture, texcoord);
     }`]);
+    const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;   
+    uniform mat3 matrix;
+    varying vec2 texcoord;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      texcoord = position.xy;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 texcoord;
+    uniform sampler2D texture;
+    uniform vec4 color;
+
+    void main() {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
+          texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      vec4 color2 = texture2D(texture, texcoord);
+      vec4 color3 =  color2 * color;
+      if (color3.a < 0.1) {
+        discard;
+      }
+      gl_FragColor = color2;
+    }`]);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
     const canvasTextureCache = new WeakmapCache<HTMLCanvasElement | HTMLImageElement, WebGLTexture>()
+
+    let objectsToDraw: twgl.DrawObject[] = []
+    const drawPattern = (
+      pattern: { graphics: Graphic[] } & Size,
+      matrix: number[],
+      bounding: { xMin: number, xMax: number, yMin: number, yMax: number },
+      drawObject: twgl.DrawObject,
+    ) => {
+      twgl.drawObjectList(gl, objectsToDraw)
+      objectsToDraw = []
+
+      gl.enable(gl.STENCIL_TEST);
+      gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
+      gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+      twgl.drawObjectList(gl, [drawObject])
+
+      gl.stencilFunc(gl.EQUAL, 1, 0xFF);
+      gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+      const { xMin, yMin, xMax, yMax } = bounding
+      const columnStartIndex = Math.floor(xMin / pattern.width)
+      const columnEndIndex = Math.floor(xMax / pattern.width)
+      const rowStartIndex = Math.floor(yMin / pattern.height)
+      const rowEndIndex = Math.floor(yMax / pattern.height)
+      for (let i = columnStartIndex; i <= columnEndIndex; i++) {
+        for (let j = rowStartIndex; j <= rowEndIndex; j++) {
+          const baseMatrix = m3.multiply(matrix, m3.translation(i * pattern.width, j * pattern.height))
+          for (const p of pattern.graphics) {
+            drawGraphic(p, baseMatrix)
+          }
+        }
+      }
+      twgl.drawObjectList(gl, objectsToDraw)
+      objectsToDraw = []
+
+      gl.disable(gl.STENCIL_TEST);
+      gl.clear(gl.STENCIL_BUFFER_BIT)
+    }
+    const drawGraphic = (line: Graphic, matrix: number[]) => {
+      if (line.type === 'texture') {
+        let textureMatrix = m3.multiply(matrix, m3.translation(line.x, line.y))
+        const width = line.width ?? line.src.width
+        const height = line.height ?? line.src.height
+        textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
+
+        const drawObject: twgl.DrawObject = {
+          programInfo: line.pattern ? colorMaskedTextureProgramInfo : line.color ? coloredTextureProgramInfo : textureProgramInfo,
+          bufferInfo: textureBufferInfo,
+          uniforms: {
+            matrix: textureMatrix,
+            color: line.color,
+            texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
+          },
+        }
+        if (line.pattern) {
+          drawPattern(line.pattern, matrix, { xMin: line.x, yMin: line.y, xMax: line.x + width, yMax: line.y + height }, drawObject)
+        } else {
+          objectsToDraw.push(drawObject)
+        }
+      } else if (line.type === 'lines' || line.type === 'triangles') {
+        const drawObject: twgl.DrawObject = {
+          programInfo,
+          bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
+            position: {
+              numComponents: 2,
+              data: line.points
+            },
+          })),
+          uniforms: {
+            color: line.color,
+            matrix,
+          },
+          type: getDrawType(line, gl),
+        }
+        if (line.pattern) {
+          let xMin = Infinity
+          let yMin = Infinity
+          let xMax = -Infinity
+          let yMax = -Infinity
+          for (let i = 0; i < line.points.length; i += 2) {
+            if (line.points[i] < xMin) {
+              xMin = line.points[i]
+            } else if (line.points[i] > xMax) {
+              xMax = line.points[i]
+            }
+            if (line.points[i + 1] < yMin) {
+              yMin = line.points[i + 1]
+            } else if (line.points[i + 1] > yMax) {
+              yMax = line.points[i + 1]
+            }
+          }
+          drawPattern(line.pattern, matrix, { xMin, yMin, xMax, yMax }, drawObject)
+        } else {
+          objectsToDraw.push(drawObject)
+        }
+      }
+    }
 
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
       const now = Date.now()
@@ -409,151 +554,15 @@ function Canvas(props: {
         worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
       }
 
-      let objectsToDraw: twgl.DrawObject[] = []
       for (const g of graphics) {
         const lines = g(strokeWidthScale, setImageLoadStatus)
         for (const line of lines) {
-          let matrix = line.matrix ? m3.multiply(worldMatrix, line.matrix) : worldMatrix
-          if (line.type === 'texture') {
-            matrix = m3.multiply(matrix, m3.translation(line.x, line.y))
-            matrix = m3.multiply(matrix, m3.scaling(line.width ?? line.src.width, line.height ?? line.src.height))
-            if (!line.color) {
-              objectsToDraw.push({
-                programInfo: textureProgramInfo,
-                bufferInfo: textureBufferInfo,
-                uniforms: {
-                  matrix,
-                  texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
-                },
-              })
-              continue
-            }
-            objectsToDraw.push({
-              programInfo: coloredTextureProgramInfo,
-              bufferInfo: textureBufferInfo,
-              uniforms: {
-                matrix,
-                color: line.color,
-                texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
-              },
-            })
-            continue
-          }
-          if (line.pattern) {
-            twgl.drawObjectList(gl, objectsToDraw)
-            objectsToDraw = []
-
-            gl.enable(gl.STENCIL_TEST);
-            gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
-            gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
-            twgl.drawObjectList(gl, [{
-              programInfo,
-              bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
-                position: {
-                  numComponents: 2,
-                  data: line.points
-                },
-              })),
-              uniforms: {
-                color: line.color,
-                matrix,
-              },
-              type: line.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
-            }])
-
-            gl.stencilFunc(gl.EQUAL, 1, 0xFF);
-            gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
-
-            let xMin = Infinity
-            let yMin = Infinity
-            let xMax = -Infinity
-            let yMax = -Infinity
-            for (let i = 0; i < line.points.length; i += 2) {
-              if (line.points[i] < xMin) {
-                xMin = line.points[i]
-              } else if (line.points[i] > xMax) {
-                xMax = line.points[i]
-              }
-              if (line.points[i + 1] < yMin) {
-                yMin = line.points[i + 1]
-              } else if (line.points[i + 1] > yMax) {
-                yMax = line.points[i + 1]
-              }
-            }
-            const columnStartIndex = Math.floor(xMin / line.pattern.width)
-            const columnEndIndex = Math.floor(xMax / line.pattern.width)
-            const rowStartIndex = Math.floor(yMin / line.pattern.height)
-            const rowEndIndex = Math.floor(yMax / line.pattern.height)
-            for (let i = columnStartIndex; i <= columnEndIndex; i++) {
-              for (let j = rowStartIndex; j <= rowEndIndex; j++) {
-                const baseMatrix = m3.multiply(matrix, m3.translation(i * line.pattern.width, j * line.pattern.height))
-                for (const p of line.pattern.graphics) {
-                  if (p.type === 'triangles' || p.type === 'lines') {
-                    objectsToDraw.push({
-                      programInfo,
-                      bufferInfo: bufferInfoCache.get(p.points, () => twgl.createBufferInfoFromArrays(gl, {
-                        position: {
-                          numComponents: 2,
-                          data: p.points
-                        },
-                      })),
-                      uniforms: {
-                        color: p.color,
-                        matrix: baseMatrix,
-                      },
-                      type: getDrawType(p, gl),
-                    })
-                  } else if (p.type === 'texture') {
-                    let textureMatrix = m3.multiply(baseMatrix, m3.translation(p.x, p.y))
-                    textureMatrix = m3.multiply(textureMatrix, m3.scaling(p.width ?? p.src.width, p.height ?? p.src.height))
-                    if (!p.color) {
-                      objectsToDraw.push({
-                        programInfo: textureProgramInfo,
-                        bufferInfo: textureBufferInfo,
-                        uniforms: {
-                          matrix: textureMatrix,
-                          texture: canvasTextureCache.get(p.src, () => twgl.createTexture(gl, { src: p.src })),
-                        },
-                      })
-                      continue
-                    }
-                    objectsToDraw.push({
-                      programInfo: coloredTextureProgramInfo,
-                      bufferInfo: textureBufferInfo,
-                      uniforms: {
-                        matrix: textureMatrix,
-                        color: p.color,
-                        texture: canvasTextureCache.get(p.src, () => twgl.createTexture(gl, { src: p.src })),
-                      },
-                    })
-                  }
-                }
-              }
-            }
-            twgl.drawObjectList(gl, objectsToDraw)
-            objectsToDraw = []
-
-            gl.disable(gl.STENCIL_TEST);
-            gl.clear(gl.STENCIL_BUFFER_BIT)
-            continue
-          }
-          objectsToDraw.push({
-            programInfo,
-            bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
-              position: {
-                numComponents: 2,
-                data: line.points
-              },
-            })),
-            uniforms: {
-              color: line.color,
-              matrix,
-            },
-            type: getDrawType(line, gl),
-          })
+          const matrix = line.matrix ? m3.multiply(worldMatrix, line.matrix) : worldMatrix
+          drawGraphic(line, matrix)
         }
       }
       twgl.drawObjectList(gl, objectsToDraw)
+      objectsToDraw = []
       if (props.debug) {
         console.info(Date.now() - now)
       }

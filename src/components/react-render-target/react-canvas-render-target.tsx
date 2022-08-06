@@ -165,10 +165,24 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.restore()
     }
   },
-  renderText(x, y, text, fillColor, fontSize, fontFamily, options) {
-    return (ctx) => {
+  renderText(x, y, text, fill, fontSize, fontFamily, options) {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
-      ctx.fillStyle = getColorString(fillColor)
+      if (typeof fill !== 'number') {
+        const canvas = document.createElement("canvas")
+        canvas.width = fill.width
+        canvas.height = fill.height
+        const patternCtx = canvas.getContext('2d')
+        if (patternCtx) {
+          fill.pattern()(patternCtx, strokeWidthScale, setImageLoadStatus)
+          const pattern = ctx.createPattern(canvas, null)
+          if (pattern) {
+            ctx.fillStyle = pattern
+          }
+        }
+      } else {
+        ctx.fillStyle = getColorString(fill)
+      }
       ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
       ctx.fillText(text, x, y)
       ctx.restore()
@@ -223,7 +237,7 @@ function renderFillPattern(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>,
-  options?: Partial<PathOptions<Draw>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern'>>,
 ) {
   if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
     if (options.fillPattern !== undefined) {

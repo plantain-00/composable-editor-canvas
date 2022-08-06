@@ -85,7 +85,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     x: number,
     y: number,
     text: string,
-    fillColor: number,
+    fill: number | Pattern<T>,
     fontSize: number,
     fontFamily: string,
     options?: Partial<{

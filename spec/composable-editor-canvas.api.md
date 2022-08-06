@@ -706,7 +706,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         strokeWidthScale: number;
     }>): JSX.Element;
     // (undocumented)
-    renderText(x: number, y: number, text: string, fillColor: number, fontSize: number, fontFamily: string, options?: Partial<{
+    renderText(x: number, y: number, text: string, fill: number | Pattern<T>, fontSize: number, fontFamily: string, options?: Partial<{
         fontWeight: React_3.CSSProperties['fontWeight'];
         fontStyle: React_3.CSSProperties['fontStyle'];
         cacheKey: object;
