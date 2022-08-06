@@ -183,6 +183,12 @@ export function EllipseEditBar(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: number, angleInDegrees: number): {
+    x: number;
+    y: number;
+};
+
+// @public (undocumented)
 export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
 
 // @public (undocumented)
@@ -538,9 +544,6 @@ export interface LinearDimension extends TextStyle {
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
-export function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | ""): Promise<HTMLImageElement>;
-
-// @public (undocumented)
 export const m3: {
     projection(width: number, height: number): Matrix;
     identity(): Matrix;
@@ -658,6 +661,12 @@ export interface ReactRenderTarget<T = JSX.Element> {
     renderEllipse(cx: number, cy: number, rx: number, ry: number, options?: Partial<PathOptions<T> & {
         angle: number;
         rotation: number;
+    }>): T;
+    // (undocumented)
+    renderEllipseArc(cx: number, cy: number, rx: number, ry: number, startAngle: number, endAngle: number, options?: Partial<PathOptions<T> & {
+        angle: number;
+        rotation: number;
+        counterclockwise: boolean;
     }>): T;
     // (undocumented)
     renderEmpty(): T;

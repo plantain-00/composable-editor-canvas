@@ -154,6 +154,24 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       />
     ), options)
   },
+  renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
+    const start = ellipsePolarToCartesian(cx, cy, rx, ry, endAngle)
+    const end = ellipsePolarToCartesian(cx, cy, rx, ry, startAngle)
+    const b = endAngle - startAngle <= 180
+    const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
+    const clockwiseFlag = options?.counterclockwise ? "1" : "0"
+    return renderFillPattern(fill => (
+      <path
+        d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
+        strokeWidth={options?.strokeWidth ?? 1}
+        vectorEffect='non-scaling-stroke'
+        stroke={getColorString(options?.strokeColor ?? 0)}
+        strokeDasharray={options?.dashArray?.join(' ')}
+        fill={fill}
+        transform={getRotateTransform(cx, cy, options)}
+      />
+    ), options)
+  },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return renderFillPattern(fill => (
       <text
@@ -245,6 +263,17 @@ export function polarToCartesian(cx: number, cy: number, radius: number, angleIn
   return {
     x: cx + (radius * Math.cos(angleInRadians)),
     y: cy + (radius * Math.sin(angleInRadians))
+  }
+}
+
+/**
+ * @public
+ */
+export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: number, angleInDegrees: number) {
+  const angleInRadians = angleInDegrees * Math.PI / 180
+  return {
+    x: cx + (rx * Math.cos(angleInRadians)),
+    y: cy + (ry * Math.sin(angleInRadians))
   }
 }
 
