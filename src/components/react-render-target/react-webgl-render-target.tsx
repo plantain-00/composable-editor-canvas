@@ -1,8 +1,9 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
-import { loadImage, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
+import { ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { getImageFromCache } from "./image-loader"
 
 interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines'
@@ -123,21 +124,27 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     return this.renderPolyline(points, options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    let points = ellipseToPolygon({ cx, cy, rx, ry }, 5)
     let angle = 0
     if (options?.angle) {
-      angle = options.angle * Math.PI / 180
+      angle = options.angle
     } else if (options?.rotation) {
-      angle = options.rotation
+      angle = options.rotation * 180 / Math.PI
     }
-    if (angle) {
-      const center = { x: cx, y: cy }
-      points = points.map((p) => rotatePosition(p, center, angle))
-    }
+    const points = ellipseToPolygon({ cx, cy, rx, ry, angle }, 5)
     return this.renderPolygon(points, options)
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     const points = arcToPolyline({ x: cx, y: cy, r, startAngle, endAngle, counterclockwise: options?.counterclockwise }, 5)
+    return this.renderPolyline(points, options)
+  },
+  renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
+    let angle = 0
+    if (options?.angle) {
+      angle = options.angle
+    } else if (options?.rotation) {
+      angle = options.rotation * 180 / Math.PI
+    }
+    const points = ellipseArcToPolyline({ cx, cy, rx, ry, startAngle, endAngle, angle, counterclockwise: options?.counterclockwise }, 5)
     return this.renderPolyline(points, options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
@@ -187,15 +194,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderImage(url, x, y, width, height, options) {
     return (_, setImageLoadStatus) => {
-      if (!images.has(url)) {
-        images.set(url, undefined)
-        // eslint-disable-next-line plantain/promise-not-await
-        loadImage(url, options?.crossOrigin).then(image => {
-          images.set(url, image)
-          setImageLoadStatus(c => c + 1)
-        })
-      }
-      const image = images.get(url)
+      const image = getImageFromCache(url, setImageLoadStatus, options?.crossOrigin)
       if (!image) {
         return []
       }
@@ -300,8 +299,6 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
 }
 
 type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: Matrix) => Graphic[]
-
-const images = new Map<string, HTMLImageElement | undefined>()
 
 const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>()
 const combinedTrianglesCache = new WeakmapMapCache<Position[][], number, number[]>()

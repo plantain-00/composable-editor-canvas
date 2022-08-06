@@ -1,6 +1,7 @@
 import * as React from "react"
-import { getColorString, loadImage, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { getColorString, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { m3, polygonToPolyline } from "../../utils"
+import { getImageFromCache } from "./image-loader"
 
 /**
  * @public
@@ -165,6 +166,25 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.restore()
     }
   },
+  renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
+    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+      ctx.save()
+      ctx.beginPath()
+      if (options?.dashArray) {
+        ctx.setLineDash(options.dashArray)
+      }
+      const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
+      ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
+      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
+      if (strokeWidth) {
+        ctx.lineWidth = strokeWidth
+        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+        ctx.stroke()
+      }
+      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      ctx.restore()
+    }
+  },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (ctx, strokeWidthScale, setImageLoadStatus) => {
       ctx.save()
@@ -190,18 +210,10 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderImage(url, x, y, width, height, options) {
     return (ctx, _, setImageLoadStatus) => {
-      if (!images.has(url)) {
-        images.set(url, undefined)
-        loadImage(url, options?.crossOrigin).then(image => {
-          images.set(url, image)
-          setImageLoadStatus(c => c + 1)
-        })
+      const image = getImageFromCache(url, setImageLoadStatus, options?.crossOrigin)
+      if (image) {
+        ctx.drawImage(image, x, y, width, height)
       }
-      const image = images.get(url)
-      if (!image) {
-        return
-      }
-      ctx.drawImage(image, x, y, width, height)
     }
   },
   renderPath(lines, options) {
@@ -230,8 +242,6 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     }
   },
 }
-
-const images = new Map<string, HTMLImageElement | undefined>()
 
 function renderFillPattern(
   ctx: CanvasRenderingContext2D,

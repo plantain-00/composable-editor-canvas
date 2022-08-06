@@ -82,6 +82,19 @@ export interface ReactRenderTarget<T = JSX.Element> {
       counterclockwise: boolean
     }>,
   ): T
+  renderEllipseArc(
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number,
+    startAngle: number,
+    endAngle: number,
+    options?: Partial<PathOptions<T> & {
+      angle: number
+      rotation: number
+      counterclockwise: boolean
+    }>,
+  ): T
   renderText(
     x: number,
     y: number,
@@ -145,20 +158,4 @@ export function renderPartStyledPolyline<T>(
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
     ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color })),
   ])
-}
-
-export function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | "") {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image()
-    if (crossOrigin !== undefined) {
-      image.crossOrigin = crossOrigin
-    }
-    image.onload = () => {
-      resolve(image)
-    }
-    image.onerror = () => {
-      reject()
-    }
-    image.src = url
-  })
 }
