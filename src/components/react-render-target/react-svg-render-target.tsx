@@ -1,6 +1,6 @@
 import * as React from "react"
-import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { m3, polygonToPolyline } from "../../utils"
+import { defaultMiterLimit, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { m3 } from "../../utils"
 
 /**
  * @public
@@ -64,10 +64,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         y={y}
         width={width}
         height={height}
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
       />
@@ -84,39 +81,28 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       return renderFillPattern(fill => (
         <path
           d={d}
-          strokeWidth={options?.strokeWidth ?? 1}
-          vectorEffect='non-scaling-stroke'
-          stroke={getColorString(options?.strokeColor ?? 0)}
-          strokeDasharray={options?.dashArray?.join(' ')}
+          {...getCommonLineAttributes(options)}
           fill={fill}
         />
       ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return renderFillPattern(fill => (
-      <polyline
-        points={pointsText}
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
-        strokeDasharray={options?.dashArray?.join(' ')}
-        fill={fill}
-      />
-    ), options)
+    return renderFillPattern(fill => React.createElement(options?.closed ? 'polygon' : 'polyline', {
+      points: pointsText,
+      ...getCommonLineAttributes(options),
+      fill,
+    }), options)
   },
   renderPolygon(points, options) {
-    return this.renderPolyline(polygonToPolyline(points), options)
+    return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
     return renderFillPattern(fill => (
       <circle
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
         cx={cx}
         cy={cy}
         r={r}
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
       />
     ), options)
@@ -124,14 +110,11 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   renderEllipse(cx, cy, rx, ry, options) {
     return renderFillPattern(fill => (
       <ellipse
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
         cx={cx}
         cy={cy}
         rx={rx}
         ry={ry}
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
         transform={getRotateTransform(cx, cy, options)}
       />
@@ -146,10 +129,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     return renderFillPattern(fill => (
       <path
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
       />
     ), options)
@@ -163,10 +143,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     return renderFillPattern(fill => (
       <path
         d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
         transform={getRotateTransform(cx, cy, options)}
       />
@@ -206,14 +183,14 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     )
   },
   renderPath(lines, options) {
-    const d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
+    let d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
+    if (options?.closed) {
+      d = d + ' Z'
+    }
     return renderFillPattern(fill => (
       <path
         d={d}
-        strokeWidth={options?.strokeWidth ?? 1}
-        vectorEffect='non-scaling-stroke'
-        stroke={getColorString(options?.strokeColor ?? 0)}
-        strokeDasharray={options?.dashArray?.join(' ')}
+        {...getCommonLineAttributes(options)}
         fill={fill}
         fillRule='evenodd'
       // strokeLinecap={options?.lineCap}
@@ -255,15 +232,22 @@ function renderFillPattern(
   }
 }
 
+function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
+  return {
+    strokeWidth: options?.strokeWidth ?? 1,
+    vectorEffect: 'non-scaling-stroke',
+    stroke: getColorString(options?.strokeColor ?? 0),
+    strokeDasharray: options?.dashArray?.join(' '),
+    strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
+    strokeLinejoin: options?.lineJoin ?? 'miter',
+  }
+}
+
 /**
  * @public
  */
 export function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
-  const angleInRadians = angleInDegrees * Math.PI / 180
-  return {
-    x: cx + (radius * Math.cos(angleInRadians)),
-    y: cy + (radius * Math.sin(angleInRadians))
-  }
+  return ellipsePolarToCartesian(cx, cy, radius, radius, angleInDegrees)
 }
 
 /**

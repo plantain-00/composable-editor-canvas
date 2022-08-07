@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMap2Cache, WeakmapMapCache } from "../../utils"
 import { ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { getImageFromCache } from "./image-loader"
 
@@ -113,11 +113,14 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
     const { dashArray, ...restOptions2 } = options ?? {}
+    if (options?.closed) {
+      points = polygonToPolyline(points)
+    }
     const path = dashArray ? dashedPolylineToLines(points, dashArray, options?.skippedLines) : [points]
     return this.renderPath(path, restOptions2)
   },
   renderPolygon(points, options) {
-    return this.renderPolyline(polygonToPolyline(points), options)
+    return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
     const points = arcToPolyline({ x: cx, y: cy, r, startAngle: 0, endAngle: 360 }, 5)
@@ -213,21 +216,29 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   renderPath(points, options) {
     return (strokeWidthScale, setImageLoadStatus) => {
       let strokeWidth = options?.strokeWidth ?? 1
-
+      const closed = options?.closed ?? false
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
       const graphics: Graphic[] = []
       if (strokeWidth) {
         if (options?.dashArray) {
           const dashArray = options.dashArray
-          points = points.map(p => dashedPolylineToLines(p, dashArray)).flat()
+          points = points.map(p => {
+            if (closed) {
+              p = polygonToPolyline(p)
+            }
+            return dashedPolylineToLines(p, dashArray)
+          }).flat()
         }
 
         if (strokeWidth === 1) {
           graphics.push({
             type: 'lines',
-            points: combinedLinesCache.get(points, () => {
+            points: combinedLinesCache.get(points, closed, () => {
               return points.map(p => {
-                return polylineLinesCache.get(p, () => {
+                return polylineLinesCache.get(p, closed, () => {
+                  if (closed) {
+                    p = polygonToPolyline(p)
+                  }
                   const result: number[] = []
                   for (let i = 1; i < p.length; i++) {
                     result.push(p[i - 1].x, p[i - 1].y, p[i].x, p[i].y)
@@ -243,9 +254,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
           strokeWidth *= strokeWidthScale
           graphics.push({
             type: 'triangles',
-            points: combinedTrianglesCache.get(points, strokeWidth, () => {
+            points: combinedTrianglesCache.get(points, strokeWidth, closed, () => {
               return combineStripTriangles(points.map(p => {
-                return polylineTrianglesCache.get(p, strokeWidth, () => getPolylineTriangles(p, strokeWidth))
+                return polylineTrianglesCache.get(p, strokeWidth, closed, () => getPolylineTriangles(p, strokeWidth, closed))
               }))
             }),
             color: strokeColor,
@@ -300,12 +311,12 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
 
 type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: Matrix) => Graphic[]
 
-const polylineTrianglesCache = new WeakmapMapCache<Position[], number, number[]>()
-const combinedTrianglesCache = new WeakmapMapCache<Position[][], number, number[]>()
+const polylineTrianglesCache = new WeakmapMap2Cache<Position[], number, boolean, number[]>()
+const combinedTrianglesCache = new WeakmapMap2Cache<Position[][], number, boolean, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 const textCanvasCache = new WeakmapCache<object, HTMLCanvasElement>()
-const polylineLinesCache = new WeakmapCache<Position[], number[]>()
-const combinedLinesCache = new WeakmapCache<Position[][], number[]>()
+const polylineLinesCache = new WeakmapMapCache<Position[], boolean, number[]>()
+const combinedLinesCache = new WeakmapMapCache<Position[][], boolean, number[]>()
 
 function Canvas(props: {
   width: number,
@@ -521,15 +532,19 @@ function Canvas(props: {
           let xMax = -Infinity
           let yMax = -Infinity
           for (let i = 0; i < line.points.length; i += 2) {
-            if (line.points[i] < xMin) {
-              xMin = line.points[i]
-            } else if (line.points[i] > xMax) {
-              xMax = line.points[i]
+            const x = line.points[i]
+            const y = line.points[i + 1]
+            if (x < xMin) {
+              xMin = x
             }
-            if (line.points[i + 1] < yMin) {
-              yMin = line.points[i + 1]
-            } else if (line.points[i + 1] > yMax) {
-              yMax = line.points[i + 1]
+            if (x > xMax) {
+              xMax = x
+            }
+            if (y < yMin) {
+              yMin = y
+            }
+            if (y > yMax) {
+              yMax = y
             }
           }
           drawPattern(line.pattern, matrix, { xMin, yMin, xMax, yMax }, drawObject)

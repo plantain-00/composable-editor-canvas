@@ -93,6 +93,9 @@ export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean)
 export function deduplicatePosition(array: Position[]): Position[];
 
 // @public (undocumented)
+export const defaultMiterLimit = 10;
+
+// @public (undocumented)
 export function DragMask(props: {
     onDragEnd: () => void;
     onDragging: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void;
@@ -321,11 +324,7 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 }[];
 
 // @public (undocumented)
-export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): {
-    c: number;
-    a: number;
-    b: number;
-}[];
+export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine];
 
 // @public (undocumented)
 export function getPerpendicular(point: Position, line: GeneralFormLine): {
@@ -374,7 +373,7 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
-export function getPolylineTriangles(points: Position[], width: number): number[];
+export function getPolylineTriangles(points: Position[], width: number, closed?: boolean): number[];
 
 // @public (undocumented)
 export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
@@ -575,11 +574,17 @@ export function normalizeAngleRange(content: AngleRange): void;
 // @public (undocumented)
 export interface PathOptions<T> {
     // (undocumented)
+    closed: boolean;
+    // (undocumented)
     dashArray: number[];
     // (undocumented)
     fillColor: number;
     // (undocumented)
     fillPattern: Pattern<T>;
+    // (undocumented)
+    lineJoin: 'round' | 'bevel' | 'miter';
+    // (undocumented)
+    miterLimit: number;
     // (undocumented)
     strokeColor: number;
     // (undocumented)
@@ -1338,6 +1343,14 @@ export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
     clear(): void;
     // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeakmapMap2Cache<TKey1 extends object, TKey2, TKey3, TValue> {
+    // (undocumented)
+    clear(): void;
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, key3: TKey3, func: () => TValue): TValue;
 }
 
 // @public (undocumented)

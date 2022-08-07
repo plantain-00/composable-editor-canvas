@@ -133,6 +133,9 @@ export interface PathOptions<T> {
   dashArray: number[]
   fillColor: number
   fillPattern: Pattern<T>
+  lineJoin: 'round' | 'bevel' | 'miter'
+  miterLimit: number
+  closed: boolean
   // lineCap?: 'butt' | 'round' | 'square'
 }
 
@@ -159,3 +162,5 @@ export function renderPartStyledPolyline<T>(
     ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color })),
   ])
 }
+
+export const defaultMiterLimit = 10
