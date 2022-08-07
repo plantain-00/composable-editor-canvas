@@ -811,24 +811,52 @@ export function getPerpendicular(point: Position, line: GeneralFormLine) {
 /**
  * @public
  */
-export function getPolylineTriangles(points: Position[], width: number) {
+export function getPolylineTriangles(points: Position[], width: number, closed?: boolean) {
   const radius = width / 2
-  const result: number[] = []
+  if (closed) {
+    points = polygonToPolyline(points)
+  }
+
+  const lines: GeneralFormLine[] = []
+  const parallelLines: [GeneralFormLine, GeneralFormLine][] = []
   for (let i = 1; i < points.length; i++) {
-    const p1 = points[i - 1]
-    const p2 = points[i]
-    const line = twoPointLineToGeneralFormLine(p1, p2)
-    const lines1 = getParallelLinesByDistance(line, radius)
-    const line2 = getPerpendicular(p1, line)
-    const line3 = getPerpendicular(p2, line)
-    for (const line1 of lines1) {
-      const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+    const line = twoPointLineToGeneralFormLine(points[i - 1], points[i])
+    lines.push(line)
+    parallelLines.push(getParallelLinesByDistance(line, radius))
+  }
+
+  const result: number[] = []
+  for (let i = 0; i < points.length; i++) {
+    if (!closed) {
+      if (i === 0) {
+        const line2 = getPerpendicular(points[i], lines[i])
+        for (const line1 of parallelLines[i]) {
+          const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+          if (point2) {
+            result.push(point2.x, point2.y)
+          }
+        }
+        continue
+      }
+      if (i === points.length - 1) {
+        const line2 = getPerpendicular(points[i], lines[i - 1])
+        for (const line1 of parallelLines[i - 1]) {
+          const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+          if (point2) {
+            result.push(point2.x, point2.y)
+          }
+        }
+        continue
+      }
+    }
+    const previousParallelLines = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1]
+    const nextParallelLines = parallelLines[i === points.length - 1 ? 0 : i]
+    const point1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
+    if (point1) {
+      result.push(point1.x, point1.y)
+      const point2 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
       if (point2) {
         result.push(point2.x, point2.y)
-      }
-      const point3 = getTwoGeneralFormLinesIntersectionPoint(line1, line3)
-      if (point3) {
-        result.push(point3.x, point3.y)
       }
     }
   }
@@ -892,7 +920,7 @@ export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Posit
 /**
  * @public
  */
-export function getParallelLinesByDistance(line: GeneralFormLine, distance: number) {
+export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine] {
   const d = distance * Math.sqrt(line.a ** 2 + line.b ** 2)
   return [
     {
@@ -993,6 +1021,9 @@ export function* iteratePolygonLines(points: Position[]) {
 }
 
 export function polygonToPolyline(points: Position[]) {
+  if (isSamePoint(points[points.length - 1], points[0])) {
+    return points
+  }
   return [...points, points[0]]
 }
 
@@ -1025,7 +1056,7 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
       })
     }
   }
-  if (i !== endAngle) {
+  if (content.counterclockwise ? i > endAngle : i < endAngle) {
     const angle = endAngle * Math.PI / 180
     points.push({
       x: content.x + content.r * Math.cos(angle),
@@ -1091,7 +1122,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
       }
     }
   }
-  if (i !== endAngle) {
+  if (content.counterclockwise ? i > endAngle : i < endAngle) {
     const angle = endAngle * Math.PI / 180
     const x = content.cx + content.rx * Math.cos(angle)
     const y = content.cy + content.ry * Math.sin(angle)
