@@ -1,6 +1,6 @@
 import * as React from "react"
-import { defaultMiterLimit, getColorString, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { m3 } from "../../utils"
+import { getColorString, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { defaultMiterLimit, m3 } from "../../utils"
 import { getImageFromCache } from "./image-loader"
 
 /**
@@ -76,7 +76,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.strokeRect(x, y, width, height)
       }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -101,14 +101,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.closed) {
         ctx.closePath()
       }
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -123,14 +117,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.setLineDash(options.dashArray)
       }
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.lineWidth = strokeWidth
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -143,14 +131,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       }
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -162,14 +144,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.setLineDash(options.dashArray)
       }
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -182,14 +158,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       }
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
@@ -243,22 +213,26 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.closed) {
         ctx.closePath()
       }
-      const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-        ctx.lineJoin = options?.lineJoin ?? 'miter'
-        // ctx.lineCap = options?.lineCap ?? 'butt'
-        ctx.stroke()
-      }
-      renderFillPattern(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
       ctx.restore()
     }
   },
 }
 
-function renderFillPattern(
+function renderStroke<T>(ctx: CanvasRenderingContext2D, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
+  const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
+  if (strokeWidth) {
+    ctx.lineWidth = strokeWidth
+    ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+    ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
+    ctx.lineJoin = options?.lineJoin ?? 'miter'
+    // ctx.lineCap = options?.lineCap ?? 'butt'
+    ctx.stroke()
+  }
+}
+
+function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>,

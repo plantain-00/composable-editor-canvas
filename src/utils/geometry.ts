@@ -808,10 +808,17 @@ export function getPerpendicular(point: Position, line: GeneralFormLine) {
   }
 }
 
+export const defaultMiterLimit = 10
+
 /**
  * @public
  */
-export function getPolylineTriangles(points: Position[], width: number, closed?: boolean) {
+export function getPolylineTriangles(
+  points: Position[],
+  width: number,
+  closed?: boolean,
+  lineJoinWithLimit: 'round' | 'bevel' | number = defaultMiterLimit,
+) {
   const radius = width / 2
   if (closed) {
     points = polygonToPolyline(points)
@@ -824,6 +831,8 @@ export function getPolylineTriangles(points: Position[], width: number, closed?:
     lines.push(line)
     parallelLines.push(getParallelLinesByDistance(line, radius))
   }
+
+  const angleLimit = typeof lineJoinWithLimit === 'number' ? Math.asin(1 / lineJoinWithLimit) * 2 : undefined
 
   const result: number[] = []
   for (let i = 0; i < points.length; i++) {
@@ -849,14 +858,76 @@ export function getPolylineTriangles(points: Position[], width: number, closed?:
         continue
       }
     }
-    const previousParallelLines = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1]
-    const nextParallelLines = parallelLines[i === points.length - 1 ? 0 : i]
-    const point1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
-    if (point1) {
-      result.push(point1.x, point1.y)
-      const point2 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
-      if (point2) {
-        result.push(point2.x, point2.y)
+    const previousIndex = i === 0 ? parallelLines.length - 1 : i - 1
+    const nextIndex = i === points.length - 1 ? 0 : i
+    const previousParallelLines = parallelLines[previousIndex]
+    const nextParallelLines = parallelLines[nextIndex]
+    const a0 = points[previousIndex]
+    const a1 = points[previousIndex + 1]
+    const b0 = points[nextIndex]
+    const b1 = points[nextIndex + 1]
+    let angle = Math.atan2(b1.y - b0.y, b1.x - b0.x) - Math.atan2(a1.y - a0.y, a1.x - a0.x)
+    if (angle < -Math.PI) {
+      angle += Math.PI * 2
+    } else if (angle > Math.PI) {
+      angle -= Math.PI * 2
+    }
+
+    if (!equals(angle, 0) && !equals(angle, Math.PI) && !equals(angle, -Math.PI)) {
+      let lineJoin = lineJoinWithLimit
+      if (angleLimit !== undefined) {
+        let a = Math.abs(angle)
+        if (a > Math.PI / 2) {
+          a = Math.PI - a
+        }
+        if (a < angleLimit) {
+          lineJoin = 'bevel'
+        }
+      }
+
+      if (lineJoin === 'bevel') {
+        if (angle > 0 && angle < Math.PI) {
+          const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
+          const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], getPerpendicular(points[i], lines[previousIndex]))
+          const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[1], getPerpendicular(points[i], lines[nextIndex]))
+          if (p) {
+            result.push(p.x, p.y)
+          }
+          if (p1) {
+            result.push(p1.x, p1.y)
+          }
+          if (p) {
+            result.push(p.x, p.y)
+          }
+          if (p2) {
+            result.push(p2.x, p2.y)
+          }
+        } else {
+          const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
+          const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], getPerpendicular(points[i], lines[previousIndex]))
+          const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[0], getPerpendicular(points[i], lines[nextIndex]))
+          if (p1) {
+            result.push(p1.x, p1.y)
+          }
+          if (p) {
+            result.push(p.x, p.y)
+          }
+          if (p2) {
+            result.push(p2.x, p2.y)
+          }
+          if (p) {
+            result.push(p.x, p.y)
+          }
+        }
+      } else {
+        const point1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
+        if (point1) {
+          result.push(point1.x, point1.y)
+          const point2 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
+          if (point2) {
+            result.push(point2.x, point2.y)
+          }
+        }
       }
     }
   }

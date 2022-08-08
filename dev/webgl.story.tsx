@@ -36,6 +36,8 @@ export default () => {
       ctx.fillText('abc', 0, ctx.canvas.height);
     }
     const lineWidth = 10
+    const miterLimit = 2
+    const closed = false
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
       lines: [
@@ -46,13 +48,13 @@ export default () => {
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], lineWidth),
+            ], lineWidth, closed, miterLimit),
             getPolylineTriangles([
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], lineWidth),
+            ], lineWidth, closed, miterLimit),
           ]),
           color: [Math.random(), Math.random(), Math.random(), 1],
         },
@@ -63,13 +65,13 @@ export default () => {
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], lineWidth),
+            ], lineWidth, closed, miterLimit),
             getPolylineTriangles([
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
               { x: Math.random() * 600, y: Math.random() * 400 },
-            ], lineWidth),
+            ], lineWidth, closed, miterLimit),
           ]),
           color: [Math.random(), Math.random(), Math.random(), 1],
         },

@@ -1,6 +1,6 @@
 import * as React from "react"
-import { defaultMiterLimit, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { m3 } from "../../utils"
+import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { defaultMiterLimit, m3 } from "../../utils"
 
 /**
  * @public
