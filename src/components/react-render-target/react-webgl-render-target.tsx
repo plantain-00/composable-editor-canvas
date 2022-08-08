@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
-import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMap2Cache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, ellipseArcToPolyline, ellipseToPolygon, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, rotatePosition, Size, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import { ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { getImageFromCache } from "./image-loader"
 
@@ -217,6 +217,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     return (strokeWidthScale, setImageLoadStatus) => {
       let strokeWidth = options?.strokeWidth ?? 1
       const closed = options?.closed ?? false
+      const lineJoin = options?.lineJoin ?? 'miter'
+      const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
       const graphics: Graphic[] = []
       if (strokeWidth) {
@@ -254,9 +256,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
           strokeWidth *= strokeWidthScale
           graphics.push({
             type: 'triangles',
-            points: combinedTrianglesCache.get(points, strokeWidth, closed, () => {
+            points: combinedTrianglesCache.get(points, strokeWidth, closed, lineJoinWithLimit, () => {
               return combineStripTriangles(points.map(p => {
-                return polylineTrianglesCache.get(p, strokeWidth, closed, () => getPolylineTriangles(p, strokeWidth, closed))
+                return polylineTrianglesCache.get(p, strokeWidth, closed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, closed, lineJoinWithLimit))
               }))
             }),
             color: strokeColor,
@@ -311,8 +313,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
 
 type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: Matrix) => Graphic[]
 
-const polylineTrianglesCache = new WeakmapMap2Cache<Position[], number, boolean, number[]>()
-const combinedTrianglesCache = new WeakmapMap2Cache<Position[][], number, boolean, number[]>()
+const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, boolean, 'round' | 'bevel' | number, number[]>()
+const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, boolean, 'round' | 'bevel' | number, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 const textCanvasCache = new WeakmapCache<object, HTMLCanvasElement>()
 const polylineLinesCache = new WeakmapMapCache<Position[], boolean, number[]>()

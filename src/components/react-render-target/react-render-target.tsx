@@ -162,5 +162,3 @@ export function renderPartStyledPolyline<T>(
     ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color })),
   ])
 }
-
-export const defaultMiterLimit = 10

@@ -373,7 +373,7 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
-export function getPolylineTriangles(points: Position[], width: number, closed?: boolean): number[];
+export function getPolylineTriangles(points: Position[], width: number, closed?: boolean, lineJoinWithLimit?: 'round' | 'bevel' | number): number[];
 
 // @public (undocumented)
 export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
@@ -1351,6 +1351,22 @@ export class WeakmapMap2Cache<TKey1 extends object, TKey2, TKey3, TValue> {
     clear(): void;
     // (undocumented)
     get(key1: TKey1, key2: TKey2, key3: TKey3, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeakmapMap3Cache<TKey1 extends object, TKey2, TKey3, TKey4, TValue> {
+    // (undocumented)
+    clear(): void;
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, key3: TKey3, key4: TKey4, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class WeakmapMap4Cache<TKey1 extends object, TKey2, TKey3, TKey4, TKey5, TValue> {
+    // (undocumented)
+    clear(): void;
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, key3: TKey3, key4: TKey4, key5: TKey5, func: () => TValue): TValue;
 }
 
 // @public (undocumented)
