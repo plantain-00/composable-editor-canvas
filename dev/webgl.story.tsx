@@ -36,7 +36,7 @@ export default () => {
       ctx.fillText('abc', 0, ctx.canvas.height);
     }
     const lineWidth = 10
-    const miterLimit = 2
+    const miterLimit = 'round'
     const closed = false
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
