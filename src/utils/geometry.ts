@@ -862,11 +862,10 @@ export function getPolylineTriangles(
     const nextIndex = i === points.length - 1 ? 0 : i
     const previousParallelLines = parallelLines[previousIndex]
     const nextParallelLines = parallelLines[nextIndex]
-    const a0 = points[previousIndex]
-    const a1 = points[previousIndex + 1]
-    const b0 = points[nextIndex]
-    const b1 = points[nextIndex + 1]
-    let angle = Math.atan2(b1.y - b0.y, b1.x - b0.x) - Math.atan2(a1.y - a0.y, a1.x - a0.x)
+    const a = points[previousIndex]
+    const b = points[i]
+    const c = points[nextIndex + 1]
+    let angle = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(b.y - a.y, b.x - a.x)
     if (angle < -Math.PI) {
       angle += Math.PI * 2
     } else if (angle > Math.PI) {
@@ -885,38 +884,40 @@ export function getPolylineTriangles(
         }
       }
 
-      if (lineJoin === 'bevel') {
+      if (lineJoin === 'bevel' || lineJoin === 'round') {
         if (angle > 0 && angle < Math.PI) {
           const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
           const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], getPerpendicular(points[i], lines[previousIndex]))
           const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[1], getPerpendicular(points[i], lines[nextIndex]))
-          if (p) {
-            result.push(p.x, p.y)
-          }
-          if (p1) {
-            result.push(p1.x, p1.y)
-          }
-          if (p) {
-            result.push(p.x, p.y)
-          }
-          if (p2) {
-            result.push(p2.x, p2.y)
+          if (p && p1 && p2) {
+            let ps: Position[]
+            if (lineJoin === 'bevel') {
+              ps = [p1, p2]
+            } else {
+              const startAngle = Math.atan2(p1.y - b.y, p1.x - b.x) * 180 / Math.PI
+              const endAngle = Math.atan2(p2.y - b.y, p2.x - b.x) * 180 / Math.PI
+              ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle }, 5)
+            }
+            for (const s of ps) {
+              result.push(p.x, p.y, s.x, s.y)
+            }
           }
         } else {
           const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
           const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], getPerpendicular(points[i], lines[previousIndex]))
           const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[0], getPerpendicular(points[i], lines[nextIndex]))
-          if (p1) {
-            result.push(p1.x, p1.y)
-          }
-          if (p) {
-            result.push(p.x, p.y)
-          }
-          if (p2) {
-            result.push(p2.x, p2.y)
-          }
-          if (p) {
-            result.push(p.x, p.y)
+          if (p && p1 && p2) {
+            let ps: Position[]
+            if (lineJoin === 'bevel') {
+              ps = [p1, p2]
+            } else {
+              const startAngle = Math.atan2(p1.y - b.y, p1.x - b.x) * 180 / Math.PI
+              const endAngle = Math.atan2(p2.y - b.y, p2.x - b.x) * 180 / Math.PI
+              ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle, counterclockwise: true }, 5)
+            }
+            for (const s of ps) {
+              result.push(s.x, s.y, p.x, p.y)
+            }
           }
         }
       } else {
