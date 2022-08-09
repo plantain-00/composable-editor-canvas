@@ -193,7 +193,6 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         {...getCommonLineAttributes(options)}
         fill={fill}
         fillRule='evenodd'
-      // strokeLinecap={options?.lineCap}
       />
     ), options)
   },
@@ -240,6 +239,7 @@ function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
     strokeDasharray: options?.dashArray?.join(' '),
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',
+    strokeLinecap: options?.lineCap ?? 'butt',
   }
 }
 

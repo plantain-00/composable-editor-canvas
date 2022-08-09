@@ -136,7 +136,7 @@ export interface PathOptions<T> {
   lineJoin: 'round' | 'bevel' | 'miter'
   miterLimit: number
   closed: boolean
-  // lineCap?: 'butt' | 'round' | 'square'
+  lineCap?: 'butt' | 'round' | 'square'
 }
 
 /**

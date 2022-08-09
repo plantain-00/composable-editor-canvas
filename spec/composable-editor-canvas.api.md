@@ -373,7 +373,7 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
 
 // @public (undocumented)
-export function getPolylineTriangles(points: Position[], width: number, closed?: boolean, lineJoinWithLimit?: 'round' | 'bevel' | number): number[];
+export function getPolylineTriangles(points: Position[], width: number, lineCapWithClosed?: true | 'butt' | 'round' | 'square', lineJoinWithLimit?: 'round' | 'bevel' | number): number[];
 
 // @public (undocumented)
 export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
@@ -581,6 +581,8 @@ export interface PathOptions<T> {
     fillColor: number;
     // (undocumented)
     fillPattern: Pattern<T>;
+    // (undocumented)
+    lineCap?: 'butt' | 'round' | 'square';
     // (undocumented)
     lineJoin: 'round' | 'bevel' | 'miter';
     // (undocumented)

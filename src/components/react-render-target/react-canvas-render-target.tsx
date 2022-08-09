@@ -227,7 +227,7 @@ function renderStroke<T>(ctx: CanvasRenderingContext2D, strokeWidthScale: number
     ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
     ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
     ctx.lineJoin = options?.lineJoin ?? 'miter'
-    // ctx.lineCap = options?.lineCap ?? 'butt'
+    ctx.lineCap = options?.lineCap ?? 'butt'
     ctx.stroke()
   }
 }

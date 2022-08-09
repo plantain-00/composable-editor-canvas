@@ -816,11 +816,11 @@ export const defaultMiterLimit = 10
 export function getPolylineTriangles(
   points: Position[],
   width: number,
-  closed?: boolean,
+  lineCapWithClosed: true | 'butt' | 'round' | 'square' = 'butt',
   lineJoinWithLimit: 'round' | 'bevel' | number = defaultMiterLimit,
 ) {
   const radius = width / 2
-  if (closed) {
+  if (lineCapWithClosed === true) {
     points = polygonToPolyline(points)
   }
 
@@ -836,9 +836,20 @@ export function getPolylineTriangles(
 
   const result: number[] = []
   for (let i = 0; i < points.length; i++) {
-    if (!closed) {
+    if (lineCapWithClosed !== true) {
       if (i === 0) {
-        const line2 = getPerpendicular(points[i], lines[i])
+        let p = points[0]
+        if (lineCapWithClosed === 'round') {
+          const angle = Math.atan2(p.y - points[1].y, p.x - points[1].x) * 180 / Math.PI
+          const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle - 90, endAngle: angle + 90 }, 5)
+          for (const s of ps) {
+            result.push(s.x, s.y, p.x, p.y)
+          }
+        }
+        if (lineCapWithClosed === 'square') {
+          p = getPointByLengthAndDirection(p, -radius, points[1])
+        }
+        const line2 = getPerpendicular(p, lines[i])
         for (const line1 of parallelLines[i]) {
           const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
           if (point2) {
@@ -848,11 +859,22 @@ export function getPolylineTriangles(
         continue
       }
       if (i === points.length - 1) {
-        const line2 = getPerpendicular(points[i], lines[i - 1])
+        let p = points[i]
+        if (lineCapWithClosed === 'square') {
+          p = getPointByLengthAndDirection(p, -radius, points[i - 1])
+        }
+        const line2 = getPerpendicular(p, lines[i - 1])
         for (const line1 of parallelLines[i - 1]) {
           const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
           if (point2) {
             result.push(point2.x, point2.y)
+          }
+        }
+        if (lineCapWithClosed === 'round') {
+          const angle = Math.atan2(p.y - points[i - 1].y, p.x - points[i - 1].x) * 180 / Math.PI
+          const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle + 90, endAngle: angle - 90, counterclockwise: true }, 5)
+          for (const s of ps) {
+            result.push(p.x, p.y, s.x, s.y)
           }
         }
         continue
