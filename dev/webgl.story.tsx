@@ -37,7 +37,7 @@ export default () => {
     }
     const lineWidth = 10
     const miterLimit = 'round'
-    const closed = false
+    const closed = undefined
     return {
       backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
       lines: [

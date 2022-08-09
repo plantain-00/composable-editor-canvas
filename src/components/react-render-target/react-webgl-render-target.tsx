@@ -216,7 +216,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   renderPath(points, options) {
     return (strokeWidthScale, setImageLoadStatus) => {
       let strokeWidth = options?.strokeWidth ?? 1
-      const closed = options?.closed ?? false
+      const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? 'butt')
       const lineJoin = options?.lineJoin ?? 'miter'
       const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
       const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
@@ -225,7 +225,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
         if (options?.dashArray) {
           const dashArray = options.dashArray
           points = points.map(p => {
-            if (closed) {
+            if (lineCapWithClosed === true) {
               p = polygonToPolyline(p)
             }
             return dashedPolylineToLines(p, dashArray)
@@ -235,10 +235,10 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
         if (strokeWidth === 1) {
           graphics.push({
             type: 'lines',
-            points: combinedLinesCache.get(points, closed, () => {
+            points: combinedLinesCache.get(points, lineCapWithClosed, () => {
               return points.map(p => {
-                return polylineLinesCache.get(p, closed, () => {
-                  if (closed) {
+                return polylineLinesCache.get(p, lineCapWithClosed, () => {
+                  if (lineCapWithClosed === true) {
                     p = polygonToPolyline(p)
                   }
                   const result: number[] = []
@@ -256,9 +256,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
           strokeWidth *= strokeWidthScale
           graphics.push({
             type: 'triangles',
-            points: combinedTrianglesCache.get(points, strokeWidth, closed, lineJoinWithLimit, () => {
+            points: combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
               return combineStripTriangles(points.map(p => {
-                return polylineTrianglesCache.get(p, strokeWidth, closed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, closed, lineJoinWithLimit))
+                return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))
               }))
             }),
             color: strokeColor,
@@ -313,12 +313,12 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
 
 type Draw = (strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>, matrix?: Matrix) => Graphic[]
 
-const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, boolean, 'round' | 'bevel' | number, number[]>()
-const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, boolean, 'round' | 'bevel' | number, number[]>()
+const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
+const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 const textCanvasCache = new WeakmapCache<object, HTMLCanvasElement>()
-const polylineLinesCache = new WeakmapMapCache<Position[], boolean, number[]>()
-const combinedLinesCache = new WeakmapMapCache<Position[][], boolean, number[]>()
+const polylineLinesCache = new WeakmapMapCache<Position[], true | 'butt' | 'round' | 'square', number[]>()
+const combinedLinesCache = new WeakmapMapCache<Position[][], true | 'butt' | 'round' | 'square', number[]>()
 
 function Canvas(props: {
   width: number,
