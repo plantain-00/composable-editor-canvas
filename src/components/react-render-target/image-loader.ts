@@ -14,11 +14,11 @@ function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | 
   })
 }
 
-const images = new Map<string, HTMLImageElement | (() => void)[]>()
+const images = new Map<string, ImageBitmap | (() => void)[]>()
 
 export function getImageFromCache(
   url: string,
-  setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>,
+  rerender: () => void,
   crossOrigin?: "anonymous" | "use-credentials" | "",
 ) {
   const image = images.get(url)
@@ -26,20 +26,22 @@ export function getImageFromCache(
     images.set(url, [])
     // eslint-disable-next-line plantain/promise-not-await
     loadImage(url, crossOrigin).then(image => {
-      const listeners = images.get(url)
-      images.set(url, image)
-      if (Array.isArray(listeners)) {
-        listeners.forEach(listener => {
-          listener()
-        })
-      }
-      setImageLoadStatus(c => c + 1)
+      createImageBitmap(image).then(imageBitMap => {
+        const listeners = images.get(url)
+        images.set(url, imageBitMap)
+        if (Array.isArray(listeners)) {
+          listeners.forEach(listener => {
+            listener()
+          })
+        }
+        rerender()
+      })
     })
     return
   }
   if (Array.isArray(image)) {
     image.push(() => {
-      setImageLoadStatus(c => c + 1)
+      rerender()
     })
     return
   }
