@@ -60,7 +60,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     if (options?.closed) {
       points = polygonToPolyline(points)
     }
-    const path = dashArray ? dashedPolylineToLines(points, dashArray, options?.skippedLines) : [points]
+    const path = dashArray ? dashedPolylineToLines(points, dashArray, options?.skippedLines, options?.dashOffset) : [points]
     return this.renderPath(path, restOptions2)
   },
   renderPolygon(points, options) {

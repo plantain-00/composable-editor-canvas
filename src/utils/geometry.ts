@@ -550,6 +550,7 @@ export function dashedPolylineToLines(
   points: Position[],
   dashArray: number[],
   skippedLines?: number[],
+  dashOffset = 0,
 ) {
   const result: Position[][] = []
   let last: Position[] = []
@@ -567,7 +568,7 @@ export function dashedPolylineToLines(
       last.push({ x, y })
     },
   }
-  drawDashedPolyline(g, points, dashArray, skippedLines)
+  drawDashedPolyline(g, points, dashArray, skippedLines, dashOffset)
   if (last.length > 1) {
     result.push(last)
   }
@@ -582,8 +583,9 @@ export function drawDashedPolyline(
   points: Position[],
   dashArray: number[],
   skippedLines?: number[],
+  dashOffset = 0,
 ) {
-  let startDistance = 0
+  let startDistance = dashOffset
   points.forEach((p, i) => {
     if (i === 0 || skippedLines?.includes(i - 1)) {
       g.moveTo(p.x, p.y)

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getColorString, PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { getColorString, PathLineStyleOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
 import { defaultMiterLimit, m3 } from "../../utils"
 import { getImageFromCache } from "./image-loader"
 
@@ -56,9 +56,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       if (options?.angle) {
         ctx.translate(x + width / 2, y + height / 2)
         ctx.rotate(options.angle / 180 * Math.PI)
@@ -88,9 +86,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       for (let i = 0; i < points.length; i++) {
         if (i === 0 || options?.skippedLines?.includes(i - 1)) {
           ctx.moveTo(points[i].x, points[i].y)
@@ -113,9 +109,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       renderStroke(ctx, strokeWidthScale, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
@@ -126,9 +120,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
       renderStroke(ctx, strokeWidthScale, options)
@@ -140,9 +132,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
@@ -153,9 +143,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, options)
@@ -166,7 +154,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
-      if (typeof fill !== 'number') {
+      if (fill === undefined) {
+        //
+      } else if (typeof fill !== 'number') {
         const canvas = document.createElement("canvas")
         canvas.width = fill.width
         canvas.height = fill.height
@@ -182,7 +172,17 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.fillStyle = getColorString(fill)
       }
       ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
-      ctx.fillText(text, x, y)
+      if (fill !== undefined) {
+        ctx.fillText(text, x, y)
+      }
+      if (options?.strokeColor !== undefined) {
+        ctx.strokeStyle = getColorString(options.strokeColor)
+        if (options.strokeWidth !== undefined) {
+          ctx.lineWidth = options.strokeWidth
+        }
+        setCanvasLineDash(ctx, options)
+        ctx.strokeText(text, x, y)
+      }
       ctx.restore()
     }
   },
@@ -198,9 +198,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
-      if (options?.dashArray) {
-        ctx.setLineDash(options.dashArray)
-      }
+      setCanvasLineDash(ctx, options)
       for (const points of lines) {
         for (let i = 0; i < points.length; i++) {
           if (i === 0) {
@@ -220,7 +218,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-function renderStroke<T>(ctx: CanvasRenderingContext2D, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
+function renderStroke(ctx: CanvasRenderingContext2D, strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions>) {
   const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
   if (strokeWidth) {
     ctx.lineWidth = strokeWidth

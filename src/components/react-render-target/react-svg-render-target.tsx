@@ -159,7 +159,11 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           fontWeight: options?.fontWeight,
           fontSize: `${fontSize}px`,
           fontStyle: options?.fontStyle,
-          fontFamily
+          fontFamily,
+          strokeWidth: options?.strokeWidth,
+          stroke: options?.strokeColor ? getColorString(options.strokeColor) : undefined,
+          strokeDasharray: options?.dashArray?.join(' '),
+          strokeDashoffset: options?.dashOffset,
         }}>
         {text}
       </text>
@@ -202,7 +206,7 @@ type Draw = (key: React.Key) => JSX.Element
 
 function renderFillPattern(
   children: (fill: string) => JSX.Element,
-  options?: Partial<PathOptions<Draw>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern'>>,
 ) {
   return (key: React.Key) => {
     const id = React.useId()
@@ -234,9 +238,10 @@ function renderFillPattern(
 function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
   return {
     strokeWidth: options?.strokeWidth ?? 1,
-    vectorEffect: 'non-scaling-stroke',
+    vectorEffect: 'non-scaling-stroke' as const,
     stroke: getColorString(options?.strokeColor ?? 0),
     strokeDasharray: options?.dashArray?.join(' '),
+    strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',
     strokeLinecap: options?.lineCap ?? 'butt',
