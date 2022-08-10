@@ -28,7 +28,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     }
   },
   renderGroup(children, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       if (options?.translate) {
         ctx.translate(options.translate.x, options.translate.y)
@@ -47,13 +47,13 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.setTransform(...m3.getTransform(options.matrix))
       }
       children.forEach((c) => {
-        c(ctx, strokeWidthScale, setImageLoadStatus)
+        c(ctx, strokeWidthScale, rerender)
       })
       ctx.restore()
     }
   },
   renderRect(x, y, width, height, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -76,7 +76,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.strokeRect(x, y, width, height)
       }
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
@@ -85,7 +85,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -102,7 +102,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.closePath()
       }
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
@@ -110,7 +110,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -118,12 +118,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       }
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -132,12 +132,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -145,12 +145,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       }
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
   renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -159,12 +159,12 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       if (typeof fill !== 'number') {
         const canvas = document.createElement("canvas")
@@ -172,7 +172,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         canvas.height = fill.height
         const patternCtx = canvas.getContext('2d')
         if (patternCtx) {
-          fill.pattern()(patternCtx, strokeWidthScale, setImageLoadStatus)
+          fill.pattern()(patternCtx, strokeWidthScale, rerender)
           const pattern = ctx.createPattern(canvas, null)
           if (pattern) {
             ctx.fillStyle = pattern
@@ -187,15 +187,15 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     }
   },
   renderImage(url, x, y, width, height, options) {
-    return (ctx, _, setImageLoadStatus) => {
-      const image = getImageFromCache(url, setImageLoadStatus, options?.crossOrigin)
+    return (ctx, _, rerender) => {
+      const image = getImageFromCache(url, rerender, options?.crossOrigin)
       if (image) {
         ctx.drawImage(image, x, y, width, height)
       }
     }
   },
   renderPath(lines, options) {
-    return (ctx, strokeWidthScale, setImageLoadStatus) => {
+    return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.beginPath()
       if (options?.dashArray) {
@@ -214,7 +214,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.closePath()
       }
       renderStroke(ctx, strokeWidthScale, options)
-      renderFill(ctx, strokeWidthScale, setImageLoadStatus, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
@@ -235,7 +235,7 @@ function renderStroke<T>(ctx: CanvasRenderingContext2D, strokeWidthScale: number
 function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
-  setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>,
+  rerender: () => void,
   options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern'>>,
 ) {
   if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
@@ -245,7 +245,7 @@ function renderFill(
       canvas.height = options.fillPattern.height
       const patternCtx = canvas.getContext('2d')
       if (patternCtx) {
-        options.fillPattern.pattern()(patternCtx, strokeWidthScale, setImageLoadStatus)
+        options.fillPattern.pattern()(patternCtx, strokeWidthScale, rerender)
         const pattern = ctx.createPattern(canvas, null)
         if (pattern) {
           // if (options.fillPattern.rotate) {
@@ -264,7 +264,7 @@ function renderFill(
   }
 }
 
-type Draw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, setImageLoadStatus: React.Dispatch<React.SetStateAction<number>>) => void
+type Draw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, rerender: () => void) => void
 
 function Canvas(props: {
   width: number,
@@ -307,8 +307,9 @@ function Canvas(props: {
           )
         }
         const scale = props.strokeWidthScale ?? 1
+        const rerender = () => setImageLoadStatus(c => c + 1)
         for (const draw of props.draws) {
-          draw(ctx, scale, setImageLoadStatus)
+          draw(ctx, scale, rerender)
         }
         ctx.restore()
         if (props.debug) {

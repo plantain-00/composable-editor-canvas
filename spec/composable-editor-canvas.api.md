@@ -78,10 +78,16 @@ export function CircleEditBar(props: {
 }): JSX.Element;
 
 // @public (undocumented)
+export function colorNumberToRec(n: number, alpha?: number): [number, number, number, number];
+
+// @public (undocumented)
 export function colorStringToNumber(color: string): number;
 
 // @public (undocumented)
 export function combineStripTriangles(triangles: number[][]): number[];
+
+// @public (undocumented)
+export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => void) | undefined;
 
 // @public (undocumented)
 export function dashedPolylineToLines(points: Position[], dashArray: number[], skippedLines?: number[]): Position[][];
@@ -284,6 +290,37 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number
 export function getFootPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
+export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
+    translate: Position;
+    base: Position;
+    angle: number;
+    rotation: number;
+    matrix: Matrix;
+}>): ({
+    matrix: Matrix | undefined;
+    type: "lines" | "triangles";
+    points: number[];
+    color: [number, number, number, number];
+    strip: boolean;
+    pattern?: PatternGraphic | undefined;
+} | {
+    matrix: Matrix | undefined;
+    type: "texture";
+    color?: [number, number, number, number] | undefined;
+    x: number;
+    y: number;
+    width?: number | undefined;
+    height?: number | undefined;
+    src: ImageBitmap | ImageData;
+    pattern?: PatternGraphic | undefined;
+})[];
+
+// @public (undocumented)
+export function getImageGraphic(url: string, x: number, y: number, width: number, height: number, rerender: () => void, options?: Partial<{
+    crossOrigin: "anonymous" | "use-credentials" | "";
+}>): Graphic | undefined;
+
+// @public (undocumented)
 export function getLinearDimensionGeometries(content: LinearDimension, dimensionStyle: {
     margin: number;
     arrowAngle: number;
@@ -325,6 +362,19 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 
 // @public (undocumented)
 export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine];
+
+// @public (undocumented)
+export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<{
+    strokeColor: number;
+    strokeWidth: number;
+    dashArray: number[];
+    fillColor: number;
+    fillPattern: PatternGraphic;
+    lineJoin: 'round' | 'bevel' | 'miter';
+    miterLimit: number;
+    closed: boolean;
+    lineCap?: 'butt' | 'round' | 'square';
+}>): Graphic[];
 
 // @public (undocumented)
 export function getPerpendicular(point: Position, line: GeneralFormLine): {
@@ -430,6 +480,13 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
+export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic, fontSize: number, fontFamily: string, options?: Partial<{
+    fontWeight: React.CSSProperties['fontWeight'];
+    fontStyle: React.CSSProperties['fontStyle'];
+    cacheKey: object;
+}>): Graphic | undefined;
+
+// @public (undocumented)
 export function getTextSize(font: string, text: string): {
     width: number;
     height: number;
@@ -480,6 +537,15 @@ export function getTwoPointsDistance(point1: Position, point2: Position): number
 
 // @public (undocumented)
 export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion;
+
+// Warning: (ae-forgotten-export) The symbol "LineOrTriangleGraphic" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "TextureGraphic" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
+    matrix?: Matrix;
+    pattern?: PatternGraphic;
+};
 
 // @public (undocumented)
 export function isBetween(target: number, a: number, b: number): boolean;
@@ -598,6 +664,11 @@ export interface Pattern<T> extends Size {
     // (undocumented)
     pattern: () => T;
 }
+
+// @public (undocumented)
+export type PatternGraphic = {
+    graphics: Graphic[];
+} & Size;
 
 // @public (undocumented)
 export function pointInPolygon({ x, y }: Position, polygon: Position[]): boolean;
