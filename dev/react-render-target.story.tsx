@@ -23,8 +23,11 @@ export default () => {
     target.renderText(10, 30, 'Hello World!', 0xff0000, 30, 'monospace'),
     target.renderText(10, 60, 'Hello World!', 0xff0000, 30, 'monospace', { fontWeight: 'bold' }),
     target.renderText(10, 90, 'Hello World!', 0xff0000, 30, 'monospace', { fontStyle: 'italic' }),
-    target.renderText(10, 150, 'Hello', { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, 70, 'monospace'),
-  ], 230, 170)
+    target.renderText(10, 150, 'He', { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, 70, 'monospace'),
+    target.renderText(90, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000 }),
+    target.renderText(130, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, dashArray: [2] }),
+    target.renderText(170, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
+  ], 230, 230)
 
   const renderEllipseArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipseArc(40, 10, 50, 30, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -67,7 +70,9 @@ export default () => {
     target.renderPath([[{ x: 185, y: 160 }, { x: 225, y: 160 }, { x: 225, y: 190 }]], { strokeColor: 0xff0000, strokeWidth: 10, lineJoin: 'round' }),
     target.renderPath([[{ x: 10, y: 210 }, { x: 40, y: 210 }, { x: 40, y: 240 }]], { strokeColor: 0xff0000, strokeWidth: 10, lineCap: 'square' }),
     target.renderPath([[{ x: 55, y: 210 }, { x: 85, y: 210 }, { x: 85, y: 240 }]], { strokeColor: 0xff0000, strokeWidth: 10, lineCap: 'round' }),
-  ], 230, 340)
+    target.renderPath([[{ x: 100, y: 210 }, { x: 220, y: 210 }]], { dashArray: [12, 4] }),
+    target.renderPath([[{ x: 100, y: 220 }, { x: 220, y: 220 }]], { dashArray: [12, 4], dashOffset: 4 }),
+  ], 230, 400)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 230, 90, { crossOrigin: '' }),

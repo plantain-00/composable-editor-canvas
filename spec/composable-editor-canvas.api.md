@@ -90,7 +90,7 @@ export function combineStripTriangles(triangles: number[][]): number[];
 export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => void) | undefined;
 
 // @public (undocumented)
-export function dashedPolylineToLines(points: Position[], dashArray: number[], skippedLines?: number[]): Position[][];
+export function dashedPolylineToLines(points: Position[], dashArray: number[], skippedLines?: number[], dashOffset?: number): Position[][];
 
 // @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
@@ -120,7 +120,7 @@ export function drawDashedLine(g: {
 export function drawDashedPolyline(g: {
     moveTo: (x: number, y: number) => void;
     lineTo: (x: number, y: number) => void;
-}, points: Position[], dashArray: number[], skippedLines?: number[]): void;
+}, points: Position[], dashArray: number[], skippedLines?: number[], dashOffset?: number): void;
 
 // @public (undocumented)
 export function EditBar<T = void>(props: {
@@ -364,16 +364,10 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine];
 
 // @public (undocumented)
-export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<{
-    strokeColor: number;
-    strokeWidth: number;
-    dashArray: number[];
+export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number;
     fillPattern: PatternGraphic;
-    lineJoin: 'round' | 'bevel' | 'miter';
-    miterLimit: number;
     closed: boolean;
-    lineCap?: 'butt' | 'round' | 'square';
 }>): Graphic[];
 
 // @public (undocumented)
@@ -480,7 +474,7 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
-export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic, fontSize: number, fontFamily: string, options?: Partial<{
+export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
     fontWeight: React.CSSProperties['fontWeight'];
     fontStyle: React.CSSProperties['fontStyle'];
     cacheKey: object;
@@ -638,21 +632,31 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
-export interface PathOptions<T> {
-    // (undocumented)
-    closed: boolean;
-    // (undocumented)
-    dashArray: number[];
-    // (undocumented)
-    fillColor: number;
-    // (undocumented)
-    fillPattern: Pattern<T>;
+export interface PathLineStyleOptions {
     // (undocumented)
     lineCap?: 'butt' | 'round' | 'square';
     // (undocumented)
     lineJoin: 'round' | 'bevel' | 'miter';
     // (undocumented)
     miterLimit: number;
+}
+
+// @public (undocumented)
+export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
+    // (undocumented)
+    closed: boolean;
+    // (undocumented)
+    fillColor: number;
+    // (undocumented)
+    fillPattern: Pattern<T>;
+}
+
+// @public (undocumented)
+export interface PathStrokeOptions {
+    // (undocumented)
+    dashArray: number[];
+    // (undocumented)
+    dashOffset: number;
     // (undocumented)
     strokeColor: number;
     // (undocumented)
@@ -798,7 +802,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         strokeWidthScale: number;
     }>): JSX.Element;
     // (undocumented)
-    renderText(x: number, y: number, text: string, fill: number | Pattern<T>, fontSize: number, fontFamily: string, options?: Partial<{
+    renderText(x: number, y: number, text: string, fill: number | Pattern<T> | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
         fontWeight: React_3.CSSProperties['fontWeight'];
         fontStyle: React_3.CSSProperties['fontStyle'];
         cacheKey: object;
@@ -839,11 +843,7 @@ export class RenderingLinesMerger {
 export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly {
     index: number;
     color: number;
-}[], points: Position[], options?: Partial<{
-    strokeColor: number;
-    dashArray?: number[];
-    strokeWidth?: number;
-}>): T;
+}[], points: Position[], options?: Partial<PathStrokeOptions>): T;
 
 // @public (undocumented)
 export function ResizeBar(props: {
@@ -893,6 +893,9 @@ export function Scrollbar(props: {
 
 // @public (undocumented)
 export type SelectPath = readonly (string | number)[];
+
+// @public (undocumented)
+export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<PathStrokeOptions>): void;
 
 // @public (undocumented)
 export interface Size {

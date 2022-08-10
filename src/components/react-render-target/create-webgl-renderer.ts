@@ -2,6 +2,7 @@ import * as twgl from 'twgl.js'
 import { combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, Size, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
+import { PathLineStyleOptions, PathStrokeOptions } from './react-render-target'
 
 interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines'
@@ -257,10 +258,10 @@ export function getTextGraphic(
   x: number,
   y: number,
   text: string,
-  fill: number | PatternGraphic,
+  fill: number | PatternGraphic | undefined,
   fontSize: number,
   fontFamily: string,
-  options?: Partial<{
+  options?: Partial<PathStrokeOptions & {
     fontWeight: React.CSSProperties['fontWeight']
     fontStyle: React.CSSProperties['fontStyle']
     cacheKey: object
@@ -279,7 +280,17 @@ export function getTextGraphic(
     ctx.canvas.height = fontSize
     ctx.font = font
     ctx.fillStyle = 'white';
-    ctx.fillText(text, 0, ctx.canvas.height);
+    if (fill !== undefined) {
+      ctx.fillText(text, 0, ctx.canvas.height);
+    }
+    if (options?.strokeColor !== undefined) {
+      ctx.strokeStyle = 'white'
+      if (options.strokeWidth !== undefined) {
+        ctx.lineWidth = options.strokeWidth
+      }
+      setCanvasLineDash(ctx, options)
+      ctx.strokeText(text, 0, ctx.canvas.height);
+    }
     return ctx.getImageData(0, 0, canvas.width, canvas.height)
   }
   const imageData = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getTextImageData) : getTextImageData()
@@ -296,6 +307,18 @@ export function getTextGraphic(
       pattern: fill,
     }
   }
+  if (fill === undefined) {
+    if (options?.strokeColor === undefined) {
+      return undefined
+    }
+    return {
+      type: 'texture',
+      x,
+      y: y - imageData.height,
+      color: colorNumberToRec(options.strokeColor),
+      src: imageData,
+    }
+  }
   return {
     type: 'texture',
     x,
@@ -308,16 +331,10 @@ export function getTextGraphic(
 export function getPathGraphics(
   points: Position[][],
   strokeWidthScale: number,
-  options?: Partial<{
-    strokeColor: number
-    strokeWidth: number
-    dashArray: number[]
+  options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number
     fillPattern: PatternGraphic
-    lineJoin: 'round' | 'bevel' | 'miter'
-    miterLimit: number
     closed: boolean
-    lineCap?: 'butt' | 'round' | 'square'
   }>,
 ): Graphic[] {
   let strokeWidth = options?.strokeWidth ?? 1
@@ -333,7 +350,7 @@ export function getPathGraphics(
         if (lineCapWithClosed === true) {
           p = polygonToPolyline(p)
         }
-        return dashedPolylineToLines(p, dashArray)
+        return dashedPolylineToLines(p, dashArray, undefined, options.dashOffset)
       }).flat()
     }
 
@@ -489,6 +506,15 @@ function getDrawType(
   return graphic.type === 'triangles'
     ? (graphic.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES)
     : (graphic.strip ? gl.LINE_STRIP : gl.LINES)
+}
+
+export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<PathStrokeOptions>) {
+  if (options?.dashArray) {
+    ctx.setLineDash(options.dashArray)
+    if (options.dashOffset) {
+      ctx.lineDashOffset = options.dashOffset
+    }
+  }
 }
 
 export function colorNumberToRec(n: number, alpha = 1) {
