@@ -3,6 +3,7 @@ import { combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, getPol
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
 import { PathLineStyleOptions, PathStrokeOptions } from './react-render-target'
+import { getColorString } from './react-svg-render-target'
 
 interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines'
@@ -279,12 +280,12 @@ export function getTextGraphic(
     ctx.canvas.width = Math.ceil(t.width) + 2;
     ctx.canvas.height = fontSize
     ctx.font = font
-    ctx.fillStyle = 'white';
     if (fill !== undefined) {
+      ctx.fillStyle = options?.strokeColor !== undefined && typeof fill === 'number' ? getColorString(fill) : 'white';
       ctx.fillText(text, 0, ctx.canvas.height);
     }
     if (options?.strokeColor !== undefined) {
-      ctx.strokeStyle = 'white'
+      ctx.strokeStyle = fill !== undefined && typeof fill === 'number' ? getColorString(options.strokeColor) : 'white'
       if (options.strokeWidth !== undefined) {
         ctx.lineWidth = options.strokeWidth
       }
@@ -316,6 +317,14 @@ export function getTextGraphic(
       x,
       y: y - imageData.height,
       color: colorNumberToRec(options.strokeColor),
+      src: imageData,
+    }
+  }
+  if (options?.strokeColor !== undefined) {
+    return {
+      type: 'texture',
+      x,
+      y: y - imageData.height,
       src: imageData,
     }
   }

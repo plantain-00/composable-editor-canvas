@@ -27,7 +27,8 @@ export default () => {
     target.renderText(90, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000 }),
     target.renderText(130, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, dashArray: [2] }),
     target.renderText(170, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
-  ], 230, 230)
+    target.renderText(10, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000 }),
+  ], 230, 260)
 
   const renderEllipseArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipseArc(40, 10, 50, 30, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
