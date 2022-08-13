@@ -993,6 +993,27 @@ export function combineStripTriangles(triangles: number[][]) {
 /**
  * @public
  */
+export function combineStripTriangleColors(colors: number[][]) {
+  const result: number[] = []
+  for (let i = 0; i < colors.length; i++) {
+    const triangle = colors[i]
+    if (i !== 0) {
+      const lastTriangle = colors[i - 1]
+      result.push(
+        lastTriangle[lastTriangle.length - 4], lastTriangle[lastTriangle.length - 3], lastTriangle[lastTriangle.length - 2], lastTriangle[lastTriangle.length - 1],
+        triangle[0], triangle[1], triangle[2], triangle[3],
+        triangle[0], triangle[1], triangle[2], triangle[3],
+        triangle[4], triangle[5], triangle[6], triangle[7],
+      )
+    }
+    result.push(...triangle)
+  }
+  return result
+}
+
+/**
+ * @public
+ */
 export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, radius: number) {
   const result: Position[] = []
   const lines1 = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p1Start, p1End), radius)
@@ -1027,6 +1048,9 @@ export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Posit
  * @public
  */
 export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine] {
+  if (isZero(distance)) {
+    return [line, line]
+  }
   const d = distance * Math.sqrt(line.a ** 2 + line.b ** 2)
   return [
     {

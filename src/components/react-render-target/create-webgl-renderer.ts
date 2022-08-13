@@ -1,16 +1,15 @@
 import * as twgl from 'twgl.js'
-import { combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getFootPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getFootPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
-import { LinearGradient, PathLineStyleOptions, PathStrokeOptions } from './react-render-target'
+import { LinearGradient, PathLineStyleOptions, PathStrokeOptions, RadialGradient } from './react-render-target'
 import { getColorString } from './react-svg-render-target'
 
 interface LineOrTriangleGraphic {
-  type: 'triangles' | 'lines'
+  type: 'triangles' | 'lines' | 'line strip' | 'triangle strip' | 'triangle fan'
   points: number[]
   color?: [number, number, number, number]
   colors?: number[]
-  strip: boolean
 }
 
 interface TextureGraphic {
@@ -210,7 +209,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       } else {
         objectsToDraw.push(drawObject)
       }
-    } else if (line.type === 'lines' || line.type === 'triangles') {
+    } else {
       const drawObject: twgl.DrawObject = {
         programInfo: line.colors ? gradientProgramInfo : programInfo,
         bufferInfo: bufferInfoCache.get(line.points, () => {
@@ -232,7 +231,10 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
           color: line.color,
           matrix,
         },
-        type: getDrawType(line, gl),
+        type: line.type === 'triangles' ? gl.TRIANGLES
+          : line.type === 'line strip' ? gl.LINE_STRIP
+            : line.type === 'lines' ? gl.LINES
+              : line.type === 'triangle strip' ? gl.TRIANGLE_STRIP : gl.TRIANGLE_FAN,
       }
       if (line.pattern) {
         let xMin = Infinity
@@ -374,6 +376,7 @@ export function getPathGraphics(
     fillColor: number
     fillPattern: PatternGraphic
     fillLinearGradient: LinearGradient
+    fillRadialGradient: RadialGradient
     closed: boolean
   }>,
 ): Graphic[] {
@@ -412,23 +415,26 @@ export function getPathGraphics(
           }).flat()
         }),
         color: strokeColor,
-        strip: false,
       })
     } else {
       strokeWidth *= strokeWidthScale
       graphics.push({
-        type: 'triangles',
+        type: 'triangle strip',
         points: combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
           return combineStripTriangles(points.map(p => {
             return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))
           }))
         }),
         color: strokeColor,
-        strip: true,
       })
     }
   }
-  if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined) {
+  if (
+    options?.fillColor !== undefined ||
+    options?.fillPattern !== undefined ||
+    options?.fillLinearGradient !== undefined ||
+    options?.fillRadialGradient !== undefined
+  ) {
     const vertices: number[] = []
     const holes: number[] = []
     for (let i = 0; i < points.length; i++) {
@@ -446,19 +452,17 @@ export function getPathGraphics(
         vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1]
       )
     }
-    if (options?.fillPattern !== undefined) {
+    if (options.fillPattern !== undefined) {
       graphics.push({
         type: 'triangles',
         points: triangles,
-        strip: false,
         color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
         pattern: options.fillPattern,
       })
-    } else if (options?.fillColor !== undefined) {
+    } else if (options.fillColor !== undefined) {
       graphics.push({
         type: 'triangles',
         points: triangles,
-        strip: false,
         color: colorNumberToRec(options.fillColor),
       })
     } else if (options.fillLinearGradient !== undefined) {
@@ -469,21 +473,20 @@ export function getPathGraphics(
       }
       const line = twoPointLineToGeneralFormLine(start, end)
       const stops = options.fillLinearGradient.stops.slice(0).sort((a, b) => a.offset - b.offset)
-      let leftSideMaxDistance = 0
-      let rightSideMaxDistance = 0
+      const distances: number[] = []
       let minOffset = stops[0].offset
       let maxOffset = stops[stops.length - 1].offset
       points[0].forEach(p => {
         const foot = getFootPoint(p, line)
-        const distance = getTwoPointsDistance(foot, p)
         const side = getPointSideOfLine(p, line)
-        if (side > 0) {
-          if (distance > leftSideMaxDistance) {
-            leftSideMaxDistance = distance
-          }
-        } else if (side < 0) {
-          if (distance > rightSideMaxDistance) {
-            rightSideMaxDistance = distance
+        if (isZero(side)) {
+          distances.push(0)
+        } else {
+          const distance = getTwoPointsDistance(foot, p)
+          if (side > 0) {
+            distances.push(distance)
+          } else if (side < 0) {
+            distances.push(-distance)
           }
         }
         const pOffset = equals(foot.x, start.x) ? (foot.y - start.y) / offset.y : (foot.x - start.x) / offset.x
@@ -505,8 +508,8 @@ export function getPathGraphics(
           color: stops[stops.length - 1].color,
         })
       }
-      const line1 = getParallelLinesByDistance(line, leftSideMaxDistance)[1]
-      const line2 = getParallelLinesByDistance(line, rightSideMaxDistance)[0]
+      const line1 = getParallelLinesByDistance(line, Math.max(...distances))[1]
+      const line2 = getParallelLinesByDistance(line, Math.min(...distances))[0]
       const fillTriangles: number[] = []
       const fillColors: number[] = []
       stops.forEach(s => {
@@ -516,22 +519,82 @@ export function getPathGraphics(
         const color = colorNumberToRec(s.color)
         if (p1 && p2) {
           fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
-          fillColors.push(...color, ...color,)
+          fillColors.push(...color, ...color)
         }
       })
-
       graphics.push({
         type: 'triangles',
         points: triangles,
-        strip: false,
         color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
         pattern: {
           graphics: [
             {
-              type: 'triangles',
+              type: 'triangle strip',
               points: fillTriangles,
-              strip: true,
               colors: fillColors,
+            }
+          ],
+        },
+      })
+    } else if (options.fillRadialGradient !== undefined) {
+      let { start, end, stops } = options.fillRadialGradient
+      if (start.r > end.r) {
+        const tmp = start
+        start = end
+        end = tmp
+        stops = stops.map(s => ({ offset: 1 - s.offset, color: s.color }))
+      }
+      const offset = { x: end.x - start.x, y: end.y - start.y, r: end.r - start.r }
+      const stopPoints = stops.slice(0).sort((a, b) => a.offset - b.offset).map(s => {
+        const circle = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset, r: start.r + offset.r * s.offset }
+        return {
+          color: colorNumberToRec(s.color),
+          points: arcToPolyline({ x: circle.x, y: circle.y, r: circle.r, startAngle: 0, endAngle: 360 }, 5),
+        }
+      })
+      const maxDistance = Math.max(...points[0].map(p => getTwoPointsDistance(p, end)))
+      if (maxDistance > end.r) {
+        stopPoints.push({
+          color: stopPoints[stopPoints.length - 1].color,
+          points: arcToPolyline({ x: end.x, y: end.y, r: maxDistance, startAngle: 0, endAngle: 360 }, 5),
+        })
+      }
+      const fillTriangles: number[][] = []
+      const fillColors: number[][] = []
+      if (start.r > 0) {
+        const stop = stopPoints[0]
+        const triangles: number[] = []
+        const colors: number[] = []
+        stop.points.forEach(p => {
+          triangles.push(p.x, p.y, start.x, start.y)
+          colors.push(...stop.color, ...stop.color)
+        })
+        fillTriangles.push(triangles)
+        fillColors.push(colors)
+      }
+      for (let i = 1; i < stopPoints.length; i++) {
+        const stop1 = stopPoints[i - 1]
+        const stop2 = stopPoints[i]
+        const triangles: number[] = []
+        const colors: number[] = []
+        stop1.points.forEach((p1, j) => {
+          const p2 = stop2.points[j]
+          triangles.push(p1.x, p1.y, p2.x, p2.y)
+          colors.push(...stop1.color, ...stop2.color)
+        })
+        fillTriangles.push(triangles)
+        fillColors.push(colors)
+      }
+      graphics.push({
+        type: 'triangles',
+        points: triangles,
+        color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
+        pattern: {
+          graphics: [
+            {
+              type: 'triangle strip',
+              points: combineStripTriangles(fillTriangles),
+              colors: combineStripTriangleColors(fillColors),
             }
           ],
         },
@@ -609,19 +672,6 @@ const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | '
 const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const polylineLinesCache = new WeakmapMapCache<Position[], true | 'butt' | 'round' | 'square', number[]>()
 const combinedLinesCache = new WeakmapMapCache<Position[][], true | 'butt' | 'round' | 'square', number[]>()
-
-
-function getDrawType(
-  graphic: {
-    type: 'triangles' | 'lines'
-    strip: boolean
-  },
-  gl: WebGLRenderingContext,
-) {
-  return graphic.type === 'triangles'
-    ? (graphic.strip ? gl.TRIANGLE_STRIP : gl.TRIANGLES)
-    : (graphic.strip ? gl.LINE_STRIP : gl.LINES)
-}
 
 export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<PathStrokeOptions>) {
   if (options?.dashArray) {
