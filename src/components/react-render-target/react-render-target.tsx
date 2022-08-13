@@ -149,7 +149,20 @@ export interface PathLineStyleOptions {
 export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
   fillColor: number
   fillPattern: Pattern<T>
+  fillLinearGradient: LinearGradient
   closed: boolean
+}
+
+/**
+ * @public
+ */
+export interface LinearGradient {
+  start: Position
+  end: Position
+  stops: {
+    offset: number
+    color: number
+  }[]
 }
 
 /**

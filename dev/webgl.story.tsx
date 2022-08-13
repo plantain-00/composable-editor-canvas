@@ -84,6 +84,19 @@ export default () => {
         Math.random() * 600,
         Math.random() * 400,
       ],
+      triangles: [
+        Math.random() * 600,
+        Math.random() * 400,
+        Math.random() * 600,
+        Math.random() * 400,
+        Math.random() * 600,
+        Math.random() * 400,
+      ],
+      triangleColors: [
+        Math.random(), Math.random(), Math.random(), 1,
+        Math.random(), Math.random(), Math.random(), 1,
+        Math.random(), Math.random(), Math.random(), 1,
+      ],
       canvas,
       color: [Math.random(), Math.random(), Math.random(), 1],
       position: { x: Math.random() * 600, y: Math.random() * 400 },
@@ -162,6 +175,24 @@ export default () => {
       src: "https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg",
       crossOrigin: "",
     });
+    const gradientProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    attribute vec4 color;
+    uniform mat3 matrix;
+    varying vec4 v_color;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      v_color = color;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec4 v_color;
+
+    void main() {
+      gl_FragColor = v_color;
+    }`]);
 
     render.current = (gs, x, y, scale) => {
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -208,6 +239,24 @@ export default () => {
           matrix,
         },
         type: gl.LINE_STRIP,
+      }]
+
+      const objectsToDraw3 = [{
+        programInfo: gradientProgramInfo,
+        bufferInfo: twgl.createBufferInfoFromArrays(gl, {
+          position: {
+            numComponents: 2,
+            data: gs.triangles
+          },
+          color: {
+            numComponents: 4,
+            data: gs.triangleColors
+          },
+        }),
+        uniforms: {
+          matrix,
+        },
+        type: gl.TRIANGLES,
       }]
 
       matrix = m3.multiply(matrix, m3.translation(gs.position.x, gs.position.y))
@@ -259,6 +308,8 @@ export default () => {
       gl.disable(gl.STENCIL_TEST);
 
       twgl.drawObjectList(gl, objectsToDraw2)
+
+      twgl.drawObjectList(gl, objectsToDraw3)
     }
   }, [ref.current])
 

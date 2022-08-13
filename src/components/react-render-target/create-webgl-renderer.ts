@@ -1,14 +1,15 @@
 import * as twgl from 'twgl.js'
-import { combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, getPolylineTriangles, m3, Matrix, polygonToPolyline, Position, Size, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
+import { combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getFootPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
-import { PathLineStyleOptions, PathStrokeOptions } from './react-render-target'
+import { LinearGradient, PathLineStyleOptions, PathStrokeOptions } from './react-render-target'
 import { getColorString } from './react-svg-render-target'
 
 interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines'
   points: number[]
-  color: [number, number, number, number]
+  color?: [number, number, number, number]
+  colors?: number[]
   strip: boolean
 }
 
@@ -29,7 +30,7 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 
 export type PatternGraphic = {
   graphics: Graphic[]
-} & Size
+} & Partial<Size>
 
 export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const gl = canvas.getContext("webgl", { antialias: true, stencil: true });
@@ -51,7 +52,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = color;
     }`]);
   const coloredTextureProgramInfo = twgl.createProgramInfo(gl, [`
-    attribute vec4 position;   
+    attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
 
@@ -78,7 +79,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = color;
     }`]);
   const textureProgramInfo = twgl.createProgramInfo(gl, [`
-    attribute vec4 position;   
+    attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
 
@@ -100,7 +101,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = texture2D(texture, texcoord);
     }`]);
   const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
-    attribute vec4 position;   
+    attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
 
@@ -127,13 +128,31 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
       gl_FragColor = color2;
     }`]);
+  const gradientProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    attribute vec4 color;
+    uniform mat3 matrix;
+    varying vec4 v_color;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      v_color = color;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec4 v_color;
+
+    void main() {
+      gl_FragColor = v_color;
+    }`]);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, WebGLTexture>()
 
   let objectsToDraw: twgl.DrawObject[] = []
   const drawPattern = (
-    pattern: { graphics: Graphic[] } & Size,
+    pattern: PatternGraphic,
     matrix: Matrix,
     bounding: { xMin: number, xMax: number, yMin: number, yMax: number },
     drawObject: twgl.DrawObject,
@@ -150,13 +169,15 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
 
     const { xMin, yMin, xMax, yMax } = bounding
-    const columnStartIndex = Math.floor(xMin / pattern.width)
-    const columnEndIndex = Math.floor(xMax / pattern.width)
-    const rowStartIndex = Math.floor(yMin / pattern.height)
-    const rowEndIndex = Math.floor(yMax / pattern.height)
+    const patternWidth = pattern.width ?? Number.MAX_SAFE_INTEGER
+    const patternHeight = pattern.height ?? Number.MAX_SAFE_INTEGER
+    const columnStartIndex = Math.floor(xMin / patternWidth)
+    const columnEndIndex = Math.floor(xMax / patternWidth)
+    const rowStartIndex = Math.floor(yMin / patternHeight)
+    const rowEndIndex = Math.floor(yMax / patternHeight)
     for (let i = columnStartIndex; i <= columnEndIndex; i++) {
       for (let j = rowStartIndex; j <= rowEndIndex; j++) {
-        const baseMatrix = m3.multiply(matrix, m3.translation(i * pattern.width, j * pattern.height))
+        const baseMatrix = m3.multiply(matrix, m3.translation(i * patternWidth, j * patternHeight))
         for (const p of pattern.graphics) {
           drawGraphic(p, p.matrix ? m3.multiply(baseMatrix, p.matrix) : baseMatrix)
         }
@@ -191,13 +212,22 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
     } else if (line.type === 'lines' || line.type === 'triangles') {
       const drawObject: twgl.DrawObject = {
-        programInfo,
-        bufferInfo: bufferInfoCache.get(line.points, () => twgl.createBufferInfoFromArrays(gl, {
-          position: {
-            numComponents: 2,
-            data: line.points
-          },
-        })),
+        programInfo: line.colors ? gradientProgramInfo : programInfo,
+        bufferInfo: bufferInfoCache.get(line.points, () => {
+          const arrays: twgl.Arrays = {
+            position: {
+              numComponents: 2,
+              data: line.points
+            }
+          }
+          if (line.colors) {
+            arrays.color = {
+              numComponents: 4,
+              data: line.colors
+            }
+          }
+          return twgl.createBufferInfoFromArrays(gl, arrays)
+        }),
         uniforms: {
           color: line.color,
           matrix,
@@ -343,6 +373,7 @@ export function getPathGraphics(
   options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number
     fillPattern: PatternGraphic
+    fillLinearGradient: LinearGradient
     closed: boolean
   }>,
 ): Graphic[] {
@@ -397,7 +428,7 @@ export function getPathGraphics(
       })
     }
   }
-  if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
+  if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined) {
     const vertices: number[] = []
     const holes: number[] = []
     for (let i = 0; i < points.length; i++) {
@@ -429,6 +460,81 @@ export function getPathGraphics(
         points: triangles,
         strip: false,
         color: colorNumberToRec(options.fillColor),
+      })
+    } else if (options.fillLinearGradient !== undefined) {
+      const { start, end } = options.fillLinearGradient
+      const offset = {
+        x: end.x - start.x,
+        y: end.y - start.y,
+      }
+      const line = twoPointLineToGeneralFormLine(start, end)
+      const stops = options.fillLinearGradient.stops.slice(0).sort((a, b) => a.offset - b.offset)
+      let leftSideMaxDistance = 0
+      let rightSideMaxDistance = 0
+      let minOffset = stops[0].offset
+      let maxOffset = stops[stops.length - 1].offset
+      points[0].forEach(p => {
+        const foot = getFootPoint(p, line)
+        const distance = getTwoPointsDistance(foot, p)
+        const side = getPointSideOfLine(p, line)
+        if (side > 0) {
+          if (distance > leftSideMaxDistance) {
+            leftSideMaxDistance = distance
+          }
+        } else if (side < 0) {
+          if (distance > rightSideMaxDistance) {
+            rightSideMaxDistance = distance
+          }
+        }
+        const pOffset = equals(foot.x, start.x) ? (foot.y - start.y) / offset.y : (foot.x - start.x) / offset.x
+        if (pOffset < minOffset) {
+          minOffset = pOffset
+        } else if (pOffset > maxOffset) {
+          maxOffset = pOffset
+        }
+      })
+      if (!equals(minOffset, stops[0].offset)) {
+        stops.unshift({
+          offset: minOffset,
+          color: stops[0].color,
+        })
+      }
+      if (!equals(maxOffset, stops[stops.length - 1].offset)) {
+        stops.push({
+          offset: maxOffset,
+          color: stops[stops.length - 1].color,
+        })
+      }
+      const line1 = getParallelLinesByDistance(line, leftSideMaxDistance)[1]
+      const line2 = getParallelLinesByDistance(line, rightSideMaxDistance)[0]
+      const fillTriangles: number[] = []
+      const fillColors: number[] = []
+      stops.forEach(s => {
+        const p = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset }
+        const p1 = getTwoGeneralFormLinesIntersectionPoint(line1, getPerpendicular(p, line1))
+        const p2 = getTwoGeneralFormLinesIntersectionPoint(line2, getPerpendicular(p, line2))
+        const color = colorNumberToRec(s.color)
+        if (p1 && p2) {
+          fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
+          fillColors.push(...color, ...color,)
+        }
+      })
+
+      graphics.push({
+        type: 'triangles',
+        points: triangles,
+        strip: false,
+        color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
+        pattern: {
+          graphics: [
+            {
+              type: 'triangles',
+              points: fillTriangles,
+              strip: true,
+              colors: fillColors,
+            }
+          ],
+        },
       })
     }
   }
