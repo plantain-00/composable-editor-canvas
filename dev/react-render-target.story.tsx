@@ -73,7 +73,8 @@ export default () => {
     target.renderPath([[{ x: 55, y: 210 }, { x: 85, y: 210 }, { x: 85, y: 240 }]], { strokeColor: 0xff0000, strokeWidth: 10, lineCap: 'round' }),
     target.renderPath([[{ x: 100, y: 210 }, { x: 220, y: 210 }]], { dashArray: [12, 4] }),
     target.renderPath([[{ x: 100, y: 220 }, { x: 220, y: 220 }]], { dashArray: [12, 4], dashOffset: 4 }),
-  ], 230, 400)
+    target.renderPath([[{ x: 5, y: 250 }, { x: 45, y: 390 }, { x: 45, y: 250 }], [{ x: 25, y: 270 }, { x: 25, y: 310 }, { x: 35, y: 310 }, { x: 35, y: 270 }]], { fillLinearGradient: { start: { x: 5, y: 250 }, end: { x: 45, y: 390 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 0 }),
+  ], 230, 420)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 230, 90, { crossOrigin: '' }),

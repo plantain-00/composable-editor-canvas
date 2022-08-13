@@ -300,7 +300,8 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     matrix: Matrix | undefined;
     type: "lines" | "triangles";
     points: number[];
-    color: [number, number, number, number];
+    color?: [number, number, number, number] | undefined;
+    colors?: number[] | undefined;
     strip: boolean;
     pattern?: PatternGraphic | undefined;
 } | {
@@ -367,6 +368,7 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
 export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number;
     fillPattern: PatternGraphic;
+    fillLinearGradient: LinearGradient;
     closed: boolean;
 }>): Graphic[];
 
@@ -412,6 +414,9 @@ export function getPointByLengthAndDirectionSafely(startPoint: Position, length:
 
 // @public (undocumented)
 export function getPointsBounding(points: Position[]): TwoPointsFormRegion | undefined;
+
+// @public
+export function getPointSideOfLine(point: Position, line: GeneralFormLine): number;
 
 // @public (undocumented)
 export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean): Position[];
@@ -600,6 +605,19 @@ export interface LinearDimension extends TextStyle {
 }
 
 // @public (undocumented)
+export interface LinearGradient {
+    // (undocumented)
+    end: Position;
+    // (undocumented)
+    start: Position;
+    // (undocumented)
+    stops: {
+        offset: number;
+        color: number;
+    }[];
+}
+
+// @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
@@ -648,6 +666,8 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
     // (undocumented)
     fillColor: number;
     // (undocumented)
+    fillLinearGradient: LinearGradient;
+    // (undocumented)
     fillPattern: Pattern<T>;
 }
 
@@ -672,7 +692,7 @@ export interface Pattern<T> extends Size {
 // @public (undocumented)
 export type PatternGraphic = {
     graphics: Graphic[];
-} & Size;
+} & Partial<Size>;
 
 // @public (undocumented)
 export function pointInPolygon({ x, y }: Position, polygon: Position[]): boolean;

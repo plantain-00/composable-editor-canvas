@@ -234,9 +234,9 @@ function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient'>>,
 ) {
-  if (options?.fillColor !== undefined || options?.fillPattern !== undefined) {
+  if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined) {
     if (options.fillPattern !== undefined) {
       const canvas = document.createElement("canvas")
       canvas.width = options.fillPattern.width
@@ -257,6 +257,12 @@ function renderFill(
       }
     } else if (options.fillColor !== undefined) {
       ctx.fillStyle = getColorString(options.fillColor)
+    } else if (options.fillLinearGradient !== undefined) {
+      const gradient = ctx.createLinearGradient(options.fillLinearGradient.start.x, options.fillLinearGradient.start.y, options.fillLinearGradient.end.x, options.fillLinearGradient.end.y)
+      options.fillLinearGradient.stops.forEach(s => {
+        gradient.addColorStop(s.offset, getColorString(s.color))
+      })
+      ctx.fillStyle = gradient
     }
     ctx.fill('evenodd')
   }

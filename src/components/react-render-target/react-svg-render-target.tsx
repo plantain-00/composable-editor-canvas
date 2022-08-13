@@ -206,7 +206,7 @@ type Draw = (key: React.Key) => JSX.Element
 
 function renderFillPattern(
   children: (fill: string) => JSX.Element,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient'>>,
 ) {
   return (key: React.Key) => {
     const id = React.useId()
@@ -223,6 +223,20 @@ function renderFillPattern(
         >
           {options.fillPattern.pattern()(id)}
         </pattern>
+      )
+      fill = `url(#${id})`
+    } else if (options?.fillLinearGradient) {
+      defs = (
+        <linearGradient
+          id={id}
+          gradientUnits="userSpaceOnUse"
+          x1={options.fillLinearGradient.start.x}
+          y1={options.fillLinearGradient.start.y}
+          x2={options.fillLinearGradient.end.x}
+          y2={options.fillLinearGradient.end.y}
+        >
+          {options.fillLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color)} />)}
+        </linearGradient>
       )
       fill = `url(#${id})`
     }

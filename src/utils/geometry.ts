@@ -150,6 +150,16 @@ export function getFootPoint(point: Position, line: GeneralFormLine): Position {
 
 /**
  * @public
+ * 0: point on line
+ * >0: point on left side of line
+ * <0: point on right side of line
+ */
+export function getPointSideOfLine(point: Position, line: GeneralFormLine): number {
+  return line.a * point.x + line.b * point.y + line.c
+}
+
+/**
+ * @public
  */
 export function getTwoPointsDistance(point1: Position, point2: Position) {
   return Math.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2)
@@ -1021,11 +1031,11 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
   return [
     {
       ...line,
-      c: line.c + d,
+      c: line.c + d, // on right side of line
     },
     {
       ...line,
-      c: line.c - d,
+      c: line.c - d, // on left side of line
     },
   ]
 }
