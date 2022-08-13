@@ -84,6 +84,9 @@ export function colorNumberToRec(n: number, alpha?: number): [number, number, nu
 export function colorStringToNumber(color: string): number;
 
 // @public (undocumented)
+export function combineStripTriangleColors(colors: number[][]): number[];
+
+// @public (undocumented)
 export function combineStripTriangles(triangles: number[][]): number[];
 
 // @public (undocumented)
@@ -298,11 +301,10 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     matrix: Matrix;
 }>): ({
     matrix: Matrix | undefined;
-    type: "lines" | "triangles";
+    type: "lines" | "triangles" | "line strip" | "triangle strip" | "triangle fan";
     points: number[];
     color?: [number, number, number, number] | undefined;
     colors?: number[] | undefined;
-    strip: boolean;
     pattern?: PatternGraphic | undefined;
 } | {
     matrix: Matrix | undefined;
@@ -369,6 +371,7 @@ export function getPathGraphics(points: Position[][], strokeWidthScale: number, 
     fillColor: number;
     fillPattern: PatternGraphic;
     fillLinearGradient: LinearGradient;
+    fillRadialGradient: RadialGradient;
     closed: boolean;
 }>): Graphic[];
 
@@ -669,6 +672,8 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
     fillLinearGradient: LinearGradient;
     // (undocumented)
     fillPattern: Pattern<T>;
+    // (undocumented)
+    fillRadialGradient: RadialGradient;
 }
 
 // @public (undocumented)
@@ -744,6 +749,19 @@ export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[];
 export interface RadialDimension extends TextStyle {
     // (undocumented)
     position: Position;
+}
+
+// @public (undocumented)
+export interface RadialGradient {
+    // (undocumented)
+    end: Circle;
+    // (undocumented)
+    start: Circle;
+    // (undocumented)
+    stops: {
+        offset: number;
+        color: number;
+    }[];
 }
 
 // Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts

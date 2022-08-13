@@ -1,5 +1,5 @@
 import React from "react"
-import { Matrix, Position, Size } from "../../utils"
+import { Circle, Matrix, Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -150,6 +150,7 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
   fillColor: number
   fillPattern: Pattern<T>
   fillLinearGradient: LinearGradient
+  fillRadialGradient: RadialGradient
   closed: boolean
 }
 
@@ -159,6 +160,18 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
 export interface LinearGradient {
   start: Position
   end: Position
+  stops: {
+    offset: number
+    color: number
+  }[]
+}
+
+/**
+ * @public
+ */
+export interface RadialGradient {
+  start: Circle
+  end: Circle
   stops: {
     offset: number
     color: number

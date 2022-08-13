@@ -234,9 +234,9 @@ function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
 ) {
-  if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined) {
+  if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined || options?.fillRadialGradient !== undefined) {
     if (options.fillPattern !== undefined) {
       const canvas = document.createElement("canvas")
       canvas.width = options.fillPattern.width
@@ -258,8 +258,16 @@ function renderFill(
     } else if (options.fillColor !== undefined) {
       ctx.fillStyle = getColorString(options.fillColor)
     } else if (options.fillLinearGradient !== undefined) {
-      const gradient = ctx.createLinearGradient(options.fillLinearGradient.start.x, options.fillLinearGradient.start.y, options.fillLinearGradient.end.x, options.fillLinearGradient.end.y)
-      options.fillLinearGradient.stops.forEach(s => {
+      const { start, end, stops } = options.fillLinearGradient
+      const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
+      stops.forEach(s => {
+        gradient.addColorStop(s.offset, getColorString(s.color))
+      })
+      ctx.fillStyle = gradient
+    } else if (options.fillRadialGradient !== undefined) {
+      const { start, end, stops } = options.fillRadialGradient
+      const gradient = ctx.createRadialGradient(start.x, start.y, start.r, end.x, end.y, end.r)
+      stops.forEach(s => {
         gradient.addColorStop(s.offset, getColorString(s.color))
       })
       ctx.fillStyle = gradient
