@@ -27,8 +27,9 @@ export default () => {
     target.renderText(90, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000 }),
     target.renderText(130, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, dashArray: [2] }),
     target.renderText(170, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
-    target.renderText(10, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000 }),
-  ], 230, 260)
+    target.renderText(10, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
+    target.renderText(50, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3, strokeOpacity: 0.3, fillOpacity: 0.3 }),
+  ], 230, 280)
 
   const renderEllipseArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipseArc(40, 10, 50, 30, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -75,11 +76,14 @@ export default () => {
     target.renderPath([[{ x: 100, y: 220 }, { x: 220, y: 220 }]], { dashArray: [12, 4], dashOffset: 4 }),
     target.renderPath([[{ x: 5, y: 250 }, { x: 45, y: 390 }, { x: 45, y: 250 }], [{ x: 25, y: 270 }, { x: 25, y: 310 }, { x: 35, y: 310 }, { x: 35, y: 270 }]], { fillLinearGradient: { start: { x: 5, y: 250 }, end: { x: 45, y: 390 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 0 }),
     target.renderPath([[{ x: 50, y: 250 }, { x: 90, y: 390 }, { x: 90, y: 250 }], [{ x: 70, y: 270 }, { x: 70, y: 310 }, { x: 80, y: 310 }, { x: 80, y: 270 }]], { fillRadialGradient: { start: { x: 70, y: 320, r: 10 }, end: { x: 70, y: 320, r: 70 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 0 }),
-  ], 230, 440)
+    target.renderPath([[{ x: 95, y: 250 }, { x: 135, y: 390 }, { x: 135, y: 250 }], [{ x: 115, y: 270 }, { x: 115, y: 310 }, { x: 125, y: 310 }, { x: 125, y: 270 }]], { fillColor: 0xff0000, fillOpacity: 0.3, strokeOpacity: 0.3 }),
+    target.renderPath([[{ x: 140, y: 250 }, { x: 180, y: 390 }, { x: 180, y: 250 }], [{ x: 160, y: 270 }, { x: 160, y: 310 }, { x: 170, y: 310 }, { x: 170, y: 270 }]], { fillRadialGradient: { start: { x: 160, y: 320, r: 10 }, end: { x: 160, y: 320, r: 70 }, stops: [{ offset: 0, color: 0xff0000, opacity: 0.3 }, { offset: 0.5, color: 0xffff00, opacity: 0.3 }, { offset: 1, color: 0x00ff00, opacity: 0.3 }] }, strokeWidth: 0 }),
+  ], 230, 500)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
-    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 230, 90, { crossOrigin: '' }),
-  ], 230, 90)
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 110, 90, { crossOrigin: '' }),
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 115, 0, 110, 90, { opacity: 0.5, crossOrigin: '' }),
+  ], 230, 110)
 
   const renderPolylines = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderPolyline([{ x: 5, y: 10 }, { x: 45, y: 150 }, { x: 45, y: 10 }], { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -104,9 +108,9 @@ export default () => {
       target.renderText(0, 40, 'abc', 0xff0000, 30, 'monospace'),
     ]
     return target.renderResult([
-      target.renderGroup(items),
-      target.renderRect(120, 10, 80, 80, { fillPattern: { width: 1000, height: 1000, pattern: () => target.renderGroup(items, { translate: { x: 100, y: 0 } }) } }),
-      target.renderCircle(180, 150, 50, { fillPattern: { width: 1000, height: 1000, pattern: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) } }),
+      target.renderGroup(items, { opacity: 0.2 }),
+      target.renderRect(120, 10, 80, 80, { fillPattern: { width: 200, height: 90, pattern: () => target.renderGroup(items, { translate: { x: 100, y: 0 } }) } }),
+      target.renderCircle(180, 150, 50, { fillPattern: { width: 230, height: 200, pattern: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) } }),
     ], 230, 200)
   }
 

@@ -244,7 +244,7 @@ export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2
 export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Position, circle: Circle, radius: number): Position[];
 
 // @public (undocumented)
-export function getColorString(color: number): string;
+export function getColorString(color: number, alpha?: number): string;
 
 // @public (undocumented)
 export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (path: number[]) => boolean, getModel: (content: T) => {
@@ -299,8 +299,10 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     angle: number;
     rotation: number;
     matrix: Matrix;
-}>): ({
+    opacity: number;
+}>, opacity?: number): ({
     matrix: Matrix | undefined;
+    opacity: number;
     type: "lines" | "triangles" | "line strip" | "triangle strip" | "triangle fan";
     points: number[];
     color?: [number, number, number, number] | undefined;
@@ -308,6 +310,7 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     pattern?: PatternGraphic | undefined;
 } | {
     matrix: Matrix | undefined;
+    opacity: number;
     type: "texture";
     color?: [number, number, number, number] | undefined;
     x: number;
@@ -320,6 +323,7 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
 
 // @public (undocumented)
 export function getImageGraphic(url: string, x: number, y: number, width: number, height: number, rerender: () => void, options?: Partial<{
+    opacity: number;
     crossOrigin: "anonymous" | "use-credentials" | "";
 }>): Graphic | undefined;
 
@@ -369,6 +373,7 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
 // @public (undocumented)
 export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number;
+    fillOpacity: number;
     fillPattern: PatternGraphic;
     fillLinearGradient: LinearGradient;
     fillRadialGradient: RadialGradient;
@@ -485,6 +490,7 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
     fontWeight: React.CSSProperties['fontWeight'];
     fontStyle: React.CSSProperties['fontStyle'];
+    fillOpacity?: number;
     cacheKey: object;
 }>): Graphic | undefined;
 
@@ -540,6 +546,16 @@ export function getTwoPointsDistance(point1: Position, point2: Position): number
 // @public (undocumented)
 export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion;
 
+// @public (undocumented)
+export interface GradientStop {
+    // (undocumented)
+    color: number;
+    // (undocumented)
+    offset: number;
+    // (undocumented)
+    opacity?: number;
+}
+
 // Warning: (ae-forgotten-export) The symbol "LineOrTriangleGraphic" needs to be exported by the entry point index.d.ts
 // Warning: (ae-forgotten-export) The symbol "TextureGraphic" needs to be exported by the entry point index.d.ts
 //
@@ -547,6 +563,7 @@ export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFor
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
     matrix?: Matrix;
     pattern?: PatternGraphic;
+    opacity?: number;
 };
 
 // @public (undocumented)
@@ -614,10 +631,7 @@ export interface LinearGradient {
     // (undocumented)
     start: Position;
     // (undocumented)
-    stops: {
-        offset: number;
-        color: number;
-    }[];
+    stops: GradientStop[];
 }
 
 // @public (undocumented)
@@ -653,6 +667,16 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
+export interface PartStyle {
+    // (undocumented)
+    color: number;
+    // (undocumented)
+    index: number;
+    // (undocumented)
+    opacity?: number;
+}
+
+// @public (undocumented)
 export interface PathLineStyleOptions {
     // (undocumented)
     lineCap?: 'butt' | 'round' | 'square';
@@ -671,6 +695,8 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
     // (undocumented)
     fillLinearGradient: LinearGradient;
     // (undocumented)
+    fillOpacity: number;
+    // (undocumented)
     fillPattern: Pattern<T>;
     // (undocumented)
     fillRadialGradient: RadialGradient;
@@ -684,6 +710,8 @@ export interface PathStrokeOptions {
     dashOffset: number;
     // (undocumented)
     strokeColor: number;
+    // (undocumented)
+    strokeOpacity: number;
     // (undocumented)
     strokeWidth: number;
 }
@@ -758,10 +786,7 @@ export interface RadialGradient {
     // (undocumented)
     start: Circle;
     // (undocumented)
-    stops: {
-        offset: number;
-        color: number;
-    }[];
+    stops: GradientStop[];
 }
 
 // Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
@@ -797,9 +822,11 @@ export interface ReactRenderTarget<T = JSX.Element> {
         angle: number;
         rotation: number;
         matrix: Matrix;
+        opacity: number;
     }>): T;
     // (undocumented)
     renderImage(url: string, x: number, y: number, width: number, height: number, options?: Partial<{
+        opacity: number;
         crossOrigin: "anonymous" | "use-credentials" | "";
     }>): T;
     // (undocumented)
@@ -807,18 +834,12 @@ export interface ReactRenderTarget<T = JSX.Element> {
     // (undocumented)
     renderPolygon(points: Position[], options?: Partial<PathOptions<T> & {
         skippedLines: number[];
-        partsStyles: readonly {
-            index: number;
-            color: number;
-        }[];
+        partsStyles: readonly PartStyle[];
     }>): T;
     // (undocumented)
     renderPolyline(points: Position[], options?: Partial<PathOptions<T> & {
         skippedLines: number[];
-        partsStyles: readonly {
-            index: number;
-            color: number;
-        }[];
+        partsStyles: readonly PartStyle[];
     }>): T;
     // (undocumented)
     renderRect(x: number, y: number, width: number, height: number, options?: Partial<PathOptions<T> & {
@@ -843,6 +864,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     renderText(x: number, y: number, text: string, fill: number | Pattern<T> | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
         fontWeight: React_3.CSSProperties['fontWeight'];
         fontStyle: React_3.CSSProperties['fontStyle'];
+        fillOpacity: number;
         cacheKey: object;
     }>): T;
     // (undocumented)
@@ -878,10 +900,7 @@ export class RenderingLinesMerger {
 }
 
 // @public (undocumented)
-export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly {
-    index: number;
-    color: number;
-}[], points: Position[], options?: Partial<PathStrokeOptions>): T;
+export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly PartStyle[], points: Position[], options?: Partial<PathStrokeOptions>): T;
 
 // @public (undocumented)
 export function ResizeBar(props: {

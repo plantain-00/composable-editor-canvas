@@ -30,6 +30,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       angle: number
       rotation: number
       matrix: Matrix
+      opacity: number
     }>,
   ): T
   renderRect(
@@ -46,14 +47,14 @@ export interface ReactRenderTarget<T = JSX.Element> {
     points: Position[],
     options?: Partial<PathOptions<T> & {
       skippedLines: number[]
-      partsStyles: readonly { index: number, color: number }[]
+      partsStyles: readonly PartStyle[]
     }>,
   ): T
   renderPolygon(
     points: Position[],
     options?: Partial<PathOptions<T> & {
       skippedLines: number[]
-      partsStyles: readonly { index: number, color: number }[]
+      partsStyles: readonly PartStyle[]
     }>,
   ): T
   renderCircle(
@@ -105,6 +106,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     options?: Partial<PathStrokeOptions & {
       fontWeight: React.CSSProperties['fontWeight']
       fontStyle: React.CSSProperties['fontStyle']
+      fillOpacity: number
       cacheKey: object
     }>,
   ): T
@@ -115,6 +117,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     width: number,
     height: number,
     options?: Partial<{
+      opacity: number
       crossOrigin: "anonymous" | "use-credentials" | ""
     }>,
   ): T
@@ -132,6 +135,7 @@ export interface PathStrokeOptions {
   strokeWidth: number
   dashArray: number[]
   dashOffset: number
+  strokeOpacity: number
 }
 
 /**
@@ -148,6 +152,7 @@ export interface PathLineStyleOptions {
  */
 export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
   fillColor: number
+  fillOpacity: number
   fillPattern: Pattern<T>
   fillLinearGradient: LinearGradient
   fillRadialGradient: RadialGradient
@@ -160,10 +165,16 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
 export interface LinearGradient {
   start: Position
   end: Position
-  stops: {
-    offset: number
-    color: number
-  }[]
+  stops: GradientStop[]
+}
+
+/**
+ * @public
+ */
+export interface GradientStop {
+  offset: number
+  color: number
+  opacity?: number
 }
 
 /**
@@ -172,10 +183,7 @@ export interface LinearGradient {
 export interface RadialGradient {
   start: Circle
   end: Circle
-  stops: {
-    offset: number
-    color: number
-  }[]
+  stops: GradientStop[]
 }
 
 /**
@@ -186,14 +194,23 @@ export interface Pattern<T> extends Size {
   // rotate?: number
 }
 
+/**
+ * @public
+ */
+export interface PartStyle {
+  index: number
+  color: number
+  opacity?: number
+}
+
 export function renderPartStyledPolyline<T>(
   target: ReactRenderTarget<T>,
-  partsStyles: readonly { index: number, color: number }[],
+  partsStyles: readonly PartStyle[],
   points: Position[],
   options?: Partial<PathStrokeOptions>,
 ) {
   return target.renderGroup([
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
-    ...partsStyles.map(({ index, color }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color })),
+    ...partsStyles.map(({ index, color, opacity }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color, strokeOpacity: opacity })),
   ])
 }
