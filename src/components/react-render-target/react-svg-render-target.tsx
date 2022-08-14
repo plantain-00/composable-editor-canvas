@@ -52,7 +52,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
     return (key) => (
-      <g transform={transform.join(' ')} key={key}>
+      <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
         {children.map((child, i) => child(i))}
       </g>
     )
@@ -164,6 +164,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           stroke: options?.strokeColor ? getColorString(options.strokeColor) : undefined,
           strokeDasharray: options?.dashArray?.join(' '),
           strokeDashoffset: options?.dashOffset,
+          fillOpacity: options?.fillOpacity,
+          strokeOpacity: options?.strokeOpacity,
         }}>
         {text}
       </text>
@@ -183,6 +185,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         height={height}
         preserveAspectRatio='none'
         crossOrigin={options?.crossOrigin}
+        opacity={options?.opacity}
       />
     )
   },
@@ -209,10 +212,10 @@ function renderFillPattern(
   options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
 ) {
   return (key: React.Key) => {
-    const id = React.useId()
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let defs: JSX.Element | undefined
     if (options?.fillPattern) {
+      const id = React.useId()
       defs = (
         <pattern
           id={id}
@@ -226,6 +229,7 @@ function renderFillPattern(
       )
       fill = `url(#${id})`
     } else if (options?.fillLinearGradient) {
+      const id = React.useId()
       defs = (
         <linearGradient
           id={id}
@@ -235,11 +239,12 @@ function renderFillPattern(
           x2={options.fillLinearGradient.end.x}
           y2={options.fillLinearGradient.end.y}
         >
-          {options.fillLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color)} />)}
+          {options.fillLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </linearGradient>
       )
       fill = `url(#${id})`
     } else if (options?.fillRadialGradient) {
+      const id = React.useId()
       defs = (
         <radialGradient
           id={id}
@@ -251,7 +256,7 @@ function renderFillPattern(
           cy={options.fillRadialGradient.end.y}
           r={options.fillRadialGradient.end.r}
         >
-          {options.fillRadialGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color)} />)}
+          {options.fillRadialGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </radialGradient>
       )
       fill = `url(#${id})`
@@ -275,6 +280,8 @@ function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',
     strokeLinecap: options?.lineCap ?? 'butt',
+    fillOpacity: options?.fillOpacity,
+    strokeOpacity: options?.strokeOpacity,
   }
 }
 
@@ -299,9 +306,14 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
 /**
  * @public
  */
-export function getColorString(color: number) {
+export function getColorString(color: number, alpha?: number) {
   const s = color.toString(16)
-  return `#${'0'.repeat(6 - s.length)}${s}`
+  let a = ''
+  if (alpha !== undefined) {
+    const f = Math.floor(alpha * 255).toString(16)
+    a = '0'.repeat(2 - f.length) + f
+  }
+  return `#${'0'.repeat(6 - s.length)}${s}${a}`
 }
 
 /**

@@ -29,7 +29,11 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderGroup(children, options) {
     return (ctx, strokeWidthScale, rerender) => {
+      const opacity = ctx.globalAlpha
       ctx.save()
+      if (options?.opacity !== undefined) {
+        ctx.globalAlpha = opacity * options.opacity
+      }
       if (options?.translate) {
         ctx.translate(options.translate.x, options.translate.y)
       }
@@ -169,14 +173,14 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
           }
         }
       } else {
-        ctx.fillStyle = getColorString(fill)
+        ctx.fillStyle = getColorString(fill, options?.fillOpacity)
       }
       ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
       if (fill !== undefined) {
         ctx.fillText(text, x, y)
       }
       if (options?.strokeColor !== undefined) {
-        ctx.strokeStyle = getColorString(options.strokeColor)
+        ctx.strokeStyle = getColorString(options.strokeColor, options.strokeOpacity)
         if (options.strokeWidth !== undefined) {
           ctx.lineWidth = options.strokeWidth
         }
@@ -190,7 +194,13 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, _, rerender) => {
       const image = getImageFromCache(url, rerender, options?.crossOrigin)
       if (image) {
+        const opacity = ctx.globalAlpha
+        ctx.save()
+        if (options?.opacity !== undefined) {
+          ctx.globalAlpha = opacity * options.opacity
+        }
         ctx.drawImage(image, x, y, width, height)
+        ctx.restore()
       }
     }
   },
@@ -222,7 +232,7 @@ function renderStroke(ctx: CanvasRenderingContext2D, strokeWidthScale: number, o
   const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
   if (strokeWidth) {
     ctx.lineWidth = strokeWidth
-    ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
+    ctx.strokeStyle = getColorString(options?.strokeColor ?? 0, options?.strokeOpacity)
     ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
     ctx.lineJoin = options?.lineJoin ?? 'miter'
     ctx.lineCap = options?.lineCap ?? 'butt'
@@ -234,7 +244,7 @@ function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillOpacity' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
 ) {
   if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined || options?.fillRadialGradient !== undefined) {
     if (options.fillPattern !== undefined) {
@@ -256,19 +266,19 @@ function renderFill(
         }
       }
     } else if (options.fillColor !== undefined) {
-      ctx.fillStyle = getColorString(options.fillColor)
+      ctx.fillStyle = getColorString(options.fillColor, options.fillOpacity)
     } else if (options.fillLinearGradient !== undefined) {
       const { start, end, stops } = options.fillLinearGradient
       const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
       stops.forEach(s => {
-        gradient.addColorStop(s.offset, getColorString(s.color))
+        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
       })
       ctx.fillStyle = gradient
     } else if (options.fillRadialGradient !== undefined) {
       const { start, end, stops } = options.fillRadialGradient
       const gradient = ctx.createRadialGradient(start.x, start.y, start.r, end.x, end.y, end.r)
       stops.forEach(s => {
-        gradient.addColorStop(s.offset, getColorString(s.color))
+        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
       })
       ctx.fillStyle = gradient
     }

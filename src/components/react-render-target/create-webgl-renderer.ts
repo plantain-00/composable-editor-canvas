@@ -25,6 +25,7 @@ interface TextureGraphic {
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
   matrix?: Matrix
   pattern?: PatternGraphic
+  opacity?: number
 }
 
 export type PatternGraphic = {
@@ -32,7 +33,7 @@ export type PatternGraphic = {
 } & Partial<Size>
 
 export function createWebglRenderer(canvas: HTMLCanvasElement) {
-  const gl = canvas.getContext("webgl", { antialias: true, stencil: true });
+  const gl = canvas.getContext("webgl", { antialias: true, stencil: true, premultipliedAlpha: false });
   if (!gl) {
     return
   }
@@ -91,13 +92,14 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
     varying vec2 texcoord;
     uniform sampler2D texture;
+    uniform float opacity;
 
     void main() {
       if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
           texcoord.y < 0.0 || texcoord.y > 1.0) {
         discard;
       }
-      gl_FragColor = texture2D(texture, texcoord);
+      gl_FragColor = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
     }`]);
   const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
@@ -145,7 +147,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     void main() {
       gl_FragColor = v_color;
     }`]);
-  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, WebGLTexture>()
 
@@ -189,6 +191,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     gl.clear(gl.STENCIL_BUFFER_BIT)
   }
   const drawGraphic = (line: Graphic, matrix: Matrix) => {
+    const color = mergeOpacityToColor(line.color, line.opacity)
     if (line.type === 'texture') {
       let textureMatrix = m3.multiply(matrix, m3.translation(line.x, line.y))
       const width = line.width ?? line.src.width
@@ -200,7 +203,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         bufferInfo: textureBufferInfo,
         uniforms: {
           matrix: textureMatrix,
-          color: line.color,
+          color,
+          opacity: line.opacity ?? 1,
           texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
         },
       }
@@ -228,7 +232,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
           return twgl.createBufferInfoFromArrays(gl, arrays)
         }),
         uniforms: {
-          color: line.color,
+          color,
           matrix,
         },
         type: line.type === 'triangles' ? gl.TRIANGLES
@@ -297,6 +301,7 @@ export function getTextGraphic(
   options?: Partial<PathStrokeOptions & {
     fontWeight: React.CSSProperties['fontWeight']
     fontStyle: React.CSSProperties['fontStyle']
+    fillOpacity?: number
     cacheKey: object
   }>,
 ): Graphic | undefined {
@@ -313,11 +318,11 @@ export function getTextGraphic(
     ctx.canvas.height = fontSize
     ctx.font = font
     if (fill !== undefined) {
-      ctx.fillStyle = options?.strokeColor !== undefined && typeof fill === 'number' ? getColorString(fill) : 'white';
+      ctx.fillStyle = options?.strokeColor !== undefined && typeof fill === 'number' ? getColorString(fill, options.fillOpacity) : 'white';
       ctx.fillText(text, 0, ctx.canvas.height);
     }
     if (options?.strokeColor !== undefined) {
-      ctx.strokeStyle = fill !== undefined && typeof fill === 'number' ? getColorString(options.strokeColor) : 'white'
+      ctx.strokeStyle = fill !== undefined && typeof fill === 'number' ? getColorString(options.strokeColor, options.strokeOpacity) : 'white'
       if (options.strokeWidth !== undefined) {
         ctx.lineWidth = options.strokeWidth
       }
@@ -348,7 +353,7 @@ export function getTextGraphic(
       type: 'texture',
       x,
       y: y - imageData.height,
-      color: colorNumberToRec(options.strokeColor),
+      color: colorNumberToRec(options.strokeColor, options.strokeOpacity),
       src: imageData,
     }
   }
@@ -364,7 +369,7 @@ export function getTextGraphic(
     type: 'texture',
     x,
     y: y - imageData.height,
-    color: colorNumberToRec(fill),
+    color: colorNumberToRec(fill, options?.fillOpacity),
     src: imageData,
   }
 }
@@ -374,6 +379,7 @@ export function getPathGraphics(
   strokeWidthScale: number,
   options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
     fillColor: number
+    fillOpacity: number
     fillPattern: PatternGraphic
     fillLinearGradient: LinearGradient
     fillRadialGradient: RadialGradient
@@ -384,7 +390,7 @@ export function getPathGraphics(
   const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? 'butt')
   const lineJoin = options?.lineJoin ?? 'miter'
   const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
-  const strokeColor = colorNumberToRec(options?.strokeColor ?? 0)
+  const strokeColor = colorNumberToRec(options?.strokeColor ?? 0, options?.strokeOpacity)
   const graphics: Graphic[] = []
   if (strokeWidth) {
     if (options?.dashArray) {
@@ -463,7 +469,7 @@ export function getPathGraphics(
       graphics.push({
         type: 'triangles',
         points: triangles,
-        color: colorNumberToRec(options.fillColor),
+        color: colorNumberToRec(options.fillColor, options.fillOpacity),
       })
     } else if (options.fillLinearGradient !== undefined) {
       const { start, end } = options.fillLinearGradient
@@ -516,7 +522,7 @@ export function getPathGraphics(
         const p = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset }
         const p1 = getTwoGeneralFormLinesIntersectionPoint(line1, getPerpendicular(p, line1))
         const p2 = getTwoGeneralFormLinesIntersectionPoint(line2, getPerpendicular(p, line2))
-        const color = colorNumberToRec(s.color)
+        const color = colorNumberToRec(s.color, s.opacity)
         if (p1 && p2) {
           fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
           fillColors.push(...color, ...color)
@@ -548,7 +554,7 @@ export function getPathGraphics(
       const stopPoints = stops.slice(0).sort((a, b) => a.offset - b.offset).map(s => {
         const circle = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset, r: start.r + offset.r * s.offset }
         return {
-          color: colorNumberToRec(s.color),
+          color: colorNumberToRec(s.color, s.opacity),
           points: arcToPolyline({ x: circle.x, y: circle.y, r: circle.r, startAngle: 0, endAngle: 360 }, 5),
         }
       })
@@ -588,7 +594,7 @@ export function getPathGraphics(
       graphics.push({
         type: 'triangles',
         points: triangles,
-        color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
+        color: options.fillColor ? colorNumberToRec(options.fillColor, options.fillOpacity) : [0, 0, 0, 0],
         pattern: {
           graphics: [
             {
@@ -612,6 +618,7 @@ export function getImageGraphic(
   height: number,
   rerender: () => void,
   options?: Partial<{
+    opacity: number
     crossOrigin: "anonymous" | "use-credentials" | ""
   }>,
 ): Graphic | undefined {
@@ -626,6 +633,7 @@ export function getImageGraphic(
     width,
     height,
     src: image,
+    opacity: options?.opacity,
   }
 }
 
@@ -638,7 +646,9 @@ export function getGroupGraphics(
     angle: number
     rotation: number
     matrix: Matrix
+    opacity: number
   }>,
+  opacity = 1,
 ) {
   if (options) {
     if (!matrix) {
@@ -659,10 +669,15 @@ export function getGroupGraphics(
     if (options.matrix) {
       matrix = m3.multiply(matrix, options.matrix)
     }
+
+    if (options.opacity !== undefined) {
+      opacity = opacity * options.opacity
+    }
   }
   return children.map(h => ({
     ...h,
     matrix: h.matrix ? (matrix ? m3.multiply(matrix, h.matrix) : h.matrix) : matrix,
+    opacity: h.opacity !== undefined ? opacity * h.opacity : opacity,
   }))
 }
 
@@ -689,4 +704,14 @@ export function colorNumberToRec(n: number, alpha = 1) {
   color[1] = n % 256 / 255
   color[0] = Math.floor(n / 256) / 255
   return color
+}
+
+function mergeOpacityToColor(color?: [number, number, number, number], opacity?: number) {
+  if (opacity === undefined) {
+    return color
+  }
+  if (color === undefined) {
+    return undefined
+  }
+  return [color[0], color[1], color[2], color[3] * opacity]
 }

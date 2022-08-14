@@ -28,8 +28,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     }
   },
   renderGroup(children, options) {
-    return (strokeWidthScale, rerender, matrix) => {
-      return getGroupGraphics(children.map(c => c(strokeWidthScale, rerender)).flat(), matrix, options)
+    return (strokeWidthScale, rerender, matrix, opacity) => {
+      return getGroupGraphics(children.map(c => c(strokeWidthScale, rerender)).flat(), matrix, options, opacity)
     }
   },
   renderRect(x, y, width, height, options) {
@@ -134,7 +134,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-type Draw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix) => Graphic[]
+type Draw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[]
 
 function Canvas(props: {
   width: number,
