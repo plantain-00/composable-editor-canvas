@@ -689,6 +689,8 @@ export interface PathLineStyleOptions {
 // @public (undocumented)
 export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
     // (undocumented)
+    clip: () => T;
+    // (undocumented)
     closed: boolean;
     // (undocumented)
     fillColor: number;

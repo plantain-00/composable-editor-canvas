@@ -109,8 +109,8 @@ export default () => {
     ]
     return target.renderResult([
       target.renderGroup(items, { opacity: 0.2 }),
-      target.renderRect(120, 10, 80, 80, { fillPattern: { width: 200, height: 90, pattern: () => target.renderGroup(items, { translate: { x: 100, y: 0 } }) } }),
-      target.renderCircle(180, 150, 50, { fillPattern: { width: 230, height: 200, pattern: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) } }),
+      target.renderRect(120, 10, 80, 80, { clip: () => target.renderGroup(items, { translate: { x: 100, y: 0 } }) }),
+      target.renderCircle(180, 150, 50, { clip: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) }),
     ], 230, 200)
   }
 

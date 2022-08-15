@@ -209,12 +209,29 @@ type Draw = (key: React.Key) => JSX.Element
 
 function renderFillPattern(
   children: (fill: string) => JSX.Element,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient' | 'clip'>>,
 ) {
   return (key: React.Key) => {
-    let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let defs: JSX.Element | undefined
-    if (options?.fillPattern) {
+    let target: JSX.Element
+    if (options?.clip) {
+      const id = React.useId()
+      const path = children(fill)
+      defs = (
+        <>
+          <clipPath id={id}>
+            {path}
+          </clipPath>
+          {path}
+        </>
+      )
+      target = (
+        <g clipPath={`url(#${id})`}>
+          {options.clip()(id)}
+        </g>
+      )
+    } else if (options?.fillPattern) {
       const id = React.useId()
       defs = (
         <pattern
@@ -227,7 +244,7 @@ function renderFillPattern(
           {options.fillPattern.pattern()(id)}
         </pattern>
       )
-      fill = `url(#${id})`
+      target = children(`url(#${id})`)
     } else if (options?.fillLinearGradient) {
       const id = React.useId()
       defs = (
@@ -242,7 +259,7 @@ function renderFillPattern(
           {options.fillLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </linearGradient>
       )
-      fill = `url(#${id})`
+      target = children(`url(#${id})`)
     } else if (options?.fillRadialGradient) {
       const id = React.useId()
       defs = (
@@ -259,12 +276,14 @@ function renderFillPattern(
           {options.fillRadialGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </radialGradient>
       )
-      fill = `url(#${id})`
+      target = children(`url(#${id})`)
+    } else {
+      target = children(fill)
     }
     return (
       <React.Fragment key={key}>
         {defs}
-        {children(fill)}
+        {target}
       </React.Fragment>
     )
   }

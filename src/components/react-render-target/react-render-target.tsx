@@ -157,6 +157,7 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
   fillLinearGradient: LinearGradient
   fillRadialGradient: RadialGradient
   closed: boolean
+  clip: () => T
 }
 
 /**

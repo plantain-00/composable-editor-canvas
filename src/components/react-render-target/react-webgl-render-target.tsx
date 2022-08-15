@@ -119,6 +119,11 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   renderPath(points, options) {
     return (strokeWidthScale, rerender) => {
       let patternGraphics: PatternGraphic | undefined
+      if (options?.clip !== undefined) {
+        patternGraphics = {
+          graphics: options.clip()(strokeWidthScale, rerender),
+        }
+      }
       if (options?.fillPattern !== undefined) {
         patternGraphics = {
           graphics: options.fillPattern.pattern()(strokeWidthScale, rerender),
