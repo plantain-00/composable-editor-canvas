@@ -244,8 +244,12 @@ function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillOpacity' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient'>>,
+  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillOpacity' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient' | 'clip'>>,
 ) {
+  if (options?.clip !== undefined) {
+    ctx.clip('evenodd')
+    options.clip()(ctx, strokeWidthScale, rerender)
+  }
   if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined || options?.fillRadialGradient !== undefined) {
     if (options.fillPattern !== undefined) {
       const canvas = document.createElement("canvas")
