@@ -101,6 +101,10 @@ export default () => {
     target.renderPolygon([{ x: 185, y: 10 }, { x: 225, y: 150 }, { x: 225, y: 10 }], { dashArray: [4] }),
   ], 230, 190)
 
+  const renderPathCommands = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
+    target.renderPathCommands([{ type: 'move', to: { x: 220, y: 10 } }, { type: 'arc', from: { x: 220, y: 80 }, to: { x: 150, y: 10 }, radius: 20 }, { type: 'line', to: { x: 150, y: 10 } }, { type: 'quadraticCurve', cp: { x: 150, y: 90 }, to: { x: 110, y: 70 } }, { type: 'bezierCurve', cp1: { x: 70, y: 20 }, cp2: { x: 40, y: 80 }, to: { x: 10, y: 10 } }], { strokeColor: 0x00ff00 }),
+  ], 230, 90)
+
   const renderGroups = <T,>(target: ReactRenderTarget<T>) => {
     const items = [
       target.renderCircle(50, 50, 20),
@@ -157,6 +161,9 @@ export default () => {
       {renderPolygons(reactSvgRenderTarget)}
       {renderPolygons(reactCanvasRenderTarget)}
       {renderPolygons(reactWebglRenderTarget)}
+      {renderPathCommands(reactSvgRenderTarget)}
+      {renderPathCommands(reactCanvasRenderTarget)}
+      {renderPathCommands(reactWebglRenderTarget)}
       {renderGroups(reactSvgRenderTarget)}
       {renderGroups(reactCanvasRenderTarget)}
       {renderGroups(reactWebglRenderTarget)}

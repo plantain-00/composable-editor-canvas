@@ -654,6 +654,24 @@ function getValueBetween2PointsByPercent(n1: number, n2: number, percent: number
 /**
  * @public
  */
+export function getQuadraticCurvePoints(p1: Position, p2: Position, p3: Position, segmentCount: number) {
+  const points: Position[] = []
+  for (let t = 1; t < segmentCount; t++) {
+    const i = t / segmentCount
+    const xa = getValueBetween2PointsByPercent(p1.x, p2.x, i)
+    const ya = getValueBetween2PointsByPercent(p1.y, p2.y, i)
+    const xb = getValueBetween2PointsByPercent(p2.x, p3.x, i)
+    const yb = getValueBetween2PointsByPercent(p2.y, p3.y, i)
+    const x = getValueBetween2PointsByPercent(xa, xb, i)
+    const y = getValueBetween2PointsByPercent(ya, yb, i)
+    points.push({ x, y })
+  }
+  return points
+}
+
+/**
+ * @public
+ */
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number) {
   const points: Position[] = []
   for (let t = 1; t < segmentCount; t++) {
@@ -1264,3 +1282,36 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
   }
   return points
 }
+
+/**
+ * @public
+ */
+export type PathCommand =
+  | {
+    type: 'move'
+    to: Position
+  }
+  | {
+    type: 'line'
+    to: Position
+  }
+  | {
+    type: 'arc'
+    from: Position
+    to: Position
+    radius: number
+  }
+  | {
+    type: 'bezierCurve'
+    cp1: Position
+    cp2: Position
+    to: Position
+  }
+  | {
+    type: 'quadraticCurve'
+    cp: Position
+    to: Position
+  }
+  | {
+    type: 'close'
+  }

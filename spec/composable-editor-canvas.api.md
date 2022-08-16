@@ -433,6 +433,9 @@ export function getPolygonPoints(point: Position, center: Position, sides: numbe
 export function getPolylineTriangles(points: Position[], width: number, lineCapWithClosed?: true | 'butt' | 'round' | 'square', lineJoinWithLimit?: 'round' | 'bevel' | number): number[];
 
 // @public (undocumented)
+export function getQuadraticCurvePoints(p1: Position, p2: Position, p3: Position, segmentCount: number): Position[];
+
+// @public (undocumented)
 export function getRadialDimensionGeometries(content: RadialDimension, circle: Circle, dimensionStyle: {
     margin: number;
     arrowAngle: number;
@@ -677,6 +680,31 @@ export interface PartStyle {
 }
 
 // @public (undocumented)
+export type PathCommand = {
+    type: 'move';
+    to: Position;
+} | {
+    type: 'line';
+    to: Position;
+} | {
+    type: 'arc';
+    from: Position;
+    to: Position;
+    radius: number;
+} | {
+    type: 'bezierCurve';
+    cp1: Position;
+    cp2: Position;
+    to: Position;
+} | {
+    type: 'quadraticCurve';
+    cp: Position;
+    to: Position;
+} | {
+    type: 'close';
+};
+
+// @public (undocumented)
 export interface PathLineStyleOptions {
     // (undocumented)
     lineCap?: 'butt' | 'round' | 'square';
@@ -833,6 +861,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     }>): T;
     // (undocumented)
     renderPath(lines: Position[][], options?: Partial<PathOptions<T>>): T;
+    // (undocumented)
+    renderPathCommands(pathCommands: PathCommand[], options?: Partial<PathOptions<T>>): T;
     // (undocumented)
     renderPolygon(points: Position[], options?: Partial<PathOptions<T> & {
         skippedLines: number[];

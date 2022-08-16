@@ -155,6 +155,34 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.restore()
     }
   },
+  renderPathCommands(pathCommands, options) {
+    return (ctx, strokeWidthScale, rerender) => {
+      ctx.save()
+      ctx.beginPath()
+      setCanvasLineDash(ctx, options)
+      for (const command of pathCommands) {
+        if (command.type === 'move') {
+          ctx.moveTo(command.to.x, command.to.y)
+        } else if (command.type === 'line') {
+          ctx.lineTo(command.to.x, command.to.y)
+        } else if (command.type === 'arc') {
+          ctx.arcTo(command.from.x, command.from.y, command.to.x, command.to.y, command.radius)
+        } else if (command.type === 'bezierCurve') {
+          ctx.bezierCurveTo(command.cp1.x, command.cp1.y, command.cp2.x, command.cp2.y, command.to.x, command.to.y)
+        } else if (command.type === 'quadraticCurve') {
+          ctx.quadraticCurveTo(command.cp.x, command.cp.y, command.to.x, command.to.y)
+        } else if (command.type === 'close') {
+          ctx.closePath()
+        }
+      }
+      if (options?.closed) {
+        ctx.closePath()
+      }
+      renderStroke(ctx, strokeWidthScale, options)
+      renderFill(ctx, strokeWidthScale, rerender, options)
+      ctx.restore()
+    }
+  },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
