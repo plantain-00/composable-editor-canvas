@@ -1,6 +1,6 @@
 import * as React from "react"
 import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { defaultMiterLimit, m3 } from "../../utils"
+import { defaultMiterLimit, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
  * @public
@@ -149,6 +149,58 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       />
     ), options)
   },
+  renderPathCommands(pathCommands, options) {
+    let d = ''
+    let last: Position | undefined
+    for (const command of pathCommands) {
+      if (command.type === 'move') {
+        d += ` M ${command.to.x} ${command.to.y}`
+        last = command.to
+      } else if (command.type === 'line') {
+        d += ` L ${command.to.x} ${command.to.y}`
+        last = command.to
+      } else if (command.type === 'arc') {
+        if (last) {
+          const p1 = command.from
+          const p2 = command.to
+          const line1 = twoPointLineToGeneralFormLine(last, p1)
+          const line2 = twoPointLineToGeneralFormLine(p1, p2)
+          const p2Direction = getPointSideOfLine(p2, line1)
+          if (isZero(p2Direction)) {
+            d += ` L ${p2.x} ${p2.y}`
+            last = p2
+          } else {
+            const index = p2Direction < 0 ? 0 : 1
+            const center = getTwoGeneralFormLinesIntersectionPoint(
+              getParallelLinesByDistance(line1, command.radius)[index],
+              getParallelLinesByDistance(line2, command.radius)[index],
+            )
+            if (center) {
+              const t1 = getFootPoint(center, line1)
+              const t2 = getFootPoint(center, line2)
+              d += ` L ${t1.x} ${t1.y} A ${command.radius} ${command.radius} 0 0 ${p2Direction < 0 ? 1 : 0} ${t2.x} ${t2.y}`
+              last = t2
+            }
+          }
+        }
+      } else if (command.type === 'bezierCurve') {
+        d += ` C ${command.cp1.x} ${command.cp1.y}, ${command.cp2.x} ${command.cp2.y}, ${command.to.x} ${command.to.y}`
+        last = command.to
+      } else if (command.type === 'quadraticCurve') {
+        d += ` Q ${command.cp.x} ${command.cp.y}, ${command.to.x} ${command.to.y}`
+        last = command.to
+      } else if (command.type === 'close') {
+        d += ' Z'
+      }
+    }
+    return renderFillPattern(fill => (
+      <path
+        d={d}
+        {...getCommonLineAttributes(options)}
+        fill={fill}
+      />
+    ), options)
+  },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return renderFillPattern(fill => (
       <text
@@ -192,7 +244,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   renderPath(lines, options) {
     let d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
     if (options?.closed) {
-      d = d + ' Z'
+      d += ' Z'
     }
     return renderFillPattern(fill => (
       <path

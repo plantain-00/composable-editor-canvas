@@ -1,5 +1,5 @@
 import React from "react"
-import { Circle, Matrix, Position, Size } from "../../utils"
+import { Circle, Matrix, PathCommand, Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -95,6 +95,10 @@ export interface ReactRenderTarget<T = JSX.Element> {
       rotation: number
       counterclockwise: boolean
     }>,
+  ): T
+  renderPathCommands(
+    pathCommands: PathCommand[],
+    options?: Partial<PathOptions<T>>,
   ): T
   renderText(
     x: number,

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, Matrix, polygonToPolyline, rotatePosition } from "../../utils"
+import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getBezierCurvePoints, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, Matrix, polygonToPolyline, Position, rotatePosition, twoPointLineToGeneralFormLine } from "../../utils"
 import { ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { colorNumberToRec, createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 
@@ -93,6 +93,73 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     }
     const points = ellipseArcToPolyline({ cx, cy, rx, ry, startAngle, endAngle, angle, counterclockwise: options?.counterclockwise }, 5)
     return this.renderPolyline(points, options)
+  },
+  renderPathCommands(pathCommands, options) {
+    const result: Position[][] = []
+    let points: Position[] = []
+    for (const command of pathCommands) {
+      if (command.type === 'move') {
+        if (points.length > 0) {
+          if (points.length > 1) {
+            result.push(points)
+          }
+          points = []
+        }
+        points.push(command.to)
+      } else if (command.type === 'line') {
+        points.push(command.to)
+      } else if (command.type === 'arc') {
+        const last = points[points.length - 1]
+        if (last) {
+          const p1 = command.from
+          const p2 = command.to
+          const line1 = twoPointLineToGeneralFormLine(last, p1)
+          const line2 = twoPointLineToGeneralFormLine(p1, p2)
+          const p2Direction = getPointSideOfLine(p2, line1)
+          if (isZero(p2Direction)) {
+            points.push(p2)
+          } else {
+            const index = p2Direction < 0 ? 0 : 1
+            const center = getTwoGeneralFormLinesIntersectionPoint(
+              getParallelLinesByDistance(line1, command.radius)[index],
+              getParallelLinesByDistance(line2, command.radius)[index],
+            )
+            if (center) {
+              const t1 = getFootPoint(center, line1)
+              const t2 = getFootPoint(center, line2)
+              points.push({ x: t1.x, y: t1.y })
+              const startAngle = Math.atan2(t1.y - center.y, t1.x - center.x) * 180 / Math.PI
+              const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x) * 180 / Math.PI
+              points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
+            }
+          }
+        }
+      } else if (command.type === 'bezierCurve') {
+        const last = points[points.length - 1]
+        if (last) {
+          points.push(...getBezierCurvePoints(last, command.cp1, command.cp2, command.to, 100))
+        }
+      } else if (command.type === 'quadraticCurve') {
+        const last = points[points.length - 1]
+        if (last) {
+          points.push(...getQuadraticCurvePoints(last, command.cp, command.to, 100))
+        }
+      } else if (command.type === 'close') {
+        if (points.length > 0) {
+          if (points.length > 1) {
+            if (!isSamePoint(points[0], points[points.length - 1])) {
+              points.push(points[0])
+            }
+            result.push(points)
+          }
+          points = []
+        }
+      }
+    }
+    if (points.length > 1) {
+      result.push(points)
+    }
+    return this.renderPath(result, options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (strokeWidthScale, rerender) => {
