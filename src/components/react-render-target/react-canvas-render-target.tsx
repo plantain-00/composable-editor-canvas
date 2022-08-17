@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getColorString, PathLineStyleOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
+import { getColorString, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
 import { defaultMiterLimit, m3 } from "../../utils"
 import { getImageFromCache } from "./image-loader"
 
@@ -78,6 +78,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
         ctx.strokeRect(x, y, width, height)
       }
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -101,7 +102,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.closed) {
         ctx.closePath()
       }
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -115,7 +116,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
       ctx.arc(cx, cy, r, 0, 2 * Math.PI)
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -127,7 +128,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       setCanvasLineDash(ctx, options)
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -138,7 +139,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
       ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -150,7 +151,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       setCanvasLineDash(ctx, options)
       const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
       ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -178,7 +179,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.closed) {
         ctx.closePath()
       }
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
@@ -189,16 +190,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (fill === undefined) {
         //
       } else if (typeof fill !== 'number') {
-        const canvas = document.createElement("canvas")
-        canvas.width = fill.width
-        canvas.height = fill.height
-        const patternCtx = canvas.getContext('2d')
-        if (patternCtx) {
-          fill.pattern()(patternCtx, strokeWidthScale, rerender)
-          const pattern = ctx.createPattern(canvas, null)
-          if (pattern) {
-            ctx.fillStyle = pattern
-          }
+        const pattern = getPattern(ctx, fill, strokeWidthScale, rerender)
+        if (pattern) {
+          ctx.fillStyle = pattern
         }
       } else {
         ctx.fillStyle = getColorString(fill, options?.fillOpacity)
@@ -209,6 +203,16 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       }
       if (options?.strokeColor !== undefined) {
         ctx.strokeStyle = getColorString(options.strokeColor, options.strokeOpacity)
+        if (options.strokeWidth !== undefined) {
+          ctx.lineWidth = options.strokeWidth
+        }
+        setCanvasLineDash(ctx, options)
+        ctx.strokeText(text, x, y)
+      } else if (options?.strokePattern) {
+        const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
+        if (pattern) {
+          ctx.strokeStyle = pattern
+        }
         if (options.strokeWidth !== undefined) {
           ctx.lineWidth = options.strokeWidth
         }
@@ -249,14 +253,19 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       if (options?.closed) {
         ctx.closePath()
       }
-      renderStroke(ctx, strokeWidthScale, options)
+      renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
     }
   },
 }
 
-function renderStroke(ctx: CanvasRenderingContext2D, strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions>) {
+function renderStroke(
+  ctx: CanvasRenderingContext2D,
+  strokeWidthScale: number,
+  rerender: () => void,
+  options?: Partial<PathStrokeOptions<Draw> & PathLineStyleOptions>,
+) {
   const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
   if (strokeWidth) {
     ctx.lineWidth = strokeWidth
@@ -264,15 +273,61 @@ function renderStroke(ctx: CanvasRenderingContext2D, strokeWidthScale: number, o
     ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
     ctx.lineJoin = options?.lineJoin ?? 'miter'
     ctx.lineCap = options?.lineCap ?? 'butt'
+    if (options?.strokePattern) {
+      const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
+      if (pattern) {
+        ctx.strokeStyle = pattern
+      }
+    } else if (options?.strokeLinearGradient !== undefined) {
+      const { start, end, stops } = options.strokeLinearGradient
+      const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
+      stops.forEach(s => {
+        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
+      })
+      ctx.strokeStyle = gradient
+    } else if (options?.strokeRadialGradient !== undefined) {
+      const { start, end, stops } = options.strokeRadialGradient
+      const gradient = ctx.createRadialGradient(start.x, start.y, start.r, end.x, end.y, end.r)
+      stops.forEach(s => {
+        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
+      })
+      ctx.strokeStyle = gradient
+    }
     ctx.stroke()
   }
+}
+
+function getPattern(
+  ctx: CanvasRenderingContext2D,
+  pattern: Pattern<Draw>,
+  strokeWidthScale: number,
+  rerender: () => void,
+) {
+  const canvas = document.createElement("canvas")
+  canvas.width = pattern.width
+  canvas.height = pattern.height
+  const patternCtx = canvas.getContext('2d')
+  if (patternCtx) {
+    pattern.pattern()(patternCtx, strokeWidthScale, rerender)
+    const result = ctx.createPattern(canvas, null)
+    if (result) {
+      // if (pattern.rotate) {
+      //   const rotate = pattern.rotate * Math.PI / 180
+      //   const c = Math.cos(rotate)
+      //   const s = Math.sin(rotate)
+      //   result.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
+      // }
+      return result
+    }
+  }
+  return
 }
 
 function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillOpacity' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient' | 'clip'>>,
+  options?: Partial<PathFillOptions<Draw>>,
 ) {
   if (options?.clip !== undefined) {
     ctx.clip('evenodd')
@@ -280,22 +335,9 @@ function renderFill(
   }
   if (options?.fillColor !== undefined || options?.fillPattern !== undefined || options?.fillLinearGradient !== undefined || options?.fillRadialGradient !== undefined) {
     if (options.fillPattern !== undefined) {
-      const canvas = document.createElement("canvas")
-      canvas.width = options.fillPattern.width
-      canvas.height = options.fillPattern.height
-      const patternCtx = canvas.getContext('2d')
-      if (patternCtx) {
-        options.fillPattern.pattern()(patternCtx, strokeWidthScale, rerender)
-        const pattern = ctx.createPattern(canvas, null)
-        if (pattern) {
-          // if (options.fillPattern.rotate) {
-          //   const rotate = options.fillPattern.rotate * Math.PI / 180
-          //   const c = Math.cos(rotate)
-          //   const s = Math.sin(rotate)
-          //   pattern.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })
-          // }
-          ctx.fillStyle = pattern
-        }
+      const pattern = getPattern(ctx, options.fillPattern, strokeWidthScale, rerender)
+      if (pattern) {
+        ctx.fillStyle = pattern
       }
     } else if (options.fillColor !== undefined) {
       ctx.fillStyle = getColorString(options.fillColor, options.fillOpacity)

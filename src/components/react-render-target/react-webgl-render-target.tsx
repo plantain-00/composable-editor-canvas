@@ -163,17 +163,28 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (strokeWidthScale, rerender) => {
-      let patternGraphics: PatternGraphic | number | undefined
+      let fillPatternGraphics: PatternGraphic | number | undefined
       if (fill !== undefined && typeof fill !== 'number') {
-        patternGraphics = {
+        fillPatternGraphics = {
           graphics: fill.pattern()(strokeWidthScale, rerender),
           width: fill.width,
           height: fill.height,
         }
       } else {
-        patternGraphics = fill
+        fillPatternGraphics = fill
       }
-      const graphic = getTextGraphic(x, y, text, patternGraphics, fontSize, fontFamily, options)
+      let strokePatternGraphics: PatternGraphic | undefined
+      if (options?.strokePattern !== undefined) {
+        strokePatternGraphics = {
+          graphics: options.strokePattern.pattern()(strokeWidthScale, rerender),
+          width: options.strokePattern.width,
+          height: options.strokePattern.height,
+        }
+      }
+      const graphic = getTextGraphic(x, y, text, fillPatternGraphics, fontSize, fontFamily, {
+        ...options,
+        strokePattern: strokePatternGraphics,
+      })
       return graphic ? [graphic] : []
     }
   },
@@ -185,22 +196,31 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderPath(points, options) {
     return (strokeWidthScale, rerender) => {
-      let patternGraphics: PatternGraphic | undefined
+      let fillPatternGraphics: PatternGraphic | undefined
       if (options?.clip !== undefined) {
-        patternGraphics = {
+        fillPatternGraphics = {
           graphics: options.clip()(strokeWidthScale, rerender),
         }
       }
       if (options?.fillPattern !== undefined) {
-        patternGraphics = {
+        fillPatternGraphics = {
           graphics: options.fillPattern.pattern()(strokeWidthScale, rerender),
           width: options.fillPattern.width,
           height: options.fillPattern.height,
         }
       }
+      let strokePatternGraphics: PatternGraphic | undefined
+      if (options?.strokePattern !== undefined) {
+        strokePatternGraphics = {
+          graphics: options.strokePattern.pattern()(strokeWidthScale, rerender),
+          width: options.strokePattern.width,
+          height: options.strokePattern.height,
+        }
+      }
       return getPathGraphics(points, strokeWidthScale, {
         ...options,
-        fillPattern: patternGraphics,
+        fillPattern: fillPatternGraphics,
+        strokePattern: strokePatternGraphics,
       })
     }
   },

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { PathOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { defaultMiterLimit, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
@@ -58,7 +58,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     )
   },
   renderRect(x, y, width, height, options) {
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <rect
         x={x}
         y={y}
@@ -66,6 +66,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         height={height}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
       />
     ), options)
@@ -78,37 +79,40 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return renderFillPattern(fill => (
+      return renderPattern((fill, stroke) => (
         <path
           d={d}
           {...getCommonLineAttributes(options)}
           fill={fill}
+          stroke={stroke}
         />
       ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return renderFillPattern(fill => React.createElement(options?.closed ? 'polygon' : 'polyline', {
+    return renderPattern((fill, stroke) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
       points: pointsText,
       ...getCommonLineAttributes(options),
       fill,
+      stroke,
     }), options)
   },
   renderPolygon(points, options) {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <circle
         cx={cx}
         cy={cy}
         r={r}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
       />
     ), options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <ellipse
         cx={cx}
         cy={cy}
@@ -116,6 +120,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         ry={ry}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
       />
     ), options)
@@ -126,11 +131,12 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <path
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
       />
     ), options)
   },
@@ -140,11 +146,12 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <path
         d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
       />
     ), options)
@@ -193,16 +200,17 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         d += ' Z'
       }
     }
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <path
         d={d}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
       />
     ), options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <text
         x={x}
         y={y}
@@ -213,7 +221,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           fontStyle: options?.fontStyle,
           fontFamily,
           strokeWidth: options?.strokeWidth,
-          stroke: options?.strokeColor ? getColorString(options.strokeColor) : undefined,
+          stroke,
           strokeDasharray: options?.dashArray?.join(' '),
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
@@ -222,9 +230,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         {text}
       </text>
     ), {
+      ...options,
       fillColor: typeof fill === 'number' ? fill : undefined,
       fillPattern: fill !== undefined && typeof fill !== 'number' ? fill : undefined,
-    })
+    }, true)
   },
   renderImage(url, x, y, width, height, options) {
     return (key) => (
@@ -246,11 +255,12 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     if (options?.closed) {
       d += ' Z'
     }
-    return renderFillPattern(fill => (
+    return renderPattern((fill, stroke) => (
       <path
         d={d}
         {...getCommonLineAttributes(options)}
         fill={fill}
+        stroke={stroke}
         fillRule='evenodd'
       />
     ), options)
@@ -259,33 +269,66 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
 
 type Draw = (key: React.Key) => JSX.Element
 
-function renderFillPattern(
-  children: (fill: string) => JSX.Element,
-  options?: Partial<Pick<PathOptions<Draw>, 'fillColor' | 'fillPattern' | 'fillLinearGradient' | 'fillRadialGradient' | 'clip'>>,
+function renderPattern(
+  children: (fill: string, stroke: string | undefined) => JSX.Element,
+  options?: Partial<PathFillOptions<Draw> & PathStrokeOptions<Draw>>,
+  noDefaultStrokeColor?: boolean,
 ) {
   return (key: React.Key) => {
-    const fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
-    let defs: JSX.Element | undefined
-    let target: JSX.Element
-    if (options?.clip) {
+    let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
+    let stroke = options?.strokeColor !== undefined ? getColorString(options.strokeColor) : noDefaultStrokeColor ? undefined : getColorString(0)
+    let fillDef: JSX.Element | undefined
+    let strokeDef: JSX.Element | undefined
+
+    if (options?.strokePattern) {
       const id = React.useId()
-      const path = children(fill)
-      defs = (
-        <>
-          <clipPath id={id}>
-            {path}
-          </clipPath>
-          {path}
-        </>
+      strokeDef = (
+        <pattern
+          id={id}
+          patternUnits="userSpaceOnUse"
+          width={options.strokePattern.width}
+          height={options.strokePattern.height}
+        >
+          {options.strokePattern.pattern()(id)}
+        </pattern>
       )
-      target = (
-        <g clipPath={`url(#${id})`}>
-          {options.clip()(id)}
-        </g>
-      )
-    } else if (options?.fillPattern) {
+      stroke = `url(#${id})`
+    } else if (options?.strokeLinearGradient) {
       const id = React.useId()
-      defs = (
+      strokeDef = (
+        <linearGradient
+          id={id}
+          gradientUnits="userSpaceOnUse"
+          x1={options.strokeLinearGradient.start.x}
+          y1={options.strokeLinearGradient.start.y}
+          x2={options.strokeLinearGradient.end.x}
+          y2={options.strokeLinearGradient.end.y}
+        >
+          {options.strokeLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
+        </linearGradient>
+      )
+      stroke = `url(#${id})`
+    } else if (options?.strokeRadialGradient) {
+      const id = React.useId()
+      strokeDef = (
+        <radialGradient
+          id={id}
+          gradientUnits="userSpaceOnUse"
+          fx={options.strokeRadialGradient.start.x}
+          fy={options.strokeRadialGradient.start.y}
+          fr={options.strokeRadialGradient.start.r}
+          cx={options.strokeRadialGradient.end.x}
+          cy={options.strokeRadialGradient.end.y}
+          r={options.strokeRadialGradient.end.r}
+        >
+          {options.strokeRadialGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
+        </radialGradient>
+      )
+      stroke = `url(#${id})`
+    }
+    if (options?.fillPattern) {
+      const id = React.useId()
+      fillDef = (
         <pattern
           id={id}
           patternUnits="userSpaceOnUse"
@@ -296,10 +339,10 @@ function renderFillPattern(
           {options.fillPattern.pattern()(id)}
         </pattern>
       )
-      target = children(`url(#${id})`)
+      fill = `url(#${id})`
     } else if (options?.fillLinearGradient) {
       const id = React.useId()
-      defs = (
+      fillDef = (
         <linearGradient
           id={id}
           gradientUnits="userSpaceOnUse"
@@ -311,10 +354,10 @@ function renderFillPattern(
           {options.fillLinearGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </linearGradient>
       )
-      target = children(`url(#${id})`)
+      fill = `url(#${id})`
     } else if (options?.fillRadialGradient) {
       const id = React.useId()
-      defs = (
+      fillDef = (
         <radialGradient
           id={id}
           gradientUnits="userSpaceOnUse"
@@ -328,13 +371,33 @@ function renderFillPattern(
           {options.fillRadialGradient.stops.map(s => <stop key={s.offset} offset={s.offset} stopColor={getColorString(s.color, s.opacity)} />)}
         </radialGradient>
       )
-      target = children(`url(#${id})`)
+      fill = `url(#${id})`
+    }
+
+    let target: JSX.Element
+    if (options?.clip) {
+      const id = React.useId()
+      const path = children(fill, stroke)
+      fillDef = (
+        <>
+          <clipPath id={id}>
+            {path}
+          </clipPath>
+          {path}
+        </>
+      )
+      target = (
+        <g clipPath={`url(#${id})`}>
+          {options.clip()(id)}
+        </g>
+      )
     } else {
-      target = children(fill)
+      target = children(fill, stroke)
     }
     return (
       <React.Fragment key={key}>
-        {defs}
+        {fillDef}
+        {strokeDef}
         {target}
       </React.Fragment>
     )
@@ -345,7 +408,6 @@ function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
   return {
     strokeWidth: options?.strokeWidth ?? 1,
     vectorEffect: 'non-scaling-stroke' as const,
-    stroke: getColorString(options?.strokeColor ?? 0),
     strokeDasharray: options?.dashArray?.join(' '),
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,

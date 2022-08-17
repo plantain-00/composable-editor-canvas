@@ -370,13 +370,11 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 // @public (undocumented)
 export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine];
 
+// Warning: (ae-forgotten-export) The symbol "StrokeStyle" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "FillStyle" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
-export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<PathStrokeOptions & PathLineStyleOptions & {
-    fillColor: number;
-    fillOpacity: number;
-    fillPattern: PatternGraphic;
-    fillLinearGradient: LinearGradient;
-    fillRadialGradient: RadialGradient;
+export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<StrokeStyle & PathLineStyleOptions & FillStyle & {
     closed: boolean;
 }>): Graphic[];
 
@@ -490,7 +488,7 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
-export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
+export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight'];
     fontStyle: React.CSSProperties['fontStyle'];
     fillOpacity?: number;
@@ -705,21 +703,9 @@ export type PathCommand = {
 };
 
 // @public (undocumented)
-export interface PathLineStyleOptions {
-    // (undocumented)
-    lineCap?: 'butt' | 'round' | 'square';
-    // (undocumented)
-    lineJoin: 'round' | 'bevel' | 'miter';
-    // (undocumented)
-    miterLimit: number;
-}
-
-// @public (undocumented)
-export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
+export interface PathFillOptions<T> {
     // (undocumented)
     clip: () => T;
-    // (undocumented)
-    closed: boolean;
     // (undocumented)
     fillColor: number;
     // (undocumented)
@@ -733,7 +719,23 @@ export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions 
 }
 
 // @public (undocumented)
-export interface PathStrokeOptions {
+export interface PathLineStyleOptions {
+    // (undocumented)
+    lineCap?: 'butt' | 'round' | 'square';
+    // (undocumented)
+    lineJoin: 'round' | 'bevel' | 'miter';
+    // (undocumented)
+    miterLimit: number;
+}
+
+// @public (undocumented)
+export interface PathOptions<T> extends PathStrokeOptions<T>, PathLineStyleOptions, PathFillOptions<T> {
+    // (undocumented)
+    closed: boolean;
+}
+
+// @public (undocumented)
+export interface PathStrokeOptions<T> {
     // (undocumented)
     dashArray: number[];
     // (undocumented)
@@ -742,6 +744,8 @@ export interface PathStrokeOptions {
     strokeColor: number;
     // (undocumented)
     strokeOpacity: number;
+    // (undocumented)
+    strokePattern: Pattern<T>;
     // (undocumented)
     strokeWidth: number;
 }
@@ -893,7 +897,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
         strokeWidthScale: number;
     }>): JSX.Element;
     // (undocumented)
-    renderText(x: number, y: number, text: string, fill: number | Pattern<T> | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions & {
+    renderText(x: number, y: number, text: string, fill: number | Pattern<T> | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions<T> & {
         fontWeight: React_3.CSSProperties['fontWeight'];
         fontStyle: React_3.CSSProperties['fontStyle'];
         fillOpacity: number;
@@ -932,7 +936,7 @@ export class RenderingLinesMerger {
 }
 
 // @public (undocumented)
-export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly PartStyle[], points: Position[], options?: Partial<PathStrokeOptions>): T;
+export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly PartStyle[], points: Position[], options?: Partial<PathStrokeOptions<T>>): T;
 
 // @public (undocumented)
 export function ResizeBar(props: {
@@ -984,7 +988,10 @@ export function Scrollbar(props: {
 export type SelectPath = readonly (string | number)[];
 
 // @public (undocumented)
-export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<PathStrokeOptions>): void;
+export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<{
+    dashArray: number[];
+    dashOffset: number;
+}>): void;
 
 // @public (undocumented)
 export interface Size {

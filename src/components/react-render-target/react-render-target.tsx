@@ -107,7 +107,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     fill: number | Pattern<T> | undefined,
     fontSize: number,
     fontFamily: string,
-    options?: Partial<PathStrokeOptions & {
+    options?: Partial<PathStrokeOptions<T> & {
       fontWeight: React.CSSProperties['fontWeight']
       fontStyle: React.CSSProperties['fontStyle']
       fillOpacity: number
@@ -134,12 +134,15 @@ export interface ReactRenderTarget<T = JSX.Element> {
 /**
  * @public
  */
-export interface PathStrokeOptions {
+export interface PathStrokeOptions<T> {
   strokeColor: number
   strokeWidth: number
   dashArray: number[]
   dashOffset: number
   strokeOpacity: number
+  strokePattern: Pattern<T>
+  strokeLinearGradient: LinearGradient
+  strokeRadialGradient: RadialGradient
 }
 
 /**
@@ -154,13 +157,19 @@ export interface PathLineStyleOptions {
 /**
  * @public
  */
-export interface PathOptions<T> extends PathStrokeOptions, PathLineStyleOptions {
+export interface PathOptions<T> extends PathStrokeOptions<T>, PathLineStyleOptions, PathFillOptions<T> {
+  closed: boolean
+}
+
+/**
+ * @public
+ */
+export interface PathFillOptions<T> {
   fillColor: number
   fillOpacity: number
   fillPattern: Pattern<T>
   fillLinearGradient: LinearGradient
   fillRadialGradient: RadialGradient
-  closed: boolean
   clip: () => T
 }
 
@@ -212,7 +221,7 @@ export function renderPartStyledPolyline<T>(
   target: ReactRenderTarget<T>,
   partsStyles: readonly PartStyle[],
   points: Position[],
-  options?: Partial<PathStrokeOptions>,
+  options?: Partial<PathStrokeOptions<T>>,
 ) {
   return target.renderGroup([
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
