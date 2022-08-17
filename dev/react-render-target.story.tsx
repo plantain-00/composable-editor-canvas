@@ -29,7 +29,8 @@ export default () => {
     target.renderText(170, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
     target.renderText(10, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
     target.renderText(50, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3, strokeOpacity: 0.3, fillOpacity: 0.3 }),
-  ], 230, 280)
+    target.renderText(90, 200, 'H', undefined, 70, 'monospace', { strokePattern: { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, strokeWidth: 5 }),
+  ], 230, 300)
 
   const renderEllipseArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipseArc(40, 10, 50, 30, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -78,7 +79,10 @@ export default () => {
     target.renderPath([[{ x: 50, y: 250 }, { x: 90, y: 390 }, { x: 90, y: 250 }], [{ x: 70, y: 270 }, { x: 70, y: 310 }, { x: 80, y: 310 }, { x: 80, y: 270 }]], { fillRadialGradient: { start: { x: 70, y: 320, r: 10 }, end: { x: 70, y: 320, r: 70 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 0 }),
     target.renderPath([[{ x: 95, y: 250 }, { x: 135, y: 390 }, { x: 135, y: 250 }], [{ x: 115, y: 270 }, { x: 115, y: 310 }, { x: 125, y: 310 }, { x: 125, y: 270 }]], { fillColor: 0xff0000, fillOpacity: 0.3, strokeOpacity: 0.3 }),
     target.renderPath([[{ x: 140, y: 250 }, { x: 180, y: 390 }, { x: 180, y: 250 }], [{ x: 160, y: 270 }, { x: 160, y: 310 }, { x: 170, y: 310 }, { x: 170, y: 270 }]], { fillRadialGradient: { start: { x: 160, y: 320, r: 10 }, end: { x: 160, y: 320, r: 70 }, stops: [{ offset: 0, color: 0xff0000, opacity: 0.3 }, { offset: 0.5, color: 0xffff00, opacity: 0.3 }, { offset: 1, color: 0x00ff00, opacity: 0.3 }] }, strokeWidth: 0 }),
-  ], 230, 500)
+    target.renderPath([[{ x: 185, y: 250 }, { x: 225, y: 390 }, { x: 225, y: 250 }], [{ x: 205, y: 270 }, { x: 205, y: 310 }, { x: 215, y: 310 }, { x: 215, y: 270 }]], { strokePattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) }, strokeWidth: 5 }),
+    target.renderPath([[{ x: 5, y: 400 }, { x: 45, y: 540 }, { x: 45, y: 400 }], [{ x: 25, y: 420 }, { x: 25, y: 460 }, { x: 35, y: 460 }, { x: 35, y: 420 }]], { strokeLinearGradient: { start: { x: 5, y: 400 }, end: { x: 45, y: 540 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 5 }),
+    target.renderPath([[{ x: 50, y: 400 }, { x: 90, y: 540 }, { x: 90, y: 400 }], [{ x: 70, y: 420 }, { x: 70, y: 460 }, { x: 80, y: 460 }, { x: 80, y: 420 }]], { strokeRadialGradient: { start: { x: 70, y: 470, r: 10 }, end: { x: 70, y: 470, r: 70 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 5 }),
+  ], 230, 570)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 110, 90, { crossOrigin: '' }),
