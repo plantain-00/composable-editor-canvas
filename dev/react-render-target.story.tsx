@@ -29,8 +29,12 @@ export default () => {
     target.renderText(170, 150, 'l', undefined, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
     target.renderText(10, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3 }),
     target.renderText(50, 200, 'H', 0x00ff00, 70, 'monospace', { strokeColor: 0xff0000, strokeWidth: 3, strokeOpacity: 0.3, fillOpacity: 0.3 }),
-    target.renderText(90, 200, 'H', undefined, 70, 'monospace', { strokePattern: { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, strokeWidth: 5 }),
-  ], 230, 300)
+    target.renderText(90, 200, 'H', undefined, 70, 'monospace', { strokePattern: { width: 4, height: 4, pattern: () => target.renderPath([[{ x: 0, y: 2 }, { x: 2, y: 0 }], [{ x: 4, y: 2 }, { x: 2, y: 4 }]], { strokeColor: 0x0000ff }) }, strokeWidth: 3 }),
+    target.renderText(130, 200, 'H', undefined, 70, 'monospace', { strokeLinearGradient: { start: { x: 150, y: 230 }, end: { x: 190, y: 150 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 3 }),
+    target.renderText(170, 200, 'H', undefined, 70, 'monospace', { strokeRadialGradient: { start: { x: 190, y: 185, r: 5 }, end: { x: 190, y: 180, r: 30 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 3 }),
+    target.renderText(130, 250, 'H', undefined, 70, 'monospace', { fillLinearGradient: { start: { x: 150, y: 280 }, end: { x: 190, y: 200 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 3 }),
+    target.renderText(170, 250, 'H', undefined, 70, 'monospace', { fillRadialGradient: { start: { x: 190, y: 235, r: 5 }, end: { x: 190, y: 230, r: 30 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 3 }),
+  ], 230, 400)
 
   const renderEllipseArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipseArc(40, 10, 50, 30, 0, 120, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),

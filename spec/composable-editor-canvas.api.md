@@ -491,7 +491,9 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight'];
     fontStyle: React.CSSProperties['fontStyle'];
-    fillOpacity?: number;
+    fillOpacity: number;
+    fillLinearGradient: LinearGradient;
+    fillRadialGradient: RadialGradient;
     cacheKey: object;
 }>): Graphic | undefined;
 
@@ -743,9 +745,13 @@ export interface PathStrokeOptions<T> {
     // (undocumented)
     strokeColor: number;
     // (undocumented)
+    strokeLinearGradient: LinearGradient;
+    // (undocumented)
     strokeOpacity: number;
     // (undocumented)
     strokePattern: Pattern<T>;
+    // (undocumented)
+    strokeRadialGradient: RadialGradient;
     // (undocumented)
     strokeWidth: number;
 }
@@ -901,6 +907,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
         fontWeight: React_3.CSSProperties['fontWeight'];
         fontStyle: React_3.CSSProperties['fontStyle'];
         fillOpacity: number;
+        fillLinearGradient: LinearGradient;
+        fillRadialGradient: RadialGradient;
         cacheKey: object;
     }>): T;
     // (undocumented)

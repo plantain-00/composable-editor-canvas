@@ -111,6 +111,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
       fontWeight: React.CSSProperties['fontWeight']
       fontStyle: React.CSSProperties['fontStyle']
       fillOpacity: number
+      fillLinearGradient: LinearGradient
+      fillRadialGradient: RadialGradient
       cacheKey: object
     }>,
   ): T

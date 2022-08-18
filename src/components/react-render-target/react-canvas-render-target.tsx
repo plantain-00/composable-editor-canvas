@@ -187,31 +187,17 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
-      if (fill === undefined) {
-        //
-      } else if (typeof fill !== 'number') {
-        const pattern = getPattern(ctx, fill, strokeWidthScale, rerender)
-        if (pattern) {
-          ctx.fillStyle = pattern
-        }
-      } else {
-        ctx.fillStyle = getColorString(fill, options?.fillOpacity)
-      }
       ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
-      if (fill !== undefined) {
-        ctx.fillText(text, x, y)
-      }
-      if (options?.strokeColor !== undefined) {
-        ctx.strokeStyle = getColorString(options.strokeColor, options.strokeOpacity)
-        if (options.strokeWidth !== undefined) {
-          ctx.lineWidth = options.strokeWidth
-        }
-        setCanvasLineDash(ctx, options)
-        ctx.strokeText(text, x, y)
-      } else if (options?.strokePattern) {
-        const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
-        if (pattern) {
-          ctx.strokeStyle = pattern
+      renderFill(ctx, strokeWidthScale, rerender, {
+        ...options,
+        fillColor: typeof fill === 'number' ? fill : undefined,
+        fillPattern: fill !== undefined && typeof fill !== 'number' ? fill : undefined,
+      }, () => ctx.fillText(text, x, y))
+      if (options?.strokeColor !== undefined || options?.strokePattern || options?.strokeLinearGradient || options?.strokeRadialGradient) {
+        if (options?.strokeColor !== undefined) {
+          ctx.strokeStyle = getColorString(options.strokeColor, options.strokeOpacity)
+        } else {
+          renderPatternOrGradient(ctx, strokeWidthScale, rerender, options)
         }
         if (options.strokeWidth !== undefined) {
           ctx.lineWidth = options.strokeWidth
@@ -273,26 +259,7 @@ function renderStroke(
     ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
     ctx.lineJoin = options?.lineJoin ?? 'miter'
     ctx.lineCap = options?.lineCap ?? 'butt'
-    if (options?.strokePattern) {
-      const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
-      if (pattern) {
-        ctx.strokeStyle = pattern
-      }
-    } else if (options?.strokeLinearGradient !== undefined) {
-      const { start, end, stops } = options.strokeLinearGradient
-      const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
-      stops.forEach(s => {
-        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
-      })
-      ctx.strokeStyle = gradient
-    } else if (options?.strokeRadialGradient !== undefined) {
-      const { start, end, stops } = options.strokeRadialGradient
-      const gradient = ctx.createRadialGradient(start.x, start.y, start.r, end.x, end.y, end.r)
-      stops.forEach(s => {
-        gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
-      })
-      ctx.strokeStyle = gradient
-    }
+    renderPatternOrGradient(ctx, strokeWidthScale, rerender, options)
     ctx.stroke()
   }
 }
@@ -328,6 +295,7 @@ function renderFill(
   strokeWidthScale: number,
   rerender: () => void,
   options?: Partial<PathFillOptions<Draw>>,
+  fillCallback?: () => void,
 ) {
   if (options?.clip !== undefined) {
     ctx.clip('evenodd')
@@ -356,7 +324,39 @@ function renderFill(
       })
       ctx.fillStyle = gradient
     }
-    ctx.fill('evenodd')
+    if (fillCallback) {
+      fillCallback()
+    } else {
+      ctx.fill('evenodd')
+    }
+  }
+}
+
+function renderPatternOrGradient(
+  ctx: CanvasRenderingContext2D,
+  strokeWidthScale: number,
+  rerender: () => void,
+  options?: Partial<PathStrokeOptions<Draw> & PathLineStyleOptions>,
+) {
+  if (options?.strokePattern) {
+    const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
+    if (pattern) {
+      ctx.strokeStyle = pattern
+    }
+  } else if (options?.strokeLinearGradient !== undefined) {
+    const { start, end, stops } = options.strokeLinearGradient
+    const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y)
+    stops.forEach(s => {
+      gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
+    })
+    ctx.strokeStyle = gradient
+  } else if (options?.strokeRadialGradient !== undefined) {
+    const { start, end, stops } = options.strokeRadialGradient
+    const gradient = ctx.createRadialGradient(start.x, start.y, start.r, end.x, end.y, end.r)
+    stops.forEach(s => {
+      gradient.addColorStop(s.offset, getColorString(s.color, s.opacity))
+    })
+    ctx.strokeStyle = gradient
   }
 }
 
