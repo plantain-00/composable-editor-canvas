@@ -301,10 +301,13 @@ export function getTextGraphic(
   options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight']
     fontStyle: React.CSSProperties['fontStyle']
-    fillOpacity?: number
+    fillOpacity: number
+    fillLinearGradient: LinearGradient
+    fillRadialGradient: RadialGradient
     cacheKey: object
   }>,
 ): Graphic | undefined {
+  const strokeWidth = options?.strokeWidth ?? 0
   const getTextImageData = () => {
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")
@@ -317,7 +320,7 @@ export function getTextGraphic(
     ctx.canvas.width = Math.ceil(t.width) + 2;
     ctx.canvas.height = fontSize
     ctx.font = font
-    if (fill !== undefined) {
+    if (fill !== undefined || options?.fillLinearGradient || options?.fillRadialGradient) {
       ctx.fillStyle = options?.strokeColor !== undefined && typeof fill === 'number' ? getColorString(fill, options.fillOpacity) : 'white';
       ctx.fillText(text, 0, ctx.canvas.height);
     }
@@ -328,13 +331,13 @@ export function getTextGraphic(
       }
       setCanvasLineDash(ctx, options)
       ctx.strokeText(text, 0, ctx.canvas.height);
-    } else if (options?.strokePattern !== undefined) {
+    } else if (options?.strokePattern || options?.strokeLinearGradient || options?.strokeRadialGradient) {
       ctx.strokeStyle = 'white'
       if (options.strokeWidth !== undefined) {
         ctx.lineWidth = options.strokeWidth - 1
       }
       setCanvasLineDash(ctx, options)
-      ctx.strokeText(text, 0, ctx.canvas.height);
+      ctx.strokeText(text, 0, ctx.canvas.height - strokeWidth)
     }
     return ctx.getImageData(0, 0, canvas.width, canvas.height)
   }
@@ -342,21 +345,70 @@ export function getTextGraphic(
   if (!imageData) {
     return undefined
   }
-  if (options?.strokePattern !== undefined) {
+  const y1 = y - imageData.height + strokeWidth
+  let pattern: PatternGraphic | undefined
+  if (options?.strokePattern) {
+    pattern = options.strokePattern
+  } else if (options?.strokeLinearGradient) {
+    pattern = {
+      graphics: [
+        getLinearGradientGraphic(options.strokeLinearGradient, [
+          { x, y: y1 },
+          { x: x + imageData.width, y: y1 },
+          { x, y },
+          { x: x + imageData.width, y },
+        ])
+      ],
+    }
+  } else if (options?.strokeRadialGradient) {
+    pattern = {
+      graphics: [
+        getRadialGradientGraphic(options.strokeRadialGradient, [
+          { x, y: y1 },
+          { x: x + imageData.width, y: y1 },
+          { x, y },
+          { x: x + imageData.width, y },
+        ])
+      ],
+    }
+  } else if (options?.fillLinearGradient) {
+    pattern = {
+      graphics: [
+        getLinearGradientGraphic(options.fillLinearGradient, [
+          { x, y: y1 },
+          { x: x + imageData.width, y: y1 },
+          { x, y },
+          { x: x + imageData.width, y },
+        ])
+      ],
+    }
+  } else if (options?.fillRadialGradient) {
+    pattern = {
+      graphics: [
+        getRadialGradientGraphic(options.fillRadialGradient, [
+          { x, y: y1 },
+          { x: x + imageData.width, y: y1 },
+          { x, y },
+          { x: x + imageData.width, y },
+        ])
+      ],
+    }
+  }
+  if (pattern) {
     return {
       type: 'texture',
       x,
-      y: y - imageData.height,
+      y: y1,
       src: imageData,
       color: [0, 0, 0, 1],
-      pattern: options.strokePattern,
+      pattern,
     }
   }
   if (fill !== undefined && typeof fill !== 'number') {
     return {
       type: 'texture',
       x,
-      y: y - imageData.height,
+      y: y1,
       src: imageData,
       color: [0, 0, 0, 1],
       pattern: fill,
@@ -369,7 +421,7 @@ export function getTextGraphic(
     return {
       type: 'texture',
       x,
-      y: y - imageData.height,
+      y: y1,
       color: colorNumberToRec(options.strokeColor, options.strokeOpacity),
       src: imageData,
     }
@@ -378,14 +430,14 @@ export function getTextGraphic(
     return {
       type: 'texture',
       x,
-      y: y - imageData.height,
+      y: y1,
       src: imageData,
     }
   }
   return {
     type: 'texture',
     x,
-    y: y - imageData.height,
+    y: y1,
     color: colorNumberToRec(fill, options?.fillOpacity),
     src: imageData,
   }
