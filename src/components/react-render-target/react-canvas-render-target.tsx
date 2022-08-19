@@ -188,6 +188,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
     return (ctx, strokeWidthScale, rerender) => {
       ctx.save()
       ctx.font = `${options?.fontWeight ?? 'normal'} ${options?.fontStyle ?? 'normal'} ${fontSize}px ${fontFamily}`
+      ctx.textAlign = options?.textAlign ?? 'left'
+      ctx.textBaseline = options?.textBaseline ?? 'alphabetic'
       renderFill(ctx, strokeWidthScale, rerender, {
         ...options,
         fillColor: typeof fill === 'number' ? fill : undefined,

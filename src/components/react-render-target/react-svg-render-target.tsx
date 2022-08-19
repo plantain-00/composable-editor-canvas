@@ -214,6 +214,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
       <text
         x={x}
         y={y}
+        textAnchor={options?.textAlign === 'center' ? 'middle' : options?.textAlign === 'right' ? 'end' : 'start'}
+        alignmentBaseline={options?.textBaseline === 'top' ? 'before-edge' : options?.textBaseline === 'bottom' ? 'after-edge' : options?.textBaseline ?? 'alphabetic'}
         style={{
           fill,
           fontWeight: options?.fontWeight,
