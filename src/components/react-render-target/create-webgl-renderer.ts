@@ -301,6 +301,8 @@ export function getTextGraphic(
   options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight']
     fontStyle: React.CSSProperties['fontStyle']
+    textAlign: 'left' | 'center' | 'right'
+    textBaseline: 'alphabetic' | 'top' | 'middle' | 'bottom'
     fillOpacity: number
     fillLinearGradient: LinearGradient
     fillRadialGradient: RadialGradient
@@ -318,11 +320,11 @@ export function getTextGraphic(
     ctx.font = font
     const t = ctx.measureText(text);
     ctx.canvas.width = Math.ceil(t.width) + 2;
-    ctx.canvas.height = fontSize
+    ctx.canvas.height = fontSize + t.actualBoundingBoxDescent
     ctx.font = font
     if (fill !== undefined || options?.fillLinearGradient || options?.fillRadialGradient) {
       ctx.fillStyle = options?.strokeColor !== undefined && typeof fill === 'number' ? getColorString(fill, options.fillOpacity) : 'white';
-      ctx.fillText(text, 0, ctx.canvas.height);
+      ctx.fillText(text, 0, fontSize);
     }
     if (options?.strokeColor !== undefined) {
       ctx.strokeStyle = fill !== undefined && typeof fill === 'number' ? getColorString(options.strokeColor, options.strokeOpacity) : 'white'
@@ -330,22 +332,39 @@ export function getTextGraphic(
         ctx.lineWidth = options.strokeWidth
       }
       setCanvasLineDash(ctx, options)
-      ctx.strokeText(text, 0, ctx.canvas.height);
+      ctx.strokeText(text, 0, fontSize);
     } else if (options?.strokePattern || options?.strokeLinearGradient || options?.strokeRadialGradient) {
       ctx.strokeStyle = 'white'
       if (options.strokeWidth !== undefined) {
         ctx.lineWidth = options.strokeWidth - 1
       }
       setCanvasLineDash(ctx, options)
-      ctx.strokeText(text, 0, ctx.canvas.height - strokeWidth)
+      ctx.strokeText(text, 0, fontSize - strokeWidth)
     }
-    return ctx.getImageData(0, 0, canvas.width, canvas.height)
+    return {
+      textMetrics: t,
+      imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+    }
   }
-  const imageData = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getTextImageData) : getTextImageData()
-  if (!imageData) {
+  const imageDataInfo = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getTextImageData) : getTextImageData()
+  if (!imageDataInfo) {
     return undefined
   }
-  const y1 = y - imageData.height + strokeWidth
+  const { imageData, textMetrics } = imageDataInfo
+  let y1 = y - imageData.height + strokeWidth + textMetrics.actualBoundingBoxDescent
+  if (options?.textBaseline === 'top') {
+    y1 += textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent / 2
+  } else if (options?.textBaseline === 'middle') {
+    y1 += (textMetrics.actualBoundingBoxAscent - textMetrics.actualBoundingBoxDescent) / 2
+  } else if (options?.textBaseline === 'bottom') {
+    y1 -= textMetrics.fontBoundingBoxDescent
+  }
+  let x1 = x
+  if (options?.textAlign === 'right') {
+    x1 -= imageData.width
+  } else if (options?.textAlign === 'center') {
+    x1 -= imageData.width / 2
+  }
   let pattern: PatternGraphic | undefined
   if (options?.strokePattern) {
     pattern = options.strokePattern
@@ -353,10 +372,10 @@ export function getTextGraphic(
     pattern = {
       graphics: [
         getLinearGradientGraphic(options.strokeLinearGradient, [
-          { x, y: y1 },
-          { x: x + imageData.width, y: y1 },
-          { x, y },
-          { x: x + imageData.width, y },
+          { x: x1, y: y1 },
+          { x: x1 + imageData.width, y: y1 },
+          { x: x1, y },
+          { x: x1 + imageData.width, y },
         ])
       ],
     }
@@ -364,10 +383,10 @@ export function getTextGraphic(
     pattern = {
       graphics: [
         getRadialGradientGraphic(options.strokeRadialGradient, [
-          { x, y: y1 },
-          { x: x + imageData.width, y: y1 },
-          { x, y },
-          { x: x + imageData.width, y },
+          { x: x1, y: y1 },
+          { x: x1 + imageData.width, y: y1 },
+          { x: x1, y },
+          { x: x1 + imageData.width, y },
         ])
       ],
     }
@@ -375,10 +394,10 @@ export function getTextGraphic(
     pattern = {
       graphics: [
         getLinearGradientGraphic(options.fillLinearGradient, [
-          { x, y: y1 },
-          { x: x + imageData.width, y: y1 },
-          { x, y },
-          { x: x + imageData.width, y },
+          { x: x1, y: y1 },
+          { x: x1 + imageData.width, y: y1 },
+          { x: x1, y },
+          { x: x1 + imageData.width, y },
         ])
       ],
     }
@@ -386,10 +405,10 @@ export function getTextGraphic(
     pattern = {
       graphics: [
         getRadialGradientGraphic(options.fillRadialGradient, [
-          { x, y: y1 },
-          { x: x + imageData.width, y: y1 },
-          { x, y },
-          { x: x + imageData.width, y },
+          { x: x1, y: y1 },
+          { x: x1 + imageData.width, y: y1 },
+          { x: x1, y },
+          { x: x1 + imageData.width, y },
         ])
       ],
     }
@@ -397,7 +416,7 @@ export function getTextGraphic(
   if (pattern) {
     return {
       type: 'texture',
-      x,
+      x: x1,
       y: y1,
       src: imageData,
       color: [0, 0, 0, 1],
@@ -407,7 +426,7 @@ export function getTextGraphic(
   if (fill !== undefined && typeof fill !== 'number') {
     return {
       type: 'texture',
-      x,
+      x: x1,
       y: y1,
       src: imageData,
       color: [0, 0, 0, 1],
@@ -420,7 +439,7 @@ export function getTextGraphic(
     }
     return {
       type: 'texture',
-      x,
+      x: x1,
       y: y1,
       color: colorNumberToRec(options.strokeColor, options.strokeOpacity),
       src: imageData,
@@ -429,14 +448,14 @@ export function getTextGraphic(
   if (options?.strokeColor !== undefined) {
     return {
       type: 'texture',
-      x,
+      x: x1,
       y: y1,
       src: imageData,
     }
   }
   return {
     type: 'texture',
-    x,
+    x: x1,
     y: y1,
     color: colorNumberToRec(fill, options?.fillOpacity),
     src: imageData,
@@ -675,7 +694,7 @@ interface FillStyle {
 }
 
 const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
-const textCanvasCache = new WeakmapCache<object, ImageData | undefined>()
+const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics } | undefined>()
 const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const polylineLinesCache = new WeakmapMapCache<Position[], true | 'butt' | 'round' | 'square', number[]>()

@@ -113,6 +113,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
       fillOpacity: number
       fillLinearGradient: LinearGradient
       fillRadialGradient: RadialGradient
+      textAlign: 'left' | 'center' | 'right'
+      textBaseline: 'alphabetic' | 'top' | 'middle' | 'bottom'
       cacheKey: object
     }>,
   ): T
