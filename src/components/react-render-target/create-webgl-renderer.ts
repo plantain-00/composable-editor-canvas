@@ -2,7 +2,7 @@ import * as twgl from 'twgl.js'
 import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getFootPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
-import { LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
+import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { getColorString } from './react-svg-render-target'
 
 interface LineOrTriangleGraphic {
@@ -20,6 +20,7 @@ interface TextureGraphic {
   width?: number
   height?: number
   src: ImageData | ImageBitmap
+  colorMatrixes?: number[][]
 }
 
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
@@ -39,7 +40,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   }
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  const programInfo = twgl.createProgramInfo(gl, [`
+  const basicProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     void main() {
@@ -100,6 +101,35 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         discard;
       }
       gl_FragColor = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
+    }`]);
+  const filteredTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    uniform mat3 matrix;
+    uniform float flipY;
+    varying vec2 texcoord;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
+      texcoord = position.xy;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 texcoord;
+    uniform sampler2D texture;
+    uniform float opacity;
+    uniform float colorMatrix[20];
+
+    void main() {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
+          texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      vec4 c = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
+			gl_FragColor.r = colorMatrix[0] * c.r + colorMatrix[1] * c.g + colorMatrix[2] * c.b + colorMatrix[3] * c.a + colorMatrix[4];
+			gl_FragColor.g = colorMatrix[5] * c.r + colorMatrix[6] * c.g + colorMatrix[7] * c.b + colorMatrix[8] * c.a + colorMatrix[9];
+			gl_FragColor.b = colorMatrix[10] * c.r + colorMatrix[11] * c.g + colorMatrix[12] * c.b + colorMatrix[13] * c.a + colorMatrix[14];
+			gl_FragColor.a = colorMatrix[15] * c.r + colorMatrix[16] * c.g + colorMatrix[17] * c.b + colorMatrix[18] * c.a + colorMatrix[19];
     }`]);
   const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
@@ -198,14 +228,64 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       const height = line.height ?? line.src.height
       textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
 
+      let texture = canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src }))
+      let programInfo: twgl.ProgramInfo
+      let colorMatrix: number[] | undefined
+      if (line.colorMatrixes && line.colorMatrixes.length > 1) {
+        twgl.drawObjectList(gl, objectsToDraw)
+        objectsToDraw = []
+        const framebufferInfos: twgl.FramebufferInfo[] = []
+        for (let i = 0; i < line.colorMatrixes.length - 1; i++) {
+          let framebufferInfo: twgl.FramebufferInfo
+          if (framebufferInfos.length < 2) {
+            framebufferInfo = twgl.createFramebufferInfo(gl, undefined, line.src.width, line.src.height)
+            framebufferInfos.push(framebufferInfo)
+          } else {
+            framebufferInfo = framebufferInfos[i % 2]
+          }
+          twgl.bindFramebufferInfo(gl, framebufferInfo)
+          twgl.drawObjectList(gl, [
+            {
+              programInfo: filteredTextureProgramInfo,
+              bufferInfo: textureBufferInfo,
+              uniforms: {
+                matrix: m3.projection(1, 1),
+                opacity: line.opacity ?? 1,
+                texture,
+                colorMatrix: line.colorMatrixes[i],
+                flipY: -1,
+              },
+            }
+          ])
+          texture = framebufferInfo.attachments[0]
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+        programInfo = filteredTextureProgramInfo
+        colorMatrix = line.colorMatrixes[line.colorMatrixes.length - 1]
+      } else {
+        if (line.pattern) {
+          programInfo = colorMaskedTextureProgramInfo
+        } else if (line.color) {
+          programInfo = coloredTextureProgramInfo
+        } else if (line.colorMatrixes) {
+          programInfo = filteredTextureProgramInfo
+        } else {
+          programInfo = textureProgramInfo
+        }
+        colorMatrix = line.colorMatrixes?.[0]
+      }
+
       const drawObject: twgl.DrawObject = {
-        programInfo: line.pattern ? colorMaskedTextureProgramInfo : line.color ? coloredTextureProgramInfo : textureProgramInfo,
+        programInfo,
         bufferInfo: textureBufferInfo,
         uniforms: {
           matrix: textureMatrix,
           color,
           opacity: line.opacity ?? 1,
-          texture: canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src })),
+          texture,
+          colorMatrix,
+          flipY: 1,
         },
       }
       if (line.pattern) {
@@ -215,7 +295,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
     } else {
       const drawObject: twgl.DrawObject = {
-        programInfo: line.colors ? gradientProgramInfo : programInfo,
+        programInfo: line.colors ? gradientProgramInfo : basicProgramInfo,
         bufferInfo: bufferInfoCache.get(line.points, () => {
           const arrays: twgl.Arrays = {
             position: {
@@ -613,11 +693,55 @@ export function getImageGraphic(
   options?: Partial<{
     opacity: number
     crossOrigin: "anonymous" | "use-credentials" | ""
+    filters: Filter[]
   }>,
 ): Graphic | undefined {
   const image = getImageFromCache(url, rerender, options?.crossOrigin)
   if (!image) {
     return
+  }
+  const colorMatrixes: number[][] = []
+  if (options?.filters && options.filters.length > 0) {
+    options.filters.forEach(f => {
+      if (f.type === 'brightness') {
+        colorMatrixes.push([
+          f.value, 0, 0, 0, 0,
+          0, f.value, 0, 0, 0,
+          0, 0, f.value, 0, 0,
+          0, 0, 0, 1, 0
+        ])
+      } else if (f.type === 'contrast') {
+        const intercept = 0.5 * (1 - f.value)
+        colorMatrixes.push([
+          f.value, 0, 0, 0, intercept,
+          0, f.value, 0, 0, intercept,
+          0, 0, f.value, 0, intercept,
+          0, 0, 0, 1, 0
+        ])
+      } else if (f.type === 'hue-rotate') {
+        const rotation = f.value * Math.PI / 180
+        const cos = Math.cos(rotation)
+        const sin = Math.sin(rotation)
+        const lumR = 0.213
+        const lumG = 0.715
+        const lumB = 0.072
+        colorMatrixes.push([
+          lumR + cos * (1 - lumR) + sin * (-lumR), lumG + cos * (-lumG) + sin * (-lumG), lumB + cos * (-lumB) + sin * (1 - lumB), 0, 0,
+          lumR + cos * (-lumR) + sin * (0.143), lumG + cos * (1 - lumG) + sin * (0.140), lumB + cos * (-lumB) + sin * (-0.283), 0, 0,
+          lumR + cos * (-lumR) + sin * (-(1 - lumR)), lumG + cos * (-lumG) + sin * (lumG), lumB + cos * (1 - lumB) + sin * (lumB), 0, 0,
+          0, 0, 0, 1, 0
+        ])
+      } else if (f.type === 'saturate') {
+        const x = (f.value - 1) * 2 / 3 + 1
+        const y = -0.5 * (x - 1)
+        colorMatrixes.push([
+          x, y, y, 0, 0,
+          y, x, y, 0, 0,
+          y, y, x, 0, 0,
+          0, 0, 0, 1, 0
+        ])
+      }
+    })
   }
   return {
     type: 'texture',
@@ -627,6 +751,7 @@ export function getImageGraphic(
     height,
     src: image,
     opacity: options?.opacity,
+    colorMatrixes: colorMatrixes.length > 0 ? colorMatrixes : undefined,
   }
 }
 

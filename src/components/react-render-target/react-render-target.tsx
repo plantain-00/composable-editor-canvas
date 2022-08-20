@@ -127,6 +127,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     options?: Partial<{
       opacity: number
       crossOrigin: "anonymous" | "use-credentials" | ""
+      filters: Filter[]
     }>,
   ): T
   renderPath(
@@ -134,6 +135,12 @@ export interface ReactRenderTarget<T = JSX.Element> {
     options?: Partial<PathOptions<T>>,
   ): T
 }
+
+export type Filter =
+  | { type: 'brightness', value: number }
+  | { type: 'contrast', value: number }
+  | { type: 'hue-rotate', value: number }
+  | { type: 'saturate', value: number }
 
 /**
  * @public

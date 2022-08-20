@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getColorString, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
+import { Filter, getColorString, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
 import { defaultMiterLimit, m3 } from "../../utils"
 import { getImageFromCache } from "./image-loader"
 
@@ -219,6 +219,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
         if (options?.opacity !== undefined) {
           ctx.globalAlpha = opacity * options.opacity
         }
+        renderFilter(ctx, options?.filters)
         ctx.drawImage(image, x, y, width, height)
         ctx.restore()
       }
@@ -246,6 +247,24 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
       ctx.restore()
     }
   },
+}
+
+function renderFilter(ctx: CanvasRenderingContext2D, filters?: Filter[]) {
+  if (filters && filters.length > 0) {
+    const result: string[] = []
+    filters.forEach(f => {
+      if (f.type === 'brightness') {
+        result.push(`brightness(${f.value})`)
+      } else if (f.type === 'contrast') {
+        result.push(`contrast(${f.value})`)
+      } else if (f.type === 'hue-rotate') {
+        result.push(`hue-rotate(${f.value}deg)`)
+      } else if (f.type === 'saturate') {
+        result.push(`saturate(${f.value})`)
+      }
+    })
+    ctx.filter = result.join(' ')
+  }
 }
 
 function renderStroke(
