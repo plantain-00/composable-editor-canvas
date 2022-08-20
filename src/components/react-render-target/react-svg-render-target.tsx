@@ -1,5 +1,5 @@
 import * as React from "react"
-import { PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
+import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
 import { defaultMiterLimit, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
@@ -238,9 +238,9 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     }, true)
   },
   renderImage(url, x, y, width, height, options) {
-    return (key) => (
+    return renderFilters(filter => (
       <image
-        key={key}
+        filter={filter}
         href={url}
         x={x}
         y={y}
@@ -250,7 +250,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         crossOrigin={options?.crossOrigin}
         opacity={options?.opacity}
       />
-    )
+    ), options?.filters)
   },
   renderPath(lines, options) {
     let d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
@@ -270,6 +270,60 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
 }
 
 type Draw = (key: React.Key) => JSX.Element
+
+function renderFilters(
+  children: (filter: string | undefined) => JSX.Element,
+  filters?: Filter[],
+) {
+  return (key: React.Key) => {
+    let def: JSX.Element | undefined
+    let filter: string | undefined
+    if (filters && filters.length > 0) {
+      const id = React.useId()
+      const results: JSX.Element[] = []
+      filters.forEach((f, i) => {
+        if (f.type === 'brightness') {
+          results.push(
+            <feComponentTransfer key={i}>
+              <feFuncR type="linear" slope={f.value} />
+              <feFuncG type="linear" slope={f.value} />
+              <feFuncB type="linear" slope={f.value} />
+            </feComponentTransfer>
+          )
+        } else if (f.type === 'contrast') {
+          const intercept = 0.5 * (1 - f.value)
+          results.push(
+            <feComponentTransfer key={i}>
+              <feFuncR type="linear" slope={f.value} intercept={intercept} />
+              <feFuncG type="linear" slope={f.value} intercept={intercept} />
+              <feFuncB type="linear" slope={f.value} intercept={intercept} />
+            </feComponentTransfer>
+          )
+        } else if (f.type === 'hue-rotate') {
+          results.push(
+            <feColorMatrix key={i} type="hueRotate" values={f.value.toString()} />
+          )
+        } else if (f.type === 'saturate') {
+          results.push(
+            <feColorMatrix key={i} type="saturate" values={f.value.toString()} />
+          )
+        }
+      })
+      def = (
+        <filter id={id}>
+          {results}
+        </filter>
+      )
+      filter = `url(#${id})`
+    }
+    return (
+      <React.Fragment key={key}>
+        {def}
+        {children(filter)}
+      </React.Fragment>
+    )
+  }
+}
 
 function renderPattern(
   children: (fill: string, stroke: string | undefined) => JSX.Element,

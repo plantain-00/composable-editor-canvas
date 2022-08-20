@@ -207,6 +207,21 @@ export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position
 export function equals(a: number, b: number): boolean;
 
 // @public (undocumented)
+export type Filter = {
+    type: 'brightness';
+    value: number;
+} | {
+    type: 'contrast';
+    value: number;
+} | {
+    type: 'hue-rotate';
+    value: number;
+} | {
+    type: 'saturate';
+    value: number;
+};
+
+// @public (undocumented)
 export function formatNumber(n: number, precision?: number): number;
 
 // @public (undocumented)
@@ -318,6 +333,7 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     width?: number | undefined;
     height?: number | undefined;
     src: ImageBitmap | ImageData;
+    colorMatrixes?: number[][] | undefined;
     pattern?: PatternGraphic | undefined;
 })[];
 
@@ -325,6 +341,7 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
 export function getImageGraphic(url: string, x: number, y: number, width: number, height: number, rerender: () => void, options?: Partial<{
     opacity: number;
     crossOrigin: "anonymous" | "use-credentials" | "";
+    filters: Filter[];
 }>): Graphic | undefined;
 
 // @public (undocumented)
@@ -870,6 +887,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
     renderImage(url: string, x: number, y: number, width: number, height: number, options?: Partial<{
         opacity: number;
         crossOrigin: "anonymous" | "use-credentials" | "";
+        filters: Filter[];
     }>): T;
     // (undocumented)
     renderPath(lines: Position[][], options?: Partial<PathOptions<T>>): T;
