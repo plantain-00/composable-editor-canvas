@@ -253,14 +253,20 @@ function renderFilter(ctx: CanvasRenderingContext2D, filters?: Filter[]) {
   if (filters && filters.length > 0) {
     const result: string[] = []
     filters.forEach(f => {
-      if (f.type === 'brightness') {
-        result.push(`brightness(${f.value})`)
-      } else if (f.type === 'contrast') {
-        result.push(`contrast(${f.value})`)
-      } else if (f.type === 'hue-rotate') {
+      if (f.type === 'hue-rotate') {
         result.push(`hue-rotate(${f.value}deg)`)
-      } else if (f.type === 'saturate') {
-        result.push(`saturate(${f.value})`)
+      } else if (f.type === 'blur') {
+        result.push(`blur(${f.value}px)`)
+      } else if (
+        f.type === 'brightness' ||
+        f.type === 'contrast' ||
+        f.type === 'saturate' ||
+        f.type === 'grayscale' ||
+        f.type === 'invert' ||
+        f.type === 'opacity' ||
+        f.type === 'sepia'
+      ) {
+        result.push(`${f.type}(${f.value})`)
       }
     })
     ctx.filter = result.join(' ')

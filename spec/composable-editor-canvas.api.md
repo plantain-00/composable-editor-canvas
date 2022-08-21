@@ -219,6 +219,21 @@ export type Filter = {
 } | {
     type: 'saturate';
     value: number;
+} | {
+    type: 'grayscale';
+    value: number;
+} | {
+    type: 'sepia';
+    value: number;
+} | {
+    type: 'invert';
+    value: number;
+} | {
+    type: 'opacity';
+    value: number;
+} | {
+    type: 'blur';
+    value: number;
 };
 
 // @public (undocumented)
@@ -333,7 +348,7 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
     width?: number | undefined;
     height?: number | undefined;
     src: ImageBitmap | ImageData;
-    colorMatrixes?: number[][] | undefined;
+    filters?: FilterGraphic[] | undefined;
     pattern?: PatternGraphic | undefined;
 })[];
 
@@ -1610,6 +1625,7 @@ export function zoomToFit(bounding: TwoPointsFormRegion | undefined, { width, he
 
 // Warnings were encountered during analysis:
 //
+// dist/nodejs/components/react-render-target/create-webgl-renderer.d.ts:79:5 - (ae-forgotten-export) The symbol "FilterGraphic" needs to be exported by the entry point index.d.ts
 // dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:12:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)

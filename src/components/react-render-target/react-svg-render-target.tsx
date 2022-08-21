@@ -307,6 +307,47 @@ function renderFilters(
           results.push(
             <feColorMatrix key={i} type="saturate" values={f.value.toString()} />
           )
+        } else if (f.type === 'grayscale') {
+          const m = 1 - f.value
+          results.push(
+            <feColorMatrix key={i} type="matrix"
+              values={`
+                ${0.2126 + 0.7874 * m} ${0.7152 - 0.7152 * m} ${0.0722 - 0.0722 * m} 0 0
+                ${0.2126 - 0.2126 * m} ${0.7152 + 0.2848 * m} ${0.0722 - 0.0722 * m} 0 0
+                ${0.2126 - 0.2126 * m} ${0.7152 - 0.7152 * m} ${0.0722 + 0.9278 * m} 0 0
+                0 0 0 1 0`}
+            />
+          )
+        } else if (f.type === 'invert') {
+          const m = `${f.value} ${1 - f.value}`
+          results.push(
+            <feComponentTransfer key={i}>
+              <feFuncR type="table" tableValues={m} />
+              <feFuncG type="table" tableValues={m} />
+              <feFuncB type="table" tableValues={m} />
+            </feComponentTransfer>
+          )
+        } else if (f.type === 'sepia') {
+          const m = 1 - f.value
+          results.push(
+            <feColorMatrix key={i} type="matrix"
+              values={`
+                ${0.393 + 0.607 * m} ${0.769 - 0.769 * m} ${0.189 - 0.189 * m} 0 0
+                ${0.349 - 0.349 * m} ${0.686 + 0.314 * m} ${0.168 - 0.168 * m} 0 0
+                ${0.272 - 0.272 * m} ${0.534 - 0.534 * m} ${0.131 + 0.869 * m} 0 0
+                0 0 0 1 0`}
+            />
+          )
+        } else if (f.type === 'opacity') {
+          results.push(
+            <feComponentTransfer key={i}>
+              <feFuncA type="table" tableValues={`0 ${f.value}`} />
+            </feComponentTransfer>
+          )
+        } else if (f.type === 'blur') {
+          results.push(
+            <feGaussianBlur key={i} in="SourceGraphic" stdDeviation={f.value}/>
+          )
         }
       })
       def = (
