@@ -141,6 +141,11 @@ export type Filter =
   | { type: 'contrast', value: number }
   | { type: 'hue-rotate', value: number }
   | { type: 'saturate', value: number }
+  | { type: 'grayscale', value: number }
+  | { type: 'sepia', value: number }
+  | { type: 'invert', value: number }
+  | { type: 'opacity', value: number }
+  | { type: 'blur', value: number }
 
 /**
  * @public

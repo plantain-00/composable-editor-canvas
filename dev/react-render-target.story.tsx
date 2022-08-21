@@ -103,7 +103,12 @@ export default () => {
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 154, 70, 75, 65, { filters: [{ type: 'saturate', value: 2 }], crossOrigin: '' }),
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 140, 75, 65, { filters: [{ type: 'saturate', value: 2 }, { type: 'hue-rotate', value: 90 }], crossOrigin: '' }),
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 77, 140, 75, 65, { filters: [{ type: 'saturate', value: 2 }, { type: 'hue-rotate', value: 90 }, { type: 'contrast', value: 2 }], crossOrigin: '' }),
-  ], 230, 250)
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 154, 140, 75, 65, { filters: [{ type: 'grayscale', value: 1 }], crossOrigin: '' }),
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 210, 75, 65, { filters: [{ type: 'sepia', value: 1 }], crossOrigin: '' }),
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 77, 210, 75, 65, { filters: [{ type: 'invert', value: 1 }], crossOrigin: '' }),
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 154, 210, 75, 65, { filters: [{ type: 'opacity', value: 0.5 }], crossOrigin: '' }),
+    target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 280, 75, 65, { filters: [{ type: 'blur', value: 2 }], crossOrigin: '' }),
+  ], 230, 370)
 
   const renderPolylines = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderPolyline([{ x: 5, y: 10 }, { x: 45, y: 150 }, { x: 45, y: 10 }], { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),

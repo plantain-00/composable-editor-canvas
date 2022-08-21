@@ -20,8 +20,18 @@ interface TextureGraphic {
   width?: number
   height?: number
   src: ImageData | ImageBitmap
-  colorMatrixes?: number[][]
+  filters?: FilterGraphic[]
 }
+
+type FilterGraphic =
+  | {
+    type: 'color matrix'
+    value: number[]
+  }
+  | {
+    type: 'blur'
+    value: [number, number]
+  }
 
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
   matrix?: Matrix
@@ -102,7 +112,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
       gl_FragColor = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
     }`]);
-  const filteredTextureProgramInfo = twgl.createProgramInfo(gl, [`
+  const colorMatrixTextureProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     uniform float flipY;
@@ -130,6 +140,46 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 			gl_FragColor.g = colorMatrix[5] * c.r + colorMatrix[6] * c.g + colorMatrix[7] * c.b + colorMatrix[8] * c.a + colorMatrix[9];
 			gl_FragColor.b = colorMatrix[10] * c.r + colorMatrix[11] * c.g + colorMatrix[12] * c.b + colorMatrix[13] * c.a + colorMatrix[14];
 			gl_FragColor.a = colorMatrix[15] * c.r + colorMatrix[16] * c.g + colorMatrix[17] * c.b + colorMatrix[18] * c.a + colorMatrix[19];
+    }`]);
+  const blurTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    attribute vec4 position;
+    uniform mat3 matrix;
+    uniform float flipY;
+    varying vec2 texcoord;
+
+    void main () {
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
+      texcoord = position.xy;
+    }
+    `, `
+    precision mediump float;
+
+    varying vec2 texcoord;
+    uniform sampler2D texture;
+    uniform float opacity;
+    uniform vec2 px;
+
+    void main() {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 ||
+          texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+			gl_FragColor = vec4(0.0);
+			gl_FragColor += texture2D(texture, texcoord + vec2(-7.0*px.x, -7.0*px.y))*0.0044299121055113265;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-6.0*px.x, -6.0*px.y))*0.00895781211794;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-5.0*px.x, -5.0*px.y))*0.0215963866053;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-4.0*px.x, -4.0*px.y))*0.0443683338718;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-3.0*px.x, -3.0*px.y))*0.0776744219933;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-2.0*px.x, -2.0*px.y))*0.115876621105;
+			gl_FragColor += texture2D(texture, texcoord + vec2(-1.0*px.x, -1.0*px.y))*0.147308056121;
+			gl_FragColor += texture2D(texture, texcoord                             )*0.159576912161;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 1.0*px.x,  1.0*px.y))*0.147308056121;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 2.0*px.x,  2.0*px.y))*0.115876621105;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 3.0*px.x,  3.0*px.y))*0.0776744219933;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 4.0*px.x,  4.0*px.y))*0.0443683338718;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 5.0*px.x,  5.0*px.y))*0.0215963866053;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 6.0*px.x,  6.0*px.y))*0.00895781211794;
+			gl_FragColor += texture2D(texture, texcoord + vec2( 7.0*px.x,  7.0*px.y))*0.0044299121055113265;
     }`]);
   const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
@@ -181,6 +231,22 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, WebGLTexture>()
 
+  const getFilterProgramInfoAndUniforms = (filter: FilterGraphic) => {
+    const filterUniforms: Record<string, unknown> = {}
+    let programInfo: twgl.ProgramInfo
+    if (filter.type === 'color matrix') {
+      programInfo = colorMatrixTextureProgramInfo
+      filterUniforms.colorMatrix = filter.value
+    } else {
+      programInfo = blurTextureProgramInfo
+      filterUniforms.px = filter.value
+    }
+    return {
+      programInfo,
+      filterUniforms,
+    }
+  }
+
   let objectsToDraw: twgl.DrawObject[] = []
   const drawPattern = (
     pattern: PatternGraphic,
@@ -229,13 +295,11 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
 
       let texture = canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src }))
-      let programInfo: twgl.ProgramInfo
-      let colorMatrix: number[] | undefined
-      if (line.colorMatrixes && line.colorMatrixes.length > 1) {
+      if (line.filters && line.filters.length > 1) {
         twgl.drawObjectList(gl, objectsToDraw)
         objectsToDraw = []
         const framebufferInfos: twgl.FramebufferInfo[] = []
-        for (let i = 0; i < line.colorMatrixes.length - 1; i++) {
+        for (let i = 0; i < line.filters.length - 1; i++) {
           let framebufferInfo: twgl.FramebufferInfo
           if (framebufferInfos.length < 2) {
             framebufferInfo = twgl.createFramebufferInfo(gl, undefined, line.src.width, line.src.height)
@@ -244,15 +308,16 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
             framebufferInfo = framebufferInfos[i % 2]
           }
           twgl.bindFramebufferInfo(gl, framebufferInfo)
+          const { programInfo, filterUniforms } = getFilterProgramInfoAndUniforms(line.filters[i])
           twgl.drawObjectList(gl, [
             {
-              programInfo: filteredTextureProgramInfo,
+              programInfo,
               bufferInfo: textureBufferInfo,
               uniforms: {
                 matrix: m3.projection(1, 1),
                 opacity: line.opacity ?? 1,
                 texture,
-                colorMatrix: line.colorMatrixes[i],
+                ...filterUniforms,
                 flipY: -1,
               },
             }
@@ -261,19 +326,21 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         }
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-        programInfo = filteredTextureProgramInfo
-        colorMatrix = line.colorMatrixes[line.colorMatrixes.length - 1]
+      }
+      let filterUniforms: Record<string, unknown> = {}
+      let programInfo: twgl.ProgramInfo
+      if (line.filters && line.filters?.length > 0) {
+        const p = getFilterProgramInfoAndUniforms(line.filters[line.filters.length - 1])
+        programInfo = p.programInfo
+        filterUniforms = p.filterUniforms
       } else {
         if (line.pattern) {
           programInfo = colorMaskedTextureProgramInfo
         } else if (line.color) {
           programInfo = coloredTextureProgramInfo
-        } else if (line.colorMatrixes) {
-          programInfo = filteredTextureProgramInfo
         } else {
           programInfo = textureProgramInfo
         }
-        colorMatrix = line.colorMatrixes?.[0]
       }
 
       const drawObject: twgl.DrawObject = {
@@ -284,7 +351,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
           color,
           opacity: line.opacity ?? 1,
           texture,
-          colorMatrix,
+          ...filterUniforms,
           flipY: 1,
         },
       }
@@ -700,24 +767,30 @@ export function getImageGraphic(
   if (!image) {
     return
   }
-  const colorMatrixes: number[][] = []
+  const filters: FilterGraphic[] = []
   if (options?.filters && options.filters.length > 0) {
     options.filters.forEach(f => {
       if (f.type === 'brightness') {
-        colorMatrixes.push([
-          f.value, 0, 0, 0, 0,
-          0, f.value, 0, 0, 0,
-          0, 0, f.value, 0, 0,
-          0, 0, 0, 1, 0
-        ])
+        filters.push({
+          type: 'color matrix',
+          value: [
+            f.value, 0, 0, 0, 0,
+            0, f.value, 0, 0, 0,
+            0, 0, f.value, 0, 0,
+            0, 0, 0, 1, 0
+          ]
+        })
       } else if (f.type === 'contrast') {
         const intercept = 0.5 * (1 - f.value)
-        colorMatrixes.push([
-          f.value, 0, 0, 0, intercept,
-          0, f.value, 0, 0, intercept,
-          0, 0, f.value, 0, intercept,
-          0, 0, 0, 1, 0
-        ])
+        filters.push({
+          type: 'color matrix',
+          value: [
+            f.value, 0, 0, 0, intercept,
+            0, f.value, 0, 0, intercept,
+            0, 0, f.value, 0, intercept,
+            0, 0, 0, 1, 0
+          ]
+        })
       } else if (f.type === 'hue-rotate') {
         const rotation = f.value * Math.PI / 180
         const cos = Math.cos(rotation)
@@ -725,21 +798,81 @@ export function getImageGraphic(
         const lumR = 0.213
         const lumG = 0.715
         const lumB = 0.072
-        colorMatrixes.push([
-          lumR + cos * (1 - lumR) + sin * (-lumR), lumG + cos * (-lumG) + sin * (-lumG), lumB + cos * (-lumB) + sin * (1 - lumB), 0, 0,
-          lumR + cos * (-lumR) + sin * (0.143), lumG + cos * (1 - lumG) + sin * (0.140), lumB + cos * (-lumB) + sin * (-0.283), 0, 0,
-          lumR + cos * (-lumR) + sin * (-(1 - lumR)), lumG + cos * (-lumG) + sin * (lumG), lumB + cos * (1 - lumB) + sin * (lumB), 0, 0,
-          0, 0, 0, 1, 0
-        ])
+        filters.push({
+          type: 'color matrix',
+          value: [
+            lumR + cos * (1 - lumR) + sin * (-lumR), lumG + cos * (-lumG) + sin * (-lumG), lumB + cos * (-lumB) + sin * (1 - lumB), 0, 0,
+            lumR + cos * (-lumR) + sin * (0.143), lumG + cos * (1 - lumG) + sin * (0.140), lumB + cos * (-lumB) + sin * (-0.283), 0, 0,
+            lumR + cos * (-lumR) + sin * (-(1 - lumR)), lumG + cos * (-lumG) + sin * (lumG), lumB + cos * (1 - lumB) + sin * (lumB), 0, 0,
+            0, 0, 0, 1, 0
+          ]
+        })
       } else if (f.type === 'saturate') {
         const x = (f.value - 1) * 2 / 3 + 1
         const y = -0.5 * (x - 1)
-        colorMatrixes.push([
-          x, y, y, 0, 0,
-          y, x, y, 0, 0,
-          y, y, x, 0, 0,
-          0, 0, 0, 1, 0
-        ])
+        filters.push({
+          type: 'color matrix',
+          value: [
+            x, y, y, 0, 0,
+            y, x, y, 0, 0,
+            y, y, x, 0, 0,
+            0, 0, 0, 1, 0
+          ]
+        })
+      } else if (f.type === 'grayscale') {
+        const m = 1 - f.value
+        filters.push({
+          type: 'color matrix',
+          value: [
+            0.2126 + 0.7874 * m, 0.7152 - 0.7152 * m, 0.0722 - 0.0722 * m, 0, 0,
+            0.2126 - 0.2126 * m, 0.7152 + 0.2848 * m, 0.0722 - 0.0722 * m, 0, 0,
+            0.2126 - 0.2126 * m, 0.7152 - 0.7152 * m, 0.0722 + 0.9278 * m, 0, 0,
+            0, 0, 0, 1, 0
+          ]
+        })
+      } else if (f.type === 'sepia') {
+        const m = 1 - f.value
+        filters.push({
+          type: 'color matrix',
+          value: [
+            0.393 + 0.607 * m, 0.769 - 0.769 * m, 0.189 - 0.189 * m, 0, 0,
+            0.349 - 0.349 * m, 0.686 + 0.314 * m, 0.168 - 0.168 * m, 0, 0,
+            0.272 - 0.272 * m, 0.534 - 0.534 * m, 0.131 + 0.869 * m, 0, 0,
+            0, 0, 0, 1, 0
+          ]
+        })
+      } else if (f.type === 'invert') {
+        const a = 1 - f.value * 2
+        filters.push({
+          type: 'color matrix',
+          value: [
+            a, 0, 0, 0, f.value,
+            0, a, 0, 0, f.value,
+            0, 0, a, 0, f.value,
+            0, 0, 0, 1, 0
+          ]
+        })
+      } else if (f.type === 'opacity') {
+        filters.push({
+          type: 'color matrix',
+          value: [
+            1, 0, 0, 0, 0,
+            0, 1, 0, 0, 0,
+            0, 0, 1, 0, 0,
+            0, 0, 0, f.value, 0,
+          ]
+        })
+      } else if (f.type === 'blur') {
+        filters.push(
+          {
+            type: 'blur',
+            value: [0, f.value * 3 / 7  / height],
+          },
+          {
+            type: 'blur',
+            value: [f.value * 3 / 7 / width, 0],
+          },
+        )
       }
     })
   }
@@ -751,7 +884,7 @@ export function getImageGraphic(
     height,
     src: image,
     opacity: options?.opacity,
-    colorMatrixes: colorMatrixes.length > 0 ? colorMatrixes : undefined,
+    filters: filters.length > 0 ? filters : undefined,
   }
 }
 
