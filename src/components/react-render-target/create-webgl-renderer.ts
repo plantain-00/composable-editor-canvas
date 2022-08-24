@@ -53,8 +53,9 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const basicProgramInfo = twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
+    uniform float flipY;
     void main() {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
     }
     `, `
     precision mediump float;
@@ -213,10 +214,11 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     attribute vec4 position;
     attribute vec4 color;
     uniform mat3 matrix;
+    uniform float flipY;
     varying vec4 v_color;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
       v_color = color;
     }
     `, `
@@ -246,6 +248,10 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       filterUniforms,
     }
   }
+  const flushDraw = () => {
+    twgl.drawObjectList(gl, objectsToDraw)
+    objectsToDraw = []
+  }
 
   let objectsToDraw: twgl.DrawObject[] = []
   const drawPattern = (
@@ -254,8 +260,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     bounding: { xMin: number, xMax: number, yMin: number, yMax: number },
     drawObject: twgl.DrawObject,
   ) => {
-    twgl.drawObjectList(gl, objectsToDraw)
-    objectsToDraw = []
+    flushDraw()
 
     gl.enable(gl.STENCIL_TEST);
     gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
@@ -280,8 +285,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         }
       }
     }
-    twgl.drawObjectList(gl, objectsToDraw)
-    objectsToDraw = []
+    flushDraw()
 
     gl.disable(gl.STENCIL_TEST);
     gl.clear(gl.STENCIL_BUFFER_BIT)
@@ -296,8 +300,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
       let texture = canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src }))
       if (line.filters && line.filters.length > 1) {
-        twgl.drawObjectList(gl, objectsToDraw)
-        objectsToDraw = []
+        flushDraw()
         const framebufferInfos: twgl.FramebufferInfo[] = []
         for (let i = 0; i < line.filters.length - 1; i++) {
           let framebufferInfo: twgl.FramebufferInfo
@@ -381,6 +384,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         uniforms: {
           color,
           matrix,
+          flipY: 1,
         },
         type: line.type === 'triangles' ? gl.TRIANGLES
           : line.type === 'line strip' ? gl.LINE_STRIP
@@ -388,27 +392,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
               : line.type === 'triangle strip' ? gl.TRIANGLE_STRIP : gl.TRIANGLE_FAN,
       }
       if (line.pattern) {
-        let xMin = Infinity
-        let yMin = Infinity
-        let xMax = -Infinity
-        let yMax = -Infinity
-        for (let i = 0; i < line.points.length; i += 2) {
-          const x = line.points[i]
-          const y = line.points[i + 1]
-          if (x < xMin) {
-            xMin = x
-          }
-          if (x > xMax) {
-            xMax = x
-          }
-          if (y < yMin) {
-            yMin = y
-          }
-          if (y > yMax) {
-            yMax = y
-          }
-        }
-        drawPattern(line.pattern, matrix, { xMin, yMin, xMax, yMax }, drawObject)
+        const bounding = getPointsBounding(line.points)
+        drawPattern(line.pattern, matrix, bounding, drawObject)
       } else {
         objectsToDraw.push(drawObject)
       }
@@ -433,8 +418,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       const matrix = graphic.matrix ? m3.multiply(worldMatrix, graphic.matrix) : worldMatrix
       drawGraphic(graphic, matrix)
     }
-    twgl.drawObjectList(gl, objectsToDraw)
-    objectsToDraw = []
+    flushDraw()
   }
 }
 
@@ -710,40 +694,34 @@ export function getPathGraphics(
         vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1]
       )
     }
+    let pattern: PatternGraphic | undefined
+    let color: [number, number, number, number] | undefined
     if (options.fillPattern !== undefined) {
-      graphics.push({
-        type: 'triangles',
-        points: triangles,
-        color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
-        pattern: options.fillPattern,
-      })
+      color = options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0]
+      pattern = options.fillPattern
     } else if (options.fillColor !== undefined) {
-      graphics.push({
-        type: 'triangles',
-        points: triangles,
-        color: colorNumberToRec(options.fillColor, options.fillOpacity),
-      })
+      color = colorNumberToRec(options.fillColor, options.fillOpacity)
     } else if (options.fillLinearGradient !== undefined) {
-      graphics.push({
-        type: 'triangles',
-        points: triangles,
-        color: options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0],
-        pattern: {
-          graphics: [
-            getLinearGradientGraphic(options.fillLinearGradient, points[0])
-          ],
-        },
-      })
+      color = options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0]
+      pattern = {
+        graphics: [
+          getLinearGradientGraphic(options.fillLinearGradient, points[0])
+        ],
+      }
     } else if (options.fillRadialGradient !== undefined) {
+      color = options.fillColor ? colorNumberToRec(options.fillColor, options.fillOpacity) : [0, 0, 0, 0]
+      pattern = {
+        graphics: [
+          getRadialGradientGraphic(options.fillRadialGradient, points[0])
+        ],
+      }
+    }
+    if (color) {
       graphics.push({
         type: 'triangles',
         points: triangles,
-        color: options.fillColor ? colorNumberToRec(options.fillColor, options.fillOpacity) : [0, 0, 0, 0],
-        pattern: {
-          graphics: [
-            getRadialGradientGraphic(options.fillRadialGradient, points[0])
-          ],
-        },
+        color,
+        pattern,
       })
     }
   }
@@ -866,7 +844,7 @@ export function getImageGraphic(
         filters.push(
           {
             type: 'blur',
-            value: [0, f.value * 3 / 7  / height],
+            value: [0, f.value * 3 / 7 / height],
           },
           {
             type: 'blur',
@@ -1112,4 +1090,33 @@ function numberArrayToPoints(num: number[]) {
     result.push({ x: num[i], y: num[i + 1] })
   }
   return result
+}
+
+function getPointsBounding(points: number[]) {
+  let xMin = Infinity
+  let yMin = Infinity
+  let xMax = -Infinity
+  let yMax = -Infinity
+  for (let i = 0; i < points.length; i += 2) {
+    const x = points[i]
+    const y = points[i + 1]
+    if (x < xMin) {
+      xMin = x
+    }
+    if (x > xMax) {
+      xMax = x
+    }
+    if (y < yMin) {
+      yMin = y
+    }
+    if (y > yMax) {
+      yMax = y
+    }
+  }
+  return {
+    xMax,
+    xMin,
+    yMin,
+    yMax,
+  }
 }
