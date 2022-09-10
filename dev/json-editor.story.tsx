@@ -138,11 +138,31 @@ function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
   )
 }
 
+const groupStyle: React.CSSProperties = { padding: '10px', border: '1px solid rgba(0,0,0,.125)', borderRadius: '0.25rem' }
+
 function ObjectEditor(props: {
   properties: Record<string, JSX.Element>
+  inline?: boolean
 }) {
+  if (props.inline) {
+    return (
+      <table style={groupStyle}>
+        <thead></thead>
+        <tbody>
+          {Object.entries(props.properties).map(([title, child]) => {
+            return (
+              <tr key={title}>
+                <td style={{ paddingRight: '5px' }}>{title}</td>
+                <td>{child}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    )
+  }
   return (
-    <div style={{ padding: '10px', border: '1px solid rgba(0,0,0,.125)', borderRadius: '0.25rem' }}>
+    <div style={groupStyle}>
       {Object.entries(props.properties).map(([title, child]) => {
         return (
           <React.Fragment key={title}>
@@ -160,21 +180,83 @@ function ArrayEditor(props: {
   remove: (index: number) => void
   items: JSX.Element[]
   title?: (index: number) => string
+  inline?: boolean
 }) {
+  if (props.inline) {
+    return (
+      <div style={groupStyle}>
+        <table>
+          <thead>
+          </thead>
+          <tbody>
+            {props.items.map((p, i) => {
+              return (
+                <tr key={i}>
+                  <td style={{ paddingRight: '5px' }}>{i + 1}</td>
+                  <td>{p}</td>
+                  <td>
+                    <button style={buttonStyle} onClick={() => props.remove(i)} >❌</button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <button style={buttonStyle} onClick={props.add}>➕</button>
+      </div>
+    )
+  }
   return (
-    <div style={{ padding: '10px', border: '1px solid rgba(0,0,0,.125)', borderRadius: '0.25rem' }}>
+    <div style={groupStyle}>
       {props.items.map((p, i) => {
         return (
           <React.Fragment key={i}>
             <div style={{ marginBottom: '5px', marginTop: '5px' }}>
-              {props.title?.(i) ?? i}
+              {props.title?.(i) ?? (i + 1)}
               <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)} >❌</button>
             </div>
             <div>{p}</div>
           </React.Fragment>
         )
       })}
-      <button style={buttonStyle} onClick={props.add}  >➕</button>
+      <button style={buttonStyle} onClick={props.add}>➕</button>
+    </div>
+  )
+}
+
+function ObjectArrayEditor(props: {
+  add: () => void
+  remove: (index: number) => void
+  properties: Record<string, JSX.Element>[]
+}) {
+  if (props.properties.length === 0) {
+    return null
+  }
+  return (
+    <div style={groupStyle}>
+      <table>
+        <thead>
+          <tr>
+            <td></td>
+            {Object.entries(props.properties[0]).map(([title]) => <td key={title}>{title}</td>)}
+            <td></td>
+          </tr>
+        </thead>
+        <tbody>
+          {props.properties.map((p, i) => {
+            return (
+              <tr key={i}>
+                <td style={{ paddingRight: '5px' }}>{i + 1}</td>
+                {Object.values(p).map((v, j) => <td key={j}>{v}</td>)}
+                <td>
+                  <button style={buttonStyle} onClick={() => props.remove(i)} >❌</button>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <button style={buttonStyle} onClick={props.add}>➕</button>
     </div>
   )
 }
@@ -188,7 +270,12 @@ export default () => {
       propertyExample1: '',
       propertyExample2: 0,
     },
+    inlineObjectExample: {
+      propertyExample1: '',
+      propertyExample2: 0,
+    },
     arrayExample: ['item1', 'item2'],
+    inlineArrayExample: ['item1', 'item2'],
     enumExample: 'enum 1' as 'enum 1' | 'enum 2',
     colorExample: '#000000',
     textareaExample: '',
@@ -202,9 +289,15 @@ export default () => {
         propertyExample1: 'bar',
         propertyExample2: 2,
       },
+    ],
+    inlineObjectArrayExample: [
       {
-        propertyExample1: 'baz',
+        propertyExample1: 'foo',
         propertyExample2: 1,
+      },
+      {
+        propertyExample1: 'bar',
+        propertyExample2: 2,
       },
     ],
     enumTitlesExample: 'enum 1' as 'enum 1' | 'enum 2',
@@ -234,14 +327,27 @@ export default () => {
             'A number example': <NumberEditor value={value.numberExample} setValue={update((draft, v) => draft.numberExample = v)} />,
             'A object example': <ObjectEditor
               properties={{
-                'Property exmaple 1': <StringEditor value={value.objectExample.propertyExample1} setValue={update((draft, v) => draft.objectExample.propertyExample1 = v)} />,
-                'Property exmaple 2': <NumberEditor value={value.objectExample.propertyExample2} setValue={update((draft, v) => draft.objectExample.propertyExample2 = v)} />,
+                'Property example 1': <StringEditor value={value.objectExample.propertyExample1} setValue={update((draft, v) => draft.objectExample.propertyExample1 = v)} />,
+                'Property example 2': <NumberEditor value={value.objectExample.propertyExample2} setValue={update((draft, v) => draft.objectExample.propertyExample2 = v)} />,
+              }}
+            />,
+            'A inline object example': <ObjectEditor
+              inline
+              properties={{
+                'Property example 1': <StringEditor value={value.inlineObjectExample.propertyExample1} setValue={update((draft, v) => draft.inlineObjectExample.propertyExample1 = v)} />,
+                'Property example 2': <NumberEditor value={value.inlineObjectExample.propertyExample2} setValue={update((draft, v) => draft.inlineObjectExample.propertyExample2 = v)} />,
               }}
             />,
             'A array example': <ArrayEditor
               add={() => change(draft => draft.arrayExample.push(''))}
               remove={(i) => change(draft => draft.arrayExample.splice(i, 1))}
               items={value.arrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.arrayExample[i] = v)} />)}
+            />,
+            'A inline array example': <ArrayEditor
+              inline
+              add={() => change(draft => draft.inlineArrayExample.push(''))}
+              remove={(i) => change(draft => draft.inlineArrayExample.splice(i, 1))}
+              items={value.inlineArrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.inlineArrayExample[i] = v)} />)}
             />,
             'A enum example': <EnumEditor value={value.enumExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumExample = v)} />,
             'A color example': <StringEditor type='color' value={value.colorExample} setValue={update((draft, v) => draft.colorExample = v)} />,
@@ -253,17 +359,25 @@ export default () => {
               title={(i) => value.itemTitleExample[i].propertyExample1}
               items={value.itemTitleExample.map((f, i) => <ObjectEditor
                 properties={{
-                  'Property exmaple 1': <StringEditor value={f.propertyExample1} setValue={update((draft, v) => draft.itemTitleExample[i].propertyExample1 = v)} />,
-                  'Property exmaple 2': <NumberEditor value={f.propertyExample2} setValue={update((draft, v) => draft.itemTitleExample[i].propertyExample2 = v)} />,
+                  'Property example 1': <StringEditor value={f.propertyExample1} setValue={update((draft, v) => draft.itemTitleExample[i].propertyExample1 = v)} />,
+                  'Property example 2': <NumberEditor value={f.propertyExample2} setValue={update((draft, v) => draft.itemTitleExample[i].propertyExample2 = v)} />,
                 }}
               />)}
+            />,
+            'A inline object array example': <ObjectArrayEditor
+              add={() => change(draft => draft.inlineObjectArrayExample.push({ propertyExample1: '', propertyExample2: 0 }))}
+              remove={(i) => change(draft => draft.inlineObjectArrayExample.splice(i, 1))}
+              properties={value.inlineObjectArrayExample.map((f, i) => ({
+                'Property example 1': <StringEditor value={f.propertyExample1} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample1 = v)} />,
+                'Property example 2': <NumberEditor value={f.propertyExample2} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample2 = v)} />,
+              }))}
             />,
             'A enum titles example': <EnumEditor enumTitles={['enum title 1', 'enum title 2']} value={value.enumTitlesExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumTitlesExample = v)} />,
             'A enum array example': <EnumArrayEditor enumTitles={['foo title', 'bar title']} value={value.enumArrayExample} enums={['foo', 'bar'] as const} setValue={update((draft, v) => draft.enumArrayExample = v)} />,
           }}
         />
       </div>
-      <pre><code>{JSON.stringify(value, null, 2)}</code></pre>
+      <pre style={{ width: '300px' }}><code>{JSON.stringify(value, null, 2)}</code></pre>
     </div>
   )
 }
