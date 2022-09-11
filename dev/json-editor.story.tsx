@@ -175,9 +175,15 @@ function ObjectEditor(props: {
   )
 }
 
-function ArrayEditor(props: {
+interface ArrayProps {
   add: () => void
   remove: (index: number) => void
+  copy: (index: number) => void
+  moveUp: (index: number) => void
+  moveDown: (index: number) => void
+}
+
+function ArrayEditor(props: ArrayProps & {
   items: JSX.Element[]
   title?: (index: number) => string
   inline?: boolean
@@ -195,7 +201,10 @@ function ArrayEditor(props: {
                   <td style={{ paddingRight: '5px' }}>{i + 1}</td>
                   <td>{p}</td>
                   <td>
-                    <button style={buttonStyle} onClick={() => props.remove(i)} >❌</button>
+                    <button style={buttonStyle} onClick={() => props.remove(i)}>❌</button>
+                    <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
+                    {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
+                    {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
                   </td>
                 </tr>
               )
@@ -213,7 +222,10 @@ function ArrayEditor(props: {
           <React.Fragment key={i}>
             <div style={{ marginBottom: '5px', marginTop: '5px' }}>
               {props.title?.(i) ?? (i + 1)}
-              <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)} >❌</button>
+              <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)}>❌</button>
+              <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
+              {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
+              {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
             </div>
             <div>{p}</div>
           </React.Fragment>
@@ -224,9 +236,7 @@ function ArrayEditor(props: {
   )
 }
 
-function ObjectArrayEditor(props: {
-  add: () => void
-  remove: (index: number) => void
+function ObjectArrayEditor(props: ArrayProps & {
   properties: Record<string, JSX.Element>[]
 }) {
   if (props.properties.length === 0) {
@@ -249,7 +259,10 @@ function ObjectArrayEditor(props: {
                 <td style={{ paddingRight: '5px' }}>{i + 1}</td>
                 {Object.values(p).map((v, j) => <td key={j}>{v}</td>)}
                 <td>
-                  <button style={buttonStyle} onClick={() => props.remove(i)} >❌</button>
+                  <button style={buttonStyle} onClick={() => props.remove(i)}>❌</button>
+                  <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
+                  {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
+                  {i < props.properties.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
                 </td>
               </tr>
             )
@@ -316,6 +329,23 @@ export default () => {
       }))
     }
   }
+  const getArrayProps = <T,>(getArray: (v: typeof value) => T[], defaultValue: T) => {
+    return {
+      add: () => change(draft => getArray(draft).push(defaultValue)),
+      remove: (i: number) => change(draft => getArray(draft).splice(i, 1)),
+      copy: (i: number) => change(draft => getArray(draft).splice(i, 0, getArray(draft)[i])),
+      moveUp: (i: number) => change(draft => {
+        const array = getArray(draft)
+        array.splice(i - 1, 0, array[i])
+        array.splice(i + 1, 1)
+      }),
+      moveDown: (i: number) => change(draft => {
+        const array = getArray(draft)
+        array.splice(i + 2, 0, array[i])
+        array.splice(i, 1)
+      }),
+    }
+  }
 
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -339,14 +369,12 @@ export default () => {
               }}
             />,
             'A array example': <ArrayEditor
-              add={() => change(draft => draft.arrayExample.push(''))}
-              remove={(i) => change(draft => draft.arrayExample.splice(i, 1))}
+              {...getArrayProps(v => v.arrayExample, '')}
               items={value.arrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.arrayExample[i] = v)} />)}
             />,
             'A inline array example': <ArrayEditor
               inline
-              add={() => change(draft => draft.inlineArrayExample.push(''))}
-              remove={(i) => change(draft => draft.inlineArrayExample.splice(i, 1))}
+              {...getArrayProps(v => v.inlineArrayExample, '')}
               items={value.inlineArrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.inlineArrayExample[i] = v)} />)}
             />,
             'A enum example': <EnumEditor value={value.enumExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumExample = v)} />,
@@ -354,8 +382,7 @@ export default () => {
             'A textarea example': <StringEditor textarea value={value.textareaExample} setValue={update((draft, v) => draft.textareaExample = v)} />,
             'A image preview example': <StringEditor value={value.imagePreviewExample} setValue={update((draft, v) => draft.imagePreviewExample = v)} />,
             'A item title example': <ArrayEditor
-              add={() => change(draft => draft.itemTitleExample.push({ propertyExample1: '', propertyExample2: 0 }))}
-              remove={(i) => change(draft => draft.itemTitleExample.splice(i, 1))}
+              {...getArrayProps(v => v.itemTitleExample, { propertyExample1: '', propertyExample2: 0 })}
               title={(i) => value.itemTitleExample[i].propertyExample1}
               items={value.itemTitleExample.map((f, i) => <ObjectEditor
                 properties={{
@@ -365,8 +392,7 @@ export default () => {
               />)}
             />,
             'A inline object array example': <ObjectArrayEditor
-              add={() => change(draft => draft.inlineObjectArrayExample.push({ propertyExample1: '', propertyExample2: 0 }))}
-              remove={(i) => change(draft => draft.inlineObjectArrayExample.splice(i, 1))}
+              {...getArrayProps(v => v.inlineObjectArrayExample, { propertyExample1: '', propertyExample2: 0 })}
               properties={value.inlineObjectArrayExample.map((f, i) => ({
                 'Property example 1': <StringEditor value={f.propertyExample1} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample1 = v)} />,
                 'Property example 2': <NumberEditor value={f.propertyExample2} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample2 = v)} />,
