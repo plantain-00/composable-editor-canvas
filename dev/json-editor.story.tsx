@@ -274,6 +274,25 @@ function ObjectArrayEditor(props: ArrayProps & {
   )
 }
 
+function DialogContainer(props: {
+  children: React.ReactNode
+}) {
+  const [visible, setVisible] = React.useState(false)
+  return (
+    <>
+      <button style={buttonStyle} onClick={() => setVisible(true)}>📖</button>
+      {visible && <div
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2 }}
+        onClick={() => setVisible(false)}
+      >
+        <div style={{ width: '600px', height: '400px', background: 'white' }} onClick={(e) => e.stopPropagation()}>
+          {props.children}
+        </div>
+      </div>}
+    </>
+  )
+}
+
 export default () => {
   const [value, setValue] = React.useState({
     stringExample: 'a string example',
@@ -307,10 +326,18 @@ export default () => {
       {
         propertyExample1: 'foo',
         propertyExample2: 1,
+        propertyExample3: {
+          propertyExample4: 2,
+          propertyExample5: '',
+        },
       },
       {
         propertyExample1: 'bar',
         propertyExample2: 2,
+        propertyExample3: {
+          propertyExample4: 3,
+          propertyExample5: '',
+        },
       },
     ],
     enumTitlesExample: 'enum 1' as 'enum 1' | 'enum 2',
@@ -394,10 +421,17 @@ export default () => {
               />)}
             />,
             'A inline object array example': <ObjectArrayEditor
-              {...getArrayProps(v => v.inlineObjectArrayExample, { propertyExample1: '', propertyExample2: 0 })}
+              {...getArrayProps(v => v.inlineObjectArrayExample, { propertyExample1: '', propertyExample2: 0, propertyExample3: { propertyExample4: 0, propertyExample5: '' } })}
               properties={value.inlineObjectArrayExample.map((f, i) => ({
                 'Property example 1': <StringEditor value={f.propertyExample1} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample1 = v)} />,
                 'Property example 2': <NumberEditor value={f.propertyExample2} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample2 = v)} />,
+                'Property example 3': <DialogContainer><ObjectEditor
+                  inline
+                  properties={{
+                    'Property example 3': <NumberEditor value={f.propertyExample3.propertyExample4} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample3.propertyExample4 = v)} />,
+                    'Property example 4': <StringEditor value={f.propertyExample3.propertyExample5} setValue={update((draft, v) => draft.inlineObjectArrayExample[i].propertyExample3.propertyExample5 = v)} />,
+                  }}
+                /></DialogContainer>,
               }))}
             />,
             'A enum titles example': <EnumEditor enumTitles={['enum title 1', 'enum title 2']} value={value.enumTitlesExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumTitlesExample = v)} />,
