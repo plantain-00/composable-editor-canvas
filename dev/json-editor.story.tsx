@@ -317,11 +317,6 @@ export default () => {
     enumArrayExample: ['foo'] as ('foo' | 'bar')[],
   })
 
-  const change = (recipe: (draft: Draft<typeof value>) => void) => {
-    setValue(produce(value, (draft) => {
-      recipe(draft)
-    }))
-  }
   const update = <T,>(recipe: (draft: Draft<typeof value>, v: T) => void) => {
     return (v: T) => {
       setValue(produce(value, (draft) => {
@@ -331,19 +326,26 @@ export default () => {
   }
   const getArrayProps = <T,>(getArray: (v: typeof value) => T[], defaultValue: T) => {
     return {
-      add: () => change(draft => getArray(draft).push(defaultValue)),
-      remove: (i: number) => change(draft => getArray(draft).splice(i, 1)),
-      copy: (i: number) => change(draft => getArray(draft).splice(i, 0, getArray(draft)[i])),
-      moveUp: (i: number) => change(draft => {
+      add: () => setValue(produce(value, draft => {
+        getArray(draft).push(defaultValue)
+      })),
+      remove: (i: number) => setValue(produce(value, draft => {
+        getArray(draft).splice(i, 1)
+      })),
+      copy: (i: number) => setValue(produce(value, draft => {
+        const array = getArray(draft)
+        array.splice(i, 0, array[i])
+      })),
+      moveUp: (i: number) => setValue(produce(value, draft => {
         const array = getArray(draft)
         array.splice(i - 1, 0, array[i])
         array.splice(i + 1, 1)
-      }),
-      moveDown: (i: number) => change(draft => {
+      })),
+      moveDown: (i: number) => setValue(produce(value, draft => {
         const array = getArray(draft)
         array.splice(i + 2, 0, array[i])
         array.splice(i, 1)
-      }),
+      })),
     }
   }
 
