@@ -4,10 +4,10 @@ import React from "react"
 interface JsonEditorProps<T> {
   value: T
   setValue: (value: T) => void
+  style?: React.CSSProperties
 }
 
 const controlStyle: React.CSSProperties = {
-  display: 'block',
   outline: 0,
   padding: '0.375rem 0.75rem',
   fontSize: '1rem',
@@ -46,7 +46,7 @@ function StringEditor(props: JsonEditorProps<string> & {
       <textarea
         value={props.value}
         onChange={(e) => props.setValue(e.target.value)}
-        style={controlStyle}
+        style={{ ...controlStyle, ...props.style }}
       />
     )
   }
@@ -60,7 +60,7 @@ function StringEditor(props: JsonEditorProps<string> & {
         value={props.value}
         type={props.type ?? 'text'}
         onChange={(e) => props.setValue(e.target.value)}
-        style={controlStyle}
+        style={{ ...controlStyle, ...props.style }}
       />
       {preview}
     </>
@@ -72,7 +72,7 @@ function NumberEditor(props: JsonEditorProps<number>) {
     <input
       value={props.value}
       onChange={(e) => props.setValue(+e.target.value)}
-      style={controlStyle}
+      style={{ ...controlStyle, ...props.style }}
     />
   )
 }
@@ -83,6 +83,7 @@ function BooleanEditor(props: JsonEditorProps<boolean>) {
       type='checkbox'
       checked={props.value}
       onChange={(e) => props.setValue(e.target.checked)}
+      style={props.style}
     />
   )
 }
@@ -92,7 +93,7 @@ function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & {
   enumTitles?: readonly string[]
 }) {
   return (
-    <div>
+    <div style={props.style}>
       {props.enums.map((e, i) => (
         <label key={e} style={{ marginRight: '10px' }}>
           <input
@@ -122,7 +123,7 @@ function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
   enumTitles?: readonly string[]
 }) {
   return (
-    <div>
+    <div style={props.style}>
       {props.enums.map((e, i) => (
         <label key={e} style={{ marginRight: '10px' }}>
           <input
@@ -308,6 +309,7 @@ export default () => {
     },
     arrayExample: ['item1', 'item2'],
     inlineArrayExample: ['item1', 'item2'],
+    optionalExample: undefined as string | undefined,
     enumExample: 'enum 1' as 'enum 1' | 'enum 2',
     colorExample: '#000000',
     textareaExample: '',
@@ -406,6 +408,10 @@ export default () => {
               {...getArrayProps(v => v.inlineArrayExample, '')}
               items={value.inlineArrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.inlineArrayExample[i] = v)} />)}
             />,
+            'A optional example': <>
+              <BooleanEditor value={value.optionalExample !== undefined} setValue={update((draft, v) => draft.optionalExample = v ? '' : undefined)} style={{ marginRight: '5px' }} />
+              {value.optionalExample !== undefined && <StringEditor value={value.optionalExample} setValue={update((draft, v) => draft.optionalExample = v)} />}
+            </>,
             'A enum example': <EnumEditor value={value.enumExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumExample = v)} />,
             'A color example': <StringEditor type='color' value={value.colorExample} setValue={update((draft, v) => draft.colorExample = v)} />,
             'A textarea example': <StringEditor textarea value={value.textareaExample} setValue={update((draft, v) => draft.textareaExample = v)} />,
