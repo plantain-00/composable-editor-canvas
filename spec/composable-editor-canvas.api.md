@@ -9,7 +9,6 @@
 import type { Draft } from 'immer/dist/types/types-external';
 import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
-import { default as React_3 } from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
 
 // @public (undocumented)
@@ -44,8 +43,22 @@ export interface Arc extends Circle, AngleRange {
 // @public (undocumented)
 export function arcToPolyline(content: Arc, angleDelta: number): Position[];
 
+// Warning: (ae-forgotten-export) The symbol "ArrayProps" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export function ArrayEditor(props: ArrayProps & {
+    items: JSX.Element[];
+    title?: (index: number) => string;
+    inline?: boolean;
+}): JSX.Element;
+
 // @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
+
+// Warning: (ae-forgotten-export) The symbol "JsonEditorProps" needs to be exported by the entry point index.d.ts
+//
+// @public (undocumented)
+export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element;
 
 // @public (undocumented)
 export interface Circle extends Position {
@@ -103,6 +116,11 @@ export function deduplicatePosition(array: Position[]): Position[];
 
 // @public (undocumented)
 export const defaultMiterLimit = 10;
+
+// @public (undocumented)
+export function DialogContainer(props: {
+    children: React_2.ReactNode;
+}): JSX.Element;
 
 // @public (undocumented)
 export function DragMask(props: {
@@ -202,6 +220,18 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
 
 // @public (undocumented)
 export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
+
+// @public (undocumented)
+export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & {
+    enums: readonly T[];
+    enumTitles?: readonly string[];
+}): JSX.Element;
+
+// @public (undocumented)
+export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
+    enums: readonly T[];
+    enumTitles?: readonly string[];
+}): JSX.Element;
 
 // @public (undocumented)
 export function equals(a: number, b: number): boolean;
@@ -704,6 +734,20 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
+export function NumberEditor(props: JsonEditorProps<number>): JSX.Element;
+
+// @public (undocumented)
+export function ObjectArrayEditor(props: ArrayProps & {
+    properties: Record<string, JSX.Element>[];
+}): JSX.Element | null;
+
+// @public (undocumented)
+export function ObjectEditor(props: {
+    properties: Record<string, JSX.Element>;
+    inline?: boolean;
+}): JSX.Element;
+
+// @public (undocumented)
 export interface PartStyle {
     // (undocumented)
     color: number;
@@ -925,8 +969,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     }>): T;
     // (undocumented)
     renderResult(children: T[], width: number, height: number, options?: Partial<{
-        attributes: Partial<React_3.DOMAttributes<HTMLOrSVGElement> & {
-            style: React_3.CSSProperties;
+        attributes: Partial<React_2.DOMAttributes<HTMLOrSVGElement> & {
+            style: React_2.CSSProperties;
         }>;
         transform: {
             x: number;
@@ -939,8 +983,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
     }>): JSX.Element;
     // (undocumented)
     renderText(x: number, y: number, text: string, fill: number | Pattern<T> | undefined, fontSize: number, fontFamily: string, options?: Partial<PathStrokeOptions<T> & {
-        fontWeight: React_3.CSSProperties['fontWeight'];
-        fontStyle: React_3.CSSProperties['fontStyle'];
+        fontWeight: React_2.CSSProperties['fontWeight'];
+        fontStyle: React_2.CSSProperties['fontStyle'];
         fillOpacity: number;
         fillLinearGradient: LinearGradient;
         fillRadialGradient: RadialGradient;
@@ -1053,6 +1097,12 @@ export type SnapPoint = Position & {
 
 // @public (undocumented)
 export type SnapPointType = typeof allSnapTypes[number];
+
+// @public (undocumented)
+export function StringEditor(props: JsonEditorProps<string> & {
+    type?: React_2.HTMLInputTypeAttribute;
+    textarea?: boolean;
+}): JSX.Element;
 
 // @public (undocumented)
 export interface TextStyle {
@@ -1315,6 +1365,19 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 
 // @public (undocumented)
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
+
+// @public (undocumented)
+export function useJsonEditorData<V>(defaultValue: V): {
+    value: V;
+    update: <T>(recipe: (draft: Draft<V>, v: T) => void) => (v: T) => void;
+    getArrayProps: <T_1>(getArray: (v: Draft<V>) => T_1[], defaultValue: T_1) => {
+        add: () => void;
+        remove: (i: number) => void;
+        copy: (i: number) => void;
+        moveUp: (i: number) => void;
+        moveDown: (i: number) => void;
+    };
+};
 
 // @public (undocumented)
 export function useKey(filter: (e: KeyboardEvent) => boolean, handler: (e: KeyboardEvent) => void, deps?: unknown[]): void;
