@@ -1,4 +1,4 @@
-import React from "react"
+import * as React from "react"
 import { Circle, Matrix, PathCommand, Position, Size } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {

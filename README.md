@@ -48,6 +48,7 @@ A composable editor canvas library.
 + `useSelectBeforeOperate` <https://plantain-00.github.io/composable-editor-canvas/?p=select-before-operate.story>
 + `getRadialDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=radial-dimension.story>
 + `getLinearDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=linear-dimension.story>
++ `useJsonEditorData` <https://plantain-00.github.io/composable-editor-canvas/?p=json-editor.story>
 
 ## combinations
 
