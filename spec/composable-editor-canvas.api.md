@@ -907,7 +907,7 @@ export interface RadialGradient {
     stops: GradientStop[];
 }
 
-// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Draw_2" needs to be exported by the entry point index.d.ts
 //
 // @public (undocumented)
 export const reactCanvasRenderTarget: ReactRenderTarget<Draw_2>;
@@ -1001,7 +1001,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
 // @public (undocumented)
 export const reactSvgRenderTarget: ReactRenderTarget<Draw>;
 
-// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Draw_3" needs to be exported by the entry point index.d.ts
 //
 // @public (undocumented)
 export const reactWebglRenderTarget: ReactRenderTarget<Draw_3>;
