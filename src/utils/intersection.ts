@@ -1,4 +1,5 @@
 import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoLineSegmentsIntersectionPoint, Position } from "./geometry"
+import { Nullable } from "./types"
 
 /**
  * @public
@@ -6,10 +7,10 @@ import { Circle, getLineSegmentCircleIntersectionPoints, getTwoCircleIntersectio
 export function* iterateIntersectionPoints<T>(
   content1: T,
   content2: T,
-  contents: readonly T[],
+  contents: readonly Nullable<T>[],
   getModel: (content: T) => {
     getCircle?: (content: T) => { circle: Circle },
-    getGeometries?: (content: T, contents: readonly T[]) => { lines: [Position, Position][] },
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: [Position, Position][] },
   } | undefined,
 ) {
   const model1 = getModel(content1)

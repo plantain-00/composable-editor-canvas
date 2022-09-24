@@ -1,15 +1,16 @@
 import { Circle, getPointAndLineSegmentMinimumDistance, getPointAndRegionMaximumDistance, getPointAndRegionMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithTwoPointsFormRegion, pointInPolygon, pointIsInRegion, Position, TwoPointsFormRegion } from "./geometry"
+import { Nullable } from "./types"
 
 /**
  * @public
  */
 export function getContentByClickPosition<T>(
-  contents: readonly T[],
+  contents: readonly Nullable<T>[],
   position: Position,
   contentSelectable: (path: number[]) => boolean,
   getModel: (content: T) => {
     getCircle?: (content: T) => { circle: Circle, fill?: boolean },
-    getGeometries?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
       lines: [Position, Position][]
       regions?: {
         points: Position[]
@@ -23,6 +24,9 @@ export function getContentByClickPosition<T>(
 ): number[] | undefined {
   for (let i = 0; i < contents.length; i++) {
     const content = contents[i]
+    if (!content) {
+      continue
+    }
     if (contentVisible && !contentVisible(content)) {
       continue
     }
@@ -70,12 +74,12 @@ export function getContentByClickPosition<T>(
  * @public
  */
 export function getContentsByClickTwoPositions<T>(
-  contents: readonly T[],
+  contents: readonly Nullable<T>[],
   startPosition: Position,
   endPosition: Position,
   getModel: (content: T) => {
     getCircle?: (content: T) => { circle: Circle, bounding: TwoPointsFormRegion },
-    getGeometries?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
       lines: [Position, Position][]
       bounding?: TwoPointsFormRegion
       regions?: {
@@ -91,6 +95,9 @@ export function getContentsByClickTwoPositions<T>(
   const region = getTwoPointsFormRegion(startPosition, endPosition)
   const partial = startPosition.x > endPosition.x
   contents.forEach((content, i) => {
+    if (!content) {
+      return
+    }
     if (contentVisible && !contentVisible(content)) {
       return
     }

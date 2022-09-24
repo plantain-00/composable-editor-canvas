@@ -18,26 +18,18 @@ export const createBlockCommand: Command = {
         onEnd({
           updateContents: (contents, selected) => {
             const id = getNextId(contents)
-            const removedContents: number[] = []
+            const newContent: BlockContent = {
+              type: 'block',
+              id,
+              contents: contents.filter((c, i) => c && isSelected([i], selected) && contentSelectable(c)),
+              base: p,
+            }
             contents.forEach((_, i) => {
               if (isSelected([i], selected)) {
-                removedContents.push(i)
+                contents[i] = undefined
               }
             })
-            const newContents: BlockContent[] = [
-              {
-                type: 'block',
-                id,
-                contents: contents.filter((c, i) => isSelected([i], selected) && contentSelectable(c)),
-                base: p,
-              },
-            ]
-            for (let i = contents.length; i >= 0; i--) {
-              if (removedContents.includes(i)) {
-                contents.splice(i, 1)
-              }
-            }
-            contents.push(...newContents)
+            contents.push(newContent)
           }
         })
       },

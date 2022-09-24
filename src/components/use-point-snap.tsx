@@ -1,16 +1,16 @@
 import * as React from "react"
-import { Circle, getLineCircleIntersectionPoints, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, pointIsInRegion, Position, Region, TwoPointsFormRegion } from "../utils"
+import { Circle, getLineCircleIntersectionPoints, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, Position, Region, TwoPointsFormRegion } from "../utils"
 
 /**
  * @public
  */
 export function usePointSnap<T>(
   enabled: boolean,
-  getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[],
+  getIntersectionPoints: (content1: T, content2: T, contents: readonly Nullable<T>[]) => Position[],
   types: readonly SnapPointType[],
   getModel: (content: T) => {
-    getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[]
-    getGeometries?: (content: T, contents: readonly T[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
+    getSnapPoints?: (content: T, contents: readonly Nullable<T>[]) => SnapPoint[]
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
     getCircle?: (content: T) => { circle: Circle, bounding?: TwoPointsFormRegion }
   } | undefined,
   scale = 1,
@@ -81,7 +81,7 @@ export function usePointSnap<T>(
     },
     getSnapPoint(
       p: Position,
-      contents: readonly T[],
+      contents: readonly Nullable<T>[],
       getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
     ) {
       if (!enabled) {
@@ -93,6 +93,9 @@ export function usePointSnap<T>(
         contentsInRange = getContentsInRange({ start: { x: p.x - delta, y: p.y - delta }, end: { x: p.x + delta, y: p.y + delta } })
       }
       for (const content of contentsInRange) {
+        if (!content) {
+          continue
+        }
         const snapPoints = getModel(content)?.getSnapPoints?.(content, contents)
         if (snapPoints) {
           for (const point of snapPoints) {
@@ -110,8 +113,14 @@ export function usePointSnap<T>(
       if (types.includes('intersection')) {
         for (let i = 0; i < contentsInRange.length; i++) {
           const content1 = contentsInRange[i]
+          if (!content1) {
+            continue
+          }
           for (let j = i + 1; j < contentsInRange.length; j++) {
             const content2 = contentsInRange[j]
+            if (!content2) {
+              continue
+            }
             for (const point of getIntersectionPoints(content1, content2, contents)) {
               if (
                 getTwoNumbersDistance(p.x, point.x) <= delta &&
@@ -126,6 +135,9 @@ export function usePointSnap<T>(
       }
       if (types.includes('nearest')) {
         for (const content of contentsInRange) {
+          if (!content) {
+            continue
+          }
           const model = getModel(content)
           if (model) {
             if (model.getCircle) {

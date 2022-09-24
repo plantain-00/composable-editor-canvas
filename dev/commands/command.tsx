@@ -1,6 +1,6 @@
 import { Patch } from "immer"
 import React from "react"
-import { Position, prependPatchPath, SelectPath } from "../../src"
+import { Nullable, Position, prependPatchPath, SelectPath } from "../../src"
 import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
 
 export interface Command {
@@ -8,7 +8,7 @@ export interface Command {
   type?: { name: string, hotkey?: string }[]
   useCommand?(props: {
     onEnd: (options?: Partial<{
-      updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
+      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
     }>) => void,
@@ -23,7 +23,7 @@ export interface Command {
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
-    updateContent?(content: Readonly<BaseContent>, contents: readonly BaseContent[]): {
+    updateContent?(content: Readonly<BaseContent>, contents: readonly Nullable<BaseContent>[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
       patches?: [Patch[], Patch[]]
@@ -31,11 +31,11 @@ export interface Command {
     assistentContents?: BaseContent[]
   }
   execute?(
-    contents: BaseContent[],
+    contents: Nullable<BaseContent>[],
     selected: readonly number[][],
     setEditingContentPath: (path: SelectPath | undefined) => void
   ): void
-  contentSelectable?(content: BaseContent, contents: readonly BaseContent[]): boolean
+  contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
   selectType?: 'select part'
   hotkey?: string
@@ -50,7 +50,7 @@ export function getCommand(name: string): Command | undefined {
 export function useCommands(
   onEnd: (
     options?: Partial<{
-      updateContents?: (contents: BaseContent[], selected: readonly number[][]) => void,
+      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
     }>
@@ -65,7 +65,7 @@ export function useCommands(
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
   const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
-  const updateContents: ((content: BaseContent, contents: readonly BaseContent[]) => {
+  const updateContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
     patches?: [Patch[], Patch[]]
@@ -145,7 +145,7 @@ export function useCommands(
   return {
     commandMasks: masks,
     commandInputs,
-    updateSelectedContents(contents: readonly BaseContent[]) {
+    updateSelectedContents(contents: readonly Nullable<BaseContent>[]) {
       const assistentContents: BaseContent[] = []
       const patches: [Patch[], Patch[]][] = []
       for (const { content, path } of selected) {

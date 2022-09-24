@@ -18,7 +18,7 @@ export const createBlockReferenceCommand: Command = {
         onEnd({
           updateContents: (contents, selected) => {
             contents.push(...contents
-              .filter((c, i): c is BlockContent => isSelected([i], selected) && isBlockContent(c))
+              .filter((c, i): c is BlockContent => !!c && isSelected([i], selected) && isBlockContent(c))
               .map((block) => ({
                 type: 'block reference',
                 refId: block.id,

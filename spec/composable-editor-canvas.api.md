@@ -307,12 +307,12 @@ export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Posit
 export function getColorString(color: number, alpha?: number): string;
 
 // @public (undocumented)
-export function getContentByClickPosition<T>(contents: readonly T[], position: Position, contentSelectable: (path: number[]) => boolean, getModel: (content: T) => {
+export function getContentByClickPosition<T>(contents: readonly Nullable<T>[], position: Position, contentSelectable: (path: number[]) => boolean, getModel: (content: T) => {
     getCircle?: (content: T) => {
         circle: Circle;
         fill?: boolean;
     };
-    getGeometries?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
         lines: [Position, Position][];
         regions?: {
             points: Position[];
@@ -322,12 +322,12 @@ export function getContentByClickPosition<T>(contents: readonly T[], position: P
 } | undefined, part?: boolean, contentVisible?: (content: T) => boolean, delta?: number): number[] | undefined;
 
 // @public (undocumented)
-export function getContentsByClickTwoPositions<T>(contents: readonly T[], startPosition: Position, endPosition: Position, getModel: (content: T) => {
+export function getContentsByClickTwoPositions<T>(contents: readonly Nullable<T>[], startPosition: Position, endPosition: Position, getModel: (content: T) => {
     getCircle?: (content: T) => {
         circle: Circle;
         bounding: TwoPointsFormRegion;
     };
-    getGeometries?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
         lines: [Position, Position][];
         bounding?: TwoPointsFormRegion;
         regions?: {
@@ -652,11 +652,11 @@ export function isSelected<T extends SelectPath = SelectPath>(value: T, selected
 export function isZero(value: number): boolean;
 
 // @public (undocumented)
-export function iterateIntersectionPoints<T>(content1: T, content2: T, contents: readonly T[], getModel: (content: T) => {
+export function iterateIntersectionPoints<T>(content1: T, content2: T, contents: readonly Nullable<T>[], getModel: (content: T) => {
     getCircle?: (content: T) => {
         circle: Circle;
     };
-    getGeometries?: (content: T, contents: readonly T[]) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
         lines: [Position, Position][];
     };
 } | undefined): Generator<Position, void, undefined>;
@@ -732,6 +732,9 @@ export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 
 // @public (undocumented)
 export function normalizeAngleRange(content: AngleRange): void;
+
+// @public (undocumented)
+export type Nullable<T> = T | undefined | null;
 
 // @public (undocumented)
 export function NumberEditor(props: JsonEditorProps<number>): JSX.Element;
@@ -1441,9 +1444,9 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 };
 
 // @public (undocumented)
-export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly T[]) => Position[], types: readonly SnapPointType[], getModel: (content: T) => {
-    getSnapPoints?: (content: T, contents: readonly T[]) => SnapPoint[];
-    getGeometries?: (content: T, contents: readonly T[]) => {
+export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (content1: T, content2: T, contents: readonly Nullable<T>[]) => Position[], types: readonly SnapPointType[], getModel: (content: T) => {
+    getSnapPoints?: (content: T, contents: readonly Nullable<T>[]) => SnapPoint[];
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
         lines: [Position, Position][];
         bounding?: TwoPointsFormRegion;
     };
@@ -1454,7 +1457,7 @@ export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (conten
 } | undefined, scale?: number, delta?: number): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
-    getSnapPoint(p: Position, contents: readonly T[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined): Position;
+    getSnapPoint(p: Position, contents: readonly Nullable<T>[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined): Position;
 };
 
 // @public (undocumented)
@@ -1507,7 +1510,7 @@ export function useSelectBeforeOperate<TSelect extends {
     selected: readonly TPath[];
     isSelected: (value: TPath, s?: readonly TPath[]) => boolean;
     addSelection(...value: readonly TPath[]): void;
-    setSelected: (...value: readonly (TPath | undefined)[]) => void;
+    setSelected: (...value: readonly Nullable<TPath>[]) => void;
     filterSelection: (selectable?: ((value: TPath) => boolean) | undefined, maxCount?: number | undefined, s?: readonly TPath[]) => {
         result: readonly TPath[];
         needSelect: boolean;
@@ -1540,7 +1543,7 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     };
     isSelected: (value: T, s?: readonly T[]) => boolean;
     addSelection: (value: readonly T[], maxCount?: number | undefined, reachMaxCount?: ((selected: T[]) => void) | undefined, selectable?: ((value: T) => boolean) | undefined) => void;
-    setSelected(...value: readonly (T | undefined)[]): void;
+    setSelected(...value: readonly Nullable<T>[]): void;
 };
 
 // @public (undocumented)

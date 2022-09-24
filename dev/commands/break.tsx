@@ -5,14 +5,13 @@ import { Command } from "./command"
 export const breakCommand: Command = {
   name: 'break',
   execute(contents, selected) {
-    const removedContents: number[] = []
     const newContents: BaseContent<string>[] = []
     contents.forEach((content, index) => {
-      if (isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+      if (content && isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
         let intersectionPoints: Position[] = []
         for (let i = 0; i < contents.length; i++) {
           const c = contents[i]
-          if (i !== index) {
+          if (c && i !== index) {
             const p = i < index ? [c, content] as const : [content, c] as const
             intersectionPoints.push(...getIntersectionPoints(...p, contents))
           }
@@ -22,16 +21,11 @@ export const breakCommand: Command = {
           const result = getModel(content.type)?.break?.(content, intersectionPoints)
           if (result) {
             newContents.push(...result)
-            removedContents.push(index)
+            contents[index] = undefined
           }
         }
       }
     })
-    for (let i = contents.length; i >= 0; i--) {
-      if (removedContents.includes(i)) {
-        contents.splice(i, 1)
-      }
-    }
     contents.push(...newContents)
   },
   contentSelectable(content, contents) {

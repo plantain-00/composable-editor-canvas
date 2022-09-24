@@ -1,11 +1,11 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { getColorString, isSelected, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
+import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
 import { BaseContent, getContentByIndex, getModel } from "../models/model"
 
 export function Renderer(props: {
   type?: string
-  contents: readonly BaseContent[]
+  contents: readonly Nullable<BaseContent>[]
   previewPatches?: Patch[]
   assistentContents?: readonly BaseContent[]
   selected?: readonly number[][]
@@ -22,7 +22,7 @@ export function Renderer(props: {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
   const strokeWidthScale = 1 / props.scale
-  const renderCache = React.useRef(new WeakmapCache<readonly BaseContent[], unknown[]>())
+  const renderCache = React.useRef(new WeakmapCache<readonly Nullable<BaseContent>[], unknown[]>())
   useValueChanged(props.type, () => renderCache.current.clear())
   useValueChanged(props.backgroundColor, () => renderCache.current.clear())
 
@@ -35,7 +35,7 @@ export function Renderer(props: {
   const previewContents = previewPatches.length > 0 ? applyPatches(props.contents, previewPatches) : props.contents
   // type-coverage:ignore-next-line
   const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
-  visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]))
+  visibleContents.add(...Array.from(previewContentIndexes).map((index) => previewContents[index]).filter((s): s is BaseContent => !!s))
 
   const backgroundColor = getColorString(props.backgroundColor)
   const r = +`0x${backgroundColor.substring(1, 3)}`
@@ -94,6 +94,9 @@ export function Renderer(props: {
   if (previewPatches.length === 0 && props.simplified) {
     children = renderCache.current.get(props.contents, () => {
       props.contents.forEach((content) => {
+        if (!content) {
+          return
+        }
         const model = getModel(content.type)
         if (!model) {
           return
@@ -104,6 +107,9 @@ export function Renderer(props: {
     })
   } else {
     previewContents.forEach((content) => {
+      if (!content) {
+        return
+      }
       if (!visibleContents.has(content)) {
         return
       }
@@ -118,8 +124,11 @@ export function Renderer(props: {
   if (!props.simplified) {
     const selected = props.selected || []
     const othersSelectedContents = props.othersSelectedContents || []
-    if (othersSelectedContents.length > 0) {
+    if (selected.length + othersSelectedContents.length > 0) {
       props.contents.forEach((content, i) => {
+        if (!content) {
+          return
+        }
         const model = getModel(content.type)
         if (!model) {
           return

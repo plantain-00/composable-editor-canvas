@@ -1,27 +1,37 @@
+import { Nullable } from "../../src"
 import { getBlockGeometries, getBlockSnapPoints, renderBlockChildren } from "./block-model"
 import { BaseContent, getModel, Model } from "./model"
 
 export type GroupContent = BaseContent<'group'> & {
-  contents: BaseContent[]
+  contents: Nullable<BaseContent>[]
 }
 
 export const groupModel: Model<GroupContent> = {
   type: 'group',
   move(content, offset) {
     content.contents.forEach((c) => {
+      if (!c) {
+        return
+      }
       getModel(c.type)?.move?.(c, offset)
     })
   },
   rotate(content, center, angle, contents) {
     content.contents.forEach((c) => {
-      getModel(c.type)?.rotate?.(c, center, angle, contents)
+      if (!c) {
+        return
+      }
+      getModel(c?.type)?.rotate?.(c, center, angle, contents)
     })
   },
   explode(content) {
-    return content.contents
+    return content.contents.filter((c) : c is BaseContent => !!c)
   },
   mirror(content, line, angle, contents) {
     content.contents.forEach((c) => {
+      if (!c) {
+        return
+      }
       getModel(c.type)?.mirror?.(c, line, angle, contents)
     })
   },

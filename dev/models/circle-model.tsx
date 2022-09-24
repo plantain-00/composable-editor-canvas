@@ -11,7 +11,7 @@ export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle & 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
   deletable(content, contents) {
-    return !contents.some((c) => isRadialDimensionReferenceContent(c) && c.refId === content.id)
+    return !contents.some((c) => c && isRadialDimensionReferenceContent(c) && c.refId === content.id)
   },
   move(content, offset) {
     content.x += offset.x
