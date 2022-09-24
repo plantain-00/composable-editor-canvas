@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, EditPoint, GeneralFormLine, getPointsBounding, iterateIntersectionPoints, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { Circle, EditPoint, GeneralFormLine, getPointsBounding, iterateIntersectionPoints, Nullable, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { isArcContent } from './arc-model'
 import { isBlockContent } from './block-model'
 import { isCircleContent } from './circle-model'
@@ -21,27 +21,27 @@ export interface FillFields {
 export interface Model<T> {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
-  rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly BaseContent[]): void
-  explode?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): BaseContent[]
+  rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
+  explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
-  mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly BaseContent[]): void
-  deletable?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): boolean
+  mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
+  deletable?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean
   getDefaultColor?(content: Omit<T, 'type'>): number | undefined
   render?<V>(props: {
     content: Omit<T, 'type'>
     color: number
     target: ReactRenderTarget<V>
     strokeWidth: number
-    contents: readonly BaseContent[]
+    contents: readonly Nullable<BaseContent>[]
   }): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
-  getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): Position
-  getEditPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): {
+  getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
+  getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
     editPoints: EditPoint<BaseContent>[]
     angleSnapStartPoint?: Position
   } | undefined
-  getSnapPoints?(content: Omit<T, 'type'>, contents: readonly BaseContent[]): SnapPoint[]
-  getGeometries?(content: Omit<T, 'type'>, contents?: readonly BaseContent[]): Geometries
+  getSnapPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): SnapPoint[]
+  getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
   fill?(content: Omit<T, 'type'>, color: number): void
@@ -79,7 +79,7 @@ export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
 export const getEditPointsFromCache = editPointsCache.get.bind(editPointsCache)
 
 const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
-export function getIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly BaseContent[]) {
+export function getIntersectionPoints(content1: BaseContent, content2: BaseContent, contents: readonly Nullable<BaseContent>[]) {
   return intersectionPointsCache.get(content1, content2, () => Array.from(iterateIntersectionPoints(content1, content2, contents, getContentModel)))
 }
 
@@ -102,8 +102,11 @@ export const fixedInputStyle: React.CSSProperties = {
   transform: 'translate(-50%, 0px)',
 }
 
-export function getContentByIndex(state: readonly BaseContent[], index: readonly number[]) {
+export function getContentByIndex(state: readonly Nullable<BaseContent>[], index: readonly number[]) {
   const content = state[index[0]]
+  if (!content) {
+    return undefined
+  }
   if (index.length === 1) {
     return content
   }
@@ -114,9 +117,12 @@ export function getContentByIndex(state: readonly BaseContent[], index: readonly
   return undefined
 }
 
-export function getNextId(contents: BaseContent[]) {
+export function getNextId(contents: Nullable<BaseContent>[]) {
   let id = 1
   contents.forEach((content) => {
+    if (!content) {
+      return
+    }
     if (isBlockContent(content)) {
       id = Math.max(id, content.id + 1)
     } else if (isCircleContent(content) || isArcContent(content)) {
@@ -131,12 +137,15 @@ export function getNextId(contents: BaseContent[]) {
 export function zoomContentsToFit(
   width: number,
   height: number,
-  editingContent: readonly BaseContent[],
-  state: readonly BaseContent[],
+  editingContent: readonly Nullable<BaseContent>[],
+  state: readonly Nullable<BaseContent>[],
   paddingScale = 0.8,
 ) {
   const points: Position[] = []
   editingContent.forEach((c) => {
+    if (!c) {
+      return
+    }
     const model = getModel(c.type)
     if (model?.getCircle) {
       const { bounding } = model.getCircle(c)

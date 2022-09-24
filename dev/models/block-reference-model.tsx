@@ -1,5 +1,5 @@
 import produce from "immer"
-import { getPointsBounding, getSymmetryPoint, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
+import { getPointsBounding, getSymmetryPoint, Nullable, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
 import { BaseContent, Geometries, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
@@ -29,6 +29,9 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     if (block) {
       const result: BaseContent[] = []
       block.contents.forEach((c) => {
+        if (!c) {
+          return
+        }
         const extracted = extractContentInBlockReference(c, content, block, contents)
         if (extracted) {
           result.push(extracted)
@@ -94,6 +97,9 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
       return blockSnapPointsCache.get(block, content, () => {
         const result: SnapPoint[] = []
         block.contents.forEach((c) => {
+          if (!c) {
+            return
+          }
           const model = getModel(c.type)
           const extracted = extractContentInBlockReference(c, content, block, contents)
           if (extracted) {
@@ -115,7 +121,7 @@ function extractContentInBlockReference(
   target: BaseContent,
   content: Omit<BlockReferenceContent, "type">,
   block: BlockContent,
-  contents: readonly BaseContent[],
+  contents: readonly Nullable<BaseContent>[],
 ) {
   const model = getModel(target.type)
   if (!model) {
@@ -127,11 +133,11 @@ function extractContentInBlockReference(
   })
 }
 
-function getBlock(id: number, contents: readonly BaseContent[]) {
-  return contents.find((c): c is BlockContent => isBlockContent(c) && c.id === id)
+function getBlock(id: number, contents: readonly Nullable<BaseContent>[]) {
+  return contents.find((c): c is BlockContent => !!c && isBlockContent(c) && c.id === id)
 }
 
-function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly BaseContent[]) {
+function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly Nullable<BaseContent>[]) {
   const block = getBlock(content.refId, contents)
   if (block) {
     return blockLinesCache.get(block, content, () => {
@@ -139,6 +145,9 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
       const points: Position[] = []
       const renderingLines: Position[][] = []
       block.contents.forEach((c) => {
+        if (!c) {
+          return
+        }
         const extracted = extractContentInBlockReference(c, content, block, contents)
         if (extracted) {
           const r = getModel(c.type)?.getGeometries?.(extracted)

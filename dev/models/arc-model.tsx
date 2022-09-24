@@ -11,7 +11,7 @@ export type ArcContent = StrokeBaseContent<'arc'> & Arc & {
 export const arcModel: Model<ArcContent> = {
   type: 'arc',
   deletable(content, contents) {
-    return !contents.some((c) => isRadialDimensionReferenceContent(c) && c.refId === content.id)
+    return !contents.some((c) => c && isRadialDimensionReferenceContent(c) && c.refId === content.id)
   },
   move(content, offset) {
     content.x += offset.x

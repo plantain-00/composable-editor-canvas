@@ -8,7 +8,7 @@ export const startEditBlockCommand: Command = {
   name: 'start edit block',
   execute(contents, selected, setEditingContentPath) {
     contents.forEach((content, index) => {
-      if (isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+      if (content && isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
         setEditingContentPath(contentSelectable(content) ? [index, 'contents'] : undefined)
       }
     })

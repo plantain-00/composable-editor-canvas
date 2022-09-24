@@ -10,11 +10,11 @@ export const createGroupCommand: Command = {
   execute(contents, selected) {
     const newContent: GroupContent = {
       type: 'group',
-      contents: contents.filter((c, i) => isSelected([i], selected) && contentSelectable(c)),
+      contents: contents.filter((c, i) => c && isSelected([i], selected) && contentSelectable(c)),
     }
     for (let i = contents.length; i >= 0; i--) {
       if (isSelected([i], selected)) {
-        contents.splice(i, 1)
+        contents[i] = undefined
       }
     }
     contents.push(newContent)

@@ -1,4 +1,4 @@
-import { getRadialDimensionGeometries, getTwoPointsDistance, RadialDimension, WeakmapCache2 } from "../../src"
+import { getRadialDimensionGeometries, getTwoPointsDistance, Nullable, RadialDimension, WeakmapCache2 } from "../../src"
 import { ArcContent, isArcContent } from "./arc-model"
 import { CircleContent, isCircleContent } from "./circle-model"
 import { LineContent } from "./line-model"
@@ -71,7 +71,7 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
   getGeometries: getRadialDimensionReferenceGeometriesFromCache,
 }
 
-export function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly BaseContent[]) {
+export function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly Nullable<BaseContent>[]) {
   const target = getRadialDimensionReferenceTarget(content.refId, contents)
   if (target) {
     return radialDimensionReferenceLinesCache.get(target, content, () => {
@@ -87,6 +87,6 @@ export function isRadialDimensionReferenceContent(content: BaseContent): content
 
 const radialDimensionReferenceLinesCache = new WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, Geometries>()
 
-function getRadialDimensionReferenceTarget(id: number, contents: readonly BaseContent[]) {
-  return contents.find((c): c is CircleContent | ArcContent => (isCircleContent(c) || isArcContent(c)) && c.id === id)
+function getRadialDimensionReferenceTarget(id: number, contents: readonly Nullable<BaseContent>[]) {
+  return contents.find((c): c is CircleContent | ArcContent => !!c && (isCircleContent(c) || isArcContent(c)) && c.id === id)
 }

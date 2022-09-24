@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, scaleByCursorPosition, colorStringToNumber, getColorString, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, scaleByCursorPosition, colorStringToNumber, getColorString, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
@@ -107,13 +107,13 @@ registerRenderer(reactCanvasRenderTarget)
 const key = 'combination-2.json'
 
 export default () => {
-  const [initialState, setInitialState] = React.useState<BaseContent[]>()
+  const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
   React.useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`https://storage.yorkyao.com/${key}`)
-        const json: BaseContent[] = await res.json()
+        const json: Nullable<BaseContent>[] = await res.json()
         setInitialState(json)
       } catch {
         setInitialState([])
@@ -268,7 +268,7 @@ export default () => {
 }
 
 const CADEditor = React.forwardRef((props: {
-  initialState: readonly BaseContent<string>[]
+  initialState: readonly Nullable<BaseContent>[]
   onApplyPatchesFromSelf: ((patches: Patch[], reversePatches: Patch[]) => void)
   onSendSelection: (selectedContents: readonly number[]) => void
   readOnly: boolean
@@ -312,10 +312,16 @@ const CADEditor = React.forwardRef((props: {
         // type-coverage:ignore-next-line
         const index = patch.path[0] as number
         if (patch.op !== 'remove' || patch.path.length > 1) {
-          newContents.add(newState[index])
+          const newContent = newState[index]
+          if (newContent) {
+            newContents.add(newContent)
+          }
         }
         if (patch.op !== 'add' || patch.path.length > 1) {
-          removedContents.add(oldState[index])
+          const oldContent = oldState[index]
+          if (oldContent) {
+            removedContents.add(oldContent)
+          }
         }
       }
       for (const content of newContents) {
@@ -401,6 +407,9 @@ const CADEditor = React.forwardRef((props: {
 
   const selectedContents: { content: BaseContent, path: number[] }[] = []
   editingContent.forEach((s, i) => {
+    if (!s) {
+      return
+    }
     if (isSelected([i])) {
       selectedContents.push({ content: s, path: [i] })
     } else {
@@ -493,7 +502,7 @@ const CADEditor = React.forwardRef((props: {
     ...commandAssistentContents,
   ]
 
-  let updatedContents: readonly BaseContent[] | undefined
+  let updatedContents: readonly Nullable<BaseContent>[] | undefined
   if (updateEditPreview) {
     const [r, patches, reversePatches] = produceWithPatches(editingContent, (draft) => {
       const result = updateEditPreview((path) => getContentByIndex(draft, path))
@@ -692,9 +701,12 @@ const CADEditor = React.forwardRef((props: {
   visibleContents.add(...assistentContents)
   const simplified = searchResult.length > 1000
 
-  const rebuildRTree = (contents: readonly BaseContent[]) => {
+  const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
     const newRTree = RTree()
     for (const content of contents) {
+      if (!content) {
+        continue
+      }
       const geometries = getModel(content.type)?.getGeometries?.(content, contents)
       if (geometries?.bounding) {
         newRTree.insert({

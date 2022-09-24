@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Nullable } from "../utils"
 import { useKey } from "./use-key"
 
 export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<UseSelectedOptions<T>>) {
@@ -48,7 +49,7 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       return isSelected(value, s)
     },
     addSelection,
-    setSelected(...value: readonly (T | undefined)[]) {
+    setSelected(...value: readonly Nullable<T>[]) {
       const s = value.filter((v): v is T => v !== undefined)
       if (s.length !== 0 || selected.length !== 0) {
         setSelected(s)
