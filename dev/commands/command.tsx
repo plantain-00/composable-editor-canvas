@@ -148,6 +148,7 @@ export function useCommands(
     updateSelectedContents(contents: readonly Nullable<BaseContent>[]) {
       const assistentContents: BaseContent[] = []
       const patches: [Patch[], Patch[]][] = []
+      let index = 0
       for (const { content, path } of selected) {
         for (const updateContent of updateContents) {
           const result = updateContent(content, contents)
@@ -161,14 +162,15 @@ export function useCommands(
             patches.push(...result.newContents.map((c, i) => [
               [{
                 op: 'add',
-                path: [contents.length + i],
+                path: [contents.length + i + index],
                 value: c,
               }],
               [{
                 op: 'remove',
-                path: [contents.length + i],
+                path: [contents.length + i + index],
               }]
             ] as [Patch[], Patch[]]))
+            index += result.newContents.length
           }
         }
       }
