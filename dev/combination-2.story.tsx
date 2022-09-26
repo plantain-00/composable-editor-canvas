@@ -628,6 +628,8 @@ const CADEditor = React.forwardRef((props: {
   const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
+    } else if (e.buttons === 4) {
+      onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     }
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
