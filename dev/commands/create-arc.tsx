@@ -38,7 +38,7 @@ export const createArcCommand: Command = {
       }
     }
     if (arc) {
-      assistentContents.push({ type: 'circle', ...arc, dashArray: [4 / scale] })
+      assistentContents.push({ ...arc, dashArray: [4 / scale], type: 'circle' })
       if (arc.startAngle !== arc.endAngle) {
         assistentContents.push(
           {
@@ -74,13 +74,13 @@ export const createArcCommand: Command = {
       }
     }
     if (circle) {
-      assistentContents.push({ type: 'circle', ...circle, dashArray: [4 / scale] })
+      assistentContents.push({ ...circle, dashArray: [4 / scale], type: 'circle' })
       if (cursorPosition) {
         assistentContents.push({ type: 'line', points: [circle, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (arc && arc.startAngle !== arc.endAngle) {
-      assistentContents.push({ type: 'arc', ...arc })
+      assistentContents.push({ ...arc, type: 'arc' })
     }
     return {
       onStart: onClick,

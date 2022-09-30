@@ -30,7 +30,7 @@ export const createEllipseArcCommand: Command = {
       }
     }
     if (ellipseArc) {
-      assistentContents.push({ type: 'ellipse', ...ellipseArc, dashArray: [4 / scale] })
+      assistentContents.push({ ...ellipseArc, dashArray: [4 / scale], type: 'ellipse' })
       if (ellipseArc.startAngle !== ellipseArc.endAngle) {
         assistentContents.push(
           {
@@ -65,13 +65,13 @@ export const createEllipseArcCommand: Command = {
         assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4 / scale] })
       }
     } else if (ellipse) {
-      assistentContents.push({ type: 'ellipse', ...ellipse, dashArray: [4 / scale] })
+      assistentContents.push({ ...ellipse, dashArray: [4 / scale], type: 'ellipse' })
       if (cursorPosition) {
         assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] })
       }
     }
     if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
-      assistentContents.push({ type: 'ellipse arc', ...ellipseArc })
+      assistentContents.push({ ...ellipseArc, type: 'ellipse arc' })
     }
     return {
       onStart: onClick,

@@ -1188,7 +1188,7 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
   }
   let i = content.startAngle
   if (content.counterclockwise) {
-    for (; i >= endAngle; i -= angleDelta) {
+    for (; i >= endAngle || equals(i, endAngle); i -= angleDelta) {
       const angle = i * Math.PI / 180
       points.push({
         x: content.x + content.r * Math.cos(angle),
@@ -1196,7 +1196,7 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
       })
     }
   } else {
-    for (; i <= endAngle; i += angleDelta) {
+    for (; i <= endAngle || equals(i, endAngle); i += angleDelta) {
       const angle = i * Math.PI / 180
       points.push({
         x: content.x + content.r * Math.cos(angle),
@@ -1248,7 +1248,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
   }
   let i = content.startAngle
   if (content.counterclockwise) {
-    for (; i >= endAngle; i -= angleDelta) {
+    for (; i >= endAngle || equals(i, endAngle); i -= angleDelta) {
       const angle = i * Math.PI / 180
       const x = content.cx + content.rx * Math.cos(angle)
       const y = content.cy + content.ry * Math.sin(angle)
@@ -1259,7 +1259,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
       }
     }
   } else {
-    for (; i <= endAngle; i += angleDelta) {
+    for (; i <= endAngle || equals(i, endAngle); i += angleDelta) {
       const angle = i * Math.PI / 180
       const x = content.cx + content.rx * Math.cos(angle)
       const y = content.cy + content.ry * Math.sin(angle)
