@@ -30,7 +30,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
-        {children.map((child, i) => child(i))}
+        {children.map((child, i) => child(i, scale))}
       </svg>
     )
   },
@@ -51,20 +51,20 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     if (options?.matrix) {
       transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
-    return (key) => (
+    return (key, scale) => (
       <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
-        {children.map((child, i) => child(i))}
+        {children.map((child, i) => child(i, scale))}
       </g>
     )
   },
   renderRect(x, y, width, height, options) {
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
@@ -79,19 +79,19 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return renderPattern((fill, stroke) => (
+      return renderPattern((fill, stroke, scale) => (
         <path
           d={d}
-          {...getCommonLineAttributes(options)}
+          {...getCommonLineAttributes(scale, options)}
           fill={fill}
           stroke={stroke}
         />
       ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return renderPattern((fill, stroke) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
+    return renderPattern((fill, stroke, scale) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
       points: pointsText,
-      ...getCommonLineAttributes(options),
+      ...getCommonLineAttributes(scale, options),
       fill,
       stroke,
     }), options)
@@ -100,25 +100,25 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <circle
         cx={cx}
         cy={cy}
         r={r}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <ellipse
         cx={cx}
         cy={cy}
         rx={rx}
         ry={ry}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -131,10 +131,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <path
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
       />
@@ -146,10 +146,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <path
         d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -200,17 +200,17 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
         d += ' Z'
       }
     }
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <path
         d={d}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <text
         x={x}
         y={y}
@@ -224,7 +224,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           fontFamily,
           strokeWidth: options?.strokeWidth,
           stroke,
-          strokeDasharray: options?.dashArray?.join(' '),
+          strokeDasharray: options?.dashArray ? options.dashArray.map(d => d * scale).join(' ') : undefined,
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
@@ -257,10 +257,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     if (options?.closed) {
       d += ' Z'
     }
-    return renderPattern((fill, stroke) => (
+    return renderPattern((fill, stroke, scale) => (
       <path
         d={d}
-        {...getCommonLineAttributes(options)}
+        {...getCommonLineAttributes(scale, options)}
         fill={fill}
         stroke={stroke}
         fillRule='evenodd'
@@ -269,7 +269,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-type Draw = (key: React.Key) => JSX.Element
+type Draw = (key: React.Key, scale: number) => JSX.Element
 
 function renderFilters(
   children: (filter: string | undefined) => JSX.Element,
@@ -346,7 +346,7 @@ function renderFilters(
           )
         } else if (f.type === 'blur') {
           results.push(
-            <feGaussianBlur key={i} in="SourceGraphic" stdDeviation={f.value}/>
+            <feGaussianBlur key={i} in="SourceGraphic" stdDeviation={f.value} />
           )
         }
       })
@@ -367,11 +367,11 @@ function renderFilters(
 }
 
 function renderPattern(
-  children: (fill: string, stroke: string | undefined) => JSX.Element,
+  children: (fill: string, stroke: string | undefined, scale: number) => JSX.Element,
   options?: Partial<PathFillOptions<Draw> & PathStrokeOptions<Draw>>,
   noDefaultStrokeColor?: boolean,
 ) {
-  return (key: React.Key) => {
+  return (key: React.Key, scale: number) => {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let stroke = options?.strokeColor !== undefined ? getColorString(options.strokeColor) : noDefaultStrokeColor ? undefined : getColorString(0)
     let fillDef: JSX.Element | undefined
@@ -386,7 +386,7 @@ function renderPattern(
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
-          {options.strokePattern.pattern()(id)}
+          {options.strokePattern.pattern()(id, scale)}
         </pattern>
       )
       stroke = `url(#${id})`
@@ -433,7 +433,7 @@ function renderPattern(
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
-          {options.fillPattern.pattern()(id)}
+          {options.fillPattern.pattern()(id, scale)}
         </pattern>
       )
       fill = `url(#${id})`
@@ -474,7 +474,7 @@ function renderPattern(
     let target: JSX.Element
     if (options?.clip) {
       const id = React.useId()
-      const path = children(fill, stroke)
+      const path = children(fill, stroke, scale)
       fillDef = (
         <>
           <clipPath id={id}>
@@ -485,11 +485,11 @@ function renderPattern(
       )
       target = (
         <g clipPath={`url(#${id})`}>
-          {options.clip()(id)}
+          {options.clip()(id, scale)}
         </g>
       )
     } else {
-      target = children(fill, stroke)
+      target = children(fill, stroke, scale)
     }
     return (
       <React.Fragment key={key}>
@@ -501,11 +501,11 @@ function renderPattern(
   }
 }
 
-function getCommonLineAttributes<T>(options?: Partial<PathOptions<T>>) {
+function getCommonLineAttributes<T>(scale: number, options?: Partial<PathOptions<T>>) {
   return {
     strokeWidth: options?.strokeWidth ?? 1,
     vectorEffect: 'non-scaling-stroke' as const,
-    strokeDasharray: options?.dashArray?.join(' '),
+    strokeDasharray: options?.dashArray ? options.dashArray.map(d => d * scale).join(' ') : undefined,
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',
