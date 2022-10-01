@@ -1,5 +1,4 @@
-import { formatNumber, getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine } from "../../utils"
-import { TextStyle } from "./radial-dimension"
+import { TextStyle, formatNumber, getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
  * @public

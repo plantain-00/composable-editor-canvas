@@ -1,4 +1,4 @@
-import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size } from "../../utils"
+import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, TextStyle } from "../../utils"
 
 /**
  * @public
@@ -93,12 +93,4 @@ export function getRadialDimensionTextPosition(
  */
 export interface RadialDimension extends TextStyle {
   position: Position
-}
-
-/**
- * @public
- */
-export interface TextStyle {
-  fontSize: number
-  fontFamily: string
 }

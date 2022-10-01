@@ -50,6 +50,7 @@ import RTree from 'rtree'
 import { fillCommand } from './commands/fill'
 import { OffsetXContext } from './story-app'
 import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
+import { createTextCommand } from './commands/create-text'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -99,6 +100,7 @@ registerCommand(createRadialDimensionCommand)
 registerCommand(createLinearDimensionCommand)
 registerCommand(createGroupCommand)
 registerCommand(fillCommand)
+registerCommand(createTextCommand)
 
 registerRenderer(reactWebglRenderTarget)
 registerRenderer(reactSvgRenderTarget)
@@ -236,7 +238,8 @@ export default () => {
       <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -550,6 +553,14 @@ const CADEditor = React.forwardRef((props: {
     setY(0)
     e.preventDefault()
   })
+  useKey((k) => k.code === 'KeyC' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    startOperation({ type: 'command', name: 'clone' })
+    e.preventDefault()
+  })
+  useKey((k) => k.code === 'KeyX' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    startOperation({ type: 'command', name: 'move' })
+    e.preventDefault()
+  })
 
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
@@ -583,6 +594,11 @@ const CADEditor = React.forwardRef((props: {
     exitEditBlock() {
       setEditingContentPath(undefined)
       setSelected()
+    },
+    compress() {
+      setState(draft => {
+        return draft.filter(d => d)
+      })
     },
   }), [applyPatchFromOtherOperators])
 
@@ -822,6 +838,7 @@ interface CADEditorRef {
   redo(): void
   startOperation(p: Operation): void
   exitEditBlock(): void
+  compress(): void
 }
 
 type Operation = {
