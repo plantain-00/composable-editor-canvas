@@ -1108,6 +1108,13 @@ export function StringEditor(props: JsonEditorProps<string> & {
 }): JSX.Element;
 
 // @public (undocumented)
+type Text_2 = Position & TextStyle & {
+    text: string;
+    color: number;
+};
+export { Text_2 as Text }
+
+// @public (undocumented)
 export interface TextStyle {
     // (undocumented)
     fontFamily: string;
@@ -1421,7 +1428,7 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
 
 // @public (undocumented)
 export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator: P, options?: Partial<{
-    onApplyPatchesFromSelf: (patches: Patch[], reversePatches: Patch[]) => void;
+    onApplyPatchesFromSelf: (patches: Patch[], reversePatches: Patch[]) => void | Promise<[Patch[], Patch[]]>;
     onChange: (data: {
         patches: Patch[];
         oldState: Readonly<T>;
@@ -1430,16 +1437,16 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
 }>): {
     state: Readonly<T>;
     applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => Readonly<T>;
-    applyPatchFromSelf: (patches: Patch[], reversePatches: Patch[]) => Readonly<T>;
+    applyPatchFromSelf: (patches: Patch[], reversePatches: Patch[]) => Promise<Readonly<T>>;
     setState: (recipe: (draft: WritableDraft<T>) => void) => Readonly<T>;
     canUndo: boolean;
     canRedo: boolean;
     undo: (e?: {
         preventDefault(): void;
-    }) => void;
+    }) => Promise<void>;
     redo: (e?: {
         preventDefault(): void;
-    }) => void;
+    }) => Promise<void>;
     stateIndex: number;
 };
 
@@ -1553,6 +1560,16 @@ export interface UseSelectedOptions<T> {
     // (undocumented)
     onChange: (s: readonly T[]) => void;
 }
+
+// @public (undocumented)
+export function useTextClickCreate(enabled: boolean, onEnd: (text: Text_2) => void, options?: Partial<{
+    scale: number;
+}>): {
+    text: Text_2 | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position): void;
+    input: JSX.Element | undefined;
+};
 
 // @public (undocumented)
 export function useUndoRedo<T>(defaultState: T): {

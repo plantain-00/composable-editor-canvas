@@ -43,7 +43,7 @@ export const createCircleCommand: Command = {
       }
     }
     if (circle) {
-      assistentContents.push({ type: 'circle', ...circle })
+      assistentContents.push({ ...circle, type: 'circle' })
     }
     return {
       onStart: onClick,

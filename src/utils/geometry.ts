@@ -1315,3 +1315,20 @@ export type PathCommand =
   | {
     type: 'close'
   }
+
+
+/**
+ * @public
+ */
+export interface TextStyle {
+  fontSize: number
+  fontFamily: string
+}
+
+/**
+ * @public
+ */
+export type Text = Position & TextStyle & {
+  text: string
+  color: number
+}

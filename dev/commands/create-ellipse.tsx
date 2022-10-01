@@ -33,7 +33,7 @@ export const createEllipseCommand: Command = {
       }
     }
     if (ellipse) {
-      assistentContents.push({ type: 'ellipse', ...ellipse })
+      assistentContents.push({ ...ellipse, type: 'ellipse' })
     }
     return {
       onStart: onClick,

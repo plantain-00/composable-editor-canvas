@@ -139,7 +139,19 @@ export const circleModel: Model<CircleContent> = {
 
 export function getCircleGeometries(content: Omit<CircleContent, "type">) {
   return getGeometriesFromCache(content, () => {
-    return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
+    const geometries = getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
+    if (content.fillColor !== undefined) {
+      return {
+        lines: [],
+        points: [],
+        bounding: geometries.bounding,
+        regions: [{
+          lines: geometries.lines,
+          points: geometries.points,
+        }]
+      }
+    }
+    return geometries
   })
 }
 
