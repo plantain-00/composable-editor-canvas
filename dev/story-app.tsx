@@ -7,6 +7,7 @@ import { navigateTo, useLocation } from '@protocol-based-web-framework/router'
 import { stories } from './import-stories'
 import { App } from '.'
 import { useDragMove } from '../src'
+import { WhiteBoard } from './whiteboard'
 
 function StoryApp() {
   const [, search] = useLocation(React)
@@ -17,6 +18,7 @@ function StoryApp() {
   if (!search) {
     return (
       <ul style={{ margin: '20px 50px' }}>
+        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=whiteboard')}>whiteboard</li>
         {stories.map((s) => <li style={{ cursor: 'pointer' }} key={s.path} onClick={() => navigateTo(location.pathname + '?p=' + s.path)}>{s.name} {s.path}</li>)}
         <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>combination 1</li>
       </ul>
@@ -26,6 +28,11 @@ function StoryApp() {
   if (path === 'index') {
     return (
       <App />
+    )
+  }
+  if (path === 'whiteboard') {
+    return (
+      <WhiteBoard />
     )
   }
   for (const story of stories) {

@@ -1,5 +1,5 @@
 import React from "react";
-import { useKey } from "../../src";
+import { useCursorInput, useKey } from "../../src";
 import { isArcContent, ArcContent } from "../models/arc-model";
 import { CircleContent, isCircleContent } from "../models/circle-model";
 import { BaseContent, getNextId } from "../models/model";
@@ -13,11 +13,28 @@ export const createRadialDimensionCommand: Command = {
   contentSelectable,
   useCommand({ onEnd, selected, type }) {
     const [result, setResult] = React.useState<Omit<RadialDimensionContent, 'refId'> & { refId?: number }>()
+    const [text, setText] = React.useState<string>()
+    let message = ''
+    if (type) {
+      message = 'input text'
+    }
+    const { input, clearText, setCursorPosition, setInputPosition, resetInput } = useCursorInput(message, type ? (e, text) => {
+      if (e.key === 'Enter') {
+        setText(text)
+        if (result) {
+          setResult({ ...result, text })
+        }
+        clearText()
+      }
+    } : undefined)
     const reset = () => {
       setResult(undefined)
+      resetInput()
+      setText(undefined)
     }
     useKey((e) => e.key === 'Escape', reset, [setResult])
     return {
+      input,
       onStart() {
         if (result) {
           onEnd({
@@ -37,6 +54,7 @@ export const createRadialDimensionCommand: Command = {
                   fontSize: result.fontSize,
                   fontFamily: result.fontFamily,
                   refId: result.refId,
+                  text: result.text,
                 } as RadialDimensionReferenceContent)
               }
             },
@@ -45,7 +63,9 @@ export const createRadialDimensionCommand: Command = {
           reset()
         }
       },
-      onMove(p) {
+      onMove(p, viewportPosition) {
+        setInputPosition(viewportPosition || p)
+        setCursorPosition(p)
         if (selected.length > 0 && type) {
           const content = selected[0].content
           if (contentSelectable(content)) {
@@ -58,6 +78,7 @@ export const createRadialDimensionCommand: Command = {
               fontSize: 16,
               fontFamily: 'monospace',
               refId: content.id,
+              text,
             })
           }
         }

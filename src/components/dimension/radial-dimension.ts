@@ -84,7 +84,7 @@ export function getRadialDimensionTextPosition(
     textPosition,
     textRotation,
     size,
-    text,
+    text: content.text || text,
   }
 }
 
@@ -93,4 +93,5 @@ export function getRadialDimensionTextPosition(
  */
 export interface RadialDimension extends TextStyle {
   position: Position
+  text?: string
 }

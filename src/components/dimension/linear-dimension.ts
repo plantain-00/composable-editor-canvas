@@ -217,7 +217,7 @@ export function getLinearDimensionTextPosition(
     textRotation = -Math.PI / 2
   }
   return {
-    text,
+    text: content.text || text,
     textPosition,
     size,
     textRotation,
@@ -232,4 +232,5 @@ export interface LinearDimension extends TextStyle {
   p2: Position
   position: Position
   direct?: boolean
+  text?: string
 }

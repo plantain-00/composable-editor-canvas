@@ -57,7 +57,7 @@ export function useCommands(
   ) => void,
   transform: (p: Position) => Position,
   angleSnapEnabled: boolean,
-  inputFixed: boolean,
+  inputFixed: boolean | undefined,
   operation: string | undefined,
   selected: { content: BaseContent, path: number[] }[],
   scale: number,
