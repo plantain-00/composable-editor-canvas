@@ -1,5 +1,6 @@
 import test from 'ava'
-import { getTwoCircleIntersectionPoints } from '../src'
+import { Patch } from 'immer'
+import { applyImmutablePatches, getTwoCircleIntersectionPoints } from '../src'
 
 test('getTwoCircleIntersectionPoints', (t) => {
   t.deepEqual(
@@ -15,5 +16,46 @@ test('getTwoCircleIntersectionPoints', (t) => {
       { x: 349.88754218653895, y: 178.1675894398844, r: 30 }
     ),
     [{ x: 329.8297135624872, y: 200.47641080920312 }],
+  )
+})
+
+test('applyImmutablePatches', (t) => {
+  function testPatches<T>(base: T, patches: Patch[]) {
+    const result = applyImmutablePatches(base, patches)
+    t.snapshot(result)
+    t.deepEqual(applyImmutablePatches(base, result.patches), result)
+    t.deepEqual(applyImmutablePatches(result.result, result.reversePatches).result, base)
+  }
+
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'add', path: ['biscuits', '-'], value: { name: 'c' } }],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [
+      { op: 'add', path: ['biscuits', '-'], value: { name: 'c' } },
+      { op: 'add', path: ['biscuits', '-'], value: { name: 'd' } },
+    ],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'replace', path: ['biscuits', 0], value: { name: "a1" } }],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'replace', path: ['biscuits', 0], value: undefined }],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'replace', path: ['biscuits', 0, 'name1'], value: 'c' }],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'replace', path: ['biscuits', 0, 'name'], value: 'a1' }],
+  )
+  testPatches(
+    { biscuits: [{ name: "a" }, { name: "b" },] },
+    [{ op: 'replace', path: ['biscuits', 0, 'name'], value: undefined }],
   )
 })
