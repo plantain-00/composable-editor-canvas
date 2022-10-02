@@ -37,6 +37,13 @@ export interface AngleRange {
 }
 
 // @public (undocumented)
+export function applyImmutablePatches<T>(base: T, patches: Patch[]): {
+    patches: Patch[];
+    reversePatches: Patch[];
+    result: T;
+};
+
+// @public (undocumented)
 export interface Arc extends Circle, AngleRange {
 }
 
@@ -293,6 +300,9 @@ export function getBezierSplineControlPointsOfPoints(points: Position[]): (reado
     readonly x: number;
     readonly y: number;
 }])[];
+
+// @public (undocumented)
+export function getByPath<T>(target: T, path?: SelectPath): T;
 
 // @public (undocumented)
 export function getCirclesTangentTo2Circles(circle1: Circle, circle2: Circle, radius: number): Position[];

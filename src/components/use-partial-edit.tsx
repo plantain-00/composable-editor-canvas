@@ -33,7 +33,7 @@ export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   return patches
 }
 
-function getByPath<T>(target: T, path?: SelectPath) {
+export function getByPath<T>(target: T, path?: SelectPath) {
   if (path) {
     // type-coverage:ignore-next-line
     let result: any = target
