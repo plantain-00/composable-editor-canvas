@@ -1,5 +1,5 @@
 import React from "react";
-import { Position, useKey } from "../../src";
+import { Position, useCursorInput, useKey } from "../../src";
 import { LineContent } from "../models/line-model";
 import { LinearDimensionContent } from "../models/linear-dimension-model";
 import { Command } from "./command";
@@ -11,12 +11,27 @@ export const createLinearDimensionCommand: Command = {
     const [p1, setP1] = React.useState<Position>()
     const [p2, setP2] = React.useState<Position>()
     const [direct, setDirect] = React.useState(false)
-    const [cursorPosition, setCursorPosition] = React.useState<Position>()
     const [result, setResult] = React.useState<LinearDimensionContent>()
+    const [text, setText] = React.useState<string>()
+    let message = ''
+    if (type) {
+      message = 'input text'
+    }
+    const { input, cursorPosition, setCursorPosition, clearText, setInputPosition, resetInput } = useCursorInput(message, type ? (e, text) => {
+      if (e.key === 'Enter') {
+        setText(text)
+        if (result) {
+          setResult({ ...result, text })
+        }
+        clearText()
+      }
+    } : undefined)
     const reset = () => {
       setP1(undefined)
       setP2(undefined)
       setResult(undefined)
+      resetInput()
+      setText(undefined)
     }
     useKey((e) => e.key === 'Escape', reset, [setResult])
     const assistentContents: (LinearDimensionContent | LineContent)[] = []
@@ -26,6 +41,7 @@ export const createLinearDimensionCommand: Command = {
       assistentContents.push({ type: 'line', points: [p1, cursorPosition], dashArray: [4 / scale] })
     }
     return {
+      input,
       onStart(p) {
         if (!p1) {
           setP1(p)
@@ -41,7 +57,8 @@ export const createLinearDimensionCommand: Command = {
           reset()
         }
       },
-      onMove(p) {
+      onMove(p, viewportPosition) {
+        setInputPosition(viewportPosition || p)
         setCursorPosition(p)
         if (type && p1 && p2) {
           setResult({
@@ -52,6 +69,7 @@ export const createLinearDimensionCommand: Command = {
             direct,
             fontSize: 16,
             fontFamily: 'monospace',
+            text,
           })
         }
       },

@@ -26,7 +26,7 @@ export function useTextClickCreate(
         x: p.x,
         y: p.y,
         text,
-        color: 0xff0000,
+        color: 0x000000,
         fontSize: 16 / (options?.scale ?? 1),
         fontFamily: 'monospace',
       })

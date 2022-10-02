@@ -3,9 +3,9 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
-import { LineContent, lineModel } from './models/line-model'
+import { isLineContent, LineContent, lineModel } from './models/line-model'
 import { CircleContent, circleModel } from './models/circle-model'
-import { polylineModel } from './models/polyline-model'
+import { isPolyLineContent, polylineModel } from './models/polyline-model'
 import { RectContent, rectModel } from './models/rect-model'
 import { getCommand, registerCommand, useCommands } from './commands/command'
 import { moveCommand } from './commands/move'
@@ -215,6 +215,7 @@ export default () => {
   const [inputFixed, setInputFixed] = React.useState(false)
   const [backgroundColor, setBackgroundColor] = React.useState(0xffffff)
   const offsetX = React.useContext(OffsetXContext)
+  const size = useWindowSize()
 
   return (
     <div style={{ height: '100%' }}>
@@ -222,6 +223,8 @@ export default () => {
         <CADEditor
           ref={editorRef}
           initialState={initialState}
+          width={size.width / 2 + offsetX}
+          height={size.height}
           onApplyPatchesFromSelf={onApplyPatchesFromSelf}
           onSendSelection={onSendSelection}
           readOnly={readOnly}
@@ -270,13 +273,16 @@ export default () => {
   )
 }
 
-const CADEditor = React.forwardRef((props: {
+export const CADEditor = React.forwardRef((props: {
   initialState: readonly Nullable<BaseContent>[]
-  onApplyPatchesFromSelf: ((patches: Patch[], reversePatches: Patch[]) => void)
-  onSendSelection: (selectedContents: readonly number[]) => void
-  readOnly: boolean
+  width: number
+  height: number
+  onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
+  onSendSelection?: (selectedContents: readonly number[]) => void
+  onChange?: (state: readonly Nullable<BaseContent>[]) => void
+  readOnly?: boolean
   angleSnapEnabled: boolean
-  inputFixed: boolean
+  inputFixed?: boolean
   snapTypes: readonly SnapPointType[]
   renderTarget?: string
   setCanUndo: (canUndo: boolean) => void
@@ -302,10 +308,10 @@ const CADEditor = React.forwardRef((props: {
       return false
     },
     {
-      onChange: (c) => props.onSendSelection(c.map((s) => s[0]))
+      onChange: (c) => props.onSendSelection?.(c.map((s) => s[0]))
     },
   )
-  const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed } = props
+  const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed, width, height } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
     onChange({ patches, oldState, newState }) {
@@ -350,6 +356,7 @@ const CADEditor = React.forwardRef((props: {
         }
       }
       setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
+      props.onChange?.(newState)
     },
   })
   const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
@@ -378,10 +385,7 @@ const CADEditor = React.forwardRef((props: {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
   })
-  const size = useWindowSize()
-  const offsetX = React.useContext(OffsetXContext)
-  const width = size.width / 2 + offsetX
-  const height = size.height
+  
   const transform: Transform = {
     x: x + offset.x,
     y: y + offset.y,
@@ -597,7 +601,15 @@ const CADEditor = React.forwardRef((props: {
     },
     compress() {
       setState(draft => {
-        return draft.filter(d => d)
+        return draft.filter(d => {
+          if (!d) {
+            return false
+          }
+          if (isLineContent(d) || isPolyLineContent(d)) {
+            return d.points.length > 1
+          }
+          return true
+        })
       })
     },
   }), [applyPatchFromOtherOperators])
@@ -831,7 +843,7 @@ const CADEditor = React.forwardRef((props: {
   )
 })
 
-interface CADEditorRef {
+export interface CADEditorRef {
   handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }): void
   handleSelectionEvent(data: { selectedContents: number[], operator: string }): void
   undo(): void

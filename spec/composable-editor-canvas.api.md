@@ -689,6 +689,8 @@ export interface LinearDimension extends TextStyle {
     p2: Position;
     // (undocumented)
     position: Position;
+    // (undocumented)
+    text?: string;
 }
 
 // @public (undocumented)
@@ -898,6 +900,8 @@ export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[];
 export interface RadialDimension extends TextStyle {
     // (undocumented)
     position: Position;
+    // (undocumented)
+    text?: string;
 }
 
 // @public (undocumented)
