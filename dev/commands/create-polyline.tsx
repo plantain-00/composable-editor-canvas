@@ -7,7 +7,7 @@ import { Command } from "./command";
 export const createPolylineCommand: Command = {
   name: 'create polyline',
   useCommand({ onEnd, scale, getAngleSnap, type }) {
-    const { line, onClick, onMove, input, inputMode } = useLineClickCreate(
+    const { line, onClick, onMove, input, inputMode, lastPosition } = useLineClickCreate(
       type === 'create polyline',
       (c) => onEnd({
         updateContents: (contents) => contents.push({ points: c, type: 'polyline' } as LineContent)
@@ -65,6 +65,7 @@ export const createPolylineCommand: Command = {
       input,
       onMove,
       assistentContents,
+      lastPosition,
     }
   },
   selectCount: 0,

@@ -41,6 +41,7 @@ export const createPolygonCommand: Command = {
         )
         : undefined,
       assistentContents,
+      lastPosition: startPosition,
     }
   },
   selectCount: 0,

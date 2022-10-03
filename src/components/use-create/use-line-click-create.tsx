@@ -129,6 +129,7 @@ export function useLineClickCreate(
   return {
     line,
     inputMode,
+    lastPosition: line?.[line.length - 2],
     onClick(p: Position) {
       if (!enabled) {
         return

@@ -40,6 +40,7 @@ export const createEllipseCommand: Command = {
       input,
       onMove,
       assistentContents,
+      lastPosition: middlePosition ?? startPosition,
     }
   },
   selectCount: 0,

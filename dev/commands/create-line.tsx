@@ -7,7 +7,7 @@ import { Command } from "./command";
 export const createLineCommand: Command = {
   name: 'create line',
   useCommand({ onEnd, scale, getAngleSnap, type }) {
-    const { line, onClick, onMove, input, inputMode } = useLineClickCreate(
+    const { line, onClick, onMove, input, inputMode, lastPosition } = useLineClickCreate(
       type === 'create line',
       (c) => onEnd({
         updateContents: (contents) => contents.push(...Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' })))
@@ -67,7 +67,7 @@ export const createLineCommand: Command = {
       input,
       onMove,
       assistentContents,
-      lastPosition: line?.[line.length - 2],
+      lastPosition,
     }
   },
   selectCount: 0,

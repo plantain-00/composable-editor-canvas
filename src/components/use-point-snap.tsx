@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
+import { Circle, isSamePoint, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
 
 /**
  * @public
@@ -151,9 +151,34 @@ export function usePointSnap<T>(
           const model = getModel(content)
           if (model) {
             if (model.getCircle) {
-              continue
-            }
-            if (model.getGeometries) {
+              const { bounding, circle } = model.getCircle(content)
+              if (
+                bounding &&
+                pointIsInRegion(
+                  p,
+                  {
+                    start: {
+                      x: bounding.start.x - delta,
+                      y: bounding.start.y - delta,
+                    },
+                    end: {
+                      x: bounding.end.x + delta,
+                      y: bounding.end.y + delta,
+                    },
+                  },
+                ) &&
+                !isSamePoint(circle, lastPosition) &&
+                getTwoNumbersDistance(getTwoPointsDistance(p, circle), circle.r) <= delta
+              ) {
+                const points = getLineCircleIntersectionPoints(lastPosition, circle, circle)
+                for (const point of points) {
+                  if (getTwoPointsDistance(p, point) <= delta) {
+                    setSnapPoint({ ...point, type: 'perpendicular' })
+                    return point
+                  }
+                }
+              }
+            } else if (model.getGeometries) {
               const { bounding, lines } = model.getGeometries(content, contents)
               if (
                 bounding &&
