@@ -24,7 +24,7 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
-export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest"];
+export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest", "perpendicular"];
 
 // @public (undocumented)
 export interface AngleRange {
@@ -360,9 +360,6 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
 
 // @public (undocumented)
-export function getFootPoint(point: Position, line: GeneralFormLine): Position;
-
-// @public (undocumented)
 export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
     translate: Position;
     base: Position;
@@ -456,6 +453,9 @@ export function getPerpendicular(point: Position, line: GeneralFormLine): {
     b: number;
     c: number;
 };
+
+// @public (undocumented)
+export function getPerpendicularPoint(point: Position, line: GeneralFormLine): Position;
 
 // @public (undocumented)
 export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position): number;
@@ -1478,7 +1478,7 @@ export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (conten
 } | undefined, scale?: number, delta?: number): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
-    getSnapPoint(p: Position, contents: readonly Nullable<T>[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined): Position;
+    getSnapPoint(p: Position, contents: readonly Nullable<T>[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined, lastPosition?: Position): Position;
 };
 
 // @public (undocumented)

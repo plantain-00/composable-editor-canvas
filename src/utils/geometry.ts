@@ -77,11 +77,11 @@ export function getPointAndLineSegmentMinimumDistance(position: Position, point1
  * @public
  */
 export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position) {
-  const footPoint = getFootPoint(position, twoPointLineToGeneralFormLine(point1, point2))
-  if (pointIsOnLineSegment(footPoint, point1, point2)) {
+  const perpendicularPoint = getPerpendicularPoint(position, twoPointLineToGeneralFormLine(point1, point2))
+  if (pointIsOnLineSegment(perpendicularPoint, point1, point2)) {
     return {
-      point: footPoint,
-      distance: getTwoPointsDistance(position, footPoint),
+      point: perpendicularPoint,
+      distance: getTwoPointsDistance(position, perpendicularPoint),
     }
   }
   const d1 = getTwoPointsDistance(position, point1)
@@ -139,7 +139,7 @@ export function getPointAndRegionMaximumDistance(position: Position, region: Two
 /**
  * @public
  */
-export function getFootPoint(point: Position, line: GeneralFormLine): Position {
+export function getPerpendicularPoint(point: Position, line: GeneralFormLine): Position {
   const d = line.a ** 2 + line.b ** 2
   const e = line.a * line.b
   return {

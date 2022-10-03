@@ -1,5 +1,5 @@
 import React from "react"
-import { Arc, getCirclesTangentTo2Lines, getFootPoint, getTwoNumbersDistance, getTwoPointsDistance, twoPointLineToGeneralFormLine, useCursorInput, useKey } from "../../src"
+import { Arc, getCirclesTangentTo2Lines, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, twoPointLineToGeneralFormLine, useCursorInput, useKey } from "../../src"
 import { ArcContent } from "../models/arc-model"
 import { isLineContent } from "../models/line-model"
 import { BaseContent } from "../models/model"
@@ -71,8 +71,8 @@ function getFillets(content1: BaseContent, content2: BaseContent, radius: number
   const result: Arc[] = []
   if (isLineContent(content1) && isLineContent(content2)) {
     result.push(...getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => {
-      const foot1 = getFootPoint(c, twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]))
-      const foot2 = getFootPoint(c, twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]))
+      const foot1 = getPerpendicularPoint(c, twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]))
+      const foot2 = getPerpendicularPoint(c, twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]))
       const angle1 = Math.atan2(foot1.y - c.y, foot1.x - c.x) * 180 / Math.PI
       const angle2 = Math.atan2(foot2.y - c.y, foot2.x - c.x) * 180 / Math.PI
       const min = Math.min(angle1, angle2)

@@ -29,6 +29,7 @@ export interface Command {
       patches?: [Patch[], Patch[]]
     }
     assistentContents?: BaseContent[]
+    lastPosition?: Position
   }
   execute?(
     contents: Nullable<BaseContent>[],
@@ -73,10 +74,11 @@ export function useCommands(
   const commandAssistentContents: BaseContent[] = []
   const onStartMap: Record<string, ((p: Position) => void)> = {}
   const hotkeys: { key: string, command: string }[] = []
+  const lastPositions: Position[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
-      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove } = command.useCommand({
+      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove, lastPosition } = command.useCommand({
         onEnd,
         transform,
         getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
@@ -103,6 +105,9 @@ export function useCommands(
       }
       if (assistentContents) {
         commandAssistentContents.push(...assistentContents)
+      }
+      if (lastPosition) {
+        lastPositions.push(lastPosition)
       }
       if (input) {
         const children: React.ReactNode[] = [...input.props.children]
@@ -194,6 +199,7 @@ export function useCommands(
       key = key.toUpperCase()
       return hotkeys.find((k) => k.key === key)?.command
     },
+    lastPosition: lastPositions[0],
   }
 }
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getLineCircleIntersectionPoints, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, Position, Region, TwoPointsFormRegion } from "../utils"
+import { Circle, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
 
 /**
  * @public
@@ -75,6 +75,15 @@ export function usePointSnap<T>(
               { x: snapPoint.x - d, y: snapPoint.y - d },
             ]),
           )
+        } else if (snapPoint.type === 'perpendicular') {
+          assistentContents.push(createPolyline([
+            { x: snapPoint.x - d * 1.5, y: snapPoint.y },
+            { x: snapPoint.x + d * 1.5, y: snapPoint.y },
+          ]))
+          assistentContents.push(createPolyline([
+            { x: snapPoint.x, y: snapPoint.y - d * 1.5 },
+            { x: snapPoint.x, y: snapPoint.y },
+          ]))
         }
       }
       return assistentContents
@@ -83,6 +92,7 @@ export function usePointSnap<T>(
       p: Position,
       contents: readonly Nullable<T>[],
       getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
+      lastPosition?: Position,
     ) {
       if (!enabled) {
         setSnapPoint(undefined)
@@ -128,6 +138,49 @@ export function usePointSnap<T>(
               ) {
                 setSnapPoint({ ...point, type: 'intersection' })
                 return point
+              }
+            }
+          }
+        }
+      }
+      if (lastPosition && types.includes('perpendicular')) {
+        for (const content of contentsInRange) {
+          if (!content) {
+            continue
+          }
+          const model = getModel(content)
+          if (model) {
+            if (model.getCircle) {
+              continue
+            }
+            if (model.getGeometries) {
+              const { bounding, lines } = model.getGeometries(content, contents)
+              if (
+                bounding &&
+                pointIsInRegion(
+                  p,
+                  {
+                    start: {
+                      x: bounding.start.x - delta,
+                      y: bounding.start.y - delta,
+                    },
+                    end: {
+                      x: bounding.end.x + delta,
+                      y: bounding.end.y + delta,
+                    },
+                  },
+                )
+              ) {
+                for (const line of lines) {
+                  const perpendicularPoint = getPerpendicularPoint(lastPosition, twoPointLineToGeneralFormLine(...line))
+                  if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
+                    const distance = getTwoPointsDistance(p, perpendicularPoint)
+                    if (distance <= delta) {
+                      setSnapPoint({ ...perpendicularPoint, type: 'perpendicular' })
+                      return perpendicularPoint
+                    }
+                  }
+                }
               }
             }
           }
@@ -211,7 +264,7 @@ export type SnapPoint = Position & { type: SnapPointType }
 /**
  * @public
  */
-export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest'] as const
+export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest', 'perpendicular'] as const
 
 /**
  * @public

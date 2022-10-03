@@ -67,6 +67,7 @@ export const createLineCommand: Command = {
       input,
       onMove,
       assistentContents,
+      lastPosition: line?.[line.length - 2],
     }
   },
   selectCount: 0,
