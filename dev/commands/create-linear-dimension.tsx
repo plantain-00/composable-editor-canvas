@@ -86,6 +86,7 @@ export const createLinearDimensionCommand: Command = {
         )
         : undefined,
       assistentContents,
+      lastPosition: p2 ?? p1,
     }
   },
 }

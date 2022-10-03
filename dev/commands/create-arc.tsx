@@ -87,6 +87,7 @@ export const createArcCommand: Command = {
       input,
       onMove,
       assistentContents,
+      lastPosition: middlePosition ?? startPosition,
     }
   },
   selectCount: 0,

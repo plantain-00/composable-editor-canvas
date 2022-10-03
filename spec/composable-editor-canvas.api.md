@@ -1425,6 +1425,7 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 }>): {
     line: Position[] | undefined;
     inputMode: "length" | "angle";
+    lastPosition: Position | undefined;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
