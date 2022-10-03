@@ -451,7 +451,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, lastPosition } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -470,7 +470,7 @@ export const CADEditor = React.forwardRef((props: {
         startOperation({ type: 'command', name: nextCommand }, [])
       }
     },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange),
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange, lastPosition),
     angleSnapEnabled && !snapPoint,
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
@@ -635,7 +635,7 @@ export const CADEditor = React.forwardRef((props: {
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
-    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange)
+    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange, lastPosition)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p)
@@ -667,7 +667,7 @@ export const CADEditor = React.forwardRef((props: {
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      onCommandMove(getSnapPoint(p, editingContent, getContentsInRange), viewportPosition)
+      onCommandMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), viewportPosition)
     }
     if (operations.type !== 'operate' && !simplified) {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange), selectedContents)

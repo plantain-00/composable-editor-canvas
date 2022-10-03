@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getFootPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
  * @public
@@ -30,7 +30,7 @@ export function getLinearDimensionGeometries(
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
-    const footPoint = getFootPoint(content.position, twoPointLineToGeneralFormLine(left, right))
+    const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
     const r = Math.atan2(right.y - left.y, right.x - left.x)
     let rotationDelta = r - centerRotation
@@ -179,7 +179,7 @@ export function getLinearDimensionTextPosition(
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
-    const footPoint = getFootPoint(content.position, twoPointLineToGeneralFormLine(left, right))
+    const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
     textRotation = Math.atan2(right.y - left.y, right.x - left.x)
     const r = Math.atan2(right.y - left.y, right.x - left.x)

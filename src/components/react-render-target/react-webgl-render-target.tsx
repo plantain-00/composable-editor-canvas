@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getBezierCurvePoints, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, Matrix, polygonToPolyline, Position, rotatePosition, twoPointLineToGeneralFormLine } from "../../utils"
+import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, getBezierCurvePoints, getPerpendicularPoint, getParallelLinesByDistance, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, Matrix, polygonToPolyline, Position, rotatePosition, twoPointLineToGeneralFormLine } from "../../utils"
 import { ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { colorNumberToRec, createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 
@@ -125,8 +125,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
               getParallelLinesByDistance(line2, command.radius)[index],
             )
             if (center) {
-              const t1 = getFootPoint(center, line1)
-              const t2 = getFootPoint(center, line2)
+              const t1 = getPerpendicularPoint(center, line1)
+              const t2 = getPerpendicularPoint(center, line2)
               points.push({ x: t1.x, y: t1.y })
               const startAngle = Math.atan2(t1.y - center.y, t1.x - center.x) * 180 / Math.PI
               const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x) * 180 / Math.PI

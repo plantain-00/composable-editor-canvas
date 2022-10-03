@@ -1,5 +1,5 @@
 import * as twgl from 'twgl.js'
-import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getFootPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getPerpendicularPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
@@ -976,7 +976,7 @@ function getLinearGradientGraphic(linearGradient: LinearGradient, points: Positi
   let minOffset = stops[0].offset
   let maxOffset = stops[stops.length - 1].offset
   points.forEach(p => {
-    const foot = getFootPoint(p, line)
+    const foot = getPerpendicularPoint(p, line)
     const side = getPointSideOfLine(p, line)
     if (isZero(side)) {
       distances.push(0)

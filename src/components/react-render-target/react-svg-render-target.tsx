@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { defaultMiterLimit, getFootPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
+import { defaultMiterLimit, getPerpendicularPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
 
 /**
  * @public
@@ -183,8 +183,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
               getParallelLinesByDistance(line2, command.radius)[index],
             )
             if (center) {
-              const t1 = getFootPoint(center, line1)
-              const t2 = getFootPoint(center, line2)
+              const t1 = getPerpendicularPoint(center, line1)
+              const t2 = getPerpendicularPoint(center, line2)
               d += ` L ${t1.x} ${t1.y} A ${command.radius} ${command.radius} 0 0 ${p2Direction < 0 ? 1 : 0} ${t2.x} ${t2.y}`
               last = t2
             }
