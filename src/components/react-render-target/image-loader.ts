@@ -20,20 +20,22 @@ export function getImageFromCache(
   url: string,
   rerender: () => void,
   crossOrigin?: "anonymous" | "use-credentials" | "",
+  callback?: (imageBitmap: ImageBitmap) => void
 ) {
   const image = images.get(url)
   if (!image) {
     images.set(url, [])
     // eslint-disable-next-line plantain/promise-not-await
     loadImage(url, crossOrigin).then(image => {
-      createImageBitmap(image).then(imageBitMap => {
+      createImageBitmap(image).then(imageBitmap => {
         const listeners = images.get(url)
-        images.set(url, imageBitMap)
+        images.set(url, imageBitmap)
         if (Array.isArray(listeners)) {
           listeners.forEach(listener => {
             listener()
           })
         }
+        callback?.(imageBitmap)
         rerender()
       })
     })
@@ -45,5 +47,6 @@ export function getImageFromCache(
     })
     return
   }
+  callback?.(image)
   return image
 }

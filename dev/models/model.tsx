@@ -60,13 +60,28 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
 }
 
 export interface Geometries {
+  /**
+   * Used for (1)line intersection, (2)select line by click, (3)select line by box, (4)snap point
+   */
   lines: [Position, Position][]
   points: Position[]
+  /**
+   * Used for (1)select line by box, (2)snap point, (3)rtree
+   */
   bounding?: TwoPointsFormRegion
   regions?: {
+    /**
+     * Used for (1)select region by click
+     */
     points: Position[]
+    /**
+     * Used for (1)select region by box
+     */
     lines: [Position, Position][]
   }[]
+  /**
+   * Used for (1)line rendering
+   */
   renderingLines?: Position[][]
 }
 

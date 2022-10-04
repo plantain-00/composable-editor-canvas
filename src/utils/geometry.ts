@@ -1332,3 +1332,10 @@ export type Text = Position & TextStyle & {
   text: string
   color: number
 }
+
+/**
+ * @public
+ */
+export type Image = Region & {
+  url: string
+}
