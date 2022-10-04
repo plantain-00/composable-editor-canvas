@@ -644,6 +644,12 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 };
 
 // @public (undocumented)
+type Image_2 = Region & {
+    url: string;
+};
+export { Image_2 as Image }
+
+// @public (undocumented)
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
@@ -1389,6 +1395,14 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 
 // @public (undocumented)
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
+
+// @public (undocumented)
+export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) => void): {
+    image: Image_2 | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position): void;
+    input: JSX.Element;
+};
 
 // @public (undocumented)
 export function useJsonEditorData<V>(defaultValue: V): {

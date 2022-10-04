@@ -51,6 +51,8 @@ import { fillCommand } from './commands/fill'
 import { OffsetXContext } from './story-app'
 import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
 import { createTextCommand } from './commands/create-text'
+import { imageModel } from './models/image-model'
+import { createImageCommand } from './commands/create-image'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -72,6 +74,7 @@ registerModel(radialDimensionModel)
 registerModel(radialDimensionReferenceModel)
 registerModel(linearDimensionModel)
 registerModel(groupModel)
+registerModel(imageModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -101,6 +104,7 @@ registerCommand(createLinearDimensionCommand)
 registerCommand(createGroupCommand)
 registerCommand(fillCommand)
 registerCommand(createTextCommand)
+registerCommand(createImageCommand)
 
 registerRenderer(reactWebglRenderTarget)
 registerRenderer(reactSvgRenderTarget)
@@ -242,7 +246,7 @@ export default () => {
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}

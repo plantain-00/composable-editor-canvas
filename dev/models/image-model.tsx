@@ -1,17 +1,14 @@
-import { getPointsBounding, getTextSize, iteratePolygonLines, Text } from "../../src"
+import { getPointsBounding, Image, iteratePolygonLines } from "../../src"
 import { LineContent } from "./line-model"
 import { BaseContent, getEditPointsFromCache, getGeometriesFromCache, Model } from "./model"
 
-export type TextContent = BaseContent<'text'> & Text
+export type ImageContent = BaseContent<'image'> & Image
 
-export const textModel: Model<TextContent> = {
-  type: 'text',
+export const imageModel: Model<ImageContent> = {
+  type: 'image',
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
-  },
-  getDefaultColor(content) {
-    return content.color
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -22,7 +19,7 @@ export const textModel: Model<TextContent> = {
             y: content.y,
             cursor: 'move',
             update(c, { cursor, start, scale }) {
-              if (!isTextContent(c)) {
+              if (!isImageContent(c)) {
                 return
               }
               c.x += cursor.x - start.x
@@ -34,22 +31,24 @@ export const textModel: Model<TextContent> = {
       }
     })
   },
-  render({ content, target, color }) {
-    return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize, content.fontFamily, { cacheKey: content })
+  render({ content, target }) {
+    return target.renderImage(content.url, content.x, content.y, content.width, content.height)
   },
-  getGeometries: getTextGeometries,
+  renderIfSelected({ content, color, target, strokeWidth }) {
+    return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth })
+  },
+  getOperatorRenderPosition(content) {
+    return content
+  },
+  getGeometries: getImageGeometries,
 }
 
-export function getTextGeometries(content: Omit<TextContent, "type">) {
+export function getImageGeometries(content: Omit<ImageContent, "type">) {
   return getGeometriesFromCache(content, () => {
-    const size = getTextSize(`${content.fontSize}px ${content.fontFamily}`, content.text)
-    if (!size) {
-      throw 'not supported'
-    }
     const points = [
-      { x: content.x, y: content.y - size.height },
-      { x: content.x + size.width, y: content.y - size.height },
-      { x: content.x + size.width, y: content.y },
+      { x: content.x, y: content.y + content.height },
+      { x: content.x + content.width, y: content.y + content.height },
+      { x: content.x + content.width, y: content.y },
       { x: content.x, y: content.y },
     ]
     const lines = Array.from(iteratePolygonLines(points))
@@ -67,6 +66,6 @@ export function getTextGeometries(content: Omit<TextContent, "type">) {
   })
 }
 
-export function isTextContent(content: BaseContent): content is TextContent {
-  return content.type === 'text'
+export function isImageContent(content: BaseContent): content is ImageContent {
+  return content.type === 'image'
 }
