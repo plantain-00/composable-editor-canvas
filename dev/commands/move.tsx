@@ -5,11 +5,10 @@ import { Command } from "./command"
 
 export const moveCommand: Command = {
   name: 'move',
-  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, transform, type, scale }) {
     const { offset, onStart, mask, startPosition } = useDragMove(onEnd, {
       transform,
       ignoreLeavingEvent: true,
-      getAngleSnap,
     })
     let message = ''
     if (type) {

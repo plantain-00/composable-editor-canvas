@@ -44,6 +44,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
 
   return {
     editPoint,
+    editLastPosition: editPoint?.angleSnapStartPoint ?? startPosition,
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V) {
       const assistentContents: V[] = []
       if (!readOnly) {

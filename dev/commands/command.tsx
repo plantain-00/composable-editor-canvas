@@ -1,7 +1,7 @@
 import { Patch } from "immer"
 import React from "react"
 import { Nullable, Position, prependPatchPath, SelectPath } from "../../src"
-import { BaseContent, fixedInputStyle, getAngleSnap } from "../models/model"
+import { BaseContent, fixedInputStyle } from "../models/model"
 
 export interface Command {
   name: string
@@ -13,7 +13,6 @@ export interface Command {
       repeatedly?: boolean,
     }>) => void,
     transform: (p: Position) => Position,
-    getAngleSnap: ((angle: number) => number | undefined) | undefined,
     type: string | undefined,
     selected: { content: BaseContent, path: number[] }[],
     scale: number,
@@ -57,7 +56,6 @@ export function useCommands(
     }>
   ) => void,
   transform: (p: Position) => Position,
-  angleSnapEnabled: boolean,
   inputFixed: boolean | undefined,
   operation: string | undefined,
   selected: { content: BaseContent, path: number[] }[],
@@ -81,7 +79,6 @@ export function useCommands(
       const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove, lastPosition } = command.useCommand({
         onEnd,
         transform,
-        getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
         type,
         selected,
         scale,
@@ -199,7 +196,7 @@ export function useCommands(
       key = key.toUpperCase()
       return hotkeys.find((k) => k.key === key)?.command
     },
-    lastPosition: lastPositions[0],
+    commandLastPosition: lastPositions[0],
   }
 }
 

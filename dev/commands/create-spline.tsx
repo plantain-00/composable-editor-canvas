@@ -9,15 +9,12 @@ export const createSplineCommand: Command = {
     { name: 'spline', hotkey: 'SPL' },
     { name: 'spline fitting' },
   ],
-  useCommand({ onEnd, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, type, scale }) {
     const { line, onClick, onMove, input, lastPosition } = useLineClickCreate(
       type === 'spline' || type === 'spline fitting',
       (c) => onEnd({
         updateContents: (contents) => contents.push({ points: c, type: 'spline', fitting: type === 'spline fitting' } as SplineContent)
       }),
-      {
-        getAngleSnap,
-      },
     )
     const assistentContents: (SplineContent | LineContent)[] = []
     if (line) {

@@ -6,11 +6,10 @@ import { Command } from "./command"
 
 export const measureCommand: Command = {
   name: 'measure',
-  useCommand({ transform, getAngleSnap, type, scale }) {
+  useCommand({ transform, type, scale }) {
     const { onStart, mask, startPosition } = useDragMove(undefined, {
       transform,
       ignoreLeavingEvent: true,
-      getAngleSnap,
     })
     let message = ''
     if (type) {

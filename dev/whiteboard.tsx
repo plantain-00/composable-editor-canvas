@@ -9,7 +9,6 @@ const initialState = draftState ? JSON.parse(draftState) as Nullable<BaseContent
 
 export const WhiteBoard = () => {
   const editorRef = React.useRef<CADEditorRef | null>(null)
-  const [angleSnapEnabled, setAngleSnapEnabled] = React.useState(true)
   const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
@@ -22,7 +21,6 @@ export const WhiteBoard = () => {
         initialState={initialState}
         width={size.width}
         height={size.height}
-        angleSnapEnabled={angleSnapEnabled}
         snapTypes={snapTypes}
         renderTarget='svg'
         setCanUndo={setCanUndo}
@@ -31,22 +29,25 @@ export const WhiteBoard = () => {
         backgroundColor={0xffffff}
         onChange={(state) => localStorage.setItem(draftKey, JSON.stringify(state))}
       />
-      {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-      <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-      {['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-      <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>
-      <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>
-      <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>
-      {allSnapTypes.map((type) => (
-        <span key={type} style={{ position: 'relative' }}>
-          <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
-          <label htmlFor={type}>{type}</label>
-        </span>
-      ))}
-      <span style={{ position: 'relative' }}>
-        <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
-        <label htmlFor='angle snap'>angle snap</label>
-      </span>
+      <div style={{ position: 'relative' }}>
+        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        <button onClick={() => editorRef.current?.compress()}>compress</button>
+        <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit block</button>
+        <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
+        <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
+        {allSnapTypes.map((type) => (
+          <span key={type}>
+            <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
+            <label htmlFor={type}>{type}</label>
+          </span>
+        ))}
+      </div>
+      <div style={{ position: 'relative' }}>
+        {['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'create radial dimension', 'create linear dimension', 'create text', 'create image', 'create arrow'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+      </div>
+      <div style={{ position: 'relative' }}>
+        {['move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+      </div>
     </div>
   )
 }

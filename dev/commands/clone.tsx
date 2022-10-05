@@ -5,14 +5,13 @@ import { Command } from "./command"
 
 export const cloneCommand: Command = {
   name: 'clone',
-  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, transform, type, scale }) {
     const { offset, onStart, mask, startPosition } = useDragMove(
       () => onEnd({ repeatedly: true }),
       {
         repeatedly: true,
         transform,
         ignoreLeavingEvent: true,
-        getAngleSnap,
       },
     )
     let message = ''

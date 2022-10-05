@@ -6,15 +6,12 @@ import { Command } from "./command";
 
 export const createLineCommand: Command = {
   name: 'create line',
-  useCommand({ onEnd, scale, getAngleSnap, type }) {
+  useCommand({ onEnd, scale, type }) {
     const { line, onClick, onMove, input, inputMode, lastPosition } = useLineClickCreate(
       type === 'create line',
       (c) => onEnd({
         updateContents: (contents) => contents.push(...Array.from(iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' })))
       }),
-      {
-        getAngleSnap,
-      },
     )
     const assistentContents: (LineContent | ArcContent | TextContent)[] = []
     if (line && line.length > 1) {

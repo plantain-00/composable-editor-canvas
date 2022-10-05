@@ -2,7 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useWindowSize, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, allSnapTypes, scaleByCursorPosition, colorStringToNumber, getColorString, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, fixedInputStyle, getAngleSnap, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
 import { isLineContent, LineContent, lineModel } from './models/line-model'
 import { CircleContent, circleModel } from './models/circle-model'
 import { isPolyLineContent, polylineModel } from './models/polyline-model'
@@ -53,6 +53,8 @@ import { radialDimensionReferenceModel } from './models/radial-dimension-referen
 import { createTextCommand } from './commands/create-text'
 import { imageModel } from './models/image-model'
 import { createImageCommand } from './commands/create-image'
+import { arrowModel } from './models/arrow-model'
+import { createArrowCommand } from './commands/create-arrow'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -75,6 +77,7 @@ registerModel(radialDimensionReferenceModel)
 registerModel(linearDimensionModel)
 registerModel(groupModel)
 registerModel(imageModel)
+registerModel(arrowModel)
 
 registerCommand(moveCommand)
 registerCommand(rotateCommand)
@@ -105,6 +108,7 @@ registerCommand(createGroupCommand)
 registerCommand(fillCommand)
 registerCommand(createTextCommand)
 registerCommand(createImageCommand)
+registerCommand(createArrowCommand)
 
 registerRenderer(reactWebglRenderTarget)
 registerRenderer(reactSvgRenderTarget)
@@ -210,7 +214,6 @@ export default () => {
   }, [ws.current, editorRef.current])
 
   const [readOnly, setReadOnly] = React.useState(false)
-  const [angleSnapEnabled, setAngleSnapEnabled] = React.useState(true)
   const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
   const [renderTarget, setRenderTarget] = React.useState<string>()
   const [canUndo, setCanUndo] = React.useState(false)
@@ -232,7 +235,6 @@ export default () => {
           onApplyPatchesFromSelf={onApplyPatchesFromSelf}
           onSendSelection={onSendSelection}
           readOnly={readOnly}
-          angleSnapEnabled={angleSnapEnabled}
           snapTypes={snapTypes}
           renderTarget={renderTarget}
           setCanUndo={setCanUndo}
@@ -246,7 +248,7 @@ export default () => {
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image', 'create arrow'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
@@ -259,10 +261,6 @@ export default () => {
             <label htmlFor={type}>{type}</label>
           </span>
         ))}
-        {!readOnly && <span style={{ position: 'relative' }}>
-          <input type='checkbox' checked={angleSnapEnabled} id='angle snap' onChange={(e) => setAngleSnapEnabled(e.target.checked)} />
-          <label htmlFor='angle snap'>angle snap</label>
-        </span>}
         <span style={{ position: 'relative' }}>
           <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
           <label htmlFor='read only'>read only</label>
@@ -285,7 +283,6 @@ export const CADEditor = React.forwardRef((props: {
   onSendSelection?: (selectedContents: readonly number[]) => void
   onChange?: (state: readonly Nullable<BaseContent>[]) => void
   readOnly?: boolean
-  angleSnapEnabled: boolean
   inputFixed?: boolean
   snapTypes: readonly SnapPointType[]
   renderTarget?: string
@@ -315,7 +312,7 @@ export const CADEditor = React.forwardRef((props: {
       onChange: (c) => props.onSendSelection?.(c.map((s) => s[0]))
     },
   )
-  const { snapTypes, angleSnapEnabled, renderTarget, readOnly, inputFixed, width, height } = props
+  const { snapTypes, renderTarget, readOnly, inputFixed, width, height } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
     onChange({ patches, oldState, newState }) {
@@ -435,18 +432,17 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
-  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
+  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
     () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
     (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
     {
       scale: transform.scale,
       readOnly: readOnly || operations.type === 'operate',
-      getAngleSnap: angleSnapEnabled ? getAngleSnap : undefined,
     }
   )
 
   // snap point
-  const { getSnapAssistentContents, getSnapPoint, snapPoint } = usePointSnap(
+  const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
     operations.type === 'operate' || editPoint !== undefined,
     getIntersectionPoints,
     snapTypes,
@@ -455,7 +451,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, lastPosition } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -475,12 +471,12 @@ export const CADEditor = React.forwardRef((props: {
       }
     },
     (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange, lastPosition),
-    angleSnapEnabled && !snapPoint,
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
     scale,
   )
+  const lastPosition = editLastPosition ?? commandLastPosition
 
   // select by region
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
@@ -674,7 +670,7 @@ export const CADEditor = React.forwardRef((props: {
       onCommandMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), viewportPosition)
     }
     if (operations.type !== 'operate' && !simplified) {
-      onEditMove(getSnapPoint(p, editingContent, getContentsInRange), selectedContents)
+      onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), selectedContents)
       // hover by position
       setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible))
     }

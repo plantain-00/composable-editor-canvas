@@ -6,7 +6,7 @@ import { Command } from "./command";
 
 export const createPolygonCommand: Command = {
   name: 'create polygon',
-  useCommand({ onEnd, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, type, scale }) {
     const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
     const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = usePolygonClickCreate(
       type === 'create polygon',
@@ -14,7 +14,6 @@ export const createPolygonCommand: Command = {
         updateContents: (contents) => contents.push({ points: c, type: 'polygon' } as PolygonContent)
       }),
       {
-        getAngleSnap,
         toEdge: createType === 'edge',
         setSidesKey: 'S',
         switchTypeKey: 'T',

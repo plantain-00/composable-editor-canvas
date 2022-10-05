@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Circle, isSamePoint, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
+import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
 
 /**
  * @public
@@ -15,6 +16,14 @@ export function usePointSnap<T>(
   } | undefined,
   scale = 1,
   delta = 5,
+  getGridSnap = (p: Position) => ({ x: Math.round(p.x), y: Math.round(p.y) }),
+  getAngleSnap = (angle: number) => {
+    const snap = Math.round(angle / 45) * 45
+    if (snap !== angle && Math.abs(snap - angle) < 5) {
+      return snap
+    }
+    return undefined
+  },
 ) {
   const [snapPoint, setSnapPoint] = React.useState<SnapPoint>()
 
@@ -275,6 +284,12 @@ export function usePointSnap<T>(
           }
         }
       }
+      if (types.includes('grid')) {
+        p = getGridSnap(p)
+      }
+      if (lastPosition && types.includes('angle')) {
+        p = getAngleSnapPosition(lastPosition, p, getAngleSnap)
+      }
       setSnapPoint(undefined)
       return p
     }
@@ -289,7 +304,7 @@ export type SnapPoint = Position & { type: SnapPointType }
 /**
  * @public
  */
-export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest', 'perpendicular'] as const
+export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest', 'perpendicular', 'grid', 'angle'] as const
 
 /**
  * @public
