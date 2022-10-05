@@ -13,15 +13,12 @@ export const createCircleCommand: Command = {
     { name: 'center radius', hotkey: 'C' },
     { name: 'center diameter' },
   ],
-  useCommand({ onEnd, scale, getAngleSnap, type }) {
+  useCommand({ onEnd, scale, type }) {
     const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useCircleClickCreate(
       type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
       (c) => onEnd({
         updateContents: (contents) => contents.push({ ...c, type: 'circle' })
       }),
-      {
-        getAngleSnap,
-      },
     )
     const assistentContents: (LineContent | PolygonContent | TextContent | CircleContent)[] = []
     if (startPosition && cursorPosition) {

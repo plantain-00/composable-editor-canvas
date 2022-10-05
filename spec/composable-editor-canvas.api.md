@@ -24,7 +24,7 @@ export function AlignmentLine(props: {
 export const allDirections: readonly ["left", "right", "top", "bottom", "left-bottom", "left-top", "right-top", "right-bottom", "center"];
 
 // @public (undocumented)
-export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest", "perpendicular"];
+export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest", "perpendicular", "grid", "angle"];
 
 // @public (undocumented)
 export interface AngleRange {
@@ -1326,6 +1326,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
         path: TPath;
         angleSnapStartPoint?: Position | undefined;
     }) | undefined;
+    editLastPosition: Position | undefined;
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
     updateEditPreview: ((getContentByPath: (path: TPath) => Draft<T> | undefined) => void | {
         assistentContents?: T[] | undefined;
@@ -1490,7 +1491,10 @@ export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (conten
         circle: Circle;
         bounding?: TwoPointsFormRegion;
     };
-} | undefined, scale?: number, delta?: number): {
+} | undefined, scale?: number, delta?: number, getGridSnap?: (p: Position) => {
+    x: number;
+    y: number;
+}, getAngleSnap?: (angle: number) => number | undefined): {
     snapPoint: SnapPoint | undefined;
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(createCircle: (circle: Circle) => TCircle, createRect: (rect: Region) => TRect, createPolyline: (points: Position[]) => TPolyline): (TCircle | TRect | TPolyline)[];
     getSnapPoint(p: Position, contents: readonly Nullable<T>[], getContentsInRange?: ((region: TwoPointsFormRegion) => readonly T[]) | undefined, lastPosition?: Position): Position;

@@ -7,13 +7,12 @@ import { Command } from "./command"
 
 export const rotateCommand: Command = {
   name: 'rotate',
-  useCommand({ onEnd, transform, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, transform, type, scale }) {
     const { offset, onStart, mask, center: startPosition } = useDragRotate(
       onEnd,
       {
         transform,
         transformOffset: (f) => f - 90,
-        getAngleSnap,
         ignoreLeavingEvent: true,
       },
     )

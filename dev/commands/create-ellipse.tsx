@@ -9,15 +9,12 @@ export const createEllipseCommand: Command = {
     { name: 'ellipse center', hotkey: 'EL' },
     { name: 'ellipse endpoint' },
   ],
-  useCommand({ onEnd, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, type, scale }) {
     const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseClickCreate(
       type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
       (c) => onEnd({
         updateContents: (contents) => contents.push({ ...c, type: 'ellipse' })
       }),
-      {
-        getAngleSnap,
-      },
     )
     const assistentContents: (LineContent | EllipseContent)[] = []
     if (startPosition && cursorPosition) {

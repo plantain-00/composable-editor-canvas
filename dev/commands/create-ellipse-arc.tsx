@@ -7,15 +7,12 @@ import { Command } from "./command";
 
 export const createEllipseArcCommand: Command = {
   name: 'create ellipse arc',
-  useCommand({ onEnd, getAngleSnap, type, scale }) {
+  useCommand({ onEnd, type, scale }) {
     const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = useEllipseArcClickCreate(
       type === 'create ellipse arc' ? 'ellipse center' : undefined,
       (c) => onEnd({
         updateContents: (contents) => contents.push({ ...c, type: 'ellipse arc' }),
       }),
-      {
-        getAngleSnap,
-      },
     )
     const assistentContents: (LineContent | PolygonContent | EllipseContent | EllipseArcContent)[] = []
     if (startPosition && cursorPosition) {

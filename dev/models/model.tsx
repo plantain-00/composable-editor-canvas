@@ -102,14 +102,6 @@ export function getContentModel(content: BaseContent) {
   return getModel(content.type)
 }
 
-export function getAngleSnap(angle: number) {
-  const snap = Math.round(angle / 45) * 45
-  if (snap !== angle && Math.abs(snap - angle) < 5) {
-    return snap
-  }
-  return undefined
-}
-
 export const fixedInputStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: '10px',
