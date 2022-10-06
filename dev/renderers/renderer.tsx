@@ -18,6 +18,7 @@ export function Renderer(props: {
   height: number
   backgroundColor: number
   simplified: boolean
+  debug?: boolean
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
@@ -174,7 +175,9 @@ export function Renderer(props: {
   }
 
   merger.flushLast()
-  console.info(Date.now() - now, children.length)
+  if (props.debug) {
+    console.info(Date.now() - now, children.length)
+  }
 
   return target.renderResult(children, props.width, props.height, {
     attributes: {
@@ -193,7 +196,7 @@ export function Renderer(props: {
       scale: props.scale,
     },
     backgroundColor: props.backgroundColor,
-    debug: true,
+    debug: props.debug,
     strokeWidthScale,
   })
 }

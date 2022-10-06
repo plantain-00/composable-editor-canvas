@@ -1491,7 +1491,7 @@ export function usePointSnap<T>(enabled: boolean, getIntersectionPoints: (conten
         circle: Circle;
         bounding?: TwoPointsFormRegion;
     };
-} | undefined, scale?: number, delta?: number, getGridSnap?: (p: Position) => {
+} | undefined, scale?: number, offset?: Position, delta?: number, getGridSnap?: (p: Position) => {
     x: number;
     y: number;
 }, getAngleSnap?: (angle: number) => number | undefined): {
