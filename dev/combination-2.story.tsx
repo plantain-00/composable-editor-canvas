@@ -242,6 +242,7 @@ export default () => {
           setOperation={setOperation}
           inputFixed={inputFixed}
           backgroundColor={backgroundColor}
+          debug
         />
       )}
       <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
@@ -290,6 +291,7 @@ export const CADEditor = React.forwardRef((props: {
   setCanRedo: (canRedo: boolean) => void
   setOperation: (operations: string | undefined) => void
   backgroundColor: number
+  debug?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const now = Date.now()
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
@@ -386,7 +388,7 @@ export const CADEditor = React.forwardRef((props: {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
   })
-  
+
   const transform: Transform = {
     x: x + offset.x,
     y: y + offset.y,
@@ -442,12 +444,14 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // snap point
+  const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
     operations.type === 'operate' || editPoint !== undefined,
     getIntersectionPoints,
     snapTypes,
     getContentModel,
     scale,
+    snapOffset,
   )
 
   // commands
@@ -652,6 +656,7 @@ export const CADEditor = React.forwardRef((props: {
         onStartSelect(e)
       }
     }
+    setSnapOffset(undefined)
   })
   const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
@@ -795,6 +800,7 @@ export const CADEditor = React.forwardRef((props: {
           height={minimapHeight}
           backgroundColor={props.backgroundColor}
           simplified
+          debug={props.debug}
         />
         <div style={{
           position: 'absolute',
@@ -807,7 +813,9 @@ export const CADEditor = React.forwardRef((props: {
       </div>
     )
   }
-  console.info(Date.now() - now, searchResult.length)
+  if (props.debug) {
+    console.info(Date.now() - now, searchResult.length)
+  }
 
   return (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
@@ -834,14 +842,66 @@ export const CADEditor = React.forwardRef((props: {
         {minimap}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
         {commandMasks}
-        {selectionInput}
-        {!readOnly && commandInputs}
+        {!snapOffsetActive && selectionInput}
+        {!readOnly && !snapOffsetActive && commandInputs}
+        {!readOnly && snapOffsetInput}
       </div>
       {dragSelectMask}
       {moveCanvasMask}
     </div>
   )
 })
+
+function useSnapOffset(enabled: boolean) {
+  const [offset, setOffset] = React.useState<Position>()
+  const [text, setText] = React.useState('')
+  const [active, setActive] = React.useState(false)
+
+  useKey((e) => e.key === 'Escape', () => {
+    setOffset(undefined)
+    setText('')
+  }, [setOffset, setText])
+
+  return {
+    snapOffset: offset,
+    snapOffsetActive: active,
+    setSnapOffset: setOffset,
+    snapOffsetInput: enabled && (
+      <input
+        placeholder={offset ? `${offset.x},${offset.y}` : 'x,y'}
+        value={text}
+        style={{
+          position: 'absolute',
+          left: '104px',
+          bottom: '1px',
+          width: '70px',
+        }}
+        onChange={(e) => setText(e.target.value)}
+        onFocus={() => setActive(true)}
+        onBlur={() => setActive(false)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            if (!text) {
+              setOffset(undefined)
+              setActive(false)
+              return
+            }
+            const positions = text.split(',')
+            if (positions.length === 2) {
+              const x = +positions[0]
+              const y = +positions[1]
+              if (!isNaN(x) && !isNaN(y)) {
+                setOffset({ x, y })
+                setText('')
+                setActive(false)
+              }
+            }
+          }
+        }}
+      />
+    )
+  }
+}
 
 export interface CADEditorRef {
   handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }): void
