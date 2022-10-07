@@ -1,7 +1,7 @@
 import React from 'react'
 import { SnapPointType, allSnapTypes, Nullable, useWindowSize } from '../src'
 import { BaseContent } from './models/model'
-import { CADEditor, CADEditorRef } from './combination-2.story'
+import { CADEditor, CADEditorRef } from './cad-editor'
 
 const draftKey = 'composable-editor-canvas-whiteboard'
 const draftState = localStorage.getItem(draftKey)
