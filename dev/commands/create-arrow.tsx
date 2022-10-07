@@ -35,5 +35,4 @@ export const createArrowCommand: Command = {
     }
   },
   selectCount: 0,
-  hotkey: 'REC',
 }
