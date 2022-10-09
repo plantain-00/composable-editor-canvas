@@ -1,6 +1,7 @@
-import { getPointByLengthAndDirection, getPointsBounding, iteratePolygonLines, iteratePolylineLines, Position, rotatePositionByCenter } from "../../src"
+import React from "react"
+import { dashedPolylineToLines, getPointByLengthAndDirection, getPointsBounding, iteratePolygonLines, iteratePolylineLines, NumberEditor, ObjectEditor, Position, rotatePositionByCenter } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
+import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
 import { dimensionStyle } from "./radial-dimension-model"
 
 export type ArrowContent = StrokeBaseContent<'arrow'> & {
@@ -17,9 +18,9 @@ export const arrowModel: Model<ArrowContent> = {
     content.p2.y += offset.y
   },
   render({ content, target, color, strokeWidth }) {
-    const { regions, lines } = getArrowGeometriesFromCache(content)
+    const { regions, renderingLines } = getArrowGeometriesFromCache(content)
     const children: ReturnType<typeof target.renderGroup>[] = []
-    for (const line of lines) {
+    for (const line of renderingLines) {
       children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
     }
     if (regions) {
@@ -31,6 +32,9 @@ export const arrowModel: Model<ArrowContent> = {
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -65,6 +69,25 @@ export const arrowModel: Model<ArrowContent> = {
     })
   },
   getGeometries: getArrowGeometriesFromCache,
+  propertyPanel(content, update) {
+    return {
+      p1: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.x = v } })} />,
+          y: <NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.y = v } })} />,
+        }}
+      />,
+      p2: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.x = v } })} />,
+          y: <NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.y = v } })} />,
+        }}
+      />,
+      ...getStrokeContentPropertyPanel(content, update, isArrowContent),
+    }
+  },
 }
 
 export function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">) {
@@ -85,7 +108,8 @@ export function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">)
           points: arrowPoints,
           lines: Array.from(iteratePolygonLines(arrowPoints)),
         }
-      ]
+      ],
+      renderingLines: dashedPolylineToLines(points, content.dashArray),
     }
   })
 }

@@ -224,7 +224,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           fontFamily,
           strokeWidth: options?.strokeWidth,
           stroke,
-          strokeDasharray: options?.dashArray ? options.dashArray.map(d => d * scale).join(' ') : undefined,
+          strokeDasharray: options?.dashArray && options.dashArray.length > 0 ? options.dashArray.map(d => d * scale).join(' ') : undefined,
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
@@ -505,7 +505,7 @@ function getCommonLineAttributes<T>(scale: number, options?: Partial<PathOptions
   return {
     strokeWidth: options?.strokeWidth ?? 1,
     vectorEffect: 'non-scaling-stroke' as const,
-    strokeDasharray: options?.dashArray ? options.dashArray.map(d => d * scale).join(' ') : undefined,
+    strokeDasharray: options?.dashArray && options.dashArray.length > 0 ? options.dashArray.map(d => d * scale).join(' ') : undefined,
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',

@@ -1,5 +1,6 @@
-import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines, dashedPolylineToLines } from '../../src'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import React from 'react'
+import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines, dashedPolylineToLines, ArrayEditor, getArrayEditorProps, ObjectEditor, NumberEditor } from '../../src'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
 
 export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
   points: Position[]
@@ -32,6 +33,9 @@ export const lineModel: Model<LineContent> = {
   getDefaultColor(content) {
     return content.strokeColor
   },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
+  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isLineContent) }))
   },
@@ -49,6 +53,22 @@ export const lineModel: Model<LineContent> = {
     })
   },
   getGeometries: getPolylineGeometries,
+  propertyPanel(content, update) {
+    return {
+      points: <ArrayEditor
+        inline
+        {...getArrayEditorProps<Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isLineContent(c)) { v(c) } }))}
+        items={content.points.map((f, i) => <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={f.x} setValue={(v) => update(c => { if (isLineContent(c)) { c.points[i].x = v } })} />,
+            y: <NumberEditor value={f.y} setValue={(v) => update(c => { if (isLineContent(c)) { c.points[i].y = v } })} />,
+          }}
+        />)}
+      />,
+      ...getStrokeContentPropertyPanel(content, update, isLineContent),
+    }
+  },
 }
 
 export function getPolylineGeometries(content: Omit<LineContent, "type">) {
@@ -57,7 +77,7 @@ export function getPolylineGeometries(content: Omit<LineContent, "type">) {
       lines: Array.from(iteratePolylineLines(content.points)),
       points: content.points,
       bounding: getPointsBounding(content.points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(content.points, content.dashArray) : [content.points],
+      renderingLines: dashedPolylineToLines(content.points, content.dashArray),
     }
   })
 }

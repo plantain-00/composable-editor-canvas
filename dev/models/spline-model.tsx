@@ -1,7 +1,8 @@
 import bspline from 'b-spline'
-import { dashedPolylineToLines, getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, Position, rotatePositionByCenter } from '../../src'
+import React from 'react'
+import { ArrayEditor, BooleanEditor, dashedPolylineToLines, getArrayEditorProps, getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, NumberEditor, ObjectEditor, Position, rotatePositionByCenter } from '../../src'
 import { getPolylineEditPoints } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
 
 export type SplineContent = StrokeBaseContent<'spline'> & {
   points: Position[]
@@ -35,6 +36,9 @@ export const splineModel: Model<SplineContent> = {
   getDefaultColor(content) {
     return content.strokeColor
   },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
+  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isSplineContent, false, true) }))
   },
@@ -42,6 +46,23 @@ export const splineModel: Model<SplineContent> = {
     return getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
   },
   getGeometries: getSplineGeometries,
+  propertyPanel(content, update) {
+    return {
+      points: <ArrayEditor
+        inline
+        {...getArrayEditorProps<Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isSplineContent(c)) { v(c) } }))}
+        items={content.points.map((f, i) => <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={f.x} setValue={(v) => update(c => { if (isSplineContent(c)) { c.points[i].x = v } })} />,
+            y: <NumberEditor value={f.y} setValue={(v) => update(c => { if (isSplineContent(c)) { c.points[i].y = v } })} />,
+          }}
+        />)}
+      />,
+      fitting: <BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isSplineContent),
+    }
+  },
 }
 
 function getSplineGeometries(content: Omit<SplineContent, "type">) {
@@ -82,7 +103,7 @@ function getSplineGeometries(content: Omit<SplineContent, "type">) {
       lines: Array.from(iteratePolylineLines(points)),
       points,
       bounding: getPointsBounding(points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
+      renderingLines: dashedPolylineToLines(points, content.dashArray),
     }
   })
 }

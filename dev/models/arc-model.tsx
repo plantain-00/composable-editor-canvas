@@ -1,7 +1,8 @@
-import { Arc, arcToPolyline, dashedPolylineToLines, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolylineLines, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter } from '../../src'
+import React from 'react'
+import { Arc, arcToPolyline, BooleanEditor, dashedPolylineToLines, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolylineLines, normalizeAngleInRange, normalizeAngleRange, NumberEditor, rotatePositionByCenter } from '../../src'
 import { angleDelta } from './ellipse-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
 import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
 export type ArcContent = StrokeBaseContent<'arc'> & Arc & {
@@ -74,7 +75,7 @@ export const arcModel: Model<ArcContent> = {
       const { points } = getArcGeometries(content)
       return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
     }
-    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth })
+    return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth, counterclockwise: content.counterclockwise })
   },
   renderIfSelected({ content, color, target, strokeWidth }) {
     const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
@@ -86,6 +87,9 @@ export const arcModel: Model<ArcContent> = {
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -166,6 +170,17 @@ export const arcModel: Model<ArcContent> = {
     })
   },
   getGeometries: getArcGeometries,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isArcContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isArcContent(c)) { c.y = v } })} />,
+      r: <NumberEditor value={content.r} setValue={(v) => update(c => { if (isArcContent(c)) { c.r = v } })} />,
+      startAngle: <NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.startAngle = v } })} />,
+      endAngle: <NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.endAngle = v } })} />,
+      counterclockwise: <BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isArcContent),
+    }
+  },
 }
 
 export function getArcGeometries(content: Omit<ArcContent, "type">) {
@@ -175,7 +190,7 @@ export function getArcGeometries(content: Omit<ArcContent, "type">) {
       lines: Array.from(iteratePolylineLines(points)),
       points,
       bounding: getPointsBounding(points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
+      renderingLines: dashedPolylineToLines(points, content.dashArray),
     }
   })
 }

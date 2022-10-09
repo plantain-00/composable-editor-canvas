@@ -1,4 +1,5 @@
-import { getPointsBounding, Nullable, Position, ReactRenderTarget } from "../../src"
+import React from "react"
+import { getPointsBounding, Nullable, NumberEditor, ObjectEditor, Position, ReactRenderTarget } from "../../src"
 import { isBlockReferenceContent } from "./block-reference-model"
 import { BaseContent, getGeometriesFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
@@ -14,7 +15,7 @@ export const blockModel: Model<BlockContent> = {
     return !contents.some((c) => c && isBlockReferenceContent(c) && c.refId === content.id)
   },
   explode(content) {
-    return content.contents.filter((c) : c is BaseContent => !!c)
+    return content.contents.filter((c): c is BaseContent => !!c)
   },
   render({ content, target, color, strokeWidth, contents }) {
     const children = renderBlockChildren(content, target, strokeWidth, contents, color)
@@ -25,6 +26,17 @@ export const blockModel: Model<BlockContent> = {
   },
   getSnapPoints: getBlockSnapPoints,
   getGeometries: getBlockGeometries,
+  propertyPanel(content, update) {
+    return {
+      base: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.base.x} setValue={(v) => update(c => { if (isBlockContent(c)) { c.base.x = v } })} />,
+          y: <NumberEditor value={content.base.y} setValue={(v) => update(c => { if (isBlockContent(c)) { c.base.y = v } })} />,
+        }}
+      />,
+    }
+  },
 }
 
 export function getBlockSnapPoints(content: Omit<BlockContent, 'type' | 'id' | 'base'>, contents: readonly BaseContent[]) {
@@ -52,6 +64,7 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' |
     const model = getModel(blockContent.type)
     if (model?.render) {
       const ContentRender = model.render
+      color = model.getDefaultColor?.(blockContent) ?? color
       children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents }))
     }
   })

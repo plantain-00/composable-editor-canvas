@@ -33,15 +33,25 @@ export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   return patches
 }
 
+/**
+ * @public
+ */
 export function getByPath<T>(target: T, path?: SelectPath) {
   if (path) {
-    // type-coverage:ignore-next-line
-    let result: any = target
-    for (const p of path) {
-      // type-coverage:ignore-next-line
-      result = result[p]
-    }
-    return result as T
+    return getItemByPath<T>(target, path)
   }
   return target
+}
+
+/**
+ * @public
+ */
+export function getItemByPath<T>(target: unknown, path: SelectPath) {
+  // type-coverage:ignore-next-line
+  let result: any = target
+  for (const p of path) {
+    // type-coverage:ignore-next-line
+    result = result[p]
+  }
+  return result as T
 }

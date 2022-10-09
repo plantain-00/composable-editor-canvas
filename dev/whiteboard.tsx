@@ -12,6 +12,7 @@ export const WhiteBoard = () => {
   const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
+  const [panelVisible, setPanelVisible] = React.useState(false)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
   return (
@@ -27,6 +28,7 @@ export const WhiteBoard = () => {
         setCanRedo={setCanRedo}
         setOperation={setOperation}
         backgroundColor={0xffffff}
+        panelVisible={panelVisible}
         onChange={(state) => localStorage.setItem(draftKey, JSON.stringify(state))}
       />
       <div style={{ position: 'relative' }}>
@@ -35,6 +37,7 @@ export const WhiteBoard = () => {
         <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit block</button>
         <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
         <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
+        <button onClick={() => setPanelVisible(!panelVisible)}>panel visible</button>
         {allSnapTypes.map((type) => (
           <span key={type}>
             <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />

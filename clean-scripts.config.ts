@@ -1,6 +1,7 @@
 const tsFiles = `"src/**/*.ts" "src/**/*.tsx" "dev/**/*.ts" "dev/**/*.tsx"`
 
 const importStories = 'types-as-schema -p ./types-as-schema.config.ts'
+const importPlugins = 'types-as-schema -p ./types-as-schema.plugin.ts'
 
 export default {
   build: [
@@ -16,6 +17,7 @@ export default {
       ],
       dev: [
         importStories,
+        importPlugins,
         `tsc -p dev --noEmit`,
       ],
     },
@@ -23,6 +25,7 @@ export default {
   ],
   start: {
     importStories: importStories + ' --watch',
+    importPlugins: importPlugins + ' --watch',
     webpack: 'webpack serve --config dev/webpack.dev.js',
   },
   lint: {

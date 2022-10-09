@@ -113,7 +113,7 @@ export function combineStripTriangles(triangles: number[][]): number[];
 export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => void) | undefined;
 
 // @public (undocumented)
-export function dashedPolylineToLines(points: Position[], dashArray: number[], skippedLines?: number[], dashOffset?: number): Position[][];
+export function dashedPolylineToLines(points: Position[], dashArray?: number[], skippedLines?: number[], dashOffset?: number): Position[][];
 
 // @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
@@ -290,6 +290,15 @@ export interface GeneralFormLine {
 export function getAngleSnapPosition(startPosition: Position | undefined, newPosition: Position, getAngleSnap?: (angle: number) => number | undefined): Position;
 
 // @public (undocumented)
+export function getArrayEditorProps<T, V>(getArray: (v: Draft<V>) => T[], defaultValue: T, update: (recipe: (draft: Draft<V>) => void) => void): {
+    add: () => void;
+    remove: (i: number) => void;
+    copy: (i: number) => void;
+    moveUp: (i: number) => void;
+    moveDown: (i: number) => void;
+};
+
+// @public (undocumented)
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number): Position[];
 
 // @public (undocumented)
@@ -397,6 +406,9 @@ export function getImageGraphic(url: string, x: number, y: number, width: number
 }>): Graphic | undefined;
 
 // @public (undocumented)
+export function getItemByPath<T>(target: unknown, path: SelectPath): T;
+
+// @public (undocumented)
 export function getLinearDimensionGeometries(content: LinearDimension, dimensionStyle: {
     margin: number;
     arrowAngle: number;
@@ -414,6 +426,7 @@ export function getLinearDimensionGeometries(content: LinearDimension, dimension
     }[];
     points: Position[];
     bounding: TwoPointsFormRegion | undefined;
+    renderingLines: never[];
 };
 
 // @public (undocumented)
@@ -523,6 +536,7 @@ export function getRadialDimensionGeometries(content: RadialDimension, circle: C
     }[];
     points: Position[];
     bounding: TwoPointsFormRegion | undefined;
+    renderingLines: never[];
 };
 
 // @public (undocumented)
@@ -755,7 +769,9 @@ export function normalizeAngleRange(content: AngleRange): void;
 export type Nullable<T> = T | undefined | null;
 
 // @public (undocumented)
-export function NumberEditor(props: JsonEditorProps<number>): JSX.Element;
+export function NumberEditor(props: JsonEditorProps<number> & {
+    type?: React_2.HTMLInputTypeAttribute;
+}): JSX.Element;
 
 // @public (undocumented)
 export function ObjectArrayEditor(props: ArrayProps & {

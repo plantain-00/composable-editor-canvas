@@ -558,10 +558,13 @@ export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number) {
  */
 export function dashedPolylineToLines(
   points: Position[],
-  dashArray: number[],
+  dashArray?: number[],
   skippedLines?: number[],
   dashOffset = 0,
 ) {
+  if (!dashArray || dashArray.length === 0) {
+    return [points]
+  }
   const result: Position[][] = []
   let last: Position[] = []
   const g = {

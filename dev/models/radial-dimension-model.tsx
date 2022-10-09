@@ -1,6 +1,7 @@
-import { Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, Position, RadialDimension, Size, WeakmapCache2 } from "../../src"
+import React from "react"
+import { BooleanEditor, Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, NumberEditor, ObjectEditor, Position, RadialDimension, Size, StringEditor, WeakmapCache2 } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
+import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
 
 export type RadialDimensionContent = StrokeBaseContent<'radial dimension'> & Circle & RadialDimension
 
@@ -16,7 +17,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     const { regions, lines } = getRadialDimensionGeometriesFromCache(content)
     const children: ReturnType<typeof target.renderGroup>[] = []
     for (const line of lines) {
-      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
+      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }))
     }
     if (regions && regions.length > 0) {
       children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
@@ -35,6 +36,9 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -61,6 +65,27 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
     })
   },
   getGeometries: getRadialDimensionGeometriesFromCache,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.y = v } })} />,
+      r: <NumberEditor value={content.r} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.r = v } })} />,
+      position: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.position.x} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.position.x = v } })} />,
+          y: <NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.position.y = v } })} />,
+        }}
+      />,
+      text: <>
+        <BooleanEditor value={content.text !== undefined} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.text = v ? '' : undefined } })} style={{ marginRight: '5px' }} />
+        {content.text !== undefined && <StringEditor value={content.text} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.text = v } })} />}
+      </>,
+      fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.fontSize = v } })} />,
+      fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.fontFamily = v } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isRadialDimensionContent),
+    }
+  },
 }
 
 export function getRadialDimensionGeometriesFromCache(content: Omit<RadialDimensionContent, "type">) {

@@ -1,6 +1,7 @@
-import { getLinearDimensionGeometries, getLinearDimensionTextPosition, LinearDimension, Position, Size, WeakmapCache } from "../../src"
+import React from "react"
+import { BooleanEditor, getLinearDimensionGeometries, getLinearDimensionTextPosition, LinearDimension, NumberEditor, ObjectEditor, Position, Size, StringEditor, WeakmapCache } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent } from "./model"
+import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
 import { dimensionStyle, getTextSizeFromCache } from "./radial-dimension-model"
 
 export type LinearDimensionContent = StrokeBaseContent<'linear dimension'> & LinearDimension
@@ -19,7 +20,7 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
     const { regions, lines } = getLinearDimensionGeometriesFromCache(content)
     const children: ReturnType<typeof target.renderGroup>[] = []
     for (const line of lines) {
-      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
+      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }))
     }
     if (regions) {
       for (let i = 0; i < 2 && i < regions.length; i++) {
@@ -40,6 +41,9 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -63,6 +67,39 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
     })
   },
   getGeometries: getLinearDimensionGeometriesFromCache,
+  propertyPanel(content, update) {
+    return {
+      p1: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = v } })} />,
+          y: <NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.y = v } })} />,
+        }}
+      />,
+      p2: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = v } })} />,
+          y: <NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.y = v } })} />,
+        }}
+      />,
+      position: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.position.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.x = v } })} />,
+          y: <NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.y = v } })} />,
+        }}
+      />,
+      direct: <BooleanEditor value={content.direct === true} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.direct = v ? true : undefined } })} />,
+      text: <>
+        <BooleanEditor value={content.text !== undefined} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.text = v ? '' : undefined } })} style={{ marginRight: '5px' }} />
+        {content.text !== undefined && <StringEditor value={content.text} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.text = v } })} />}
+      </>,
+      fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontSize = v } })} />,
+      fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontFamily = v } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isLinearDimensionContent),
+    }
+  },
 }
 
 export function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">) {

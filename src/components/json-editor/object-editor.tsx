@@ -17,7 +17,7 @@ export function ObjectEditor(props: {
             return (
               <tr key={title}>
                 <td style={{ paddingRight: '5px' }}>{title}</td>
-                <td>{child}</td>
+                <td style={{ display: 'flex', flexDirection: 'column' }}>{child}</td>
               </tr>
             )
           })}
@@ -31,7 +31,7 @@ export function ObjectEditor(props: {
         return (
           <React.Fragment key={title}>
             <div style={{ marginTop: '5px', marginBottom: '5px' }}>{title}</div>
-            <div>{child}</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>{child}</div>
           </React.Fragment>
         )
       })}
