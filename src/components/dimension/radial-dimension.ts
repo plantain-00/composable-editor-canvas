@@ -50,6 +50,7 @@ export function getRadialDimensionGeometries(
     ],
     points,
     bounding: getPointsBounding(points),
+    renderingLines: [],
   }
 }
 

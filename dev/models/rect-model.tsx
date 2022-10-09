@@ -1,6 +1,7 @@
-import { dashedPolylineToLines, getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
+import React from 'react'
+import { dashedPolylineToLines, getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, NumberEditor, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getFillContentPropertyPanel, getStrokeContentPropertyPanel } from './model'
 
 export type RectContent = StrokeBaseContent<'rect'> & FillFields & Region & {
   angle: number
@@ -52,6 +53,9 @@ export const rectModel: Model<RectContent> = {
   },
   getDefaultColor(content) {
     return content.fillColor !== undefined ? content.fillColor : content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -105,6 +109,17 @@ export const rectModel: Model<RectContent> = {
   },
   getGeometries: getRectGeometries,
   canSelectPart: true,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isRectContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isRectContent(c)) { c.y = v } })} />,
+      width: <NumberEditor value={content.width} setValue={(v) => update(c => { if (isRectContent(c)) { c.width = v } })} />,
+      height: <NumberEditor value={content.height} setValue={(v) => update(c => { if (isRectContent(c)) { c.height = v } })} />,
+      angle: <NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRectContent(c)) { c.angle = v } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isRectContent),
+      ...getFillContentPropertyPanel(content, update, isRectContent),
+    }
+  },
 }
 
 export function getRectGeometries(content: Omit<RectContent, "type">) {
@@ -120,7 +135,7 @@ export function getRectGeometries(content: Omit<RectContent, "type">) {
       lines,
       points,
       bounding: getPointsBounding(points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(polygonToPolyline(points), content.dashArray) : [polygonToPolyline(points)],
+      renderingLines: dashedPolylineToLines(polygonToPolyline(points), content.dashArray),
       regions: content.fillColor !== undefined ? [
         {
           lines,

@@ -20,27 +20,23 @@ export function ArrayEditor(props: ArrayProps & {
   if (props.inline) {
     return (
       <div style={groupStyle}>
-        <table>
-          <thead>
-          </thead>
-          <tbody>
-            {props.items.map((p, i) => {
-              return (
-                <tr key={i}>
-                  <td style={{ paddingRight: '5px' }}>{i + 1}</td>
-                  <td>{p}</td>
-                  <td>
-                    <button style={buttonStyle} onClick={() => props.remove(i)}>❌</button>
-                    <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
-                    {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
-                    {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        <button style={buttonStyle} onClick={props.add}>➕</button>
+        <div>
+          {props.items.map((p, i) => {
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '3px' }}>
+                <div style={{ paddingRight: '5px', width: '14px' }}>{i + 1}</div>
+                <div style={{ flex: 1, display: 'flex' }}>{p}</div>
+                <div>
+                  <button style={buttonStyle} onClick={() => props.remove(i)}>{removeIcon}</button>
+                  <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
+                  {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
+                  {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
       </div>
     )
   }
@@ -51,16 +47,16 @@ export function ArrayEditor(props: ArrayProps & {
           <React.Fragment key={i}>
             <div style={{ marginBottom: '5px', marginTop: '5px' }}>
               {props.title?.(i) ?? (i + 1)}
-              <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)}>❌</button>
-              <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
-              {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
-              {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
+              <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)}>{removeIcon}</button>
+              <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
+              {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
+              {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
             </div>
-            <div>{p}</div>
+            <div style={{ display: 'flex' }}>{p}</div>
           </React.Fragment>
         )
       })}
-      <button style={buttonStyle} onClick={props.add}>➕</button>
+      <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
     </div>
   )
 }
@@ -91,17 +87,70 @@ export function ObjectArrayEditor(props: ArrayProps & {
                 <td style={{ paddingRight: '5px' }}>{i + 1}</td>
                 {Object.values(p).map((v, j) => <td key={j}>{v}</td>)}
                 <td>
-                  <button style={buttonStyle} onClick={() => props.remove(i)}>❌</button>
-                  <button style={buttonStyle} onClick={() => props.copy(i)}>©</button>
-                  {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>⬆</button>}
-                  {i < props.properties.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>⬇</button>}
+                  <button style={buttonStyle} onClick={() => props.remove(i)}>{removeIcon}</button>
+                  <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
+                  {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
+                  {i < props.properties.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
                 </td>
               </tr>
             )
           })}
         </tbody>
       </table>
-      <button style={buttonStyle} onClick={props.add}>➕</button>
+      <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
     </div>
   )
 }
+
+const addIcon = <svg
+  style={{
+    width: '20px',
+    height: '20px'
+  }}
+  viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" >
+  <path fill="currentColor" d="M480 480V128a32 32 0 0 1 64 0v352h352a32 32 0 1 1 0 64H544v352a32 32 0 1 1-64 0V544H128a32 32 0 0 1 0-64h352z"></path>
+</svg>
+
+const removeIcon = <svg
+  style={{
+    width: '20px',
+    height: '20px'
+  }}
+  viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z"></path>
+</svg>
+
+const topIcon = <svg
+  style={{
+    width: '20px',
+    height: '20px'
+  }}
+  viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg">
+  <path fill="currentColor" d="M572.235 205.282v600.365a30.118 30.118 0 1 1-60.235 0V205.282L292.382 438.633a28.913 28.913 0 0 1-42.646 0 33.43 33.43 0 0 1 0-45.236l271.058-288.045a28.913 28.913 0 0 1 42.647 0L834.5 393.397a33.43 33.43 0 0 1 0 45.176 28.913 28.913 0 0 1-42.647 0l-219.618-233.23z"></path>
+</svg>
+
+const bottomIcon = <svg
+  style={{
+    width: '20px',
+    height: '20px'
+  }}
+  viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path fill="currentColor" d="M544 805.888V168a32 32 0 1 0-64 0v637.888L246.656 557.952a30.72 30.72 0 0 0-45.312 0 35.52 35.52 0 0 0 0 48.064l288 306.048a30.72 30.72 0 0 0 45.312 0l288-306.048a35.52 35.52 0 0 0 0-48 30.72 30.72 0 0 0-45.312 0L544 805.824z"></path>
+</svg>
+
+const copyIcon = <svg
+  style={{
+    width: '20px',
+    height: '20px'
+  }}
+  viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path fill="currentColor" d="M128 320v576h576V320H128zm-32-64h640a32 32 0 0 1 32 32v640a32 32 0 0 1-32 32H96a32 32 0 0 1-32-32V288a32 32 0 0 1 32-32zM960 96v704a32 32 0 0 1-32 32h-96v-64h64V128H384v64h-64V96a32 32 0 0 1 32-32h576a32 32 0 0 1 32 32zM256 672h320v64H256v-64zm0-192h320v64H256v-64z"></path>
+</svg>

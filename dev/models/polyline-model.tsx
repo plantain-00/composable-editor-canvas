@@ -1,5 +1,7 @@
-import { BaseContent, getEditPointsFromCache, Model } from './model'
+import { BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, Model } from './model'
 import { getPolylineEditPoints, getPolylineGeometries, LineContent, lineModel } from './line-model'
+import React from 'react'
+import { ArrayEditor, getArrayEditorProps, NumberEditor, ObjectEditor, Position } from '../../src'
 
 export const polylineModel: Model<LineContent> = {
   ...lineModel,
@@ -15,6 +17,22 @@ export const polylineModel: Model<LineContent> = {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolyLineContent) }))
   },
   canSelectPart: true,
+  propertyPanel(content, update) {
+    return {
+      points: <ArrayEditor
+        inline
+        {...getArrayEditorProps<Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isPolyLineContent(c)) { v(c) } }))}
+        items={content.points.map((f, i) => <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={f.x} setValue={(v) => update(c => { if (isPolyLineContent(c)) { c.points[i].x = v } })} />,
+            y: <NumberEditor value={f.y} setValue={(v) => update(c => { if (isPolyLineContent(c)) { c.points[i].y = v } })} />,
+          }}
+        />)}
+      />,
+      ...getStrokeContentPropertyPanel(content, update, isPolyLineContent),
+    }
+  },
 }
 
 export function isPolyLineContent(content: BaseContent): content is LineContent {

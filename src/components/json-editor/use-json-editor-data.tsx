@@ -17,28 +17,43 @@ export function useJsonEditorData<V>(defaultValue: V) {
       }
     },
     getArrayProps: <T,>(getArray: (v: Draft<typeof value>) => T[], defaultValue: T) => {
-      return {
-        add: () => setValue(produce(value, draft => {
-          getArray(draft).push(defaultValue)
-        })),
-        remove: (i: number) => setValue(produce(value, draft => {
-          getArray(draft).splice(i, 1)
-        })),
-        copy: (i: number) => setValue(produce(value, draft => {
-          const array = getArray(draft)
-          array.splice(i, 0, array[i])
-        })),
-        moveUp: (i: number) => setValue(produce(value, draft => {
-          const array = getArray(draft)
-          array.splice(i - 1, 0, array[i])
-          array.splice(i + 1, 1)
-        })),
-        moveDown: (i: number) => setValue(produce(value, draft => {
-          const array = getArray(draft)
-          array.splice(i + 2, 0, array[i])
-          array.splice(i, 1)
-        })),
-      }
+      return getArrayEditorProps(getArray, defaultValue, update => {
+        setValue(produce(value, draft => {
+          update(draft)
+        }))
+      })
     },
+  }
+}
+
+/**
+ * @public
+ */
+export function getArrayEditorProps<T, V>(
+  getArray: (v: Draft<V>) => T[],
+  defaultValue: T,
+  update: (recipe: (draft: Draft<V>) => void) => void,
+) {
+  return {
+    add: () => update(draft => {
+      getArray(draft).push(defaultValue)
+    }),
+    remove: (i: number) => update(draft => {
+      getArray(draft).splice(i, 1)
+    }),
+    copy: (i: number) => update(draft => {
+      const array = getArray(draft)
+      array.splice(i, 0, array[i])
+    }),
+    moveUp: (i: number) => update(draft => {
+      const array = getArray(draft)
+      array.splice(i - 1, 0, array[i])
+      array.splice(i + 1, 1)
+    }),
+    moveDown: (i: number) => update(draft => {
+      const array = getArray(draft)
+      array.splice(i + 2, 0, array[i])
+      array.splice(i, 1)
+    }),
   }
 }

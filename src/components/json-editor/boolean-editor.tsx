@@ -6,11 +6,12 @@ import { JsonEditorProps } from "./common"
  */
 export function BooleanEditor(props: JsonEditorProps<boolean>) {
   return (
-    <input
-      type='checkbox'
-      checked={props.value}
-      onChange={(e) => props.setValue(e.target.checked)}
-      style={props.style}
-    />
+    <div style={props.style}>
+      <input
+        type='checkbox'
+        checked={props.value}
+        onChange={(e) => props.setValue(e.target.checked)}
+      />
+    </div>
   )
 }

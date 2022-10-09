@@ -1,4 +1,5 @@
-import { getPointsBounding, getTextSize, iteratePolygonLines, Text } from "../../src"
+import React from "react"
+import { getPointsBounding, getTextSize, iteratePolygonLines, NumberEditor, StringEditor, Text } from "../../src"
 import { LineContent } from "./line-model"
 import { BaseContent, getEditPointsFromCache, getGeometriesFromCache, Model } from "./model"
 
@@ -38,6 +39,16 @@ export const textModel: Model<TextContent> = {
     return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize, content.fontFamily, { cacheKey: content })
   },
   getGeometries: getTextGeometries,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isTextContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isTextContent(c)) { c.y = v } })} />,
+      fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontSize = v } })} />,
+      fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontFamily = v } })} />,
+      text: <StringEditor value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />,
+      color: <NumberEditor type='color' value={content.color} setValue={(v) => update(c => { if (isTextContent(c)) { c.color = v } })} />,
+    }
+  },
 }
 
 export function getTextGeometries(content: Omit<TextContent, "type">) {
@@ -63,6 +74,7 @@ export function getTextGeometries(content: Omit<TextContent, "type">) {
           points,
         },
       ],
+      renderingLines: [],
     }
   })
 }

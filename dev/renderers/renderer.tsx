@@ -90,8 +90,6 @@ export function Renderer(props: {
     }
   }
 
-  const strokeWidth = 1
-
   if (previewPatches.length === 0 && props.simplified) {
     children = renderCache.current.get(props.contents, () => {
       props.contents.forEach((content) => {
@@ -102,7 +100,7 @@ export function Renderer(props: {
         if (!model) {
           return
         }
-        renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, strokeWidth)
+        renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, model.getDefaultStrokeWidth?.(content) ?? 1)
       })
       return children
     })
@@ -118,7 +116,7 @@ export function Renderer(props: {
       if (!model) {
         return
       }
-      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, strokeWidth)
+      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, model.getDefaultStrokeWidth?.(content) ?? 1)
     })
   }
 
@@ -149,14 +147,15 @@ export function Renderer(props: {
     for (const index of (props.hovering || [])) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        renderContent(content, 0x00ff00, strokeWidth * 2)
+        renderContent(content, 0x00ff00, (getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1) + 1)
       }
     }
 
     for (const index of selected) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        renderContent(content, 0xff0000, strokeWidth * 2)
+        const strokeWidth = getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1
+        renderContent(content, 0xff0000, strokeWidth + 1)
         const RenderIfSelected = getModel(content.type)?.renderIfSelected
         if (RenderIfSelected) {
           merger.flushLast()
@@ -170,7 +169,7 @@ export function Renderer(props: {
       if (!model) {
         return
       }
-      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, strokeWidth)
+      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1)
     })
   }
 

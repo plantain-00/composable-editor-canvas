@@ -1,4 +1,5 @@
-import { getPointsBounding, Image, iteratePolygonLines } from "../../src"
+import React from "react"
+import { getPointsBounding, Image, iteratePolygonLines, NumberEditor, StringEditor } from "../../src"
 import { LineContent } from "./line-model"
 import { BaseContent, getEditPointsFromCache, getGeometriesFromCache, Model } from "./model"
 
@@ -41,6 +42,15 @@ export const imageModel: Model<ImageContent> = {
     return content
   },
   getGeometries: getImageGeometries,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isImageContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isImageContent(c)) { c.y = v } })} />,
+      width: <NumberEditor value={content.width} setValue={(v) => update(c => { if (isImageContent(c)) { c.width = v } })} />,
+      height: <NumberEditor value={content.height} setValue={(v) => update(c => { if (isImageContent(c)) { c.height = v } })} />,
+      url: <StringEditor value={content.url} setValue={(v) => update(c => { if (isImageContent(c)) { c.url = v } })} />,
+    }
+  },
 }
 
 export function getImageGeometries(content: Omit<ImageContent, "type">) {
@@ -62,6 +72,7 @@ export function getImageGeometries(content: Omit<ImageContent, "type">) {
           points,
         },
       ],
+      renderingLines: [],
     }
   })
 }

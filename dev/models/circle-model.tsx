@@ -1,7 +1,8 @@
-import { Circle, getSymmetryPoint, getTwoPointsDistance, Position, rotatePositionByCenter } from '../../src'
+import React from 'react'
+import { Circle, getSymmetryPoint, getTwoPointsDistance, NumberEditor, Position, rotatePositionByCenter } from '../../src'
 import { ArcContent, getArcGeometries } from './arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
 import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
 export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle & {
@@ -59,6 +60,9 @@ export const circleModel: Model<CircleContent> = {
   },
   getDefaultColor(content) {
     return content.fillColor !== undefined ? content.fillColor : content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -135,6 +139,15 @@ export const circleModel: Model<CircleContent> = {
     }
   },
   getGeometries: getCircleGeometries,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isCircleContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isCircleContent(c)) { c.y = v } })} />,
+      r: <NumberEditor value={content.r} setValue={(v) => update(c => { if (isCircleContent(c)) { c.r = v } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isCircleContent),
+      ...getFillContentPropertyPanel(content, update, isCircleContent),
+    }
+  },
 }
 
 export function getCircleGeometries(content: Omit<CircleContent, "type">) {
@@ -143,12 +156,13 @@ export function getCircleGeometries(content: Omit<CircleContent, "type">) {
     if (content.fillColor !== undefined) {
       return {
         lines: [],
-        points: [],
+        points: geometries.points,
         bounding: geometries.bounding,
         regions: [{
           lines: geometries.lines,
           points: geometries.points,
-        }]
+        }],
+        renderingLines: [],
       }
     }
     return geometries

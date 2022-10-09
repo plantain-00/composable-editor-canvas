@@ -8,11 +8,26 @@ export function StringEditor(props: JsonEditorProps<string> & {
   type?: React.HTMLInputTypeAttribute
   textarea?: boolean
 }) {
+  const [text, setText] = React.useState(props.value)
+  React.useEffect(() => {
+    setText(props.value)
+  }, [props.value])
+  const onComplete = () => {
+    if (text !== props.value) {
+      props.setValue(text)
+    }
+  }
   if (props.textarea) {
     return (
       <textarea
-        value={props.value}
-        onChange={(e) => props.setValue(e.target.value)}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onComplete()
+          }
+        }}
+        onBlur={onComplete}
         style={{ ...controlStyle, ...props.style }}
       />
     )
@@ -24,9 +39,15 @@ export function StringEditor(props: JsonEditorProps<string> & {
   return (
     <>
       <input
-        value={props.value}
+        value={text}
         type={props.type ?? 'text'}
-        onChange={(e) => props.setValue(e.target.value)}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onComplete()
+          }
+        }}
+        onBlur={onComplete}
         style={{ ...controlStyle, ...props.style }}
       />
       {preview}

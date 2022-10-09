@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, getItemByPath } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
 import { isLineContent, LineContent, lineModel } from './models/line-model'
@@ -128,6 +128,7 @@ export const CADEditor = React.forwardRef((props: {
   setOperation: (operations: string | undefined) => void
   backgroundColor: number
   debug?: boolean
+  panelVisible?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const now = Date.now()
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
@@ -157,16 +158,14 @@ export const CADEditor = React.forwardRef((props: {
       const newContents = new Set<BaseContent>()
       const removedContents = new Set<BaseContent>()
       for (const patch of patches) {
-        // type-coverage:ignore-next-line
-        const index = patch.path[0] as number
         if (patch.op !== 'remove' || patch.path.length > 1) {
-          const newContent = newState[index]
+          const newContent = getItemByPath<Nullable<BaseContent>>(newState, patch.path)
           if (newContent) {
             newContents.add(newContent)
           }
         }
         if (patch.op !== 'add' || patch.path.length > 1) {
-          const oldContent = oldState[index]
+          const oldContent = getItemByPath<Nullable<BaseContent>>(oldState, patch.path)
           if (oldContent) {
             removedContents.add(oldContent)
           }
@@ -649,6 +648,28 @@ export const CADEditor = React.forwardRef((props: {
       </div>
     )
   }
+  let panel: JSX.Element | undefined
+  if (props.panelVisible && selectedContents.length > 0) {
+    const target = selectedContents[0]
+    const propertyPanel = getModel(target.content.type)?.propertyPanel?.(target.content, update => {
+      const [, ...patches] = produceWithPatches(editingContent, (draft) => {
+        const content = getContentByIndex(draft, target.path)
+        if (content) {
+          update(content)
+        }
+      })
+      applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
+    })
+    panel = (
+      <div onMouseMove={e => e.stopPropagation()} style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
+        {target.content.type}
+        {propertyPanel && <ObjectEditor
+          properties={propertyPanel}
+          inline
+        />}
+      </div>
+    )
+  }
   if (props.debug) {
     console.info(Date.now() - now, searchResult.length)
   }
@@ -677,6 +698,7 @@ export const CADEditor = React.forwardRef((props: {
         />}
         {minimap}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
+        {panel}
         {commandMasks}
         {!snapOffsetActive && selectionInput}
         {!readOnly && !snapOffsetActive && commandInputs}

@@ -158,6 +158,7 @@ export function getLinearDimensionGeometries(
     ],
     points,
     bounding: getPointsBounding(points),
+    renderingLines: [],
   }
 }
 

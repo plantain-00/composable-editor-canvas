@@ -1,6 +1,7 @@
-import { dashedPolylineToLines, getPointsBounding, getSymmetryPoint, iteratePolygonLines, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
+import React from 'react'
+import { ArrayEditor, dashedPolylineToLines, getArrayEditorProps, getPointsBounding, getSymmetryPoint, iteratePolygonLines, NumberEditor, ObjectEditor, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
 
 export type PolygonContent = StrokeBaseContent<'polygon'> & FillFields & {
   points: Position[]
@@ -44,6 +45,9 @@ export const polygonModel: Model<PolygonContent> = {
   getDefaultColor(content) {
     return content.fillColor !== undefined ? content.fillColor : content.strokeColor
   },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
+  },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolygonContent, true) }))
   },
@@ -62,6 +66,23 @@ export const polygonModel: Model<PolygonContent> = {
   },
   getGeometries: getPolygonGeometries,
   canSelectPart: true,
+  propertyPanel(content, update) {
+    return {
+      points: <ArrayEditor
+        inline
+        {...getArrayEditorProps<Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isPolygonContent(c)) { v(c) } }))}
+        items={content.points.map((f, i) => <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={f.x} setValue={(v) => update(c => { if (isPolygonContent(c)) { c.points[i].x = v } })} />,
+            y: <NumberEditor value={f.y} setValue={(v) => update(c => { if (isPolygonContent(c)) { c.points[i].y = v } })} />,
+          }}
+        />)}
+      />,
+      ...getStrokeContentPropertyPanel(content, update, isPolygonContent),
+      ...getFillContentPropertyPanel(content, update, isPolygonContent),
+    }
+  },
 }
 
 function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
@@ -71,7 +92,7 @@ function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
       lines,
       points: content.points,
       bounding: getPointsBounding(content.points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(polygonToPolyline(content.points), content.dashArray) : [polygonToPolyline(content.points)],
+      renderingLines: dashedPolylineToLines(polygonToPolyline(content.points), content.dashArray),
       regions: content.fillColor !== undefined ? [
         {
           lines,

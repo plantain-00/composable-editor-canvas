@@ -1,5 +1,5 @@
 import React from 'react'
-import { Circle, EditPoint, GeneralFormLine, getPointsBounding, iterateIntersectionPoints, Nullable, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, iterateIntersectionPoints, Nullable, NumberEditor, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { isArcContent } from './arc-model'
 import { isBlockContent } from './block-model'
 import { isCircleContent } from './circle-model'
@@ -12,6 +12,7 @@ export interface BaseContent<T extends string = string> {
 export interface StrokeBaseContent<T extends string = string> extends BaseContent<T> {
   dashArray?: number[]
   strokeColor?: number
+  strokeWidth?: number
 }
 
 export interface FillFields {
@@ -27,6 +28,7 @@ export interface Model<T> {
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean
   getDefaultColor?(content: Omit<T, 'type'>): number | undefined
+  getDefaultStrokeWidth?(content: Omit<T, 'type'>): number | undefined
   render?<V>(props: {
     content: Omit<T, 'type'>
     color: number
@@ -45,6 +47,7 @@ export interface Model<T> {
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
   fill?(content: Omit<T, 'type'>, color: number): void
+  propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element>
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -82,7 +85,7 @@ export interface Geometries {
   /**
    * Used for (1)line rendering
    */
-  renderingLines?: Position[][]
+  renderingLines: Position[][]
 }
 
 const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, Geometries>()
@@ -177,3 +180,43 @@ export function zoomContentsToFit(
     ...result,
   }
 }
+
+export function getStrokeContentPropertyPanel(
+  content: Omit<StrokeBaseContent, 'type'>,
+  update: (recipe: (content: BaseContent) => void) => void,
+  isStrokeContent: (content: BaseContent) => content is StrokeBaseContent,
+) {
+  return {
+    dashArray: <>
+      <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} style={{ marginRight: '5px' }} />
+      {content.dashArray !== undefined && <ArrayEditor
+        inline
+        {...getArrayEditorProps<number, typeof content>(v => v.dashArray || [], 4, (v) => update(c => { if (isStrokeContent(c)) { v(c) } }))}
+        items={content.dashArray.map((f, i) => <NumberEditor value={f} setValue={(v) => update(c => { if (isStrokeContent(c) && c.dashArray) { c.dashArray[i] = v } })} />)}
+      />}
+    </>,
+    strokeColor: <>
+      <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
+      {content.strokeColor !== undefined && <NumberEditor type='color' value={content.strokeColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v } })} />}
+    </>,
+    strokeWidth: <>
+      <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} style={{ marginRight: '5px' }} />
+      {content.strokeWidth !== undefined && <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} />}
+    </>,
+  }
+}
+
+export function getFillContentPropertyPanel(
+  content: FillFields,
+  update: (recipe: (content: BaseContent) => void) => void,
+  isStrokeContent: (content: BaseContent) => content is FillFields & { type: string },
+) {
+  return {
+    fillColor: <>
+      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
+      {content.fillColor !== undefined && <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.fillColor = v } })} />}
+    </>,
+  }
+}
+
+export { angleDelta } from './ellipse-model'

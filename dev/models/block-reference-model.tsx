@@ -1,5 +1,6 @@
 import produce from "immer"
-import { getPointsBounding, getSymmetryPoint, Nullable, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
+import React from "react"
+import { getPointsBounding, getSymmetryPoint, Nullable, NumberEditor, Position, rotatePositionByCenter, WeakmapCache2 } from "../../src"
 import { BlockContent, isBlockContent, renderBlockChildren } from "./block-model"
 import { LineContent } from "./line-model"
 import { BaseContent, Geometries, getEditPointsFromCache, getModel, Model, SnapPoint } from "./model"
@@ -115,6 +116,13 @@ export const blockReferenceModel: Model<BlockReferenceContent> = {
     return []
   },
   getGeometries: getBlockReferenceGeometries,
+  propertyPanel(content, update) {
+    return {
+      x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.x = v } })} />,
+      y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.y = v } })} />,
+      angle: <NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,
+    }
+  },
 }
 
 function extractContentInBlockReference(
@@ -168,7 +176,7 @@ function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type"
       }
     })
   }
-  return { lines: [], points: [] }
+  return { lines: [], points: [], renderingLines: [] }
 }
 
 const blockLinesCache = new WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, Geometries>()

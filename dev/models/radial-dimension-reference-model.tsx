@@ -1,8 +1,9 @@
-import { getRadialDimensionGeometries, getTwoPointsDistance, Nullable, RadialDimension, WeakmapCache2 } from "../../src"
+import React from "react"
+import { BooleanEditor, getRadialDimensionGeometries, getTwoPointsDistance, Nullable, NumberEditor, ObjectEditor, RadialDimension, StringEditor, WeakmapCache2 } from "../../src"
 import { ArcContent, isArcContent } from "./arc-model"
 import { CircleContent, isCircleContent } from "./circle-model"
 import { LineContent } from "./line-model"
-import { Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, Geometries } from "./model"
+import { Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, Geometries, getStrokeContentPropertyPanel } from "./model"
 import { dimensionStyle, getTextPosition } from "./radial-dimension-model"
 
 export type RadialDimensionReferenceContent = StrokeBaseContent<'radial dimension reference'> & RadialDimension & {
@@ -19,7 +20,7 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
     const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)
     const children: ReturnType<typeof target.renderGroup>[] = []
     for (const line of lines) {
-      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
+      children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }))
     }
     if (regions && regions.length > 0) {
       children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
@@ -42,6 +43,9 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content, contents) {
     return getEditPointsFromCache(content, () => {
@@ -69,6 +73,24 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
     })
   },
   getGeometries: getRadialDimensionReferenceGeometriesFromCache,
+  propertyPanel(content, update) {
+    return {
+      position: <ObjectEditor
+        inline
+        properties={{
+          x: <NumberEditor value={content.position.x} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.position.x = v } })} />,
+          y: <NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.position.y = v } })} />,
+        }}
+      />,
+      text: <>
+        <BooleanEditor value={content.text !== undefined} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v ? '' : undefined } })} style={{ marginRight: '5px' }} />
+        {content.text !== undefined && <StringEditor value={content.text} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v } })} />}
+      </>,
+      fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontSize = v } })} />,
+      fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontFamily = v } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isRadialDimensionReferenceContent),
+    }
+  },
 }
 
 export function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly Nullable<BaseContent>[]) {
@@ -78,7 +100,7 @@ export function getRadialDimensionReferenceGeometriesFromCache(content: Omit<Rad
       return getRadialDimensionGeometries(content, target, dimensionStyle, getTextPosition)
     })
   }
-  return { lines: [], points: [] }
+  return { lines: [], points: [], renderingLines: [] }
 }
 
 export function isRadialDimensionReferenceContent(content: BaseContent): content is RadialDimensionReferenceContent {

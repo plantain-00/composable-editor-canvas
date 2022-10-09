@@ -1,7 +1,8 @@
-import { EllipseArc, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines, ellipseArcToPolyline, dashedPolylineToLines } from '../../src'
+import React from 'react'
+import { EllipseArc, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines, ellipseArcToPolyline, dashedPolylineToLines, NumberEditor, BooleanEditor } from '../../src'
 import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache } from './model'
+import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
 
 export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
@@ -60,6 +61,9 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   },
   getDefaultColor(content) {
     return content.strokeColor
+  },
+  getDefaultStrokeWidth(content) {
+    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -127,6 +131,22 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
     })
   },
   getGeometries: getEllipseArcGeometries,
+  propertyPanel(content, update) {
+    return {
+      cx: <NumberEditor value={content.cx} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.cx = v } })} />,
+      cy: <NumberEditor value={content.cy} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.cy = v } })} />,
+      rx: <NumberEditor value={content.rx} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.rx = v } })} />,
+      ry: <NumberEditor value={content.ry} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.ry = v } })} />,
+      angle: <>
+        <BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.angle = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
+        {content.angle !== undefined && <NumberEditor value={content.angle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.angle = v } })} />}
+      </>,
+      startAngle: <NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.startAngle = v } })} />,
+      endAngle: <NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.endAngle = v } })} />,
+      counterclockwise: <BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
+      ...getStrokeContentPropertyPanel(content, update, isEllipseArcContent),
+    }
+  },
 }
 
 export function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
@@ -136,7 +156,7 @@ export function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">
       lines: Array.from(iteratePolylineLines(points)),
       points,
       bounding: getPointsBounding(points),
-      renderingLines: content.dashArray ? dashedPolylineToLines(points, content.dashArray) : [points],
+      renderingLines: dashedPolylineToLines(points, content.dashArray),
     }
   })
 }
