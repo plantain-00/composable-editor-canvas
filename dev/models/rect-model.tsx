@@ -9,6 +9,7 @@ export type RectContent = StrokeBaseContent<'rect'> & FillFields & Region & {
 
 export const rectModel: Model<RectContent> = {
   type: 'rect',
+  subTypes: ['stroke', 'fill'],
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
@@ -26,9 +27,6 @@ export const rectModel: Model<RectContent> = {
   break(content, intersectionPoints) {
     const { lines } = getRectGeometries(content)
     return breakPolyline(lines, intersectionPoints)
-  },
-  fill(content, color) {
-    content.fillColor = color
   },
   mirror(content, line, angle) {
     const p = getSymmetryPoint(content, line)
@@ -116,8 +114,8 @@ export const rectModel: Model<RectContent> = {
       width: <NumberEditor value={content.width} setValue={(v) => update(c => { if (isRectContent(c)) { c.width = v } })} />,
       height: <NumberEditor value={content.height} setValue={(v) => update(c => { if (isRectContent(c)) { c.height = v } })} />,
       angle: <NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRectContent(c)) { c.angle = v } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isRectContent),
-      ...getFillContentPropertyPanel(content, update, isRectContent),
+      ...getStrokeContentPropertyPanel(content, update),
+      ...getFillContentPropertyPanel(content, update),
     }
   },
 }

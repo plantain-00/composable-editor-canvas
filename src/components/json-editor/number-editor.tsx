@@ -23,12 +23,16 @@ export function NumberEditor(props: JsonEditorProps<number> & {
       props.setValue(value)
     }
   }
+  const extraStyle = props.type === 'color' ? {
+    flex: 'unset',
+    padding: 0,
+  } : undefined
   return (
     <input
       value={text}
       type={props.type ?? 'number'}
       onChange={(e) => setText(e.target.value)}
-      style={{ ...controlStyle, ...props.style }}
+      style={{ ...controlStyle, ...props.style, ...extraStyle }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           onComplete()

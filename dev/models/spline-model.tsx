@@ -11,6 +11,7 @@ export type SplineContent = StrokeBaseContent<'spline'> & {
 
 export const splineModel: Model<SplineContent> = {
   type: 'spline',
+  subTypes: ['stroke'],
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -60,7 +61,7 @@ export const splineModel: Model<SplineContent> = {
         />)}
       />,
       fitting: <BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isSplineContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

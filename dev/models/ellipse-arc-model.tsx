@@ -8,6 +8,7 @@ export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
 
 export const ellipseArcModel: Model<EllipseArcContent> = {
   type: 'ellipse arc',
+  subTypes: ['stroke'],
   move: ellipseModel.move,
   rotate: ellipseModel.rotate,
   mirror: ellipseModel.mirror,
@@ -144,7 +145,7 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
       startAngle: <NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.startAngle = v } })} />,
       endAngle: <NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.endAngle = v } })} />,
       counterclockwise: <BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isEllipseArcContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

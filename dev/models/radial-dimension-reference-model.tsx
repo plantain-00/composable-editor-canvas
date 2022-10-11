@@ -12,6 +12,7 @@ export type RadialDimensionReferenceContent = StrokeBaseContent<'radial dimensio
 
 export const radialDimensionReferenceModel: Model<RadialDimensionReferenceContent> = {
   type: 'radial dimension reference',
+  subTypes: ['stroke'],
   move(content, offset) {
     content.position.x += offset.x
     content.position.y += offset.y
@@ -88,7 +89,7 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
       </>,
       fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontSize = v } })} />,
       fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontFamily = v } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isRadialDimensionReferenceContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }
@@ -110,5 +111,5 @@ export function isRadialDimensionReferenceContent(content: BaseContent): content
 const radialDimensionReferenceLinesCache = new WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, Geometries>()
 
 function getRadialDimensionReferenceTarget(id: number, contents: readonly Nullable<BaseContent>[]) {
-  return contents.find((c): c is CircleContent | ArcContent => !!c && (isCircleContent(c) || isArcContent(c)) && c.id === id)
+  return contents.find((c, i): c is CircleContent | ArcContent => !!c && (isCircleContent(c) || isArcContent(c)) && i === id)
 }

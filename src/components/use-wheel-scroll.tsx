@@ -16,8 +16,8 @@ export function useWheelScroll<T extends HTMLElement>(
       return
     }
     const wheelHandler = (e: WheelEvent) => {
-      e.preventDefault()
       if (!e.ctrlKey) {
+        e.preventDefault()
         setX((x) => {
           if (maxOffsetX >= 0) {
             return Math.max(-maxOffsetX, Math.min(maxOffsetX, x - e.deltaX))

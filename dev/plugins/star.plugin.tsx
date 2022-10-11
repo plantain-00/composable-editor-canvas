@@ -41,12 +41,10 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   const React = ctx.React
   return {
     type: 'star',
+    subTypes: ['stroke', 'fill'],
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
-    },
-    fill(content, color) {
-      content.fillColor = color
     },
     render({ content, target, color, strokeWidth }) {
       const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
@@ -90,8 +88,8 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
         outerRadius: <ctx.NumberEditor value={content.outerRadius} setValue={(v) => update(c => { if (isStarContent(c)) { c.outerRadius = v } })} />,
         innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isStarContent(c)) { c.innerRadius = v } })} />,
         count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isStarContent(c)) { c.count = v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update, isStarContent),
-        ...ctx.getFillContentPropertyPanel(content, update, isStarContent),
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
   }

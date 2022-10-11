@@ -7,6 +7,7 @@ export type RadialDimensionContent = StrokeBaseContent<'radial dimension'> & Cir
 
 export const radialDimensionModel: Model<RadialDimensionContent> = {
   type: 'radial dimension',
+  subTypes: ['stroke'],
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
@@ -83,7 +84,7 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
       </>,
       fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.fontSize = v } })} />,
       fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionContent(c)) { c.fontFamily = v } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isRadialDimensionContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

@@ -1,8 +1,8 @@
 import React from "react";
 import { useCursorInput, useKey } from "../../src";
 import { isArcContent, ArcContent } from "../models/arc-model";
-import { CircleContent, isCircleContent } from "../models/circle-model";
-import { BaseContent, getNextId } from "../models/model";
+import { CircleContent, getCircleOrArcIndex, isCircleContent } from "../models/circle-model";
+import { BaseContent } from "../models/model";
 import { RadialDimensionContent } from "../models/radial-dimension-model";
 import { RadialDimensionReferenceContent } from "../models/radial-dimension-reference-model";
 import { Command } from "./command";
@@ -42,9 +42,7 @@ export const createRadialDimensionCommand: Command = {
               if (!result.refId && selected.length > 0 && type) {
                 const content = selected[0].content
                 if (contentSelectable(content)) {
-                  result.refId = getNextId(contents);
-                  // type-coverage:ignore-next-line
-                  (contents[selected[0].path[0]] as CircleContent | ArcContent).id = result.refId
+                  result.refId = getCircleOrArcIndex(content, contents)
                 }
               }
               if (result.refId) {
@@ -77,7 +75,7 @@ export const createRadialDimensionCommand: Command = {
               r: content.r,
               fontSize: 16,
               fontFamily: 'monospace',
-              refId: content.id,
+              refId: selected[0].path[0],
               text,
             })
           }

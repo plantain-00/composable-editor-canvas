@@ -11,6 +11,7 @@ export type ArrowContent = StrokeBaseContent<'arrow'> & {
 
 export const arrowModel: Model<ArrowContent> = {
   type: 'arrow',
+  subTypes: ['stroke'],
   move(content, offset) {
     content.p1.x += offset.x
     content.p1.y += offset.y
@@ -85,7 +86,7 @@ export const arrowModel: Model<ArrowContent> = {
           y: <NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.y = v } })} />,
         }}
       />,
-      ...getStrokeContentPropertyPanel(content, update, isArrowContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

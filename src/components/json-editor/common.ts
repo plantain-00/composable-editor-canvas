@@ -19,6 +19,7 @@ export const controlStyle: React.CSSProperties = {
   appearance: 'none',
   borderRadius: '0.25rem',
   flex: 1,
+  marginBottom: '3px',
 }
 
 export const buttonStyle: React.CSSProperties = {
@@ -43,5 +44,6 @@ export const groupStyle: React.CSSProperties = {
   border: '1px solid rgba(0,0,0,.125)',
   borderRadius: '0.25rem',
   flex: 1,
+  marginBottom: '3px',
 }
 

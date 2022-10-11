@@ -8,6 +8,7 @@ export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
 
 export const lineModel: Model<LineContent> = {
   type: 'line',
+  subTypes: ['stroke'],
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -66,7 +67,7 @@ export const lineModel: Model<LineContent> = {
           }}
         />)}
       />,
-      ...getStrokeContentPropertyPanel(content, update, isLineContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

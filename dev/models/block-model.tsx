@@ -1,10 +1,10 @@
 import React from "react"
 import { getPointsBounding, Nullable, NumberEditor, ObjectEditor, Position, ReactRenderTarget } from "../../src"
 import { isBlockReferenceContent } from "./block-reference-model"
+import { isGroupContent } from "./group-model"
 import { BaseContent, getGeometriesFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
 export type BlockContent = BaseContent<'block'> & {
-  id: number
   contents: Nullable<BaseContent>[]
   base: Position
 }
@@ -12,7 +12,7 @@ export type BlockContent = BaseContent<'block'> & {
 export const blockModel: Model<BlockContent> = {
   type: 'block',
   deletable(content, contents) {
-    return !contents.some((c) => c && isBlockReferenceContent(c) && c.refId === content.id)
+    return !blockIsReferenced(getBlockIndex(content, contents), contents)
   },
   explode(content) {
     return content.contents.filter((c): c is BaseContent => !!c)
@@ -37,6 +37,31 @@ export const blockModel: Model<BlockContent> = {
       />,
     }
   },
+}
+
+export function getBlockIndex(content: Omit<BlockContent, "type">, contents: readonly Nullable<BaseContent>[]) {
+  return contents.findIndex(c => c && isBlockContent(c) && content === c)
+}
+
+export function* iterateAllContents(contents: readonly Nullable<BaseContent>[]): Generator<BaseContent, void, unknown> {
+  for (const content of contents) {
+    if (!content) {
+      continue
+    }
+    yield content
+    if (isBlockContent(content) || isGroupContent(content)) {
+      yield* iterateAllContents(content.contents)
+    }
+  }
+}
+
+function blockIsReferenced(id: number, contents: readonly Nullable<BaseContent>[]): boolean {
+  for (const content of iterateAllContents(contents)) {
+    if (isBlockReferenceContent(content) && content.refId === id) {
+      return true
+    }
+  }
+  return false
 }
 
 export function getBlockSnapPoints(content: Omit<BlockContent, 'type' | 'id' | 'base'>, contents: readonly BaseContent[]) {

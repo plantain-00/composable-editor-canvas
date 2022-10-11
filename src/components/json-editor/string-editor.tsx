@@ -36,6 +36,10 @@ export function StringEditor(props: JsonEditorProps<string> & {
   if (props.value.startsWith('http')) {
     preview = <img src={props.value} style={{ display: 'block', height: 'auto', margin: '6px 0px', maxWidth: '100%' }} />
   }
+  const extraStyle = props.type === 'color' ? {
+    flex: 'unset',
+    padding: 0,
+  } : undefined
   return (
     <>
       <input
@@ -48,7 +52,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
           }
         }}
         onBlur={onComplete}
-        style={{ ...controlStyle, ...props.style }}
+        style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
       {preview}
     </>
