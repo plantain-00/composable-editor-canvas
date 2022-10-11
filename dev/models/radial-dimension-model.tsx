@@ -1,13 +1,13 @@
 import React from "react"
 import { BooleanEditor, Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getTextSize, getTwoPointsDistance, MapCache2, NumberEditor, ObjectEditor, Position, RadialDimension, Size, StringEditor, WeakmapCache2 } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
+import { getGeometriesFromCache, Model, StrokeFields, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel, strokeModel } from "./model"
 
-export type RadialDimensionContent = StrokeBaseContent<'radial dimension'> & Circle & RadialDimension
+export type RadialDimensionContent = BaseContent<'radial dimension'> & StrokeFields & Circle & RadialDimension
 
 export const radialDimensionModel: Model<RadialDimensionContent> = {
   type: 'radial dimension',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
@@ -34,12 +34,6 @@ export const radialDimensionModel: Model<RadialDimensionContent> = {
       },
     ))
     return target.renderGroup(children)
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

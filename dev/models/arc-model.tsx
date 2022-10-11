@@ -1,15 +1,14 @@
 import React from 'react'
 import { Arc, arcToPolyline, BooleanEditor, dashedPolylineToLines, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolylineLines, normalizeAngleInRange, normalizeAngleRange, NumberEditor, rotatePositionByCenter } from '../../src'
 import { circleOrArcIsReferenced, getCircleOrArcIndex } from './circle-model'
-import { angleDelta } from './ellipse-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, strokeModel, angleDelta } from './model'
 
-export type ArcContent = StrokeBaseContent<'arc'> & Arc
+export type ArcContent = BaseContent<'arc'> & StrokeFields & Arc
 
 export const arcModel: Model<ArcContent> = {
   type: 'arc',
-  subTypes: ['stroke'],
+  ...strokeModel,
   deletable(content, contents) {
     return !circleOrArcIsReferenced(getCircleOrArcIndex(content, contents), contents)
   },
@@ -83,12 +82,6 @@ export const arcModel: Model<ArcContent> = {
   getOperatorRenderPosition(content) {
     const { points } = getArcGeometries(content)
     return points[0]
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

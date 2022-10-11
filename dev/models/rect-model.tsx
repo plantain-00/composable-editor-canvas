@@ -1,15 +1,16 @@
 import React from 'react'
 import { dashedPolylineToLines, getPointsBounding, getResizeCursor, getResizeOffset, getSymmetryPoint, getTwoPointCenter, iteratePolygonLines, NumberEditor, polygonToPolyline, Region, rotatePositionByCenter } from '../../src'
 import { breakPolyline, LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getFillContentPropertyPanel, getStrokeContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getFillContentPropertyPanel, getStrokeContentPropertyPanel, strokeModel, fillModel } from './model'
 
-export type RectContent = StrokeBaseContent<'rect'> & FillFields & Region & {
+export type RectContent = BaseContent<'rect'> & StrokeFields & FillFields & Region & {
   angle: number
 }
 
 export const rectModel: Model<RectContent> = {
   type: 'rect',
-  subTypes: ['stroke', 'fill'],
+  ...strokeModel,
+  ...fillModel,
   move(content, offset) {
     content.x += offset.x
     content.y += offset.y
@@ -48,12 +49,6 @@ export const rectModel: Model<RectContent> = {
   getOperatorRenderPosition(content) {
     const { points } = getRectGeometries(content)
     return points[0]
-  },
-  getDefaultColor(content) {
-    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

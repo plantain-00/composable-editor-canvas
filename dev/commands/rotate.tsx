@@ -1,4 +1,5 @@
-import { produceWithPatches } from "immer"
+import produce, { produceWithPatches } from "immer"
+import React from "react"
 import { getTwoPointsDistance, useCursorInput, useDragRotate } from "../../src"
 import { ArcContent } from "../models/arc-model"
 import { LineContent } from "../models/line-model"
@@ -8,6 +9,7 @@ import { Command } from "./command"
 export const rotateCommand: Command = {
   name: 'rotate',
   useCommand({ onEnd, transform, type, scale }) {
+    const [changeOriginal, setChangeOriginal] = React.useState(true)
     const { offset, onStart, mask, center: startPosition } = useDragRotate(
       onEnd,
       {
@@ -54,9 +56,28 @@ export const rotateCommand: Command = {
       onMove(_, p) {
         setInputPosition(p)
       },
+      subcommand: type ? (
+        <button
+          onClick={(e) => {
+            setChangeOriginal(!changeOriginal)
+            e.stopPropagation()
+          }}
+        >
+          {changeOriginal ? 'create new(N)' : 'change original(Y)'}
+        </button>
+      ) : undefined,
       updateContent(content, contents) {
         if (startPosition && offset?.angle !== undefined) {
           const angle = offset.angle
+          if (!changeOriginal) {
+            return {
+              newContents: [
+                produce(content, (d) => {
+                  getModel(d.type)?.rotate?.(d, startPosition, angle, contents)
+                }),
+              ]
+            }
+          }
           const [, ...patches] = produceWithPatches(content, (draft) => {
             getModel(content.type)?.rotate?.(draft, startPosition, angle, contents)
           })

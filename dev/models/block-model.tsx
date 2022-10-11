@@ -2,7 +2,7 @@ import React from "react"
 import { getPointsBounding, Nullable, NumberEditor, ObjectEditor, Position, ReactRenderTarget } from "../../src"
 import { isBlockReferenceContent } from "./block-reference-model"
 import { isGroupContent } from "./group-model"
-import { BaseContent, getGeometriesFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
+import { BaseContent, getContentColor, getGeometriesFromCache, getModel, getSnapPointsFromCache, Model, SnapPoint } from "./model"
 
 export type BlockContent = BaseContent<'block'> & {
   contents: Nullable<BaseContent>[]
@@ -89,7 +89,7 @@ export function renderBlockChildren<V>(block: Omit<BlockContent, 'type' | 'id' |
     const model = getModel(blockContent.type)
     if (model?.render) {
       const ContentRender = model.render
-      color = model.getDefaultColor?.(blockContent) ?? color
+      color = getContentColor(blockContent, color)
       children.push(ContentRender({ content: blockContent, color, target, strokeWidth, contents }))
     }
   })

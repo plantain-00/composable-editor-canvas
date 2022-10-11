@@ -4,26 +4,20 @@ import type { Position } from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-type StarContent = model.BaseContent<'star'> & model.StrokeFields & model.FillFields & core.Position & {
-  outerRadius: number
-  innerRadius: number
+type RegularPolygonContent = model.BaseContent<'regular polygon'> & model.StrokeFields & model.FillFields & core.Position & {
+  radius: number
   count: number
-  angle?: number
+  angle: number
 }
 
-export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<StarContent> {
-  function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
+export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<RegularPolygonContent> {
+  function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0)
-      const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle)
-      const p1 = ctx.rotatePositionByCenter({ x: content.x + content.innerRadius, y: content.y }, content, angle + 180 / content.count)
+      const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle)
       const points: Position[] = []
       for (let i = 0; i < content.count; i++) {
-        const angle = 360 / content.count * i
-        points.push(
-          ctx.rotatePositionByCenter(p0, content, angle),
-          ctx.rotatePositionByCenter(p1, content, angle),
-        )
+        points.push(ctx.rotatePositionByCenter(p0, content, 360 / content.count * i))
       }
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
@@ -42,7 +36,7 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
   const React = ctx.React
   return {
-    type: 'star',
+    type: 'regular polygon',
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
@@ -54,18 +48,19 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
       if (content.fillColor !== undefined) {
         strokeWidth = 0
       }
-      const { points } = getStarGeometriesFromCache(content)
+      const { points } = getRegularPolygonGeometriesFromCache(content)
       return target.renderPolygon(points, { [colorField]: color, strokeWidth })
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
+        const { points } = getRegularPolygonGeometriesFromCache(content)
         return {
           editPoints: [
             {
               ...content,
               cursor: 'move',
               update(c, { cursor, start, scale }) {
-                if (!isStarContent(c)) {
+                if (!isRegularPolygonContent(c)) {
                   return
                 }
                 c.x += cursor.x - start.x
@@ -73,19 +68,31 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
               },
             },
+            ...points.map(p => ({
+              x: p.x,
+              y: p.y,
+              cursor: 'move',
+              update(c, { cursor, start, scale }) {
+                if (!isRegularPolygonContent(c)) {
+                  return
+                }
+                c.radius = ctx.getTwoPointsDistance(cursor, c)
+                c.angle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
+              },
+            } as core.EditPoint<model.BaseContent>))
           ]
         }
       })
     },
-    getGeometries: getStarGeometriesFromCache,
+    getGeometries: getRegularPolygonGeometriesFromCache,
     propertyPanel(content, update) {
       return {
-        x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isStarContent(c)) { c.x = v } })} />,
-        y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isStarContent(c)) { c.y = v } })} />,
-        outerRadius: <ctx.NumberEditor value={content.outerRadius} setValue={(v) => update(c => { if (isStarContent(c)) { c.outerRadius = v } })} />,
-        innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isStarContent(c)) { c.innerRadius = v } })} />,
-        count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isStarContent(c)) { c.count = v } })} />,
-        angle: <ctx.NumberEditor value={content.angle ?? 0} setValue={(v) => update(c => { if (isStarContent(c)) { c.angle = v === 0 ? undefined : v } })} />,
+        x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.x = v } })} />,
+        y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.y = v } })} />,
+        radius: <ctx.NumberEditor value={content.radius} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.radius = v } })} />,
+        count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.count = v } })} />,
+        angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.angle = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
@@ -93,44 +100,40 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
 }
 
-function isStarContent(content: model.BaseContent): content is StarContent {
-  return content.type === 'star'
+function isRegularPolygonContent(content: model.BaseContent): content is RegularPolygonContent {
+  return content.type === 'regular polygon'
 }
 
 export function getCommand(ctx: typeof core & typeof model): Command {
   return {
-    name: 'create star',
+    name: 'create regular polygon',
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
-        type === 'create star',
+        type === 'create regular polygon',
         ([p0, p1]) => onEnd({
           updateContents: (contents) => {
-            const outerRadius = ctx.getTwoPointsDistance(p0, p1)
             contents.push({
-              type: 'star',
+              type: 'regular polygon',
               x: p0.x,
               y: p0.y,
-              outerRadius,
-              innerRadius: outerRadius * 0.5,
+              radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
               angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
-            } as StarContent)
+            } as RegularPolygonContent)
           }
         }),
         {
           once: true,
         },
       )
-      const assistentContents: StarContent[] = []
+      const assistentContents: RegularPolygonContent[] = []
       if (line) {
         const [p0, p1] = line
-        const outerRadius = ctx.getTwoPointsDistance(p0, p1)
         assistentContents.push({
-          type: 'star',
+          type: 'regular polygon',
           x: p0.x,
           y: p0.y,
-          outerRadius,
-          innerRadius: outerRadius * 0.5,
+          radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
           angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
         })

@@ -1469,6 +1469,7 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
     editingContent: T;
     setEditingContentPath: (path: SelectPath | undefined) => void;
     prependPatchPath: (patches: Patch[]) => Patch[];
+    trimPatchPath: (patches: Patch[]) => Patch[];
     getContentByPath<V>(content: V): V;
 };
 
