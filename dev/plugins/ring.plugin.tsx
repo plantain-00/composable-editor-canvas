@@ -40,12 +40,10 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   const React = ctx.React
   return {
     type: 'ring',
+    subTypes: ['stroke', 'fill'],
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
-    },
-    fill(content, color) {
-      content.fillColor = color
     },
     render({ content, target, color, strokeWidth }) {
       const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
@@ -91,8 +89,8 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRingContent(c)) { c.y = v } })} />,
         outerRadius: <ctx.NumberEditor value={content.outerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.outerRadius = v } })} />,
         innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.innerRadius = v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update, isRingContent),
-        ...ctx.getFillContentPropertyPanel(content, update, isRingContent),
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
   }

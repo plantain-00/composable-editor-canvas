@@ -24,7 +24,7 @@ export default () => {
   const [coEdit, setCoEdit] = React.useState(true)
   const [pluginCommandNames, setPluginCommandNames] = React.useState<string[]>([])
   const [pluginLoaded, setPluginLoaded] = React.useState(false)
-  const [panelVisible, setPanelVisible] = React.useState(false)
+  const [panelVisible, setPanelVisible] = React.useState(true)
 
   React.useEffect(() => {
     (async () => {

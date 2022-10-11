@@ -9,6 +9,7 @@ export type PolygonContent = StrokeBaseContent<'polygon'> & FillFields & {
 
 export const polygonModel: Model<PolygonContent> = {
   type: 'polygon',
+  subTypes: ['stroke', 'fill'],
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -28,9 +29,6 @@ export const polygonModel: Model<PolygonContent> = {
   break(content, intersectionPoints) {
     const { lines } = getPolygonGeometries(content)
     return breakPolyline(lines, intersectionPoints)
-  },
-  fill(content, color) {
-    content.fillColor = color
   },
   render({ content, color, target, strokeWidth }) {
     const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
@@ -79,8 +77,8 @@ export const polygonModel: Model<PolygonContent> = {
           }}
         />)}
       />,
-      ...getStrokeContentPropertyPanel(content, update, isPolygonContent),
-      ...getFillContentPropertyPanel(content, update, isPolygonContent),
+      ...getStrokeContentPropertyPanel(content, update),
+      ...getFillContentPropertyPanel(content, update),
     }
   },
 }

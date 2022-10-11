@@ -1,7 +1,7 @@
 import { isSelected, useCursorInput } from "../../src"
 import { BlockContent, isBlockContent } from "../models/block-model"
 import { isBlockReferenceContent } from "../models/block-reference-model"
-import { BaseContent, getNextId } from "../models/model"
+import { BaseContent } from "../models/model"
 import { Command } from "./command"
 
 export const createBlockCommand: Command = {
@@ -17,10 +17,8 @@ export const createBlockCommand: Command = {
       onStart(p) {
         onEnd({
           updateContents: (contents, selected) => {
-            const id = getNextId(contents)
             const newContent: BlockContent = {
               type: 'block',
-              id,
               contents: contents.filter((c, i) => c && isSelected([i], selected) && contentSelectable(c)),
               base: p,
             }

@@ -1,8 +1,5 @@
 import React from 'react'
 import { ArrayEditor, BooleanEditor, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, iterateIntersectionPoints, Nullable, NumberEditor, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
-import { isArcContent } from './arc-model'
-import { isBlockContent } from './block-model'
-import { isCircleContent } from './circle-model'
 import { LineContent } from './line-model'
 
 export interface BaseContent<T extends string = string> {
@@ -21,6 +18,7 @@ export interface FillFields {
 
 export interface Model<T> {
   type: string
+  subTypes?: ('stroke' | 'fill')[]
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
@@ -46,7 +44,6 @@ export interface Model<T> {
   getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
-  fill?(content: Omit<T, 'type'>, color: number): void
   propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element>
 }
 
@@ -127,23 +124,6 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
   return undefined
 }
 
-export function getNextId(contents: Nullable<BaseContent>[]) {
-  let id = 1
-  contents.forEach((content) => {
-    if (!content) {
-      return
-    }
-    if (isBlockContent(content)) {
-      id = Math.max(id, content.id + 1)
-    } else if (isCircleContent(content) || isArcContent(content)) {
-      if (content.id) {
-        id = Math.max(id, content.id + 1)
-      }
-    }
-  })
-  return id
-}
-
 export function zoomContentsToFit(
   width: number,
   height: number,
@@ -184,7 +164,6 @@ export function zoomContentsToFit(
 export function getStrokeContentPropertyPanel(
   content: Omit<StrokeBaseContent, 'type'>,
   update: (recipe: (content: BaseContent) => void) => void,
-  isStrokeContent: (content: BaseContent) => content is StrokeBaseContent,
 ) {
   return {
     dashArray: <>
@@ -209,14 +188,25 @@ export function getStrokeContentPropertyPanel(
 export function getFillContentPropertyPanel(
   content: FillFields,
   update: (recipe: (content: BaseContent) => void) => void,
-  isStrokeContent: (content: BaseContent) => content is FillFields & { type: string },
 ) {
   return {
     fillColor: <>
-      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
-      {content.fillColor !== undefined && <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.fillColor = v } })} />}
+      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
+      {content.fillColor !== undefined && <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} />}
     </>,
   }
+}
+
+interface FillContent extends FillFields {
+  type: string
+}
+
+export function isStrokeContent(content: BaseContent): content is StrokeBaseContent {
+  return !!getModel(content.type)?.subTypes?.includes?.('stroke')
+}
+
+export function isFillContent(content: BaseContent): content is FillContent {
+  return !!getModel(content.type)?.subTypes?.includes?.('fill')
 }
 
 export { angleDelta } from './ellipse-model'

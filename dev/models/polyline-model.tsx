@@ -30,7 +30,7 @@ export const polylineModel: Model<LineContent> = {
           }}
         />)}
       />,
-      ...getStrokeContentPropertyPanel(content, update, isPolyLineContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

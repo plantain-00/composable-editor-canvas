@@ -1,18 +1,18 @@
 import React from 'react'
-import { Circle, getSymmetryPoint, getTwoPointsDistance, NumberEditor, Position, rotatePositionByCenter } from '../../src'
-import { ArcContent, getArcGeometries } from './arc-model'
+import { Circle, getSymmetryPoint, getTwoPointsDistance, Nullable, NumberEditor, Position, rotatePositionByCenter } from '../../src'
+import { ArcContent, getArcGeometries, isArcContent } from './arc-model'
+import { iterateAllContents } from './block-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
 import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
-export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle & {
-  id?: number
-}
+export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle
 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
+  subTypes: ['fill', 'stroke'],
   deletable(content, contents) {
-    return !contents.some((c) => c && isRadialDimensionReferenceContent(c) && c.refId === content.id)
+    return !circleOrArcIsReferenced(getCircleOrArcIndex(content, contents), contents)
   },
   move(content, offset) {
     content.x += offset.x
@@ -27,9 +27,6 @@ export const circleModel: Model<CircleContent> = {
     const p = getSymmetryPoint(content, line)
     content.x = p.x
     content.y = p.y
-  },
-  fill(content, color) {
-    content.fillColor = color
   },
   break(content, points) {
     if (points.length < 2) {
@@ -144,8 +141,8 @@ export const circleModel: Model<CircleContent> = {
       x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isCircleContent(c)) { c.x = v } })} />,
       y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isCircleContent(c)) { c.y = v } })} />,
       r: <NumberEditor value={content.r} setValue={(v) => update(c => { if (isCircleContent(c)) { c.r = v } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isCircleContent),
-      ...getFillContentPropertyPanel(content, update, isCircleContent),
+      ...getStrokeContentPropertyPanel(content, update),
+      ...getFillContentPropertyPanel(content, update),
     }
   },
 }
@@ -171,4 +168,17 @@ export function getCircleGeometries(content: Omit<CircleContent, "type">) {
 
 export function isCircleContent(content: BaseContent): content is CircleContent {
   return content.type === 'circle'
+}
+
+export function getCircleOrArcIndex(content: Omit<CircleContent | ArcContent, "type">, contents: readonly Nullable<BaseContent>[]) {
+  return contents.findIndex(c => c && (isCircleContent(c) || isArcContent(c)) && content === c)
+}
+
+export function circleOrArcIsReferenced(id: number, contents: readonly Nullable<BaseContent>[]): boolean {
+  for (const content of iterateAllContents(contents)) {
+    if (isRadialDimensionReferenceContent(content) && content.refId === id) {
+      return true
+    }
+  }
+  return false
 }

@@ -4,15 +4,17 @@ import { BaseContent } from './models/model'
 import { CADEditor, CADEditorRef } from './cad-editor'
 
 const draftKey = 'composable-editor-canvas-whiteboard'
-const draftState = localStorage.getItem(draftKey)
-const initialState = draftState ? JSON.parse(draftState) as Nullable<BaseContent>[] : []
 
 export const WhiteBoard = () => {
+  const [initialState] = React.useState(() => {
+    const draftState = localStorage.getItem(draftKey)
+    return draftState ? JSON.parse(draftState) as Nullable<BaseContent>[] : []
+  })
   const editorRef = React.useRef<CADEditorRef | null>(null)
   const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
-  const [panelVisible, setPanelVisible] = React.useState(false)
+  const [panelVisible, setPanelVisible] = React.useState(true)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
   return (

@@ -8,6 +8,7 @@ export type EllipseContent = StrokeBaseContent<'ellipse'> & FillFields & Ellipse
 
 export const ellipseModel: Model<EllipseContent> = {
   type: 'ellipse',
+  subTypes: ['stroke', 'fill'],
   move(content, offset) {
     content.cx += offset.x
     content.cy += offset.y
@@ -23,9 +24,6 @@ export const ellipseModel: Model<EllipseContent> = {
     content.cx = p.x
     content.cy = p.y
     content.angle = 2 * angle - (content.angle ?? 0)
-  },
-  fill(content, color) {
-    content.fillColor = color
   },
   break(content, points) {
     if (points.length < 2) {
@@ -156,8 +154,8 @@ export const ellipseModel: Model<EllipseContent> = {
         <BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.angle = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
         {content.angle !== undefined && <NumberEditor value={content.angle} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.angle = v } })} />}
       </>,
-      ...getStrokeContentPropertyPanel(content, update, isEllipseContent),
-      ...getFillContentPropertyPanel(content, update, isEllipseContent),
+      ...getStrokeContentPropertyPanel(content, update),
+      ...getFillContentPropertyPanel(content, update),
     }
   },
 }

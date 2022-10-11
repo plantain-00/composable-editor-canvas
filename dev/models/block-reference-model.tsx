@@ -142,7 +142,7 @@ function extractContentInBlockReference(
 }
 
 function getBlock(id: number, contents: readonly Nullable<BaseContent>[]) {
-  return contents.find((c): c is BlockContent => !!c && isBlockContent(c) && c.id === id)
+  return contents.find((c, i): c is BlockContent => !!c && isBlockContent(c) && i === id)
 }
 
 function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly Nullable<BaseContent>[]) {

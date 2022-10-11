@@ -20,8 +20,8 @@ export function useWheelZoom<T extends HTMLElement>(
       return
     }
     const wheelHandler = (e: WheelEvent) => {
-      e.preventDefault()
       if (e.ctrlKey) {
+        e.preventDefault()
         setScale((s) => {
           const newScale = Math.min(Math.max(min, s * Math.exp(-e.deltaY / 100)), max)
           if (s !== newScale) {

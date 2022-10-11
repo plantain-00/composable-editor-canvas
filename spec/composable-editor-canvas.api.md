@@ -780,7 +780,7 @@ export function ObjectArrayEditor(props: ArrayProps & {
 
 // @public (undocumented)
 export function ObjectEditor(props: {
-    properties: Record<string, JSX.Element>;
+    properties: Record<string, JSX.Element | JSX.Element[]>;
     inline?: boolean;
 }): JSX.Element;
 

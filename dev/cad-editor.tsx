@@ -20,8 +20,8 @@ import { arcModel } from './models/arc-model'
 import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
 import { textModel } from './models/text-model'
-import { blockModel } from './models/block-model'
-import { blockReferenceModel } from './models/block-reference-model'
+import { blockModel, isBlockContent, iterateAllContents } from './models/block-model'
+import { blockReferenceModel, isBlockReferenceContent } from './models/block-reference-model'
 import { createBlockCommand } from './commands/create-block'
 import { createBlockReferenceCommand } from './commands/create-block-reference'
 import { startEditBlockCommand } from './commands/start-edit-block'
@@ -43,11 +43,11 @@ import { radialDimensionModel } from './models/radial-dimension-model'
 import { createRadialDimensionCommand } from './commands/create-radial-dimension'
 import { createLinearDimensionCommand } from './commands/create-linear-dimension'
 import { linearDimensionModel } from './models/linear-dimension-model'
-import { groupModel } from './models/group-model'
+import { groupModel, isGroupContent } from './models/group-model'
 import { createGroupCommand } from './commands/create-group'
 import RTree from 'rtree'
 import { fillCommand } from './commands/fill'
-import { radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
+import { isRadialDimensionReferenceContent, radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
 import { createTextCommand } from './commands/create-text'
 import { imageModel } from './models/image-model'
 import { createImageCommand } from './commands/create-image'
@@ -440,15 +440,33 @@ export const CADEditor = React.forwardRef((props: {
     },
     compress() {
       setState(draft => {
-        return draft.filter(d => {
-          if (!d) {
-            return false
+        const newIndexes: (number | undefined)[] = []
+        let validContentCount = 0
+        const invalidContentsIndex: number[] = []
+        const contentIsValid = (d: Nullable<BaseContent>): d is BaseContent => !!d && ((!isLineContent(d) && !isPolyLineContent(d)) || d.points.length > 1)
+        draft.forEach((d, i) => {
+          if (contentIsValid(d)) {
+            newIndexes.push(validContentCount)
+            if (isBlockContent(d) || isGroupContent(d)) {
+              d.contents = d.contents.filter(c => contentIsValid(c))
+            }
+            validContentCount++
+          } else {
+            newIndexes.push(undefined)
+            invalidContentsIndex.unshift(i)
           }
-          if (isLineContent(d) || isPolyLineContent(d)) {
-            return d.points.length > 1
-          }
-          return true
         })
+        invalidContentsIndex.forEach(i => {
+          draft.splice(i, 1)
+        })
+        for (const content of iterateAllContents(draft)) {
+          if (isBlockReferenceContent(content) || isRadialDimensionReferenceContent(content)) {
+            const newIndex = newIndexes[content.refId]
+            if (newIndex !== undefined) {
+              content.refId = newIndex
+            }
+          }
+        }
       })
     },
   }), [applyPatchFromOtherOperators])
@@ -650,22 +668,40 @@ export const CADEditor = React.forwardRef((props: {
   }
   let panel: JSX.Element | undefined
   if (props.panelVisible && selectedContents.length > 0) {
-    const target = selectedContents[0]
-    const propertyPanel = getModel(target.content.type)?.propertyPanel?.(target.content, update => {
+    const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
+    const types = new Set<string>()
+    const contentsUpdater = (update: (content: BaseContent) => void) => {
       const [, ...patches] = produceWithPatches(editingContent, (draft) => {
-        const content = getContentByIndex(draft, target.path)
-        if (content) {
-          update(content)
-        }
+        selectedContents.forEach(target => {
+          const content = getContentByIndex(draft, target.path)
+          if (content) {
+            update(content)
+          }
+        })
       })
       applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
+    }
+    selectedContents.forEach(target => {
+      types.add(target.content.type)
+      const propertyPanel = getModel(target.content.type)?.propertyPanel?.(target.content, contentsUpdater)
+      if (propertyPanel) {
+        Object.entries(propertyPanel).forEach(([field, value]) => {
+          const element = propertyPanels[field]
+          if (Array.isArray(element)) {
+            element.push(value)
+          } else if (element) {
+            propertyPanels[field] = [element, value]
+          } else {
+            propertyPanels[field] = value
+          }
+        })
+      }
     })
     panel = (
-      <div onMouseMove={e => e.stopPropagation()} style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
-        {target.content.type}
-        {propertyPanel && <ObjectEditor
-          properties={propertyPanel}
-          inline
+      <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
+        {Array.from(types).join(',')}
+        {propertyPanels && <ObjectEditor
+          properties={propertyPanels}
         />}
       </div>
     )
@@ -674,7 +710,7 @@ export const CADEditor = React.forwardRef((props: {
     console.info(Date.now() - now, searchResult.length)
   }
 
-  return (
+  const main = (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
       <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
         {rtree && <MemoizedRenderer
@@ -698,7 +734,6 @@ export const CADEditor = React.forwardRef((props: {
         />}
         {minimap}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
-        {panel}
         {commandMasks}
         {!snapOffsetActive && selectionInput}
         {!readOnly && !snapOffsetActive && commandInputs}
@@ -707,6 +742,12 @@ export const CADEditor = React.forwardRef((props: {
       {dragSelectMask}
       {moveCanvasMask}
     </div>
+  )
+  return (
+    <>
+      {main}
+      {panel}
+    </>
   )
 })
 

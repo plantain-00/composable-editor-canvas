@@ -8,6 +8,7 @@ export type LinearDimensionContent = StrokeBaseContent<'linear dimension'> & Lin
 
 export const linearDimensionModel: Model<LinearDimensionContent> = {
   type: 'linear dimension',
+  subTypes: ['stroke'],
   move(content, offset) {
     content.p1.x += offset.x
     content.p1.y += offset.y
@@ -97,7 +98,7 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
       </>,
       fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontSize = v } })} />,
       fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontFamily = v } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isLinearDimensionContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }

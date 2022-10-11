@@ -31,12 +31,10 @@ export const pluginScripts = [
   const React = ctx.React;
   return {
     type: "ring",
+    subTypes: ["stroke", "fill"],
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
-    },
-    fill(content, color) {
-      content.fillColor = color;
     },
     render({ content, target, color, strokeWidth }) {
       const colorField = content.fillColor !== void 0 ? "fillColor" : "strokeColor";
@@ -110,8 +108,8 @@ export const pluginScripts = [
             }
           })
         }),
-        ...ctx.getStrokeContentPropertyPanel(content, update, isRingContent),
-        ...ctx.getFillContentPropertyPanel(content, update, isRingContent)
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update)
       };
     }
   };
@@ -195,12 +193,10 @@ export function getCommand(ctx) {
   const React = ctx.React;
   return {
     type: "star",
+    subTypes: ["stroke", "fill"],
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
-    },
-    fill(content, color) {
-      content.fillColor = color;
     },
     render({ content, target, color, strokeWidth }) {
       const colorField = content.fillColor !== void 0 ? "fillColor" : "strokeColor";
@@ -279,8 +275,8 @@ export function getCommand(ctx) {
             }
           })
         }),
-        ...ctx.getStrokeContentPropertyPanel(content, update, isStarContent),
-        ...ctx.getFillContentPropertyPanel(content, update, isStarContent)
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update)
       };
     }
   };

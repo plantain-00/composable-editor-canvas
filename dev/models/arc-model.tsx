@@ -1,18 +1,17 @@
 import React from 'react'
 import { Arc, arcToPolyline, BooleanEditor, dashedPolylineToLines, equals, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolylineLines, normalizeAngleInRange, normalizeAngleRange, NumberEditor, rotatePositionByCenter } from '../../src'
+import { circleOrArcIsReferenced, getCircleOrArcIndex } from './circle-model'
 import { angleDelta } from './ellipse-model'
 import { LineContent } from './line-model'
 import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
-import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
-export type ArcContent = StrokeBaseContent<'arc'> & Arc & {
-  id?: number
-}
+export type ArcContent = StrokeBaseContent<'arc'> & Arc
 
 export const arcModel: Model<ArcContent> = {
   type: 'arc',
+  subTypes: ['stroke'],
   deletable(content, contents) {
-    return !contents.some((c) => c && isRadialDimensionReferenceContent(c) && c.refId === content.id)
+    return !circleOrArcIsReferenced(getCircleOrArcIndex(content, contents), contents)
   },
   move(content, offset) {
     content.x += offset.x
@@ -178,7 +177,7 @@ export const arcModel: Model<ArcContent> = {
       startAngle: <NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.startAngle = v } })} />,
       endAngle: <NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.endAngle = v } })} />,
       counterclockwise: <BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
-      ...getStrokeContentPropertyPanel(content, update, isArcContent),
+      ...getStrokeContentPropertyPanel(content, update),
     }
   },
 }
