@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, getItemByPath } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
 import { isLineContent, LineContent, lineModel } from './models/line-model'
@@ -157,15 +157,18 @@ export const CADEditor = React.forwardRef((props: {
     onChange({ patches, oldState, newState }) {
       const newContents = new Set<BaseContent>()
       const removedContents = new Set<BaseContent>()
+      patches = trimPatchPath(patches)
       for (const patch of patches) {
+        // type-coverage:ignore-next-line
+        const index = patch.path[0] as number
         if (patch.op !== 'remove' || patch.path.length > 1) {
-          const newContent = getItemByPath<Nullable<BaseContent>>(newState, patch.path)
+          const newContent = getContentByPath(newState)[index]
           if (newContent) {
             newContents.add(newContent)
           }
         }
         if (patch.op !== 'add' || patch.path.length > 1) {
-          const oldContent = getItemByPath<Nullable<BaseContent>>(oldState, patch.path)
+          const oldContent = getContentByPath(oldState)[index]
           if (oldContent) {
             removedContents.add(oldContent)
           }
@@ -198,7 +201,7 @@ export const CADEditor = React.forwardRef((props: {
     },
   })
   const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
-  const { editingContent, getContentByPath, setEditingContentPath, prependPatchPath } = usePartialEdit(state, {
+  const { editingContent, trimPatchPath, getContentByPath, setEditingContentPath, prependPatchPath } = usePartialEdit(state, {
     onEditingContentPathChange(contents) {
       rebuildRTree(contents)
     }

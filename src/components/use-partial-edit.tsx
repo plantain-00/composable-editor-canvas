@@ -17,6 +17,7 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
       setEditingContentPath(path)
     },
     prependPatchPath: (patches: Patch[]) => prependPatchPath(patches, editingContentPath),
+    trimPatchPath: (patches: Patch[]) => trimPatchPath(patches, editingContentPath),
     getContentByPath<V>(content: V) {
       return getByPath(content, editingContentPath)
     },
@@ -29,6 +30,13 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
 export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
   if (path && path.length > 0) {
     return patches.map((p) => ({ ...p, path: [...path, ...p.path] }))
+  }
+  return patches
+}
+
+function trimPatchPath(patches: Patch[], path?: SelectPath): Patch[] {
+  if (path && path.length > 0) {
+    return patches.map((p) => ({ ...p, path: p.path.slice(path.length) }))
   }
   return patches
 }
