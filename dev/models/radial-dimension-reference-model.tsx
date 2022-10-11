@@ -3,16 +3,16 @@ import { BooleanEditor, getRadialDimensionGeometries, getTwoPointsDistance, Null
 import { ArcContent, isArcContent } from "./arc-model"
 import { CircleContent, isCircleContent } from "./circle-model"
 import { LineContent } from "./line-model"
-import { Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, Geometries, getStrokeContentPropertyPanel } from "./model"
+import { Model, StrokeFields, getEditPointsFromCache, BaseContent, Geometries, getStrokeContentPropertyPanel, strokeModel } from "./model"
 import { dimensionStyle, getTextPosition } from "./radial-dimension-model"
 
-export type RadialDimensionReferenceContent = StrokeBaseContent<'radial dimension reference'> & RadialDimension & {
+export type RadialDimensionReferenceContent = BaseContent<'radial dimension reference'> & StrokeFields & RadialDimension & {
   refId: number
 }
 
 export const radialDimensionReferenceModel: Model<RadialDimensionReferenceContent> = {
   type: 'radial dimension reference',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     content.position.x += offset.x
     content.position.y += offset.y
@@ -41,12 +41,6 @@ export const radialDimensionReferenceModel: Model<RadialDimensionReferenceConten
     }
 
     return target.renderGroup(children)
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content, contents) {
     return getEditPointsFromCache(content, () => {

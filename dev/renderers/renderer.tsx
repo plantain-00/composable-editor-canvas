@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, getContentByIndex, getModel } from "../models/model"
+import { BaseContent, getContentByIndex, getContentColor, getModel, getStrokeWidth } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -96,11 +96,7 @@ export function Renderer(props: {
         if (!content) {
           return
         }
-        const model = getModel(content.type)
-        if (!model) {
-          return
-        }
-        renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, model.getDefaultStrokeWidth?.(content) ?? 1)
+        renderContent(content, getContentColor(content), getStrokeWidth(content))
       })
       return children
     })
@@ -112,11 +108,7 @@ export function Renderer(props: {
       if (!visibleContents.has(content)) {
         return
       }
-      const model = getModel(content.type)
-      if (!model) {
-        return
-      }
-      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, model.getDefaultStrokeWidth?.(content) ?? 1)
+      renderContent(content, getContentColor(content), getStrokeWidth(content))
     })
   }
 
@@ -147,14 +139,14 @@ export function Renderer(props: {
     for (const index of (props.hovering || [])) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        renderContent(content, 0x00ff00, (getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1) + 1)
+        renderContent(content, 0x00ff00, getStrokeWidth(content) + 1)
       }
     }
 
     for (const index of selected) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        const strokeWidth = getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1
+        const strokeWidth = getStrokeWidth(content)
         renderContent(content, 0xff0000, strokeWidth + 1)
         const RenderIfSelected = getModel(content.type)?.renderIfSelected
         if (RenderIfSelected) {
@@ -165,11 +157,7 @@ export function Renderer(props: {
     }
 
     props.assistentContents?.forEach((content) => {
-      const model = getModel(content.type)
-      if (!model) {
-        return
-      }
-      renderContent(content, model.getDefaultColor?.(content) ?? 0x000000, getModel(content.type)?.getDefaultStrokeWidth?.(content) ?? 1)
+      renderContent(content, getContentColor(content), getStrokeWidth(content))
     })
   }
 

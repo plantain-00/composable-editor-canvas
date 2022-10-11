@@ -2,13 +2,14 @@ import React from 'react'
 import { BooleanEditor, dashedPolylineToLines, Ellipse, ellipseToPolygon, getEllipseAngle, getPointsBounding, getResizeCursor, getSymmetryPoint, getTwoPointsDistance, iteratePolygonLines, NumberEditor, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { EllipseArcContent } from './ellipse-arc-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel, strokeModel, fillModel, angleDelta } from './model'
 
-export type EllipseContent = StrokeBaseContent<'ellipse'> & FillFields & Ellipse
+export type EllipseContent = BaseContent<'ellipse'> & StrokeFields & FillFields & Ellipse
 
 export const ellipseModel: Model<EllipseContent> = {
   type: 'ellipse',
-  subTypes: ['stroke', 'fill'],
+  ...strokeModel,
+  ...fillModel,
   move(content, offset) {
     content.cx += offset.x
     content.cy += offset.y
@@ -51,12 +52,6 @@ export const ellipseModel: Model<EllipseContent> = {
   },
   getOperatorRenderPosition(content) {
     return { x: content.cx, y: content.cy }
-  },
-  getDefaultColor(content) {
-    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {
@@ -183,8 +178,6 @@ export function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
 export function rotatePositionByEllipseCenter(p: Position, content: Omit<EllipseContent, "type">) {
   return rotatePositionByCenter(p, { x: content.cx, y: content.cy }, -(content.angle ?? 0))
 }
-
-export const angleDelta = 5
 
 export function isEllipseContent(content: BaseContent): content is EllipseContent {
   return content.type === 'ellipse'

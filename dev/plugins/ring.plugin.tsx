@@ -3,7 +3,7 @@ import type * as core from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-type RingContent = model.StrokeBaseContent<'ring'> & model.FillFields & core.Position & {
+type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model.FillFields & core.Position & {
   outerRadius: number
   innerRadius: number
 }
@@ -40,7 +40,8 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   const React = ctx.React
   return {
     type: 'ring',
-    subTypes: ['stroke', 'fill'],
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
@@ -55,12 +56,6 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
         return target.renderPath([regions[0].points, regions[1].points], { [colorField]: color, strokeWidth })
       }
       return target.renderGroup(renderingLines.map(r => target.renderPolyline(r, { [colorField]: color, strokeWidth })))
-    },
-    getDefaultColor(content) {
-      return content.fillColor !== undefined ? content.fillColor : content.strokeColor
-    },
-    getDefaultStrokeWidth(content) {
-      return content.strokeWidth
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {

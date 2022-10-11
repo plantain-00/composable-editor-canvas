@@ -1,14 +1,14 @@
 import React from 'react'
 import { EllipseArc, getEllipseAngle, equals, normalizeAngleInRange, normalizeAngleRange, rotatePositionByCenter, getResizeCursor, getPointsBounding, iteratePolylineLines, ellipseArcToPolyline, dashedPolylineToLines, NumberEditor, BooleanEditor } from '../../src'
-import { angleDelta, ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
+import { ellipseModel, rotatePositionByEllipseCenter } from './ellipse-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, strokeModel, angleDelta } from './model'
 
-export type EllipseArcContent = StrokeBaseContent<'ellipse arc'> & EllipseArc
+export type EllipseArcContent = BaseContent<'ellipse arc'> & StrokeFields & EllipseArc
 
 export const ellipseArcModel: Model<EllipseArcContent> = {
   type: 'ellipse arc',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move: ellipseModel.move,
   rotate: ellipseModel.rotate,
   mirror: ellipseModel.mirror,
@@ -59,12 +59,6 @@ export const ellipseArcModel: Model<EllipseArcContent> = {
   getOperatorRenderPosition(content) {
     const { points } = getEllipseArcGeometries(content)
     return points[0]
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

@@ -1,15 +1,16 @@
 import React from 'react'
 import { ArrayEditor, dashedPolylineToLines, getArrayEditorProps, getPointsBounding, getSymmetryPoint, iteratePolygonLines, NumberEditor, ObjectEditor, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
 import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel, strokeModel, fillModel } from './model'
 
-export type PolygonContent = StrokeBaseContent<'polygon'> & FillFields & {
+export type PolygonContent = BaseContent<'polygon'> & StrokeFields & FillFields & {
   points: Position[]
 }
 
 export const polygonModel: Model<PolygonContent> = {
   type: 'polygon',
-  subTypes: ['stroke', 'fill'],
+  ...strokeModel,
+  ...fillModel,
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -39,12 +40,6 @@ export const polygonModel: Model<PolygonContent> = {
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
-  },
-  getDefaultColor(content) {
-    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isPolygonContent, true) }))

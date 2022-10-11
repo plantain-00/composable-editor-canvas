@@ -11,7 +11,7 @@ export const textModel: Model<TextContent> = {
     content.x += offset.x
     content.y += offset.y
   },
-  getDefaultColor(content) {
+  getColor(content) {
     return content.color
   },
   getEditPoints(content) {

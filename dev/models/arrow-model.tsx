@@ -1,17 +1,17 @@
 import React from "react"
 import { dashedPolylineToLines, getPointByLengthAndDirection, getPointsBounding, iteratePolygonLines, iteratePolylineLines, NumberEditor, ObjectEditor, Position, rotatePositionByCenter } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
+import { getGeometriesFromCache, Model, StrokeFields, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel, strokeModel } from "./model"
 import { dimensionStyle } from "./radial-dimension-model"
 
-export type ArrowContent = StrokeBaseContent<'arrow'> & {
+export type ArrowContent = BaseContent<'arrow'> & StrokeFields & {
   p1: Position
   p2: Position
 }
 
 export const arrowModel: Model<ArrowContent> = {
   type: 'arrow',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     content.p1.x += offset.x
     content.p1.y += offset.y
@@ -30,12 +30,6 @@ export const arrowModel: Model<ArrowContent> = {
       }
     }
     return target.renderGroup(children)
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

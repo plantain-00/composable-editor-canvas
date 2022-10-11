@@ -2,16 +2,16 @@ import bspline from 'b-spline'
 import React from 'react'
 import { ArrayEditor, BooleanEditor, dashedPolylineToLines, getArrayEditorProps, getBezierCurvePoints, getBezierSplineControlPointsOfPoints, getPointsBounding, getSymmetryPoint, iteratePolylineLines, NumberEditor, ObjectEditor, Position, rotatePositionByCenter } from '../../src'
 import { getPolylineEditPoints } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, strokeModel } from './model'
 
-export type SplineContent = StrokeBaseContent<'spline'> & {
+export type SplineContent = BaseContent<'spline'> & StrokeFields & {
   points: Position[]
   fitting?: boolean
 }
 
 export const splineModel: Model<SplineContent> = {
   type: 'spline',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -33,12 +33,6 @@ export const splineModel: Model<SplineContent> = {
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isSplineContent, false, true) }))

@@ -1,14 +1,14 @@
 import React from "react"
 import { BooleanEditor, getLinearDimensionGeometries, getLinearDimensionTextPosition, LinearDimension, NumberEditor, ObjectEditor, Position, Size, StringEditor, WeakmapCache } from "../../src"
 import { LineContent } from "./line-model"
-import { getGeometriesFromCache, Model, StrokeBaseContent, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel } from "./model"
+import { getGeometriesFromCache, Model, StrokeFields, getEditPointsFromCache, BaseContent, getStrokeContentPropertyPanel, strokeModel } from "./model"
 import { dimensionStyle, getTextSizeFromCache } from "./radial-dimension-model"
 
-export type LinearDimensionContent = StrokeBaseContent<'linear dimension'> & LinearDimension
+export type LinearDimensionContent = BaseContent<'linear dimension'> & StrokeFields & LinearDimension
 
 export const linearDimensionModel: Model<LinearDimensionContent> = {
   type: 'linear dimension',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     content.p1.x += offset.x
     content.p1.y += offset.y
@@ -39,12 +39,6 @@ export const linearDimensionModel: Model<LinearDimensionContent> = {
       }
     ))
     return target.renderGroup(children)
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

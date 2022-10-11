@@ -3,14 +3,15 @@ import { Circle, getSymmetryPoint, getTwoPointsDistance, Nullable, NumberEditor,
 import { ArcContent, getArcGeometries, isArcContent } from './arc-model'
 import { iterateAllContents } from './block-model'
 import { LineContent } from './line-model'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel, strokeModel, fillModel } from './model'
 import { isRadialDimensionReferenceContent } from './radial-dimension-reference-model'
 
-export type CircleContent = StrokeBaseContent<'circle'> & FillFields & Circle
+export type CircleContent = BaseContent<'circle'> & StrokeFields & FillFields & Circle
 
 export const circleModel: Model<CircleContent> = {
   type: 'circle',
-  subTypes: ['fill', 'stroke'],
+  ...strokeModel,
+  ...fillModel,
   deletable(content, contents) {
     return !circleOrArcIsReferenced(getCircleOrArcIndex(content, contents), contents)
   },
@@ -54,12 +55,6 @@ export const circleModel: Model<CircleContent> = {
   },
   getOperatorRenderPosition(content) {
     return content
-  },
-  getDefaultColor(content) {
-    return content.fillColor !== undefined ? content.fillColor : content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => {

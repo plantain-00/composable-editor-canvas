@@ -6,7 +6,7 @@ export interface BaseContent<T extends string = string> {
   type: T
 }
 
-export interface StrokeBaseContent<T extends string = string> extends BaseContent<T> {
+export interface StrokeFields {
   dashArray?: number[]
   strokeColor?: number
   strokeWidth?: number
@@ -16,17 +16,27 @@ export interface FillFields {
   fillColor?: number
 }
 
-export interface Model<T> {
+type StrokeContent<T extends string = string> = BaseContent<T> & StrokeFields
+
+type FillContent<T extends string = string> = BaseContent<T> & FillFields
+
+export const strokeModel = {
+  isStroke: true,
+}
+
+export const fillModel = {
+  isFill: true,
+}
+
+export type Model<T> = Partial<typeof strokeModel & typeof fillModel> & {
   type: string
-  subTypes?: ('stroke' | 'fill')[]
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   deletable?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean
-  getDefaultColor?(content: Omit<T, 'type'>): number | undefined
-  getDefaultStrokeWidth?(content: Omit<T, 'type'>): number | undefined
+  getColor?(content: Omit<T, 'type'>): number
   render?<V>(props: {
     content: Omit<T, 'type'>
     color: number
@@ -162,7 +172,7 @@ export function zoomContentsToFit(
 }
 
 export function getStrokeContentPropertyPanel(
-  content: Omit<StrokeBaseContent, 'type'>,
+  content: Omit<StrokeContent, 'type'>,
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
   return {
@@ -197,16 +207,27 @@ export function getFillContentPropertyPanel(
   }
 }
 
-interface FillContent extends FillFields {
-  type: string
-}
-
-export function isStrokeContent(content: BaseContent): content is StrokeBaseContent {
-  return !!getModel(content.type)?.subTypes?.includes?.('stroke')
+export function isStrokeContent(content: BaseContent): content is StrokeContent {
+  return !!getModel(content.type)?.isStroke
 }
 
 export function isFillContent(content: BaseContent): content is FillContent {
-  return !!getModel(content.type)?.subTypes?.includes?.('fill')
+  return !!getModel(content.type)?.isFill
 }
 
-export { angleDelta } from './ellipse-model'
+export function getStrokeWidth(content: BaseContent) {
+  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? 1
+}
+
+export function getContentColor(content: BaseContent, defaultColor = 0x000000) {
+  const model = getModel(content.type)
+  if (model?.getColor) {
+    return model.getColor(content)
+  }
+  if (isFillContent(content) && content.fillColor !== undefined) {
+    return content.fillColor
+  }
+  return (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultColor
+}
+
+export const angleDelta = 5

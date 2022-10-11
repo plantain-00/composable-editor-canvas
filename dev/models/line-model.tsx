@@ -1,14 +1,14 @@
 import React from 'react'
 import { isSamePoint, getSymmetryPoint, getTwoPointsDistance, pointIsOnLineSegment, Position, rotatePositionByCenter, pointIsOnLine, getPointsBounding, iteratePolylineLines, dashedPolylineToLines, ArrayEditor, getArrayEditorProps, ObjectEditor, NumberEditor } from '../../src'
-import { StrokeBaseContent, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel } from './model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, strokeModel } from './model'
 
-export type LineContent = StrokeBaseContent<'line' | 'polyline'> & {
+export type LineContent = BaseContent<'line' | 'polyline'> & StrokeFields & {
   points: Position[]
 }
 
 export const lineModel: Model<LineContent> = {
   type: 'line',
-  subTypes: ['stroke'],
+  ...strokeModel,
   move(content, offset) {
     for (const point of content.points) {
       point.x += offset.x
@@ -30,12 +30,6 @@ export const lineModel: Model<LineContent> = {
   },
   getOperatorRenderPosition(content) {
     return content.points[0]
-  },
-  getDefaultColor(content) {
-    return content.strokeColor
-  },
-  getDefaultStrokeWidth(content) {
-    return content.strokeWidth
   },
   getEditPoints(content) {
     return getEditPointsFromCache(content, () => ({ editPoints: getPolylineEditPoints(content, isLineContent) }))
