@@ -2,18 +2,14 @@ import React from 'react'
 import { useWindowSize, SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable } from '../src'
 import { Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { BaseContent, registerModel } from './models/model'
+import { BaseContent } from './models/model'
 import { CircleContent } from './models/circle-model'
 import { RectContent } from './models/rect-model'
-import { Command, registerCommand } from './commands/command'
 import { getAllRendererTypes } from './renderers/renderer'
 import { EllipseContent } from './models/ellipse-model'
 import { OffsetXContext } from './story-app'
 
-import * as core from '../src'
-import * as model from './models/model'
-import { CADEditor, CADEditorRef } from './cad-editor'
-import { pluginScripts } from './plugins/variables'
+import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -22,34 +18,8 @@ const key = 'combination-2.json'
 export default () => {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
-  const [pluginCommandNames, setPluginCommandNames] = React.useState<string[]>([])
-  const [pluginLoaded, setPluginLoaded] = React.useState(false)
+  const { pluginLoaded, pluginCommandNames } = usePlugins()
   const [panelVisible, setPanelVisible] = React.useState(true)
-
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const plugins: { getModel?: (ctx: unknown) => model.Model<unknown>, getCommand?: (ctx: unknown) => Command }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-        const ctx = { ...core, ...model, React }
-        const commandNames = [...pluginCommandNames]
-        for (const plugin of plugins) {
-          if (plugin.getModel) {
-            registerModel(plugin.getModel(ctx))
-          }
-          if (plugin.getCommand) {
-            const command = plugin.getCommand(ctx)
-            registerCommand(command)
-            commandNames.push(command.name)
-          }
-        }
-        setPluginCommandNames(commandNames)
-        setPluginLoaded(true)
-      } catch (e) {
-        console.info(e)
-        setPluginLoaded(true)
-      }
-    })()
-  }, [])
 
   React.useEffect(() => {
     (async () => {
@@ -182,7 +152,7 @@ export default () => {
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image', 'create arrow', ...pluginCommandNames].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && ['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create radial dimension', 'create linear dimension', 'create group', 'fill', 'create text', 'create image', 'create arrow', ...pluginCommandNames].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit block</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}

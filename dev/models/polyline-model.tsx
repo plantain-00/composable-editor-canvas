@@ -1,5 +1,5 @@
-import { BaseContent, getEditPointsFromCache, getStrokeContentPropertyPanel, Model } from './model'
-import { getPolylineEditPoints, getPolylineGeometries, LineContent, lineModel } from './line-model'
+import { BaseContent, getEditPointsFromCache, getPolylineEditPoints, getStrokeContentPropertyPanel, Model } from './model'
+import { getPolylineGeometries, LineContent, lineModel } from './line-model'
 import React from 'react'
 import { ArrayEditor, getArrayEditorProps, NumberEditor, ObjectEditor, Position } from '../../src'
 
