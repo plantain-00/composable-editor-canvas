@@ -1,7 +1,7 @@
 import React from 'react'
 import { ArrayEditor, dashedPolylineToLines, getArrayEditorProps, getPointsBounding, getSymmetryPoint, iteratePolygonLines, NumberEditor, ObjectEditor, polygonToPolyline, Position, rotatePositionByCenter } from '../../src'
-import { breakPolyline, getPolylineEditPoints, LineContent } from './line-model'
-import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel, strokeModel, fillModel } from './model'
+import { breakPolyline, LineContent } from './line-model'
+import { StrokeFields, getGeometriesFromCache, Model, getSnapPointsFromCache, BaseContent, getEditPointsFromCache, FillFields, getStrokeContentPropertyPanel, getFillContentPropertyPanel, strokeModel, fillModel, getPolylineEditPoints } from './model'
 
 export type PolygonContent = BaseContent<'polygon'> & StrokeFields & FillFields & {
   points: Position[]

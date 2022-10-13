@@ -59,6 +59,7 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
+        const { points } = getStarGeometriesFromCache(content)
         return {
           editPoints: [
             {
@@ -73,6 +74,22 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
               },
             },
+            ...points.map((p, i) => ({
+              x: p.x,
+              y: p.y,
+              cursor: 'move',
+              update(c, { cursor, start, scale }) {
+                if (!isStarContent(c)) {
+                  return
+                }
+                if (i % 2 === 0) {
+                  c.outerRadius = ctx.getTwoPointsDistance(cursor, c)
+                } else {
+                  c.innerRadius = ctx.getTwoPointsDistance(cursor, c)
+                }
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
+              },
+            } as core.EditPoint<model.BaseContent>))
           ]
         }
       })

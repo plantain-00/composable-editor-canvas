@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrayEditor, BooleanEditor, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, iterateIntersectionPoints, Nullable, NumberEditor, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, isSamePoint, iterateIntersectionPoints, Nullable, NumberEditor, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { LineContent } from './line-model'
 
 export interface BaseContent<T extends string = string> {
@@ -231,3 +231,68 @@ export function getContentColor(content: BaseContent, defaultColor = 0x000000) {
 }
 
 export const angleDelta = 5
+
+export function getPolylineEditPoints(
+  content: { points: Position[] },
+  isPolyLineContent: (content: BaseContent<string>) => content is { type: string, points: Position[] },
+  isPolygon?: boolean,
+  midpointDisabled?: boolean,
+) {
+  const points = content.points
+  const isClosed = !isPolygon &&
+    points.length > 2 &&
+    isSamePoint(points[0], points[points.length - 1])
+
+  const positions: (Position & { pointIndexes: number[] })[] = []
+  points.forEach((point, i) => {
+    if (isPolygon || i !== points.length - 1 || !isClosed) {
+      positions.push({
+        pointIndexes: [i],
+        x: point.x,
+        y: point.y,
+      })
+    }
+    if (!midpointDisabled && i !== points.length - 1) {
+      const nextPoint = points[i + 1]
+      positions.push({
+        pointIndexes: [i, i + 1],
+        x: (point.x + nextPoint.x) / 2,
+        y: (point.y + nextPoint.y) / 2,
+      })
+    }
+    if (isPolygon && i === points.length - 1) {
+      const nextPoint = points[0]
+      positions.push({
+        pointIndexes: [points.length - 1, 0],
+        x: (point.x + nextPoint.x) / 2,
+        y: (point.y + nextPoint.y) / 2,
+      })
+    }
+  })
+  if (isClosed) {
+    for (const position of positions) {
+      if (position.pointIndexes.includes(0)) {
+        position.pointIndexes.push(points.length - 1)
+      } else if (position.pointIndexes.includes(points.length - 1)) {
+        position.pointIndexes.push(0)
+      }
+    }
+  }
+  return positions.map((p) => ({
+    x: p.x,
+    y: p.y,
+    cursor: 'move',
+    update(c: BaseContent, { cursor, start, scale }: { cursor: Position, start: Position, scale: number }) {
+      if (!isPolyLineContent(c)) {
+        return
+      }
+      const offsetX = cursor.x - start.x
+      const offsetY = cursor.y - start.y
+      for (const pointIndex of p.pointIndexes) {
+        c.points[pointIndex].x += offsetX
+        c.points[pointIndex].y += offsetY
+      }
+      return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+    },
+  }))
+}

@@ -6,7 +6,7 @@ import { isLineContent, LineContent, lineModel } from './models/line-model'
 import { CircleContent, circleModel } from './models/circle-model'
 import { isPolyLineContent, polylineModel } from './models/polyline-model'
 import { RectContent, rectModel } from './models/rect-model'
-import { getCommand, registerCommand, useCommands } from './commands/command'
+import { Command, getCommand, registerCommand, useCommands } from './commands/command'
 import { moveCommand } from './commands/move'
 import { rotateCommand } from './commands/rotate'
 import { mirrorCommand } from './commands/mirror'
@@ -17,7 +17,6 @@ import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } f
 import { polygonModel } from './models/polygon-model'
 import { ellipseModel } from './models/ellipse-model'
 import { arcModel } from './models/arc-model'
-import { splineModel } from './models/spline-model'
 import { ellipseArcModel } from './models/ellipse-arc-model'
 import { textModel } from './models/text-model'
 import { blockModel, isBlockContent, iterateAllContents } from './models/block-model'
@@ -33,7 +32,6 @@ import { createLineCommand } from './commands/create-line'
 import { createPolylineCommand } from './commands/create-polyline'
 import { createPolygonCommand } from './commands/create-polygon'
 import { createRectCommand } from './commands/create-rect'
-import { createSplineCommand } from './commands/create-spline'
 import { createTangentTangentRadiusCircleCommand } from './commands/create-tangent-tangent-radius-circle'
 import { filletCommand } from './commands/fillet'
 import { chamferCommand } from './commands/chamfer'
@@ -54,6 +52,10 @@ import { createImageCommand } from './commands/create-image'
 import { arrowModel } from './models/arrow-model'
 import { createArrowCommand } from './commands/create-arrow'
 
+import * as core from '../src'
+import * as model from './models/model'
+import { pluginScripts } from './plugins/variables'
+
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
 enablePatches()
@@ -65,7 +67,6 @@ registerModel(rectModel)
 registerModel(polygonModel)
 registerModel(ellipseModel)
 registerModel(arcModel)
-registerModel(splineModel)
 registerModel(ellipseArcModel)
 registerModel(textModel)
 registerModel(blockModel)
@@ -94,7 +95,6 @@ registerCommand(createLineCommand)
 registerCommand(createPolylineCommand)
 registerCommand(createPolygonCommand)
 registerCommand(createRectCommand)
-registerCommand(createSplineCommand)
 registerCommand(createTangentTangentRadiusCircleCommand)
 registerCommand(filletCommand)
 registerCommand(chamferCommand)
@@ -753,6 +753,50 @@ export const CADEditor = React.forwardRef((props: {
     </>
   )
 })
+
+export function usePlugins() {
+  const [pluginCommandNames, setPluginCommandNames] = React.useState<string[]>([])
+  const [pluginLoaded, setPluginLoaded] = React.useState(false)
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const commandNames = await registerPlugins()
+        setPluginCommandNames(commandNames)
+        setPluginLoaded(true)
+      } catch (e) {
+        console.info(e)
+        setPluginLoaded(true)
+      }
+    })()
+  }, [])
+
+  return {
+    pluginCommandNames,
+    pluginLoaded,
+  }
+}
+
+async function registerPlugins() {
+  const plugins: { getModel?: (ctx: unknown) => model.Model<unknown>, getCommand?: (ctx: unknown) => Command }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
+  const ctx = { ...core, ...model, React }
+  const commandNames: string[] = []
+  for (const plugin of plugins) {
+    if (plugin.getModel) {
+      registerModel(plugin.getModel(ctx))
+    }
+    if (plugin.getCommand) {
+      const command = plugin.getCommand(ctx)
+      registerCommand(command)
+      if (command.type) {
+        commandNames.push(...command.type.map(t => t.name))
+      } else {
+        commandNames.push(command.name)
+      }
+    }
+  }
+  return commandNames
+}
 
 function useSnapOffset(enabled: boolean) {
   const [offset, setOffset] = React.useState<Position>()

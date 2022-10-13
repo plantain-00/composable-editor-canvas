@@ -1,7 +1,7 @@
 import React from 'react'
 import { SnapPointType, allSnapTypes, Nullable, useWindowSize } from '../src'
 import { BaseContent } from './models/model'
-import { CADEditor, CADEditorRef } from './cad-editor'
+import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 
 const draftKey = 'composable-editor-canvas-whiteboard'
 
@@ -17,6 +17,10 @@ export const WhiteBoard = () => {
   const [panelVisible, setPanelVisible] = React.useState(true)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
+  const { pluginLoaded, pluginCommandNames } = usePlugins()
+  if (!pluginLoaded) {
+    return null
+  }
   return (
     <div>
       <CADEditor
@@ -48,10 +52,13 @@ export const WhiteBoard = () => {
         ))}
       </div>
       <div style={{ position: 'relative' }}>
-        {['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'spline', 'spline fitting', 'create radial dimension', 'create linear dimension', 'create text', 'create image', 'create arrow'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'create radial dimension', 'create linear dimension', 'create text', 'create image', 'create arrow'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
       </div>
       <div style={{ position: 'relative' }}>
         {['move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+      </div>
+      <div style={{ position: 'relative' }}>
+        {pluginCommandNames.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
       </div>
     </div>
   )

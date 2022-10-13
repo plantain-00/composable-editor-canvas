@@ -1,5 +1,6 @@
 export const pluginScripts = [
-`export function getModel(ctx) {
+`// dev/plugins/regular-polygon.plugin.tsx
+function getModel(ctx) {
   function getRegularPolygonGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0);
@@ -126,7 +127,7 @@ export const pluginScripts = [
 function isRegularPolygonContent(content) {
   return content.type === "regular polygon";
 }
-export function getCommand(ctx) {
+function getCommand(ctx) {
   return {
     name: "create regular polygon",
     useCommand({ onEnd, type }) {
@@ -171,8 +172,13 @@ export function getCommand(ctx) {
     selectCount: 0
   };
 }
+export {
+  getCommand,
+  getModel
+};
 `,
-`export function getModel(ctx) {
+`// dev/plugins/ring.plugin.tsx
+function getModel(ctx) {
   function getRingGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta);
@@ -285,7 +291,7 @@ export function getCommand(ctx) {
 function isRingContent(content) {
   return content.type === "ring";
 }
-export function getCommand(ctx) {
+function getCommand(ctx) {
   return {
     name: "create ring",
     useCommand({ onEnd, type }) {
@@ -329,8 +335,265 @@ export function getCommand(ctx) {
     selectCount: 0
   };
 }
+export {
+  getCommand,
+  getModel
+};
 `,
-`export function getModel(ctx) {
+`var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// node_modules/b-spline/index.js
+var require_b_spline = __commonJS({
+  "node_modules/b-spline/index.js"(exports, module) {
+    function interpolate(t, degree, points, knots, weights, result) {
+      var i, j, s, l;
+      var n = points.length;
+      var d = points[0].length;
+      if (degree < 1)
+        throw new Error("degree must be at least 1 (linear)");
+      if (degree > n - 1)
+        throw new Error("degree must be less than or equal to point count - 1");
+      if (!weights) {
+        weights = [];
+        for (i = 0; i < n; i++) {
+          weights[i] = 1;
+        }
+      }
+      if (!knots) {
+        var knots = [];
+        for (i = 0; i < n + degree + 1; i++) {
+          knots[i] = i;
+        }
+      } else {
+        if (knots.length !== n + degree + 1)
+          throw new Error("bad knot vector length");
+      }
+      var domain = [
+        degree,
+        knots.length - 1 - degree
+      ];
+      var low = knots[domain[0]];
+      var high = knots[domain[1]];
+      t = t * (high - low) + low;
+      if (t < low || t > high)
+        throw new Error("out of bounds");
+      for (s = domain[0]; s < domain[1]; s++) {
+        if (t >= knots[s] && t <= knots[s + 1]) {
+          break;
+        }
+      }
+      var v = [];
+      for (i = 0; i < n; i++) {
+        v[i] = [];
+        for (j = 0; j < d; j++) {
+          v[i][j] = points[i][j] * weights[i];
+        }
+        v[i][d] = weights[i];
+      }
+      var alpha;
+      for (l = 1; l <= degree + 1; l++) {
+        for (i = s; i > s - degree - 1 + l; i--) {
+          alpha = (t - knots[i]) / (knots[i + degree + 1 - l] - knots[i]);
+          for (j = 0; j < d + 1; j++) {
+            v[i][j] = (1 - alpha) * v[i - 1][j] + alpha * v[i][j];
+          }
+        }
+      }
+      var result = result || [];
+      for (i = 0; i < d; i++) {
+        result[i] = v[s][i] / v[s][d];
+      }
+      return result;
+    }
+    module.exports = interpolate;
+  }
+});
+
+// dev/plugins/spline.plugin.tsx
+var import_b_spline = __toESM(require_b_spline());
+function getModel(ctx) {
+  function getSplineGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      const inputPoints = content.points.map((p) => [p.x, p.y]);
+      let points = [];
+      if (inputPoints.length > 2) {
+        if (content.fitting) {
+          const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points);
+          for (let i = 0; i < controlPoints.length; i++) {
+            points.push(
+              content.points[i],
+              ...ctx.getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount)
+            );
+          }
+          points.push(content.points[content.points.length - 1]);
+        } else {
+          const degree = 2;
+          const knots = [];
+          for (let i = 0; i < inputPoints.length + degree + 1; i++) {
+            if (i < degree + 1) {
+              knots.push(0);
+            } else if (i < inputPoints.length) {
+              knots.push(i - degree);
+            } else {
+              knots.push(inputPoints.length - degree);
+            }
+          }
+          for (let t = 0; t <= splineSegmentCount; t++) {
+            const p = (0, import_b_spline.default)(t / splineSegmentCount, degree, inputPoints, knots);
+            points.push({ x: p[0], y: p[1] });
+          }
+        }
+      } else {
+        points = content.points;
+      }
+      return {
+        lines: Array.from(ctx.iteratePolylineLines(points)),
+        points,
+        bounding: ctx.getPointsBounding(points),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "spline",
+    ...ctx.strokeModel,
+    move(content, offset) {
+      for (const point of content.points) {
+        point.x += offset.x;
+        point.y += offset.y;
+      }
+    },
+    rotate(content, center, angle) {
+      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+    },
+    mirror(content, line) {
+      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+    },
+    render({ content, color, target, strokeWidth }) {
+      const { points } = getSplineGeometries(content);
+      return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth });
+    },
+    renderIfSelected({ content, color, target, strokeWidth }) {
+      return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4], strokeWidth });
+    },
+    getOperatorRenderPosition(content) {
+      return content.points[0];
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isSplineContent, false, true) }));
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: "endpoint" })));
+    },
+    getGeometries: getSplineGeometries,
+    propertyPanel(content, update) {
+      return {
+        points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
+          inline: true,
+          ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+            if (isSplineContent(c)) {
+              v(c);
+            }
+          })),
+          items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+                value: f.x,
+                setValue: (v) => update((c) => {
+                  if (isSplineContent(c)) {
+                    c.points[i].x = v;
+                  }
+                })
+              }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+                value: f.y,
+                setValue: (v) => update((c) => {
+                  if (isSplineContent(c)) {
+                    c.points[i].y = v;
+                  }
+                })
+              })
+            }
+          }))
+        }),
+        fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+          value: content.fitting === true,
+          setValue: (v) => update((c) => {
+            if (isSplineContent(c)) {
+              c.fitting = v ? true : void 0;
+            }
+          })
+        }),
+        ...ctx.getStrokeContentPropertyPanel(content, update)
+      };
+    }
+  };
+}
+function isSplineContent(content) {
+  return content.type === "spline";
+}
+var splineSegmentCount = 100;
+function getCommand(ctx) {
+  return {
+    name: "create spline",
+    type: [
+      { name: "spline", hotkey: "SPL" },
+      { name: "spline fitting" }
+    ],
+    useCommand({ onEnd, type, scale }) {
+      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+        type === "spline" || type === "spline fitting",
+        (c) => onEnd({
+          updateContents: (contents) => contents.push({ points: c, type: "spline", fitting: type === "spline fitting" })
+        })
+      );
+      const assistentContents = [];
+      if (line) {
+        assistentContents.push(
+          { points: line, type: "spline", fitting: type === "spline fitting" },
+          { points: line, type: "polyline", dashArray: [4 / scale] }
+        );
+      }
+      return {
+        onStart: onClick,
+        input,
+        onMove,
+        assistentContents,
+        lastPosition
+      };
+    },
+    selectCount: 0
+  };
+}
+export {
+  getCommand,
+  getModel
+};
+`,
+`// dev/plugins/star.plugin.tsx
+function getModel(ctx) {
   function getStarGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0);
@@ -378,6 +641,7 @@ export function getCommand(ctx) {
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
+        const { points } = getStarGeometriesFromCache(content);
         return {
           editPoints: [
             {
@@ -391,7 +655,23 @@ export function getCommand(ctx) {
                 c.y += cursor.y - start.y;
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
-            }
+            },
+            ...points.map((p, i) => ({
+              x: p.x,
+              y: p.y,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isStarContent(c)) {
+                  return;
+                }
+                if (i % 2 === 0) {
+                  c.outerRadius = ctx.getTwoPointsDistance(cursor, c);
+                } else {
+                  c.innerRadius = ctx.getTwoPointsDistance(cursor, c);
+                }
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            }))
           ]
         };
       });
@@ -456,7 +736,7 @@ export function getCommand(ctx) {
 function isStarContent(content) {
   return content.type === "star";
 }
-export function getCommand(ctx) {
+function getCommand(ctx) {
   return {
     name: "create star",
     useCommand({ onEnd, type }) {
@@ -505,5 +785,9 @@ export function getCommand(ctx) {
     selectCount: 0
   };
 }
+export {
+  getCommand,
+  getModel
+};
 `,
 ]

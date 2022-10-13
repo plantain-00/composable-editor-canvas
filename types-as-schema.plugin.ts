@@ -1,20 +1,26 @@
 import { Configuration } from 'types-as-schema'
-import { transformSync } from 'esbuild'
+import { buildSync } from 'esbuild'
 
 const config: Configuration = {
   files: [
     './dev/plugins/*.plugin.tsx',
   ],
   plugins: [
-    (_typeDeclarations, _, sourceFiles) => [
-      {
+    (_typeDeclarations, _, sourceFiles) => {
+      const result = buildSync({
+        format: 'esm',
+        entryPoints: sourceFiles.map(s => s.fileName),
+        write: false,
+        outdir: '.',
+        bundle: true,
+      })
+      return [{
         path: './dev/plugins/variables.ts',
-        content: `export const pluginScripts = [\n` + sourceFiles.map(s => {
-          const result = transformSync(s.text, { loader: 'tsx' })
-          return `\`${result.code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,`
+        content: `export const pluginScripts = [\n` + result.outputFiles.map(s => {
+          return `\`${s.text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,`
         }).join('\n') + '\n]',
-      }
-    ],
+      }]
+    },
   ],
 }
 
