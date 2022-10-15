@@ -17,7 +17,7 @@ export const WhiteBoard = () => {
   const [panelVisible, setPanelVisible] = React.useState(true)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
-  const { pluginLoaded, pluginCommandNames } = usePlugins()
+  const { pluginLoaded, pluginCommandTypes } = usePlugins()
   if (!pluginLoaded) {
     return null
   }
@@ -52,7 +52,7 @@ export const WhiteBoard = () => {
         ))}
       </div>
       <div style={{ position: 'relative' }}>
-        {pluginCommandNames.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {pluginCommandTypes.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })} key={p.name} style={{ borderColor: operation === p.name ? 'red' : undefined }}>{p.name}{p.hotkey ? `(${p.hotkey})` : ''}</button>)}
       </div>
     </div>
   )

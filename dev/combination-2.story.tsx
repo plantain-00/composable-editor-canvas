@@ -17,7 +17,7 @@ const key = 'combination-2.json'
 export default () => {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
-  const { pluginLoaded, pluginCommandNames } = usePlugins()
+  const { pluginLoaded, pluginCommandTypes } = usePlugins()
   const [panelVisible, setPanelVisible] = React.useState(true)
 
   React.useEffect(() => {
@@ -151,7 +151,7 @@ export default () => {
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-        {!readOnly && pluginCommandNames.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        {!readOnly && pluginCommandTypes.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })} key={p.name} style={{ position: 'relative', borderColor: operation === p.name ? 'red' : undefined }}>{p.name}{p.hotkey ? `(${p.hotkey})` : ''}</button>)}
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit container</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
