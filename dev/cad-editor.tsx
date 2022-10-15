@@ -2,7 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, iterateAllContents, registerModel, zoomContentsToFit } from './models/model'
-import { Command, getCommand, registerCommand, useCommands } from './commands/command'
+import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import RTree from 'rtree'
 
@@ -660,14 +660,14 @@ export const CADEditor = React.forwardRef((props: {
 })
 
 export function usePlugins() {
-  const [pluginCommandNames, setPluginCommandNames] = React.useState<string[]>([])
+  const [pluginCommandTypes, setPluginCommandTypes] = React.useState<CommandType[]>([])
   const [pluginLoaded, setPluginLoaded] = React.useState(false)
 
   React.useEffect(() => {
     (async () => {
       try {
         const commandNames = await registerPlugins()
-        setPluginCommandNames(commandNames)
+        setPluginCommandTypes(commandNames)
         setPluginLoaded(true)
       } catch (e) {
         console.info(e)
@@ -677,7 +677,7 @@ export function usePlugins() {
   }, [])
 
   return {
-    pluginCommandNames,
+    pluginCommandTypes,
     pluginLoaded,
   }
 }
@@ -685,7 +685,7 @@ export function usePlugins() {
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
   const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches }
-  const commandNames: string[] = []
+  const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {
       for (const m of iterateItemOrArray(plugin.getModel(ctx))) {
@@ -696,14 +696,14 @@ async function registerPlugins() {
       for (const command of iterateItemOrArray(plugin.getCommand(ctx))) {
         registerCommand(command)
         if (command.type) {
-          commandNames.push(...command.type.map(t => t.name))
+          commandTypes.push(...command.type)
         } else {
-          commandNames.push(command.name)
+          commandTypes.push(command)
         }
       }
     }
   }
-  return commandNames
+  return commandTypes
 }
 
 function* iterateItemOrArray<T>(item: T | T[]): Generator<T, void, unknown> {

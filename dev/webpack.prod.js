@@ -28,4 +28,7 @@ module.exports = {
       template: './index.html',
     }),
   ],
+  optimization: {
+    providedExports: false,
+  },
 }

@@ -3,9 +3,8 @@ import React from "react"
 import { Nullable, Position, prependPatchPath, SelectPath } from "../../src"
 import { BaseContent, fixedInputStyle } from "../models/model"
 
-export interface Command {
-  name: string
-  type?: { name: string, hotkey?: string }[]
+export interface Command extends CommandType {
+  type?: CommandType[]
   useCommand?(props: {
     onEnd: (options?: Partial<{
       updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
@@ -38,6 +37,10 @@ export interface Command {
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
   selectType?: 'select part'
+}
+
+export interface CommandType {
+  name: string
   hotkey?: string
 }
 
