@@ -1,14 +1,14 @@
-import type ReactType from 'react'
+import type { PluginContext } from './types'
 import type * as core from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model.FillFields & core.Position & {
+export type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model.FillFields & core.Position & {
   outerRadius: number
   innerRadius: number
 }
 
-export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<RingContent> {
+export function getModel(ctx: PluginContext): model.Model<RingContent> {
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta)
@@ -91,11 +91,11 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
 }
 
-function isRingContent(content: model.BaseContent): content is RingContent {
+export function isRingContent(content: model.BaseContent): content is RingContent {
   return content.type === 'ring'
 }
 
-export function getCommand(ctx: typeof core & typeof model): Command {
+export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create ring',
     useCommand({ onEnd, type }) {

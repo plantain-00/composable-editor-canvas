@@ -68,6 +68,9 @@ export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.Muta
 export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element;
 
 // @public (undocumented)
+export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
+
+// @public (undocumented)
 export interface Circle extends Position {
     // (undocumented)
     r: number;
@@ -1087,6 +1090,9 @@ export function rotatePosition(position: Position, center: Position, rotation: n
 
 // @public (undocumented)
 export function rotatePositionByCenter(position: Position, center: Position, angle: number): Position;
+
+// @public (undocumented)
+export function rotatePositionByEllipseCenter(p: Position, content: Ellipse): Position;
 
 // @public (undocumented)
 export function RotationBar(props: {

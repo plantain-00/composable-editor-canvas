@@ -1,0 +1,89 @@
+import type { PluginContext } from './types'
+import type * as core from '../../src'
+import type { Command } from '../commands/command'
+import type * as model from '../models/model'
+import { isLineContent } from './line-polyline.plugin'
+import type { ArcContent } from './circle-arc.plugin'
+
+export function getCommand(ctx: PluginContext): Command {
+  function getFillets(content1: model.BaseContent, content2: model.BaseContent, radius: number) {
+    const result: core.Arc[] = []
+    if (isLineContent(content1) && isLineContent(content2)) {
+      result.push(...ctx.getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => {
+        const foot1 = ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]))
+        const foot2 = ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]))
+        const angle1 = Math.atan2(foot1.y - c.y, foot1.x - c.x) * 180 / Math.PI
+        const angle2 = Math.atan2(foot2.y - c.y, foot2.x - c.x) * 180 / Math.PI
+        const min = Math.min(angle1, angle2)
+        const max = Math.max(angle1, angle2)
+        if (max - min < 180) {
+          return { ...c, r: radius, startAngle: min, endAngle: max }
+        }
+        return { ...c, r: radius, startAngle: max, endAngle: min + 360 }
+      }))
+    }
+    return result
+  }
+  const React = ctx.React
+  return {
+    name: 'fillet',
+    useCommand({ onEnd, type, selected, scale }) {
+      const [candidates, setCandidates] = React.useState<core.Arc[]>([])
+      const [result, setResult] = React.useState<core.Arc>()
+      let message = ''
+      if (type) {
+        if (candidates.length > 0) {
+          message = 'select one result'
+        } else {
+          message = 'input radius'
+        }
+      }
+      const assistentContents: ArcContent[] = candidates.map((c) => ({
+        ...c,
+        type: 'arc',
+        dashArray: c === result ? undefined : [4 / scale],
+      }))
+      const { input, setInputPosition, setCursorPosition, clearText, resetInput } = ctx.useCursorInput(message, type && candidates.length == 0 ? (e, text) => {
+        if (e.key === 'Enter') {
+          const radius = +text
+          if (!isNaN(radius)) {
+            setCandidates(getFillets(selected[0].content, selected[1].content, radius))
+            clearText()
+          }
+        }
+      } : undefined)
+      const reset = () => {
+        setCandidates([])
+        setResult(undefined)
+        clearText()
+        resetInput()
+      }
+      ctx.useKey((e) => e.key === 'Escape', reset, [setCandidates])
+
+      return {
+        onStart(p) {
+          setCursorPosition(p)
+          if (result) {
+            onEnd({
+              updateContents: (contents) => {
+                contents.push({ type: 'arc', ...result } as ArcContent)
+              }
+            })
+            setCandidates([])
+          }
+        },
+        input,
+        onMove(p, viewportPosition) {
+          setCursorPosition(p)
+          setInputPosition(viewportPosition || p)
+          setResult(candidates.find((c) => ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(c, p), c.r) < 5))
+        },
+        assistentContents,
+      }
+    },
+    selectCount: 2,
+    contentSelectable: (c) => isLineContent(c),
+    selectType: 'select part',
+    hotkey: 'F',
+  }
+}

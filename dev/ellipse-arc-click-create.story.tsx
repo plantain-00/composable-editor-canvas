@@ -1,7 +1,7 @@
 import produce from "immer"
 import React from "react"
-import { EllipseArc, useEllipseArcClickCreate } from "../src"
-import { getEllipseArcGeometries } from "./models/ellipse-arc-model"
+import { EllipseArc, ellipseArcToPolyline, useEllipseArcClickCreate } from "../src"
+import { angleDelta } from "./models/model"
 
 export default () => {
   const [contents, setContents] = React.useState<EllipseArc[]>([])
@@ -38,7 +38,7 @@ export default () => {
         />}
         {[...contents, ellipseArc].map((content, i) => {
           if (content) {
-            const { points } = getEllipseArcGeometries(content)
+            const points = ellipseArcToPolyline(content, angleDelta)
             return <polyline
               key={i}
               points={points.map((p) => `${p.x},${p.y}`).join(' ')}

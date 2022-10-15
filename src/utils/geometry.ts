@@ -513,6 +513,13 @@ export function rotatePositionByCenter(position: Position, center: Position, ang
 /**
  * @public
  */
+export function rotatePositionByEllipseCenter(p: Position, content: Ellipse) {
+  return rotatePositionByCenter(p, { x: content.cx, y: content.cy }, -(content.angle ?? 0))
+}
+
+/**
+ * @public
+ */
 export function rotatePosition(position: Position, center: Position, rotation: number) {
   if (!rotation) {
     return position

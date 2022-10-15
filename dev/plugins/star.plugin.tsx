@@ -1,23 +1,22 @@
-import type ReactType from 'react'
+import type { PluginContext } from './types'
 import type * as core from '../../src'
-import type { Position } from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-type StarContent = model.BaseContent<'star'> & model.StrokeFields & model.FillFields & core.Position & {
+export type StarContent = model.BaseContent<'star'> & model.StrokeFields & model.FillFields & core.Position & {
   outerRadius: number
   innerRadius: number
   count: number
   angle?: number
 }
 
-export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<StarContent> {
+export function getModel(ctx: PluginContext): model.Model<StarContent> {
   function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle)
       const p1 = ctx.rotatePositionByCenter({ x: content.x + content.innerRadius, y: content.y }, content, angle + 180 / content.count)
-      const points: Position[] = []
+      const points: core.Position[] = []
       for (let i = 0; i < content.count; i++) {
         const angle = 360 / content.count * i
         points.push(
@@ -110,11 +109,11 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
 }
 
-function isStarContent(content: model.BaseContent): content is StarContent {
+export function isStarContent(content: model.BaseContent): content is StarContent {
   return content.type === 'star'
 }
 
-export function getCommand(ctx: typeof core & typeof model): Command {
+export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create star',
     useCommand({ onEnd, type }) {

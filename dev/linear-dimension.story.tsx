@@ -1,6 +1,6 @@
 import React from "react"
 import { getLinearDimensionGeometries, getLinearDimensionTextPosition, getRotateTransform, getTextSize, LinearDimension } from "../src"
-import { dimensionStyle } from "./models/radial-dimension-model"
+import { dimensionStyle } from "./models/model"
 
 export default () => {
   const dimension: LinearDimension = {
