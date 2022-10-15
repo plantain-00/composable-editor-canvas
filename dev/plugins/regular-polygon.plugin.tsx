@@ -1,21 +1,20 @@
-import type ReactType from 'react'
+import type { PluginContext } from './types'
 import type * as core from '../../src'
-import type { Position } from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-type RegularPolygonContent = model.BaseContent<'regular polygon'> & model.StrokeFields & model.FillFields & core.Position & {
+export type RegularPolygonContent = model.BaseContent<'regular polygon'> & model.StrokeFields & model.FillFields & core.Position & {
   radius: number
   count: number
   angle: number
 }
 
-export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<RegularPolygonContent> {
+export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent> {
   function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle)
-      const points: Position[] = []
+      const points: core.Position[] = []
       for (let i = 0; i < content.count; i++) {
         points.push(ctx.rotatePositionByCenter(p0, content, 360 / content.count * i))
       }
@@ -100,11 +99,11 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
 }
 
-function isRegularPolygonContent(content: model.BaseContent): content is RegularPolygonContent {
+export function isRegularPolygonContent(content: model.BaseContent): content is RegularPolygonContent {
   return content.type === 'regular polygon'
 }
 
-export function getCommand(ctx: typeof core & typeof model): Command {
+export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create regular polygon',
     useCommand({ onEnd, type }) {

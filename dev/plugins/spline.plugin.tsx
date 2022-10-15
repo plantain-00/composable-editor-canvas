@@ -1,21 +1,20 @@
-import type ReactType from 'react'
+import type { PluginContext } from './types'
 import type * as core from '../../src'
-import type { Position } from '../../src'
 import type { Command } from '../commands/command'
-import type { LineContent } from '../models/line-model'
 import type * as model from '../models/model'
 import bspline from 'b-spline'
+import type { LineContent } from './line-polyline.plugin'
 
-type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & {
-  points: Position[]
+export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & {
+  points: core.Position[]
   fitting?: boolean
 }
 
-export function getModel(ctx: typeof core & typeof model & { React: typeof ReactType }): model.Model<SplineContent> {
+export function getModel(ctx: PluginContext): model.Model<SplineContent> {
   function getSplineGeometries(content: Omit<SplineContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y])
-      let points: Position[] = []
+      let points: core.Position[] = []
       if (inputPoints.length > 2) {
         if (content.fitting) {
           const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points)
@@ -91,7 +90,7 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
       return {
         points: <ctx.ArrayEditor
           inline
-          {...ctx.getArrayEditorProps<Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isSplineContent(c)) { v(c) } }))}
+          {...ctx.getArrayEditorProps<core.Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isSplineContent(c)) { v(c) } }))}
           items={content.points.map((f, i) => <ctx.ObjectEditor
             inline
             properties={{
@@ -107,13 +106,13 @@ export function getModel(ctx: typeof core & typeof model & { React: typeof React
   }
 }
 
-function isSplineContent(content: model.BaseContent): content is SplineContent {
+export function isSplineContent(content: model.BaseContent): content is SplineContent {
   return content.type === 'spline'
 }
 
 const splineSegmentCount = 100
 
-export function getCommand(ctx: typeof core & typeof model): Command {
+export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create spline',
     type: [

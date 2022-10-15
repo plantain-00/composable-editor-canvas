@@ -40,7 +40,7 @@ export const WhiteBoard = () => {
       <div style={{ position: 'relative' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => editorRef.current?.compress()}>compress</button>
-        <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit block</button>
+        <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit container</button>
         <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
         <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
         <button onClick={() => setPanelVisible(!panelVisible)}>panel visible</button>
@@ -50,12 +50,6 @@ export const WhiteBoard = () => {
             <label htmlFor={type}>{type}</label>
           </span>
         ))}
-      </div>
-      <div style={{ position: 'relative' }}>
-        {['create line', 'create polyline', 'create polygon', 'create rect', '2 points', '3 points', 'center radius', 'center diameter', 'create tangent tangent radius circle', 'create arc', 'ellipse center', 'ellipse endpoint', 'create ellipse arc', 'create radial dimension', 'create linear dimension', 'create text', 'create image', 'create arrow'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-      </div>
-      <div style={{ position: 'relative' }}>
-        {['move', 'delete', 'rotate', 'clone', 'explode', 'mirror', 'create block', 'create block reference', 'start edit block', 'fillet', 'chamfer', 'break', 'measure', 'create group', 'fill'].map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
       </div>
       <div style={{ position: 'relative' }}>
         {pluginCommandNames.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}

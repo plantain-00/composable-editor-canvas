@@ -1,6 +1,6 @@
 import React from 'react'
-import { ArrayEditor, BooleanEditor, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, isSamePoint, iterateIntersectionPoints, Nullable, NumberEditor, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
-import { LineContent } from './line-model'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, Position, ReactRenderTarget, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { LineContent } from '../plugins/line-polyline.plugin'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -16,9 +16,15 @@ export interface FillFields {
   fillColor?: number
 }
 
+export interface ContainerFields {
+  contents: Nullable<BaseContent>[]
+}
+
 type StrokeContent<T extends string = string> = BaseContent<T> & StrokeFields
 
 type FillContent<T extends string = string> = BaseContent<T> & FillFields
+
+type ContainerContent<T extends string = string> = BaseContent<T> & ContainerFields
 
 export const strokeModel = {
   isStroke: true,
@@ -28,14 +34,17 @@ export const fillModel = {
   isFill: true,
 }
 
-export type Model<T> = Partial<typeof strokeModel & typeof fillModel> & {
+export const containerModel = {
+  isContainer: true,
+}
+
+export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof containerModel> & {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  deletable?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean
   getColor?(content: Omit<T, 'type'>): number
   render?<V>(props: {
     content: Omit<T, 'type'>
@@ -55,6 +64,8 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel> & {
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
   propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element>
+  getRefIds?(content: T): number[] | undefined
+  updateRefId?(content: T, update: (id: number) => number | undefined): void
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -215,6 +226,10 @@ export function isFillContent(content: BaseContent): content is FillContent {
   return !!getModel(content.type)?.isFill
 }
 
+export function isContainerContent(content: BaseContent): content is ContainerContent {
+  return !!getModel(content.type)?.isContainer
+}
+
 export function getStrokeWidth(content: BaseContent) {
   return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? 1
 }
@@ -231,6 +246,17 @@ export function getContentColor(content: BaseContent, defaultColor = 0x000000) {
 }
 
 export const angleDelta = 5
+
+export const dimensionStyle = {
+  margin: 5,
+  arrowAngle: 15,
+  arrowSize: 10,
+}
+
+const textSizeMap = new MapCache2<string, string, Size | undefined>()
+export function getTextSizeFromCache(font: string, text: string) {
+  return textSizeMap.get(font, text, () => getTextSize(font, text))
+}
 
 export function getPolylineEditPoints(
   content: { points: Position[] },
@@ -295,4 +321,106 @@ export function getPolylineEditPoints(
       return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
     },
   }))
+}
+
+export function getContentIndex(content: Omit<BaseContent, 'type'>, contents: readonly Nullable<BaseContent>[]) {
+  return contents.findIndex(c => content === c)
+}
+
+export function contentIsReferenced(content: Omit<BaseContent, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean {
+  const id = getContentIndex(content, contents)
+  for (const content of iterateAllContents(contents)) {
+    if (getContentModel(content)?.getRefIds?.(content)?.includes(id)) {
+      return true
+    }
+  }
+  return false
+}
+
+
+export function* iterateAllContents(contents: readonly Nullable<BaseContent>[]): Generator<BaseContent, void, unknown> {
+  for (const content of contents) {
+    if (!content) {
+      continue
+    }
+    yield content
+    if (isContainerContent(content)) {
+      yield* iterateAllContents(content.contents)
+    }
+  }
+}
+
+export function getContainerSnapPoints(content: ContainerFields, contents: readonly BaseContent[]) {
+  return getSnapPointsFromCache(content, () => {
+    const result: SnapPoint[] = []
+    content.contents.forEach((c) => {
+      if (!c) {
+        return
+      }
+      const r = getModel(c.type)?.getSnapPoints?.(c, contents)
+      if (r) {
+        result.push(...r)
+      }
+    })
+    return result
+  })
+}
+
+export function renderContainerChildren<V>(block: ContainerFields, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly Nullable<BaseContent>[], color: number) {
+  const children: (ReturnType<typeof target.renderGroup>)[] = []
+  block.contents.forEach((content) => {
+    if (!content) {
+      return
+    }
+    const model = getModel(content.type)
+    if (model?.render) {
+      const ContentRender = model.render
+      color = getContentColor(content, color)
+      children.push(ContentRender({ content: content, color, target, strokeWidth, contents }))
+    }
+  })
+  return children
+}
+
+export function getContainerGeometries(content: ContainerFields) {
+  return getGeometriesFromCache(content, () => {
+    const lines: [Position, Position][] = []
+    const points: Position[] = []
+    const renderingLines: Position[][] = []
+    content.contents.forEach((c) => {
+      if (!c) {
+        return
+      }
+      const r = getModel(c.type)?.getGeometries?.(c)
+      if (r) {
+        lines.push(...r.lines)
+        points.push(...r.points)
+        if (r.renderingLines) {
+          renderingLines.push(...r.renderingLines)
+        }
+      }
+    })
+    return {
+      lines,
+      points,
+      bounding: getPointsBounding(points),
+      renderingLines,
+    }
+  })
+}
+
+export function breakPolyline(
+  lines: [Position, Position][],
+  intersectionPoints: Position[],
+) {
+  const result: LineContent[] = breakPolylineToPolylines(lines, intersectionPoints).map(r => ({
+    type: 'polyline',
+    points: r
+  }))
+  for (const r of result) {
+    if (r.points.length === 2) {
+      r.type === 'line'
+    }
+  }
+  return undefined
 }

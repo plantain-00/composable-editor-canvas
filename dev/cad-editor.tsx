@@ -1,112 +1,22 @@
 import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
-import { isLineContent, LineContent, lineModel } from './models/line-model'
-import { CircleContent, circleModel } from './models/circle-model'
-import { isPolyLineContent, polylineModel } from './models/polyline-model'
-import { RectContent, rectModel } from './models/rect-model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, iterateAllContents, registerModel, zoomContentsToFit } from './models/model'
 import { Command, getCommand, registerCommand, useCommands } from './commands/command'
-import { moveCommand } from './commands/move'
-import { rotateCommand } from './commands/rotate'
-import { mirrorCommand } from './commands/mirror'
-import { cloneCommand } from './commands/clone'
-import { explodeCommand } from './commands/explode'
-import { deleteCommand } from './commands/delete'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
-import { polygonModel } from './models/polygon-model'
-import { ellipseModel } from './models/ellipse-model'
-import { arcModel } from './models/arc-model'
-import { ellipseArcModel } from './models/ellipse-arc-model'
-import { textModel } from './models/text-model'
-import { blockModel, isBlockContent, iterateAllContents } from './models/block-model'
-import { blockReferenceModel, isBlockReferenceContent } from './models/block-reference-model'
-import { createBlockCommand } from './commands/create-block'
-import { createBlockReferenceCommand } from './commands/create-block-reference'
-import { startEditBlockCommand } from './commands/start-edit-block'
-import { createCircleCommand } from './commands/create-circle'
-import { createArcCommand } from './commands/create-arc'
-import { createEllipseCommand } from './commands/create-ellipse'
-import { createEllipseArcCommand } from './commands/create-ellipse-arc'
-import { createLineCommand } from './commands/create-line'
-import { createPolylineCommand } from './commands/create-polyline'
-import { createPolygonCommand } from './commands/create-polygon'
-import { createRectCommand } from './commands/create-rect'
-import { createTangentTangentRadiusCircleCommand } from './commands/create-tangent-tangent-radius-circle'
-import { filletCommand } from './commands/fillet'
-import { chamferCommand } from './commands/chamfer'
-import { breakCommand } from './commands/break'
-import { measureCommand } from './commands/measure'
-import { radialDimensionModel } from './models/radial-dimension-model'
-import { createRadialDimensionCommand } from './commands/create-radial-dimension'
-import { createLinearDimensionCommand } from './commands/create-linear-dimension'
-import { linearDimensionModel } from './models/linear-dimension-model'
-import { groupModel, isGroupContent } from './models/group-model'
-import { createGroupCommand } from './commands/create-group'
 import RTree from 'rtree'
-import { fillCommand } from './commands/fill'
-import { isRadialDimensionReferenceContent, radialDimensionReferenceModel } from './models/radial-dimension-reference-model'
-import { createTextCommand } from './commands/create-text'
-import { imageModel } from './models/image-model'
-import { createImageCommand } from './commands/create-image'
-import { arrowModel } from './models/arrow-model'
-import { createArrowCommand } from './commands/create-arrow'
 
 import * as core from '../src'
 import * as model from './models/model'
 import { pluginScripts } from './plugins/variables'
+import type { RectContent } from './plugins/rect.plugin'
+import type { CircleContent } from './plugins/circle-arc.plugin'
+import { isLineContent, isPolyLineContent, LineContent } from './plugins/line-polyline.plugin'
+import type { PluginContext } from './plugins/types'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
 enablePatches()
-
-registerModel(lineModel)
-registerModel(circleModel)
-registerModel(polylineModel)
-registerModel(rectModel)
-registerModel(polygonModel)
-registerModel(ellipseModel)
-registerModel(arcModel)
-registerModel(ellipseArcModel)
-registerModel(textModel)
-registerModel(blockModel)
-registerModel(blockReferenceModel)
-registerModel(radialDimensionModel)
-registerModel(radialDimensionReferenceModel)
-registerModel(linearDimensionModel)
-registerModel(groupModel)
-registerModel(imageModel)
-registerModel(arrowModel)
-
-registerCommand(moveCommand)
-registerCommand(rotateCommand)
-registerCommand(mirrorCommand)
-registerCommand(cloneCommand)
-registerCommand(deleteCommand)
-registerCommand(explodeCommand)
-registerCommand(createBlockCommand)
-registerCommand(startEditBlockCommand)
-registerCommand(createBlockReferenceCommand)
-registerCommand(createCircleCommand)
-registerCommand(createArcCommand)
-registerCommand(createEllipseCommand)
-registerCommand(createEllipseArcCommand)
-registerCommand(createLineCommand)
-registerCommand(createPolylineCommand)
-registerCommand(createPolygonCommand)
-registerCommand(createRectCommand)
-registerCommand(createTangentTangentRadiusCircleCommand)
-registerCommand(filletCommand)
-registerCommand(chamferCommand)
-registerCommand(breakCommand)
-registerCommand(measureCommand)
-registerCommand(createRadialDimensionCommand)
-registerCommand(createLinearDimensionCommand)
-registerCommand(createGroupCommand)
-registerCommand(fillCommand)
-registerCommand(createTextCommand)
-registerCommand(createImageCommand)
-registerCommand(createArrowCommand)
 
 registerRenderer(reactWebglRenderTarget)
 registerRenderer(reactSvgRenderTarget)
@@ -450,7 +360,7 @@ export const CADEditor = React.forwardRef((props: {
         draft.forEach((d, i) => {
           if (contentIsValid(d)) {
             newIndexes.push(validContentCount)
-            if (isBlockContent(d) || isGroupContent(d)) {
+            if (model.isContainerContent(d)) {
               d.contents = d.contents.filter(c => contentIsValid(c))
             }
             validContentCount++
@@ -463,12 +373,7 @@ export const CADEditor = React.forwardRef((props: {
           draft.splice(i, 1)
         })
         for (const content of iterateAllContents(draft)) {
-          if (isBlockReferenceContent(content) || isRadialDimensionReferenceContent(content)) {
-            const newIndex = newIndexes[content.refId]
-            if (newIndex !== undefined) {
-              content.refId = newIndex
-            }
-          }
+          getContentModel(content)?.updateRefId?.(content, refId => newIndexes[refId])
         }
       })
     },
@@ -778,24 +683,37 @@ export function usePlugins() {
 }
 
 async function registerPlugins() {
-  const plugins: { getModel?: (ctx: unknown) => model.Model<unknown>, getCommand?: (ctx: unknown) => Command }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx = { ...core, ...model, React }
+  const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
+  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches }
   const commandNames: string[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {
-      registerModel(plugin.getModel(ctx))
+      for (const m of iterateItemOrArray(plugin.getModel(ctx))) {
+        registerModel(m)
+      }
     }
     if (plugin.getCommand) {
-      const command = plugin.getCommand(ctx)
-      registerCommand(command)
-      if (command.type) {
-        commandNames.push(...command.type.map(t => t.name))
-      } else {
-        commandNames.push(command.name)
+      for (const command of iterateItemOrArray(plugin.getCommand(ctx))) {
+        registerCommand(command)
+        if (command.type) {
+          commandNames.push(...command.type.map(t => t.name))
+        } else {
+          commandNames.push(command.name)
+        }
       }
     }
   }
   return commandNames
+}
+
+function* iterateItemOrArray<T>(item: T | T[]): Generator<T, void, unknown> {
+  if (Array.isArray(item)) {
+    for (const t of item) {
+      yield t
+    }
+  } else {
+    yield item
+  }
 }
 
 function useSnapOffset(enabled: boolean) {
