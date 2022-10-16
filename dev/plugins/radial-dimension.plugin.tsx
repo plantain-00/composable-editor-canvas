@@ -104,10 +104,10 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
             y: <ctx.NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.position.y = v } })} />,
           }}
         />,
-        text: <>
-          <ctx.BooleanEditor value={content.text !== undefined} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v ? '' : undefined } })} style={{ marginRight: '5px' }} />
-          {content.text !== undefined && <ctx.StringEditor value={content.text} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v } })} />}
-        </>,
+        text: [
+          <ctx.BooleanEditor value={content.text !== undefined} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v ? '' : undefined } })} style={{ marginRight: '5px' }} />,
+          content.text !== undefined ? <ctx.StringEditor value={content.text} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.text = v } })} /> : undefined,
+        ],
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontSize = v } })} />,
         fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontFamily = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update),

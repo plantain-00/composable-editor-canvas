@@ -42,6 +42,7 @@ export interface Command extends CommandType {
 export interface CommandType {
   name: string
   hotkey?: string
+  icon?: JSX.Element
 }
 
 const commandCenter: Record<string, Command> = {}

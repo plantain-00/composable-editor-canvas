@@ -13,6 +13,9 @@ export function NumberEditor(props: JsonEditorProps<number> & {
     setText(props.type === 'color' ? getColorString(props.value) : props.value.toString())
   }, [props.value])
   const onComplete = () => {
+    if (props.readOnly) {
+      return
+    }
     let value: number
     if (props.type === 'color') {
       value = colorStringToNumber(text)
@@ -23,15 +26,27 @@ export function NumberEditor(props: JsonEditorProps<number> & {
       props.setValue(value)
     }
   }
-  const extraStyle = props.type === 'color' ? {
-    flex: 'unset',
-    padding: 0,
-  } : undefined
+  let extraStyle: React.CSSProperties = {}
+  if (props.type === 'color') {
+    extraStyle = {
+      flex: 'unset',
+      padding: 0,
+    }
+  }
+  if (props.readOnly) {
+    extraStyle.opacity = 0.5
+  }
   return (
     <input
       value={text}
       type={props.type ?? 'number'}
-      onChange={(e) => setText(e.target.value)}
+      disabled={props.readOnly}
+      onChange={(e) => {
+        if (props.readOnly) {
+          return
+        }
+        setText(e.target.value)
+      }}
       style={{ ...controlStyle, ...props.style, ...extraStyle }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {

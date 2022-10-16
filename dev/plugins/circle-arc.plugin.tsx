@@ -348,14 +348,47 @@ export function isArcContent(content: model.BaseContent): content is ArcContent 
 }
 
 export function getCommand(ctx: PluginContext): Command[] {
+  const React = ctx.React
+  const circleIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="44.75112610327733" cy="48.751126103277315" r="39.24601890638081" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></circle>
+      <polyline points="44.75112610327733,48.751126103277315 66.35131574575921,15.984041896579598" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
+  const icon2 = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="44.75112610327733" cy="48.751126103277315" r="39.24601890638081" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></circle>
+      <circle cx="18.017351145722543" cy="20.018648373035933" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+      <circle cx="72.41194310314575" cy="76.59226837330263" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+    </svg>
+  )
+  const icon3 = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="44.75112610327733" cy="48.751126103277315" r="39.24601890638081" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></circle>
+      <circle cx="18.017351145722543" cy="20.018648373035933" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+      <circle cx="36.75568663017539" cy="87.17407429354459" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+      <circle cx="80.41194310314575" cy="28.59226837330263" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+    </svg>
+  )
+  const circleIcon4 = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="44.75112610327733" cy="48.751126103277315" r="39.24601890638081" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></circle>
+      <polyline points="25.519211367842193,82.96199361067842 66.35131574575921,15.984041896579598" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
+  const arcIcon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <path d="M 31.023373335849115 80.3626026626414 A 35.805027579936315 35.805027579936315 0 1 0 25.04108890280913 24.327977157175116" strokeWidth="2" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></path>
+    </svg>
+  )
   return [
     {
       name: 'create circle',
       type: [
-        { name: '2 points' },
-        { name: '3 points' },
-        { name: 'center radius', hotkey: 'C' },
-        { name: 'center diameter' },
+        { name: '2 points', icon: icon2, },
+        { name: '3 points', icon: icon3 },
+        { name: 'center radius', hotkey: 'C', icon: circleIcon },
+        { name: 'center diameter', icon: circleIcon4 },
       ],
       useCommand({ onEnd, scale, type }) {
         const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleClickCreate(
@@ -479,6 +512,7 @@ export function getCommand(ctx: PluginContext): Command[] {
       },
       selectCount: 0,
       hotkey: 'A',
+      icon: arcIcon,
     },
   ]
 }

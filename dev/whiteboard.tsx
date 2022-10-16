@@ -52,7 +52,29 @@ export const WhiteBoard = () => {
         ))}
       </div>
       <div style={{ position: 'relative' }}>
-        {pluginCommandTypes.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })} key={p.name} style={{ borderColor: operation === p.name ? 'red' : undefined }}>{p.name}{p.hotkey ? `(${p.hotkey})` : ''}</button>)}
+        {pluginCommandTypes.map((p) => {
+          if (p.icon) {
+            return React.cloneElement(p.icon, {
+              onClick: () => editorRef.current?.startOperation({ type: 'command', name: p.name }),
+              key: p.name,
+              style: {
+                width: '20px',
+                height: '20px',
+                margin: '5px',
+                cursor: 'pointer',
+                color: operation === p.name ? 'red' : undefined,
+              },
+            })
+          }
+          return (
+            <button
+              onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })}
+              key={p.name}
+              style={{ borderColor: operation === p.name ? 'red' : undefined }}>
+              {p.name}{p.hotkey ? `(${p.hotkey})` : ''}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

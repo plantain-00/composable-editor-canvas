@@ -9,8 +9,13 @@ export function BooleanEditor(props: JsonEditorProps<boolean>) {
     <div style={props.style}>
       <input
         type='checkbox'
+        disabled={props.readOnly}
         checked={props.value}
-        onChange={(e) => props.setValue(e.target.checked)}
+        onChange={(e) => {
+          if (!props.readOnly) {
+            props.setValue(e.target.checked)
+          }
+        }}
       />
     </div>
   )

@@ -133,8 +133,18 @@ function isArrowContent(content) {
   return content.type === "arrow";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 512 512"
+  }, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22l0 88L32 208c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l288 0 0 88c0 9.6 5.7 18.2 14.5 22z"
+  }));
   return {
     name: "create arrow",
+    hotkey: "AR",
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === "create arrow",
@@ -379,6 +389,14 @@ function isBlockReferenceContent(content) {
   return content.type === "block reference";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 640 512"
+  }, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H328.6C339.6 12.9 360.3 0 384 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V232.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM119.4 96c-5.6 9.7-13.7 17.8-23.4 23.4V232.6c9.7 5.6 17.8 13.7 23.4 23.4H328.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4H119.4zm192 384c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V352h64v40.6c9.7 5.6 17.8 13.7 23.4 23.4H520.6c5.6-9.7 13.7-17.8 23.4-23.4V279.4c-9.7-5.6-17.8-13.7-23.4-23.4h-46c-5.4-15.4-14.6-28.9-26.5-39.6V192h72.6c11.1-19.1 31.7-32 55.4-32c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H311.4z"
+  }));
   return {
     name: "create block reference",
     useCommand({ onEnd, type, scale }) {
@@ -443,7 +461,8 @@ function getCommand(ctx) {
     },
     contentSelectable: isBlockContent,
     selectCount: 1,
-    hotkey: "I"
+    hotkey: "I",
+    icon
   };
 }
 export {
@@ -504,6 +523,14 @@ function getCommand(ctx) {
   function contentSelectable(content, contents) {
     return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents);
   }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 576 512"
+  }, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H456.6C467.6 12.9 488.3 0 512 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM456.6 96H119.4c-5.6 9.7-13.7 17.8-23.4 23.4V392.6c9.7 5.6 17.8 13.7 23.4 23.4H456.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4zM128 160c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160zM256 320h32c35.3 0 64-28.7 64-64V224h64c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H288c-17.7 0-32-14.3-32-32V320z"
+  }));
   return {
     name: "create block",
     useCommand({ onEnd, type }) {
@@ -537,7 +564,8 @@ function getCommand(ctx) {
       };
     },
     contentSelectable,
-    hotkey: "B"
+    hotkey: "B",
+    icon
   };
 }
 export {
@@ -548,6 +576,14 @@ export {
 `,
 `// dev/plugins/break.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 640 512"
+  }, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L489.3 358.2l90.5-90.5c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114l-96 96-31.9-25C430.9 239.6 420.1 175.1 377 132c-52.2-52.3-134.5-56.2-191.3-11.7L38.8 5.1zM239 162c30.1-14.9 67.7-9.9 92.8 15.3c20 20 27.5 48.3 21.7 74.5L239 162zM406.6 416.4L220.9 270c-2.1 39.8 12.2 80.1 42.2 110c38.9 38.9 94.4 51 143.6 36.3zm-290-228.5L60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5l61.8-61.8-50.6-39.9z"
+  }));
   return {
     name: "break",
     execute(contents, selected) {
@@ -578,7 +614,8 @@ function getCommand(ctx) {
       const model = ctx.getModel(content.type);
       return model?.break !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
-    hotkey: "BR"
+    hotkey: "BR",
+    icon
   };
 }
 export {
@@ -625,6 +662,16 @@ function getCommand(ctx) {
     return result;
   }
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "11,12 57,12 86.01723625709383,41.01723625709381 86.01723625709383,86.01150037545519",
+    strokeWidth: "3",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "chamfer",
     useCommand({ onEnd, type, selected, scale }) {
@@ -693,7 +740,8 @@ function getCommand(ctx) {
     selectCount: 2,
     contentSelectable: (c) => isLineContent(c),
     selectType: "select part",
-    hotkey: "CHA"
+    hotkey: "CHA",
+    icon
   };
 }
 export {
@@ -1100,14 +1148,125 @@ function isArcContent(content) {
   return content.type === "arc";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const circleIcon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "44.75112610327733",
+    cy: "48.751126103277315",
+    r: "39.24601890638081",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "44.75112610327733,48.751126103277315 66.35131574575921,15.984041896579598",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "44.75112610327733",
+    cy: "48.751126103277315",
+    r: "39.24601890638081",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "18.017351145722543",
+    cy: "20.018648373035933",
+    r: "12",
+    strokeWidth: "0",
+    vectorEffect: "non-scaling-stroke",
+    fill: "currentColor",
+    stroke: "#000000"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "72.41194310314575",
+    cy: "76.59226837330263",
+    r: "12",
+    strokeWidth: "0",
+    vectorEffect: "non-scaling-stroke",
+    fill: "currentColor",
+    stroke: "#000000"
+  }));
+  const icon3 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "44.75112610327733",
+    cy: "48.751126103277315",
+    r: "39.24601890638081",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "18.017351145722543",
+    cy: "20.018648373035933",
+    r: "12",
+    strokeWidth: "0",
+    vectorEffect: "non-scaling-stroke",
+    fill: "currentColor",
+    stroke: "#000000"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "36.75568663017539",
+    cy: "87.17407429354459",
+    r: "12",
+    strokeWidth: "0",
+    vectorEffect: "non-scaling-stroke",
+    fill: "currentColor",
+    stroke: "#000000"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "80.41194310314575",
+    cy: "28.59226837330263",
+    r: "12",
+    strokeWidth: "0",
+    vectorEffect: "non-scaling-stroke",
+    fill: "currentColor",
+    stroke: "#000000"
+  }));
+  const circleIcon4 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "44.75112610327733",
+    cy: "48.751126103277315",
+    r: "39.24601890638081",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "25.519211367842193,82.96199361067842 66.35131574575921,15.984041896579598",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  const arcIcon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("path", {
+    d: "M 31.023373335849115 80.3626026626414 A 35.805027579936315 35.805027579936315 0 1 0 25.04108890280913 24.327977157175116",
+    strokeWidth: "2",
+    vectorEffect: "non-scaling-stroke",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return [
     {
       name: "create circle",
       type: [
-        { name: "2 points" },
-        { name: "3 points" },
-        { name: "center radius", hotkey: "C" },
-        { name: "center diameter" }
+        { name: "2 points", icon: icon2 },
+        { name: "3 points", icon: icon3 },
+        { name: "center radius", hotkey: "C", icon: circleIcon },
+        { name: "center diameter", icon: circleIcon4 }
       ],
       useCommand({ onEnd, scale, type }) {
         const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleClickCreate(
@@ -1232,7 +1391,8 @@ function getCommand(ctx) {
         };
       },
       selectCount: 0,
-      hotkey: "A"
+      hotkey: "A",
+      icon: arcIcon
     }
   ];
 }
@@ -1615,22 +1775,25 @@ function getModel(ctx) {
             }
           })
         }),
-        angle: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.angle !== void 0,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.angle = v ? 0 : void 0;
-            }
+        angle: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+            value: content.angle !== void 0,
+            setValue: (v) => update((c) => {
+              if (isEllipseContent(c)) {
+                c.angle = v ? 0 : void 0;
+              }
+            }),
+            style: { marginRight: "5px" }
           }),
-          style: { marginRight: "5px" }
-        }), content.angle !== void 0 && /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.angle,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.angle = v;
-            }
-          })
-        })),
+          content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+            value: content.angle,
+            setValue: (v) => update((c) => {
+              if (isEllipseContent(c)) {
+                c.angle = v;
+              }
+            })
+          }) : void 0
+        ],
         ...ctx.getStrokeContentPropertyPanel(content, update),
         ...ctx.getFillContentPropertyPanel(content, update)
       };
@@ -1792,22 +1955,25 @@ function getModel(ctx) {
               }
             })
           }),
-          angle: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.angle !== void 0,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.angle = v ? 0 : void 0;
-              }
+          angle: [
+            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+              value: content.angle !== void 0,
+              setValue: (v) => update((c) => {
+                if (isEllipseArcContent(c)) {
+                  c.angle = v ? 0 : void 0;
+                }
+              }),
+              style: { marginRight: "5px" }
             }),
-            style: { marginRight: "5px" }
-          }), content.angle !== void 0 && /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.angle,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.angle = v;
-              }
-            })
-          })),
+            content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+              value: content.angle,
+              setValue: (v) => update((c) => {
+                if (isEllipseArcContent(c)) {
+                  c.angle = v;
+                }
+              })
+            }) : void 0
+          ],
           startAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
             value: content.startAngle,
             setValue: (v) => update((c) => {
@@ -2411,6 +2577,9 @@ function getModel(ctx) {
         }),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
+    },
+    isValid(content) {
+      return content.points.length > 1;
     }
   };
   return [
@@ -2756,22 +2925,25 @@ function getModel(ctx) {
             }
           })
         }),
-        text: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.text !== void 0,
-          setValue: (v) => update((c) => {
-            if (isLinearDimensionContent(c)) {
-              c.text = v ? "" : void 0;
-            }
+        text: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+            value: content.text !== void 0,
+            setValue: (v) => update((c) => {
+              if (isLinearDimensionContent(c)) {
+                c.text = v ? "" : void 0;
+              }
+            }),
+            style: { marginRight: "5px" }
           }),
-          style: { marginRight: "5px" }
-        }), content.text !== void 0 && /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.text,
-          setValue: (v) => update((c) => {
-            if (isLinearDimensionContent(c)) {
-              c.text = v;
-            }
-          })
-        })),
+          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, {
+            value: content.text,
+            setValue: (v) => update((c) => {
+              if (isLinearDimensionContent(c)) {
+                c.text = v;
+              }
+            })
+          }) : void 0
+        ],
         fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.fontSize,
           setValue: (v) => update((c) => {
@@ -3367,22 +3539,25 @@ function getModel(ctx) {
             })
           }
         }),
-        text: /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.text !== void 0,
-          setValue: (v) => update((c) => {
-            if (isRadialDimensionReferenceContent(c)) {
-              c.text = v ? "" : void 0;
-            }
+        text: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+            value: content.text !== void 0,
+            setValue: (v) => update((c) => {
+              if (isRadialDimensionReferenceContent(c)) {
+                c.text = v ? "" : void 0;
+              }
+            }),
+            style: { marginRight: "5px" }
           }),
-          style: { marginRight: "5px" }
-        }), content.text !== void 0 && /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.text,
-          setValue: (v) => update((c) => {
-            if (isRadialDimensionReferenceContent(c)) {
-              c.text = v;
-            }
-          })
-        })),
+          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, {
+            value: content.text,
+            setValue: (v) => update((c) => {
+              if (isRadialDimensionReferenceContent(c)) {
+                c.text = v;
+              }
+            })
+          }) : void 0
+        ],
         fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.fontSize,
           setValue: (v) => update((c) => {

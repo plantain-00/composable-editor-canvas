@@ -16,6 +16,7 @@ export function ArrayEditor(props: ArrayProps & {
   items: JSX.Element[]
   title?: (index: number) => string
   inline?: boolean
+  readOnly?: boolean
 }) {
   if (props.inline) {
     return (
@@ -25,18 +26,18 @@ export function ArrayEditor(props: ArrayProps & {
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '3px' }}>
                 <div style={{ paddingRight: '5px', width: '14px' }}>{i + 1}</div>
-                <div style={{ flex: 1, display: 'flex' }}>{p}</div>
-                <div>
+                <div style={{ flex: 1, display: 'flex' }}>{React.cloneElement(p, { readOnly: props.readOnly })}</div>
+                {!props.readOnly && <div>
                   <button style={buttonStyle} onClick={() => props.remove(i)}>{removeIcon}</button>
                   <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
                   {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
                   {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
-                </div>
+                </div>}
               </div>
             )
           })}
         </div>
-        <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
+        {!props.readOnly && <button style={buttonStyle} onClick={props.add}>{addIcon}</button>}
       </div>
     )
   }
@@ -47,16 +48,16 @@ export function ArrayEditor(props: ArrayProps & {
           <React.Fragment key={i}>
             <div style={{ marginBottom: '5px', marginTop: '5px' }}>
               {props.title?.(i) ?? (i + 1)}
-              <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)}>{removeIcon}</button>
-              <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
-              {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
-              {i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
+              {!props.readOnly && <button style={{ marginLeft: '5px', ...buttonStyle }} onClick={() => props.remove(i)}>{removeIcon}</button>}
+              {!props.readOnly && <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>}
+              {!props.readOnly && i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
+              {!props.readOnly && i < props.items.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
             </div>
-            <div style={{ display: 'flex' }}>{p}</div>
+            <div style={{ display: 'flex' }}>{React.cloneElement(p, { readOnly: props.readOnly })}</div>
           </React.Fragment>
         )
       })}
-      <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
+      {!props.readOnly && <button style={buttonStyle} onClick={props.add}>{addIcon}</button>}
     </div>
   )
 }
@@ -66,6 +67,7 @@ export function ArrayEditor(props: ArrayProps & {
  */
 export function ObjectArrayEditor(props: ArrayProps & {
   properties: Record<string, JSX.Element>[]
+  readOnly?: boolean
 }) {
   if (props.properties.length === 0) {
     return null
@@ -77,7 +79,7 @@ export function ObjectArrayEditor(props: ArrayProps & {
           <tr>
             <td></td>
             {Object.entries(props.properties[0]).map(([title]) => <td key={title}>{title}</td>)}
-            <td></td>
+            {!props.readOnly && <td></td>}
           </tr>
         </thead>
         <tbody>
@@ -85,19 +87,19 @@ export function ObjectArrayEditor(props: ArrayProps & {
             return (
               <tr key={i}>
                 <td style={{ paddingRight: '5px' }}>{i + 1}</td>
-                {Object.values(p).map((v, j) => <td key={j}>{v}</td>)}
-                <td>
+                {Object.values(p).map((v, j) => <td key={j}>{React.cloneElement(v, { readOnly: props.readOnly })}</td>)}
+                {!props.readOnly && <td>
                   <button style={buttonStyle} onClick={() => props.remove(i)}>{removeIcon}</button>
                   <button style={buttonStyle} onClick={() => props.copy(i)}>{copyIcon}</button>
                   {i > 0 && <button style={buttonStyle} onClick={() => props.moveUp(i)}>{topIcon}</button>}
                   {i < props.properties.length - 1 && <button style={buttonStyle} onClick={() => props.moveDown(i)}>{bottomIcon}</button>}
-                </td>
+                </td>}
               </tr>
             )
           })}
         </tbody>
       </table>
-      <button style={buttonStyle} onClick={props.add}>{addIcon}</button>
+      {!props.readOnly && <button style={buttonStyle} onClick={props.add}>{addIcon}</button>}
     </div>
   )
 }

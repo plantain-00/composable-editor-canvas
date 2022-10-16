@@ -38,6 +38,11 @@ export function getCommand(ctx: PluginContext): Command {
     return result
   }
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="11,12 57,12 86.01723625709383,41.01723625709381 86.01723625709383,86.01150037545519" strokeWidth="3" vectorEffect="non-scaling-stroke" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
   return {
     name: 'chamfer',
     useCommand({ onEnd, type, selected, scale }) {
@@ -108,5 +113,6 @@ export function getCommand(ctx: PluginContext): Command {
     contentSelectable: (c) => isLineContent(c),
     selectType: 'select part',
     hotkey: 'CHA',
+    icon,
   }
 }
