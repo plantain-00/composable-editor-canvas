@@ -79,6 +79,9 @@ export function getModel(ctx: PluginContext) {
         ...ctx.getStrokeContentPropertyPanel(content, update),
       }
     },
+    isValid(content) {
+      return content.points.length > 1
+    },
   }
   return [
     lineModel,

@@ -57,6 +57,7 @@ export function ArrayEditor(props: ArrayProps & {
     items: JSX.Element[];
     title?: (index: number) => string;
     inline?: boolean;
+    readOnly?: boolean;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -129,7 +130,8 @@ export const defaultMiterLimit = 10;
 
 // @public (undocumented)
 export function DialogContainer(props: {
-    children: React_2.ReactNode;
+    children: JSX.Element;
+    readOnly?: boolean;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -779,12 +781,14 @@ export function NumberEditor(props: JsonEditorProps<number> & {
 // @public (undocumented)
 export function ObjectArrayEditor(props: ArrayProps & {
     properties: Record<string, JSX.Element>[];
+    readOnly?: boolean;
 }): JSX.Element | null;
 
 // @public (undocumented)
 export function ObjectEditor(props: {
-    properties: Record<string, JSX.Element | JSX.Element[]>;
+    properties: Record<string, JSX.Element | (JSX.Element | undefined)[]>;
     inline?: boolean;
+    readOnly?: boolean;
 }): JSX.Element;
 
 // @public (undocumented)

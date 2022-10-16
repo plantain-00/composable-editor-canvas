@@ -11,7 +11,7 @@ import * as model from './models/model'
 import { pluginScripts } from './plugins/variables'
 import type { RectContent } from './plugins/rect.plugin'
 import type { CircleContent } from './plugins/circle-arc.plugin'
-import { isLineContent, isPolyLineContent, LineContent } from './plugins/line-polyline.plugin'
+import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
@@ -356,7 +356,7 @@ export const CADEditor = React.forwardRef((props: {
         const newIndexes: (number | undefined)[] = []
         let validContentCount = 0
         const invalidContentsIndex: number[] = []
-        const contentIsValid = (d: Nullable<BaseContent>): d is BaseContent => !!d && ((!isLineContent(d) && !isPolyLineContent(d)) || d.points.length > 1)
+        const contentIsValid = (d: Nullable<BaseContent>): d is BaseContent => !!d && (getContentModel(d)?.isValid?.(d) ?? true)
         draft.forEach((d, i) => {
           if (contentIsValid(d)) {
             newIndexes.push(validContentCount)
@@ -595,12 +595,13 @@ export const CADEditor = React.forwardRef((props: {
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]
+          const v = Array.from(iterateItemOrArray(value))
           if (Array.isArray(element)) {
-            element.push(value)
+            element.push(...v)
           } else if (element) {
-            propertyPanels[field] = [element, value]
+            propertyPanels[field] = [element, ...v]
           } else {
-            propertyPanels[field] = value
+            propertyPanels[field] = v
           }
         })
       }
@@ -610,6 +611,7 @@ export const CADEditor = React.forwardRef((props: {
         {Array.from(types).join(',')}
         {propertyPanels && <ObjectEditor
           properties={propertyPanels}
+          readOnly={readOnly}
         />}
       </div>
     )
@@ -706,10 +708,12 @@ async function registerPlugins() {
   return commandTypes
 }
 
-function* iterateItemOrArray<T>(item: T | T[]): Generator<T, void, unknown> {
+function* iterateItemOrArray<T>(item: T | (T | undefined)[]): Generator<T, void, unknown> {
   if (Array.isArray(item)) {
     for (const t of item) {
-      yield t
+      if (t) {
+        yield t
+      }
     }
   } else {
     yield item

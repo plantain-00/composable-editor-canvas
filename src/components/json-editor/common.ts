@@ -4,6 +4,7 @@ export interface JsonEditorProps<T> {
   value: T
   setValue: (value: T) => void
   style?: React.CSSProperties
+  readOnly?: boolean
 }
 
 export const controlStyle: React.CSSProperties = {

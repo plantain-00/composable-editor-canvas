@@ -2,6 +2,7 @@ import React from "react"
 import { useJsonEditorData, ArrayEditor, BooleanEditor, DialogContainer, EnumArrayEditor, EnumEditor, NumberEditor, ObjectArrayEditor, ObjectEditor, StringEditor } from '../src'
 
 export default () => {
+  const [readOnly, setReadOnly] = React.useState(false)
   const { value, update, getArrayProps } = useJsonEditorData({
     stringExample: 'a string example',
     booleanExample: false,
@@ -83,10 +84,10 @@ export default () => {
               {...getArrayProps(v => v.inlineArrayExample, '')}
               items={value.inlineArrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.inlineArrayExample[i] = v)} />)}
             />,
-            'A optional example': <>
-              <BooleanEditor value={value.optionalExample !== undefined} setValue={update((draft, v) => draft.optionalExample = v ? '' : undefined)} style={{ marginRight: '5px' }} />
-              {value.optionalExample !== undefined && <StringEditor value={value.optionalExample} setValue={update((draft, v) => draft.optionalExample = v)} />}
-            </>,
+            'A optional example': [
+              <BooleanEditor value={value.optionalExample !== undefined} setValue={update((draft, v) => draft.optionalExample = v ? '' : undefined)} style={{ marginRight: '5px' }} />,
+              value.optionalExample !== undefined ? <StringEditor value={value.optionalExample} setValue={update((draft, v) => draft.optionalExample = v)} /> : undefined,
+            ],
             'A enum example': <EnumEditor value={value.enumExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumExample = v)} />,
             'A color example': <StringEditor type='color' value={value.colorExample} setValue={update((draft, v) => draft.colorExample = v)} />,
             'A textarea example': <StringEditor textarea value={value.textareaExample} setValue={update((draft, v) => draft.textareaExample = v)} />,
@@ -118,9 +119,11 @@ export default () => {
             'A enum titles example': <EnumEditor enumTitles={['enum title 1', 'enum title 2']} value={value.enumTitlesExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumTitlesExample = v)} />,
             'A enum array example': <EnumArrayEditor enumTitles={['foo title', 'bar title']} value={value.enumArrayExample} enums={['foo', 'bar'] as const} setValue={update((draft, v) => draft.enumArrayExample = v)} />,
           }}
+          readOnly={readOnly}
         />
       </div>
       <pre style={{ width: '300px' }}><code>{JSON.stringify(value, null, 2)}</code></pre>
+      <BooleanEditor style={{ position: 'absolute', left: '8px', top: '8px' }} value={readOnly} setValue={v => setReadOnly(v)} />
     </div>
   )
 }

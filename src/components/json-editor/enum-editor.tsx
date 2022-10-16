@@ -17,7 +17,11 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
             type='checkbox'
             checked={props.value.includes(e)}
             style={{ marginRight: '5px' }}
+            disabled={props.readOnly}
             onChange={() => {
+              if (props.readOnly) {
+                return
+              }
               const index = props.value.indexOf(e)
               props.setValue(produce(props.value, draft => {
                 if (index >= 0) {
@@ -48,9 +52,15 @@ export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
         <label key={e} style={{ marginRight: '10px' }}>
           <input
             type='radio'
+            disabled={props.readOnly}
             checked={props.value === e}
             style={{ marginRight: '5px' }}
-            onChange={() => props.setValue(e)}
+            onChange={() => {
+              if (props.readOnly) {
+                return
+              }
+              props.setValue(e)
+            }}
           />
           {props.enumTitles?.[i] ?? e}
         </label>

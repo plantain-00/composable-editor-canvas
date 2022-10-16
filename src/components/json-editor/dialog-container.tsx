@@ -5,7 +5,8 @@ import { buttonStyle } from "./common"
  * @public
  */
 export function DialogContainer(props: {
-  children: React.ReactNode
+  children: JSX.Element
+  readOnly?: boolean
 }) {
   const [visible, setVisible] = React.useState(false)
   return (
@@ -16,7 +17,7 @@ export function DialogContainer(props: {
         onClick={() => setVisible(false)}
       >
         <div style={{ width: '600px', display: 'flex', background: 'white' }} onClick={(e) => e.stopPropagation()}>
-          {props.children}
+          {React.cloneElement(props.children, { readOnly: props.readOnly })}
         </div>
       </div>}
     </>

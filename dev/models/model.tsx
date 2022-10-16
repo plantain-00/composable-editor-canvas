@@ -63,9 +63,10 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
-  propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element>
+  propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number) => number | undefined): void
+  isValid?(content: Omit<T, 'type'>): boolean
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -187,22 +188,22 @@ export function getStrokeContentPropertyPanel(
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
   return {
-    dashArray: <>
-      <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} style={{ marginRight: '5px' }} />
-      {content.dashArray !== undefined && <ArrayEditor
+    dashArray: [
+      <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} style={{ marginRight: '5px' }} />,
+      content.dashArray !== undefined ? <ArrayEditor
         inline
         {...getArrayEditorProps<number, typeof content>(v => v.dashArray || [], 4, (v) => update(c => { if (isStrokeContent(c)) { v(c) } }))}
         items={content.dashArray.map((f, i) => <NumberEditor value={f} setValue={(v) => update(c => { if (isStrokeContent(c) && c.dashArray) { c.dashArray[i] = v } })} />)}
-      />}
-    </>,
-    strokeColor: <>
-      <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
-      {content.strokeColor !== undefined && <NumberEditor type='color' value={content.strokeColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v } })} />}
-    </>,
-    strokeWidth: <>
-      <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} style={{ marginRight: '5px' }} />
-      {content.strokeWidth !== undefined && <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} />}
-    </>,
+      /> : undefined
+    ],
+    strokeColor: [
+      <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+      content.strokeColor !== undefined ? <NumberEditor type='color' value={content.strokeColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v } })} /> : undefined,
+    ],
+    strokeWidth: [
+      <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} style={{ marginRight: '5px' }} />,
+      content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,
+    ],
   }
 }
 
@@ -211,10 +212,10 @@ export function getFillContentPropertyPanel(
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
   return {
-    fillColor: <>
-      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />
-      {content.fillColor !== undefined && <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} />}
-    </>,
+    fillColor: [
+      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+      content.fillColor !== undefined ? <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} /> : undefined,
+    ],
   }
 }
 

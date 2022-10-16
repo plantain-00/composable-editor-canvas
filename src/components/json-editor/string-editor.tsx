@@ -13,22 +13,38 @@ export function StringEditor(props: JsonEditorProps<string> & {
     setText(props.value)
   }, [props.value])
   const onComplete = () => {
-    if (text !== props.value) {
+    if (!props.readOnly && text !== props.value) {
       props.setValue(text)
     }
+  }
+  let extraStyle: React.CSSProperties = {}
+  if (props.type === 'color') {
+    extraStyle = {
+      flex: 'unset',
+      padding: 0,
+    }
+  }
+  if (props.readOnly) {
+    extraStyle.opacity = 0.5
   }
   if (props.textarea) {
     return (
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        disabled={props.readOnly}
+        onChange={(e) => {
+          if (props.readOnly) {
+            return
+          }
+          setText(e.target.value)
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             onComplete()
           }
         }}
         onBlur={onComplete}
-        style={{ ...controlStyle, ...props.style }}
+        style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
     )
   }
@@ -36,16 +52,18 @@ export function StringEditor(props: JsonEditorProps<string> & {
   if (props.value.startsWith('http')) {
     preview = <img src={props.value} style={{ display: 'block', height: 'auto', margin: '6px 0px', maxWidth: '100%' }} />
   }
-  const extraStyle = props.type === 'color' ? {
-    flex: 'unset',
-    padding: 0,
-  } : undefined
   return (
     <>
       <input
         value={text}
+        disabled={props.readOnly}
         type={props.type ?? 'text'}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          if (props.readOnly) {
+            return
+          }
+          setText(e.target.value)
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             onComplete()
