@@ -622,6 +622,58 @@ export {
   getCommand
 };
 `,
+`// dev/plugins/cancel-edit-container.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "37.2523424414741,82.2523424414741 32,77 45.26210843293586,64.73424940995307 34.85576768442547,52.45776612707198 22.804714999337193,65 16.408386715608138,58.388958288839014 4.438582558303025,90.59970985857345",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "83.31772011698345,40.37472637282923 78.58823529411765,34.64705882352941 65.11778548913132,46.68363390432083 53.8856897130448,35.157837010145315 67.51629404983674,24.353109954091316 61.542962454827205,17.357525798639863 94.74536622245155,8.502633800256604",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "60.823922790999546,82.94782332121554 66.3768001163132,78.0142895314217 53.860936060450534,64.98795833037552 64.9729807484759,53.34637628924838 76.26359466760502,66.57730742319224 83.03857504543225,60.35488595723553 93.08844972308609,93.21532946025053",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "17.30773332157345,38.42709778758177 22.36668717670166,32.98823870348119 35.10404208885271,45.798076620726135 46.996145772344406,34.95456060653361 34.026286658445244,23.364985294745704 40.40167834341685,16.733750953905556 7.779106641484908,5.936689140444656",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "cancel edit container",
+    execute(contents, selected, setEditingContentPath) {
+      setEditingContentPath(void 0);
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/plugins/line-polyline.plugin.tsx
 function isLineContent(content) {
   return content.type === "line";
@@ -1487,6 +1539,77 @@ export {
   getCommand
 };
 `,
+`// dev/plugins/compress.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("rect", {
+    x: "10.000000000000007",
+    y: "44.006943105369096",
+    width: "81",
+    height: "20",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("rect", {
+    x: "9",
+    y: "69",
+    width: "81",
+    height: "20",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "42.02315889327355,6.083985542473695 57.02315889327355,6.083985542473695 57.02315889327355,31.083985542473695 73.02315889327355,31.083985542473695 51.714259038694095,44.09092864784279 27.023158893273553,32.0839855424737 42.05645527164646,32.0839855424737",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "compress",
+    execute(contents) {
+      const newIndexes = [];
+      let validContentCount = 0;
+      const invalidContentsIndex = [];
+      const contentIsValid = (d) => !!d && (ctx.getContentModel(d)?.isValid?.(d) ?? true);
+      contents.forEach((d, i) => {
+        if (contentIsValid(d)) {
+          newIndexes.push(validContentCount);
+          if (ctx.isContainerContent(d)) {
+            d.contents = d.contents.filter((c) => contentIsValid(c));
+          }
+          validContentCount++;
+        } else {
+          newIndexes.push(void 0);
+          invalidContentsIndex.unshift(i);
+        }
+      });
+      invalidContentsIndex.forEach((i) => {
+        contents.splice(i, 1);
+      });
+      for (const content of ctx.iterateAllContents(contents)) {
+        ctx.getContentModel(content)?.updateRefId?.(content, (refId) => newIndexes[refId]);
+      }
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/plugins/line-polyline.plugin.tsx
 function isLineContent(content) {
   return content.type === "line";
@@ -1518,6 +1641,38 @@ function getCommand(ctx) {
     return result;
   }
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "10,87 89,87",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "17",
+    cy: "40",
+    r: "16.55294535724685",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "60.33793628490876",
+    cy: "57",
+    r: "30",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create tangent tangent radius circle",
     useCommand({ onEnd, type, selected, scale }) {
@@ -1575,7 +1730,8 @@ function getCommand(ctx) {
     },
     selectCount: 2,
     contentSelectable: (c) => isCircleContent(c) || isArcContent(c) || isLineContent(c),
-    selectType: "select part"
+    selectType: "select part",
+    icon
   };
 }
 export {
@@ -1584,6 +1740,27 @@ export {
 `,
 `// dev/plugins/delete.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "17,21 80.00793600809345,84.00793600809345",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "77.78066522214152,23.227270785951916 19.22727078595193,81.78066522214154",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "delete",
     execute(contents, selected) {
@@ -1596,7 +1773,8 @@ function getCommand(ctx) {
     contentSelectable(content, contents) {
       return !ctx.contentIsReferenced(content, contents);
     },
-    hotkey: "E"
+    hotkey: "E",
+    icon
   };
 }
 export {
@@ -2039,12 +2217,95 @@ function isEllipseArcContent(content) {
   return content.type === "ellipse arc";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon1 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("ellipse", {
+    cx: "50",
+    cy: "50",
+    rx: "42",
+    ry: "25.495097567963924",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "50",
+    cy: "50",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "92",
+    cy: "50",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("ellipse", {
+    cx: "50",
+    cy: "50",
+    rx: "42",
+    ry: "25.495097567963924",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "8",
+    cy: "50",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "92",
+    cy: "50",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  const icon3 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "7.25397110182702,71.37301444908648 7.525675776285333,68.97359332179542 8.120635704784306,66.42977169275659 9.034322883021424,63.7609095805685 10.259783599870872,60.987318637407924 11.787691359324036,58.130107565092274 13.606417860755549,55.211021465113106 15.70212149731244,52.25227634528363 18.058852698900033,49.27639004250492 20.65867531804105,46.30601084843038 23.481803134788017,43.363745142290924 26.506750441804286,40.47198534269887 29.710495563570376,37.65273948782142 33.06865606523542,34.9274637409214 36.555674317669016,32.316899095999176 40.14501200645094,29.840913526304668 43.80935210446823,27.518350777064185 47.520806770985914,25.366886953201202 51.25112959495419,23.40289599350468 54.97193056725217,21.641325055068076 58.65489214579961,20.095580756398505 62.27198476915073,18.77742714495478 65.79568017838163,17.696896165642876 69.19916092376258,16.86221131165783 72.45652446174336,16.279725038734938 75.54298028895008,15.953870419125984 78.43503861288471,15.88712740324258 81.11068912342954,16.080003945736145 83.54956850459736,16.53103213965627 85.73311541166187,17.23677938810893 87.64471173419864,18.19187452839158 89.26980906993974,19.389048709784426 90.59603944689957,20.819190713893583 91.61330945110967,22.47141629652439 92.3138770435936,24.333151023351952 92.69241048195828,26.39022596895895 92.746028898173,28.626985550913506 92.47432422371466,31.02640667820458 91.8793642952157,33.570228307243404 90.96567711697858,36.239090419431484 89.74021640012914,39.012681362592076 88.21230864067596,41.869892434907726 86.39358213924444,44.788978534886894 84.29787850268758,47.74772365471635 81.94114730109996,50.723609957495086 79.34132468195895,53.69398915156962 76.51819686521199,56.636254857709076 73.49324955819571,59.52801465730113 70.28950443642962,62.347260512178565 66.93134393476458,65.0725362590786 63.44432568233099,67.68310090400082 59.85498799354905,70.15908647369534 56.19064789553177,72.4816492229358 52.479193229014086,74.6331130467988 48.74887040504581,76.59710400649531 45.02806943274783,78.35867494493192 41.3451078542004,79.9044192436015 37.728015230849266,81.22257285504521 34.20431982161838,82.30310383435712",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return [
     {
       name: "create ellipse",
       type: [
-        { name: "ellipse center", hotkey: "EL" },
-        { name: "ellipse endpoint" }
+        { name: "ellipse center", hotkey: "EL", icon: icon1 },
+        { name: "ellipse endpoint", icon: icon2 }
       ],
       useCommand({ onEnd, type, scale }) {
         const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useEllipseClickCreate(
@@ -2152,7 +2413,8 @@ function getCommand(ctx) {
           lastPosition: middlePosition ?? startPosition
         };
       },
-      selectCount: 0
+      selectCount: 0,
+      icon: icon3
     }
   ];
 }
@@ -2165,6 +2427,43 @@ export {
 `,
 `// dev/plugins/explode.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "17,11 83,11",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "80,91 16,91",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "9,84 9,19",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "90,19 90,85",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "explode",
     execute(contents, selected) {
@@ -2184,7 +2483,78 @@ function getCommand(ctx) {
       const model = ctx.getModel(content.type);
       return model?.explode !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
-    hotkey: "X"
+    hotkey: "X",
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/plugins/export-jsx.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "25,13 7,51 22,90",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "75,13 93,51 78,90",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "64,15 51,90",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "export jsx",
+    execute(contents, selected) {
+      const result = [];
+      contents.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected)) {
+          const model = ctx.getContentModel(content);
+          if (model?.render) {
+            const color = ctx.getContentColor(content);
+            const svg = ctx.renderToStaticMarkup(model.render({
+              content,
+              target: ctx.reactSvgRenderTarget,
+              color,
+              strokeWidth: ctx.getStrokeWidth(content),
+              contents
+            })(index, 1, 1));
+            let jsx = "";
+            for (let j = 0; j < svg.length; j++) {
+              const c = svg[j];
+              if (c === "-") {
+                jsx += svg[j + 1].toUpperCase();
+                j++;
+              } else {
+                jsx += c;
+              }
+            }
+            result.push(jsx.split(ctx.getColorString(color)).join("currentColor"));
+          }
+        }
+      });
+      navigator.clipboard.writeText(result.join("\\n"));
+    },
+    icon
   };
 }
 export {
@@ -2193,6 +2563,21 @@ export {
 `,
 `// dev/plugins/fill.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "50",
+    cy: "50",
+    r: "40.45985664828782",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
   return {
     name: "fill",
     execute(contents, selected) {
@@ -2204,7 +2589,8 @@ function getCommand(ctx) {
         }
       });
     },
-    contentSelectable: ctx.isFillContent
+    contentSelectable: ctx.isFillContent,
+    icon
   };
 }
 export {
@@ -2237,6 +2623,34 @@ function getCommand(ctx) {
     return result;
   }
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "9,10 92.02409288875128,10",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "92.02409288875128,10 92.02409288875128,93.02467676553937",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("path", {
+    d: "M 92.02409288875128 60.000000000000014 A 50 50 0 0 0 42.024092888751284 10.000000000000014",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "fillet",
     useCommand({ onEnd, type, selected, scale }) {
@@ -2295,7 +2709,8 @@ function getCommand(ctx) {
     selectCount: 2,
     contentSelectable: (c) => isLineContent(c),
     selectType: "select part",
-    hotkey: "F"
+    hotkey: "F",
+    icon
   };
 }
 export {
@@ -2346,6 +2761,40 @@ function getCommand(ctx) {
   function contentSelectable(content, contents) {
     return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents);
   }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "28",
+    cy: "73",
+    r: "22.090722034374522",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "93,78 97.68132319206183,48.443288605436294 71.01782864251547,34.85755955998643 49.85755955998643,56.01782864251546 63.44328860543629,82.68132319206183",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("rect", {
+    x: "7",
+    y: "8.5",
+    width: "50",
+    height: "37",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create group",
     execute(contents, selected) {
@@ -2361,7 +2810,8 @@ function getCommand(ctx) {
       contents.push(newContent);
     },
     contentSelectable,
-    hotkey: "G"
+    hotkey: "G",
+    icon
   };
 }
 export {
@@ -2482,6 +2932,29 @@ function isImageContent(content) {
   return content.type === "image";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "100,100 100,50 66,67 28.124783736376884,11.999999999999993 0,36 0,100",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "70",
+    cy: "22",
+    r: "13.601470508735444",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
   return {
     name: "create image",
     useCommand({ onEnd, type }) {
@@ -2508,7 +2981,8 @@ function getCommand(ctx) {
         assistentContents
       };
     },
-    selectCount: 0
+    selectCount: 0,
+    icon
   };
 }
 export {
@@ -2670,6 +3144,31 @@ function isPolyLineContent(content) {
   return content.type === "polyline";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon1 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "10,87 87.51451476981585,9.485485230184139",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "12,86 38,24 62.2,64.6 88,13",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return [
     {
       name: "create line",
@@ -2735,12 +3234,13 @@ function getCommand(ctx) {
         };
       },
       selectCount: 0,
-      hotkey: "L"
+      hotkey: "L",
+      icon: icon1
     },
     {
       name: "create polyline",
       useCommand({ onEnd, scale, type }) {
-        const { line, onClick, onMove, input, inputMode, lastPosition } = ctx.useLineClickCreate(
+        const { line, onClick, onMove, input, inputMode, lastPosition, reset, positions } = ctx.useLineClickCreate(
           type === "create polyline",
           (c) => onEnd({
             updateContents: (contents) => contents.push({ points: c, type: "polyline" })
@@ -2795,11 +3295,21 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition
+          lastPosition,
+          subcommand: type === "create polyline" && positions.length > 2 ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
+            onClick: () => {
+              onEnd({
+                updateContents: (contents) => contents.push({ points: positions, type: "polygon" })
+              });
+              reset();
+            },
+            style: { position: "relative" }
+          }, "close")) : void 0
         };
       },
       selectCount: 0,
-      hotkey: "PL"
+      hotkey: "PL",
+      icon: icon2
     }
   ];
 }
@@ -2998,6 +3508,70 @@ function isLinearDimensionContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "15",
+    cy: "83",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "82",
+    cy: "84",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "15,83 14.999999999999995,7.940023980819191",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "82,84 82,6",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "14.999999999999996,25.040156291535933 81.99999999999999,25.040156291535933",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "66.73400154202005,34.93792306863058 83.13620848929534,24.48805424801579 65.88525315079036,15.508260763853169",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "29.265998457979954,34.575944487278335 12.308983383341738,25.052720722827807 29.034844626598673,15.129126778060689",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
   return {
     name: "create linear dimension",
     selectCount: 0,
@@ -3079,7 +3653,8 @@ function getCommand(ctx) {
         assistentContents,
         lastPosition: p2 ?? p1
       };
-    }
+    },
+    icon
   };
 }
 export {
@@ -3090,6 +3665,37 @@ export {
 `,
 `// dev/plugins/measure.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "9,14 43,92",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "94.0881895447306,14 93.76440329468612,21.41592435882452 92.795508753423,28.775409055420823 91.18887979343477,36.022443967469464 88.95674383121603,43.10187478341042 86.1160887692398,49.9598227600572 82.68853370776218,56.54409477236529 78.70016441041528,62.80458053462891 74.1813347757952,68.69363397001257 69.1664358259653,74.1664358259653 63.69363397001257,79.1813347757952 57.80458053462891,83.70016441041528 51.544094772365305,87.68853370776216 44.9598227600572,91.1160887692398",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "9,14 94.0881895447306,14",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "measure",
     useCommand({ transform, type, scale }) {
@@ -3158,7 +3764,8 @@ function getCommand(ctx) {
         assistentContents
       };
     },
-    selectCount: 0
+    selectCount: 0,
+    icon
   };
 }
 export {
@@ -3168,6 +3775,35 @@ export {
 `// dev/plugins/mirror.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "9.999999999999998,91.0384048104053 38,46 9,10",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "50,0 50,100",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "90,91.0384048104053 62,46 91,10",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "mirror",
     useCommand({ onEnd, transform, type, scale }) {
@@ -3237,7 +3873,8 @@ function getCommand(ctx) {
     contentSelectable(content) {
       return ctx.getModel(content.type)?.mirror !== void 0;
     },
-    hotkey: "MI"
+    hotkey: "MI",
+    icon
   };
 }
 export {
@@ -3246,6 +3883,31 @@ export {
 `,
 `// dev/plugins/move.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "9,60 55,60 55,91 9,91",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("rect", {
+    x: "44",
+    y: "10",
+    width: "46",
+    height: "31",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "move",
     useCommand({ onEnd, transform, type, scale }) {
@@ -3288,7 +3950,8 @@ function getCommand(ctx) {
     contentSelectable(content) {
       return ctx.getModel(content.type)?.move !== void 0;
     },
-    hotkey: "M"
+    hotkey: "M",
+    icon
   };
 }
 export {
@@ -3409,6 +4072,18 @@ function isPolygonContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "10.964331152381801,81 86.72644978417914,83.3559397330022 88.44676768044036,39.61510448168846 52.00408203830702,10.225841867064801 12.791823135476555,35.80311391824452",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create polygon",
     useCommand({ onEnd, type, scale }) {
@@ -3448,7 +4123,8 @@ function getCommand(ctx) {
       };
     },
     selectCount: 0,
-    hotkey: "POL"
+    hotkey: "POL",
+    icon
   };
 }
 export {
@@ -3624,9 +4300,40 @@ function getCommand(ctx) {
     return isArcContent(content) || isCircleContent(content);
   }
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "36",
+    cy: "64",
+    r: "31.622776601683793",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "36,64 90.50229352972221,9.497706470277791",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "75.10199280075491,32.88621938243634 65.39851220628051,22.75526837146677 54.21645977390029,44.31651677899134",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
   return {
     name: "create radial dimension",
     selectCount: 1,
+    icon,
     contentSelectable,
     useCommand({ onEnd, selected, type }) {
       const [result, setResult] = React.useState();
@@ -3879,8 +4586,25 @@ function isRectContent(content) {
   return content.type === "rect";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("rect", {
+    x: "11",
+    y: "26",
+    width: "79",
+    height: "48",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create rect",
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === "create rect",
@@ -4056,8 +4780,22 @@ function isRegularPolygonContent(content) {
   return content.type === "regular polygon";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "91,40 53.15913160642131,7.916512888149235 10.952450707702425,33.99097459975807 22.708155753551882,82.18936528774087 72.18026193232437,85.90314722435183",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create regular polygon",
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === "create regular polygon",
@@ -4221,8 +4959,30 @@ function isRingContent(content) {
   return content.type === "ring";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "91.86884283091663,50 91.70951924339575,53.6491100949135 91.2327610295363,57.27044825861179 90.4421966072203,60.83645392104537 89.34384264905735,64.31998762591 87.94605829187336,67.69453757829653 86.25948151863179,70.93442141545832 84.29694819695987,74.01498166509921 82.07339439044554,76.9127734036263 79.60574268617492,79.60574268617492 76.9127734036263,82.07339439044554 74.01498166509921,84.29694819695987 70.93442141545833,86.25948151863179 67.69453757829653,87.94605829187336 64.31998762591002,89.34384264905735 60.83645392104537,90.4421966072203 57.2704482586118,91.2327610295363 53.6491100949135,91.70951924339575 50,91.86884283091663 46.3508899050865,91.70951924339575 42.72955174138821,91.2327610295363 39.16354607895463,90.4421966072203 35.68001237409,89.34384264905735 32.30546242170347,87.94605829187337 29.06557858454169,86.25948151863179 25.9850183349008,84.29694819695987 23.087226596373693,82.07339439044554 20.39425731382508,79.60574268617492 17.92660560955445,76.91277340362632 15.703051803040147,74.01498166509923 13.740518481368213,70.93442141545832 12.053941708126636,67.69453757829655 10.65615735094265,64.31998762591002 9.55780339277971,60.836453921045376 8.767238970463687,57.27044825861179 8.290480756604254,53.649110094913524 8.131157169083359,50.00000000000001 8.290480756604254,46.350889905086504 8.767238970463687,42.7295517413882 9.557803392779704,39.16354607895465 10.65615735094265,35.68001237409 12.05394170812663,32.30546242170347 13.74051848136822,29.065578584541676 15.703051803040125,25.9850183349008 17.926605609554443,23.087226596373696 20.394257313825072,20.39425731382508 23.08722659637369,17.92660560955445 25.985018334900776,15.703051803040147 29.06557858454166,13.740518481368227 32.30546242170344,12.053941708126644 35.68001237408997,10.656157350942657 39.16354607895464,9.55780339277971 42.72955174138821,8.767238970463687 46.3508899050865,8.290480756604254 49.99999999999999,8.131157169083359 53.64911009491349,8.290480756604254 57.27044825861178,8.76723897046368 60.83645392104538,9.55780339277971 64.31998762590999,10.656157350942642 67.69453757829655,12.053941708126636 70.93442141545833,13.74051848136822 74.01498166509921,15.703051803040132 76.9127734036263,17.926605609554443 79.60574268617492,20.394257313825072 82.07339439044554,23.087226596373682 84.29694819695985,25.985018334900772 86.25948151863177,29.06557858454166 87.94605829187336,32.30546242170344 89.34384264905735,35.68001237409 90.4421966072203,39.16354607895464 91.2327610295363,42.729551741388164 91.70951924339575,46.35088990508649 91.86884283091663,49.99999999999999",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "70.93442141545832,50 70.85475962169787,51.82455504745675 70.61638051476815,53.6352241293059 70.22109830361015,55.41822696052268 69.67192132452868,57.159993812955 68.97302914593668,58.847268789148266 68.1297407593159,60.46721070772916 67.14847409847994,62.00749083254961 66.03669719522277,63.45638670181315 64.80287134308746,64.80287134308746 63.45638670181315,66.03669719522277 62.00749083254961,67.14847409847994 60.467210707729166,68.1297407593159 58.847268789148266,68.97302914593668 57.15999381295501,69.67192132452868 55.41822696052268,70.22109830361015 53.6352241293059,70.61638051476815 51.82455504745675,70.85475962169787 50,70.93442141545832 48.175444952543245,70.85475962169787 46.3647758706941,70.61638051476815 44.58177303947731,70.22109830361015 42.840006187045,69.67192132452868 41.152731210851734,68.97302914593669 39.53278929227085,68.1297407593159 37.9925091674504,67.14847409847994 36.54361329818685,66.03669719522277 35.19712865691254,64.80287134308746 33.96330280477723,63.45638670181316 32.85152590152008,62.007490832549614 31.870259240684106,60.46721070772916 31.02697085406332,58.84726878914827 30.328078675471325,57.15999381295501 29.778901696389855,55.41822696052269 29.383619485231844,53.6352241293059 29.145240378302127,51.82455504745676 29.06557858454168,50 29.145240378302127,48.17544495254325 29.383619485231844,46.364775870694096 29.778901696389852,44.581773039477326 30.328078675471325,42.840006187045 31.026970854063315,41.152731210851734 31.87025924068411,39.532789292270834 32.85152590152006,37.9925091674504 33.96330280477722,36.54361329818685 35.19712865691254,35.19712865691254 36.54361329818684,33.96330280477723 37.992509167450386,32.85152590152008 39.532789292270834,31.870259240684113 41.15273121085172,31.026970854063322 42.840006187044985,30.32807867547133 44.58177303947732,29.778901696389855 46.3647758706941,29.383619485231844 48.175444952543245,29.145240378302127 49.99999999999999,29.06557858454168 51.82455504745675,29.145240378302127 53.63522412930589,29.38361948523184 55.41822696052269,29.778901696389855 57.159993812954994,30.32807867547132 58.84726878914827,31.02697085406332 60.467210707729166,31.87025924068411 62.00749083254961,32.85152590152006 63.45638670181315,33.96330280477722 64.80287134308746,35.19712865691254 66.03669719522277,36.54361329818684 67.14847409847992,37.992509167450386 68.1297407593159,39.532789292270834 68.97302914593668,41.15273121085172 69.67192132452868,42.840006187045 70.22109830361015,44.58177303947732 70.61638051476815,46.36477587069408 70.85475962169787,48.175444952543245 70.93442141545832,49.99999999999999",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create ring",
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === "create ring",
@@ -4273,8 +5033,34 @@ export {
 `// dev/plugins/rotate.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "5.5,66 66.5,66 66.5,94 5.5,94",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("rect", {
+    x: "35.5",
+    y: "26",
+    width: "61",
+    height: "28",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor",
+    transform: "rotate(56.85300416774402,66,40)"
+  }));
   return {
     name: "rotate",
+    icon,
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(true);
       const { offset, onStart, mask, center: startPosition } = ctx.useDragRotate(
@@ -4578,11 +5364,116 @@ function isSplineContent(content) {
 }
 var splineSegmentCount = 100;
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon1 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "13",
+    cy: "22",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "28",
+    cy: "79",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "63",
+    cy: "22",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "85",
+    cy: "80",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "13,22 13.601,24.2458 14.204,26.423199999999998 14.808999999999997,28.5322 15.416000000000002,30.5728 16.025000000000002,32.545 16.636,34.4488 17.249,36.2842 17.864,38.0512 18.481,39.74980000000001 19.1,41.38000000000001 19.721,42.9418 20.344,44.435199999999995 20.968999999999998,45.860200000000006 21.595999999999997,47.2168 22.225,48.50499999999999 22.856,49.7248 23.489,50.8762 24.124,51.959199999999996 24.761000000000003,52.9738 25.4,53.92 26.041000000000004,54.7978 26.684000000000005,55.607200000000006 27.329000000000004,56.348200000000006 27.976,57.020799999999994 28.625,57.625 29.275999999999996,58.1608 29.929000000000002,58.62820000000001 30.583999999999996,59.02719999999999 31.241,59.3578 31.9,59.620000000000005 32.561,59.8138 33.224000000000004,59.9392 33.888999999999996,59.99619999999999 34.556,59.98479999999999 35.224999999999994,59.905 35.896,59.7568 36.569,59.5402 37.244,59.255199999999995 37.921,58.9018 38.6,58.480000000000004 39.281,57.98980000000001 39.964000000000006,57.431200000000004 40.648999999999994,56.80420000000001 41.336,56.1088 42.025,55.345 42.716,54.5128 43.409000000000006,53.61220000000001 44.104,52.6432 44.80100000000001,51.6058 45.5,50.5 46.2018,49.3946 46.907199999999996,48.358399999999996 47.6162,47.3914 48.32880000000001,46.493599999999994 49.045,45.665 49.76480000000001,44.90559999999999 50.48819999999999,44.21540000000001 51.215199999999996,43.5944 51.94579999999999,43.0426 52.68,42.559999999999995 53.4178,42.1466 54.159200000000006,41.8024 54.9042,41.5274 55.6528,41.3216 56.405,41.185 57.16080000000001,41.117599999999996 57.92020000000001,41.1194 58.683200000000014,41.1904 59.449799999999996,41.3306 60.22,41.54 60.99379999999999,41.8186 61.77120000000001,42.166399999999996 62.5522,42.5834 63.3368,43.0696 64.125,43.625 64.9168,44.2496 65.7122,44.9434 66.5112,45.7064 67.3138,46.5386 68.12,47.44 68.9298,48.4106 69.74319999999999,49.450399999999995 70.5602,50.5594 71.3808,51.73759999999999 72.20499999999998,52.985 73.03280000000001,54.301599999999986 73.8642,55.6874 74.6992,57.142399999999995 75.5378,58.66660000000001 76.38,60.260000000000005 77.22579999999999,61.9226 78.0752,63.654399999999995 78.9282,65.45540000000001 79.7848,67.32559999999998 80.645,69.265 81.5088,71.2736 82.37619999999998,73.3514 83.24719999999999,75.49839999999999 84.12180000000001,77.7146 85,80",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("circle", {
+    cx: "13",
+    cy: "22",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "28",
+    cy: "79",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "63",
+    cy: "22",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "85",
+    cy: "80",
+    r: "5",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "13,22 13.0880062,22.9506286 13.1760496,23.9010288 13.264167399999998,24.8509722 13.3523968,25.800230400000004 13.440775,26.748575 13.5293392,27.6957776 13.6181266,28.641609800000005 13.7071744,29.5858432 13.796519799999999,30.5282494 13.886199999999999,31.468600000000002 13.9762522,32.4066666 14.0667136,33.3422208 14.157621400000002,34.27503420000001 14.249012800000003,35.2048784 14.340924999999999,36.131525 14.4333952,37.0547456 14.5264606,37.974311799999995 14.620158400000001,38.8899952 14.714525799999999,39.8015674 14.8096,40.7088 14.9054182,41.6114646 15.0020176,42.509332799999996 15.0994354,43.4021762 15.197708800000001,44.2897664 15.296875000000002,45.171875 15.396971200000001,46.0482736 15.4980346,46.918733800000005 15.600102399999999,47.7830272 15.7032118,48.6409254 15.8074,49.4922 15.912704199999999,50.336622600000005 16.0191616,51.1739648 16.1268094,52.003998200000005 16.2356848,52.8264944 16.345825,53.641225000000006 16.4572672,54.4479616 16.5700486,55.2464758 16.6842064,56.0365392 16.7997778,56.817923400000005 16.9168,57.590399999999995 17.035310199999998,58.353740599999995 17.155345599999997,59.107716800000006 17.2769434,59.852100199999995 17.4001408,60.58666240000001 17.524975,61.311175000000006 17.6514832,62.0254096 17.7797026,62.729137800000004 17.9096704,63.422131199999995 18.0414238,64.10416140000001 18.174999999999997,64.775 18.310436199999998,65.4344186 18.4477696,66.0821888 18.5870374,66.7180822 18.7282768,67.3418704 18.871525,67.953325 19.0168192,68.5522176 19.1641966,69.13831979999999 19.313694400000003,69.7114032 19.4653498,70.2712394 19.6192,70.8176 19.7752822,71.35025660000001 19.9336336,71.8689808 20.0942914,72.3735442 20.2572928,72.86371840000001 20.422675,73.339275 20.5904752,73.7999856 20.7607306,74.24562180000001 20.933478400000002,74.6759552 21.1087558,75.0907574 21.2866,75.4898 21.467048199999997,75.8728546 21.6501376,76.2396928 21.835905399999998,76.59008619999999 22.0243888,76.92380639999999 22.215625,77.240625 22.4096512,77.54031359999999 22.6065046,77.8226438 22.8062224,78.08738720000001 23.008841800000003,78.33431540000001 23.214399999999998,78.56320000000001 23.4229342,78.7738126 23.6344816,78.9659248 23.8490794,79.1393082 24.0667648,79.2937344 24.287575,79.428975 24.511547200000003,79.5448016 24.7387186,79.64098580000001 24.9691264,79.7172992 25.202807800000002,79.77351340000001 25.439799999999998,79.80940000000001 25.6801402,79.8247306 25.923865600000003,79.8192768 26.171013400000003,79.79281019999999 26.421620799999996,79.7451024 26.675725,79.675925 26.933363200000002,79.5850496 27.1945726,79.47224779999999 27.4593904,79.3372912 27.727853800000002,79.1799514 28,79 28.275849,78.797323 28.555352,78.57226399999999 28.838443,78.325281 29.125056,78.05683200000001 29.415125,77.767375 29.708584,77.457368 30.005367,77.127269 30.305408,76.777536 30.608641,76.408627 30.915,76.021 31.224419,75.615113 31.536832,75.19142400000001 31.852173,74.75039100000001 32.170376,74.292472 32.491375,73.818125 32.815104,73.327808 33.141497,72.821979 33.470487999999996,72.301096 33.802011,71.76561699999999 34.136,71.216 34.472389,70.652703 34.811112,70.076184 35.152103000000004,69.486901 35.495296,68.885312 35.840625,68.271875 36.188024,67.647048 36.537427,67.011289 36.888768,66.365056 37.241980999999996,65.70880700000001 37.596999999999994,65.043 37.953759000000005,64.368093 38.312191999999996,63.684544 38.672233000000006,62.992810999999996 39.033815999999995,62.29335199999999 39.396875,61.586625000000005 39.761344,60.873087999999996 40.127157,60.153199 40.494248,59.42741600000001 40.862550999999996,58.696197 41.232,57.96 41.602529000000004,57.219283 41.97407199999999,56.474503999999996 42.346563,55.72612099999999 42.719936000000004,54.974592 43.094125,54.22037499999999 43.469063999999996,53.463927999999996 43.844687,52.705709 44.220928,51.946176 44.597721,51.185787000000005 44.974999999999994,50.425 45.352699,49.664272999999994 45.730752,48.904064 46.109093,48.144830999999996 46.487656,47.387032 46.866375000000005,46.631125 47.245184,45.877568 47.624016999999995,45.126819000000005 48.002808,44.379336 48.381491,43.635577 48.760000000000005,42.896 49.138268999999994,42.161063 49.516232,41.431224 49.893823000000005,40.706941 50.270976000000005,39.988672 50.647625,39.276875 51.023704,38.572008 51.399147,37.874528999999995 51.773888,37.184895999999995 52.147861,36.503567000000004 52.521,35.831 52.893239,35.167653 53.264511999999996,34.513984 53.634753,33.870451 54.003896,33.237512 54.371875,32.615625 54.738624,32.005247999999995 55.104077000000004,31.406838999999998 55.468168000000006,30.820856 55.830831,30.247757 56.19200000000001,29.687999999999995 56.551609,29.142042999999997 56.909591999999996,28.610344000000005 57.265883,28.093361 57.620416,27.591552 57.973124999999996,27.105375 58.323944,26.635288 58.672807,26.181749 59.019648000000004,25.745216 59.364401,25.326147 59.706999999999994,24.924999999999997 60.047379,24.542232999999996 60.385472,24.178303999999997 60.721213,23.833670999999995 61.054536000000006,23.508792 61.385374999999996,23.204124999999998 61.713664,22.920128000000002 62.039336999999996,22.657258999999996 62.362328,22.415976 62.682571,22.196737000000002 63,22 63.3145648,21.8261084 63.626278400000004,21.674947200000002 63.9351696,21.5462868 64.24126720000001,21.439897600000002 64.54459999999999,21.35555 64.8451968,21.2930144 65.14308639999999,21.252061199999996 65.4382976,21.2324608 65.7308592,21.2339836 66.02080000000001,21.2564 66.3081488,21.2994804 66.59293439999999,21.3629952 66.8751856,21.446714800000002 67.15493120000001,21.550409600000002 67.4322,21.67385 67.7070208,21.8168064 67.97942239999999,21.979049200000002 68.2494336,22.1603488 68.5170832,22.3604756 68.7824,22.5792 69.04541280000001,22.8162924 69.3061504,23.071523199999998 69.5646416,23.3446628 69.8209152,23.635481600000002 70.075,23.94375 70.3269248,24.269238400000003 70.57671839999999,24.6117172 70.8244096,24.970956800000003 71.0700272,25.3467276 71.3136,25.7388 71.55515679999999,26.1469444 71.7947264,26.5709312 72.03233759999999,27.010530800000005 72.2680192,27.4655136 72.50179999999999,27.935650000000003 72.73370879999999,28.4207104 72.9637744,28.9204652 73.19202560000001,29.4346848 73.4184912,29.9631396 73.64320000000001,30.505600000000005 73.86618080000001,31.0618364 74.08746239999999,31.631619200000003 74.3070736,32.2147188 74.5250432,32.8109056 74.7414,33.41995 74.9561728,34.0416224 75.16939039999998,34.6756932 75.38108159999999,35.3219328 75.5912752,35.9801116 75.80000000000001,36.65 76.00728480000001,37.3313684 76.2131584,38.02398720000001 76.4176496,38.72762680000001 76.62078720000001,39.442057600000005 76.82260000000001,40.16705 77.02311680000001,40.9023744 77.2223664,41.647801199999996 77.4203776,42.4031008 77.6171792,43.1680436 77.8128,43.94239999999999 78.00726879999999,44.7259404 78.20061439999999,45.51843519999999 78.3928656,46.319654799999995 78.58405119999999,47.129369600000004 78.77420000000001,47.94735 78.96334080000001,48.773366400000015 79.15150240000001,49.60718920000001 79.3387136,50.44858880000001 79.5250032,51.297335600000004 79.7104,52.1532 79.8949328,53.0159524 80.0786304,53.8853632 80.2615216,54.7612028 80.44363519999999,55.643241599999996 80.625,56.53124999999999 80.8056448,57.42499839999999 80.98559839999999,58.324257200000005 81.1648896,59.228796800000005 81.3435472,60.138387600000016 81.5216,61.05280000000001 81.69907680000001,61.97180440000001 81.87600640000001,62.89517120000001 82.0524176,63.822670800000004 82.22833920000001,64.7540736 82.4038,65.68915 82.5788288,66.6276704 82.7534544,67.5694052 82.9277056,68.51412479999999 83.1016112,69.4615996 83.2752,70.41159999999999 83.44850079999999,71.36389639999999 83.62154239999998,72.31825920000001 83.7943536,73.2744588 83.96696320000001,74.2322656 84.13940000000001,75.19144999999997 84.3116928,76.1517824 84.4838704,77.1130332 84.6559616,78.07497280000001 84.8279952,79.0373716 85,80",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create spline",
     type: [
-      { name: "spline", hotkey: "SPL" },
-      { name: "spline fitting" }
+      { name: "spline", hotkey: "SPL", icon: icon1 },
+      { name: "spline fitting", icon: icon2 }
     ],
     useCommand({ onEnd, type, scale }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
@@ -4760,8 +5651,22 @@ function isStarContent(content) {
   return content.type === "star";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "75,84 70.10506171865889,56.40597325071819 90.0613464134089,36.73016490136938 62.30524834733077,32.85850464193647 49.75927371857041,7.798790883939958 37.5,33 9.789876562682231,37.18805349856361 29.969326793295547,56.63491754931531 25.389503305338458,84.28299071612705 50.1203631407148,71.10060455803003",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create star",
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === "create star",
@@ -4819,8 +5724,40 @@ function getCommand(ctx) {
   function contentSelectable(c) {
     return ctx.isContainerContent(c);
   }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "42.15549442140351,73 42.09401788765295,74.40804411575307 41.91005615994365,75.80537216558498 41.605009298102615,77.18134963930676 41.181198892940785,78.52550451750547 40.641850397545156,79.82760696993512 39.99106857963322,81.07774721070176 39.233806281792084,82.26641091771783 38.37582672735581,83.38455164243818 37.42365965879586,84.42365965879586 36.38455164243818,85.37582672735581 35.26641091771783,86.23380628179208 34.07774721070176,86.99106857963322 32.82760696993512,87.64185039754516 31.52550451750547,88.18119889294078 30.18134963930676,88.60500929810262 28.80537216558498,88.91005615994365 27.40804411575307,89.09401788765295 26,89.15549442140352 24.59195588424693,89.09401788765295 23.194627834415023,88.91005615994365 21.81865036069324,88.60500929810262 20.47449548249453,88.18119889294078 19.17239303006488,87.64185039754516 17.92225278929825,86.99106857963322 16.733589082282172,86.23380628179208 15.615448357561815,85.37582672735581 14.57634034120414,84.42365965879586 13.624173272644194,83.38455164243818 12.766193718207916,82.26641091771783 12.008931420366778,81.07774721070176 11.35814960245484,79.82760696993512 10.818801107059214,78.52550451750547 10.394990701897383,77.18134963930676 10.089943840056348,75.80537216558498 9.90598211234705,74.40804411575309 9.84450557859649,73 9.90598211234705,71.59195588424693 10.089943840056348,70.19462783441502 10.39499070189738,68.81865036069325 10.818801107059212,67.47449548249453 11.358149602454839,66.17239303006488 12.00893142036678,64.92225278929824 12.766193718207909,63.73358908228217 13.62417327264419,62.61544835756182 14.576340341204137,61.576340341204144 15.615448357561814,60.62417327264419 16.733589082282165,59.766193718207916 17.922252789298238,59.00893142036678 19.172393030064875,58.358149602454844 20.47449548249452,57.818801107059215 21.818650360693244,57.394990701897385 23.194627834415023,57.08994384005635 24.59195588424693,56.90598211234705 25.999999999999996,56.84450557859649 27.408044115753068,56.90598211234705 28.805372165584973,57.08994384005635 30.181349639306763,57.394990701897385 31.52550451750546,57.81880110705921 32.82760696993512,58.358149602454844 34.07774721070176,59.00893142036678 35.26641091771783,59.766193718207916 36.38455164243818,60.62417327264419 37.423659658795856,61.57634034120414 38.3758267273558,62.61544835756181 39.233806281792084,63.733589082282165 39.991068579633215,64.92225278929824 40.641850397545156,66.17239303006487 41.181198892940785,67.47449548249453 41.605009298102615,68.81865036069324 41.91005615994365,70.194627834415 42.09401788765295,71.59195588424693 42.15549442140351,73",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "12,10 76,10 76,45 12,45",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "70.00000000000001,93.07397274136177 93.44674817538672,52.46301362931911 46.553251824613284,52.463013629319114",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "start edit container",
+    icon,
     execute(contents, selected, setEditingContentPath) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
@@ -4959,8 +5896,30 @@ function isTextContent(content) {
   return content.type === "text";
 }
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "16,22 83.00746227100382,22",
+    strokeWidth: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "49,22.000000000000004 49.00000000000001,89.00746227100382",
+    strokeWidth: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "create text",
+    icon,
     useCommand({ onEnd, type, scale }) {
       const { text, onClick, onMove, input } = ctx.useTextClickCreate(
         type === "create text",

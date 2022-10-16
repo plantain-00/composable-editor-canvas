@@ -2,6 +2,12 @@ import type { PluginContext } from './types'
 import type { Command } from '../commands/command'
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40.45985664828782" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></circle>
+    </svg>
+  )
   return {
     name: 'fill',
     execute(contents, selected) {
@@ -14,5 +20,6 @@ export function getCommand(ctx: PluginContext): Command {
       })
     },
     contentSelectable: ctx.isFillContent,
+    icon,
   }
 }

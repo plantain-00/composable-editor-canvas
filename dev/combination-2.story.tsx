@@ -152,9 +152,22 @@ export default () => {
       <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
-        <button onClick={() => editorRef.current?.compress()} style={{ position: 'relative' }}>compress</button>
-        {!readOnly && pluginCommandTypes.map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })} key={p.name} style={{ position: 'relative', borderColor: operation === p.name ? 'red' : undefined }}>{p.name}{p.hotkey ? `(${p.hotkey})` : ''}</button>)}
-        {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit container</button>}
+        {!readOnly && pluginCommandTypes.map((p) => {
+          if (p.icon) {
+            return React.cloneElement(p.icon, {
+              onClick: () => editorRef.current?.startOperation({ type: 'command', name: p.name }),
+              key: p.name,
+              style: {
+                width: '20px',
+                height: '20px',
+                margin: '5px',
+                cursor: 'pointer',
+                color: operation === p.name ? 'red' : undefined,
+              },
+            })
+          }
+          return null
+        })}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
         {!readOnly && <span>

@@ -4,6 +4,7 @@ import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 import type { ArcContent } from './circle-arc.plugin'
 import type { TextContent } from './text.plugin'
+import type { PolygonContent } from './polygon.plugin'
 
 export type LineContent = model.BaseContent<'line' | 'polyline'> & model.StrokeFields & {
   points: core.Position[]
@@ -128,6 +129,17 @@ export function isPolyLineContent(content: model.BaseContent): content is LineCo
 }
 
 export function getCommand(ctx: PluginContext): Command[] {
+  const React = ctx.React
+  const icon1 = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="10,87 87.51451476981585,9.485485230184139" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
+  const icon2 = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="12,86 38,24 62.2,64.6 88,13" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
   return [
     {
       name: 'create line',
@@ -194,11 +206,12 @@ export function getCommand(ctx: PluginContext): Command[] {
       },
       selectCount: 0,
       hotkey: 'L',
+      icon: icon1,
     },
     {
       name: 'create polyline',
       useCommand({ onEnd, scale, type }) {
-        const { line, onClick, onMove, input, inputMode, lastPosition } = ctx.useLineClickCreate(
+        const { line, onClick, onMove, input, inputMode, lastPosition, reset, positions } = ctx.useLineClickCreate(
           type === 'create polyline',
           (c) => onEnd({
             updateContents: (contents) => contents.push({ points: c, type: 'polyline' } as LineContent)
@@ -254,10 +267,28 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition,
+          subcommand: type === 'create polyline' && positions.length > 2
+            ? (
+              <span>
+                <button
+                  onClick={() => {
+                    onEnd({
+                      updateContents: (contents) => contents.push({ points: positions, type: 'polygon' } as PolygonContent)
+                    })
+                    reset()
+                  }}
+                  style={{ position: 'relative' }}
+                >
+                  close
+                </button>
+              </span>
+            )
+            : undefined,
         }
       },
       selectCount: 0,
       hotkey: 'PL',
+      icon: icon2,
     },
   ]
 }

@@ -49,6 +49,14 @@ export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
     return ctx.getContentModel(content)?.getRefIds === undefined && !ctx.contentIsReferenced(content, contents)
   }
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="28" cy="73" r="22.090722034374522" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></circle>
+      <polygon points="93,78 97.68132319206183,48.443288605436294 71.01782864251547,34.85755955998643 49.85755955998643,56.01782864251546 63.44328860543629,82.68132319206183" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+      <rect x="7" y="8.5" width="50" height="37" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></rect>
+    </svg>
+  )
   return {
     name: 'create group',
     execute(contents, selected) {
@@ -65,5 +73,6 @@ export function getCommand(ctx: PluginContext): Command {
     },
     contentSelectable,
     hotkey: 'G',
+    icon,
   }
 }

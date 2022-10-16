@@ -1470,6 +1470,8 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
+    reset: () => void;
+    positions: Position[];
 };
 
 // @public (undocumented)

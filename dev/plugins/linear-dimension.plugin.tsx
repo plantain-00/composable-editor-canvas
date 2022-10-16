@@ -122,6 +122,17 @@ export function isLinearDimensionContent(content: model.BaseContent): content is
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="15" cy="83" r="10" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></circle>
+      <circle cx="82" cy="84" r="10" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></circle>
+      <polyline points="15,83 14.999999999999995,7.940023980819191" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="82,84 82,6" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="14.999999999999996,25.040156291535933 81.99999999999999,25.040156291535933" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polygon points="66.73400154202005,34.93792306863058 83.13620848929534,24.48805424801579 65.88525315079036,15.508260763853169" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
+      <polygon points="29.265998457979954,34.575944487278335 12.308983383341738,25.052720722827807 29.034844626598673,15.129126778060689" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
+    </svg>
+  )
   return {
     name: 'create linear dimension',
     selectCount: 0,
@@ -207,5 +218,6 @@ export function getCommand(ctx: PluginContext): Command {
         lastPosition: p2 ?? p1,
       }
     },
+    icon,
   }
 }

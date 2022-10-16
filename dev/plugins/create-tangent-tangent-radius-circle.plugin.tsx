@@ -22,6 +22,13 @@ export function getCommand(ctx: PluginContext): Command {
     return result
   }
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="10,87 89,87" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <circle cx="17" cy="40" r="16.55294535724685" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></circle>
+      <circle cx="60.33793628490876" cy="57" r="30" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></circle>
+    </svg>
+  )
   return {
     name: 'create tangent tangent radius circle',
     useCommand({ onEnd, type, selected, scale }) {
@@ -81,5 +88,6 @@ export function getCommand(ctx: PluginContext): Command {
     selectCount: 2,
     contentSelectable: (c) => isCircleContent(c) || isArcContent(c) || isLineContent(c),
     selectType: 'select part',
+    icon,
   }
 }
