@@ -617,7 +617,7 @@ export function getPathGraphics(
       }).flat()
     }
 
-    if (strokeWidth === 1) {
+    if (strokeWidth === 1 && strokeWidthScale !== 1) {
       graphics.push({
         type: 'lines',
         points: combinedLinesCache.get(points, lineCapWithClosed, () => {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useWindowSize, SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable } from '../src'
+import { useWindowSize, SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable, useLocalStorageState } from '../src'
 import { Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent } from './models/model'
@@ -18,7 +18,8 @@ export default () => {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
-  const [panelVisible, setPanelVisible] = React.useState(true)
+  const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-whiteboard:panel', true)
+  const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-whiteboard:print-mode', false)
 
   React.useEffect(() => {
     (async () => {
@@ -115,13 +116,13 @@ export default () => {
   }, [ws.current, editorRef.current])
 
   const [readOnly, setReadOnly] = React.useState(false)
-  const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
-  const [renderTarget, setRenderTarget] = React.useState<string>()
+  const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
+  const [renderTarget, setRenderTarget] = useLocalStorageState<string | undefined>('composable-editor-canvas-whiteboard:render-target', undefined)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
   const [operation, setOperation] = React.useState<string>()
-  const [inputFixed, setInputFixed] = React.useState(false)
-  const [backgroundColor, setBackgroundColor] = React.useState(0xffffff)
+  const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-whiteboard:input-fiixed', false)
+  const [backgroundColor, setBackgroundColor] = useLocalStorageState('composable-editor-canvas-whiteboard:background-color', 0xffffff)
   const offsetX = React.useContext(OffsetXContext)
   const size = useWindowSize()
 
@@ -145,6 +146,7 @@ export default () => {
           backgroundColor={backgroundColor}
           debug
           panelVisible={panelVisible}
+          printMode={printMode}
         />
       )}
       <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
@@ -155,8 +157,15 @@ export default () => {
         {!readOnly && <button onClick={() => editorRef.current?.exitEditBlock()} style={{ position: 'relative' }}>exit edit container</button>}
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
-        {!readOnly && <button onClick={() => setPanelVisible(!panelVisible)}>panel visible</button>}
-        <select onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
+        {!readOnly && <span>
+          <input type='checkbox' checked={panelVisible} id='panel' onChange={() => setPanelVisible(!panelVisible)} />
+          <label htmlFor='panel'>panel</label>
+        </span>}
+        <span>
+          <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
+          <label htmlFor='print mode'>print mode</label>
+        </span>
+        <select value={renderTarget} onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
           {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
         </select>
         {!readOnly && allSnapTypes.map((type) => (

@@ -1405,6 +1405,33 @@ export {
 `,
 `// dev/plugins/clone.plugin.tsx
 function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("rect", {
+    x: "8",
+    y: "27",
+    width: "62",
+    height: "65",
+    strokeWidth: "3",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("rect", {
+    x: "30",
+    y: "8",
+    width: "62",
+    height: "65",
+    strokeWidth: "3",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
   return {
     name: "clone",
     useCommand({ onEnd, transform, type, scale }) {
@@ -1452,7 +1479,8 @@ function getCommand(ctx) {
     contentSelectable(content) {
       return ctx.getModel(content.type)?.move !== void 0;
     },
-    hotkey: "CO"
+    hotkey: "CO",
+    icon
   };
 }
 export {

@@ -19,10 +19,11 @@ export function Renderer(props: {
   backgroundColor: number
   simplified: boolean
   debug?: boolean
+  printMode?: boolean
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
-  const strokeWidthScale = 1 / props.scale
+  const strokeWidthScale = props.printMode ? 1 : 1 / props.scale
   const renderCache = React.useRef(new WeakmapCache<readonly Nullable<BaseContent>[], unknown[]>())
   useValueChanged(props.type, () => renderCache.current.clear())
   useValueChanged(props.backgroundColor, () => renderCache.current.clear())
