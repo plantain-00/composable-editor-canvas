@@ -73,10 +73,6 @@ export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 
 
 const modelCenter: Record<string, Model<BaseContent>> = {}
 
-export function getModel(type: string): Model<BaseContent> | undefined {
-  return modelCenter[type]
-}
-
 export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
@@ -120,8 +116,8 @@ export function getIntersectionPoints(content1: BaseContent, content2: BaseConte
   return intersectionPointsCache.get(content1, content2, () => Array.from(iterateIntersectionPoints(content1, content2, contents, getContentModel)))
 }
 
-export function getContentModel(content: BaseContent) {
-  return getModel(content.type)
+export function getContentModel(content: BaseContent): Model<BaseContent> | undefined {
+  return modelCenter[content.type]
 }
 
 export const fixedInputStyle: React.CSSProperties = {
@@ -139,7 +135,7 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
   if (index.length === 1) {
     return content
   }
-  const line = getModel(content.type)?.getGeometries?.(content)?.lines?.[index[1]]
+  const line = getContentModel(content)?.getGeometries?.(content)?.lines?.[index[1]]
   if (line) {
     return { type: 'line', points: line } as LineContent
   }
@@ -158,7 +154,7 @@ export function zoomContentsToFit(
     if (!c) {
       return
     }
-    const model = getModel(c.type)
+    const model = getContentModel(c)
     if (model?.getCircle) {
       const { bounding } = model.getCircle(c)
       points.push(bounding.start, bounding.end)
@@ -220,15 +216,15 @@ export function getFillContentPropertyPanel(
 }
 
 export function isStrokeContent(content: BaseContent): content is StrokeContent {
-  return !!getModel(content.type)?.isStroke
+  return !!getContentModel(content)?.isStroke
 }
 
 export function isFillContent(content: BaseContent): content is FillContent {
-  return !!getModel(content.type)?.isFill
+  return !!getContentModel(content)?.isFill
 }
 
 export function isContainerContent(content: BaseContent): content is ContainerContent {
-  return !!getModel(content.type)?.isContainer
+  return !!getContentModel(content)?.isContainer
 }
 
 export function getStrokeWidth(content: BaseContent) {
@@ -236,7 +232,7 @@ export function getStrokeWidth(content: BaseContent) {
 }
 
 export function getContentColor(content: BaseContent, defaultColor = 0x000000) {
-  const model = getModel(content.type)
+  const model = getContentModel(content)
   if (model?.getColor) {
     return model.getColor(content)
   }
@@ -358,7 +354,7 @@ export function getContainerSnapPoints(content: ContainerFields, contents: reado
       if (!c) {
         return
       }
-      const r = getModel(c.type)?.getSnapPoints?.(c, contents)
+      const r = getContentModel(c)?.getSnapPoints?.(c, contents)
       if (r) {
         result.push(...r)
       }
@@ -373,7 +369,7 @@ export function renderContainerChildren<V>(block: ContainerFields, target: React
     if (!content) {
       return
     }
-    const model = getModel(content.type)
+    const model = getContentModel(content)
     if (model?.render) {
       const ContentRender = model.render
       color = getContentColor(content, color)
@@ -392,7 +388,7 @@ export function getContainerGeometries(content: ContainerFields) {
       if (!c) {
         return
       }
-      const r = getModel(c.type)?.getGeometries?.(c)
+      const r = getContentModel(c)?.getGeometries?.(c)
       if (r) {
         lines.push(...r.lines)
         points.push(...r.points)

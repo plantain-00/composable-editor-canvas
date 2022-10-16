@@ -18,7 +18,7 @@ export function getCommand(ctx: PluginContext): Command {
       const newContents: model.BaseContent<string>[] = []
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          const result = ctx.getModel(content.type)?.explode?.(content, contents)
+          const result = ctx.getContentModel(content)?.explode?.(content, contents)
           if (result) {
             newContents.push(...result)
             contents[index] = undefined
@@ -28,7 +28,7 @@ export function getCommand(ctx: PluginContext): Command {
       contents.push(...newContents)
     },
     contentSelectable(content, contents) {
-      const model = ctx.getModel(content.type)
+      const model = ctx.getContentModel(content)
       return model?.explode !== undefined && !ctx.contentIsReferenced(content, contents)
     },
     hotkey: 'X',

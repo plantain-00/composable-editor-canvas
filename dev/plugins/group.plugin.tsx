@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         if (!c) {
           return
         }
-        ctx.getModel(c.type)?.move?.(c, offset)
+        ctx.getContentModel(c)?.move?.(c, offset)
       })
     },
     rotate(content, center, angle, contents) {
@@ -22,7 +22,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         if (!c) {
           return
         }
-        ctx.getModel(c?.type)?.rotate?.(c, center, angle, contents)
+        ctx.getContentModel(c)?.rotate?.(c, center, angle, contents)
       })
     },
     explode(content) {
@@ -33,7 +33,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         if (!c) {
           return
         }
-        ctx.getModel(c.type)?.mirror?.(c, line, angle, contents)
+        ctx.getContentModel(c)?.mirror?.(c, line, angle, contents)
       })
     },
     render({ content, target, color, strokeWidth, contents }) {
