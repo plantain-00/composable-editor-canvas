@@ -1473,6 +1473,9 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
+export function useLocalStorageState<S>(key: string, defaultValue: S): [S, React_2.Dispatch<S>];
+
+// @public (undocumented)
 export function usePartialEdit<T>(content: T, options?: Partial<{
     onEditingContentPathChange: (content: T) => void;
 }>): {

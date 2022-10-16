@@ -1,7 +1,8 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, getColorString } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, iterateAllContents, registerModel, zoomContentsToFit } from './models/model'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentColor, getContentModel, getIntersectionPoints, getModel, getStrokeWidth, iterateAllContents, registerModel, zoomContentsToFit } from './models/model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import RTree from 'rtree'
@@ -39,6 +40,7 @@ export const CADEditor = React.forwardRef((props: {
   backgroundColor: number
   debug?: boolean
   panelVisible?: boolean
+  printMode?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const now = Date.now()
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
@@ -317,6 +319,34 @@ export const CADEditor = React.forwardRef((props: {
     startOperation({ type: 'command', name: 'move' })
     e.preventDefault()
   })
+  useKey((k) => k.code === 'KeyE' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), () => {
+    const result: string[] = []
+    selectedContents.forEach((s, i) => {
+      const model = getContentModel(s.content)
+      if (model?.render) {
+        const color = getContentColor(s.content)
+        const svg = renderToStaticMarkup(model.render({
+          content: s.content,
+          target: reactSvgRenderTarget,
+          color,
+          strokeWidth: getStrokeWidth(s.content),
+          contents: editingContent,
+        })(i, 1, 1))
+        let jsx = ''
+        for (let j = 0; j < svg.length; j++) {
+          const c = svg[j]
+          if (c === '-') {
+            jsx += svg[j + 1].toUpperCase()
+            j++
+          } else {
+            jsx += c
+          }
+        }
+        result.push(jsx.split(getColorString(color)).join('currentColor'))
+      }
+    })
+    navigator.clipboard.writeText(result.join('\n'))
+  })
 
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
@@ -562,6 +592,7 @@ export const CADEditor = React.forwardRef((props: {
           backgroundColor={props.backgroundColor}
           simplified
           debug={props.debug}
+          printMode={props.printMode}
         />
         <div style={{
           position: 'absolute',
@@ -641,6 +672,7 @@ export const CADEditor = React.forwardRef((props: {
           height={height}
           backgroundColor={props.backgroundColor}
           simplified={simplified}
+          printMode={props.printMode}
         />}
         {minimap}
         {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}

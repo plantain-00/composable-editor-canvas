@@ -1,20 +1,16 @@
 import React from 'react'
-import { SnapPointType, allSnapTypes, Nullable, useWindowSize } from '../src'
+import { SnapPointType, allSnapTypes, Nullable, useWindowSize, useLocalStorageState } from '../src'
 import { BaseContent } from './models/model'
 import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 
-const draftKey = 'composable-editor-canvas-whiteboard'
-
 export const WhiteBoard = () => {
-  const [initialState] = React.useState(() => {
-    const draftState = localStorage.getItem(draftKey)
-    return draftState ? JSON.parse(draftState) as Nullable<BaseContent>[] : []
-  })
+  const [initialState, onChange] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [])
   const editorRef = React.useRef<CADEditorRef | null>(null)
-  const [snapTypes, setSnapTypes] = React.useState<readonly SnapPointType[]>(allSnapTypes)
+  const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
-  const [panelVisible, setPanelVisible] = React.useState(true)
+  const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-whiteboard:panel', true)
+  const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-whiteboard:print-mode', false)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
@@ -35,7 +31,8 @@ export const WhiteBoard = () => {
         setOperation={setOperation}
         backgroundColor={0xffffff}
         panelVisible={panelVisible}
-        onChange={(state) => localStorage.setItem(draftKey, JSON.stringify(state))}
+        printMode={printMode}
+        onChange={onChange}
       />
       <div style={{ position: 'relative' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
@@ -43,7 +40,14 @@ export const WhiteBoard = () => {
         <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit container</button>
         <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
         <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
-        <button onClick={() => setPanelVisible(!panelVisible)}>panel visible</button>
+        <span>
+          <input type='checkbox' checked={panelVisible} id='panel' onChange={() => setPanelVisible(!panelVisible)} />
+          <label htmlFor='panel'>panel</label>
+        </span>
+        <span>
+          <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
+          <label htmlFor='print mode'>print mode</label>
+        </span>
         {allSnapTypes.map((type) => (
           <span key={type}>
             <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
