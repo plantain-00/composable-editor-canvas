@@ -1,8 +1,8 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, getColorString } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentColor, getContentModel, getIntersectionPoints, getModel, getStrokeWidth, iterateAllContents, registerModel, zoomContentsToFit } from './models/model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import RTree from 'rtree'
@@ -319,34 +319,6 @@ export const CADEditor = React.forwardRef((props: {
     startOperation({ type: 'command', name: 'move' })
     e.preventDefault()
   })
-  useKey((k) => k.code === 'KeyE' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), () => {
-    const result: string[] = []
-    selectedContents.forEach((s, i) => {
-      const model = getContentModel(s.content)
-      if (model?.render) {
-        const color = getContentColor(s.content)
-        const svg = renderToStaticMarkup(model.render({
-          content: s.content,
-          target: reactSvgRenderTarget,
-          color,
-          strokeWidth: getStrokeWidth(s.content),
-          contents: editingContent,
-        })(i, 1, 1))
-        let jsx = ''
-        for (let j = 0; j < svg.length; j++) {
-          const c = svg[j]
-          if (c === '-') {
-            jsx += svg[j + 1].toUpperCase()
-            j++
-          } else {
-            jsx += c
-          }
-        }
-        result.push(jsx.split(getColorString(color)).join('currentColor'))
-      }
-    })
-    navigator.clipboard.writeText(result.join('\n'))
-  })
 
   React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
@@ -377,36 +349,6 @@ export const CADEditor = React.forwardRef((props: {
     undo,
     redo,
     startOperation,
-    exitEditBlock() {
-      setEditingContentPath(undefined)
-      setSelected()
-    },
-    compress() {
-      setState(draft => {
-        const newIndexes: (number | undefined)[] = []
-        let validContentCount = 0
-        const invalidContentsIndex: number[] = []
-        const contentIsValid = (d: Nullable<BaseContent>): d is BaseContent => !!d && (getContentModel(d)?.isValid?.(d) ?? true)
-        draft.forEach((d, i) => {
-          if (contentIsValid(d)) {
-            newIndexes.push(validContentCount)
-            if (model.isContainerContent(d)) {
-              d.contents = d.contents.filter(c => contentIsValid(c))
-            }
-            validContentCount++
-          } else {
-            newIndexes.push(undefined)
-            invalidContentsIndex.unshift(i)
-          }
-        })
-        invalidContentsIndex.forEach(i => {
-          draft.splice(i, 1)
-        })
-        for (const content of iterateAllContents(draft)) {
-          getContentModel(content)?.updateRefId?.(content, refId => newIndexes[refId])
-        }
-      })
-    },
   }), [applyPatchFromOtherOperators])
 
   const { input: cursorInput, inputPosition, setInputPosition, setCursorPosition, clearText } = useCursorInput(message, operations.type !== 'operate' && !readOnly ? (e, text) => {
@@ -718,7 +660,7 @@ export function usePlugins() {
 
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches }
+  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {
@@ -809,8 +751,6 @@ export interface CADEditorRef {
   undo(): void
   redo(): void
   startOperation(p: Operation): void
-  exitEditBlock(): void
-  compress(): void
 }
 
 type Operation = {

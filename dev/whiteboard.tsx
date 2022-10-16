@@ -36,8 +36,6 @@ export const WhiteBoard = () => {
       />
       <div style={{ position: 'relative' }}>
         {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        <button onClick={() => editorRef.current?.compress()}>compress</button>
-        <button onClick={() => editorRef.current?.exitEditBlock()}>exit edit container</button>
         <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
         <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
         <span>
@@ -70,14 +68,7 @@ export const WhiteBoard = () => {
               },
             })
           }
-          return (
-            <button
-              onClick={() => editorRef.current?.startOperation({ type: 'command', name: p.name })}
-              key={p.name}
-              style={{ borderColor: operation === p.name ? 'red' : undefined }}>
-              {p.name}{p.hotkey ? `(${p.hotkey})` : ''}
-            </button>
-          )
+          return null
         })}
       </div>
     </div>

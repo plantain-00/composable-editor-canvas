@@ -104,8 +104,15 @@ export function isRegularPolygonContent(content: model.BaseContent): content is 
 }
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="91,40 53.15913160642131,7.916512888149235 10.952450707702425,33.99097459975807 22.708155753551882,82.18936528774087 72.18026193232437,85.90314722435183" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+    </svg>
+  )
   return {
     name: 'create regular polygon',
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === 'create regular polygon',

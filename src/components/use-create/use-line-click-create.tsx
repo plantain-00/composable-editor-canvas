@@ -160,6 +160,8 @@ export function useLineClickCreate(
       setLine([...positions, newPosition])
     },
     input,
+    reset,
+    positions,
   }
 }
 

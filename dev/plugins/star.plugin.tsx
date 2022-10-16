@@ -114,8 +114,15 @@ export function isStarContent(content: model.BaseContent): content is StarConten
 }
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="75,84 70.10506171865889,56.40597325071819 90.0613464134089,36.73016490136938 62.30524834733077,32.85850464193647 49.75927371857041,7.798790883939958 37.5,33 9.789876562682231,37.18805349856361 29.969326793295547,56.63491754931531 25.389503305338458,84.28299071612705 50.1203631407148,71.10060455803003" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+    </svg>
+  )
   return {
     name: 'create star',
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === 'create star',

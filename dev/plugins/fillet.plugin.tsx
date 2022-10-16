@@ -25,6 +25,13 @@ export function getCommand(ctx: PluginContext): Command {
     return result
   }
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="9,10 92.02409288875128,10" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="92.02409288875128,10 92.02409288875128,93.02467676553937" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <path d="M 92.02409288875128 60.000000000000014 A 50 50 0 0 0 42.024092888751284 10.000000000000014" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></path>
+    </svg>
+  )
   return {
     name: 'fillet',
     useCommand({ onEnd, type, selected, scale }) {
@@ -85,5 +92,6 @@ export function getCommand(ctx: PluginContext): Command {
     contentSelectable: (c) => isLineContent(c),
     selectType: 'select part',
     hotkey: 'F',
+    icon,
   }
 }

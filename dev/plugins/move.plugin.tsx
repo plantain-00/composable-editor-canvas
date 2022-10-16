@@ -2,6 +2,13 @@ import type { PluginContext } from './types'
 import type { Command } from '../commands/command'
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="9,60 55,60 55,91 9,91" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+      <rect x="44" y="10" width="46" height="31" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></rect>
+    </svg>
+  )
   return {
     name: 'move',
     useCommand({ onEnd, transform, type, scale }) {
@@ -46,5 +53,6 @@ export function getCommand(ctx: PluginContext): Command {
       return ctx.getModel(content.type)?.move !== undefined
     },
     hotkey: 'M',
+    icon,
   }
 }

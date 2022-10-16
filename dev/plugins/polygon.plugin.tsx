@@ -105,6 +105,11 @@ export function isPolygonContent(content: model.BaseContent): content is Polygon
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="10.964331152381801,81 86.72644978417914,83.3559397330022 88.44676768044036,39.61510448168846 52.00408203830702,10.225841867064801 12.791823135476555,35.80311391824452" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+    </svg>
+  )
   return {
     name: 'create polygon',
     useCommand({ onEnd, type, scale }) {
@@ -146,5 +151,6 @@ export function getCommand(ctx: PluginContext): Command {
     },
     selectCount: 0,
     hotkey: 'POL',
+    icon,
   }
 }

@@ -85,6 +85,13 @@ export function isImageContent(content: model.BaseContent): content is ImageCont
 }
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="100,100 100,50 66,67 28.124783736376884,11.999999999999993 0,36 0,100" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
+      <circle cx="70" cy="22" r="13.601470508735444" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></circle>
+    </svg>
+  )
   return {
     name: 'create image',
     useCommand({ onEnd, type }) {
@@ -112,5 +119,6 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     selectCount: 0,
+    icon,
   }
 }

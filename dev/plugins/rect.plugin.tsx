@@ -147,8 +147,15 @@ export function isRectContent(content: model.BaseContent): content is RectConten
 }
 
 export function getCommand(ctx: PluginContext): Command {
+  const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect x="11" y="26" width="79" height="48" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></rect>
+    </svg>
+  )
   return {
     name: 'create rect',
+    icon,
     useCommand({ onEnd, type }) {
       const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
         type === 'create rect',

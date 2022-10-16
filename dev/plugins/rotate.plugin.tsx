@@ -5,8 +5,15 @@ import type { ArcContent } from './circle-arc.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
+  const icon = (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polygon points="5.5,66 66.5,66 66.5,94 5.5,94" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polygon>
+      <rect x="35.5" y="26" width="61" height="28" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor" transform="rotate(56.85300416774402,66,40)"></rect>
+    </svg>
+  )
   return {
     name: 'rotate',
+    icon,
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(true)
       const { offset, onStart, mask, center: startPosition } = ctx.useDragRotate(
