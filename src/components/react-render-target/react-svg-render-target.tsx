@@ -211,7 +211,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
     ), options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return renderPattern((fill, stroke, scale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <text
         x={x}
         y={y}
@@ -225,7 +225,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
           fontFamily,
           strokeWidth: options?.strokeWidth,
           stroke,
-          strokeDasharray: options?.dashArray && options.dashArray.length > 0 ? options.dashArray.map(d => d * scale).join(' ') : undefined,
+          strokeDasharray: getStrokeDasharray(scale, strokeWidthScale, options),
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
@@ -506,7 +506,7 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, opt
   return {
     strokeWidth: options?.strokeWidth ?? 1,
     vectorEffect: strokeWidthScale === 1 ? undefined : 'non-scaling-stroke' as const,
-    strokeDasharray: options?.dashArray && options.dashArray.length > 0 ? options.dashArray.map(d => d * scale).join(' ') : undefined,
+    strokeDasharray: getStrokeDasharray(scale, strokeWidthScale, options),
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? 'miter',
@@ -514,6 +514,13 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, opt
     fillOpacity: options?.fillOpacity,
     strokeOpacity: options?.strokeOpacity,
   }
+}
+
+function getStrokeDasharray<T>(scale: number, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
+  if (options?.dashArray && options.dashArray.length > 0) {
+    return options.dashArray.map(d => d * (strokeWidthScale === 1 ? 1 : scale)).join(' ')
+  }
+  return
 }
 
 /**

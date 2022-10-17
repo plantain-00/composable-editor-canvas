@@ -4,11 +4,13 @@ function getModel(ctx) {
   function getArrowGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [content.p1, content.p2];
-      const arrow = ctx.getPointByLengthAndDirection(content.p2, ctx.dimensionStyle.arrowSize, content.p1);
+      const arrowSize = content.arrowSize ?? ctx.dimensionStyle.arrowSize;
+      const arrowAngle = content.arrowAngle ?? ctx.dimensionStyle.arrowAngle;
+      const arrow = ctx.getPointByLengthAndDirection(content.p2, arrowSize, content.p1);
       const arrowPoints = [
         content.p2,
-        ctx.rotatePositionByCenter(arrow, content.p2, ctx.dimensionStyle.arrowAngle),
-        ctx.rotatePositionByCenter(arrow, content.p2, -ctx.dimensionStyle.arrowAngle)
+        ctx.rotatePositionByCenter(arrow, content.p2, arrowAngle),
+        ctx.rotatePositionByCenter(arrow, content.p2, -arrowAngle)
       ];
       return {
         points: [],
@@ -28,6 +30,7 @@ function getModel(ctx) {
   return {
     type: "arrow",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x;
       content.p1.y += offset.y;
@@ -42,7 +45,7 @@ function getModel(ctx) {
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }));
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
         }
       }
       return target.renderGroup(children);
@@ -124,6 +127,7 @@ function getModel(ctx) {
             })
           }
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     }
@@ -3324,7 +3328,11 @@ export {
 function getModel(ctx) {
   function getLinearDimensionGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      return ctx.getLinearDimensionGeometries(content, ctx.dimensionStyle, getTextPosition);
+      return ctx.getLinearDimensionGeometries(content, {
+        arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+        arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+        margin: ctx.dimensionStyle.margin
+      }, getTextPosition);
     });
   }
   const textPositionMap = new ctx.WeakmapCache();
@@ -3337,6 +3345,7 @@ function getModel(ctx) {
   return {
     type: "linear dimension",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x;
       content.p1.y += offset.y;
@@ -3353,7 +3362,7 @@ function getModel(ctx) {
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }));
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
         }
       }
       const { textPosition, text, textRotation } = getTextPosition(content);
@@ -3498,6 +3507,7 @@ function getModel(ctx) {
             }
           })
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     }
@@ -4147,7 +4157,11 @@ function getModel(ctx) {
     const target = getRadialDimensionReferenceTarget(content.refId, contents);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
-        return ctx.getRadialDimensionGeometries(content, target, ctx.dimensionStyle, getTextPosition);
+        return ctx.getRadialDimensionGeometries(content, target, {
+          arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+          arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+          margin: ctx.dimensionStyle.margin
+        }, getTextPosition);
       });
     }
     return { lines: [], points: [], renderingLines: [] };
@@ -4166,6 +4180,7 @@ function getModel(ctx) {
   return {
     type: "radial dimension reference",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.position.x += offset.x;
       content.position.y += offset.y;
@@ -4177,7 +4192,7 @@ function getModel(ctx) {
         children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }));
       }
       if (regions && regions.length > 0) {
-        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }));
+        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
       }
       const referenceTarget = getRadialDimensionReferenceTarget(content.refId, contents);
       if (referenceTarget) {
@@ -4278,6 +4293,7 @@ function getModel(ctx) {
             }
           })
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     },

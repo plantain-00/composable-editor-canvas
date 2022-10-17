@@ -5,7 +5,7 @@ import type * as model from '../models/model'
 import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 import type { LineContent } from './line-polyline.plugin'
 
-export type RadialDimensionReferenceContent = model.BaseContent<'radial dimension reference'> & model.StrokeFields & core.RadialDimension & {
+export type RadialDimensionReferenceContent = model.BaseContent<'radial dimension reference'> & model.StrokeFields & model.ArrowFields & core.RadialDimension & {
   refId: number
 }
 
@@ -14,7 +14,11 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     const target = getRadialDimensionReferenceTarget(content.refId, contents)
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
-        return ctx.getRadialDimensionGeometries(content, target, ctx.dimensionStyle, getTextPosition)
+        return ctx.getRadialDimensionGeometries(content, target, {
+          arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+          arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+          margin: ctx.dimensionStyle.margin,
+        }, getTextPosition)
       })
     }
     return { lines: [], points: [], renderingLines: [] }
@@ -40,6 +44,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   return {
     type: 'radial dimension reference',
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.position.x += offset.x
       content.position.y += offset.y
@@ -51,7 +56,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
         children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }))
       }
       if (regions && regions.length > 0) {
-        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }))
+        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
       }
       const referenceTarget = getRadialDimensionReferenceTarget(content.refId, contents)
       if (referenceTarget) {
@@ -110,6 +115,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
         ],
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontSize = v } })} />,
         fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontFamily = v } })} />,
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update),
       }
     },

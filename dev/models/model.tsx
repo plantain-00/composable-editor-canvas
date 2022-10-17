@@ -20,11 +20,18 @@ export interface ContainerFields {
   contents: Nullable<BaseContent>[]
 }
 
+export interface ArrowFields {
+  arrowAngle?: number
+  arrowSize?: number
+}
+
 type StrokeContent<T extends string = string> = BaseContent<T> & StrokeFields
 
 type FillContent<T extends string = string> = BaseContent<T> & FillFields
 
 type ContainerContent<T extends string = string> = BaseContent<T> & ContainerFields
+
+type ArrowContent<T extends string = string> = BaseContent<T> & ArrowFields
 
 export const strokeModel = {
   isStroke: true,
@@ -38,7 +45,11 @@ export const containerModel = {
   isContainer: true,
 }
 
-export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof containerModel> & {
+export const arrowModel = {
+  isArrow: true,
+}
+
+export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof containerModel & typeof arrowModel> & {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
@@ -215,6 +226,22 @@ export function getFillContentPropertyPanel(
   }
 }
 
+export function getArrowContentPropertyPanel(
+  content: Omit<ArrowContent, 'type'>,
+  update: (recipe: (content: BaseContent) => void) => void,
+) {
+  return {
+    arrowAngle: [
+      <BooleanEditor value={content.arrowAngle !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowAngle = v ? dimensionStyle.arrowAngle : undefined } })} style={{ marginRight: '5px' }} />,
+      content.arrowAngle !== undefined ? <NumberEditor value={content.arrowAngle} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowAngle = v } })} /> : undefined,
+    ],
+    arrowSize: [
+      <BooleanEditor value={content.arrowSize !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowSize = v ? dimensionStyle.arrowSize : undefined } })} style={{ marginRight: '5px' }} />,
+      content.arrowSize !== undefined ? <NumberEditor value={content.arrowSize} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowSize = v } })} /> : undefined,
+    ],
+  }
+}
+
 export function isStrokeContent(content: BaseContent): content is StrokeContent {
   return !!getContentModel(content)?.isStroke
 }
@@ -225,6 +252,10 @@ export function isFillContent(content: BaseContent): content is FillContent {
 
 export function isContainerContent(content: BaseContent): content is ContainerContent {
   return !!getContentModel(content)?.isContainer
+}
+
+export function isArrowContent(content: BaseContent): content is ArrowContent {
+  return !!getContentModel(content)?.isArrow
 }
 
 export function getStrokeWidth(content: BaseContent) {

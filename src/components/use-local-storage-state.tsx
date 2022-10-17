@@ -3,7 +3,9 @@ import * as React from "react"
 /**
  * @public
  */
-export function useLocalStorageState<S>(key: string, defaultValue: S): [S, React.Dispatch<S>] {
+export function useLocalStorageState<S>(key: string, defaultValue: S, options?: Partial<{
+  initial: boolean
+}>): [S, React.Dispatch<S>] {
   const [state, setState] = React.useState(() => {
     const stateString = localStorage.getItem(key)
     if (stateString) {
@@ -17,7 +19,9 @@ export function useLocalStorageState<S>(key: string, defaultValue: S): [S, React
   })
   const onChange: React.Dispatch<S> = (s) => {
     localStorage.setItem(key, JSON.stringify(s))
-    setState(s)
+    if (!options?.initial) {
+      setState(s)
+    }
   }
   return [state, onChange]
 }
