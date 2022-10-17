@@ -3,9 +3,10 @@ export const pluginScripts = [
 function getModel(ctx) {
   function getArrowGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = [content.p1, content.p2];
       const arrowSize = content.arrowSize ?? ctx.dimensionStyle.arrowSize;
       const arrowAngle = content.arrowAngle ?? ctx.dimensionStyle.arrowAngle;
+      const d = (content.strokeWidth ?? 1) / 2 / Math.tan(arrowAngle * Math.PI / 180);
+      const points = [content.p1, ctx.getPointByLengthAndDirection(content.p2, d, content.p1)];
       const arrow = ctx.getPointByLengthAndDirection(content.p2, arrowSize, content.p1);
       const arrowPoints = [
         content.p2,
