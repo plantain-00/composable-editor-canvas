@@ -79,13 +79,13 @@ export function getCommand(ctx: PluginContext): Command {
               return {
                 newContents: [
                   ctx.produce(content, (d) => {
-                    ctx.getModel(d.type)?.rotate?.(d, startPosition, angle, contents)
+                    ctx.getContentModel(d)?.rotate?.(d, startPosition, angle, contents)
                   }),
                 ]
               }
             }
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getModel(content.type)?.rotate?.(draft, startPosition, angle, contents)
+              ctx.getContentModel(content)?.rotate?.(draft, startPosition, angle, contents)
             })
             return {
               patches,
@@ -97,7 +97,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.rotate !== undefined
+      return ctx.getContentModel(content)?.rotate !== undefined
     },
     hotkey: 'RO',
   }

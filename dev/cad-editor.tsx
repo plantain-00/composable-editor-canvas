@@ -2,7 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getModel, registerModel, zoomContentsToFit } from './models/model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, registerModel, zoomContentsToFit } from './models/model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import RTree from 'rtree'
@@ -87,7 +87,7 @@ export const CADEditor = React.forwardRef((props: {
         }
       }
       for (const content of newContents) {
-        const geometries = getModel(content.type)?.getGeometries?.(content, newState)
+        const geometries = getContentModel(content)?.getGeometries?.(content, newState)
         if (geometries?.bounding) {
           rtree?.insert({
             x: geometries.bounding.start.x,
@@ -98,7 +98,7 @@ export const CADEditor = React.forwardRef((props: {
         }
       }
       for (const content of removedContents) {
-        const geometries = getModel(content.type)?.getGeometries?.(content, oldState)
+        const geometries = getContentModel(content)?.getGeometries?.(content, oldState)
         if (geometries?.bounding) {
           rtree?.remove({
             x: geometries.bounding.start.x,
@@ -175,7 +175,7 @@ export const CADEditor = React.forwardRef((props: {
     } else {
       for (const f of selected) {
         if (f.length === 2 && f[0] === i) {
-          const line = getModel(s.type)?.getGeometries?.(s)?.lines?.[f[1]]
+          const line = getContentModel(s)?.getGeometries?.(s)?.lines?.[f[1]]
           if (line) {
             selectedContents.push({ content: { type: 'line', points: line } as LineContent, path: f })
           }
@@ -186,7 +186,7 @@ export const CADEditor = React.forwardRef((props: {
 
   const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
     () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
-    (s) => getModel(s.type)?.getEditPoints?.(s, editingContent),
+    (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
       scale: transform.scale,
       readOnly: readOnly || operations.type === 'operate',
@@ -475,7 +475,7 @@ export const CADEditor = React.forwardRef((props: {
       if (!content) {
         continue
       }
-      const geometries = getModel(content.type)?.getGeometries?.(content, contents)
+      const geometries = getContentModel(content)?.getGeometries?.(content, contents)
       if (geometries?.bounding) {
         newRTree.insert({
           x: geometries.bounding.start.x,
@@ -564,7 +564,7 @@ export const CADEditor = React.forwardRef((props: {
     }
     selectedContents.forEach(target => {
       types.add(target.content.type)
-      const propertyPanel = getModel(target.content.type)?.propertyPanel?.(target.content, contentsUpdater)
+      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater)
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]

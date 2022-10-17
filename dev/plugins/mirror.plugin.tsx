@@ -51,7 +51,7 @@ export function getCommand(ctx: PluginContext): Command {
             const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI
             if (changeOriginal) {
               const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-                ctx.getModel(content.type)?.mirror?.(draft, line, angle, contents)
+                ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents)
               })
               return {
                 patches,
@@ -60,7 +60,7 @@ export function getCommand(ctx: PluginContext): Command {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getModel(d.type)?.mirror?.(d, line, angle, contents)
+                  ctx.getContentModel(d)?.mirror?.(d, line, angle, contents)
                 }),
               ]
             }
@@ -81,7 +81,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.mirror !== undefined
+      return ctx.getContentModel(content)?.mirror !== undefined
     },
     hotkey: 'MI',
     icon,

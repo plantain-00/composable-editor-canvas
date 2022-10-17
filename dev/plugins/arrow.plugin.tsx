@@ -4,7 +4,7 @@ import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type ArrowContent = model.BaseContent<'arrow'> & model.StrokeFields & {
+export type ArrowContent = model.BaseContent<'arrow'> & model.StrokeFields & model.ArrowFields & {
   p1: core.Position
   p2: core.Position
 }
@@ -13,11 +13,13 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
   function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [content.p1, content.p2]
-      const arrow = ctx.getPointByLengthAndDirection(content.p2, ctx.dimensionStyle.arrowSize, content.p1)
+      const arrowSize = content.arrowSize ?? ctx.dimensionStyle.arrowSize
+      const arrowAngle = content.arrowAngle ?? ctx.dimensionStyle.arrowAngle
+      const arrow = ctx.getPointByLengthAndDirection(content.p2, arrowSize, content.p1)
       const arrowPoints = [
         content.p2,
-        ctx.rotatePositionByCenter(arrow, content.p2, ctx.dimensionStyle.arrowAngle),
-        ctx.rotatePositionByCenter(arrow, content.p2, -ctx.dimensionStyle.arrowAngle),
+        ctx.rotatePositionByCenter(arrow, content.p2, arrowAngle),
+        ctx.rotatePositionByCenter(arrow, content.p2, -arrowAngle),
       ]
       return {
         points: [],
@@ -37,6 +39,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
   return {
     type: 'arrow',
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x
       content.p1.y += offset.y
@@ -51,7 +54,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }))
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
         }
       }
       return target.renderGroup(children)
@@ -105,6 +108,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.y = v } })} />,
           }}
         />,
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update),
       }
     },

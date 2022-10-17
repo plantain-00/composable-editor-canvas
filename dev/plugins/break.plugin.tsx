@@ -26,7 +26,7 @@ export function getCommand(ctx: PluginContext): Command {
           }
           intersectionPoints = ctx.deduplicatePosition(intersectionPoints)
           if (intersectionPoints.length > 0) {
-            const result = ctx.getModel(content.type)?.break?.(content, intersectionPoints)
+            const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints)
             if (result) {
               newContents.push(...result)
               contents[index] = undefined
@@ -37,7 +37,7 @@ export function getCommand(ctx: PluginContext): Command {
       contents.push(...newContents)
     },
     contentSelectable(content, contents) {
-      const model = ctx.getModel(content.type)
+      const model = ctx.getContentModel(content)
       return model?.break !== undefined && !ctx.contentIsReferenced(content, contents)
     },
     hotkey: 'BR',

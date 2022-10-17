@@ -4,11 +4,13 @@ function getModel(ctx) {
   function getArrowGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [content.p1, content.p2];
-      const arrow = ctx.getPointByLengthAndDirection(content.p2, ctx.dimensionStyle.arrowSize, content.p1);
+      const arrowSize = content.arrowSize ?? ctx.dimensionStyle.arrowSize;
+      const arrowAngle = content.arrowAngle ?? ctx.dimensionStyle.arrowAngle;
+      const arrow = ctx.getPointByLengthAndDirection(content.p2, arrowSize, content.p1);
       const arrowPoints = [
         content.p2,
-        ctx.rotatePositionByCenter(arrow, content.p2, ctx.dimensionStyle.arrowAngle),
-        ctx.rotatePositionByCenter(arrow, content.p2, -ctx.dimensionStyle.arrowAngle)
+        ctx.rotatePositionByCenter(arrow, content.p2, arrowAngle),
+        ctx.rotatePositionByCenter(arrow, content.p2, -arrowAngle)
       ];
       return {
         points: [],
@@ -28,6 +30,7 @@ function getModel(ctx) {
   return {
     type: "arrow",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x;
       content.p1.y += offset.y;
@@ -42,7 +45,7 @@ function getModel(ctx) {
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }));
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
         }
       }
       return target.renderGroup(children);
@@ -124,6 +127,7 @@ function getModel(ctx) {
             })
           }
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     }
@@ -197,7 +201,7 @@ function getModel(ctx) {
     return contents.find((c, i) => !!c && isBlockContent(c) && i === id);
   }
   function extractContentInBlockReference(target, content, block, contents) {
-    const model = ctx.getModel(target.type);
+    const model = ctx.getContentModel(target);
     if (!model) {
       return void 0;
     }
@@ -219,7 +223,7 @@ function getModel(ctx) {
           }
           const extracted = extractContentInBlockReference(c, content, block, contents);
           if (extracted) {
-            const r = ctx.getModel(c.type)?.getGeometries?.(extracted);
+            const r = ctx.getContentModel(c)?.getGeometries?.(extracted);
             if (r) {
               lines.push(...r.lines);
               points.push(...r.points);
@@ -331,7 +335,7 @@ function getModel(ctx) {
             if (!c) {
               return;
             }
-            const model = ctx.getModel(c.type);
+            const model = ctx.getContentModel(c);
             const extracted = extractContentInBlockReference(c, content, block, contents);
             if (extracted) {
               const r = model?.getSnapPoints?.(extracted, contents);
@@ -600,7 +604,7 @@ function getCommand(ctx) {
           }
           intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
           if (intersectionPoints.length > 0) {
-            const result = ctx.getModel(content.type)?.break?.(content, intersectionPoints);
+            const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints);
             if (result) {
               newContents.push(...result);
               contents[index] = void 0;
@@ -611,7 +615,7 @@ function getCommand(ctx) {
       contents.push(...newContents);
     },
     contentSelectable(content, contents) {
-      const model = ctx.getModel(content.type);
+      const model = ctx.getContentModel(content);
       return model?.break !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "BR",
@@ -1512,7 +1516,7 @@ function getCommand(ctx) {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getModel(d.type)?.move?.(d, offset);
+                  ctx.getContentModel(d)?.move?.(d, offset);
                 })
               ]
             };
@@ -1529,7 +1533,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.move !== void 0;
+      return ctx.getContentModel(content)?.move !== void 0;
     },
     hotkey: "CO",
     icon
@@ -2470,7 +2474,7 @@ function getCommand(ctx) {
       const newContents = [];
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          const result = ctx.getModel(content.type)?.explode?.(content, contents);
+          const result = ctx.getContentModel(content)?.explode?.(content, contents);
           if (result) {
             newContents.push(...result);
             contents[index] = void 0;
@@ -2480,7 +2484,7 @@ function getCommand(ctx) {
       contents.push(...newContents);
     },
     contentSelectable(content, contents) {
-      const model = ctx.getModel(content.type);
+      const model = ctx.getContentModel(content);
       return model?.explode !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "X",
@@ -2727,7 +2731,7 @@ function getModel(ctx) {
         if (!c) {
           return;
         }
-        ctx.getModel(c.type)?.move?.(c, offset);
+        ctx.getContentModel(c)?.move?.(c, offset);
       });
     },
     rotate(content, center, angle, contents) {
@@ -2735,7 +2739,7 @@ function getModel(ctx) {
         if (!c) {
           return;
         }
-        ctx.getModel(c?.type)?.rotate?.(c, center, angle, contents);
+        ctx.getContentModel(c)?.rotate?.(c, center, angle, contents);
       });
     },
     explode(content) {
@@ -2746,7 +2750,7 @@ function getModel(ctx) {
         if (!c) {
           return;
         }
-        ctx.getModel(c.type)?.mirror?.(c, line, angle, contents);
+        ctx.getContentModel(c)?.mirror?.(c, line, angle, contents);
       });
     },
     render({ content, target, color, strokeWidth, contents }) {
@@ -3324,7 +3328,11 @@ export {
 function getModel(ctx) {
   function getLinearDimensionGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      return ctx.getLinearDimensionGeometries(content, ctx.dimensionStyle, getTextPosition);
+      return ctx.getLinearDimensionGeometries(content, {
+        arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+        arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+        margin: ctx.dimensionStyle.margin
+      }, getTextPosition);
     });
   }
   const textPositionMap = new ctx.WeakmapCache();
@@ -3337,6 +3345,7 @@ function getModel(ctx) {
   return {
     type: "linear dimension",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x;
       content.p1.y += offset.y;
@@ -3353,7 +3362,7 @@ function getModel(ctx) {
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }));
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
         }
       }
       const { textPosition, text, textRotation } = getTextPosition(content);
@@ -3498,6 +3507,7 @@ function getModel(ctx) {
             }
           })
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     }
@@ -3841,7 +3851,7 @@ function getCommand(ctx) {
             const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI;
             if (changeOriginal) {
               const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-                ctx.getModel(content.type)?.mirror?.(draft, line, angle, contents);
+                ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents);
               });
               return {
                 patches
@@ -3850,7 +3860,7 @@ function getCommand(ctx) {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getModel(d.type)?.mirror?.(d, line, angle, contents);
+                  ctx.getContentModel(d)?.mirror?.(d, line, angle, contents);
                 })
               ]
             };
@@ -3871,7 +3881,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.mirror !== void 0;
+      return ctx.getContentModel(content)?.mirror !== void 0;
     },
     hotkey: "MI",
     icon
@@ -3930,7 +3940,7 @@ function getCommand(ctx) {
         updateContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getModel(content.type)?.move?.(draft, offset);
+              ctx.getContentModel(content)?.move?.(draft, offset);
             });
             return {
               patches
@@ -3948,7 +3958,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.move !== void 0;
+      return ctx.getContentModel(content)?.move !== void 0;
     },
     hotkey: "M",
     icon
@@ -4147,7 +4157,11 @@ function getModel(ctx) {
     const target = getRadialDimensionReferenceTarget(content.refId, contents);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
-        return ctx.getRadialDimensionGeometries(content, target, ctx.dimensionStyle, getTextPosition);
+        return ctx.getRadialDimensionGeometries(content, target, {
+          arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+          arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+          margin: ctx.dimensionStyle.margin
+        }, getTextPosition);
       });
     }
     return { lines: [], points: [], renderingLines: [] };
@@ -4166,6 +4180,7 @@ function getModel(ctx) {
   return {
     type: "radial dimension reference",
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.position.x += offset.x;
       content.position.y += offset.y;
@@ -4177,7 +4192,7 @@ function getModel(ctx) {
         children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }));
       }
       if (regions && regions.length > 0) {
-        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth, fillColor: color }));
+        children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
       }
       const referenceTarget = getRadialDimensionReferenceTarget(content.refId, contents);
       if (referenceTarget) {
@@ -4278,6 +4293,7 @@ function getModel(ctx) {
             }
           })
         }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     },
@@ -5121,13 +5137,13 @@ function getCommand(ctx) {
               return {
                 newContents: [
                   ctx.produce(content, (d) => {
-                    ctx.getModel(d.type)?.rotate?.(d, startPosition, angle, contents);
+                    ctx.getContentModel(d)?.rotate?.(d, startPosition, angle, contents);
                   })
                 ]
               };
             }
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getModel(content.type)?.rotate?.(draft, startPosition, angle, contents);
+              ctx.getContentModel(content)?.rotate?.(draft, startPosition, angle, contents);
             });
             return {
               patches
@@ -5139,7 +5155,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.rotate !== void 0;
+      return ctx.getContentModel(content)?.rotate !== void 0;
     },
     hotkey: "RO"
   };

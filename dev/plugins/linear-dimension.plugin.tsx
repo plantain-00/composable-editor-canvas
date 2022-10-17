@@ -4,12 +4,16 @@ import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & core.LinearDimension
+export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & model.ArrowFields & core.LinearDimension
 
 export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent> {
   function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      return ctx.getLinearDimensionGeometries(content, ctx.dimensionStyle, getTextPosition)
+      return ctx.getLinearDimensionGeometries(content, {
+        arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
+        arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+        margin: ctx.dimensionStyle.margin,
+      }, getTextPosition)
     })
   }
   const textPositionMap = new ctx.WeakmapCache<Omit<LinearDimensionContent, 'type'>, {
@@ -27,6 +31,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
   return {
     type: 'linear dimension',
     ...ctx.strokeModel,
+    ...ctx.arrowModel,
     move(content, offset) {
       content.p1.x += offset.x
       content.p1.y += offset.y
@@ -43,7 +48,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth, fillColor: color }))
+          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
         }
       }
       const { textPosition, text, textRotation } = getTextPosition(content)
@@ -110,6 +115,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         ],
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontSize = v } })} />,
         fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontFamily = v } })} />,
+        ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update),
       }
     },

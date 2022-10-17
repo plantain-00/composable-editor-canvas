@@ -1475,7 +1475,9 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
-export function useLocalStorageState<S>(key: string, defaultValue: S): [S, React_2.Dispatch<S>];
+export function useLocalStorageState<S>(key: string, defaultValue: S, options?: Partial<{
+    initial: boolean;
+}>): [S, React_2.Dispatch<S>];
 
 // @public (undocumented)
 export function usePartialEdit<T>(content: T, options?: Partial<{

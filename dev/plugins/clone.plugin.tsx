@@ -38,7 +38,7 @@ export function getCommand(ctx: PluginContext): Command {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getModel(d.type)?.move?.(d, offset)
+                  ctx.getContentModel(d)?.move?.(d, offset)
                 }),
               ],
             }
@@ -55,7 +55,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.move !== undefined
+      return ctx.getContentModel(content)?.move !== undefined
     },
     hotkey: 'CO',
     icon,

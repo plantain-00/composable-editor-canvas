@@ -32,7 +32,7 @@ export function getCommand(ctx: PluginContext): Command {
         updateContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getModel(content.type)?.move?.(draft, offset)
+              ctx.getContentModel(content)?.move?.(draft, offset)
             })
             return {
               patches,
@@ -50,7 +50,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getModel(content.type)?.move !== undefined
+      return ctx.getContentModel(content)?.move !== undefined
     },
     hotkey: 'M',
     icon,

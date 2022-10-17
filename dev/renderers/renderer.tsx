@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, getContentByIndex, getContentColor, getModel, getStrokeWidth } from "../models/model"
+import { BaseContent, getContentByIndex, getContentColor, getContentModel, getStrokeWidth } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -60,7 +60,7 @@ export function Renderer(props: {
   )
 
   const renderContent = (content: BaseContent, color: number, strokeWidth: number) => {
-    const model = getModel(content.type)
+    const model = getContentModel(content)
     if (!model) {
       return
     }
@@ -121,7 +121,7 @@ export function Renderer(props: {
         if (!content) {
           return
         }
-        const model = getModel(content.type)
+        const model = getContentModel(content)
         if (!model) {
           return
         }
@@ -149,7 +149,7 @@ export function Renderer(props: {
       if (content) {
         const strokeWidth = getStrokeWidth(content)
         renderContent(content, 0xff0000, strokeWidth + 1)
-        const RenderIfSelected = getModel(content.type)?.renderIfSelected
+        const RenderIfSelected = getContentModel(content)?.renderIfSelected
         if (RenderIfSelected) {
           merger.flushLast()
           children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth }))

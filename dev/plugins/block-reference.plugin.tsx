@@ -22,7 +22,7 @@ export function getModel(ctx: PluginContext): model.Model<BlockReferenceContent>
     block: BlockContent,
     contents: readonly core.Nullable<model.BaseContent>[],
   ) {
-    const model = ctx.getModel(target.type)
+    const model = ctx.getContentModel(target)
     if (!model) {
       return undefined
     }
@@ -44,7 +44,7 @@ export function getModel(ctx: PluginContext): model.Model<BlockReferenceContent>
           }
           const extracted = extractContentInBlockReference(c, content, block, contents)
           if (extracted) {
-            const r = ctx.getModel(c.type)?.getGeometries?.(extracted)
+            const r = ctx.getContentModel(c)?.getGeometries?.(extracted)
             if (r) {
               lines.push(...r.lines)
               points.push(...r.points)
@@ -156,7 +156,7 @@ export function getModel(ctx: PluginContext): model.Model<BlockReferenceContent>
             if (!c) {
               return
             }
-            const model = ctx.getModel(c.type)
+            const model = ctx.getContentModel(c)
             const extracted = extractContentInBlockReference(c, content, block, contents)
             if (extracted) {
               const r = model?.getSnapPoints?.(extracted, contents)

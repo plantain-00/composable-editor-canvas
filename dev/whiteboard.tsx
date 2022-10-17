@@ -4,7 +4,7 @@ import { BaseContent } from './models/model'
 import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 
 export const WhiteBoard = () => {
-  const [initialState, onChange] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [])
+  const [initialState, onChange] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [], { initial: true })
   const editorRef = React.useRef<CADEditorRef | null>(null)
   const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
   const [canUndo, setCanUndo] = React.useState(false)
