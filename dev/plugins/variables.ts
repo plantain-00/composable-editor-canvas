@@ -38,6 +38,14 @@ function getModel(ctx) {
       content.p2.x += offset.x;
       content.p2.y += offset.y;
     },
+    rotate(content, center, angle) {
+      content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle);
+      content.p2 = ctx.rotatePositionByCenter(content.p2, center, -angle);
+    },
+    mirror(content, line) {
+      content.p1 = ctx.getSymmetryPoint(content.p1, line);
+      content.p2 = ctx.getSymmetryPoint(content.p2, line);
+    },
     render({ content, target, color, strokeWidth }) {
       const { regions, renderingLines } = getArrowGeometriesFromCache(content);
       const children = [];
@@ -620,58 +628,6 @@ function getCommand(ctx) {
       return model?.break !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "BR",
-    icon
-  };
-}
-export {
-  getCommand
-};
-`,
-`// dev/plugins/cancel-edit-container.plugin.tsx
-function getCommand(ctx) {
-  const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "37.2523424414741,82.2523424414741 32,77 45.26210843293586,64.73424940995307 34.85576768442547,52.45776612707198 22.804714999337193,65 16.408386715608138,58.388958288839014 4.438582558303025,90.59970985857345",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "83.31772011698345,40.37472637282923 78.58823529411765,34.64705882352941 65.11778548913132,46.68363390432083 53.8856897130448,35.157837010145315 67.51629404983674,24.353109954091316 61.542962454827205,17.357525798639863 94.74536622245155,8.502633800256604",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "60.823922790999546,82.94782332121554 66.3768001163132,78.0142895314217 53.860936060450534,64.98795833037552 64.9729807484759,53.34637628924838 76.26359466760502,66.57730742319224 83.03857504543225,60.35488595723553 93.08844972308609,93.21532946025053",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "17.30773332157345,38.42709778758177 22.36668717670166,32.98823870348119 35.10404208885271,45.798076620726135 46.996145772344406,34.95456060653361 34.026286658445244,23.364985294745704 40.40167834341685,16.733750953905556 7.779106641484908,5.936689140444656",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
-  return {
-    name: "cancel edit container",
-    execute(contents, selected, setEditingContentPath) {
-      setEditingContentPath(void 0);
-    },
-    selectCount: 0,
     icon
   };
 }
@@ -1544,6 +1500,80 @@ export {
   getCommand
 };
 `,
+`// dev/plugins/line-polyline.plugin.tsx
+function isPolyLineContent(content) {
+  return content.type === "polyline";
+}
+
+// dev/plugins/close.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "78,18 13.968757625671515,18.00000000000001 13.968757625671511,89.02905001183156 78.03032679046687,89.02905001183156",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "78",
+    cy: "18",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("circle", {
+    cx: "78.03032679046687",
+    cy: "89.02905001183156",
+    r: "10",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "close",
+    execute(contents, selected) {
+      const newContents = [];
+      contents.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected) && isPolyLineContent(content)) {
+          const p0 = content.points[0];
+          const p1 = content.points[content.points.length - 1];
+          if (ctx.isSamePoint(p0, p1)) {
+            contents[index] = {
+              type: "polygon",
+              points: content.points.slice(0, content.points.length - 1)
+            };
+          } else {
+            contents[index] = {
+              type: "polygon",
+              points: content.points
+            };
+          }
+        }
+      });
+      contents.push(...newContents);
+    },
+    contentSelectable(content) {
+      return isPolyLineContent(content) && content.points.length > 2;
+    },
+    hotkey: "X",
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/plugins/compress.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
@@ -1781,6 +1811,105 @@ function getCommand(ctx) {
     hotkey: "E",
     icon
   };
+}
+export {
+  getCommand
+};
+`,
+`// dev/plugins/edit-container.plugin.tsx
+function getCommand(ctx) {
+  function contentSelectable(c) {
+    return ctx.isContainerContent(c);
+  }
+  const React = ctx.React;
+  const startIcon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "42.15549442140351,73 42.09401788765295,74.40804411575307 41.91005615994365,75.80537216558498 41.605009298102615,77.18134963930676 41.181198892940785,78.52550451750547 40.641850397545156,79.82760696993512 39.99106857963322,81.07774721070176 39.233806281792084,82.26641091771783 38.37582672735581,83.38455164243818 37.42365965879586,84.42365965879586 36.38455164243818,85.37582672735581 35.26641091771783,86.23380628179208 34.07774721070176,86.99106857963322 32.82760696993512,87.64185039754516 31.52550451750547,88.18119889294078 30.18134963930676,88.60500929810262 28.80537216558498,88.91005615994365 27.40804411575307,89.09401788765295 26,89.15549442140352 24.59195588424693,89.09401788765295 23.194627834415023,88.91005615994365 21.81865036069324,88.60500929810262 20.47449548249453,88.18119889294078 19.17239303006488,87.64185039754516 17.92225278929825,86.99106857963322 16.733589082282172,86.23380628179208 15.615448357561815,85.37582672735581 14.57634034120414,84.42365965879586 13.624173272644194,83.38455164243818 12.766193718207916,82.26641091771783 12.008931420366778,81.07774721070176 11.35814960245484,79.82760696993512 10.818801107059214,78.52550451750547 10.394990701897383,77.18134963930676 10.089943840056348,75.80537216558498 9.90598211234705,74.40804411575309 9.84450557859649,73 9.90598211234705,71.59195588424693 10.089943840056348,70.19462783441502 10.39499070189738,68.81865036069325 10.818801107059212,67.47449548249453 11.358149602454839,66.17239303006488 12.00893142036678,64.92225278929824 12.766193718207909,63.73358908228217 13.62417327264419,62.61544835756182 14.576340341204137,61.576340341204144 15.615448357561814,60.62417327264419 16.733589082282165,59.766193718207916 17.922252789298238,59.00893142036678 19.172393030064875,58.358149602454844 20.47449548249452,57.818801107059215 21.818650360693244,57.394990701897385 23.194627834415023,57.08994384005635 24.59195588424693,56.90598211234705 25.999999999999996,56.84450557859649 27.408044115753068,56.90598211234705 28.805372165584973,57.08994384005635 30.181349639306763,57.394990701897385 31.52550451750546,57.81880110705921 32.82760696993512,58.358149602454844 34.07774721070176,59.00893142036678 35.26641091771783,59.766193718207916 36.38455164243818,60.62417327264419 37.423659658795856,61.57634034120414 38.3758267273558,62.61544835756181 39.233806281792084,63.733589082282165 39.991068579633215,64.92225278929824 40.641850397545156,66.17239303006487 41.181198892940785,67.47449548249453 41.605009298102615,68.81865036069324 41.91005615994365,70.194627834415 42.09401788765295,71.59195588424693 42.15549442140351,73",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "12,10 76,10 76,45 12,45",
+    strokeWidth: "5",
+    strokeDasharray: "10",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "70.00000000000001,93.07397274136177 93.44674817538672,52.46301362931911 46.553251824613284,52.463013629319114",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  const startCommand = {
+    name: "start edit container",
+    icon: startIcon,
+    execute(contents, selected, setEditingContentPath) {
+      contents.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+          setEditingContentPath(contentSelectable(content) ? [index, "contents"] : void 0);
+        }
+      });
+    },
+    contentSelectable,
+    selectCount: 1
+  };
+  const cancelIcon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "37.2523424414741,82.2523424414741 32,77 45.26210843293586,64.73424940995307 34.85576768442547,52.45776612707198 22.804714999337193,65 16.408386715608138,58.388958288839014 4.438582558303025,90.59970985857345",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "83.31772011698345,40.37472637282923 78.58823529411765,34.64705882352941 65.11778548913132,46.68363390432083 53.8856897130448,35.157837010145315 67.51629404983674,24.353109954091316 61.542962454827205,17.357525798639863 94.74536622245155,8.502633800256604",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "60.823922790999546,82.94782332121554 66.3768001163132,78.0142895314217 53.860936060450534,64.98795833037552 64.9729807484759,53.34637628924838 76.26359466760502,66.57730742319224 83.03857504543225,60.35488595723553 93.08844972308609,93.21532946025053",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polygon", {
+    points: "17.30773332157345,38.42709778758177 22.36668717670166,32.98823870348119 35.10404208885271,45.798076620726135 46.996145772344406,34.95456060653361 34.026286658445244,23.364985294745704 40.40167834341685,16.733750953905556 7.779106641484908,5.936689140444656",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  const cancelCommand = {
+    name: "cancel edit container",
+    execute(contents, selected, setEditingContentPath) {
+      setEditingContentPath(void 0);
+    },
+    selectCount: 0,
+    icon: cancelIcon
+  };
+  return [startCommand, cancelCommand];
 }
 export {
   getCommand
@@ -5734,60 +5863,6 @@ export {
   getCommand,
   getModel,
   isStarContent
-};
-`,
-`// dev/plugins/start-edit-container.plugin.tsx
-function getCommand(ctx) {
-  function contentSelectable(c) {
-    return ctx.isContainerContent(c);
-  }
-  const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "42.15549442140351,73 42.09401788765295,74.40804411575307 41.91005615994365,75.80537216558498 41.605009298102615,77.18134963930676 41.181198892940785,78.52550451750547 40.641850397545156,79.82760696993512 39.99106857963322,81.07774721070176 39.233806281792084,82.26641091771783 38.37582672735581,83.38455164243818 37.42365965879586,84.42365965879586 36.38455164243818,85.37582672735581 35.26641091771783,86.23380628179208 34.07774721070176,86.99106857963322 32.82760696993512,87.64185039754516 31.52550451750547,88.18119889294078 30.18134963930676,88.60500929810262 28.80537216558498,88.91005615994365 27.40804411575307,89.09401788765295 26,89.15549442140352 24.59195588424693,89.09401788765295 23.194627834415023,88.91005615994365 21.81865036069324,88.60500929810262 20.47449548249453,88.18119889294078 19.17239303006488,87.64185039754516 17.92225278929825,86.99106857963322 16.733589082282172,86.23380628179208 15.615448357561815,85.37582672735581 14.57634034120414,84.42365965879586 13.624173272644194,83.38455164243818 12.766193718207916,82.26641091771783 12.008931420366778,81.07774721070176 11.35814960245484,79.82760696993512 10.818801107059214,78.52550451750547 10.394990701897383,77.18134963930676 10.089943840056348,75.80537216558498 9.90598211234705,74.40804411575309 9.84450557859649,73 9.90598211234705,71.59195588424693 10.089943840056348,70.19462783441502 10.39499070189738,68.81865036069325 10.818801107059212,67.47449548249453 11.358149602454839,66.17239303006488 12.00893142036678,64.92225278929824 12.766193718207909,63.73358908228217 13.62417327264419,62.61544835756182 14.576340341204137,61.576340341204144 15.615448357561814,60.62417327264419 16.733589082282165,59.766193718207916 17.922252789298238,59.00893142036678 19.172393030064875,58.358149602454844 20.47449548249452,57.818801107059215 21.818650360693244,57.394990701897385 23.194627834415023,57.08994384005635 24.59195588424693,56.90598211234705 25.999999999999996,56.84450557859649 27.408044115753068,56.90598211234705 28.805372165584973,57.08994384005635 30.181349639306763,57.394990701897385 31.52550451750546,57.81880110705921 32.82760696993512,58.358149602454844 34.07774721070176,59.00893142036678 35.26641091771783,59.766193718207916 36.38455164243818,60.62417327264419 37.423659658795856,61.57634034120414 38.3758267273558,62.61544835756181 39.233806281792084,63.733589082282165 39.991068579633215,64.92225278929824 40.641850397545156,66.17239303006487 41.181198892940785,67.47449548249453 41.605009298102615,68.81865036069324 41.91005615994365,70.194627834415 42.09401788765295,71.59195588424693 42.15549442140351,73",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "12,10 76,10 76,45 12,45",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "70.00000000000001,93.07397274136177 93.44674817538672,52.46301362931911 46.553251824613284,52.463013629319114",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  return {
-    name: "start edit container",
-    icon,
-    execute(contents, selected, setEditingContentPath) {
-      contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          setEditingContentPath(contentSelectable(content) ? [index, "contents"] : void 0);
-        }
-      });
-    },
-    contentSelectable,
-    selectCount: 1
-  };
-}
-export {
-  getCommand
 };
 `,
 `// dev/plugins/text.plugin.tsx
