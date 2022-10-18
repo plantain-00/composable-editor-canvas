@@ -47,6 +47,14 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       content.p2.x += offset.x
       content.p2.y += offset.y
     },
+    rotate(content, center, angle) {
+      content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle)
+      content.p2 = ctx.rotatePositionByCenter(content.p2, center, -angle)
+    },
+    mirror(content, line) {
+      content.p1 = ctx.getSymmetryPoint(content.p1, line)
+      content.p2 = ctx.getSymmetryPoint(content.p2, line)
+    },
     render({ content, target, color, strokeWidth }) {
       const { regions, renderingLines } = getArrowGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
