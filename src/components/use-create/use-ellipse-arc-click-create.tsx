@@ -63,6 +63,7 @@ export function useEllipseArcClickCreate(
     startPosition,
     middlePosition,
     cursorPosition,
+    reset,
     onClick(p: Position) {
       if (!type) {
         return

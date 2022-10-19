@@ -114,7 +114,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create regular polygon',
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create regular polygon',
         ([p0, p1]) => onEnd({
           updateContents: (contents) => {
@@ -150,6 +150,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove,
         assistentContents,
         lastPosition,
+        reset,
       }
     },
     selectCount: 0,

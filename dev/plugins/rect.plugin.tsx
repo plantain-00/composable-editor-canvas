@@ -157,7 +157,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create rect',
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create rect',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -190,6 +190,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove,
         assistentContents,
         lastPosition,
+        reset,
       }
     },
     selectCount: 0,

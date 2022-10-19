@@ -205,7 +205,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -416,6 +416,7 @@ export const CADEditor = React.forwardRef((props: {
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected) => {
     setLastOperation(p)
+    resetCommands()
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
@@ -551,6 +552,7 @@ export const CADEditor = React.forwardRef((props: {
   if (props.panelVisible && selectedContents.length > 0) {
     const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
     const types = new Set<string>()
+    const ids: number[] = []
     const contentsUpdater = (update: (content: BaseContent) => void) => {
       const [, ...patches] = produceWithPatches(editingContent, (draft) => {
         selectedContents.forEach(target => {
@@ -564,6 +566,7 @@ export const CADEditor = React.forwardRef((props: {
     }
     selectedContents.forEach(target => {
       types.add(target.content.type)
+      ids.push(target.path[0])
       const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater)
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
@@ -582,6 +585,7 @@ export const CADEditor = React.forwardRef((props: {
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
         {Array.from(types).join(',')}
+        <div>{ids.join(',')}</div>
         {propertyPanels && <ObjectEditor
           properties={propertyPanels}
           readOnly={readOnly}

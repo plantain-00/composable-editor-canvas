@@ -144,7 +144,7 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create line',
       useCommand({ onEnd, scale, type }) {
-        const { line, onClick, onMove, input, inputMode, lastPosition } = ctx.useLineClickCreate(
+        const { line, onClick, onMove, input, inputMode, lastPosition, reset } = ctx.useLineClickCreate(
           type === 'create line',
           (c) => onEnd({
             updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' })))
@@ -202,6 +202,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition,
+          reset,
         }
       },
       selectCount: 0,
@@ -267,6 +268,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition,
+          reset,
           subcommand: type === 'create polyline' && positions.length > 2
             ? (
               <span>

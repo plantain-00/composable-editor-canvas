@@ -101,6 +101,7 @@ export function useEllipseClickCreate(
     setCursorPosition,
     setInputPosition,
     clearText,
+    reset,
     onClick(p: Position) {
       if (!type) {
         return

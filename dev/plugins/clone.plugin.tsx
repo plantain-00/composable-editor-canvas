@@ -12,7 +12,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'clone',
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(
         () => onEnd({ repeatedly: true }),
         {
           repeatedly: true,
@@ -29,6 +29,7 @@ export function getCommand(ctx: PluginContext): Command {
       return {
         onStart,
         mask,
+        reset,
         input,
         onMove(_, p) {
           setInputPosition(p)

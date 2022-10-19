@@ -49,7 +49,7 @@ export function usePathClickCreate(
       message = 'specify start point by click, or input radius'
     }
   }
-  const { input, setCursorPosition, cursorPosition, clearText, setInputPosition, resetInput } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, cursorPosition, clearText, setInputPosition, resetInput } = useCursorInput(enabled ? message : '', enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       const position = text.split(',')
       if (position.length === 2) {

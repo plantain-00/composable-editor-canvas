@@ -106,10 +106,10 @@ export function getModel(ctx: PluginContext): model.Model<BlockReferenceContent>
         content.angle = 2 * angle - content.angle
       }
     },
-    render({ content, target, color, strokeWidth, contents }) {
+    render({ content, target, color, contents }) {
       const block = getBlock(content.refId, contents)
       if (block) {
-        const children = ctx.renderContainerChildren(block, target, strokeWidth, contents, color)
+        const children = ctx.renderContainerChildren(block, target, contents, color)
         return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
       }
       return target.renderEmpty()
@@ -173,6 +173,7 @@ export function getModel(ctx: PluginContext): model.Model<BlockReferenceContent>
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update) {
       return {
+        refId: <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.refId = v } })} />,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,
@@ -263,6 +264,7 @@ export function getCommand(ctx: PluginContext): Command {
           }
           return {}
         },
+        reset: resetInput,
       }
     },
     contentSelectable: isBlockContent,

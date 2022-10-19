@@ -19,14 +19,16 @@ export function useDragRotate(
   const [offset, setOffset] = React.useState<Position & { angle?: number }>()
   const [center, setCenter] = React.useState<Position>()
   const parentRotate = options?.parentRotate ?? 0
-  useKey((e) => e.key === 'Escape', () => {
+  const reset = () => {
     setOffset(undefined)
     setCenter(undefined)
-  }, [setCenter])
+  }
+  useKey((e) => e.key === 'Escape', reset, [setCenter])
   return {
     offset,
     center,
     onStart: setCenter,
+    reset,
     mask: center && <DragMask
       ignoreLeavingEvent={options?.ignoreLeavingEvent}
       onDragging={(e) => {

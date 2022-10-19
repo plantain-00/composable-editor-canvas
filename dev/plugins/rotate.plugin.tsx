@@ -16,7 +16,7 @@ export function getCommand(ctx: PluginContext): Command {
     icon,
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(true)
-      const { offset, onStart, mask, center: startPosition } = ctx.useDragRotate(
+      const { offset, onStart, mask, center: startPosition, reset } = ctx.useDragRotate(
         onEnd,
         {
           transform,
@@ -62,6 +62,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove(_, p) {
           setInputPosition(p)
         },
+        reset,
         subcommand: type ? (
           <button
             onClick={(e) => {

@@ -159,7 +159,7 @@ function getCommand(ctx) {
     hotkey: "AR",
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create arrow",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -185,7 +185,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0
@@ -294,10 +295,10 @@ function getModel(ctx) {
         content.angle = 2 * angle - content.angle;
       }
     },
-    render({ content, target, color, strokeWidth, contents }) {
+    render({ content, target, color, contents }) {
       const block = getBlock(content.refId, contents);
       if (block) {
-        const children = ctx.renderContainerChildren(block, target, strokeWidth, contents, color);
+        const children = ctx.renderContainerChildren(block, target, contents, color);
         return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
       }
       return target.renderEmpty();
@@ -361,6 +362,14 @@ function getModel(ctx) {
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update) {
       return {
+        refId: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.refId,
+          setValue: (v) => update((c) => {
+            if (isBlockReferenceContent(c)) {
+              c.refId = v;
+            }
+          })
+        }),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.x,
           setValue: (v) => update((c) => {
@@ -469,7 +478,8 @@ function getCommand(ctx) {
             };
           }
           return {};
-        }
+        },
+        reset: resetInput
       };
     },
     contentSelectable: isBlockContent,
@@ -493,9 +503,12 @@ function getModel(ctx) {
     explode(content) {
       return content.contents.filter((c) => !!c);
     },
-    render({ content, target, color, strokeWidth, contents }) {
-      const children = ctx.renderContainerChildren(content, target, strokeWidth, contents, color);
+    render({ content, target, color, contents }) {
+      const children = ctx.renderContainerChildren(content, target, contents, color);
       return target.renderGroup(children);
+    },
+    renderIfSelected({ content, color, target, strokeWidth }) {
+      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
     },
     getOperatorRenderPosition(content) {
       return content.base;
@@ -551,7 +564,7 @@ function getCommand(ctx) {
       if (type) {
         message = "specify base point";
       }
-      const { input, setInputPosition } = ctx.useCursorInput(message);
+      const { input, setInputPosition, resetInput } = ctx.useCursorInput(message);
       return {
         onStart(p) {
           onEnd({
@@ -573,7 +586,8 @@ function getCommand(ctx) {
         input,
         onMove(_, p) {
           setInputPosition(p);
-        }
+        },
+        reset: resetInput
       };
     },
     contentSelectable,
@@ -747,7 +761,8 @@ function getCommand(ctx) {
           setInputPosition(viewportPosition || p);
           setResult(candidates.find((c) => ctx.getPointAndLineSegmentMinimumDistance(p, c[0], c[1]) < 5));
         },
-        assistentContents
+        assistentContents,
+        reset
       };
     },
     selectCount: 2,
@@ -1282,7 +1297,7 @@ function getCommand(ctx) {
         { name: "center diameter", icon: circleIcon4 }
       ],
       useCommand({ onEnd, scale, type }) {
-        const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleClickCreate(
+        const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleClickCreate(
           type === "2 points" || type === "3 points" || type === "center diameter" || type === "center radius" ? type : void 0,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: "circle" })
@@ -1315,7 +1330,8 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition
+          lastPosition: middlePosition ?? startPosition,
+          reset
         };
       },
       selectCount: 0
@@ -1323,7 +1339,7 @@ function getCommand(ctx) {
     {
       name: "create arc",
       useCommand({ onEnd, type, scale }) {
-        const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleArcClickCreate(
+        const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleArcClickCreate(
           type === "create arc" ? "center radius" : void 0,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: "arc" })
@@ -1400,7 +1416,8 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition
+          lastPosition: middlePosition ?? startPosition,
+          reset
         };
       },
       selectCount: 0,
@@ -1448,7 +1465,7 @@ function getCommand(ctx) {
   return {
     name: "clone",
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(
         () => onEnd({ repeatedly: true }),
         {
           repeatedly: true,
@@ -1464,6 +1481,7 @@ function getCommand(ctx) {
       return {
         onStart,
         mask,
+        reset,
         input,
         onMove(_, p) {
           setInputPosition(p);
@@ -1760,7 +1778,8 @@ function getCommand(ctx) {
           setInputPosition(viewportPosition || p);
           setResult(candidates.find((c) => ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(c, p), c.r) < 5));
         },
-        assistentContents
+        assistentContents,
+        reset
       };
     },
     selectCount: 2,
@@ -2442,7 +2461,7 @@ function getCommand(ctx) {
         { name: "ellipse endpoint", icon: icon2 }
       ],
       useCommand({ onEnd, type, scale }) {
-        const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useEllipseClickCreate(
+        const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseClickCreate(
           type === "ellipse center" || type === "ellipse endpoint" ? type : void 0,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: "ellipse" })
@@ -2469,7 +2488,8 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition
+          lastPosition: middlePosition ?? startPosition,
+          reset
         };
       },
       selectCount: 0
@@ -2477,7 +2497,7 @@ function getCommand(ctx) {
     {
       name: "create ellipse arc",
       useCommand({ onEnd, type, scale }) {
-        const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useEllipseArcClickCreate(
+        const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseArcClickCreate(
           type === "create ellipse arc" ? "ellipse center" : void 0,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: "ellipse arc" })
@@ -2544,7 +2564,8 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition
+          lastPosition: middlePosition ?? startPosition,
+          reset
         };
       },
       selectCount: 0,
@@ -2837,7 +2858,8 @@ function getCommand(ctx) {
           setInputPosition(viewportPosition || p);
           setResult(candidates.find((c) => ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(c, p), c.r) < 5));
         },
-        assistentContents
+        assistentContents,
+        reset
       };
     },
     selectCount: 2,
@@ -2883,9 +2905,12 @@ function getModel(ctx) {
         ctx.getContentModel(c)?.mirror?.(c, line, angle, contents);
       });
     },
-    render({ content, target, color, strokeWidth, contents }) {
-      const children = ctx.renderContainerChildren(content, target, strokeWidth, contents, color);
+    render({ content, target, color, contents }) {
+      const children = ctx.renderContainerChildren(content, target, contents, color);
       return target.renderGroup(children);
+    },
+    renderIfSelected({ content, color, target, strokeWidth }) {
+      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
     },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries
@@ -3092,7 +3117,7 @@ function getCommand(ctx) {
   return {
     name: "create image",
     useCommand({ onEnd, type }) {
-      const { image, onClick, onMove, input } = ctx.useImageClickCreate(
+      const { image, onClick, onMove, input, reset } = ctx.useImageClickCreate(
         type === "create image",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -3112,7 +3137,8 @@ function getCommand(ctx) {
         onStart: onClick,
         input,
         onMove,
-        assistentContents
+        assistentContents,
+        reset
       };
     },
     selectCount: 0,
@@ -3307,7 +3333,7 @@ function getCommand(ctx) {
     {
       name: "create line",
       useCommand({ onEnd, scale, type }) {
-        const { line, onClick, onMove, input, inputMode, lastPosition } = ctx.useLineClickCreate(
+        const { line, onClick, onMove, input, inputMode, lastPosition, reset } = ctx.useLineClickCreate(
           type === "create line",
           (c) => onEnd({
             updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line2) => ({ points: line2, type: "line" })))
@@ -3364,7 +3390,8 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition
+          lastPosition,
+          reset
         };
       },
       selectCount: 0,
@@ -3430,6 +3457,7 @@ function getCommand(ctx) {
           onMove,
           assistentContents,
           lastPosition,
+          reset,
           subcommand: type === "create polyline" && positions.length > 2 ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
             onClick: () => {
               onEnd({
@@ -3750,6 +3778,7 @@ function getCommand(ctx) {
       }
       return {
         input,
+        reset,
         onStart(p) {
           if (!p1) {
             setP1(p);
@@ -3839,7 +3868,7 @@ function getCommand(ctx) {
   return {
     name: "measure",
     useCommand({ transform, type, scale }) {
-      const { onStart, mask, startPosition } = ctx.useDragMove(void 0, {
+      const { onStart, mask, startPosition, reset } = ctx.useDragMove(void 0, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -3897,6 +3926,7 @@ function getCommand(ctx) {
         onStart,
         mask,
         input,
+        reset,
         onMove(p, viewportPosition) {
           setCursorPosition(p);
           setInputPosition(viewportPosition ?? p);
@@ -3948,7 +3978,7 @@ function getCommand(ctx) {
     name: "mirror",
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(false);
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -3968,6 +3998,7 @@ function getCommand(ctx) {
         onStart,
         mask: type ? mask : void 0,
         input,
+        reset,
         subcommand: type ? /* @__PURE__ */ React.createElement("button", {
           onClick: (e) => {
             setChangeOriginal(!changeOriginal);
@@ -4051,7 +4082,7 @@ function getCommand(ctx) {
   return {
     name: "move",
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -4067,6 +4098,7 @@ function getCommand(ctx) {
         onMove(_, p) {
           setInputPosition(p);
         },
+        reset,
         updateContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
@@ -4521,7 +4553,7 @@ function getCommand(ctx) {
     hotkey: "P",
     icon,
     useCommand({ onEnd, type, scale }) {
-      const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition } = ctx.usePathClickCreate(
+      const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition, reset } = ctx.usePathClickCreate(
         type === "create path",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -4559,6 +4591,7 @@ function getCommand(ctx) {
         onStart: onClick,
         input,
         onMove,
+        reset,
         subcommand: type === "create path" ? /* @__PURE__ */ React.createElement("span", null, ["line", "arc", "bezierCurve", "quadraticCurve", "close"].map((m) => /* @__PURE__ */ React.createElement("button", {
           key: m,
           onClick: () => setInputType(m),
@@ -4706,7 +4739,7 @@ function getCommand(ctx) {
     name: "create polygon",
     useCommand({ onEnd, type, scale }) {
       const [createType, setCreateType] = React.useState("point");
-      const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = ctx.usePolygonClickCreate(
+      const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition, reset } = ctx.usePolygonClickCreate(
         type === "create polygon",
         (c) => onEnd({
           updateContents: (contents) => contents.push({ points: c, type: "polygon" })
@@ -4729,6 +4762,7 @@ function getCommand(ctx) {
         onStart: onClick,
         input,
         onMove,
+        reset,
         subcommand: type === "create polygon" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
           onClick: startSetSides,
           style: { position: "relative" }
@@ -4845,6 +4879,14 @@ function getModel(ctx) {
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
     propertyPanel(content, update) {
       return {
+        refId: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.refId,
+          setValue: (v) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.refId = v;
+            }
+          })
+        }),
         position: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
           inline: true,
           properties: {
@@ -5026,7 +5068,8 @@ function getCommand(ctx) {
             }
           }
         },
-        assistentContents: result ? [result] : void 0
+        assistentContents: result ? [result] : void 0,
+        reset
       };
     }
   };
@@ -5230,7 +5273,7 @@ function getCommand(ctx) {
     name: "create rect",
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create rect",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -5262,7 +5305,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0,
@@ -5421,7 +5465,7 @@ function getCommand(ctx) {
     name: "create regular polygon",
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create regular polygon",
         ([p0, p1]) => onEnd({
           updateContents: (contents) => {
@@ -5456,7 +5500,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0
@@ -5608,7 +5653,7 @@ function getCommand(ctx) {
     name: "create ring",
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create ring",
         (c) => onEnd({
           updateContents: (contents) => {
@@ -5642,7 +5687,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0
@@ -5687,7 +5733,7 @@ function getCommand(ctx) {
     icon,
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(true);
-      const { offset, onStart, mask, center: startPosition } = ctx.useDragRotate(
+      const { offset, onStart, mask, center: startPosition, reset } = ctx.useDragRotate(
         onEnd,
         {
           transform,
@@ -5732,6 +5778,7 @@ function getCommand(ctx) {
         onMove(_, p) {
           setInputPosition(p);
         },
+        reset,
         subcommand: type ? /* @__PURE__ */ React.createElement("button", {
           onClick: (e) => {
             setChangeOriginal(!changeOriginal);
@@ -6100,7 +6147,7 @@ function getCommand(ctx) {
       { name: "spline fitting", icon: icon2 }
     ],
     useCommand({ onEnd, type, scale }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "spline" || type === "spline fitting",
         (c) => onEnd({
           updateContents: (contents) => contents.push({ points: c, type: "spline", fitting: type === "spline fitting" })
@@ -6118,7 +6165,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0
@@ -6292,7 +6340,7 @@ function getCommand(ctx) {
     name: "create star",
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create star",
         ([p0, p1]) => onEnd({
           updateContents: (contents) => {
@@ -6331,7 +6379,8 @@ function getCommand(ctx) {
         input,
         onMove,
         assistentContents,
-        lastPosition
+        lastPosition,
+        reset
       };
     },
     selectCount: 0
@@ -6491,7 +6540,7 @@ function getCommand(ctx) {
     name: "create text",
     icon,
     useCommand({ onEnd, type, scale }) {
-      const { text, onClick, onMove, input } = ctx.useTextClickCreate(
+      const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
         type === "create text",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -6514,7 +6563,8 @@ function getCommand(ctx) {
         onStart: onClick,
         input,
         onMove,
-        assistentContents
+        assistentContents,
+        reset
       };
     },
     selectCount: 0,

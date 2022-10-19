@@ -366,7 +366,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         { name: 'ellipse endpoint', icon: icon2 },
       ],
       useCommand({ onEnd, type, scale }) {
-        const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useEllipseClickCreate(
+        const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseClickCreate(
           type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: 'ellipse' })
@@ -394,6 +394,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition: middlePosition ?? startPosition,
+          reset,
         }
       },
       selectCount: 0,
@@ -401,7 +402,7 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create ellipse arc',
       useCommand({ onEnd, type, scale }) {
-        const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useEllipseArcClickCreate(
+        const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseArcClickCreate(
           type === 'create ellipse arc' ? 'ellipse center' : undefined,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: 'ellipse arc' }),
@@ -469,6 +470,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition: middlePosition ?? startPosition,
+          reset,
         }
       },
       selectCount: 0,

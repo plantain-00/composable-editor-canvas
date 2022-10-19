@@ -391,7 +391,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         { name: 'center diameter', icon: circleIcon4 },
       ],
       useCommand({ onEnd, scale, type }) {
-        const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleClickCreate(
+        const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleClickCreate(
           type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: 'circle' })
@@ -425,6 +425,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition: middlePosition ?? startPosition,
+          reset,
         }
       },
       selectCount: 0,
@@ -432,7 +433,7 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create arc',
       useCommand({ onEnd, type, scale }) {
-        const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition } = ctx.useCircleArcClickCreate(
+        const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleArcClickCreate(
           type === 'create arc' ? 'center radius' : undefined,
           (c) => onEnd({
             updateContents: (contents) => contents.push({ ...c, type: 'arc' })
@@ -508,6 +509,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           onMove,
           assistentContents,
           lastPosition: middlePosition ?? startPosition,
+          reset,
         }
       },
       selectCount: 0,

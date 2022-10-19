@@ -14,7 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'mirror',
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(false)
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -34,6 +34,7 @@ export function getCommand(ctx: PluginContext): Command {
         onStart,
         mask: type ? mask : undefined,
         input,
+        reset,
         subcommand: type ? (
           <button
             onClick={(e) => {

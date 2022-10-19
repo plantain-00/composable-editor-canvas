@@ -107,6 +107,7 @@ export function getCommand(ctx: PluginContext): Command {
           setResult(candidates.find((c) => ctx.getPointAndLineSegmentMinimumDistance(p, c[0], c[1]) < 5))
         },
         assistentContents,
+        reset,
       }
     },
     selectCount: 2,

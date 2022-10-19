@@ -20,13 +20,16 @@ export function useDragMove<T = void>(
   const scale = options?.scale ?? 1
   const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
 
-  useKey((e) => e.key === 'Escape', () => {
+  const reset = () => {
     setOffset({ x: 0, y: 0 })
     setDragStartPosition(undefined)
-  }, [setDragStartPosition])
+  }
+
+  useKey((e) => e.key === 'Escape',reset , [setDragStartPosition])
 
   return {
     offset,
+    reset,
     startPosition: dragStartPosition,
     onStart(p: Position, startPosition?: Partial<Position & { data: T }>) {
       setDragStartPosition({

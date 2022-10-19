@@ -107,5 +107,6 @@ export function useCircleArcClickCreate(
       }
     },
     input,
+    reset,
   }
 }

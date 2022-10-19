@@ -28,6 +28,7 @@ export interface Command extends CommandType {
     }
     assistentContents?: BaseContent[]
     lastPosition?: Position
+    reset?(): void
   }
   execute?(
     contents: Nullable<BaseContent>[],
@@ -77,10 +78,11 @@ export function useCommands(
   const onStartMap: Record<string, ((p: Position) => void)> = {}
   const hotkeys: { key: string, command: string }[] = []
   const lastPositions: Position[] = []
+  const resets: (() => void)[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
-      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove, lastPosition } = command.useCommand({
+      const { onStart, mask, updateContent, assistentContents, input, subcommand, onMove, lastPosition, reset } = command.useCommand({
         onEnd,
         transform,
         type,
@@ -109,6 +111,9 @@ export function useCommands(
       }
       if (lastPosition) {
         lastPositions.push(lastPosition)
+      }
+      if (reset) {
+        resets.push(reset)
       }
       if (input) {
         const children: React.ReactNode[] = [...input.props.children]
@@ -201,6 +206,11 @@ export function useCommands(
       return hotkeys.find((k) => k.key === key)?.command
     },
     commandLastPosition: lastPositions[0],
+    resetCommands() {
+      resets.forEach(r => {
+        r()
+      })
+    }
   }
 }
 
