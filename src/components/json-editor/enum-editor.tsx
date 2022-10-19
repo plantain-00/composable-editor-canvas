@@ -1,6 +1,6 @@
 import * as React from "react"
 import produce, { castDraft } from "immer"
-import { JsonEditorProps } from "./common"
+import { controlStyle, JsonEditorProps } from "./common"
 
 /**
  * @public
@@ -45,7 +45,26 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
 export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
   enums: readonly T[]
   enumTitles?: readonly string[]
+  select?: boolean
 }) {
+  if (props.select) {
+    return (
+      <select
+        style={{ ...controlStyle, ...props.style }}
+        disabled={props.readOnly}
+        value={props.value}
+        onChange={(e) => {
+          if (props.readOnly) {
+            return
+          }
+          // type-coverage:ignore-next-line
+          props.setValue(e.target.value as T)
+        }}
+      >
+        {props.enums.map((e, i) => <option key={e} value={e}>{props.enumTitles?.[i] ?? e}</option>)}
+      </select>
+    )
+  }
   return (
     <div style={props.style}>
       {props.enums.map((e, i) => (

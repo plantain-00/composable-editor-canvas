@@ -134,7 +134,7 @@ export function getContentModel(content: BaseContent): Model<BaseContent> | unde
 export const fixedInputStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: '10px',
-  left: '25%',
+  left: '28%',
   transform: 'translate(-50%, 0px)',
 }
 
