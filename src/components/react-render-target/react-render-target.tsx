@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, Matrix, PathCommand, Position, Size } from "../../utils"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, Matrix, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -243,4 +243,114 @@ export function renderPartStyledPolyline<T>(
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
     ...partsStyles.map(({ index, color, opacity }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color, strokeOpacity: opacity })),
   ])
+}
+
+/**
+ * @public
+ */
+export function getPathCommandsPoints(pathCommands: PathCommand[]) {
+  const result: Position[][] = []
+  let points: Position[] = []
+  for (const command of pathCommands) {
+    if (command.type === 'move') {
+      if (points.length > 0) {
+        if (points.length > 1) {
+          result.push(points)
+        }
+        points = []
+      }
+      points.push(command.to)
+    } else if (command.type === 'line') {
+      points.push(command.to)
+    } else if (command.type === 'arc') {
+      const last = points[points.length - 1]
+      if (last) {
+        const p1 = command.from
+        const p2 = command.to
+        const line1 = twoPointLineToGeneralFormLine(last, p1)
+        const line2 = twoPointLineToGeneralFormLine(p1, p2)
+        const p2Direction = getPointSideOfLine(p2, line1)
+        if (isZero(p2Direction)) {
+          points.push(p2)
+        } else {
+          const index = p2Direction < 0 ? 0 : 1
+          const center = getTwoGeneralFormLinesIntersectionPoint(
+            getParallelLinesByDistance(line1, command.radius)[index],
+            getParallelLinesByDistance(line2, command.radius)[index],
+          )
+          if (center) {
+            const t1 = getPerpendicularPoint(center, line1)
+            const t2 = getPerpendicularPoint(center, line2)
+            points.push({ x: t1.x, y: t1.y })
+            const startAngle = Math.atan2(t1.y - center.y, t1.x - center.x) * 180 / Math.PI
+            const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x) * 180 / Math.PI
+            points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
+          }
+        }
+      }
+    } else if (command.type === 'bezierCurve') {
+      const last = points[points.length - 1]
+      if (last) {
+        points.push(...getBezierCurvePoints(last, command.cp1, command.cp2, command.to, 100))
+      }
+    } else if (command.type === 'quadraticCurve') {
+      const last = points[points.length - 1]
+      if (last) {
+        points.push(...getQuadraticCurvePoints(last, command.cp, command.to, 100))
+      }
+    } else if (command.type === 'close') {
+      if (points.length > 0) {
+        if (points.length > 1) {
+          if (!isSamePoint(points[0], points[points.length - 1])) {
+            points.push(points[0])
+          }
+          result.push(points)
+        }
+        points = []
+      }
+    }
+  }
+  if (points.length > 1) {
+    result.push(points)
+  }
+  return result
+}
+
+/**
+ * @public
+ */
+export function getPathCommandEndPoint(pathCommands: PathCommand[], index: number): Position | undefined {
+  if (index >= 0) {
+    const command = pathCommands[index]
+    if (command.type !== 'close') {
+      if (command.type !== 'arc') {
+        return command.to
+      }
+      const last = getPathCommandEndPoint(pathCommands, index - 1)
+      if (last) {
+        const p1 = command.from
+        const p2 = command.to
+        const line1 = twoPointLineToGeneralFormLine(last, p1)
+        const line2 = twoPointLineToGeneralFormLine(p1, p2)
+        const p2Direction = getPointSideOfLine(p2, line1)
+        if (isZero(p2Direction)) {
+          return command.to
+        }
+        const i = p2Direction < 0 ? 0 : 1
+        const center = getTwoGeneralFormLinesIntersectionPoint(
+          getParallelLinesByDistance(line1, command.radius)[i],
+          getParallelLinesByDistance(line2, command.radius)[i],
+        )
+        if (center) {
+          const t2 = getPerpendicularPoint(center, line2)
+          const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x)
+          return {
+            x: center.x + command.radius * Math.cos(endAngle),
+            y: center.y + command.radius * Math.sin(endAngle),
+          }
+        }
+      }
+    }
+  }
+  return
 }

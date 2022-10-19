@@ -243,6 +243,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
 export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
     enums: readonly T[];
     enumTitles?: readonly string[];
+    select?: boolean;
 }): JSX.Element;
 
 // @public (undocumented)
@@ -456,6 +457,12 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
 
 // @public (undocumented)
 export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine];
+
+// @public (undocumented)
+export function getPathCommandEndPoint(pathCommands: PathCommand[], index: number): Position | undefined;
+
+// @public (undocumented)
+export function getPathCommandsPoints(pathCommands: PathCommand[]): Position[][];
 
 // Warning: (ae-forgotten-export) The symbol "StrokeStyle" needs to be exported by the entry point index.d.ts
 // Warning: (ae-forgotten-export) The symbol "FillStyle" needs to be exported by the entry point index.d.ts
@@ -1512,6 +1519,20 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
         preventDefault(): void;
     }) => Promise<void>;
     stateIndex: number;
+};
+
+// @public (undocumented)
+export function usePathClickCreate(enabled: boolean, onEnd: (path: PathCommand[]) => void): {
+    path: PathCommand[];
+    preview: PathCommand[];
+    controlPoint: Position | undefined;
+    controlPoint2: Position | undefined;
+    onClick(p: Position): void;
+    onMove(p: Position, viewportPosition?: Position): void;
+    input: JSX.Element | undefined;
+    reset: () => void;
+    setInputType(type: PathCommand['type']): void;
+    cursorPosition: Position | undefined;
 };
 
 // @public (undocumented)
