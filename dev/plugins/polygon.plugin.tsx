@@ -114,7 +114,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create polygon',
     useCommand({ onEnd, type, scale }) {
       const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
-      const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition } = ctx.usePolygonClickCreate(
+      const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition, reset } = ctx.usePolygonClickCreate(
         type === 'create polygon',
         (c) => onEnd({
           updateContents: (contents) => contents.push({ points: c, type: 'polygon' } as PolygonContent)
@@ -137,6 +137,7 @@ export function getCommand(ctx: PluginContext): Command {
         onStart: onClick,
         input,
         onMove,
+        reset,
         subcommand: type === 'create polygon'
           ? (
             <span>

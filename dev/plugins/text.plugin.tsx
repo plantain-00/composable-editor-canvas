@@ -98,7 +98,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create text',
     icon,
     useCommand({ onEnd, type, scale }) {
-      const { text, onClick, onMove, input } = ctx.useTextClickCreate(
+      const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
         type === 'create text',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -122,6 +122,7 @@ export function getCommand(ctx: PluginContext): Command {
         input,
         onMove,
         assistentContents,
+        reset,
       }
     },
     selectCount: 0,

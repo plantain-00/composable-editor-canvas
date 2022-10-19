@@ -102,6 +102,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
     propertyPanel(content, update) {
       return {
+        refId: <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} />,
         position: <ctx.ObjectEditor
           inline
           properties={{
@@ -220,6 +221,7 @@ export function getCommand(ctx: PluginContext): Command {
           }
         },
         assistentContents: result ? [result] : undefined,
+        reset,
       }
     },
   }

@@ -106,7 +106,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create ring',
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create ring',
         (c) => onEnd({
           updateContents: (contents) => {
@@ -141,6 +141,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove,
         assistentContents,
         lastPosition,
+        reset,
       }
     },
     selectCount: 0,

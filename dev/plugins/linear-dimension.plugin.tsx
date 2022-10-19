@@ -177,6 +177,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
       return {
         input,
+        reset,
         onStart(p) {
           if (!p1) {
             setP1(p)

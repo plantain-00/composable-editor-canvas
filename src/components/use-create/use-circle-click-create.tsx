@@ -139,6 +139,7 @@ export function useCircleClickCreate(
       }
     },
     input,
+    reset,
   }
 }
 

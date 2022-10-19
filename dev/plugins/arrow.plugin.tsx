@@ -140,7 +140,7 @@ export function getCommand(ctx: PluginContext): Command {
     hotkey: 'AR',
     icon,
     useCommand({ onEnd, type }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create arrow',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -167,6 +167,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove,
         assistentContents,
         lastPosition,
+        reset,
       }
     },
     selectCount: 0,

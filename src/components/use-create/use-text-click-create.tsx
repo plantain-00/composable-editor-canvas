@@ -63,5 +63,6 @@ export function useTextClickCreate(
       }
     },
     input,
+    reset,
   }
 }

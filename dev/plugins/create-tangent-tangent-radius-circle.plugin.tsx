@@ -83,6 +83,7 @@ export function getCommand(ctx: PluginContext): Command {
           setResult(candidates.find((c) => ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(c, p), c.r) < 5))
         },
         assistentContents,
+        reset,
       }
     },
     selectCount: 2,

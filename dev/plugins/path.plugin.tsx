@@ -298,7 +298,7 @@ export function getCommand(ctx: PluginContext): Command {
     hotkey: 'P',
     icon,
     useCommand({ onEnd, type, scale }) {
-      const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition } = ctx.usePathClickCreate(
+      const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition, reset } = ctx.usePathClickCreate(
         type === 'create path',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -336,6 +336,7 @@ export function getCommand(ctx: PluginContext): Command {
         onStart: onClick,
         input,
         onMove,
+        reset,
         subcommand: type === 'create path'
           ? (
             <span>

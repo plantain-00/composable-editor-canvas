@@ -87,6 +87,7 @@ export function usePolygonClickCreate(
     polygon,
     startPosition,
     cursorPosition,
+    reset,
     onClick(p: Position) {
       if (!enabled) {
         return

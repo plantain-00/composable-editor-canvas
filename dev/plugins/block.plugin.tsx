@@ -15,9 +15,12 @@ export function getModel(ctx: PluginContext): model.Model<BlockContent> {
     explode(content) {
       return content.contents.filter((c): c is model.BaseContent => !!c)
     },
-    render({ content, target, color, strokeWidth, contents }) {
-      const children = ctx.renderContainerChildren(content, target, strokeWidth, contents, color)
+    render({ content, target, color, contents }) {
+      const children = ctx.renderContainerChildren(content, target, contents, color)
       return target.renderGroup(children)
+    },
+    renderIfSelected({ content, color, target, strokeWidth }) {
+      return ctx.renderContainerIfSelected(content, target, strokeWidth, color)
     },
     getOperatorRenderPosition(content) {
       return content.base
@@ -59,7 +62,7 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = 'specify base point'
       }
-      const { input, setInputPosition } = ctx.useCursorInput(message)
+      const { input, setInputPosition, resetInput } = ctx.useCursorInput(message)
 
       return {
         onStart(p) {
@@ -83,6 +86,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove(_, p) {
           setInputPosition(p)
         },
+        reset: resetInput,
       }
     },
     contentSelectable,

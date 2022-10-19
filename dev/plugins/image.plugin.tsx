@@ -95,7 +95,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create image',
     useCommand({ onEnd, type }) {
-      const { image, onClick, onMove, input } = ctx.useImageClickCreate(
+      const { image, onClick, onMove, input, reset } = ctx.useImageClickCreate(
         type === 'create image',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
@@ -116,6 +116,7 @@ export function getCommand(ctx: PluginContext): Command {
         input,
         onMove,
         assistentContents,
+        reset,
       }
     },
     selectCount: 0,

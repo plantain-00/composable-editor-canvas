@@ -1206,6 +1206,7 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
+    reset: () => void;
 };
 
 // Warning: (ae-forgotten-export) The symbol "EditOptions" needs to be exported by the entry point index.d.ts
@@ -1238,6 +1239,7 @@ export function useCircleClickCreate(type: '2 points' | '3 points' | 'center rad
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
+    reset: () => void;
 };
 
 // @public (undocumented)
@@ -1277,6 +1279,7 @@ export function useDragMove<T = void>(onDragEnd?: () => void, options?: Partial<
     getAngleSnap: (angle: number) => number | undefined;
 }>): {
     offset: Position;
+    reset: () => void;
     startPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
@@ -1323,6 +1326,7 @@ export function useDragRotate(onDragEnd: () => void, options?: Partial<{
     }) | undefined;
     center: Position | undefined;
     onStart: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
+    reset: () => void;
     mask: JSX.Element | undefined;
 };
 
@@ -1380,6 +1384,7 @@ export function useEllipseArcClickCreate(type: 'ellipse center' | 'ellipse endpo
     startPosition: Position | undefined;
     middlePosition: Position | undefined;
     cursorPosition: Position | undefined;
+    reset: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
@@ -1410,6 +1415,7 @@ export function useEllipseClickCreate(type: 'ellipse center' | 'ellipse endpoint
     setCursorPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText: () => void;
+    reset: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
@@ -1433,6 +1439,7 @@ export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 // @public (undocumented)
 export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) => void): {
     image: Image_2 | undefined;
+    reset: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element;
@@ -1566,6 +1573,7 @@ export function usePolygonClickCreate(enabled: boolean, onEnd: (polygon: Positio
     polygon: Position[] | undefined;
     startPosition: Position | undefined;
     cursorPosition: Position | undefined;
+    reset: () => void;
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
@@ -1657,6 +1665,7 @@ export function useTextClickCreate(enabled: boolean, onEnd: (text: Text_2) => vo
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element | undefined;
+    reset: () => void;
 };
 
 // @public (undocumented)

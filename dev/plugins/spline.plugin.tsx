@@ -139,7 +139,7 @@ export function getCommand(ctx: PluginContext): Command {
       { name: 'spline fitting', icon: icon2 },
     ],
     useCommand({ onEnd, type, scale }) {
-      const { line, onClick, onMove, input, lastPosition } = ctx.useLineClickCreate(
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'spline' || type === 'spline fitting',
         (c) => onEnd({
           updateContents: (contents) => contents.push({ points: c, type: 'spline', fitting: type === 'spline fitting' } as SplineContent)
@@ -158,6 +158,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove,
         assistentContents,
         lastPosition,
+        reset,
       }
     },
     selectCount: 0,

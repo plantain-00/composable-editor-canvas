@@ -16,7 +16,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'measure',
     useCommand({ transform, type, scale }) {
-      const { onStart, mask, startPosition } = ctx.useDragMove(undefined, {
+      const { onStart, mask, startPosition, reset } = ctx.useDragMove(undefined, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -76,6 +76,7 @@ export function getCommand(ctx: PluginContext): Command {
         onStart,
         mask,
         input,
+        reset,
         onMove(p, viewportPosition) {
           setCursorPosition(p)
           setInputPosition(viewportPosition ?? p)

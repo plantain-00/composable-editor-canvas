@@ -134,8 +134,7 @@ export function getContentModel(content: BaseContent): Model<BaseContent> | unde
 export const fixedInputStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: '10px',
-  left: '28%',
-  transform: 'translate(-50%, 0px)',
+  left: '190px',
 }
 
 export function getContentByIndex(state: readonly Nullable<BaseContent>[], index: readonly number[]) {
@@ -394,9 +393,9 @@ export function getContainerSnapPoints(content: ContainerFields, contents: reado
   })
 }
 
-export function renderContainerChildren<V>(block: ContainerFields, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly Nullable<BaseContent>[], color: number) {
+export function renderContainerChildren<V>(container: ContainerFields, target: ReactRenderTarget<V>, contents: readonly Nullable<BaseContent>[], color: number) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
-  block.contents.forEach((content) => {
+  container.contents.forEach((content) => {
     if (!content) {
       return
     }
@@ -404,10 +403,25 @@ export function renderContainerChildren<V>(block: ContainerFields, target: React
     if (model?.render) {
       const ContentRender = model.render
       color = getContentColor(content, color)
+      const strokeWidth = getStrokeWidth(content)
       children.push(ContentRender({ content: content, color, target, strokeWidth, contents }))
     }
   })
   return children
+}
+
+export function renderContainerIfSelected<V>(container: ContainerFields, target: ReactRenderTarget<V>, strokeWidth: number, color: number) {
+  const { bounding } = getContainerGeometries(container)
+  if (!bounding) {
+    return target.renderEmpty()
+  }
+  return target.renderRect(
+    bounding.start.x,
+    bounding.start.y,
+    bounding.end.x - bounding.start.x,
+    bounding.end.y - bounding.start.y,
+    { strokeColor: color, dashArray: [4], strokeWidth },
+  )
 }
 
 export function getContainerGeometries(content: ContainerFields) {
@@ -415,6 +429,7 @@ export function getContainerGeometries(content: ContainerFields) {
     const lines: [Position, Position][] = []
     const points: Position[] = []
     const renderingLines: Position[][] = []
+    const boundings: Position[] = []
     content.contents.forEach((c) => {
       if (!c) {
         return
@@ -423,6 +438,9 @@ export function getContainerGeometries(content: ContainerFields) {
       if (r) {
         lines.push(...r.lines)
         points.push(...r.points)
+        if (r.bounding) {
+          boundings.push(r.bounding.start, r.bounding.end)
+        }
         if (r.renderingLines) {
           renderingLines.push(...r.renderingLines)
         }
@@ -431,7 +449,7 @@ export function getContainerGeometries(content: ContainerFields) {
     return {
       lines,
       points,
-      bounding: getPointsBounding(points),
+      bounding: getPointsBounding(boundings),
       renderingLines,
     }
   })

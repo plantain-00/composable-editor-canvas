@@ -12,7 +12,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'move',
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -29,6 +29,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove(_, p) {
           setInputPosition(p)
         },
+        reset,
         updateContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {

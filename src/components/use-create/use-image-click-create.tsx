@@ -35,6 +35,7 @@ export function useImageClickCreate(
 
   return {
     image,
+    reset,
     onClick(p: Position) {
       if (!enabled) {
         return
