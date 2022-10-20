@@ -6,7 +6,7 @@ import type { ArcContent } from './circle-arc.plugin'
 import type { TextContent } from './text.plugin'
 import type { PolygonContent } from './polygon.plugin'
 
-export type LineContent = model.BaseContent<'line' | 'polyline'> & model.StrokeFields & {
+export type LineContent = model.BaseContent<'line' | 'polyline'> & model.StrokeFields & model.FillFields & {
   points: core.Position[]
 }
 
@@ -89,12 +89,17 @@ export function getModel(ctx: PluginContext) {
     {
       ...lineModel,
       type: 'polyline',
+      ...ctx.fillModel,
       explode(content) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
       render({ content, color, target, strokeWidth }) {
-        return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+        if (content.fillColor !== undefined) {
+          strokeWidth = 0
+        }
+        return target.renderPolyline(content.points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }))
@@ -114,6 +119,7 @@ export function getModel(ctx: PluginContext) {
             />)}
           />,
           ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
     } as model.Model<LineContent>,

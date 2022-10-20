@@ -34,7 +34,7 @@ export function getCommand(ctx: PluginContext): Command {
         onMove(_, p) {
           setInputPosition(p)
         },
-        updateContent(content) {
+        updateSelectedContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             return {
               newContents: [

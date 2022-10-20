@@ -312,7 +312,11 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((k) => k.code === 'KeyC' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    startOperation({ type: 'command', name: 'clone' })
+    startOperation({ type: 'command', name: 'copy' })
+    e.preventDefault()
+  })
+  useKey((k) => k.code === 'KeyV' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    startOperation({ type: 'command', name: 'paste' })
     e.preventDefault()
   })
   useKey((k) => k.code === 'KeyX' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {

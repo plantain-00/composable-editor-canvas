@@ -199,15 +199,61 @@ export {
 };
 `,
 `// dev/plugins/block.plugin.tsx
-function isBlockContent(content) {
-  return content.type === "block";
-}
-
-// dev/plugins/block-reference.plugin.tsx
 function getModel(ctx) {
+  const React = ctx.React;
+  const blockModel = {
+    type: "block",
+    ...ctx.containerModel,
+    explode(content) {
+      return content.contents.filter((c) => !!c);
+    },
+    render({ content, target, color, contents }) {
+      const children = ctx.renderContainerChildren(content, target, contents, color);
+      return target.renderGroup(children);
+    },
+    renderIfSelected({ content, color, target, strokeWidth }) {
+      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
+    },
+    getOperatorRenderPosition(content) {
+      return content.base;
+    },
+    getSnapPoints: ctx.getContainerSnapPoints,
+    getGeometries: ctx.getContainerGeometries,
+    propertyPanel(content, update) {
+      return {
+        base: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+          inline: true,
+          properties: {
+            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+              value: content.base.x,
+              setValue: (v) => update((c) => {
+                if (isBlockContent(c)) {
+                  c.base.x = v;
+                }
+              })
+            }),
+            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+              value: content.base.y,
+              setValue: (v) => update((c) => {
+                if (isBlockContent(c)) {
+                  c.base.y = v;
+                }
+              })
+            })
+          }
+        })
+      };
+    }
+  };
   const blockLinesCache = new ctx.WeakmapCache2();
   const blockSnapPointsCache = new ctx.WeakmapCache2();
   function getBlock(id, contents) {
+    if (typeof id !== "number") {
+      if (isBlockContent(id)) {
+        return id;
+      }
+      return;
+    }
     return contents.find((c, i) => !!c && isBlockContent(c) && i === id);
   }
   function extractContentInBlockReference(target, content, block, contents) {
@@ -253,8 +299,7 @@ function getModel(ctx) {
     }
     return { lines: [], points: [], renderingLines: [] };
   }
-  const React = ctx.React;
-  return {
+  const blockReferenceModel = {
     type: "block reference",
     move(content, offset) {
       content.x += offset.x;
@@ -362,14 +407,14 @@ function getModel(ctx) {
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update) {
       return {
-        refId: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.refId,
           setValue: (v) => update((c) => {
             if (isBlockReferenceContent(c)) {
               c.refId = v;
             }
           })
-        }),
+        }) : [],
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.x,
           setValue: (v) => update((c) => {
@@ -397,7 +442,7 @@ function getModel(ctx) {
       };
     },
     getRefIds(content) {
-      return [content.refId];
+      return typeof content.refId === "number" ? [content.refId] : void 0;
     },
     updateRefId(content, update) {
       const newRefId = update(content.refId);
@@ -406,144 +451,16 @@ function getModel(ctx) {
       }
     }
   };
-}
-function isBlockReferenceContent(content) {
-  return content.type === "block reference";
-}
-function getCommand(ctx) {
-  const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 640 512"
-  }, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H328.6C339.6 12.9 360.3 0 384 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V232.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM119.4 96c-5.6 9.7-13.7 17.8-23.4 23.4V232.6c9.7 5.6 17.8 13.7 23.4 23.4H328.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4H119.4zm192 384c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V352h64v40.6c9.7 5.6 17.8 13.7 23.4 23.4H520.6c5.6-9.7 13.7-17.8 23.4-23.4V279.4c-9.7-5.6-17.8-13.7-23.4-23.4h-46c-5.4-15.4-14.6-28.9-26.5-39.6V192h72.6c11.1-19.1 31.7-32 55.4-32c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H311.4z"
-  }));
-  return {
-    name: "create block reference",
-    useCommand({ onEnd, type, scale }) {
-      let message = "";
-      if (type) {
-        message = "specify target point";
-      }
-      const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message);
-      return {
-        onStart(p) {
-          resetInput();
-          onEnd({
-            updateContents: (contents, selected) => {
-              contents.push(
-                ...contents.filter((c, i) => !!c && ctx.isSelected([i], selected) && isBlockContent(c)).map((block) => ({
-                  type: "block reference",
-                  refId: ctx.getContentIndex(block, contents),
-                  x: p.x - block.base.x,
-                  y: p.y - block.base.y,
-                  angle: 0
-                }))
-              );
-              setCursorPosition(void 0);
-            }
-          });
-        },
-        input,
-        onMove(p, viewportPosition) {
-          setInputPosition(viewportPosition || p);
-          if (!type) {
-            return;
-          }
-          setCursorPosition(p);
-        },
-        updateContent(content, contents) {
-          if (!isBlockContent(content)) {
-            return {};
-          }
-          if (cursorPosition) {
-            return {
-              newContents: [
-                {
-                  type: "block reference",
-                  refId: ctx.getContentIndex(content, contents),
-                  x: cursorPosition.x - content.base.x,
-                  y: cursorPosition.y - content.base.y,
-                  angle: 0
-                }
-              ],
-              assistentContents: [
-                {
-                  type: "line",
-                  dashArray: [4 / scale],
-                  points: [{ x: content.base.x, y: content.base.y }, cursorPosition]
-                }
-              ]
-            };
-          }
-          return {};
-        },
-        reset: resetInput
-      };
-    },
-    contentSelectable: isBlockContent,
-    selectCount: 1,
-    hotkey: "I",
-    icon
-  };
-}
-export {
-  getCommand,
-  getModel,
-  isBlockReferenceContent
-};
-`,
-`// dev/plugins/block.plugin.tsx
-function getModel(ctx) {
-  const React = ctx.React;
-  return {
-    type: "block",
-    ...ctx.containerModel,
-    explode(content) {
-      return content.contents.filter((c) => !!c);
-    },
-    render({ content, target, color, contents }) {
-      const children = ctx.renderContainerChildren(content, target, contents, color);
-      return target.renderGroup(children);
-    },
-    renderIfSelected({ content, color, target, strokeWidth }) {
-      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
-    },
-    getOperatorRenderPosition(content) {
-      return content.base;
-    },
-    getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: ctx.getContainerGeometries,
-    propertyPanel(content, update) {
-      return {
-        base: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.base.x,
-              setValue: (v) => update((c) => {
-                if (isBlockContent(c)) {
-                  c.base.x = v;
-                }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.base.y,
-              setValue: (v) => update((c) => {
-                if (isBlockContent(c)) {
-                  c.base.y = v;
-                }
-              })
-            })
-          }
-        })
-      };
-    }
-  };
+  return [
+    blockModel,
+    blockReferenceModel
+  ];
 }
 function isBlockContent(content) {
   return content.type === "block";
+}
+function isBlockReferenceContent(content) {
+  return content.type === "block reference";
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
@@ -557,7 +474,14 @@ function getCommand(ctx) {
     fill: "currentColor",
     d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H456.6C467.6 12.9 488.3 0 512 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM456.6 96H119.4c-5.6 9.7-13.7 17.8-23.4 23.4V392.6c9.7 5.6 17.8 13.7 23.4 23.4H456.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4zM128 160c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160zM256 320h32c35.3 0 64-28.7 64-64V224h64c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H288c-17.7 0-32-14.3-32-32V320z"
   }));
-  return {
+  const referenceIcon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 640 512"
+  }, /* @__PURE__ */ React.createElement("path", {
+    fill: "currentColor",
+    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H328.6C339.6 12.9 360.3 0 384 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V232.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM119.4 96c-5.6 9.7-13.7 17.8-23.4 23.4V232.6c9.7 5.6 17.8 13.7 23.4 23.4H328.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4H119.4zm192 384c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V352h64v40.6c9.7 5.6 17.8 13.7 23.4 23.4H520.6c5.6-9.7 13.7-17.8 23.4-23.4V279.4c-9.7-5.6-17.8-13.7-23.4-23.4h-46c-5.4-15.4-14.6-28.9-26.5-39.6V192h72.6c11.1-19.1 31.7-32 55.4-32c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H311.4z"
+  }));
+  const blockCommand = {
     name: "create block",
     useCommand({ onEnd, type }) {
       let message = "";
@@ -594,11 +518,80 @@ function getCommand(ctx) {
     hotkey: "B",
     icon
   };
+  const blockReferenceCommand = {
+    name: "create block reference",
+    useCommand({ onEnd, type, scale }) {
+      let message = "";
+      if (type) {
+        message = "specify target point";
+      }
+      const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message);
+      return {
+        onStart(p) {
+          resetInput();
+          onEnd({
+            updateContents: (contents, selected) => {
+              contents.push(
+                ...contents.filter((c, i) => !!c && ctx.isSelected([i], selected) && isBlockContent(c)).map((block) => ({
+                  type: "block reference",
+                  refId: ctx.getContentIndex(block, contents),
+                  x: p.x - block.base.x,
+                  y: p.y - block.base.y,
+                  angle: 0
+                }))
+              );
+              setCursorPosition(void 0);
+            }
+          });
+        },
+        input,
+        onMove(p, viewportPosition) {
+          setInputPosition(viewportPosition || p);
+          if (!type) {
+            return;
+          }
+          setCursorPosition(p);
+        },
+        updateSelectedContent(content, contents) {
+          if (!isBlockContent(content)) {
+            return {};
+          }
+          if (cursorPosition) {
+            return {
+              newContents: [
+                {
+                  type: "block reference",
+                  refId: ctx.getContentIndex(content, contents),
+                  x: cursorPosition.x - content.base.x,
+                  y: cursorPosition.y - content.base.y,
+                  angle: 0
+                }
+              ],
+              assistentContents: [
+                {
+                  type: "line",
+                  dashArray: [4 / scale],
+                  points: [{ x: content.base.x, y: content.base.y }, cursorPosition]
+                }
+              ]
+            };
+          }
+          return {};
+        },
+        reset: resetInput
+      };
+    },
+    contentSelectable: isBlockContent,
+    selectCount: 1,
+    icon: referenceIcon
+  };
+  return [blockCommand, blockReferenceCommand];
 }
 export {
   getCommand,
   getModel,
-  isBlockContent
+  isBlockContent,
+  isBlockReferenceContent
 };
 `,
 `// dev/plugins/break.plugin.tsx
@@ -963,6 +956,7 @@ function getModel(ctx) {
     {
       type: "arc",
       ...ctx.strokeModel,
+      ...ctx.fillModel,
       move(content, offset) {
         content.x += offset.x;
         content.y += offset.y;
@@ -1020,11 +1014,15 @@ function getModel(ctx) {
         return result.length > 1 ? result : void 0;
       },
       render({ content, color, target, strokeWidth }) {
-        if (content.dashArray) {
-          const { points } = getArcGeometries(content);
-          return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth });
+        const colorField = content.fillColor !== void 0 ? "fillColor" : "strokeColor";
+        if (content.fillColor !== void 0) {
+          strokeWidth = 0;
         }
-        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth, counterclockwise: content.counterclockwise });
+        if (content.dashArray) {
+          const { points } = getCircleGeometries(content);
+          return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth });
+        }
+        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { [colorField]: color, strokeWidth, counterclockwise: content.counterclockwise });
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
@@ -1163,7 +1161,8 @@ function getModel(ctx) {
               }
             })
           }),
-          ...ctx.getStrokeContentPropertyPanel(content, update)
+          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update)
         };
       }
     }
@@ -1486,7 +1485,7 @@ function getCommand(ctx) {
         onMove(_, p) {
           setInputPosition(p);
         },
-        updateContent(content) {
+        updateSelectedContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             return {
               newContents: [
@@ -1511,80 +1510,6 @@ function getCommand(ctx) {
       return ctx.getContentModel(content)?.move !== void 0;
     },
     hotkey: "CO",
-    icon
-  };
-}
-export {
-  getCommand
-};
-`,
-`// dev/plugins/line-polyline.plugin.tsx
-function isPolyLineContent(content) {
-  return content.type === "polyline";
-}
-
-// dev/plugins/close.plugin.tsx
-function getCommand(ctx) {
-  const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "78,18 13.968757625671515,18.00000000000001 13.968757625671511,89.02905001183156 78.03032679046687,89.02905001183156",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "78",
-    cy: "18",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "78.03032679046687",
-    cy: "89.02905001183156",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
-  return {
-    name: "close",
-    execute(contents, selected) {
-      const newContents = [];
-      contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && isPolyLineContent(content)) {
-          const p0 = content.points[0];
-          const p1 = content.points[content.points.length - 1];
-          if (ctx.isSamePoint(p0, p1)) {
-            contents[index] = {
-              type: "polygon",
-              points: content.points.slice(0, content.points.length - 1)
-            };
-          } else {
-            contents[index] = {
-              type: "polygon",
-              points: content.points
-            };
-          }
-        }
-      });
-      contents.push(...newContents);
-    },
-    contentSelectable(content) {
-      return isPolyLineContent(content) && content.points.length > 2;
-    },
-    hotkey: "X",
     icon
   };
 }
@@ -1652,12 +1577,166 @@ function getCommand(ctx) {
         contents.splice(i, 1);
       });
       for (const content of ctx.iterateAllContents(contents)) {
-        ctx.getContentModel(content)?.updateRefId?.(content, (refId) => newIndexes[refId]);
+        ctx.getContentModel(content)?.updateRefId?.(content, (refId) => typeof refId === "number" ? newIndexes[refId] : void 0);
       }
     },
     selectCount: 0,
     icon
   };
+}
+export {
+  getCommand
+};
+`,
+`// dev/plugins/copy-paste.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  return [
+    {
+      name: "copy",
+      execute(contents, selected) {
+        const ids = /* @__PURE__ */ new Set();
+        contents.forEach((content, index) => {
+          if (content && ctx.isSelected([index], selected)) {
+            for (const id of iterateRefContents(index, contents, ctx)) {
+              ids.add(id);
+            }
+          }
+        });
+        const copiedContents = [];
+        const boundingPoints = [];
+        ids.forEach((id) => {
+          const content = contents[id];
+          if (content) {
+            const geometries = ctx.getContentModel(content)?.getGeometries?.(content, contents);
+            if (geometries?.bounding) {
+              boundingPoints.push(geometries.bounding.start, geometries.bounding.end);
+            }
+            copiedContents.unshift({
+              id,
+              content
+            });
+          }
+        });
+        const bounding = ctx.getPointsBounding(boundingPoints);
+        if (!bounding) {
+          return;
+        }
+        const copyData = {
+          type: "composable-editor-canvas",
+          contents: copiedContents,
+          center: ctx.getTwoPointCenter(bounding.start, bounding.end)
+        };
+        navigator.clipboard.writeText(JSON.stringify(copyData));
+      }
+    },
+    {
+      name: "paste",
+      useCommand({ onEnd, type }) {
+        let message = "";
+        if (type) {
+          message = "specify target point";
+        }
+        const [copyData, setCopyData] = React.useState();
+        const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message);
+        ctx.React.useEffect(() => {
+          if (type) {
+            (async () => {
+              try {
+                const text = await navigator.clipboard.readText();
+                const copyData2 = JSON.parse(text);
+                if (copyData2.type === "composable-editor-canvas") {
+                  setCopyData(copyData2);
+                }
+              } catch (error) {
+                console.info(error);
+              }
+            })();
+          }
+        }, [type]);
+        const reset = () => {
+          setCopyData(void 0);
+          resetInput();
+          setCursorPosition(void 0);
+          setInputPosition(void 0);
+        };
+        ctx.useKey((e) => e.key === "Escape", reset, [setCopyData, resetInput, setInputPosition, setInputPosition]);
+        const assistentContents = [];
+        if (cursorPosition && copyData) {
+          const offset = {
+            x: cursorPosition.x - copyData.center.x,
+            y: cursorPosition.y - copyData.center.y
+          };
+          copyData.contents.forEach((c) => {
+            assistentContents.push(ctx.produce(c.content, (draft) => {
+              const model = ctx.getContentModel(draft);
+              model?.move?.(draft, offset);
+              model?.updateRefId?.(draft, (d) => {
+                if (typeof d === "number") {
+                  const index = copyData.contents.findIndex((c2) => c2.id === d);
+                  if (index >= 0 && index < assistentContents.length) {
+                    return assistentContents[index];
+                  }
+                }
+                return void 0;
+              });
+            }));
+          });
+        }
+        return {
+          onStart(p) {
+            resetInput();
+            onEnd({
+              updateContents: (contents) => {
+                if (copyData) {
+                  const offset = {
+                    x: p.x - copyData.center.x,
+                    y: p.y - copyData.center.y
+                  };
+                  const idMap = {};
+                  let id = contents.length;
+                  copyData.contents.forEach((c) => {
+                    idMap[c.id] = id++;
+                  });
+                  copyData.contents.forEach((c) => {
+                    contents.push(ctx.produce(c.content, (draft) => {
+                      const model = ctx.getContentModel(draft);
+                      model?.move?.(draft, offset);
+                      model?.updateRefId?.(draft, (d) => typeof d === "number" ? idMap[d] : void 0);
+                    }));
+                  });
+                }
+                reset();
+              }
+            });
+          },
+          input,
+          onMove(p, viewportPosition) {
+            setInputPosition(viewportPosition || p);
+            if (!type) {
+              return;
+            }
+            setCursorPosition(p);
+          },
+          assistentContents,
+          reset
+        };
+      },
+      selectCount: 0
+    }
+  ];
+}
+function* iterateRefContents(id, contents, ctx) {
+  yield id;
+  const content = contents[id];
+  if (content) {
+    const refIds = ctx.getContentModel(content)?.getRefIds?.(content);
+    if (refIds) {
+      for (const refId of refIds) {
+        yield* iterateRefContents(refId, contents, ctx);
+      }
+    }
+  }
 }
 export {
   getCommand
@@ -2163,6 +2242,7 @@ function getModel(ctx) {
     {
       type: "ellipse arc",
       ...ctx.strokeModel,
+      ...ctx.fillModel,
       move: ellipseModel.move,
       rotate: ellipseModel.rotate,
       mirror: ellipseModel.mirror,
@@ -2203,8 +2283,12 @@ function getModel(ctx) {
         return result.length > 1 ? result : void 0;
       },
       render({ content, color, target, strokeWidth }) {
+        const colorField = content.fillColor !== void 0 ? "fillColor" : "strokeColor";
+        if (content.fillColor !== void 0) {
+          strokeWidth = 0;
+        }
         const { points } = getEllipseArcGeometries(content);
-        return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth });
+        return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth });
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
@@ -2357,7 +2441,8 @@ function getModel(ctx) {
               }
             })
           }),
-          ...ctx.getStrokeContentPropertyPanel(content, update)
+          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update)
         };
       }
     }
@@ -2709,42 +2794,6 @@ function getCommand(ctx) {
       });
       navigator.clipboard.writeText(result.join("\\n"));
     },
-    icon
-  };
-}
-export {
-  getCommand
-};
-`,
-`// dev/plugins/fill.plugin.tsx
-function getCommand(ctx) {
-  const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "50",
-    cy: "50",
-    r: "40.45985664828782",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
-  return {
-    name: "fill",
-    execute(contents, selected) {
-      contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          if (ctx.isFillContent(content)) {
-            content.fillColor = 0;
-          }
-        }
-      });
-    },
-    contentSelectable: ctx.isFillContent,
     icon
   };
 }
@@ -3142,6 +3191,7 @@ function getCommand(ctx) {
       };
     },
     selectCount: 0,
+    hotkey: "I",
     icon
   };
 }
@@ -3249,12 +3299,17 @@ function getModel(ctx) {
     {
       ...lineModel,
       type: "polyline",
+      ...ctx.fillModel,
       explode(content) {
         const { lines } = getPolylineGeometries(content);
         return lines.map((line) => ({ type: "line", points: line }));
       },
       render({ content, color, target, strokeWidth }) {
-        return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth });
+        const colorField = content.fillColor !== void 0 ? "fillColor" : "strokeColor";
+        if (content.fillColor !== void 0) {
+          strokeWidth = 0;
+        }
+        return target.renderPolyline(content.points, { [colorField]: color, dashArray: content.dashArray, strokeWidth });
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }));
@@ -3291,7 +3346,8 @@ function getModel(ctx) {
               }
             }))
           }),
-          ...ctx.getStrokeContentPropertyPanel(content, update)
+          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update)
         };
       }
     }
@@ -4005,7 +4061,7 @@ function getCommand(ctx) {
             e.stopPropagation();
           }
         }, changeOriginal ? "create new(N)" : "change original(Y)") : void 0,
-        updateContent(content, contents) {
+        updateSelectedContent(content, contents) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
@@ -4099,7 +4155,7 @@ function getCommand(ctx) {
           setInputPosition(p);
         },
         reset,
-        updateContent(content) {
+        updateSelectedContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
               ctx.getContentModel(content)?.move?.(draft, offset);
@@ -4810,6 +4866,12 @@ function getModel(ctx) {
   }
   const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2();
   function getRadialDimensionReferenceTarget(id, contents) {
+    if (typeof id !== "number") {
+      if (isCircleContent(id) || isArcContent(id)) {
+        return id;
+      }
+      return;
+    }
     return contents.find((c, i) => !!c && (isCircleContent(c) || isArcContent(c)) && i === id);
   }
   const textPositionMap = new ctx.WeakmapCache2();
@@ -4879,14 +4941,14 @@ function getModel(ctx) {
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
     propertyPanel(content, update) {
       return {
-        refId: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.refId,
           setValue: (v) => update((c) => {
             if (isRadialDimensionReferenceContent(c)) {
               c.refId = v;
             }
           })
-        }),
+        }) : [],
         position: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
           inline: true,
           properties: {
@@ -4948,7 +5010,7 @@ function getModel(ctx) {
       };
     },
     getRefIds(content) {
-      return [content.refId];
+      return typeof content.refId === "number" ? [content.refId] : void 0;
     },
     updateRefId(content, update) {
       const newRefId = update(content.refId);
@@ -5785,7 +5847,7 @@ function getCommand(ctx) {
             e.stopPropagation();
           }
         }, changeOriginal ? "create new(N)" : "change original(Y)") : void 0,
-        updateContent(content, contents) {
+        updateSelectedContent(content, contents) {
           if (startPosition && offset?.angle !== void 0) {
             const angle = offset.angle;
             if (!changeOriginal) {

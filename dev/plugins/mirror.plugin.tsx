@@ -45,7 +45,7 @@ export function getCommand(ctx: PluginContext): Command {
             {changeOriginal ? 'create new(N)' : 'change original(Y)'}
           </button>
         ) : undefined,
-        updateContent(content, contents) {
+        updateSelectedContent(content, contents) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end)
