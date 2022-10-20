@@ -120,6 +120,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     selectCount: 0,
+    hotkey: 'I',
     icon,
   }
 }

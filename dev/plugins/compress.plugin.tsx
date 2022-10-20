@@ -35,7 +35,7 @@ export function getCommand(ctx: PluginContext): Command {
         contents.splice(i, 1)
       })
       for (const content of ctx.iterateAllContents(contents)) {
-        ctx.getContentModel(content)?.updateRefId?.(content, refId => newIndexes[refId])
+        ctx.getContentModel(content)?.updateRefId?.(content, refId => typeof refId === 'number' ? newIndexes[refId] : undefined)
       }
     },
     selectCount: 0,

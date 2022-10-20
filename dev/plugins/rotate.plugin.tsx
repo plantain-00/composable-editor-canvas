@@ -73,7 +73,7 @@ export function getCommand(ctx: PluginContext): Command {
             {changeOriginal ? 'create new(N)' : 'change original(Y)'}
           </button>
         ) : undefined,
-        updateContent(content, contents) {
+        updateSelectedContent(content, contents) {
           if (startPosition && offset?.angle !== undefined) {
             const angle = offset.angle
             if (!changeOriginal) {

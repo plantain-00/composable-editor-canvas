@@ -76,7 +76,7 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   canSelectPart?: boolean
   propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
-  updateRefId?(content: T, update: (id: number) => number | undefined): void
+  updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
   isValid?(content: Omit<T, 'type'>): boolean
 }
 

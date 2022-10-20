@@ -5,7 +5,7 @@ import type * as model from '../models/model'
 import type { LineContent } from './line-polyline.plugin'
 
 export type EllipseContent = model.BaseContent<'ellipse'> & model.StrokeFields & model.FillFields & core.Ellipse
-export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeFields & core.EllipseArc
+export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeFields & model.FillFields & core.EllipseArc
 
 export function getModel(ctx: PluginContext) {
   function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
@@ -192,6 +192,7 @@ export function getModel(ctx: PluginContext) {
     {
       type: 'ellipse arc',
       ...ctx.strokeModel,
+      ...ctx.fillModel,
       move: ellipseModel.move,
       rotate: ellipseModel.rotate,
       mirror: ellipseModel.mirror,
@@ -232,8 +233,12 @@ export function getModel(ctx: PluginContext) {
         return result.length > 1 ? result : undefined
       },
       render({ content, color, target, strokeWidth }) {
+        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+        if (content.fillColor !== undefined) {
+          strokeWidth = 0
+        }
         const { points } = getEllipseArcGeometries(content)
-        return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+        return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
@@ -323,6 +328,7 @@ export function getModel(ctx: PluginContext) {
           endAngle: <ctx.NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.endAngle = v } })} />,
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
     } as model.Model<EllipseArcContent>,

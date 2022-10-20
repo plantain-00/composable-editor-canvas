@@ -7,7 +7,7 @@ import type { PolygonContent } from './polygon.plugin'
 import type { TextContent } from './text.plugin'
 
 export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & model.FillFields & core.Circle
-export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & core.Arc
+export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.FillFields & core.Arc
 
 export function getModel(ctx: PluginContext) {
   function getCircleGeometries(content: Omit<CircleContent, "type">) {
@@ -174,6 +174,7 @@ export function getModel(ctx: PluginContext) {
     {
       type: 'arc',
       ...ctx.strokeModel,
+      ...ctx.fillModel,
       move(content, offset) {
         content.x += offset.x
         content.y += offset.y
@@ -231,11 +232,15 @@ export function getModel(ctx: PluginContext) {
         return result.length > 1 ? result : undefined
       },
       render({ content, color, target, strokeWidth }) {
-        if (content.dashArray) {
-          const { points } = getArcGeometries(content)
-          return target.renderPolyline(points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
+        if (content.fillColor !== undefined) {
+          strokeWidth = 0
         }
-        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { strokeColor: color, strokeWidth, counterclockwise: content.counterclockwise })
+        if (content.dashArray) {
+          const { points } = getCircleGeometries(content)
+          return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+        }
+        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { [colorField]: color, strokeWidth, counterclockwise: content.counterclockwise })
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
@@ -333,6 +338,7 @@ export function getModel(ctx: PluginContext) {
           endAngle: <ctx.NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.endAngle = v } })} />,
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
     } as model.Model<ArcContent>,

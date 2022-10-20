@@ -6,7 +6,7 @@ import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circ
 import type { LineContent } from './line-polyline.plugin'
 
 export type RadialDimensionReferenceContent = model.BaseContent<'radial dimension reference'> & model.StrokeFields & model.ArrowFields & core.RadialDimension & {
-  refId: number
+  refId: number | model.BaseContent
 }
 
 export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferenceContent> {
@@ -25,7 +25,13 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   }
   const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, model.Geometries>()
 
-  function getRadialDimensionReferenceTarget(id: number, contents: readonly core.Nullable<model.BaseContent>[]) {
+  function getRadialDimensionReferenceTarget(id: number | model.BaseContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    if (typeof id !== 'number') {
+      if (isCircleContent(id) || isArcContent(id)) {
+        return id
+      }
+      return
+    }
     return contents.find((c, i): c is CircleContent | ArcContent => !!c && (isCircleContent(c) || isArcContent(c)) && i === id)
   }
 
@@ -102,7 +108,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
     propertyPanel(content, update) {
       return {
-        refId: <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} />,
+        refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} /> : [],
         position: <ctx.ObjectEditor
           inline
           properties={{
@@ -121,7 +127,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       }
     },
     getRefIds(content) {
-      return [content.refId]
+      return typeof content.refId === 'number' ? [content.refId] : undefined
     },
     updateRefId(content, update) {
       const newRefId = update(content.refId)
