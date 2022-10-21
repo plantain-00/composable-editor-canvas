@@ -11,7 +11,7 @@ export type RadialDimensionReferenceContent = model.BaseContent<'radial dimensio
 
 export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferenceContent> {
   function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const target = getRadialDimensionReferenceTarget(content.refId, contents)
+    const target = ctx.getReference(content.refId, contents, contentSelectable)
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         return ctx.getRadialDimensionGeometries(content, target, {
@@ -24,16 +24,6 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     return { lines: [], points: [], renderingLines: [] }
   }
   const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, model.Geometries>()
-
-  function getRadialDimensionReferenceTarget(id: number | model.BaseContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    if (typeof id !== 'number') {
-      if (isCircleContent(id) || isArcContent(id)) {
-        return id
-      }
-      return
-    }
-    return contents.find((c, i): c is CircleContent | ArcContent => !!c && (isCircleContent(c) || isArcContent(c)) && i === id)
-  }
 
   const textPositionMap = new ctx.WeakmapCache2<core.RadialDimension, core.Circle, {
     textPosition: core.Position
@@ -64,7 +54,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       if (regions && regions.length > 0) {
         children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
       }
-      const referenceTarget = getRadialDimensionReferenceTarget(content.refId, contents)
+      const referenceTarget = ctx.getReference(content.refId, contents, contentSelectable)
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget)
         children.push(target.renderGroup(
@@ -94,7 +84,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
                 }
                 c.position.x += cursor.x - start.x
                 c.position.y += cursor.y - start.y
-                const target = getRadialDimensionReferenceTarget(c.refId, contents)
+                const target = ctx.getReference(c.refId, contents, contentSelectable)
                 if (!target || ctx.getTwoPointsDistance(target, c.position) > target.r) {
                   return
                 }
@@ -142,10 +132,11 @@ export function isRadialDimensionReferenceContent(content: model.BaseContent): c
   return content.type === 'radial dimension reference'
 }
 
+function contentSelectable(content: model.BaseContent): content is CircleContent | ArcContent {
+  return isArcContent(content) || isCircleContent(content)
+}
+
 export function getCommand(ctx: PluginContext): Command {
-  function contentSelectable(content: model.BaseContent): content is CircleContent | ArcContent {
-    return isArcContent(content) || isCircleContent(content)
-  }
   const React = ctx.React
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">

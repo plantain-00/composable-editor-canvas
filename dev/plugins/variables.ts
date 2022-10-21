@@ -247,15 +247,6 @@ function getModel(ctx) {
   };
   const blockLinesCache = new ctx.WeakmapCache2();
   const blockSnapPointsCache = new ctx.WeakmapCache2();
-  function getBlock(id, contents) {
-    if (typeof id !== "number") {
-      if (isBlockContent(id)) {
-        return id;
-      }
-      return;
-    }
-    return contents.find((c, i) => !!c && isBlockContent(c) && i === id);
-  }
   function extractContentInBlockReference(target, content, block, contents) {
     const model = ctx.getContentModel(target);
     if (!model) {
@@ -267,7 +258,7 @@ function getModel(ctx) {
     });
   }
   function getBlockReferenceGeometries(content, contents) {
-    const block = getBlock(content.refId, contents);
+    const block = ctx.getReference(content.refId, contents, isBlockContent);
     if (block) {
       return blockLinesCache.get(block, content, () => {
         const lines = [];
@@ -306,7 +297,7 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     rotate(content, center, angle, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const p = ctx.rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle);
         content.x = p.x - block.base.x;
@@ -315,7 +306,7 @@ function getModel(ctx) {
       }
     },
     explode(content, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const result = [];
         block.contents.forEach((c) => {
@@ -332,7 +323,7 @@ function getModel(ctx) {
       return [];
     },
     mirror(content, line, angle, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const p = ctx.getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line);
         content.x = p.x - block.base.x;
@@ -341,7 +332,7 @@ function getModel(ctx) {
       }
     },
     render({ content, target, color, contents }) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const children = ctx.renderContainerChildren(block, target, contents, color);
         return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
@@ -349,14 +340,14 @@ function getModel(ctx) {
       return target.renderEmpty();
     },
     getOperatorRenderPosition(content, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         return { x: content.x + block.base.x, y: content.y + block.base.y };
       }
       return content;
     },
     getEditPoints(content, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (!block) {
         return;
       }
@@ -382,7 +373,7 @@ function getModel(ctx) {
       });
     },
     getSnapPoints(content, contents) {
-      const block = getBlock(content.refId, contents);
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         return blockSnapPointsCache.get(block, content, () => {
           const result = [];
@@ -1579,6 +1570,7 @@ function getCommand(ctx) {
       for (const content of ctx.iterateAllContents(contents)) {
         ctx.getContentModel(content)?.updateRefId?.(content, (refId) => typeof refId === "number" ? newIndexes[refId] : void 0);
       }
+      ctx.contentIndexCache.clear();
     },
     selectCount: 0,
     icon
@@ -4852,7 +4844,7 @@ function isArcContent(content) {
 // dev/plugins/radial-dimension.plugin.tsx
 function getModel(ctx) {
   function getRadialDimensionReferenceGeometriesFromCache(content, contents) {
-    const target = getRadialDimensionReferenceTarget(content.refId, contents);
+    const target = ctx.getReference(content.refId, contents, contentSelectable);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         return ctx.getRadialDimensionGeometries(content, target, {
@@ -4865,15 +4857,6 @@ function getModel(ctx) {
     return { lines: [], points: [], renderingLines: [] };
   }
   const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2();
-  function getRadialDimensionReferenceTarget(id, contents) {
-    if (typeof id !== "number") {
-      if (isCircleContent(id) || isArcContent(id)) {
-        return id;
-      }
-      return;
-    }
-    return contents.find((c, i) => !!c && (isCircleContent(c) || isArcContent(c)) && i === id);
-  }
   const textPositionMap = new ctx.WeakmapCache2();
   function getTextPosition(content, circle) {
     return textPositionMap.get(content, circle, () => {
@@ -4898,7 +4881,7 @@ function getModel(ctx) {
       if (regions && regions.length > 0) {
         children.push(target.renderPolyline(regions[0].points, { strokeColor: color, strokeWidth: 0, fillColor: color }));
       }
-      const referenceTarget = getRadialDimensionReferenceTarget(content.refId, contents);
+      const referenceTarget = ctx.getReference(content.refId, contents, contentSelectable);
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget);
         children.push(target.renderGroup(
@@ -4927,7 +4910,7 @@ function getModel(ctx) {
                 }
                 c.position.x += cursor.x - start.x;
                 c.position.y += cursor.y - start.y;
-                const target = getRadialDimensionReferenceTarget(c.refId, contents);
+                const target = ctx.getReference(c.refId, contents, contentSelectable);
                 if (!target || ctx.getTwoPointsDistance(target, c.position) > target.r) {
                   return;
                 }
@@ -5023,10 +5006,10 @@ function getModel(ctx) {
 function isRadialDimensionReferenceContent(content) {
   return content.type === "radial dimension reference";
 }
+function contentSelectable(content) {
+  return isArcContent(content) || isCircleContent(content);
+}
 function getCommand(ctx) {
-  function contentSelectable(content) {
-    return isArcContent(content) || isCircleContent(content);
-  }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", {
     xmlns: "http://www.w3.org/2000/svg",
@@ -6019,6 +6002,7 @@ function getModel(ctx) {
   return {
     type: "spline",
     ...ctx.strokeModel,
+    ...ctx.fillModel,
     move(content, offset) {
       for (const point of content.points) {
         point.x += offset.x;
@@ -6087,7 +6071,8 @@ function getModel(ctx) {
             }
           })
         }),
-        ...ctx.getStrokeContentPropertyPanel(content, update)
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update)
       };
     }
   };

@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, getContentByIndex, getContentColor, getContentModel, getStrokeWidth } from "../models/model"
+import { BaseContent, getContentByIndex, getContentColor, getContentModel, getSortedContents, getStrokeWidth } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -92,8 +92,9 @@ export function Renderer(props: {
   }
 
   if (previewPatches.length === 0 && props.simplified) {
-    children = renderCache.current.get(props.contents, () => {
-      props.contents.forEach((content) => {
+    const sortedContents = getSortedContents(props.contents).contents
+    children = renderCache.current.get(sortedContents, () => {
+      sortedContents.forEach((content) => {
         if (!content) {
           return
         }
@@ -102,7 +103,8 @@ export function Renderer(props: {
       return children
     })
   } else {
-    previewContents.forEach((content) => {
+    const sortedContents = getSortedContents(previewContents).contents
+    sortedContents.forEach((content) => {
       if (!content) {
         return
       }

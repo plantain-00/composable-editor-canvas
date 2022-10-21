@@ -46,15 +46,6 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
   }
   const blockLinesCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.Geometries>()
   const blockSnapPointsCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.SnapPoint[]>()
-  function getBlock(id: number | model.BaseContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    if (typeof id !== 'number') {
-      if (isBlockContent(id)) {
-        return id
-      }
-      return
-    }
-    return contents.find((c, i): c is BlockContent => !!c && isBlockContent(c) && i === id)
-  }
   function extractContentInBlockReference(
     target: model.BaseContent,
     content: Omit<BlockReferenceContent, "type">,
@@ -71,7 +62,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     })
   }
   function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const block = getBlock(content.refId, contents)
+    const block = ctx.getReference(content.refId, contents, isBlockContent)
     if (block) {
       return blockLinesCache.get(block, content, () => {
         const lines: [core.Position, core.Position][] = []
@@ -110,7 +101,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       content.y += offset.y
     },
     rotate(content, center, angle, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         const p = ctx.rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle)
         content.x = p.x - block.base.x
@@ -119,7 +110,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       }
     },
     explode(content, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         const result: model.BaseContent[] = []
         block.contents.forEach((c) => {
@@ -136,7 +127,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       return []
     },
     mirror(content, line, angle, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         const p = ctx.getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
         content.x = p.x - block.base.x
@@ -145,7 +136,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       }
     },
     render({ content, target, color, contents }) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         const children = ctx.renderContainerChildren(block, target, contents, color)
         return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
@@ -153,14 +144,14 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       return target.renderEmpty()
     },
     getOperatorRenderPosition(content, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         return { x: content.x + block.base.x, y: content.y + block.base.y }
       }
       return content
     },
     getEditPoints(content, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (!block) {
         return
       }
@@ -186,7 +177,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       })
     },
     getSnapPoints(content, contents) {
-      const block = getBlock(content.refId, contents)
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         return blockSnapPointsCache.get(block, content, () => {
           const result: model.SnapPoint[] = []
