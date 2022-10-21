@@ -1,8 +1,8 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, registerModel, zoomContentsToFit } from './models/model'
+import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './models/model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
 import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
 import RTree from 'rtree'
@@ -414,7 +414,8 @@ export const CADEditor = React.forwardRef((props: {
     if (operations.type !== 'operate' && !simplified) {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), selectedContents)
       // hover by position
-      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible))
+      const indexes = getSortedContents(editingContent).indexes
+      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
@@ -568,9 +569,11 @@ export const CADEditor = React.forwardRef((props: {
       })
       applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
     }
+    const zPanel: JSX.Element[] = []
     selectedContents.forEach(target => {
       types.add(target.content.type)
-      ids.push(target.path[0])
+      const id = target.path[0]
+      ids.push(id)
       const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater)
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
@@ -585,7 +588,12 @@ export const CADEditor = React.forwardRef((props: {
           }
         })
       }
+      zPanel.push(<BooleanEditor value={target.content.z !== undefined} setValue={(v) => contentsUpdater(c => { c.z = v ? id : undefined })} style={{ marginRight: '5px' }} />)
+      if (target.content.z !== undefined) {
+        zPanel.push(<NumberEditor value={target.content.z} setValue={(v) => contentsUpdater(c => { c.z = v })} />)
+      }
     })
+    propertyPanels.z = zPanel
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
         {Array.from(types).join(',')}

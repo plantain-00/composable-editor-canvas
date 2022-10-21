@@ -344,7 +344,7 @@ export function getContentByClickPosition<T>(contents: readonly Nullable<T>[], p
         }[];
     };
     canSelectPart?: boolean;
-} | undefined, part?: boolean, contentVisible?: (content: T) => boolean, delta?: number): number[] | undefined;
+} | undefined, part?: boolean, contentVisible?: (content: T) => boolean, indexes?: number[], delta?: number): number[] | undefined;
 
 // @public (undocumented)
 export function getContentsByClickTwoPositions<T>(contents: readonly Nullable<T>[], startPosition: Position, endPosition: Position, getModel: (content: T) => {

@@ -5,7 +5,7 @@ import type * as model from '../models/model'
 import bspline from 'b-spline'
 import type { LineContent } from './line-polyline.plugin'
 
-export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & {
+export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & {
   points: core.Position[]
   fitting?: boolean
 }
@@ -57,6 +57,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent> {
   return {
     type: 'spline',
     ...ctx.strokeModel,
+    ...ctx.fillModel,
     move(content, offset) {
       for (const point of content.points) {
         point.x += offset.x
@@ -101,6 +102,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent> {
         />,
         fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
   }

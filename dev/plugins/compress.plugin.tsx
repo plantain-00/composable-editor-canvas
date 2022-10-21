@@ -37,6 +37,7 @@ export function getCommand(ctx: PluginContext): Command {
       for (const content of ctx.iterateAllContents(contents)) {
         ctx.getContentModel(content)?.updateRefId?.(content, refId => typeof refId === 'number' ? newIndexes[refId] : undefined)
       }
+      ctx.contentIndexCache.clear()
     },
     selectCount: 0,
     icon,

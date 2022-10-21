@@ -1,9 +1,11 @@
+import produce from 'immer'
 import React from 'react'
 import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, Position, ReactRenderTarget, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { LineContent } from '../plugins/line-polyline.plugin'
 
 export interface BaseContent<T extends string = string> {
   type: T
+  z?: number
 }
 
 export interface StrokeFields {
@@ -24,14 +26,6 @@ export interface ArrowFields {
   arrowAngle?: number
   arrowSize?: number
 }
-
-type StrokeContent<T extends string = string> = BaseContent<T> & StrokeFields
-
-type FillContent<T extends string = string> = BaseContent<T> & FillFields
-
-type ContainerContent<T extends string = string> = BaseContent<T> & ContainerFields
-
-type ArrowContent<T extends string = string> = BaseContent<T> & ArrowFields
 
 export const strokeModel = {
   isStroke: true,
@@ -114,9 +108,9 @@ export interface Geometries {
   renderingLines: Position[][]
 }
 
-const geometriesCache = new WeakmapCache<Omit<BaseContent, 'type'>, Geometries>()
-const snapPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, SnapPoint[]>()
-const editPointsCache = new WeakmapCache<Omit<BaseContent, 'type'>, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
+const geometriesCache = new WeakmapCache<object, Geometries>()
+const snapPointsCache = new WeakmapCache<object, SnapPoint[]>()
+const editPointsCache = new WeakmapCache<object, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
 
 export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
@@ -190,7 +184,7 @@ export function zoomContentsToFit(
 }
 
 export function getStrokeContentPropertyPanel(
-  content: Omit<StrokeContent, 'type'>,
+  content: StrokeFields,
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
   return {
@@ -226,7 +220,7 @@ export function getFillContentPropertyPanel(
 }
 
 export function getArrowContentPropertyPanel(
-  content: Omit<ArrowContent, 'type'>,
+  content: ArrowFields,
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
   return {
@@ -241,19 +235,19 @@ export function getArrowContentPropertyPanel(
   }
 }
 
-export function isStrokeContent(content: BaseContent): content is StrokeContent {
+export function isStrokeContent(content: BaseContent): content is (BaseContent & StrokeFields) {
   return !!getContentModel(content)?.isStroke
 }
 
-export function isFillContent(content: BaseContent): content is FillContent {
+export function isFillContent(content: BaseContent): content is (BaseContent & FillFields) {
   return !!getContentModel(content)?.isFill
 }
 
-export function isContainerContent(content: BaseContent): content is ContainerContent {
+export function isContainerContent(content: BaseContent): content is (BaseContent & ContainerFields) {
   return !!getContentModel(content)?.isContainer
 }
 
-export function isArrowContent(content: BaseContent): content is ArrowContent {
+export function isArrowContent(content: BaseContent): content is (BaseContent & ArrowFields) {
   return !!getContentModel(content)?.isArrow
 }
 
@@ -350,11 +344,57 @@ export function getPolylineEditPoints(
   }))
 }
 
-export function getContentIndex(content: Omit<BaseContent, 'type'>, contents: readonly Nullable<BaseContent>[]) {
-  return contents.findIndex(c => content === c)
+export function getContentIndex(content: object, contents: readonly Nullable<BaseContent>[]) {
+  return contentIndexCache.get(content, () => {
+    return contents.findIndex(c => content === c)
+  })
 }
 
-export function contentIsReferenced(content: Omit<BaseContent, 'type'>, contents: readonly Nullable<BaseContent>[]): boolean {
+export const contentIndexCache = new WeakmapCache<object, number>()
+
+const sortedContentsCache = new WeakmapCache<readonly Nullable<BaseContent>[], {
+  contents: readonly Nullable<BaseContent>[]
+  indexes: number[]
+}>()
+
+export function getSortedContents(contents: readonly Nullable<BaseContent>[]) {
+  return sortedContentsCache.get(contents, () => {
+    const contentsWithOrder = contents.map((c, i) => {
+      return {
+        content: c,
+        index: i,
+        z: c?.z ?? i,
+      }
+    })
+    const result = produce(contentsWithOrder, draft => {
+      draft.sort((a, b) => a.z - b.z)
+    })
+    return {
+      contents: result.map(r => r.content),
+      indexes: result.map(r => r.index),
+    }
+  })
+}
+
+export function getReference<T extends BaseContent>(
+  id: number | BaseContent,
+  contents: readonly Nullable<BaseContent>[],
+  filter: (content: BaseContent) => content is T,
+) {
+  if (typeof id !== 'number') {
+    if (filter(id)) {
+      return id
+    }
+    return
+  }
+  const content = contents[id]
+  if (content && filter(content)) {
+    return content
+  }
+  return
+}
+
+export function contentIsReferenced(content: object, contents: readonly Nullable<BaseContent>[]): boolean {
   const id = getContentIndex(content, contents)
   for (const content of iterateAllContents(contents)) {
     if (getContentModel(content)?.getRefIds?.(content)?.includes(id)) {
@@ -395,7 +435,8 @@ export function getContainerSnapPoints(content: ContainerFields, contents: reado
 
 export function renderContainerChildren<V>(container: ContainerFields, target: ReactRenderTarget<V>, contents: readonly Nullable<BaseContent>[], color: number) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
-  container.contents.forEach((content) => {
+  const sortedContents = getSortedContents(container.contents).contents
+  sortedContents.forEach((content) => {
     if (!content) {
       return
     }

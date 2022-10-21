@@ -6,7 +6,7 @@ export class WeakmapCache<TKey extends object, TValue> {
 
   public get(key: TKey, func: () => TValue) {
     let result = this.cache.get(key)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       this.cache.set(key, result)
     }
@@ -31,7 +31,7 @@ export class WeakmapCache2<TKey1 extends object, TKey2 extends object, TValue> {
       this.cache.set(key1, map)
     }
     let result = map.get(key2)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map.set(key2, result)
     }
@@ -56,7 +56,7 @@ export class WeakmapMapCache<TKey1 extends object, TKey2, TValue> {
       this.cache.set(key1, map)
     }
     let result = map.get(key2)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map.set(key2, result)
     }
@@ -86,7 +86,7 @@ export class WeakmapMap2Cache<TKey1 extends object, TKey2, TKey3, TValue> {
       map.set(key2, map2)
     }
     let result = map2.get(key3)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map2.set(key3, result)
     }
@@ -121,7 +121,7 @@ export class WeakmapMap3Cache<TKey1 extends object, TKey2, TKey3, TKey4, TValue>
       map2.set(key3, map3)
     }
     let result = map3.get(key4)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map3.set(key4, result)
     }
@@ -161,7 +161,7 @@ export class WeakmapMap4Cache<TKey1 extends object, TKey2, TKey3, TKey4, TKey5, 
       map3.set(key4, map4)
     }
     let result = map4.get(key5)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map4.set(key5, result)
     }
@@ -186,7 +186,7 @@ export class MapCache2<TKey1, TKey2, TValue> {
       this.cache.set(key1, map)
     }
     let result = map.get(key2)
-    if (!result) {
+    if (result === undefined) {
       result = func()
       map.set(key2, result)
     }

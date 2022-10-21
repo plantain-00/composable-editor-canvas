@@ -20,9 +20,11 @@ export function getContentByClickPosition<T>(
   } | undefined,
   part = false,
   contentVisible?: (content: T) => boolean,
+  indexes = contents.map((_,i) => i),
   delta = 3,
 ): number[] | undefined {
-  for (let i = 0; i < contents.length; i++) {
+  for (let j = indexes.length - 1; j > 0; j--) {
+    const i = indexes[j]
     const content = contents[i]
     if (!content) {
       continue
