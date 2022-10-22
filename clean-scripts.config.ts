@@ -13,7 +13,7 @@ export default {
       ],
       front: [
         'tsc -p src/tsconfig.browser.json',
-        'rollup --config rollup.config.js'
+        'rollup --config rollup.config.mjs'
       ],
       dev: [
         importStories,
@@ -35,6 +35,6 @@ export default {
     typeCoverage: 'type-coverage -p src/tsconfig.nodejs.json --strict',
     typeCoverageDev: 'type-coverage -p dev --strict'
   },
-  test: 'ava',
+  test: 'ava --timeout=30s',
   fix: `eslint --ext .js,.ts ${tsFiles} --fix`
 }
