@@ -12,16 +12,8 @@ export type ArrowContent = model.BaseContent<'arrow'> & model.StrokeFields & mod
 export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
   function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const arrowSize = content.arrowSize ?? ctx.dimensionStyle.arrowSize
-      const arrowAngle = content.arrowAngle ?? ctx.dimensionStyle.arrowAngle
-      const d = (content.strokeWidth ?? 1) / 2 / Math.tan(arrowAngle * Math.PI / 180)
-      const points = [content.p1, ctx.getPointByLengthAndDirection(content.p2, d, content.p1)]
-      const arrow = ctx.getPointByLengthAndDirection(content.p2, arrowSize, content.p1)
-      const arrowPoints = [
-        content.p2,
-        ctx.rotatePositionByCenter(arrow, content.p2, arrowAngle),
-        ctx.rotatePositionByCenter(arrow, content.p2, -arrowAngle),
-      ]
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(content.p1, content.p2, content)
+      const points = [content.p1, endPoint]
       return {
         points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),

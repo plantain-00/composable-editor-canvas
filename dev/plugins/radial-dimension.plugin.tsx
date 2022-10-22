@@ -140,9 +140,9 @@ export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <circle cx="36" cy="64" r="31.622776601683793" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></circle>
-      <polyline points="36,64 90.50229352972221,9.497706470277791" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
-      <polygon points="75.10199280075491,32.88621938243634 65.39851220628051,22.75526837146677 54.21645977390029,44.31651677899134" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
+      <circle cx="36" cy="64" r="31" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></circle>
+      <polyline points="36,64 90,9" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polygon points="75,32 65,22 54,44" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
     </svg>
   )
   return {

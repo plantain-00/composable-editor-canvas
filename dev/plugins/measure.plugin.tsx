@@ -9,8 +9,8 @@ export function getCommand(ctx: PluginContext): Command {
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <polyline points="9,14 43,92" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
-      <polyline points="94.0881895447306,14 93.76440329468612,21.41592435882452 92.795508753423,28.775409055420823 91.18887979343477,36.022443967469464 88.95674383121603,43.10187478341042 86.1160887692398,49.9598227600572 82.68853370776218,56.54409477236529 78.70016441041528,62.80458053462891 74.1813347757952,68.69363397001257 69.1664358259653,74.1664358259653 63.69363397001257,79.1813347757952 57.80458053462891,83.70016441041528 51.544094772365305,87.68853370776216 44.9598227600572,91.1160887692398" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
-      <polyline points="9,14 94.0881895447306,14" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="94,14 93,21 92,28 91,36 88,43 86,49 82,56 78,62 74,68 69,74 63,79 57,83 51,87 44,91" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="9,14 94,14" strokeWidth="5" strokeDasharray="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
   )
   return {

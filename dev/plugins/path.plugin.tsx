@@ -290,7 +290,7 @@ export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <path d=" M 8 8 L 40.39763407926134 7.609667059286008 A 50 50 0 0 1 91 57.606038480595494 Q 91 91, 17.362373874233413 90.75522644243098 C 50 72, 50 31, 8 24 Z" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></path>
+      <path d=" M 8 8 L 40 7 A 50 50 0 0 1 91 57 Q 91 91, 17 90 C 50 72, 50 31, 8 24 Z" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></path>
     </svg>
   )
   return {
