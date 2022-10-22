@@ -36,6 +36,7 @@ export function getCommand(ctx: PluginContext): Command {
                 jsx += c
               }
             }
+            jsx = jsx.replaceAll(/[0-9]+\.[0-9]+/g, c => Math.round(+c).toString())
             result.push(jsx.split(ctx.getColorString(color)).join('currentColor'))
           }
         }

@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, Position, ReactRenderTarget, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, Position, ReactRenderTarget, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { LineContent } from '../plugins/line-polyline.plugin'
 
 export interface BaseContent<T extends string = string> {
@@ -510,4 +510,20 @@ export function breakPolyline(
     }
   }
   return undefined
+}
+
+export function getArrowPoints(from: Position, to: Position, content: ArrowFields & StrokeFields) {
+  const arrowSize = content.arrowSize ?? dimensionStyle.arrowSize
+  const arrowAngle = content.arrowAngle ?? dimensionStyle.arrowAngle
+  const arrow = getPointByLengthAndDirection(to, arrowSize, from)
+  const distance = (content.strokeWidth ?? 1) / 2 / Math.tan(arrowAngle * Math.PI / 180)
+  return {
+    arrowPoints: [
+      to,
+      rotatePositionByCenter(arrow, to, arrowAngle),
+      rotatePositionByCenter(arrow, to, -arrowAngle),
+    ],
+    distance,
+    endPoint: getPointByLengthAndDirection(to, distance, from),
+  }
 }

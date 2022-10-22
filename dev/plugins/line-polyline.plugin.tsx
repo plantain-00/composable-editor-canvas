@@ -13,11 +13,18 @@ export type LineContent = model.BaseContent<'line' | 'polyline'> & model.StrokeF
 export function getModel(ctx: PluginContext) {
   function getPolylineGeometries(content: Omit<LineContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
+      const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {
-        lines: Array.from(ctx.iteratePolylineLines(content.points)),
+        lines,
         points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(content.points, content.dashArray),
+        regions: content.fillColor !== undefined ? [
+          {
+            lines,
+            points: content.points,
+          },
+        ] : undefined,
       }
     })
   }
@@ -138,12 +145,12 @@ export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React
   const icon1 = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <polyline points="10,87 87.51451476981585,9.485485230184139" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="10,87 87,9" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
   )
   const icon2 = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <polyline points="12,86 38,24 62.2,64.6 88,13" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="12,86 38,24 62,64 88,13" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
   )
   return [
