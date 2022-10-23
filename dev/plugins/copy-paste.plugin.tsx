@@ -5,15 +5,18 @@ import type * as model from '../models/model'
 
 export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React
-  return [
+  const cutOrCopyCommand: Command = (
     {
       name: 'copy',
-      execute(contents, selected) {
+      execute({ contents, selected, type }) {
         const ids = new Set<number>()
         contents.forEach((content, index) => {
           if (content && ctx.isSelected([index], selected)) {
             for (const id of iterateRefContents(index, contents, ctx)) {
               ids.add(id)
+            }
+            if (type === 'cut' && !ctx.contentIsReferenced(content, contents)) {
+              contents[index] = undefined
             }
           }
         })
@@ -43,6 +46,13 @@ export function getCommand(ctx: PluginContext): Command[] {
         }
         navigator.clipboard.writeText(JSON.stringify(copyData))
       },
+    }
+  )
+  return [
+    cutOrCopyCommand,
+    {
+      ...cutOrCopyCommand,
+      name: 'cut',
     },
     {
       name: 'paste',

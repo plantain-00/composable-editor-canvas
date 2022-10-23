@@ -1,7 +1,7 @@
 import * as React from "react"
 
 export function DragMask(props: {
-  onDragEnd: () => void
+  onDragEnd: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
   onDragging: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void
   ignoreLeavingEvent?: boolean
   style?: React.CSSProperties

@@ -150,8 +150,6 @@ export default () => {
         />
       )}
       <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
-        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         {!readOnly && pluginCommandTypes.map((p) => {
           if (p.icon) {
             return React.cloneElement(p.icon, {
@@ -168,6 +166,8 @@ export default () => {
           }
           return null
         })}
+        {(['move canvas', 'zoom window'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
         {!readOnly && <span>

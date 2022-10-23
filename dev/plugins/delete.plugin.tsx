@@ -12,7 +12,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'delete',
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           contents[index] = undefined

@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './models/model'
@@ -34,8 +34,8 @@ export const CADEditor = React.forwardRef((props: {
   inputFixed?: boolean
   snapTypes: readonly SnapPointType[]
   renderTarget?: string
-  setCanUndo: (canUndo: boolean) => void
-  setCanRedo: (canRedo: boolean) => void
+  setCanUndo?: (canUndo: boolean) => void
+  setCanRedo?: (canRedo: boolean) => void
   setOperation: (operations: string | undefined) => void
   backgroundColor: number
   debug?: boolean
@@ -51,7 +51,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.(draft, s, setEditingContentPath)
+            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name})
           })
           setSelected()
           return true
@@ -233,12 +233,24 @@ export const CADEditor = React.forwardRef((props: {
   const lastPosition = editLastPosition ?? commandLastPosition
 
   // select by region
-  const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
+  const { onStartSelect, dragSelectMask } = useDragSelect((start, end, e) => {
     if (end) {
+      start = reverseTransformPosition(start, transform)
+      end = reverseTransformPosition(end, transform)
+      if (e.shiftKey || (operations.type === 'operate' && operations.operate.name === 'zoom window')) {
+        const result = zoomToFit({ start, end }, { width, height }, { x: width / 2, y: height / 2 }, 1)
+        if (result) {
+          setScale(result.scale)
+          setX(result.x)
+          setY(result.y)
+        }
+        resetOperation()
+        return
+      }
       addSelection(...getContentsByClickTwoPositions(
         editingContent,
-        reverseTransformPosition(start, transform),
-        reverseTransformPosition(end, transform),
+        start,
+        end,
         getContentModel,
         isSelectable,
         contentVisible,
@@ -320,12 +332,12 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((k) => k.code === 'KeyX' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    startOperation({ type: 'command', name: 'move' })
+    startOperation({ type: 'command', name: 'cut' })
     e.preventDefault()
   })
 
-  React.useEffect(() => props.setCanUndo(canUndo), [canUndo])
-  React.useEffect(() => props.setCanRedo(canRedo), [canRedo])
+  React.useEffect(() => props.setCanUndo?.(canUndo), [canUndo])
+  React.useEffect(() => props.setCanRedo?.(canRedo), [canRedo])
   React.useEffect(() => {
     props.setOperation(operations.type !== 'select' ? operations.operate.name : undefined)
   }, [operations])
@@ -392,6 +404,9 @@ export const CADEditor = React.forwardRef((props: {
         // start selection by region
         onStartSelect(e)
       }
+    }
+    if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
+      onStartSelect(e)
     }
     setSnapOffset(undefined)
   })
@@ -633,7 +648,7 @@ export const CADEditor = React.forwardRef((props: {
           printMode={props.printMode}
         />}
         {minimap}
-        {position && <span style={{ position: 'absolute' }}>{position.x},{position.y}</span>}
+        {position && <span style={{ position: 'absolute', right: 0 }}>{position.x},{position.y}</span>}
         {commandMasks}
         {!snapOffsetActive && selectionInput}
         {!readOnly && !snapOffsetActive && commandInputs}

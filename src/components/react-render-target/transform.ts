@@ -1,4 +1,4 @@
-import { getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils"
+import { equals, getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils"
 
 /**
  * @public
@@ -30,8 +30,8 @@ export function zoomToFit(
   center: Position,
   paddingScale = 0.8,
 ) {
-  if (bounding && bounding.start.x < bounding.end.x && bounding.start.y < bounding.end.y) {
-    const scale = Math.min(width / (bounding.end.x - bounding.start.x), height / (bounding.end.y - bounding.start.y)) * paddingScale
+  if (bounding && !equals(bounding.start.x, bounding.end.x) && !equals(bounding.start.y, bounding.end.y)) {
+    const scale = Math.min(width / Math.abs(bounding.end.x - bounding.start.x), height / Math.abs(bounding.end.y - bounding.start.y)) * paddingScale
     return {
       scale,
       x: (center.x - getTwoNumberCenter(bounding.start.x, bounding.end.x)) * scale,

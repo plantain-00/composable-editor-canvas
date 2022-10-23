@@ -14,7 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'compress',
-    execute(contents) {
+    execute({contents}) {
       const newIndexes: (number | undefined)[] = []
       let validContentCount = 0
       const invalidContentsIndex: number[] = []

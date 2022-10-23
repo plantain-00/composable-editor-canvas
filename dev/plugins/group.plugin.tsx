@@ -62,7 +62,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create group',
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const newContent: GroupContent = {
         type: 'group',
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
