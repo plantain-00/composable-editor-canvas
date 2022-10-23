@@ -7,9 +7,6 @@ export const WhiteBoard = () => {
   const [initialState, onChange] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [], { initial: true })
   const editorRef = React.useRef<CADEditorRef | null>(null)
   const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
-  const [canUndo, setCanUndo] = React.useState(false)
-  const [canRedo, setCanRedo] = React.useState(false)
-  const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-whiteboard:panel', true)
   const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-whiteboard:print-mode', false)
   const [operation, setOperation] = React.useState<string>()
   const size = useWindowSize()
@@ -26,22 +23,13 @@ export const WhiteBoard = () => {
         height={size.height}
         snapTypes={snapTypes}
         renderTarget='svg'
-        setCanUndo={setCanUndo}
-        setCanRedo={setCanRedo}
         setOperation={setOperation}
         backgroundColor={0xffffff}
-        panelVisible={panelVisible}
+        panelVisible
         printMode={printMode}
         onChange={onChange}
       />
       <div style={{ position: 'relative' }}>
-        {(['move canvas'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        <button disabled={!canUndo} onClick={() => editorRef.current?.undo()}>undo</button>
-        <button disabled={!canRedo} onClick={() => editorRef.current?.redo()}>redo</button>
-        <span>
-          <input type='checkbox' checked={panelVisible} id='panel' onChange={() => setPanelVisible(!panelVisible)} />
-          <label htmlFor='panel'>panel</label>
-        </span>
         <span>
           <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
           <label htmlFor='print mode'>print mode</label>

@@ -30,11 +30,12 @@ export interface Command extends CommandType {
     lastPosition?: Position
     reset?(): void
   }
-  execute?(
+  execute?(props: {
     contents: Nullable<BaseContent>[],
     selected: readonly number[][],
     setEditingContentPath: (path: SelectPath | undefined) => void
-  ): void
+    type: string | undefined,
+  }): void
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
   selectType?: 'select part'

@@ -30,6 +30,27 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     getOperatorRenderPosition(content) {
       return content.base
     },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: [
+            {
+              ...content.base,
+              cursor: 'move',
+              update(c, { cursor, start, scale }) {
+                if (!isBlockContent(c)) {
+                  return
+                }
+                c.base.x += cursor.x - start.x
+                c.base.y += cursor.y - start.y
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content.base, cursor] } as LineContent] }
+              },
+            },
+          ],
+          angleSnapStartPoint: content.base,
+        }
+      })
+    },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
     propertyPanel(content, update) {

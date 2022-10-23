@@ -209,6 +209,27 @@ function getModel(ctx) {
     getOperatorRenderPosition(content) {
       return content.base;
     },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: [
+            {
+              ...content.base,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isBlockContent(c)) {
+                  return;
+                }
+                c.base.x += cursor.x - start.x;
+                c.base.y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content.base, cursor] }] };
+              }
+            }
+          ],
+          angleSnapStartPoint: content.base
+        };
+      });
+    },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
     propertyPanel(content, update) {
@@ -589,7 +610,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "break",
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const newContents = [];
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
@@ -1539,7 +1560,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "compress",
-    execute(contents) {
+    execute({ contents }) {
       const newIndexes = [];
       let validContentCount = 0;
       const invalidContentsIndex = [];
@@ -1575,44 +1596,52 @@ export {
 `// dev/plugins/copy-paste.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  return [
-    {
-      name: "copy",
-      execute(contents, selected) {
-        const ids = /* @__PURE__ */ new Set();
-        contents.forEach((content, index) => {
-          if (content && ctx.isSelected([index], selected)) {
-            for (const id of iterateRefContents(index, contents, ctx)) {
-              ids.add(id);
-            }
+  const cutOrCopyCommand = {
+    name: "copy",
+    execute({ contents, selected, type }) {
+      const ids = /* @__PURE__ */ new Set();
+      contents.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected)) {
+          for (const id of iterateRefContents(index, contents, ctx)) {
+            ids.add(id);
           }
-        });
-        const copiedContents = [];
-        const boundingPoints = [];
-        ids.forEach((id) => {
-          const content = contents[id];
-          if (content) {
-            const geometries = ctx.getContentModel(content)?.getGeometries?.(content, contents);
-            if (geometries?.bounding) {
-              boundingPoints.push(geometries.bounding.start, geometries.bounding.end);
-            }
-            copiedContents.unshift({
-              id,
-              content
-            });
+          if (type === "cut" && !ctx.contentIsReferenced(content, contents)) {
+            contents[index] = void 0;
           }
-        });
-        const bounding = ctx.getPointsBounding(boundingPoints);
-        if (!bounding) {
-          return;
         }
-        const copyData = {
-          type: "composable-editor-canvas",
-          contents: copiedContents,
-          center: ctx.getTwoPointCenter(bounding.start, bounding.end)
-        };
-        navigator.clipboard.writeText(JSON.stringify(copyData));
+      });
+      const copiedContents = [];
+      const boundingPoints = [];
+      ids.forEach((id) => {
+        const content = contents[id];
+        if (content) {
+          const geometries = ctx.getContentModel(content)?.getGeometries?.(content, contents);
+          if (geometries?.bounding) {
+            boundingPoints.push(geometries.bounding.start, geometries.bounding.end);
+          }
+          copiedContents.unshift({
+            id,
+            content
+          });
+        }
+      });
+      const bounding = ctx.getPointsBounding(boundingPoints);
+      if (!bounding) {
+        return;
       }
+      const copyData = {
+        type: "composable-editor-canvas",
+        contents: copiedContents,
+        center: ctx.getTwoPointCenter(bounding.start, bounding.end)
+      };
+      navigator.clipboard.writeText(JSON.stringify(copyData));
+    }
+  };
+  return [
+    cutOrCopyCommand,
+    {
+      ...cutOrCopyCommand,
+      name: "cut"
     },
     {
       name: "paste",
@@ -1880,7 +1909,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "delete",
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           contents[index] = void 0;
@@ -1937,7 +1966,7 @@ function getCommand(ctx) {
   const startCommand = {
     name: "start edit container",
     icon: startIcon,
-    execute(contents, selected, setEditingContentPath) {
+    execute({ contents, selected, setEditingContentPath }) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           setEditingContentPath(contentSelectable(content) ? [index, "contents"] : void 0);
@@ -1985,7 +2014,7 @@ function getCommand(ctx) {
   }));
   const cancelCommand = {
     name: "cancel edit container",
-    execute(contents, selected, setEditingContentPath) {
+    execute({ setEditingContentPath }) {
       setEditingContentPath(void 0);
     },
     selectCount: 0,
@@ -2690,7 +2719,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "explode",
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const newContents = [];
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
@@ -2748,7 +2777,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "export jsx",
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const result = [];
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected)) {
@@ -3025,7 +3054,7 @@ function getCommand(ctx) {
   }));
   return {
     name: "create group",
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const newContent = {
         type: "group",
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents))

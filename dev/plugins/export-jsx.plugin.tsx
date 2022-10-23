@@ -12,7 +12,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'export jsx',
-    execute(contents, selected) {
+    execute({ contents, selected }) {
       const result: string[] = []
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected)) {

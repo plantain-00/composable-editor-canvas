@@ -136,7 +136,7 @@ export function DialogContainer(props: {
 
 // @public (undocumented)
 export function DragMask(props: {
-    onDragEnd: () => void;
+    onDragEnd: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void;
     onDragging: (e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void;
     ignoreLeavingEvent?: boolean;
     style?: React_2.CSSProperties;
@@ -1333,7 +1333,7 @@ export function useDragRotate(onDragEnd: () => void, options?: Partial<{
 // @public (undocumented)
 export function useDragSelect<T = void>(onDragEnd: (dragSelectStartPosition: Position & {
     data?: T;
-}, dragSelectEndPosition?: Position) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean)): {
+}, dragSelectEndPosition: Position | undefined, e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => void, square?: boolean | ((e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>) => boolean)): {
     dragSelectStartPosition: (Position & {
         data?: T | undefined;
     }) | undefined;
