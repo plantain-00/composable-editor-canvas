@@ -232,6 +232,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, WebGLTexture>()
+  const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 
   const getFilterProgramInfoAndUniforms = (filter: FilterGraphic) => {
     const filterUniforms: Record<string, unknown> = {}
@@ -929,7 +930,6 @@ interface FillStyle {
   fillRadialGradient: RadialGradient
 }
 
-const bufferInfoCache = new WeakmapCache<number[], twgl.BufferInfo>()
 const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics } | undefined>()
 const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()

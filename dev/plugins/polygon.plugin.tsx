@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(content.points), content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points,
@@ -51,11 +51,12 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
       const { lines } = getPolygonGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       return target.renderPolygon(content.points, { ...options, dashArray: content.dashArray })
     },

@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points,
@@ -82,11 +82,12 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray })
     },

@@ -9,6 +9,8 @@ import type { EllipseContent } from './plugins/ellipse.plugin'
 import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 import type { RectContent } from './plugins/rect.plugin'
 import type { CircleContent } from './plugins/circle-arc.plugin'
+import type { RegularPolygonContent } from './plugins/regular-polygon.plugin'
+import type { StarContent } from './plugins/star.plugin'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
@@ -56,34 +58,54 @@ export default () => {
     setInitialState(undefined)
     setCoEdit(false)
     setTimeout(() => {
-      const json: (CircleContent | RectContent | EllipseContent)[] = []
-      const max = 100
+      const json: (CircleContent | RectContent | EllipseContent | RegularPolygonContent | StarContent)[] = []
+      const max = 200
       for (let i = 0; i < max; i++) {
         for (let j = 0; j < max; j++) {
           const r = Math.random()
-          if (r < 0.3) {
+          if (r < 0.05) {
             json.push({
               type: 'circle',
               x: i * 100 + (Math.random() - 0.5) * 50,
               y: j * 100 + (Math.random() - 0.5) * 50,
-              r: Math.random() * 100,
+              r: Math.random() * 80 + 20,
             })
-          } else if (r < 0.7) {
+          } else if (r < 0.1) {
             json.push({
               type: 'rect',
               x: i * 100 + (Math.random() - 0.5) * 50,
               y: j * 100 + (Math.random() - 0.5) * 50,
-              width: Math.random() * 100,
-              height: Math.random() * 100,
+              width: Math.random() * 80 + 20,
+              height: Math.random() * 20 + 80,
               angle: Math.random() * 360 - 180,
             })
-          } else {
+          } else if (r < 0.15) {
             json.push({
               type: 'ellipse',
               cx: i * 100 + (Math.random() - 0.5) * 50,
               cy: j * 100 + (Math.random() - 0.5) * 50,
-              rx: Math.random() * 100,
-              ry: Math.random() * 100,
+              rx: Math.random() * 80 + 20,
+              ry: Math.random() * 20 + 80,
+              angle: Math.random() * 360 - 180,
+            })
+          } else if (r < 0.2) {
+            json.push({
+              type: 'regular polygon',
+              x: i * 100 + (Math.random() - 0.5) * 50,
+              y: j * 100 + (Math.random() - 0.5) * 50,
+              radius: Math.random() * 80 + 20,
+              count: [3, 5, 6, 8][Math.floor(Math.random() * 4)],
+              angle: Math.random() * 360 - 180,
+            })
+          } else if (r < 0.25) {
+            const radius = Math.random() * 80 + 20
+            json.push({
+              type: 'star',
+              x: i * 100 + (Math.random() - 0.5) * 50,
+              y: j * 100 + (Math.random() - 0.5) * 50,
+              innerRadius: radius * (Math.random() * 0.4 + 0.3),
+              outerRadius: radius,
+              count: [5, 6, 8][Math.floor(Math.random() * 3)],
               angle: Math.random() * 360 - 180,
             })
           }

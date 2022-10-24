@@ -55,7 +55,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points,
@@ -109,12 +109,13 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const { points } = getSplineGeometries(content)
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
     },
@@ -159,8 +160,8 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
-      render({ content, transformColor, target, transformStrokeWidth }) {
-        const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+      render(content, { getStrokeColor, target, transformStrokeWidth }) {
+        const strokeColor = getStrokeColor(content)
         const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
         const { regions, renderingLines } = getSplineArrowGeometries(content)
         const children: ReturnType<typeof target.renderGroup>[] = []

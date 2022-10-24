@@ -12,8 +12,19 @@ export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.F
 export function getModel(ctx: PluginContext) {
   function getCircleGeometries(content: Omit<CircleContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const geometries = getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
-      if (content.fillColor !== undefined) {
+      return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
+    })
+  }
+  function getArcGeometries(content: Omit<ArcContent, "type">) {
+    return ctx.getGeometriesFromCache(content, () => {
+      const points = ctx.arcToPolyline(content, ctx.angleDelta)
+      const geometries = {
+        lines: Array.from(ctx.iteratePolylineLines(points)),
+        points,
+        bounding: ctx.getPointsBounding(points),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
+      }
+      if (ctx.hasFill(content)) {
         return {
           lines: [],
           points: geometries.points,
@@ -26,17 +37,6 @@ export function getModel(ctx: PluginContext) {
         }
       }
       return geometries
-    })
-  }
-  function getArcGeometries(content: Omit<ArcContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.arcToPolyline(content, ctx.angleDelta)
-      return {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
-        points,
-        bounding: ctx.getPointsBounding(points),
-        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
-      }
     })
   }
   const React = ctx.React
@@ -72,11 +72,12 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content),
         }
         if (content.dashArray) {
           const { points } = getCircleGeometries(content)
@@ -154,7 +155,7 @@ export function getModel(ctx: PluginContext) {
       getCircle(content) {
         return {
           circle: content,
-          fill: content.fillColor !== undefined,
+          fill: ctx.hasFill(content),
           bounding: {
             start: { x: content.x - content.r, y: content.y - content.r },
             end: { x: content.x + content.r, y: content.y + content.r },
@@ -232,11 +233,12 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
           strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content),
         }
         if (content.dashArray) {
           const { points } = getCircleGeometries(content)

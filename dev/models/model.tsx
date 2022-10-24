@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, Position, ReactRenderTarget, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { LineContent } from '../plugins/line-polyline.plugin'
 
 export interface BaseContent<T extends string = string> {
@@ -16,6 +16,10 @@ export interface StrokeFields {
 
 export interface FillFields {
   fillColor?: number
+  fillPattern?: Size & {
+    lines: Position[][]
+    strokeColor?: number
+  }
 }
 
 export interface ContainerFields {
@@ -50,13 +54,7 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  render?<V>(props: {
-    content: T
-    transformColor: (color: number) => number
-    target: ReactRenderTarget<V>
-    transformStrokeWidth: (strokeWidth: number) => number,
-    contents: readonly Nullable<BaseContent>[]
-  }): V
+  render?<V>(content: T, ctx: RenderContext<V>): V
   renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly Nullable<BaseContent>[] }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
@@ -71,6 +69,16 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
   isValid?(content: Omit<T, 'type'>): boolean
+}
+
+export interface RenderContext<V> {
+  transformColor: (color: number) => number
+  target: ReactRenderTarget<V>
+  transformStrokeWidth: (strokeWidth: number) => number,
+  contents: readonly Nullable<BaseContent>[]
+  getStrokeColor(content: StrokeFields & FillFields): number | undefined
+  getFillColor(content: FillFields): number | undefined
+  getFillPattern: (content: FillFields) => Pattern<V> | undefined
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -215,6 +223,33 @@ export function getFillContentPropertyPanel(
       <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
       content.fillColor !== undefined ? <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} /> : undefined,
     ],
+    fillPattern: [
+      <BooleanEditor value={content.fillPattern !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillPattern = v ? { width: 10, height: 10, lines: [[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]] } : undefined } })} style={{ marginRight: '5px' }} />,
+      content.fillPattern !== undefined
+        ? (
+          <ObjectEditor
+            properties={{
+              width: <NumberEditor value={content.fillPattern.width} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.width = v } })} />,
+              height: <NumberEditor value={content.fillPattern.height} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.height = v } })} />,
+              strokeColor: [
+                <BooleanEditor value={content.fillPattern.strokeColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+                content.fillPattern.strokeColor !== undefined ? <NumberEditor type='color' value={content.fillPattern.strokeColor} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v } })} /> : undefined,
+              ],
+              lines: <ArrayEditor
+                {...getArrayEditorProps<Position[], typeof content>(v => v.fillPattern?.lines || [], [{ x: 0, y: 5 }, { x: 5, y: 0 }], (v) => update(c => { if (isFillContent(c) && c.fillPattern) { v(c) } }))}
+                items={content.fillPattern.lines.map((f, i) => <ObjectArrayEditor
+                  {...getArrayEditorProps<Position, typeof f>(v => v, { x: 0, y: 5 }, (v) => update(c => { if (isFillContent(c) && c.fillPattern) { v(c.fillPattern.lines[i]) } }))}
+                  properties={f.map((g, j) => ({
+                    x: <NumberEditor value={g.x} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.lines[i][j].x = v } })} style={{ width: '70px' }} />,
+                    y: <NumberEditor value={g.y} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.lines[i][j].y = v } })} style={{ width: '70px' }} />,
+                  }))}
+                />)}
+              />
+            }}
+          />
+        )
+        : undefined,
+    ],
   }
 }
 
@@ -250,15 +285,11 @@ export function isArrowContent(content: BaseContent): content is (BaseContent & 
   return !!getContentModel(content)?.isArrow
 }
 
+export function hasFill(content: FillFields) {
+  return content.fillColor !== undefined || content.fillPattern !== undefined
+}
 export function getStrokeWidth(content: BaseContent) {
-  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? (isFillContent(content) && content.fillColor !== undefined ? 0 : 1)
-}
-
-export function getTransformedStrokeColor(content: StrokeFields & FillFields, transformColor: (color: number) => number) {
-  return content.strokeColor !== undefined ? transformColor(content.strokeColor) : (content.fillColor !== undefined ? undefined : defaultStrokeColor)
-}
-export function getTransformedFillColor(content: FillFields, transformColor: (color: number) => number) {
-  return content.fillColor !== undefined ? transformColor(content.fillColor) : undefined
+  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? (isFillContent(content) && hasFill(content) ? 0 : 1)
 }
 
 export const defaultStrokeColor = 0x000000
@@ -431,12 +462,9 @@ export function getContainerSnapPoints(content: ContainerFields, contents: reado
 
 export function renderContainerChildren<V>(
   container: ContainerFields,
-  target: ReactRenderTarget<V>,
-  contents: readonly Nullable<BaseContent>[],
-  transformColor: (color: number) => number,
-  transformStrokeWidth: (strokeWidth: number) => number,
+  ctx: RenderContext<V>,
 ) {
-  const children: (ReturnType<typeof target.renderGroup>)[] = []
+  const children: (ReturnType<typeof ctx.target.renderGroup>)[] = []
   const sortedContents = getSortedContents(container.contents).contents
   sortedContents.forEach((content) => {
     if (!content) {
@@ -445,7 +473,7 @@ export function renderContainerChildren<V>(
     const model = getContentModel(content)
     if (model?.render) {
       const ContentRender = model.render
-      children.push(ContentRender({ content: content, transformColor, target, transformStrokeWidth, contents }))
+      children.push(ContentRender(content, ctx))
     }
   })
   return children

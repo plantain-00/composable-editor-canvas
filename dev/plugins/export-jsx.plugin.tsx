@@ -25,11 +25,19 @@ export function getCommand(ctx: PluginContext): Command {
               color = content.strokeColor
             }
             color = color ?? ctx.defaultStrokeColor
-            const svg = ctx.renderToStaticMarkup(model.render({
-              content,
+            const svg = ctx.renderToStaticMarkup(model.render(content, {
               target: ctx.reactSvgRenderTarget,
               transformColor: c => c,
               transformStrokeWidth: w => w,
+              getFillColor: c => c.fillColor,
+              getStrokeColor: c => c.strokeColor ?? (ctx.hasFill(c) ? undefined : ctx.defaultStrokeColor),
+              getFillPattern: c => c.fillPattern ? {
+                width: c.fillPattern.width,
+                height: c.fillPattern.height,
+                pattern: () => ctx.reactSvgRenderTarget.renderPath(c.fillPattern?.lines ?? [], {
+                  strokeColor: c.fillPattern?.strokeColor ?? ctx.defaultStrokeColor,
+                })
+              } : undefined,
               contents,
             })(index, 1, 1))
             let jsx = ''

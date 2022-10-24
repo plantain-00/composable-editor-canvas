@@ -36,9 +36,9 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         ctx.getContentModel(c)?.mirror?.(c, line, angle, contents)
       })
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const children = ctx.renderContainerChildren(content, target, contents, transformColor, transformStrokeWidth)
-      return target.renderGroup(children)
+    render(content, renderCtx) {
+      const children = ctx.renderContainerChildren(content, renderCtx)
+      return renderCtx.target.renderGroup(children)
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       return ctx.renderContainerIfSelected(content, target, strokeWidth, color)

@@ -62,7 +62,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render({ content, target, transformColor }) {
+    render(content, { target, transformColor }) {
       const color = transformColor(content.color)
       return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey: content })
     },

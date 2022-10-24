@@ -38,8 +38,8 @@ function getModel(ctx) {
       content.p1 = ctx.getSymmetryPoint(content.p1, line);
       content.p2 = ctx.getSymmetryPoint(content.p2, line);
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor);
+    render(content, { target, getStrokeColor, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content);
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content));
       const { regions, renderingLines } = getArrowGeometriesFromCache(content);
       const children = [];
@@ -201,9 +201,9 @@ function getModel(ctx) {
     explode(content) {
       return content.contents.filter((c) => !!c);
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const children = ctx.renderContainerChildren(content, target, contents, transformColor, transformStrokeWidth);
-      return target.renderGroup(children);
+    render(content, renderCtx) {
+      const children = ctx.renderContainerChildren(content, renderCtx);
+      return renderCtx.target.renderGroup(children);
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
@@ -346,13 +346,13 @@ function getModel(ctx) {
         content.angle = 2 * angle - content.angle;
       }
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const block = ctx.getReference(content.refId, contents, isBlockContent);
+    render(content, renderCtx) {
+      const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
-        const children = ctx.renderContainerChildren(block, target, contents, transformColor, transformStrokeWidth);
-        return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
+        const children = ctx.renderContainerChildren(block, renderCtx);
+        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
       }
-      return target.renderEmpty();
+      return renderCtx.target.renderEmpty();
     },
     renderIfSelected({ content, color, target, strokeWidth, contents }) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
@@ -787,8 +787,19 @@ export {
 function getModel(ctx) {
   function getCircleGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const geometries = getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
-      if (content.fillColor !== void 0) {
+      return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
+    });
+  }
+  function getArcGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      const points = ctx.arcToPolyline(content, ctx.angleDelta);
+      const geometries = {
+        lines: Array.from(ctx.iteratePolylineLines(points)),
+        points,
+        bounding: ctx.getPointsBounding(points),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+      };
+      if (ctx.hasFill(content)) {
         return {
           lines: [],
           points: geometries.points,
@@ -801,17 +812,6 @@ function getModel(ctx) {
         };
       }
       return geometries;
-    });
-  }
-  function getArcGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.arcToPolyline(content, ctx.angleDelta);
-      return {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
-        points,
-        bounding: ctx.getPointsBounding(points),
-        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
-      };
     });
   }
   const React = ctx.React;
@@ -847,11 +847,12 @@ function getModel(ctx) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1]
         }));
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content)
         };
         if (content.dashArray) {
           const { points } = getCircleGeometries(content);
@@ -929,7 +930,7 @@ function getModel(ctx) {
       getCircle(content) {
         return {
           circle: content,
-          fill: content.fillColor !== void 0,
+          fill: ctx.hasFill(content),
           bounding: {
             start: { x: content.x - content.r, y: content.y - content.r },
             end: { x: content.x + content.r, y: content.y + content.r }
@@ -1028,11 +1029,12 @@ function getModel(ctx) {
         });
         return result.length > 1 ? result : void 0;
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content)
         };
         if (content.dashArray) {
           const { points } = getCircleGeometries(content);
@@ -2050,7 +2052,7 @@ function getModel(ctx) {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points
@@ -2062,11 +2064,18 @@ function getModel(ctx) {
   function getEllipseArcGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = ctx.ellipseArcToPolyline(content, ctx.angleDelta);
+      const lines = Array.from(ctx.iteratePolylineLines(points));
       return {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
+        lines,
         points,
         bounding: ctx.getPointsBounding(points),
-        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
+        regions: ctx.hasFill(content) ? [
+          {
+            lines,
+            points
+          }
+        ] : void 0
       };
     });
   }
@@ -2104,11 +2113,12 @@ function getModel(ctx) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1]
       }));
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       if (content.dashArray) {
         const { points } = getEllipseGeometries(content);
@@ -2308,11 +2318,12 @@ function getModel(ctx) {
         });
         return result.length > 1 ? result : void 0;
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content)
         };
         const { points } = getEllipseArcGeometries(content);
         return target.renderPolyline(points, { ...options, dashArray: content.dashArray });
@@ -2804,11 +2815,19 @@ function getCommand(ctx) {
               color = content.strokeColor;
             }
             color = color ?? ctx.defaultStrokeColor;
-            const svg = ctx.renderToStaticMarkup(model.render({
-              content,
+            const svg = ctx.renderToStaticMarkup(model.render(content, {
               target: ctx.reactSvgRenderTarget,
               transformColor: (c) => c,
               transformStrokeWidth: (w) => w,
+              getFillColor: (c) => c.fillColor,
+              getStrokeColor: (c) => c.strokeColor ?? (ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor),
+              getFillPattern: (c) => c.fillPattern ? {
+                width: c.fillPattern.width,
+                height: c.fillPattern.height,
+                pattern: () => ctx.reactSvgRenderTarget.renderPath(c.fillPattern?.lines ?? [], {
+                  strokeColor: c.fillPattern?.strokeColor ?? ctx.defaultStrokeColor
+                })
+              } : void 0,
               contents
             })(index, 1, 1));
             let jsx = "";
@@ -3023,9 +3042,9 @@ function getModel(ctx) {
         ctx.getContentModel(c)?.mirror?.(c, line, angle, contents);
       });
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const children = ctx.renderContainerChildren(content, target, contents, transformColor, transformStrokeWidth);
-      return target.renderGroup(children);
+    render(content, renderCtx) {
+      const children = ctx.renderContainerChildren(content, renderCtx);
+      return renderCtx.target.renderGroup(children);
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
@@ -3149,7 +3168,7 @@ function getModel(ctx) {
         };
       });
     },
-    render({ content, target }) {
+    render(content, { target }) {
       return target.renderImage(content.url, content.x, content.y, content.width, content.height);
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
@@ -3280,7 +3299,7 @@ function getModel(ctx) {
         points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(content.points, content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points
@@ -3309,8 +3328,8 @@ function getModel(ctx) {
       const { lines } = getPolylineGeometries(content);
       return ctx.breakPolyline(lines, intersectionPoints);
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor);
+    render(content, { getStrokeColor, target, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content);
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content));
       return target.renderPolyline(content.points, { strokeColor, dashArray: content.dashArray, strokeWidth });
     },
@@ -3382,11 +3401,12 @@ function getModel(ctx) {
         const { lines } = getPolylineGeometries(content);
         return lines.map((line) => ({ type: "line", points: line }));
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content)
         };
         return target.renderPolyline(content.points, { ...options, dashArray: content.dashArray });
       },
@@ -3647,8 +3667,8 @@ function getModel(ctx) {
       content.position.x += offset.x;
       content.position.y += offset.y;
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor);
+    render(content, { target, getStrokeColor, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content);
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content));
       const { regions, lines } = getLinearDimensionGeometriesFromCache(content);
       const children = [];
@@ -4278,7 +4298,7 @@ function getModel(ctx) {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points
@@ -4342,11 +4362,12 @@ function getModel(ctx) {
         }
       }
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray });
     },
@@ -4757,7 +4778,7 @@ function getModel(ctx) {
         points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(content.points), content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points
@@ -4791,11 +4812,12 @@ function getModel(ctx) {
       const { lines } = getPolygonGeometries(content);
       return ctx.breakPolyline(lines, intersectionPoints);
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       return target.renderPolygon(content.points, { ...options, dashArray: content.dashArray });
     },
@@ -4963,8 +4985,8 @@ function getModel(ctx) {
       content.position.x += offset.x;
       content.position.y += offset.y;
     },
-    render({ content, target, transformColor, transformStrokeWidth, contents }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor);
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      const strokeColor = getStrokeColor(content);
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content));
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents);
       const children = [];
@@ -5234,7 +5256,7 @@ function getModel(ctx) {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points
@@ -5272,11 +5294,12 @@ function getModel(ctx) {
       content.y = p.y;
       content.angle = 2 * angle - content.angle;
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       if (content.dashArray) {
         const { points } = getRectGeometries(content);
@@ -5473,7 +5496,7 @@ function getModel(ctx) {
         points,
         lines,
         bounding: ctx.getPointsBounding(points),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points
@@ -5492,11 +5515,12 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       const { points } = getRegularPolygonGeometriesFromCache(content);
       return target.renderPolygon(points, options);
@@ -5666,7 +5690,7 @@ function getModel(ctx) {
         points,
         lines: [...lines1, ...lines1],
         bounding: ctx.getPointsBounding(points),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines: lines1,
             points: points1
@@ -5692,11 +5716,12 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       const { renderingLines, regions } = getRingGeometriesFromCache(content);
       if (regions) {
@@ -6092,7 +6117,7 @@ function getModel(ctx) {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points
@@ -6146,12 +6171,13 @@ function getModel(ctx) {
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const { points } = getSplineGeometries(content);
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       return target.renderPolyline(points, { ...options, dashArray: content.dashArray });
     },
@@ -6221,8 +6247,8 @@ function getModel(ctx) {
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
-      render({ content, transformColor, target, transformStrokeWidth }) {
-        const strokeColor = ctx.getTransformedStrokeColor(content, transformColor);
+      render(content, { getStrokeColor, target, transformStrokeWidth }) {
+        const strokeColor = getStrokeColor(content);
         const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content));
         const { regions, renderingLines } = getSplineArrowGeometries(content);
         const children = [];
@@ -6512,7 +6538,7 @@ function getModel(ctx) {
         points,
         lines,
         bounding: ctx.getPointsBounding(points),
-        regions: content.fillColor !== void 0 ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points
@@ -6531,11 +6557,12 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content)
       };
       const { points } = getStarGeometriesFromCache(content);
       return target.renderPolygon(points, options);
@@ -6764,7 +6791,7 @@ function getModel(ctx) {
         };
       });
     },
-    render({ content, target, transformColor }) {
+    render(content, { target, transformColor }) {
       const color = transformColor(content.color);
       return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey: content });
     },

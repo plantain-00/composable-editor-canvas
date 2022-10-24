@@ -20,9 +20,9 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     explode(content) {
       return content.contents.filter((c): c is model.BaseContent => !!c)
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const children = ctx.renderContainerChildren(content, target, contents, transformColor, transformStrokeWidth)
-      return target.renderGroup(children)
+    render(content, renderCtx) {
+      const children = ctx.renderContainerChildren(content, renderCtx)
+      return renderCtx.target.renderGroup(children)
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       return ctx.renderContainerIfSelected(content, target, strokeWidth, color)
@@ -156,13 +156,13 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         content.angle = 2 * angle - content.angle
       }
     },
-    render({ content, target, transformColor, contents, transformStrokeWidth }) {
-      const block = ctx.getReference(content.refId, contents, isBlockContent)
+    render(content, renderCtx) {
+      const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
-        const children = ctx.renderContainerChildren(block, target, contents, transformColor, transformStrokeWidth)
-        return target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
+        const children = ctx.renderContainerChildren(block, renderCtx)
+        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
       }
-      return target.renderEmpty()
+      return renderCtx.target.renderEmpty()
     },
     renderIfSelected({ content, color, target, strokeWidth, contents }) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
