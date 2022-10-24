@@ -50,15 +50,14 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  getColor?(content: Omit<T, 'type'>): number
   render?<V>(props: {
-    content: Omit<T, 'type'>
-    color: number
+    content: T
+    transformColor: (color: number) => number
     target: ReactRenderTarget<V>
-    strokeWidth: number
+    transformStrokeWidth: (strokeWidth: number) => number,
     contents: readonly Nullable<BaseContent>[]
   }): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number }): V
+  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly Nullable<BaseContent>[] }): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
     editPoints: EditPoint<BaseContent>[]
@@ -252,20 +251,17 @@ export function isArrowContent(content: BaseContent): content is (BaseContent & 
 }
 
 export function getStrokeWidth(content: BaseContent) {
-  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? 1
+  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? (isFillContent(content) && content.fillColor !== undefined ? 0 : 1)
 }
 
-export function getContentColor(content: BaseContent, defaultColor = 0x000000) {
-  const model = getContentModel(content)
-  if (model?.getColor) {
-    return model.getColor(content)
-  }
-  if (isFillContent(content) && content.fillColor !== undefined) {
-    return content.fillColor
-  }
-  return (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultColor
+export function getTransformedStrokeColor(content: StrokeFields & FillFields, transformColor: (color: number) => number) {
+  return content.strokeColor !== undefined ? transformColor(content.strokeColor) : (content.fillColor !== undefined ? undefined : defaultStrokeColor)
+}
+export function getTransformedFillColor(content: FillFields, transformColor: (color: number) => number) {
+  return content.fillColor !== undefined ? transformColor(content.fillColor) : undefined
 }
 
+export const defaultStrokeColor = 0x000000
 export const angleDelta = 5
 
 export const dimensionStyle = {
@@ -433,7 +429,13 @@ export function getContainerSnapPoints(content: ContainerFields, contents: reado
   })
 }
 
-export function renderContainerChildren<V>(container: ContainerFields, target: ReactRenderTarget<V>, contents: readonly Nullable<BaseContent>[], color: number) {
+export function renderContainerChildren<V>(
+  container: ContainerFields,
+  target: ReactRenderTarget<V>,
+  contents: readonly Nullable<BaseContent>[],
+  transformColor: (color: number) => number,
+  transformStrokeWidth: (strokeWidth: number) => number,
+) {
   const children: (ReturnType<typeof target.renderGroup>)[] = []
   const sortedContents = getSortedContents(container.contents).contents
   sortedContents.forEach((content) => {
@@ -443,9 +445,7 @@ export function renderContainerChildren<V>(container: ContainerFields, target: R
     const model = getContentModel(content)
     if (model?.render) {
       const ContentRender = model.render
-      color = getContentColor(content, color)
-      const strokeWidth = getStrokeWidth(content)
-      children.push(ContentRender({ content: content, color, target, strokeWidth, contents }))
+      children.push(ContentRender({ content: content, transformColor, target, transformStrokeWidth, contents }))
     }
   })
   return children

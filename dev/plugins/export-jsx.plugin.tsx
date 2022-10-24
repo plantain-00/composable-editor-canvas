@@ -18,12 +18,18 @@ export function getCommand(ctx: PluginContext): Command {
         if (content && ctx.isSelected([index], selected)) {
           const model = ctx.getContentModel(content)
           if (model?.render) {
-            const color = ctx.getContentColor(content)
+            let color: number | undefined
+            if (ctx.isFillContent(content) && content.fillColor !== undefined) {
+              color = content.fillColor
+            } else if (ctx.isStrokeContent(content)) {
+              color = content.strokeColor
+            }
+            color = color ?? ctx.defaultStrokeColor
             const svg = ctx.renderToStaticMarkup(model.render({
               content,
               target: ctx.reactSvgRenderTarget,
-              color,
-              strokeWidth: ctx.getStrokeWidth(content),
+              transformColor: c => c,
+              transformStrokeWidth: w => w,
               contents,
             })(index, 1, 1))
             let jsx = ''

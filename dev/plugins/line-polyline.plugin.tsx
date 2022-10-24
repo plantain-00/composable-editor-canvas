@@ -48,8 +48,10 @@ export function getModel(ctx: PluginContext) {
       const { lines } = getPolylineGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    render({ content, color, target, strokeWidth }) {
-      return target.renderPolyline(content.points, { strokeColor: color, dashArray: content.dashArray, strokeWidth })
+    render({ content, transformColor, target, transformStrokeWidth }) {
+      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
+      return target.renderPolyline(content.points, { strokeColor, dashArray: content.dashArray, strokeWidth })
     },
     getOperatorRenderPosition(content) {
       return content.points[0]
@@ -101,12 +103,13 @@ export function getModel(ctx: PluginContext) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
-      render({ content, color, target, strokeWidth }) {
-        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-        if (content.fillColor !== undefined) {
-          strokeWidth = 0
+      render({ content, transformColor, target, transformStrokeWidth }) {
+        const options = {
+          fillColor: ctx.getTransformedFillColor(content, transformColor),
+          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
         }
-        return target.renderPolyline(content.points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+        return target.renderPolyline(content.points, { ...options, dashArray: content.dashArray })
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }))

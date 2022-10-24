@@ -46,16 +46,17 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render({ content, target, color, strokeWidth }) {
-      const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-      if (content.fillColor !== undefined) {
-        strokeWidth = 0
+    render({ content, target, transformColor, transformStrokeWidth }) {
+      const options = {
+        fillColor: ctx.getTransformedFillColor(content, transformColor),
+        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
       }
       const { renderingLines, regions } = getRingGeometriesFromCache(content)
       if (regions) {
-        return target.renderPath([regions[0].points, regions[1].points], { [colorField]: color, strokeWidth })
+        return target.renderPath([regions[0].points, regions[1].points], options)
       }
-      return target.renderGroup(renderingLines.map(r => target.renderPolyline(r, { [colorField]: color, strokeWidth })))
+      return target.renderGroup(renderingLines.map(r => target.renderPolyline(r, options)))
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {

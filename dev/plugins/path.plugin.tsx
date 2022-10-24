@@ -82,12 +82,13 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
-    render({ content, target, color, strokeWidth }) {
-      const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-      if (content.fillColor !== undefined) {
-        strokeWidth = 0
+    render({ content, target, transformColor, transformStrokeWidth }) {
+      const options = {
+        fillColor: ctx.getTransformedFillColor(content, transformColor),
+        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
       }
-      return target.renderPathCommands(content.commands, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+      return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray })
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       const points: core.Position[][] = []

@@ -109,13 +109,14 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
     },
-    render({ content, color, target, strokeWidth }) {
+    render({ content, transformColor, target, transformStrokeWidth }) {
       const { points } = getSplineGeometries(content)
-      const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-      if (content.fillColor !== undefined) {
-        strokeWidth = 0
+      const options = {
+        fillColor: ctx.getTransformedFillColor(content, transformColor),
+        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
       }
-      return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+      return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
     },
     renderIfSelected({ content, color, target, strokeWidth }) {
       return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4], strokeWidth })
@@ -158,15 +159,17 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
-      render({ content, color, target, strokeWidth }) {
+      render({ content, transformColor, target, transformStrokeWidth }) {
+        const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+        const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
         const { regions, renderingLines } = getSplineArrowGeometries(content)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const line of renderingLines) {
-          children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
+          children.push(target.renderPolyline(line, { strokeColor, strokeWidth }))
         }
         if (regions) {
           for (let i = 0; i < 2 && i < regions.length; i++) {
-            children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
+            children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }))
           }
         }
         return target.renderGroup(children)

@@ -48,13 +48,14 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render({ content, target, color, strokeWidth }) {
-      const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-      if (content.fillColor !== undefined) {
-        strokeWidth = 0
+    render({ content, target, transformColor, transformStrokeWidth }) {
+      const options = {
+        fillColor: ctx.getTransformedFillColor(content, transformColor),
+        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
       }
       const { points } = getStarGeometriesFromCache(content)
-      return target.renderPolygon(points, { [colorField]: color, strokeWidth })
+      return target.renderPolygon(points, options)
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {

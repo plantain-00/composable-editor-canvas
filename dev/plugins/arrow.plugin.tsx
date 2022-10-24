@@ -47,15 +47,17 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       content.p1 = ctx.getSymmetryPoint(content.p1, line)
       content.p2 = ctx.getSymmetryPoint(content.p2, line)
     },
-    render({ content, target, color, strokeWidth }) {
+    render({ content, target, transformColor, transformStrokeWidth }) {
+      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       const { regions, renderingLines } = getArrowGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
-        children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth }))
+        children.push(target.renderPolyline(line, { strokeColor, strokeWidth }))
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
+          children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }))
         }
       }
       return target.renderGroup(children)
