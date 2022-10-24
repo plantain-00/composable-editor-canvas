@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, isFillContent, isStrokeContent } from "../models/model"
+import { BaseContent, defaultStrokeColor, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, isStrokeContent } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -64,12 +64,12 @@ export function Renderer(props: {
     if (!model) {
       return
     }
-    let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? 0x000000
-    strokeColor = transformColor(strokeColor)
-    if ((props.simplified || target.type === 'webgl') && model.getGeometries && !isFillContent(content)) {
+    if ((props.simplified || target.type === 'webgl') && model.getGeometries) {
       const { renderingLines, regions } = model.getGeometries(content, props.contents)
       if (renderingLines && !regions) {
         const strokeWidth = transformStrokeWidth(getStrokeWidth(content))
+        let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
+        strokeColor = transformColor(strokeColor)
         for (const line of renderingLines) {
           merger.push({
             line,
