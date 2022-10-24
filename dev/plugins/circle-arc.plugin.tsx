@@ -72,16 +72,17 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render({ content, color, target, strokeWidth }) {
-        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-        if (content.fillColor !== undefined) {
-          strokeWidth = 0
+      render({ content, transformColor, target, transformStrokeWidth }) {
+        const options = {
+          fillColor: ctx.getTransformedFillColor(content, transformColor),
+          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
         }
         if (content.dashArray) {
           const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+          return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
         }
-        return target.renderCircle(content.x, content.y, content.r, { [colorField]: color, strokeWidth })
+        return target.renderCircle(content.x, content.y, content.r, { ...options })
       },
       getOperatorRenderPosition(content) {
         return content
@@ -231,16 +232,17 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render({ content, color, target, strokeWidth }) {
-        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-        if (content.fillColor !== undefined) {
-          strokeWidth = 0
+      render({ content, transformColor, target, transformStrokeWidth }) {
+        const options = {
+          fillColor: ctx.getTransformedFillColor(content, transformColor),
+          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
         }
         if (content.dashArray) {
           const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+          return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
         }
-        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { [colorField]: color, strokeWidth, counterclockwise: content.counterclockwise })
+        return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })

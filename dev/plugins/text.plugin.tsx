@@ -41,9 +41,6 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    getColor(content) {
-      return content.color
-    },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
@@ -65,8 +62,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render({ content, target, color }) {
-      return target.renderText(content.x, content.y, content.text, color ?? content.color, content.fontSize, content.fontFamily, { cacheKey: content })
+    render({ content, target, transformColor }) {
+      const color = transformColor(content.color)
+      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey: content })
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {

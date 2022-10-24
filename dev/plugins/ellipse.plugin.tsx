@@ -72,16 +72,17 @@ export function getModel(ctx: PluginContext) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
       }) as EllipseArcContent)
     },
-    render({ content, color, target, strokeWidth }) {
-      const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-      if (content.fillColor !== undefined) {
-        strokeWidth = 0
+    render({ content, transformColor, target, transformStrokeWidth }) {
+      const options = {
+        fillColor: ctx.getTransformedFillColor(content, transformColor),
+        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
       }
       if (content.dashArray) {
         const { points } = getEllipseGeometries(content)
-        return target.renderPolygon(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+        return target.renderPolygon(points, { ...options, dashArray: content.dashArray })
       }
-      return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { [colorField]: color, angle: content.angle, strokeWidth })
+      return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { ...options, angle: content.angle })
     },
     getOperatorRenderPosition(content) {
       return { x: content.cx, y: content.cy }
@@ -232,13 +233,14 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render({ content, color, target, strokeWidth }) {
-        const colorField = content.fillColor !== undefined ? 'fillColor' : 'strokeColor'
-        if (content.fillColor !== undefined) {
-          strokeWidth = 0
+      render({ content, transformColor, target, transformStrokeWidth }) {
+        const options = {
+          fillColor: ctx.getTransformedFillColor(content, transformColor),
+          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
         }
         const { points } = getEllipseArcGeometries(content)
-        return target.renderPolyline(points, { [colorField]: color, dashArray: content.dashArray, strokeWidth })
+        return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
       },
       renderIfSelected({ content, color, target, strokeWidth }) {
         const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })

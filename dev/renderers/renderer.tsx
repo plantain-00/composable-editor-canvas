@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, getContentByIndex, getContentColor, getContentModel, getSortedContents, getStrokeWidth } from "../models/model"
+import { BaseContent, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, isFillContent, isStrokeContent } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -59,19 +59,21 @@ export function Renderer(props: {
     }))
   )
 
-  const renderContent = (content: BaseContent, color: number, strokeWidth: number) => {
+  const renderContent = (content: BaseContent, transformStrokeWidth: (strokeWidth: number) => number) => {
     const model = getContentModel(content)
     if (!model) {
       return
     }
-    color = transformColor(color)
-    if ((props.simplified || target.type === 'webgl') && model.getGeometries) {
+    let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? 0x000000
+    strokeColor = transformColor(strokeColor)
+    if ((props.simplified || target.type === 'webgl') && model.getGeometries && !isFillContent(content)) {
       const { renderingLines, regions } = model.getGeometries(content, props.contents)
       if (renderingLines && !regions) {
+        const strokeWidth = transformStrokeWidth(getStrokeWidth(content))
         for (const line of renderingLines) {
           merger.push({
             line,
-            strokeColor: color,
+            strokeColor,
             strokeWidth,
           })
         }
@@ -79,14 +81,14 @@ export function Renderer(props: {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
+          children.push(ContentRender({ content, transformColor, target, transformStrokeWidth, contents: props.contents }))
         }
       }
     } else {
       const ContentRender = model.render
       if (ContentRender) {
         merger.flushLast()
-        children.push(ContentRender({ content, color, target, strokeWidth, contents: props.contents }))
+        children.push(ContentRender({ content, transformColor, target, transformStrokeWidth, contents: props.contents }))
       }
     }
   }
@@ -98,7 +100,7 @@ export function Renderer(props: {
         if (!content) {
           return
         }
-        renderContent(content, getContentColor(content), getStrokeWidth(content))
+        renderContent(content, w => w)
       })
       return children
     })
@@ -111,7 +113,7 @@ export function Renderer(props: {
       if (!visibleContents.has(content)) {
         return
       }
-      renderContent(content, getContentColor(content), getStrokeWidth(content))
+      renderContent(content, w => w)
     })
   }
 
@@ -142,7 +144,7 @@ export function Renderer(props: {
     for (const index of (props.hovering || [])) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        renderContent(content, 0x00ff00, getStrokeWidth(content) + 1)
+        renderContent(content, w => w + 1)
       }
     }
 
@@ -150,17 +152,17 @@ export function Renderer(props: {
       const content = getContentByIndex(props.contents, index)
       if (content) {
         const strokeWidth = getStrokeWidth(content)
-        renderContent(content, 0xff0000, strokeWidth + 1)
+        renderContent(content, w => w + 1)
         const RenderIfSelected = getContentModel(content)?.renderIfSelected
         if (RenderIfSelected) {
           merger.flushLast()
-          children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth }))
+          children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
         }
       }
     }
 
     props.assistentContents?.forEach((content) => {
-      renderContent(content, getContentColor(content), getStrokeWidth(content))
+      renderContent(content, w => w)
     })
   }
 

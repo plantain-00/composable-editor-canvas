@@ -40,21 +40,23 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       content.position.x += offset.x
       content.position.y += offset.y
     },
-    render({ content, target, color, strokeWidth }) {
+    render({ content, target, transformColor, transformStrokeWidth }) {
+      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       const { regions, lines } = getLinearDimensionGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
-        children.push(target.renderPolyline(line, { strokeColor: color, strokeWidth, dashArray: content.dashArray }))
+        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: content.dashArray }))
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeColor: color, strokeWidth: 0, fillColor: color }))
+          children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }))
         }
       }
       const { textPosition, text, textRotation } = getTextPosition(content)
       children.push(target.renderGroup(
         [
-          target.renderText(textPosition.x, textPosition.y, text, color, content.fontSize, content.fontFamily, { cacheKey: content }),
+          target.renderText(textPosition.x, textPosition.y, text, strokeColor, content.fontSize, content.fontFamily, { cacheKey: content }),
         ],
         {
           rotation: textRotation,
