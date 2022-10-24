@@ -23,7 +23,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
         points,
         lines,
         bounding: ctx.getPointsBounding(points),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points,
@@ -42,11 +42,12 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.x += offset.x
       content.y += offset.y
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       const { points } = getRegularPolygonGeometriesFromCache(content)
       return target.renderPolygon(points, options)

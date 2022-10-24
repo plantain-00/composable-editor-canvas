@@ -58,7 +58,7 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
         }
       })
     },
-    render({ content, target }) {
+    render(content, { target }) {
       return target.renderImage(content.url, content.x, content.y, content.width, content.height)
     },
     renderIfSelected({ content, color, target, strokeWidth }) {

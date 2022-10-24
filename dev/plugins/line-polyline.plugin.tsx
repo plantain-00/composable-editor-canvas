@@ -19,7 +19,7 @@ export function getModel(ctx: PluginContext) {
         points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(content.points, content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points: content.points,
@@ -48,8 +48,8 @@ export function getModel(ctx: PluginContext) {
       const { lines } = getPolylineGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+    render(content, { getStrokeColor, target, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content)
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       return target.renderPolyline(content.points, { strokeColor, dashArray: content.dashArray, strokeWidth })
     },
@@ -103,11 +103,12 @@ export function getModel(ctx: PluginContext) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
           strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content),
         }
         return target.renderPolyline(content.points, { ...options, dashArray: content.dashArray })
       },

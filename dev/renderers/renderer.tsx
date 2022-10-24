@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { getColorString, isSelected, Nullable, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, defaultStrokeColor, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, isStrokeContent } from "../models/model"
+import { getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
+import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, hasFill, isStrokeContent, StrokeFields } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -28,6 +28,9 @@ export function Renderer(props: {
   useValueChanged(props.type, () => renderCache.current.clear())
   useValueChanged(props.backgroundColor, () => renderCache.current.clear())
 
+  const fillPatternCache = React.useRef(new WeakmapCache<object, Pattern<unknown>>())
+  useValueChanged(target, () => fillPatternCache.current.clear())
+
   if (!target) {
     return null
   }
@@ -50,6 +53,26 @@ export function Renderer(props: {
     }
     return color === 0xffffff ? 0 : color
   }
+  const getStrokeColor = (content: StrokeFields & FillFields) => {
+    return content.strokeColor !== undefined ? transformColor(content.strokeColor) : (hasFill(content) ? undefined : defaultStrokeColor)
+  }
+  const getFillColor = (content: FillFields) => {
+    return content.fillColor !== undefined ? transformColor(content.fillColor) : undefined
+  }
+  const getFillPattern = (content: FillFields): Pattern<unknown> | undefined => {
+    if (content.fillPattern === undefined) {
+      return
+    }
+    const fillPattern = content.fillPattern
+    return fillPatternCache.current.get(fillPattern, () => ({
+      width: fillPattern.width,
+      height: fillPattern.height,
+      pattern: () => target.renderPath(fillPattern.lines, {
+        strokeColor: (fillPattern.strokeColor !== undefined ? transformColor(fillPattern.strokeColor) : undefined) ?? defaultStrokeColor,
+      })
+    }))
+  }
+
   let children: unknown[] = []
   const merger = new RenderingLinesMerger(
     (last) => children.push(target.renderPath(last.line, {
@@ -81,14 +104,14 @@ export function Renderer(props: {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender({ content, transformColor, target, transformStrokeWidth, contents: props.contents }))
+          children.push(ContentRender(content, { transformColor, target, transformStrokeWidth, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
         }
       }
     } else {
       const ContentRender = model.render
       if (ContentRender) {
         merger.flushLast()
-        children.push(ContentRender({ content, transformColor, target, transformStrokeWidth, contents: props.contents }))
+        children.push(ContentRender(content, { transformColor, target, transformStrokeWidth, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
       }
     }
   }

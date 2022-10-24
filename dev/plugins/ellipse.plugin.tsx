@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext) {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points,
@@ -30,11 +30,18 @@ export function getModel(ctx: PluginContext) {
   function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = ctx.ellipseArcToPolyline(content, ctx.angleDelta)
+      const lines = Array.from(ctx.iteratePolylineLines(points))
       return {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
+        lines,
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
+        regions: ctx.hasFill(content) ? [
+          {
+            lines,
+            points,
+          },
+        ] : undefined,
       }
     })
   }
@@ -72,11 +79,12 @@ export function getModel(ctx: PluginContext) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
       }) as EllipseArcContent)
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
+        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       if (content.dashArray) {
         const { points } = getEllipseGeometries(content)
@@ -233,11 +241,12 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render({ content, transformColor, target, transformStrokeWidth }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
         const options = {
-          fillColor: ctx.getTransformedFillColor(content, transformColor),
-          strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content))
+          fillColor: getFillColor(content),
+          strokeColor: getStrokeColor(content),
+          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          fillPattern: getFillPattern(content),
         }
         const { points } = getEllipseArcGeometries(content)
         return target.renderPolyline(points, { ...options, dashArray: content.dashArray })

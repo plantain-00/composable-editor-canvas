@@ -47,8 +47,8 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       content.p1 = ctx.getSymmetryPoint(content.p1, line)
       content.p2 = ctx.getSymmetryPoint(content.p2, line)
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+    render(content, { target, getStrokeColor, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content)
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       const { regions, renderingLines } = getArrowGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []

@@ -45,8 +45,8 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       content.position.x += offset.x
       content.position.y += offset.y
     },
-    render({ content, target, transformColor, transformStrokeWidth, contents }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      const strokeColor = getStrokeColor(content)
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []

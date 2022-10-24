@@ -23,7 +23,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
         points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
-        regions: content.fillColor !== undefined ? [
+        regions: ctx.hasFill(content) ? [
           {
             lines,
             points,
@@ -61,11 +61,12 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.y = p.y
       content.angle = 2 * angle - content.angle
     },
-    render({ content, transformColor, target, transformStrokeWidth }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
       const options = {
-        fillColor: ctx.getTransformedFillColor(content, transformColor),
-        strokeColor: ctx.getTransformedStrokeColor(content, transformColor),
+        fillColor: getFillColor(content),
+        strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        fillPattern: getFillPattern(content),
       }
       if (content.dashArray) {
         const { points } = getRectGeometries(content)

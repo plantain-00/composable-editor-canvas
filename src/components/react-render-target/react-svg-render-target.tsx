@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { defaultMiterLimit, getPerpendicularPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine } from "../../utils"
+import { defaultMiterLimit, getPerpendicularPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine, WeakmapCache } from "../../utils"
 
 /**
  * @public
@@ -280,7 +280,7 @@ function renderFilters(
     let def: JSX.Element | undefined
     let filter: string | undefined
     if (filters && filters.length > 0) {
-      const id = React.useId()
+      const id = getDomId(filters)
       const results: JSX.Element[] = []
       filters.forEach((f, i) => {
         if (f.type === 'brightness') {
@@ -379,7 +379,7 @@ function renderPattern(
     let strokeDef: JSX.Element | undefined
 
     if (options?.strokePattern) {
-      const id = React.useId()
+      const id = getDomId(options.strokePattern)
       strokeDef = (
         <pattern
           id={id}
@@ -392,7 +392,7 @@ function renderPattern(
       )
       stroke = `url(#${id})`
     } else if (options?.strokeLinearGradient) {
-      const id = React.useId()
+      const id = getDomId(options.strokeLinearGradient)
       strokeDef = (
         <linearGradient
           id={id}
@@ -407,7 +407,7 @@ function renderPattern(
       )
       stroke = `url(#${id})`
     } else if (options?.strokeRadialGradient) {
-      const id = React.useId()
+      const id = getDomId(options.strokeRadialGradient)
       strokeDef = (
         <radialGradient
           id={id}
@@ -425,7 +425,7 @@ function renderPattern(
       stroke = `url(#${id})`
     }
     if (options?.fillPattern) {
-      const id = React.useId()
+      const id = getDomId(options.fillPattern)
       fillDef = (
         <pattern
           id={id}
@@ -439,7 +439,7 @@ function renderPattern(
       )
       fill = `url(#${id})`
     } else if (options?.fillLinearGradient) {
-      const id = React.useId()
+      const id = getDomId(options.fillLinearGradient)
       fillDef = (
         <linearGradient
           id={id}
@@ -454,7 +454,7 @@ function renderPattern(
       )
       fill = `url(#${id})`
     } else if (options?.fillRadialGradient) {
-      const id = React.useId()
+      const id = getDomId(options.fillRadialGradient)
       fillDef = (
         <radialGradient
           id={id}
@@ -474,7 +474,7 @@ function renderPattern(
 
     let target: JSX.Element
     if (options?.clip) {
-      const id = React.useId()
+      const id = getDomId(options.clip)
       const path = children(fill, stroke, scale, strokeWidthScale)
       fillDef = (
         <>
@@ -500,6 +500,11 @@ function renderPattern(
       </React.Fragment>
     )
   }
+}
+
+const domIdCache = new WeakmapCache<object, string>()
+function getDomId(target: object) {
+  return domIdCache.get(target, () => Math.random().toString())
 }
 
 function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {

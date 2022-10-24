@@ -40,8 +40,8 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       content.position.x += offset.x
       content.position.y += offset.y
     },
-    render({ content, target, transformColor, transformStrokeWidth }) {
-      const strokeColor = ctx.getTransformedStrokeColor(content, transformColor)
+    render(content, { target, getStrokeColor, transformStrokeWidth }) {
+      const strokeColor = getStrokeColor(content)
       const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
       const { regions, lines } = getLinearDimensionGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
