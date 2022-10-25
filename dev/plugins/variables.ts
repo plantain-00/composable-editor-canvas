@@ -198,16 +198,9 @@ function getModel(ctx) {
   const blockModel = {
     type: "block",
     ...ctx.containerModel,
-    explode(content) {
-      return content.contents.filter((c) => !!c);
-    },
-    render(content, renderCtx) {
-      const children = ctx.renderContainerChildren(content, renderCtx);
-      return renderCtx.target.renderGroup(children);
-    },
-    renderIfSelected({ content, color, target, strokeWidth }) {
-      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
-    },
+    explode: ctx.getContainerExplode,
+    render: ctx.getContainerRender,
+    renderIfSelected: ctx.getContainerRenderIfSelected,
     getOperatorRenderPosition(content) {
       return content.base;
     },
@@ -354,13 +347,13 @@ function getModel(ctx) {
       }
       return renderCtx.target.renderEmpty();
     },
-    renderIfSelected({ content, color, target, strokeWidth, contents }) {
-      const block = ctx.getReference(content.refId, contents, isBlockContent);
+    renderIfSelected(content, renderCtx) {
+      const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
-        const children = ctx.renderContainerIfSelected(block, target, strokeWidth, color);
-        return target.renderGroup([children], { translate: content, base: block.base, angle: content.angle });
+        const children = ctx.renderContainerIfSelected(block, renderCtx);
+        return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle });
       }
-      return target.renderEmpty();
+      return renderCtx.target.renderEmpty();
     },
     getOperatorRenderPosition(content, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
@@ -1042,7 +1035,7 @@ function getModel(ctx) {
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise });
       },
-      renderIfSelected({ content, color, target, strokeWidth }) {
+      renderIfSelected(content, { color, target, strokeWidth }) {
         const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth });
       },
@@ -1533,6 +1526,173 @@ function getCommand(ctx) {
 }
 export {
   getCommand
+};
+`,
+`// dev/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
+}
+function isPolyLineContent(content) {
+  return content.type === "polyline";
+}
+
+// dev/plugins/circle-arc.plugin.tsx
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/plugins/ellipse.plugin.tsx
+function isEllipseArcContent(content) {
+  return content.type === "ellipse arc";
+}
+
+// dev/plugins/combined-path.plugin.tsx
+function getModel(ctx) {
+  const getGeometries = (content) => {
+    return ctx.getGeometriesFromCache(content, () => {
+      const lines = [];
+      const points = [];
+      const remains = [];
+      const boundings = [];
+      content.contents.forEach((c) => {
+        if (!c) {
+          return;
+        }
+        const r = ctx.getContentModel(c)?.getGeometries?.(c);
+        if (r) {
+          lines.push(...r.lines);
+          points.push(...r.points);
+          remains.push(r.points);
+          if (r.bounding) {
+            boundings.push(r.bounding.start, r.bounding.end);
+          }
+        }
+      });
+      const result = [];
+      const combine = (points2, target) => {
+        const start = points2[0];
+        let i = target.findIndex((r) => ctx.isSamePoint(r[0], start));
+        if (i >= 0) {
+          target[i] = [...points2.slice(1, points2.length).reverse(), ...target[i]];
+          return true;
+        }
+        i = target.findIndex((r) => ctx.isSamePoint(r[r.length - 1], start));
+        if (i >= 0) {
+          target[i] = [...target[i], ...points2.slice(1, points2.length)];
+          return true;
+        }
+        const end = points2[points2.length - 1];
+        i = target.findIndex((r) => ctx.isSamePoint(r[0], end));
+        if (i >= 0) {
+          target[i] = [...points2.slice(0, points2.length - 1), ...target[i]];
+          return true;
+        }
+        i = target.findIndex((r) => ctx.isSamePoint(r[r.length - 1], end));
+        if (i >= 0) {
+          target[i] = [...target[i], ...points2.slice(1, points2.length).reverse()];
+          return true;
+        }
+        return false;
+      };
+      while (remains.length > 0) {
+        const current = remains.shift();
+        if (!current) {
+          break;
+        }
+        let success = combine(current, result);
+        if (success) {
+          continue;
+        }
+        success = combine(current, remains);
+        if (success) {
+          continue;
+        }
+        result.push(current);
+      }
+      return {
+        lines,
+        points,
+        bounding: ctx.getPointsBounding(boundings),
+        renderingLines: result,
+        regions: ctx.hasFill(content) ? [{
+          lines,
+          points
+        }] : void 0
+      };
+    });
+  };
+  return {
+    type: "combined path",
+    ...ctx.containerModel,
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
+    move: ctx.getContainerMove,
+    rotate: ctx.getContainerRotate,
+    explode: ctx.getContainerExplode,
+    mirror: ctx.getContainerMirror,
+    render(content, renderCtx) {
+      const geometries = getGeometries(content);
+      const options = {
+        ...renderCtx,
+        strokeColor: renderCtx.getStrokeColor(content),
+        fillColor: renderCtx.getFillColor(content),
+        fillPattern: renderCtx.getFillPattern(content),
+        strokeWidth: renderCtx.transformStrokeWidth(ctx.getStrokeWidth(content)),
+        dashArray: content.dashArray
+      };
+      return renderCtx.target.renderGroup(geometries.renderingLines.map((line) => {
+        return renderCtx.target.renderPolyline(line, options);
+      }));
+    },
+    renderIfSelected: ctx.getContainerRenderIfSelected,
+    getSnapPoints: ctx.getContainerSnapPoints,
+    getGeometries,
+    propertyPanel(content, update) {
+      return {
+        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update)
+      };
+    }
+  };
+}
+function getCommand(ctx) {
+  function contentSelectable(content, contents) {
+    return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
+  }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "36,93 40,92 43,90 47,88 51,86 55,84 58,81 62,79 65,76 69,73 72,70 75,67 78,64 80,60 83,57 85,54 86,51 88,47 89,44 90,41 90,38 91,36 90,33 90,31 89,28 88,26 87,25 85,23 83,22 81,21 78,20 76,20 73,20 69,20 66,20 63,21 59,22 55,23 52,25 48,27 44,29 40,31 37,34 33,36 30,39 26,42 23,45 20,48 17,51 15,55 12,58 10,61 9,64 36,93",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "create combined path",
+    execute({ contents, selected }) {
+      const newContent = {
+        type: "combined path",
+        contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents))
+      };
+      for (let i = contents.length; i >= 0; i--) {
+        if (ctx.isSelected([i], selected)) {
+          contents[i] = void 0;
+        }
+      }
+      contents.push(newContent);
+    },
+    contentSelectable,
+    icon
+  };
+}
+export {
+  getCommand,
+  getModel
 };
 `,
 `// dev/plugins/compress.plugin.tsx
@@ -2328,7 +2488,7 @@ function getModel(ctx) {
         const { points } = getEllipseArcGeometries(content);
         return target.renderPolyline(points, { ...options, dashArray: content.dashArray });
       },
-      renderIfSelected({ content, color, target, strokeWidth }) {
+      renderIfSelected(content, { color, target, strokeWidth }) {
         const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth });
       },
@@ -3015,40 +3175,12 @@ function getModel(ctx) {
   return {
     type: "group",
     ...ctx.containerModel,
-    move(content, offset) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return;
-        }
-        ctx.getContentModel(c)?.move?.(c, offset);
-      });
-    },
-    rotate(content, center, angle, contents) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return;
-        }
-        ctx.getContentModel(c)?.rotate?.(c, center, angle, contents);
-      });
-    },
-    explode(content) {
-      return content.contents.filter((c) => !!c);
-    },
-    mirror(content, line, angle, contents) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return;
-        }
-        ctx.getContentModel(c)?.mirror?.(c, line, angle, contents);
-      });
-    },
-    render(content, renderCtx) {
-      const children = ctx.renderContainerChildren(content, renderCtx);
-      return renderCtx.target.renderGroup(children);
-    },
-    renderIfSelected({ content, color, target, strokeWidth }) {
-      return ctx.renderContainerIfSelected(content, target, strokeWidth, color);
-    },
+    move: ctx.getContainerMove,
+    rotate: ctx.getContainerRotate,
+    explode: ctx.getContainerExplode,
+    mirror: ctx.getContainerMirror,
+    render: ctx.getContainerRender,
+    renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries
   };
@@ -3171,7 +3303,7 @@ function getModel(ctx) {
     render(content, { target }) {
       return target.renderImage(content.url, content.x, content.y, content.width, content.height);
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth });
     },
     getOperatorRenderPosition(content) {
@@ -4371,7 +4503,7 @@ function getModel(ctx) {
       };
       return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray });
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       const points = [];
       content.commands.forEach((c, i) => {
         const last = ctx.getPathCommandEndPoint(content.commands, i - 1);
@@ -6181,7 +6313,7 @@ function getModel(ctx) {
       };
       return target.renderPolyline(points, { ...options, dashArray: content.dashArray });
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4], strokeWidth });
     },
     getOperatorRenderPosition(content) {

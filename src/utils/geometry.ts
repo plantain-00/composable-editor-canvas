@@ -862,6 +862,8 @@ export function getPolylineTriangles(
   const radius = width / 2
   if (lineCapWithClosed === true) {
     points = polygonToPolyline(points)
+  } else if (isSamePoint(points[0], points[points.length - 1])) {
+    lineCapWithClosed = true
   }
 
   const lines: GeneralFormLine[] = []
@@ -1280,7 +1282,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
       }
     }
   }
-  if (content.counterclockwise ? i > endAngle : i < endAngle) {
+  if (!equals(i, endAngle)) {
     const angle = endAngle * Math.PI / 180
     const x = content.cx + content.rx * Math.cos(angle)
     const y = content.cy + content.ry * Math.sin(angle)

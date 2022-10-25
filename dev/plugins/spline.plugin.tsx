@@ -119,7 +119,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       }
       return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4], strokeWidth })
     },
     getOperatorRenderPosition(content) {

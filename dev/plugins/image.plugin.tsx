@@ -61,7 +61,7 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
     render(content, { target }) {
       return target.renderImage(content.url, content.x, content.y, content.width, content.height)
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth })
     },
     getOperatorRenderPosition(content) {
