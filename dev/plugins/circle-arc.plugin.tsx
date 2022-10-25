@@ -246,7 +246,7 @@ export function getModel(ctx: PluginContext) {
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
-      renderIfSelected({ content, color, target, strokeWidth }) {
+      renderIfSelected(content, { color, target, strokeWidth }) {
         const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },

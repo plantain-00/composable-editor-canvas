@@ -55,7 +55,7 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   render?<V>(content: T, ctx: RenderContext<V>): V
-  renderIfSelected?<V>(props: { content: Omit<T, 'type'>, color: number, target: ReactRenderTarget<V>, strokeWidth: number, contents: readonly Nullable<BaseContent>[] }): V
+  renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
     editPoints: EditPoint<BaseContent>[]
@@ -79,6 +79,12 @@ export interface RenderContext<V> {
   getStrokeColor(content: StrokeFields & FillFields): number | undefined
   getFillColor(content: FillFields): number | undefined
   getFillPattern: (content: FillFields) => Pattern<V> | undefined
+}
+interface RenderIfSelectedContext<V> {
+  color: number
+  target: ReactRenderTarget<V>
+  strokeWidth: number
+  contents: readonly Nullable<BaseContent>[]
 }
 
 export type SnapPoint = Position & { type: 'endpoint' | 'midpoint' | 'center' | 'intersection' }
@@ -479,17 +485,17 @@ export function renderContainerChildren<V>(
   return children
 }
 
-export function renderContainerIfSelected<V>(container: ContainerFields, target: ReactRenderTarget<V>, strokeWidth: number, color: number) {
+export function renderContainerIfSelected<V>(container: ContainerFields, ctx: RenderIfSelectedContext<V>) {
   const { bounding } = getContainerGeometries(container)
   if (!bounding) {
-    return target.renderEmpty()
+    return ctx.target.renderEmpty()
   }
-  return target.renderRect(
+  return ctx.target.renderRect(
     bounding.start.x,
     bounding.start.y,
     bounding.end.x - bounding.start.x,
     bounding.end.y - bounding.start.y,
-    { strokeColor: color, dashArray: [4], strokeWidth },
+    { strokeColor: ctx.color, dashArray: [4], strokeWidth: ctx.strokeWidth },
   )
 }
 
@@ -499,6 +505,7 @@ export function getContainerGeometries(content: ContainerFields) {
     const points: Position[] = []
     const renderingLines: Position[][] = []
     const boundings: Position[] = []
+    const regions: NonNullable<Geometries['regions']> = []
     content.contents.forEach((c) => {
       if (!c) {
         return
@@ -513,6 +520,9 @@ export function getContainerGeometries(content: ContainerFields) {
         if (r.renderingLines) {
           renderingLines.push(...r.renderingLines)
         }
+        if (r.regions) [
+          regions.push(...r.regions)
+        ]
       }
     })
     return {
@@ -520,8 +530,44 @@ export function getContainerGeometries(content: ContainerFields) {
       points,
       bounding: getPointsBounding(boundings),
       renderingLines,
+      regions: regions.length > 0 ? regions : undefined,
     }
   })
+}
+
+export function getContainerMove(content: ContainerFields, offset: Position) {
+  content.contents.forEach((c) => {
+    if (!c) {
+      return
+    }
+    getContentModel(c)?.move?.(c, offset)
+  })
+}
+export function getContainerRotate(content: ContainerFields, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]) {
+  content.contents.forEach((c) => {
+    if (!c) {
+      return
+    }
+    getContentModel(c)?.rotate?.(c, center, angle, contents)
+  })
+}
+export function getContainerExplode(content: ContainerFields) {
+  return content.contents.filter((c): c is BaseContent => !!c)
+}
+export function getContainerMirror(content: ContainerFields, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]) {
+  content.contents.forEach((c) => {
+    if (!c) {
+      return
+    }
+    getContentModel(c)?.mirror?.(c, line, angle, contents)
+  })
+}
+export function getContainerRender<V>(content: ContainerFields, ctx: RenderContext<V>) {
+  const children = renderContainerChildren(content, ctx)
+  return ctx.target.renderGroup(children)
+}
+export function getContainerRenderIfSelected<V>(content: ContainerFields, ctx: RenderIfSelectedContext<V>) {
+  return renderContainerIfSelected(content, ctx)
 }
 
 export function breakPolyline(

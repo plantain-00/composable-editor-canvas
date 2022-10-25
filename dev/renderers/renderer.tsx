@@ -179,7 +179,7 @@ export function Renderer(props: {
         const RenderIfSelected = getContentModel(content)?.renderIfSelected
         if (RenderIfSelected) {
           merger.flushLast()
-          children.push(RenderIfSelected({ content, color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
+          children.push(RenderIfSelected(content, { color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
         }
       }
     }

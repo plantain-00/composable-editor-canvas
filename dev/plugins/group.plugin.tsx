@@ -9,40 +9,12 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
   return {
     type: 'group',
     ...ctx.containerModel,
-    move(content, offset) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return
-        }
-        ctx.getContentModel(c)?.move?.(c, offset)
-      })
-    },
-    rotate(content, center, angle, contents) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return
-        }
-        ctx.getContentModel(c)?.rotate?.(c, center, angle, contents)
-      })
-    },
-    explode(content) {
-      return content.contents.filter((c): c is model.BaseContent => !!c)
-    },
-    mirror(content, line, angle, contents) {
-      content.contents.forEach((c) => {
-        if (!c) {
-          return
-        }
-        ctx.getContentModel(c)?.mirror?.(c, line, angle, contents)
-      })
-    },
-    render(content, renderCtx) {
-      const children = ctx.renderContainerChildren(content, renderCtx)
-      return renderCtx.target.renderGroup(children)
-    },
-    renderIfSelected({ content, color, target, strokeWidth }) {
-      return ctx.renderContainerIfSelected(content, target, strokeWidth, color)
-    },
+    move: ctx.getContainerMove,
+    rotate: ctx.getContainerRotate,
+    explode: ctx.getContainerExplode,
+    mirror: ctx.getContainerMirror,
+    render: ctx.getContainerRender,
+    renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
   }

@@ -56,8 +56,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
     if (partsStyles && partsStyles.length > 0) {
       return renderPartStyledPolyline(this, partsStyles, points, restOptions)
     }
-    const { dashArray, ...restOptions2 } = options ?? {}
-    if (options?.closed) {
+    const { dashArray, closed, ...restOptions2 } = options ?? {}
+    if (closed) {
       points = polygonToPolyline(points)
     }
     const path = dashedPolylineToLines(points, dashArray, options?.skippedLines, options?.dashOffset)

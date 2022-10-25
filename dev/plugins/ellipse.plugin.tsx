@@ -251,7 +251,7 @@ export function getModel(ctx: PluginContext) {
         const { points } = getEllipseArcGeometries(content)
         return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
       },
-      renderIfSelected({ content, color, target, strokeWidth }) {
+      renderIfSelected(content, { color, target, strokeWidth }) {
         const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },

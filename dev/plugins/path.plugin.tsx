@@ -91,7 +91,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       }
       return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray })
     },
-    renderIfSelected({ content, color, target, strokeWidth }) {
+    renderIfSelected(content, { color, target, strokeWidth }) {
       const points: core.Position[][] = []
       content.commands.forEach((c, i) => {
         const last = ctx.getPathCommandEndPoint(content.commands, i - 1)
