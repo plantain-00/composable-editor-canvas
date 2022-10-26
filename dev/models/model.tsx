@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getArrayEditorProps, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { LineContent } from '../plugins/line-polyline.plugin'
 
 export interface BaseContent<T extends string = string> {
@@ -12,6 +12,7 @@ export interface StrokeFields {
   dashArray?: number[]
   strokeColor?: number
   strokeWidth?: number
+  strokeStyleId?: number | BaseContent
 }
 
 export interface FillFields {
@@ -65,7 +66,11 @@ export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof co
   getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
   getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
-  propertyPanel?(content: Omit<T, 'type'>, update: (recipe: (content: BaseContent) => void) => void): Record<string, JSX.Element | (JSX.Element | undefined)[]>
+  propertyPanel?(
+    content: Omit<T, 'type'>,
+    update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
+    contents: readonly Nullable<BaseContent>[],
+  ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
   isValid?(content: Omit<T, 'type'>): boolean
@@ -199,8 +204,33 @@ export function zoomContentsToFit(
 export function getStrokeContentPropertyPanel(
   content: StrokeFields,
   update: (recipe: (content: BaseContent) => void) => void,
-) {
+  contents?: readonly Nullable<BaseContent>[],
+): Record<string, JSX.Element | (JSX.Element | undefined)[]> {
+  const strokeStyleId: (JSX.Element | undefined)[] = []
+  if (contents) {
+    const strokeStyles = getStrokeStyles(contents)
+    if (strokeStyles.length > 0) {
+      strokeStyleId.push(<BooleanEditor value={content.strokeStyleId !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeStyleId = v ? strokeStyles[0].index : undefined } })} style={{ marginRight: '5px' }} />)
+      if (typeof content.strokeStyleId === 'number') {
+        strokeStyleId.push(
+          <EnumEditor
+            select
+            enums={strokeStyles.map(s => s.index)}
+            enumTitles={strokeStyles.map(s => s.label)}
+            value={content.strokeStyleId}
+            setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeStyleId = v } })}
+          />
+        )
+      }
+    }
+  }
+  if (strokeStyleId.length > 1) {
+    return {
+      strokeStyleId,
+    }
+  }
   return {
+    strokeStyleId,
     dashArray: [
       <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} style={{ marginRight: '5px' }} />,
       content.dashArray !== undefined ? <ArrayEditor
@@ -218,6 +248,27 @@ export function getStrokeContentPropertyPanel(
       content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,
     ],
   }
+}
+
+const strokeStylesCache = new WeakmapCache<readonly Nullable<BaseContent>[], { label: string, index: number, content: StrokeStyleContent }[]>()
+export function getStrokeStyles(contents: readonly Nullable<BaseContent>[]) {
+  return strokeStylesCache.get(contents, () => {
+    return contents.map((c, i) => ({ c, i }))
+      .filter((c): c is { c: StrokeStyleContent, i: number } => !!c.c && isStrokeStyleContent(c.c))
+      .map(({ c, i }) => ({ 
+        index: i, 
+        content: c,
+        label: `${c.strokeWidth ?? 1}px ${c.dashArray?.join(',') ?? 'solid'} ${getColorString(c.strokeColor ?? 0)}` ,
+      }))
+  })
+}
+
+export type StrokeStyleContent = BaseContent<'stroke style'> & StrokeFields & Region & {
+  isCurrent?: boolean
+}
+
+export function isStrokeStyleContent(content: BaseContent): content is StrokeStyleContent {
+  return content.type === 'stroke style'
 }
 
 export function getFillContentPropertyPanel(
@@ -294,8 +345,17 @@ export function isArrowContent(content: BaseContent): content is (BaseContent & 
 export function hasFill(content: FillFields) {
   return content.fillColor !== undefined || content.fillPattern !== undefined
 }
-export function getStrokeWidth(content: BaseContent) {
-  return (isStrokeContent(content) ? content.strokeWidth : undefined) ?? (isFillContent(content) && hasFill(content) ? 0 : 1)
+export function getDefaultStrokeWidth(content: BaseContent): number {
+  return isFillContent(content) && hasFill(content) ? 0 : 1
+}
+export function getStrokeStyleContent(content: StrokeFields, contents: readonly Nullable<BaseContent>[]) {
+  if (content.strokeStyleId !== undefined) {
+    const strokeStyleContent = typeof content.strokeStyleId === 'number' ? contents[content.strokeStyleId] : content.strokeStyleId
+    if (strokeStyleContent && isStrokeStyleContent(strokeStyleContent)) {
+      return strokeStyleContent
+    }
+  }
+  return content
 }
 
 export const defaultStrokeColor = 0x000000
@@ -568,6 +628,18 @@ export function getContainerRender<V>(content: ContainerFields, ctx: RenderConte
 }
 export function getContainerRenderIfSelected<V>(content: ContainerFields, ctx: RenderIfSelectedContext<V>) {
   return renderContainerIfSelected(content, ctx)
+}
+
+export function getStrokeRefIds(content: StrokeFields) {
+  return typeof content.strokeStyleId === 'number' ? [content.strokeStyleId] : undefined
+}
+export function updateStrokeRefIds(content: StrokeFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+  if (content.strokeStyleId !== undefined) {
+    const newRefId = update(content.strokeStyleId)
+    if (newRefId !== undefined) {
+      content.strokeStyleId = newRefId
+    }
+  }
 }
 
 export function breakPolyline(

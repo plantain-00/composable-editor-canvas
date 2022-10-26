@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache, WeaksetCache } from "../../src"
-import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getSortedContents, getStrokeWidth, hasFill, isStrokeContent, StrokeFields } from "../models/model"
+import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, StrokeFields } from "../models/model"
 
 export function Renderer(props: {
   type?: string
@@ -53,7 +53,7 @@ export function Renderer(props: {
     }
     return color === 0xffffff ? 0 : color
   }
-  const getStrokeColor = (content: StrokeFields & FillFields) => {
+  const getStrokeColor = (content: StrokeFields & FillFields): number | undefined => {
     return content.strokeColor !== undefined ? transformColor(content.strokeColor) : (hasFill(content) ? undefined : defaultStrokeColor)
   }
   const getFillColor = (content: FillFields) => {
@@ -90,7 +90,7 @@ export function Renderer(props: {
     if ((props.simplified || target.type === 'webgl') && model.getGeometries) {
       const { renderingLines, regions } = model.getGeometries(content, props.contents)
       if (renderingLines && !regions) {
-        const strokeWidth = transformStrokeWidth(getStrokeWidth(content))
+        const strokeWidth = transformStrokeWidth((isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content))
         let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
         strokeColor = transformColor(strokeColor)
         for (const line of renderingLines) {
@@ -174,7 +174,7 @@ export function Renderer(props: {
     for (const index of selected) {
       const content = getContentByIndex(props.contents, index)
       if (content) {
-        const strokeWidth = getStrokeWidth(content)
+        const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
         renderContent(content, w => w + 1)
         const RenderIfSelected = getContentModel(content)?.renderIfSelected
         if (RenderIfSelected) {

@@ -47,9 +47,10 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       content.p1 = ctx.getSymmetryPoint(content.p1, line)
       content.p2 = ctx.getSymmetryPoint(content.p2, line)
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth }) {
-      const strokeColor = getStrokeColor(content)
-      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const strokeColor = getStrokeColor(strokeStyleContent)
+      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
       const { regions, renderingLines } = getArrowGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
@@ -95,7 +96,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       })
     },
     getGeometries: getArrowGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         p1: <ctx.ObjectEditor
           inline
@@ -112,9 +113,11 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
           }}
         />,
         ...ctx.getArrowContentPropertyPanel(content, update),
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -133,7 +136,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create arrow',
     hotkey: 'AR',
     icon,
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, strokeStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create arrow',
         (c) => onEnd({
@@ -141,6 +144,7 @@ export function getCommand(ctx: PluginContext): Command {
             type: 'arrow',
             p1: c[0],
             p2: c[1],
+            strokeStyleId,
           } as ArrowContent)
         }),
         {
@@ -153,6 +157,7 @@ export function getCommand(ctx: PluginContext): Command {
           type: 'arrow',
           p1: line[0],
           p2: line[1],
+          strokeStyleId,
         })
       }
       return {

@@ -72,16 +72,17 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const options = {
           fillColor: getFillColor(content),
-          strokeColor: getStrokeColor(content),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          strokeColor: getStrokeColor(strokeStyleContent),
+          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(content),
         }
-        if (content.dashArray) {
+        if (strokeStyleContent.dashArray) {
           const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
+          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray })
         }
         return target.renderCircle(content.x, content.y, content.r, { ...options })
       },
@@ -163,15 +164,17 @@ export function getModel(ctx: PluginContext) {
         }
       },
       getGeometries: getCircleGeometries,
-      propertyPanel(content, update) {
+      propertyPanel(content, update, contents) {
         return {
           x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isCircleContent(c)) { c.x = v } })} />,
           y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isCircleContent(c)) { c.y = v } })} />,
           r: <ctx.NumberEditor value={content.r} setValue={(v) => update(c => { if (isCircleContent(c)) { c.r = v } })} />,
-          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
+      getRefIds: ctx.getStrokeRefIds,
+      updateRefId: ctx.updateStrokeRefIds,
     } as model.Model<CircleContent>,
     {
       type: 'arc',
@@ -233,16 +236,17 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const options = {
           fillColor: getFillColor(content),
-          strokeColor: getStrokeColor(content),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          strokeColor: getStrokeColor(strokeStyleContent),
+          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(content),
         }
-        if (content.dashArray) {
+        if (strokeStyleContent.dashArray) {
           const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
+          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray })
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
@@ -285,6 +289,7 @@ export function getModel(ctx: PluginContext) {
                     return
                   }
                   c.startAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                  c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
                 },
@@ -298,6 +303,7 @@ export function getModel(ctx: PluginContext) {
                     return
                   }
                   c.endAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                  c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
                 },
@@ -333,7 +339,7 @@ export function getModel(ctx: PluginContext) {
         })
       },
       getGeometries: getArcGeometries,
-      propertyPanel(content, update) {
+      propertyPanel(content, update, contents) {
         return {
           x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isArcContent(c)) { c.x = v } })} />,
           y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isArcContent(c)) { c.y = v } })} />,
@@ -341,10 +347,12 @@ export function getModel(ctx: PluginContext) {
           startAngle: <ctx.NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.startAngle = v } })} />,
           endAngle: <ctx.NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isArcContent(c)) { c.endAngle = v } })} />,
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
-          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
+      getRefIds: ctx.getStrokeRefIds,
+      updateRefId: ctx.updateStrokeRefIds,
     } as model.Model<ArcContent>,
   ]
 }
@@ -400,11 +408,11 @@ export function getCommand(ctx: PluginContext): Command[] {
         { name: 'center radius', hotkey: 'C', icon: circleIcon },
         { name: 'center diameter', icon: circleIcon4 },
       ],
-      useCommand({ onEnd, scale, type }) {
+      useCommand({ onEnd, scale, type, strokeStyleId }) {
         const { circle, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleClickCreate(
           type === '2 points' || type === '3 points' || type === 'center diameter' || type === 'center radius' ? type : undefined,
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ ...c, type: 'circle' })
+            updateContents: (contents) => contents.push({ ...c, strokeStyleId, type: 'circle' } as CircleContent)
           }),
         )
         const assistentContents: (LineContent | PolygonContent | TextContent | CircleContent)[] = []
@@ -427,7 +435,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           }
         }
         if (circle) {
-          assistentContents.push({ ...circle, type: 'circle' })
+          assistentContents.push({ ...circle, strokeStyleId, type: 'circle' })
         }
         return {
           onStart: onClick,
@@ -442,11 +450,11 @@ export function getCommand(ctx: PluginContext): Command[] {
     },
     {
       name: 'create arc',
-      useCommand({ onEnd, type, scale }) {
+      useCommand({ onEnd, type, scale, strokeStyleId }) {
         const { circle, arc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useCircleArcClickCreate(
           type === 'create arc' ? 'center radius' : undefined,
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ ...c, type: 'arc' })
+            updateContents: (contents) => contents.push({ ...c, strokeStyleId, type: 'arc' } as ArcContent)
           }),
         )
         const assistentContents: (LineContent | PolygonContent | CircleContent | TextContent | ArcContent)[] = []
@@ -511,7 +519,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           }
         }
         if (arc && arc.startAngle !== arc.endAngle) {
-          assistentContents.push({ ...arc, type: 'arc' })
+          assistentContents.push({ ...arc, strokeStyleId, type: 'arc' })
         }
         return {
           onStart: onClick,

@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { getDefaultZoomOption, ZoomOptions } from "."
+import { getDefaultZoomOption, useLocalStorageState, ZoomOptions } from "."
 import { Position } from "../utils"
 
 /**
@@ -9,9 +9,11 @@ import { Position } from "../utils"
 export function useWheelZoom<T extends HTMLElement>(
   options?: Partial<ZoomOptions & {
     onChange(oldScale: number, newScale: number, cursor: Position): void
+    initialValue: number
+    localStorageKey: string
   }>
 ) {
-  const [scale, setScale] = React.useState(1)
+  const [scale, setScale] = useLocalStorageState(options?.localStorageKey, options?.initialValue ?? 1)
   const ref = React.useRef<T | null>(null)
   const { min, max } = getDefaultZoomOption(options)
 

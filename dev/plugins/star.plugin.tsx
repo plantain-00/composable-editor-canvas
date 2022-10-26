@@ -48,12 +48,14 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
+        dashArray: strokeStyleContent.dashArray,
       }
       const { points } = getStarGeometriesFromCache(content)
       return target.renderPolygon(points, options)
@@ -96,7 +98,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       })
     },
     getGeometries: getStarGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isStarContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isStarContent(c)) { c.y = v } })} />,
@@ -104,10 +106,12 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isStarContent(c)) { c.innerRadius = v } })} />,
         count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isStarContent(c)) { c.count = v } })} />,
         angle: <ctx.NumberEditor value={content.angle ?? 0} setValue={(v) => update(c => { if (isStarContent(c)) { c.angle = v === 0 ? undefined : v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -125,7 +129,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create star',
     icon,
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, strokeStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create star',
         ([p0, p1]) => onEnd({
@@ -139,6 +143,7 @@ export function getCommand(ctx: PluginContext): Command {
               innerRadius: outerRadius * 0,
               count: 5,
               angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              strokeStyleId,
             } as StarContent)
           }
         }),
@@ -158,6 +163,7 @@ export function getCommand(ctx: PluginContext): Command {
           innerRadius: outerRadius * 0,
           count: 5,
           angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          strokeStyleId,
         })
       }
       return {

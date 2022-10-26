@@ -40,13 +40,14 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       content.position.x += offset.x
       content.position.y += offset.y
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth }) {
-      const strokeColor = getStrokeColor(content)
-      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const strokeColor = getStrokeColor(strokeStyleContent)
+      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
       const { regions, lines } = getLinearDimensionGeometriesFromCache(content)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
-        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: content.dashArray }))
+        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: strokeStyleContent.dashArray }))
       }
       if (regions) {
         for (let i = 0; i < 2 && i < regions.length; i++) {
@@ -87,7 +88,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       })
     },
     getGeometries: getLinearDimensionGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         p1: <ctx.ObjectEditor
           inline
@@ -118,9 +119,11 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontSize = v } })} />,
         fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.fontFamily = v } })} />,
         ...ctx.getArrowContentPropertyPanel(content, update),
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -144,7 +147,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create linear dimension',
     selectCount: 0,
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, strokeStyleId }) {
       const [p1, setP1] = React.useState<core.Position>()
       const [p2, setP2] = React.useState<core.Position>()
       const [direct, setDirect] = React.useState(false)
@@ -204,6 +207,7 @@ export function getCommand(ctx: PluginContext): Command {
               position: p,
               p1,
               p2,
+              strokeStyleId,
               direct,
               fontSize: 16,
               fontFamily: 'monospace',

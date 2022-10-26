@@ -46,12 +46,14 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
+        dashArray: strokeStyleContent.dashArray,
       }
       const { renderingLines, regions } = getRingGeometriesFromCache(content)
       if (regions) {
@@ -80,16 +82,18 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       })
     },
     getGeometries: getRingGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRingContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRingContent(c)) { c.y = v } })} />,
         outerRadius: <ctx.NumberEditor value={content.outerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.outerRadius = v } })} />,
         innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.innerRadius = v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -107,7 +111,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create ring',
     icon,
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, strokeStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create ring',
         (c) => onEnd({
@@ -119,6 +123,7 @@ export function getCommand(ctx: PluginContext): Command {
               y: c[0].y,
               outerRadius,
               innerRadius: outerRadius * 0,
+              strokeStyleId,
             } as RingContent)
           }
         }),
@@ -135,6 +140,7 @@ export function getCommand(ctx: PluginContext): Command {
           y: line[0].y,
           outerRadius,
           innerRadius: outerRadius * 0,
+          strokeStyleId,
         })
       }
       return {

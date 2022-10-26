@@ -61,16 +61,17 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.y = p.y
       content.angle = 2 * angle - content.angle
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
       }
-      if (content.dashArray) {
+      if (strokeStyleContent.dashArray) {
         const { points } = getRectGeometries(content)
-        return target.renderPolygon(points, { ...options, dashArray: content.dashArray })
+        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray })
       }
       return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle })
     },
@@ -130,17 +131,19 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     },
     getGeometries: getRectGeometries,
     canSelectPart: true,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRectContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRectContent(c)) { c.y = v } })} />,
         width: <ctx.NumberEditor value={content.width} setValue={(v) => update(c => { if (isRectContent(c)) { c.width = v } })} />,
         height: <ctx.NumberEditor value={content.height} setValue={(v) => update(c => { if (isRectContent(c)) { c.height = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRectContent(c)) { c.angle = v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -158,7 +161,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create rect',
     icon,
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, strokeStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create rect',
         (c) => onEnd({
@@ -169,6 +172,7 @@ export function getCommand(ctx: PluginContext): Command {
             width: Math.abs(c[0].x - c[1].x),
             height: Math.abs(c[0].y - c[1].y),
             angle: 0,
+            strokeStyleId
           } as RectContent)
         }),
         {
@@ -184,6 +188,7 @@ export function getCommand(ctx: PluginContext): Command {
           width: Math.abs(line[0].x - line[1].x),
           height: Math.abs(line[0].y - line[1].y),
           angle: 0,
+          strokeStyleId,
         })
       }
       return {

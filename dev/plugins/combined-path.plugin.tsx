@@ -93,13 +93,14 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {
       const geometries = getGeometries(content)
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, renderCtx.contents)
       const options = {
         ...renderCtx,
-        strokeColor: renderCtx.getStrokeColor(content),
         fillColor: renderCtx.getFillColor(content),
         fillPattern: renderCtx.getFillPattern(content),
-        strokeWidth: renderCtx.transformStrokeWidth(ctx.getStrokeWidth(content)),
-        dashArray: content.dashArray,
+        strokeColor: renderCtx.getStrokeColor(strokeStyleContent),
+        strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        dashArray: strokeStyleContent.dashArray,
       }
       return renderCtx.target.renderGroup(geometries.renderingLines.map(line => {
         return renderCtx.target.renderPolyline(line, options)
@@ -108,12 +109,14 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -131,9 +134,10 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create combined path',
-    execute({ contents, selected }) {
+    execute({ contents, selected, strokeStyleId }) {
       const newContent: CombinedPathContent = {
         type: 'combined path',
+        strokeStyleId,
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
       }
       for (let i = contents.length; i >= 0; i--) {

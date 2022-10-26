@@ -48,7 +48,10 @@ export interface Arc extends Circle, AngleRange {
 }
 
 // @public (undocumented)
-export function arcToPolyline(content: Arc, angleDelta: number): Position[];
+export function arcToPolyline(content: Arc, angleDelta: number): {
+    x: number;
+    y: number;
+}[];
 
 // Warning: (ae-forgotten-export) The symbol "ArrayProps" needs to be exported by the entry point index.d.ts
 //
@@ -240,7 +243,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
 }): JSX.Element;
 
 // @public (undocumented)
-export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
+export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> & {
     enums: readonly T[];
     enumTitles?: readonly string[];
     select?: boolean;
@@ -1489,9 +1492,7 @@ export function useLineClickCreate(enabled: boolean, onEnd: (line: Position[]) =
 };
 
 // @public (undocumented)
-export function useLocalStorageState<S>(key: string, defaultValue: S, options?: Partial<{
-    initial: boolean;
-}>): [S, React_2.Dispatch<S>];
+export function useLocalStorageState<S>(key: string | undefined, defaultValue: S): [S, React_2.Dispatch<React_2.SetStateAction<S>>, S];
 
 // @public (undocumented)
 export function usePartialEdit<T>(content: T, options?: Partial<{
@@ -1687,7 +1688,13 @@ export function useUndoRedo<T>(defaultState: T): {
 export function useValueChanged<T>(value: T, callback: (lastValue: T) => true | void): void;
 
 // @public (undocumented)
-export function useWheelScroll<T extends HTMLElement>(maxOffsetX?: number, maxOffsetY?: number): {
+export function useWheelScroll<T extends HTMLElement>(options?: Partial<{
+    maxOffsetX: number;
+    maxOffsetY: number;
+    initialPosition: Position;
+    localStorageXKey: string;
+    localStorageYKey: string;
+}>): {
     ref: React_2.MutableRefObject<T | null>;
     x: number;
     y: number;
@@ -1698,6 +1705,8 @@ export function useWheelScroll<T extends HTMLElement>(maxOffsetX?: number, maxOf
 // @public (undocumented)
 export function useWheelZoom<T extends HTMLElement>(options?: Partial<ZoomOptions & {
     onChange(oldScale: number, newScale: number, cursor: Position): void;
+    initialValue: number;
+    localStorageKey: string;
 }>): {
     ref: React_2.MutableRefObject<T | null>;
     scale: number;

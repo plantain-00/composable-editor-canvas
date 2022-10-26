@@ -1,14 +1,23 @@
 import * as React from "react"
+import { Position } from "../utils"
+import { useLocalStorageState } from "./use-local-storage-state"
 
 /**
  * @public
  */
 export function useWheelScroll<T extends HTMLElement>(
-  maxOffsetX = -1,
-  maxOffsetY = -1,
+  options?: Partial<{
+    maxOffsetX: number
+    maxOffsetY: number
+    initialPosition: Position
+    localStorageXKey: string
+    localStorageYKey: string
+  }>
 ) {
-  const [x, setX] = React.useState(0)
-  const [y, setY] = React.useState(0)
+  const maxOffsetX = options?.maxOffsetX ?? -1
+  const maxOffsetY = options?.maxOffsetY ?? -1
+  const [x, setX] = useLocalStorageState(options?.localStorageXKey, options?.initialPosition?.x ?? 0)
+  const [y, setY] = useLocalStorageState(options?.localStorageYKey, options?.initialPosition?.y ?? 0)
   const ref = React.useRef<T | null>(null)
 
   React.useEffect(() => {

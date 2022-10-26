@@ -24,6 +24,7 @@ registerRenderer(reactSvgRenderTarget)
 registerRenderer(reactCanvasRenderTarget)
 
 export const CADEditor = React.forwardRef((props: {
+  id: string
   initialState: readonly Nullable<BaseContent>[]
   width: number
   height: number
@@ -51,7 +52,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name})
+            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId })
           })
           setSelected()
           return true
@@ -121,10 +122,15 @@ export const CADEditor = React.forwardRef((props: {
   const [position, setPosition] = React.useState<Position>()
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
+  const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
 
-  const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
+  const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
+    localStorageXKey: props.id + '-x',
+    localStorageYKey: props.id + '-y',
+  })
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
+    localStorageKey: props.id + '-scale',
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
       setX(result.setX)
@@ -229,6 +235,7 @@ export const CADEditor = React.forwardRef((props: {
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
     scale,
+    strokeStyleId,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
 
@@ -573,12 +580,12 @@ export const CADEditor = React.forwardRef((props: {
     const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
     const types = new Set<string>()
     const ids: number[] = []
-    const contentsUpdater = (update: (content: BaseContent) => void) => {
+    const contentsUpdater = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
       const [, ...patches] = produceWithPatches(editingContent, (draft) => {
         selectedContents.forEach(target => {
           const content = getContentByIndex(draft, target.path)
           if (content) {
-            update(content)
+            update(content, draft)
           }
         })
       })
@@ -589,7 +596,7 @@ export const CADEditor = React.forwardRef((props: {
       types.add(target.content.type)
       const id = target.path[0]
       ids.push(id)
-      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater)
+      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state)
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]

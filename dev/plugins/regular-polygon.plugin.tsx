@@ -42,12 +42,14 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
+        dashArray: strokeStyleContent.dashArray,
       }
       const { points } = getRegularPolygonGeometriesFromCache(content)
       return target.renderPolygon(points, options)
@@ -87,17 +89,19 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       })
     },
     getGeometries: getRegularPolygonGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.y = v } })} />,
         radius: <ctx.NumberEditor value={content.radius} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.radius = v } })} />,
         count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.count = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.angle = v } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -115,7 +119,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create regular polygon',
     icon,
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, strokeStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create regular polygon',
         ([p0, p1]) => onEnd({
@@ -127,6 +131,7 @@ export function getCommand(ctx: PluginContext): Command {
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
               angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              strokeStyleId,
             } as RegularPolygonContent)
           }
         }),
@@ -144,6 +149,7 @@ export function getCommand(ctx: PluginContext): Command {
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
           angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          strokeStyleId,
         })
       }
       return {

@@ -20,8 +20,8 @@ export default () => {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
-  const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-whiteboard:panel', true)
-  const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-whiteboard:print-mode', false)
+  const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-combination2:panel', true)
+  const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-combination2:print-mode', false)
 
   React.useEffect(() => {
     (async () => {
@@ -138,13 +138,13 @@ export default () => {
   }, [ws.current, editorRef.current])
 
   const [readOnly, setReadOnly] = React.useState(false)
-  const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
-  const [renderTarget, setRenderTarget] = useLocalStorageState<string | undefined>('composable-editor-canvas-whiteboard:render-target', undefined)
+  const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-combination2:snaps', allSnapTypes)
+  const [renderTarget, setRenderTarget] = useLocalStorageState<string | undefined>('composable-editor-canvas-combination2:render-target', undefined)
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
   const [operation, setOperation] = React.useState<string>()
-  const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-whiteboard:input-fiixed', false)
-  const [backgroundColor, setBackgroundColor] = useLocalStorageState('composable-editor-canvas-whiteboard:background-color', 0xffffff)
+  const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-combination2:input-fiixed', false)
+  const [backgroundColor, setBackgroundColor] = useLocalStorageState('composable-editor-canvas-combination2:background-color', 0xffffff)
   const offsetX = React.useContext(OffsetXContext)
   const size = useWindowSize()
 
@@ -153,6 +153,7 @@ export default () => {
       {initialState && pluginLoaded && (
         <CADEditor
           ref={editorRef}
+          id='combination2'
           initialState={initialState}
           width={size.width / 2 + offsetX}
           height={size.height}

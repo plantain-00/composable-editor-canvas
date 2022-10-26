@@ -2,7 +2,10 @@ import React from "react"
 import { useWheelScroll } from "../src"
 
 export default () => {
-  const { ref, x, y } = useWheelScroll<HTMLDivElement>(250, 250)
+  const { ref, x, y } = useWheelScroll<HTMLDivElement>({
+    maxOffsetX: 250,
+    maxOffsetY: 250,
+  })
   return (
     <div
       style={{
