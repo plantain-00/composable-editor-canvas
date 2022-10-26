@@ -1191,39 +1191,41 @@ export function polygonToPolyline(points: Position[]) {
  * @public
  */
 export function arcToPolyline(content: Arc, angleDelta: number) {
-  const points: Position[] = []
-  let endAngle: number
-  if (content.counterclockwise) {
-    endAngle = content.startAngle < content.endAngle ? content.endAngle - 360 : content.endAngle
-  } else {
-    endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
-  }
-  let i = content.startAngle
-  if (content.counterclockwise) {
-    for (; i >= endAngle || equals(i, endAngle); i -= angleDelta) {
-      const angle = i * Math.PI / 180
-      points.push({
-        x: content.x + content.r * Math.cos(angle),
-        y: content.y + content.r * Math.sin(angle),
-      })
-    }
-  } else {
-    for (; i <= endAngle || equals(i, endAngle); i += angleDelta) {
-      const angle = i * Math.PI / 180
-      points.push({
-        x: content.x + content.r * Math.cos(angle),
-        y: content.y + content.r * Math.sin(angle),
-      })
-    }
-  }
-  if (content.counterclockwise ? i > endAngle : i < endAngle) {
-    const angle = endAngle * Math.PI / 180
-    points.push({
+  return getAngleRange(content, angleDelta).map(i => {
+    const angle = i * Math.PI / 180
+    return {
       x: content.x + content.r * Math.cos(angle),
       y: content.y + content.r * Math.sin(angle),
-    })
+    }
+  })
+}
+
+function getAngleRange(range: AngleRange, angleDelta: number) {
+  let endAngle: number
+  if (range.counterclockwise) {
+    endAngle = range.startAngle < range.endAngle ? range.endAngle - 360 : range.endAngle
+  } else {
+    endAngle = range.startAngle > range.endAngle ? range.endAngle + 360 : range.endAngle
   }
-  return points
+  const angles: number[] = []
+  for (let i = range.startAngle; ;) {
+    if (equals(i, endAngle)) {
+      break
+    }
+    if (range.counterclockwise ? i < endAngle : i > endAngle) {
+      break
+    }
+    angles.push(i)
+    if (range.counterclockwise) {
+      i -= angleDelta
+    } else {
+      i += angleDelta
+    }
+  }
+  if (angles.length === 0 || !equals(angles[angles.length - 1], endAngle)) {
+    angles.push(endAngle)
+  }
+  return angles
 }
 
 /**
@@ -1250,49 +1252,17 @@ export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
  * @public
  */
 export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
-  const points: Position[] = []
   const center = { x: content.cx, y: content.cy }
-  let endAngle: number
-  if (content.counterclockwise) {
-    endAngle = content.startAngle < content.endAngle ? content.endAngle - 360 : content.endAngle
-  } else {
-    endAngle = content.startAngle > content.endAngle ? content.endAngle + 360 : content.endAngle
-  }
-  let i = content.startAngle
-  if (content.counterclockwise) {
-    for (; i >= endAngle || equals(i, endAngle); i -= angleDelta) {
-      const angle = i * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      if (content.angle) {
-        points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
-      } else {
-        points.push({ x, y })
-      }
-    }
-  } else {
-    for (; i <= endAngle || equals(i, endAngle); i += angleDelta) {
-      const angle = i * Math.PI / 180
-      const x = content.cx + content.rx * Math.cos(angle)
-      const y = content.cy + content.ry * Math.sin(angle)
-      if (content.angle) {
-        points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
-      } else {
-        points.push({ x, y })
-      }
-    }
-  }
-  if (!equals(i, endAngle)) {
-    const angle = endAngle * Math.PI / 180
+  return getAngleRange(content, angleDelta).map(i => {
+    const angle = i * Math.PI / 180
     const x = content.cx + content.rx * Math.cos(angle)
     const y = content.cy + content.ry * Math.sin(angle)
     if (content.angle) {
-      points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
+      return rotatePosition({ x, y }, center, content.angle * Math.PI / 180)
     } else {
-      points.push({ x, y })
+      return { x, y }
     }
-  }
-  return points
+  })
 }
 
 /**

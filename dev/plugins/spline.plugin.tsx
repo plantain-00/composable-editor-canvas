@@ -109,15 +109,17 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const { points } = getSplineGeometries(content)
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
+        dashArray: strokeStyleContent.dashArray,
       }
-      return target.renderPolyline(points, { ...options, dashArray: content.dashArray })
+      return target.renderPolyline(points, options)
     },
     renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderPolyline(content.points, { strokeColor: color, dashArray: [4], strokeWidth })
@@ -132,7 +134,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       return ctx.getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
     },
     getGeometries: getSplineGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         points: <ctx.ArrayEditor
           inline
@@ -146,10 +148,12 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
           />)}
         />,
         fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
   return [
     splineModel,
@@ -160,9 +164,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
-      render(content, { getStrokeColor, target, transformStrokeWidth }) {
-        const strokeColor = getStrokeColor(content)
-        const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
+      render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
+        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+        const strokeColor = getStrokeColor(strokeStyleContent)
+        const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
         const { regions, renderingLines } = getSplineArrowGeometries(content)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const line of renderingLines) {
@@ -182,7 +187,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       },
       getSnapPoints: splineModel.getSnapPoints,
       getGeometries: getSplineArrowGeometries,
-      propertyPanel(content, update) {
+      propertyPanel(content, update, contents) {
         return {
           points: <ctx.ArrayEditor
             inline
@@ -196,10 +201,12 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
             />)}
           />,
           fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineArrowContent(c)) { c.fitting = v ? true : undefined } })} />,
-          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getArrowContentPropertyPanel(content, update),
         }
       },
+      getRefIds: ctx.getStrokeRefIds,
+      updateRefId: ctx.updateStrokeRefIds,
     } as model.Model<SplineArrowContent>
   ]
 }
@@ -274,17 +281,17 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create spline arrow',
       icon: icon3,
-      useCommand({ onEnd, type, scale }) {
+      useCommand({ onEnd, type, scale, strokeStyleId }) {
         const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
           type === 'create spline arrow',
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ points: c, type: 'spline arrow' } as SplineArrowContent)
+            updateContents: (contents) => contents.push({ points: c, strokeStyleId, type: 'spline arrow' } as SplineArrowContent)
           }),
         )
         const assistentContents: (SplineArrowContent | LineContent)[] = []
         if (line) {
           assistentContents.push(
-            { points: line, type: 'spline arrow' },
+            { points: line, strokeStyleId, type: 'spline arrow' },
             { points: line, type: 'polyline', dashArray: [4 / scale] }
           )
         }

@@ -51,14 +51,16 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
       const { lines } = getPolygonGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(content),
+        dashArray: strokeStyleContent.dashArray,
       }
-      return target.renderPolygon(content.points, { ...options, dashArray: content.dashArray })
+      return target.renderPolygon(content.points, options)
     },
     getOperatorRenderPosition(content) {
       return content.points[0]
@@ -81,7 +83,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     },
     getGeometries: getPolygonGeometries,
     canSelectPart: true,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         points: <ctx.ArrayEditor
           inline
@@ -94,10 +96,12 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
             }}
           />)}
         />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -114,12 +118,12 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create polygon',
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, strokeStyleId }) {
       const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
       const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition, reset } = ctx.usePolygonClickCreate(
         type === 'create polygon',
         (c) => onEnd({
-          updateContents: (contents) => contents.push({ points: c, type: 'polygon' } as PolygonContent)
+          updateContents: (contents) => contents.push({ points: c, strokeStyleId, type: 'polygon' } as PolygonContent)
         }),
         {
           toEdge: createType === 'edge',
@@ -133,7 +137,7 @@ export function getCommand(ctx: PluginContext): Command {
         assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
       }
       if (polygon) {
-        assistentContents.push({ points: polygon, type: 'polygon' })
+        assistentContents.push({ points: polygon, strokeStyleId, type: 'polygon' })
       }
       return {
         onStart: onClick,

@@ -46,12 +46,13 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       content.position.y += offset.y
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
-      const strokeColor = getStrokeColor(content)
-      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const strokeColor = getStrokeColor(strokeStyleContent)
+      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
-        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: content.dashArray }))
+        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: strokeStyleContent.dashArray }))
       }
       if (regions && regions.length > 0) {
         children.push(target.renderPolyline(regions[0].points, { strokeWidth: 0, fillColor: strokeColor }))
@@ -98,7 +99,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       })
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} /> : [],
         position: <ctx.ObjectEditor
@@ -115,17 +116,25 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontSize = v } })} />,
         fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.fontFamily = v } })} />,
         ...ctx.getArrowContentPropertyPanel(content, update),
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
     getRefIds(content) {
-      return typeof content.refId === 'number' ? [content.refId] : undefined
+      const refIds: number[] = []
+      if (typeof content.refId === 'number') {
+        refIds.push(content.refId)
+      }
+      if (typeof content.strokeStyleId === 'number') {
+        refIds.push(content.strokeStyleId)
+      }
+      return refIds.length > 0 ? refIds : undefined
     },
     updateRefId(content, update) {
       const newRefId = update(content.refId)
       if (newRefId !== undefined) {
         content.refId = newRefId
       }
+      ctx.updateStrokeRefIds(content, update)
     },
   }
 }
@@ -152,7 +161,7 @@ export function getCommand(ctx: PluginContext): Command {
     selectCount: 1,
     icon,
     contentSelectable,
-    useCommand({ onEnd, selected, type }) {
+    useCommand({ onEnd, selected, type, strokeStyleId }) {
       const [result, setResult] = React.useState<RadialDimensionReferenceContent>()
       const [text, setText] = React.useState<string>()
       let message = ''
@@ -194,6 +203,7 @@ export function getCommand(ctx: PluginContext): Command {
                     fontFamily: result.fontFamily,
                     refId: result.refId,
                     text: result.text,
+                    strokeStyleId,
                   } as RadialDimensionReferenceContent)
                 }
               },
@@ -215,6 +225,7 @@ export function getCommand(ctx: PluginContext): Command {
                 fontFamily: 'monospace',
                 refId: selected[0].path[0],
                 text,
+                strokeStyleId,
               })
             }
           }

@@ -82,14 +82,16 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
-    render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern }) {
+    render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const options = {
         fillColor: getFillColor(content),
-        strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        dashArray: strokeStyleContent.dashArray,
         fillPattern: getFillPattern(content),
       }
-      return target.renderPathCommands(content.commands, { ...options, dashArray: content.dashArray })
+      return target.renderPathCommands(content.commands, options)
     },
     renderIfSelected(content, { color, target, strokeWidth }) {
       const points: core.Position[][] = []
@@ -206,7 +208,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       })
     },
     getGeometries: getPathGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         commands: <ctx.ArrayEditor
           inline
@@ -277,10 +279,12 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
             return <ctx.ObjectEditor inline properties={properties} />
           })}
         />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
 }
 
@@ -299,12 +303,13 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create path',
     hotkey: 'P',
     icon,
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, strokeStyleId }) {
       const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition, reset } = ctx.usePathClickCreate(
         type === 'create path',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
             type: 'path',
+            strokeStyleId,
             commands: c,
           } as PathContent)
         }),
@@ -313,6 +318,7 @@ export function getCommand(ctx: PluginContext): Command {
       if (preview.length > 1) {
         assistentContents.push({
           type: 'path',
+          strokeStyleId,
           commands: preview,
         })
       }

@@ -48,10 +48,14 @@ export function getModel(ctx: PluginContext) {
       const { lines } = getPolylineGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    render(content, { getStrokeColor, target, transformStrokeWidth }) {
-      const strokeColor = getStrokeColor(content)
-      const strokeWidth = transformStrokeWidth(ctx.getStrokeWidth(content))
-      return target.renderPolyline(content.points, { strokeColor, dashArray: content.dashArray, strokeWidth })
+    render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const options = {
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        dashArray: strokeStyleContent.dashArray,
+      }
+      return target.renderPolyline(content.points, options)
     },
     getOperatorRenderPosition(content) {
       return content.points[0]
@@ -73,7 +77,7 @@ export function getModel(ctx: PluginContext) {
       })
     },
     getGeometries: getPolylineGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
       return {
         points: <ctx.ArrayEditor
           inline
@@ -86,12 +90,14 @@ export function getModel(ctx: PluginContext) {
             }}
           />)}
         />,
-        ...ctx.getStrokeContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
     isValid(content) {
       return content.points.length > 1
     },
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
   }
   return [
     lineModel,
@@ -103,20 +109,21 @@ export function getModel(ctx: PluginContext) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
-      render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern }) {
+      render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
+        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const options = {
           fillColor: getFillColor(content),
-          strokeColor: getStrokeColor(content),
-          strokeWidth: transformStrokeWidth(ctx.getStrokeWidth(content)),
+          strokeColor: getStrokeColor(strokeStyleContent),
+          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(content),
         }
-        return target.renderPolyline(content.points, { ...options, dashArray: content.dashArray })
+        return target.renderPolyline(content.points, { ...options, dashArray: strokeStyleContent.dashArray })
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }))
       },
       canSelectPart: true,
-      propertyPanel(content, update) {
+      propertyPanel(content, update, contents) {
         return {
           points: <ctx.ArrayEditor
             inline
@@ -129,7 +136,7 @@ export function getModel(ctx: PluginContext) {
               }}
             />)}
           />,
-          ...ctx.getStrokeContentPropertyPanel(content, update),
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update),
         }
       },
@@ -160,11 +167,11 @@ export function getCommand(ctx: PluginContext): Command[] {
   return [
     {
       name: 'create line',
-      useCommand({ onEnd, scale, type }) {
+      useCommand({ onEnd, scale, type, strokeStyleId }) {
         const { line, onClick, onMove, input, inputMode, lastPosition, reset } = ctx.useLineClickCreate(
           type === 'create line',
           (c) => onEnd({
-            updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line) => ({ points: line, type: 'line' })))
+            updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line) => ({ points: line, strokeStyleId, type: 'line' } as LineContent)))
           }),
         )
         const assistentContents: (LineContent | ArcContent | TextContent)[] = []
@@ -210,7 +217,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         }
         if (line) {
           for (const lineSegment of ctx.iteratePolylineLines(line)) {
-            assistentContents.push({ points: lineSegment, type: 'line' })
+            assistentContents.push({ points: lineSegment, strokeStyleId, type: 'line' })
           }
         }
         return {
@@ -228,11 +235,11 @@ export function getCommand(ctx: PluginContext): Command[] {
     },
     {
       name: 'create polyline',
-      useCommand({ onEnd, scale, type }) {
+      useCommand({ onEnd, scale, type, strokeStyleId }) {
         const { line, onClick, onMove, input, inputMode, lastPosition, reset, positions } = ctx.useLineClickCreate(
           type === 'create polyline',
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ points: c, type: 'polyline' } as LineContent)
+            updateContents: (contents) => contents.push({ points: c, strokeStyleId, type: 'polyline' } as LineContent)
           }),
         )
         const assistentContents: (LineContent | ArcContent | TextContent)[] = []
@@ -277,7 +284,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           )
         }
         if (line) {
-          assistentContents.push({ points: line, type: 'polyline' })
+          assistentContents.push({ points: line, strokeStyleId, type: 'polyline' })
         }
         return {
           onStart: onClick,

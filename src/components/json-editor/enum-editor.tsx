@@ -42,7 +42,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
 /**
  * @public
  */
-export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
+export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> & {
   enums: readonly T[]
   enumTitles?: readonly string[]
   select?: boolean
@@ -57,8 +57,12 @@ export function EnumEditor<T extends string>(props: JsonEditorProps<T> & {
           if (props.readOnly) {
             return
           }
+          let v: number | string = e.target.value
+          if (typeof props.enums[0] === 'number') {
+            v = +v
+          }
           // type-coverage:ignore-next-line
-          props.setValue(e.target.value as T)
+          props.setValue(v as T)
         }}
       >
         {props.enums.map((e, i) => <option key={e} value={e}>{props.enumTitles?.[i] ?? e}</option>)}

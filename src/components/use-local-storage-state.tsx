@@ -3,10 +3,11 @@ import * as React from "react"
 /**
  * @public
  */
-export function useLocalStorageState<S>(key: string, defaultValue: S, options?: Partial<{
-  initial: boolean
-}>): [S, React.Dispatch<S>] {
+export function useLocalStorageState<S>(key: string | undefined, defaultValue: S): [S, React.Dispatch<React.SetStateAction<S>>, S] {
   const [state, setState] = React.useState(() => {
+    if (!key) {
+      return defaultValue
+    }
     const stateString = localStorage.getItem(key)
     if (stateString) {
       try {
@@ -17,11 +18,13 @@ export function useLocalStorageState<S>(key: string, defaultValue: S, options?: 
     }
     return defaultValue
   })
-  const onChange: React.Dispatch<S> = (s) => {
-    localStorage.setItem(key, JSON.stringify(s))
-    if (!options?.initial) {
-      setState(s)
+  const initialState = React.useRef(state)
+
+  React.useEffect(() => {
+    if (key) {
+      localStorage.setItem(key, JSON.stringify(state))
     }
-  }
-  return [state, onChange]
+  }, [state, key])
+
+  return [state, setState, initialState.current]
 }

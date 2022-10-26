@@ -41,10 +41,10 @@ export function App() {
     height: targetSize.height * scale + padding,
   }
 
-  const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>(
-    (contentSize.width - containerSize.width) / 2,
-    (contentSize.height - containerSize.height) / 2,
-  )
+  const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>({
+    maxOffsetX: (contentSize.width - containerSize.width) / 2,
+    maxOffsetY: (contentSize.height - containerSize.height) / 2,
+  })
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), redo)
