@@ -72,6 +72,18 @@ export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.Muta
 export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element;
 
 // @public (undocumented)
+export interface Bounding {
+    // (undocumented)
+    xMax: number;
+    // (undocumented)
+    xMin: number;
+    // (undocumented)
+    yMax: number;
+    // (undocumented)
+    yMin: number;
+}
+
+// @public (undocumented)
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
 
 // @public (undocumented)

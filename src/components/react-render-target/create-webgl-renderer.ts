@@ -1,5 +1,5 @@
 import * as twgl from 'twgl.js'
-import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getPerpendicularPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from "../../utils"
+import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getPerpendicularPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache, Bounding } from "../../utils"
 import earcut from 'earcut'
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
@@ -258,7 +258,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const drawPattern = (
     pattern: PatternGraphic,
     matrix: Matrix,
-    bounding: { xMin: number, xMax: number, yMin: number, yMax: number },
+    bounding: Bounding,
     drawObject: twgl.DrawObject,
   ) => {
     flushDraw()

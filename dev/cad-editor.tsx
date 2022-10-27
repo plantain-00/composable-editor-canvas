@@ -52,7 +52,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId })
+            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId })
           })
           setSelected()
           return true
@@ -123,6 +123,7 @@ export const CADEditor = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
+  const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -236,6 +237,7 @@ export const CADEditor = React.forwardRef((props: {
     selectedContents,
     scale,
     strokeStyleId,
+    fillStyleId,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
 
@@ -476,8 +478,8 @@ export const CADEditor = React.forwardRef((props: {
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (lastOperation) {
       startOperation(lastOperation)
+      e.preventDefault()
     }
-    e.preventDefault()
   })
   const [rtree, setRTree] = React.useState<ReturnType<typeof RTree>>()
   const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
@@ -601,6 +603,9 @@ export const CADEditor = React.forwardRef((props: {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]
           const v = Array.from(iterateItemOrArray(value))
+          if (v.length === 0) {
+            return
+          }
           if (Array.isArray(element)) {
             element.push(...v)
           } else if (element) {
@@ -610,7 +615,7 @@ export const CADEditor = React.forwardRef((props: {
           }
         })
       }
-      zPanel.push(<BooleanEditor value={target.content.z !== undefined} setValue={(v) => contentsUpdater(c => { c.z = v ? id : undefined })} style={{ marginRight: '5px' }} />)
+      zPanel.push(<BooleanEditor value={target.content.z !== undefined} setValue={(v) => contentsUpdater(c => { c.z = v ? id : undefined })} />)
       if (target.content.z !== undefined) {
         zPanel.push(<NumberEditor value={target.content.z} setValue={(v) => contentsUpdater(c => { c.z = v })} />)
       }

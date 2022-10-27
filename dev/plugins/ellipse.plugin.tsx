@@ -81,11 +81,12 @@ export function getModel(ctx: PluginContext) {
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
       }
       if (strokeStyleContent.dashArray) {
         const { points } = getEllipseGeometries(content)
@@ -189,15 +190,15 @@ export function getModel(ctx: PluginContext) {
         rx: <ctx.NumberEditor value={content.rx} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.rx = v } })} />,
         ry: <ctx.NumberEditor value={content.ry} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.ry = v } })} />,
         angle: [
-          <ctx.BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.angle = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+          <ctx.BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.angle = v ? 0 : undefined } })} />,
           content.angle !== undefined ? <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.angle = v } })} /> : undefined,
         ],
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
   return [
     ellipseModel,
@@ -246,11 +247,12 @@ export function getModel(ctx: PluginContext) {
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+        const fillStyleContent = ctx.getFillStyleContent(content, contents)
         const options = {
-          fillColor: getFillColor(content),
+          fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
           strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(content),
+          fillPattern: getFillPattern(fillStyleContent),
           dashArray: strokeStyleContent.dashArray,
         }
         const { points } = getEllipseArcGeometries(content)
@@ -337,18 +339,18 @@ export function getModel(ctx: PluginContext) {
           rx: <ctx.NumberEditor value={content.rx} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.rx = v } })} />,
           ry: <ctx.NumberEditor value={content.ry} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.ry = v } })} />,
           angle: [
-            <ctx.BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.angle = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+            <ctx.BooleanEditor value={content.angle !== undefined} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.angle = v ? 0 : undefined } })} />,
             content.angle !== undefined ? <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.angle = v } })} /> : undefined,
           ],
           startAngle: <ctx.NumberEditor value={content.startAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.startAngle = v } })} />,
           endAngle: <ctx.NumberEditor value={content.endAngle} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.endAngle = v } })} />,
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-          ...ctx.getFillContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update, contents),
         }
       },
-      getRefIds: ctx.getStrokeRefIds,
-      updateRefId: ctx.updateStrokeRefIds,
+      getRefIds: ctx.getStrokeAndFillRefIds,
+      updateRefId: ctx.updateStrokeAndFillRefIds,
     } as model.Model<EllipseArcContent>,
   ]
 }
@@ -389,11 +391,11 @@ export function getCommand(ctx: PluginContext): Command[] {
         { name: 'ellipse center', hotkey: 'EL', icon: icon1 },
         { name: 'ellipse endpoint', icon: icon2 },
       ],
-      useCommand({ onEnd, type, scale, strokeStyleId }) {
+      useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
         const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseClickCreate(
           type === 'ellipse center' || type === 'ellipse endpoint' ? type : undefined,
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ ...c, strokeStyleId, type: 'ellipse' } as EllipseContent)
+            updateContents: (contents) => contents.push({ ...c, strokeStyleId, fillStyleId, type: 'ellipse' } as EllipseContent)
           }),
         )
         const assistentContents: (LineContent | EllipseContent)[] = []
@@ -410,7 +412,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           }
         }
         if (ellipse) {
-          assistentContents.push({ ...ellipse, strokeStyleId, type: 'ellipse' })
+          assistentContents.push({ ...ellipse, strokeStyleId, fillStyleId, type: 'ellipse' })
         }
         return {
           onStart: onClick,
@@ -425,11 +427,11 @@ export function getCommand(ctx: PluginContext): Command[] {
     },
     {
       name: 'create ellipse arc',
-      useCommand({ onEnd, type, scale, strokeStyleId }) {
+      useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
         const { ellipse, ellipseArc, onClick, onMove, input, startPosition, middlePosition, cursorPosition, reset } = ctx.useEllipseArcClickCreate(
           type === 'create ellipse arc' ? 'ellipse center' : undefined,
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ ...c, strokeStyleId, type: 'ellipse arc' } as EllipseArcContent),
+            updateContents: (contents) => contents.push({ ...c, strokeStyleId, fillStyleId, type: 'ellipse arc' } as EllipseArcContent),
           }),
         )
         const assistentContents: (LineContent | EllipseContent | EllipseArcContent)[] = []
@@ -486,7 +488,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           }
         }
         if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
-          assistentContents.push({ ...ellipseArc, strokeStyleId, type: 'ellipse arc' })
+          assistentContents.push({ ...ellipseArc, strokeStyleId, fillStyleId, type: 'ellipse arc' })
         }
         return {
           onStart: onClick,
