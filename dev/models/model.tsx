@@ -21,6 +21,7 @@ export interface FillFields {
     lines: Position[][]
     strokeColor?: number
   }
+  fillStyleId?: number | BaseContent
 }
 
 export interface ContainerFields {
@@ -210,7 +211,7 @@ export function getStrokeContentPropertyPanel(
   if (contents) {
     const strokeStyles = getStrokeStyles(contents)
     if (strokeStyles.length > 0) {
-      strokeStyleId.push(<BooleanEditor value={content.strokeStyleId !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeStyleId = v ? strokeStyles[0].index : undefined } })} style={{ marginRight: '5px' }} />)
+      strokeStyleId.push(<BooleanEditor value={content.strokeStyleId !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeStyleId = v ? strokeStyles[0].index : undefined } })} />)
       if (typeof content.strokeStyleId === 'number') {
         strokeStyleId.push(
           <EnumEditor
@@ -232,7 +233,7 @@ export function getStrokeContentPropertyPanel(
   return {
     strokeStyleId,
     dashArray: [
-      <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.dashArray !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.dashArray = v ? [4] : undefined } })} />,
       content.dashArray !== undefined ? <ArrayEditor
         inline
         {...getArrayEditorProps<number, typeof content>(v => v.dashArray || [], 4, (v) => update(c => { if (isStrokeContent(c)) { v(c) } }))}
@@ -240,11 +241,11 @@ export function getStrokeContentPropertyPanel(
       /> : undefined
     ],
     strokeColor: [
-      <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} />,
       content.strokeColor !== undefined ? <NumberEditor type='color' value={content.strokeColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v } })} /> : undefined,
     ],
     strokeWidth: [
-      <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} />,
       content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,
     ],
   }
@@ -255,11 +256,32 @@ export function getStrokeStyles(contents: readonly Nullable<BaseContent>[]) {
   return strokeStylesCache.get(contents, () => {
     return contents.map((c, i) => ({ c, i }))
       .filter((c): c is { c: StrokeStyleContent, i: number } => !!c.c && isStrokeStyleContent(c.c))
-      .map(({ c, i }) => ({ 
-        index: i, 
+      .map(({ c, i }) => ({
+        index: i,
         content: c,
-        label: `${c.strokeWidth ?? 1}px ${c.dashArray?.join(',') ?? 'solid'} ${getColorString(c.strokeColor ?? 0)}` ,
+        label: `${c.strokeWidth ?? 1}px ${c.dashArray?.join(',') ?? 'solid'} ${getColorString(c.strokeColor ?? 0)}`,
       }))
+  })
+}
+
+const fillStylesCache = new WeakmapCache<readonly Nullable<BaseContent>[], { label: string, index: number, content: FillStyleContent }[]>()
+export function getFillStyles(contents: readonly Nullable<BaseContent>[]) {
+  return fillStylesCache.get(contents, () => {
+    return contents.map((c, i) => ({ c, i }))
+      .filter((c): c is { c: FillStyleContent, i: number } => !!c.c && isFillStyleContent(c.c))
+      .map(({ c, i }) => {
+        let label = ''
+        if (c.fillPattern) {
+          label = `${c.fillPattern.width}*${c.fillPattern.height} ${getColorString(c.fillPattern.strokeColor ?? 0)} ${JSON.stringify(c.fillPattern.lines)}`
+        } else if (c.fillColor !== undefined) {
+          label = getColorString(c.fillColor)
+        }
+        return {
+          index: i,
+          content: c,
+          label,
+        }
+      })
   })
 }
 
@@ -271,17 +293,50 @@ export function isStrokeStyleContent(content: BaseContent): content is StrokeSty
   return content.type === 'stroke style'
 }
 
+export type FillStyleContent = BaseContent<'fill style'> & FillFields & Region & {
+  isCurrent?: boolean
+}
+
+export function isFillStyleContent(content: BaseContent): content is FillStyleContent {
+  return content.type === 'fill style'
+}
+
 export function getFillContentPropertyPanel(
   content: FillFields,
   update: (recipe: (content: BaseContent) => void) => void,
-) {
+  contents?: readonly Nullable<BaseContent>[],
+): Record<string, JSX.Element | (JSX.Element | undefined)[]> {
+  const fillStyleId: (JSX.Element | undefined)[] = []
+  if (contents) {
+    const fillStyles = getFillStyles(contents)
+    if (fillStyles.length > 0) {
+      fillStyleId.push(<BooleanEditor value={content.fillStyleId !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillStyleId = v ? fillStyles[0].index : undefined } })} />)
+      if (typeof content.fillStyleId === 'number') {
+        fillStyleId.push(
+          <EnumEditor
+            select
+            enums={fillStyles.map(s => s.index)}
+            enumTitles={fillStyles.map(s => s.label)}
+            value={content.fillStyleId}
+            setValue={(v) => update(c => { if (isFillContent(c)) { c.fillStyleId = v } })}
+          />
+        )
+      }
+    }
+  }
+  if (fillStyleId.length > 1) {
+    return {
+      fillStyleId,
+    }
+  }
   return {
+    fillStyleId,
     fillColor: [
-      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} />,
       content.fillColor !== undefined ? <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} /> : undefined,
     ],
     fillPattern: [
-      <BooleanEditor value={content.fillPattern !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillPattern = v ? { width: 10, height: 10, lines: [[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]] } : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.fillPattern !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillPattern = v ? { width: 10, height: 10, lines: [[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]] } : undefined } })} />,
       content.fillPattern !== undefined
         ? (
           <ObjectEditor
@@ -289,7 +344,7 @@ export function getFillContentPropertyPanel(
               width: <NumberEditor value={content.fillPattern.width} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.width = v } })} />,
               height: <NumberEditor value={content.fillPattern.height} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.height = v } })} />,
               strokeColor: [
-                <BooleanEditor value={content.fillPattern.strokeColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v ? 0 : undefined } })} style={{ marginRight: '5px' }} />,
+                <BooleanEditor value={content.fillPattern.strokeColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v ? 0 : undefined } })} />,
                 content.fillPattern.strokeColor !== undefined ? <NumberEditor type='color' value={content.fillPattern.strokeColor} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v } })} /> : undefined,
               ],
               lines: <ArrayEditor
@@ -316,11 +371,11 @@ export function getArrowContentPropertyPanel(
 ) {
   return {
     arrowAngle: [
-      <BooleanEditor value={content.arrowAngle !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowAngle = v ? dimensionStyle.arrowAngle : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.arrowAngle !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowAngle = v ? dimensionStyle.arrowAngle : undefined } })} />,
       content.arrowAngle !== undefined ? <NumberEditor value={content.arrowAngle} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowAngle = v } })} /> : undefined,
     ],
     arrowSize: [
-      <BooleanEditor value={content.arrowSize !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowSize = v ? dimensionStyle.arrowSize : undefined } })} style={{ marginRight: '5px' }} />,
+      <BooleanEditor value={content.arrowSize !== undefined} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowSize = v ? dimensionStyle.arrowSize : undefined } })} />,
       content.arrowSize !== undefined ? <NumberEditor value={content.arrowSize} setValue={(v) => update(c => { if (isArrowContent(c)) { c.arrowSize = v } })} /> : undefined,
     ],
   }
@@ -343,7 +398,7 @@ export function isArrowContent(content: BaseContent): content is (BaseContent & 
 }
 
 export function hasFill(content: FillFields) {
-  return content.fillColor !== undefined || content.fillPattern !== undefined
+  return content.fillColor !== undefined || content.fillPattern !== undefined || content.fillStyleId !== undefined
 }
 export function getDefaultStrokeWidth(content: BaseContent): number {
   return isFillContent(content) && hasFill(content) ? 0 : 1
@@ -353,6 +408,15 @@ export function getStrokeStyleContent(content: StrokeFields, contents: readonly 
     const strokeStyleContent = typeof content.strokeStyleId === 'number' ? contents[content.strokeStyleId] : content.strokeStyleId
     if (strokeStyleContent && isStrokeStyleContent(strokeStyleContent)) {
       return strokeStyleContent
+    }
+  }
+  return content
+}
+export function getFillStyleContent(content: FillFields, contents: readonly Nullable<BaseContent>[]) {
+  if (content.fillStyleId !== undefined) {
+    const fillStyleContent = typeof content.fillStyleId === 'number' ? contents[content.fillStyleId] : content.fillStyleId
+    if (fillStyleContent && isFillStyleContent(fillStyleContent)) {
+      return fillStyleContent
     }
   }
   return content
@@ -631,7 +695,7 @@ export function getContainerRenderIfSelected<V>(content: ContainerFields, ctx: R
 }
 
 export function getStrokeRefIds(content: StrokeFields) {
-  return typeof content.strokeStyleId === 'number' ? [content.strokeStyleId] : undefined
+  return typeof content.strokeStyleId === 'number' ? [content.strokeStyleId] : []
 }
 export function updateStrokeRefIds(content: StrokeFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
   if (content.strokeStyleId !== undefined) {
@@ -640,6 +704,24 @@ export function updateStrokeRefIds(content: StrokeFields, update: (id: number | 
       content.strokeStyleId = newRefId
     }
   }
+}
+function getFillRefIds(content: FillFields) {
+  return typeof content.fillStyleId === 'number' ? [content.fillStyleId] : []
+}
+function updateFillRefIds(content: FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+  if (content.fillStyleId !== undefined) {
+    const newRefId = update(content.fillStyleId)
+    if (newRefId !== undefined) {
+      content.fillStyleId = newRefId
+    }
+  }
+}
+export function getStrokeAndFillRefIds(content: StrokeFields & FillFields) {
+  return [...getStrokeRefIds(content), ...getFillRefIds(content)]
+}
+export function updateStrokeAndFillRefIds(content: StrokeFields & FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+  updateStrokeRefIds(content, update)
+  updateFillRefIds(content, update)
 }
 
 export function breakPolyline(

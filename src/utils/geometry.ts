@@ -797,6 +797,16 @@ export interface TwoPointsFormRegion {
   end: Position
 }
 
+/**
+ * @public
+ */
+export interface Bounding {
+  xMin: number
+  xMax: number
+  yMin: number
+  yMax: number
+}
+
 export interface Circle extends Position {
   r: number
 }

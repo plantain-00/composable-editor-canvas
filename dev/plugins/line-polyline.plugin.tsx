@@ -96,8 +96,8 @@ export function getModel(ctx: PluginContext) {
     isValid(content) {
       return content.points.length > 1
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
   return [
     lineModel,
@@ -111,11 +111,12 @@ export function getModel(ctx: PluginContext) {
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+        const fillStyleContent = ctx.getFillStyleContent(content, contents)
         const options = {
-          fillColor: getFillColor(content),
+          fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
           strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(content),
+          fillPattern: getFillPattern(fillStyleContent),
         }
         return target.renderPolyline(content.points, { ...options, dashArray: strokeStyleContent.dashArray })
       },
@@ -137,7 +138,7 @@ export function getModel(ctx: PluginContext) {
             />)}
           />,
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-          ...ctx.getFillContentPropertyPanel(content, update),
+          ...ctx.getFillContentPropertyPanel(content, update, contents),
         }
       },
     } as model.Model<LineContent>,
@@ -167,11 +168,11 @@ export function getCommand(ctx: PluginContext): Command[] {
   return [
     {
       name: 'create line',
-      useCommand({ onEnd, scale, type, strokeStyleId }) {
+      useCommand({ onEnd, scale, type, strokeStyleId, fillStyleId }) {
         const { line, onClick, onMove, input, inputMode, lastPosition, reset } = ctx.useLineClickCreate(
           type === 'create line',
           (c) => onEnd({
-            updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line) => ({ points: line, strokeStyleId, type: 'line' } as LineContent)))
+            updateContents: (contents) => contents.push(...Array.from(ctx.iteratePolylineLines(c)).map((line) => ({ points: line, strokeStyleId, fillStyleId, type: 'line' } as LineContent)))
           }),
         )
         const assistentContents: (LineContent | ArcContent | TextContent)[] = []
@@ -217,7 +218,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         }
         if (line) {
           for (const lineSegment of ctx.iteratePolylineLines(line)) {
-            assistentContents.push({ points: lineSegment, strokeStyleId, type: 'line' })
+            assistentContents.push({ points: lineSegment, strokeStyleId, fillStyleId, type: 'line' })
           }
         }
         return {
@@ -235,11 +236,11 @@ export function getCommand(ctx: PluginContext): Command[] {
     },
     {
       name: 'create polyline',
-      useCommand({ onEnd, scale, type, strokeStyleId }) {
+      useCommand({ onEnd, scale, type, strokeStyleId, fillStyleId }) {
         const { line, onClick, onMove, input, inputMode, lastPosition, reset, positions } = ctx.useLineClickCreate(
           type === 'create polyline',
           (c) => onEnd({
-            updateContents: (contents) => contents.push({ points: c, strokeStyleId, type: 'polyline' } as LineContent)
+            updateContents: (contents) => contents.push({ points: c, strokeStyleId, fillStyleId, type: 'polyline' } as LineContent)
           }),
         )
         const assistentContents: (LineContent | ArcContent | TextContent)[] = []
@@ -284,7 +285,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           )
         }
         if (line) {
-          assistentContents.push({ points: line, strokeStyleId, type: 'polyline' })
+          assistentContents.push({ points: line, strokeStyleId, fillStyleId, type: 'polyline' })
         }
         return {
           onStart: onClick,

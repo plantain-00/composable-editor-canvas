@@ -63,11 +63,12 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
       }
       if (strokeStyleContent.dashArray) {
         const { points } = getRectGeometries(content)
@@ -139,11 +140,11 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
         height: <ctx.NumberEditor value={content.height} setValue={(v) => update(c => { if (isRectContent(c)) { c.height = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRectContent(c)) { c.angle = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -161,7 +162,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create rect',
     icon,
-    useCommand({ onEnd, type, strokeStyleId }) {
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create rect',
         (c) => onEnd({
@@ -172,7 +173,8 @@ export function getCommand(ctx: PluginContext): Command {
             width: Math.abs(c[0].x - c[1].x),
             height: Math.abs(c[0].y - c[1].y),
             angle: 0,
-            strokeStyleId
+            strokeStyleId,
+            fillStyleId,
           } as RectContent)
         }),
         {
@@ -189,6 +191,7 @@ export function getCommand(ctx: PluginContext): Command {
           height: Math.abs(line[0].y - line[1].y),
           angle: 0,
           strokeStyleId,
+          fillStyleId,
         })
       }
       return {

@@ -44,11 +44,12 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
       }
       const { points } = getRegularPolygonGeometriesFromCache(content)
@@ -97,11 +98,11 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
         count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.count = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.angle = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -119,7 +120,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create regular polygon',
     icon,
-    useCommand({ onEnd, type, strokeStyleId }) {
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create regular polygon',
         ([p0, p1]) => onEnd({
@@ -132,6 +133,7 @@ export function getCommand(ctx: PluginContext): Command {
               count: 5,
               angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
               strokeStyleId,
+              fillStyleId,
             } as RegularPolygonContent)
           }
         }),
@@ -150,6 +152,7 @@ export function getCommand(ctx: PluginContext): Command {
           count: 5,
           angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
           strokeStyleId,
+          fillStyleId,
         })
       }
       return {

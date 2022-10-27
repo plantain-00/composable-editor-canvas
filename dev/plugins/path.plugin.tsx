@@ -84,12 +84,13 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray,
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
       }
       return target.renderPathCommands(content.commands, options)
     },
@@ -280,11 +281,11 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
           })}
         />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -303,13 +304,14 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create path',
     hotkey: 'P',
     icon,
-    useCommand({ onEnd, type, scale, strokeStyleId }) {
+    useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
       const { path, controlPoint, controlPoint2, preview, onClick, onMove, input, setInputType, cursorPosition, reset } = ctx.usePathClickCreate(
         type === 'create path',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
             type: 'path',
             strokeStyleId,
+            fillStyleId,
             commands: c,
           } as PathContent)
         }),
@@ -319,6 +321,7 @@ export function getCommand(ctx: PluginContext): Command {
         assistentContents.push({
           type: 'path',
           strokeStyleId,
+          fillStyleId,
           commands: preview,
         })
       }

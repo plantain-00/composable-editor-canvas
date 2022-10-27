@@ -53,11 +53,12 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
       }
       return target.renderPolygon(content.points, options)
@@ -97,11 +98,11 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
           />)}
         />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -118,12 +119,12 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create polygon',
-    useCommand({ onEnd, type, scale, strokeStyleId }) {
+    useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
       const [createType, setCreateType] = React.useState<'point' | 'edge'>('point')
       const { polygon, onClick, onMove, input, startSetSides, startPosition, cursorPosition, reset } = ctx.usePolygonClickCreate(
         type === 'create polygon',
         (c) => onEnd({
-          updateContents: (contents) => contents.push({ points: c, strokeStyleId, type: 'polygon' } as PolygonContent)
+          updateContents: (contents) => contents.push({ points: c, strokeStyleId, fillStyleId, type: 'polygon' } as PolygonContent)
         }),
         {
           toEdge: createType === 'edge',
@@ -137,7 +138,7 @@ export function getCommand(ctx: PluginContext): Command {
         assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
       }
       if (polygon) {
-        assistentContents.push({ points: polygon, strokeStyleId, type: 'polygon' })
+        assistentContents.push({ points: polygon, strokeStyleId, fillStyleId, type: 'polygon' })
       }
       return {
         onStart: onClick,

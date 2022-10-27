@@ -112,11 +112,12 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const { points } = getSplineGeometries(content)
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
       }
       return target.renderPolyline(points, options)
@@ -149,11 +150,11 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         />,
         fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
   return [
     splineModel,
@@ -251,17 +252,17 @@ export function getCommand(ctx: PluginContext): Command[] {
       { name: 'spline', hotkey: 'SPL', icon: icon1 },
       { name: 'spline fitting', icon: icon2 },
     ],
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'spline' || type === 'spline fitting',
         (c) => onEnd({
-          updateContents: (contents) => contents.push({ points: c, type: 'spline', fitting: type === 'spline fitting' } as SplineContent)
+          updateContents: (contents) => contents.push({ points: c, type: 'spline', strokeStyleId, fillStyleId, fitting: type === 'spline fitting' } as SplineContent)
         }),
       )
       const assistentContents: (SplineContent | LineContent)[] = []
       if (line) {
         assistentContents.push(
-          { points: line, type: 'spline', fitting: type === 'spline fitting' },
+          { points: line, type: 'spline', strokeStyleId, fillStyleId, fitting: type === 'spline fitting' },
           { points: line, type: 'polyline', dashArray: [4 / scale] }
         )
       }

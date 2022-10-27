@@ -16,6 +16,7 @@ export interface Command extends CommandType {
     selected: { content: BaseContent, path: number[] }[],
     scale: number,
     strokeStyleId: number | undefined,
+    fillStyleId: number | undefined,
   }): {
     onStart(p: Position): void
     onMove?: (p: Position, viewportPosition?: Position) => void
@@ -37,6 +38,7 @@ export interface Command extends CommandType {
     setEditingContentPath: (path: SelectPath | undefined) => void
     type: string | undefined,
     strokeStyleId: number | undefined,
+    fillStyleId: number | undefined,
   }): void
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
@@ -69,6 +71,7 @@ export function useCommands(
   selected: { content: BaseContent, path: number[] }[],
   scale: number,
   strokeStyleId: number | undefined,
+  fillStyleId: number | undefined,
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
@@ -93,6 +96,7 @@ export function useCommands(
         selected,
         scale,
         strokeStyleId,
+        fillStyleId,
       })
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))

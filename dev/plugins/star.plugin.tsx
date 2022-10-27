@@ -50,11 +50,12 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
-        fillColor: getFillColor(content),
+        fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(content),
+        fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
       }
       const { points } = getStarGeometriesFromCache(content)
@@ -107,11 +108,11 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         count: <ctx.NumberEditor value={content.count} setValue={(v) => update(c => { if (isStarContent(c)) { c.count = v } })} />,
         angle: <ctx.NumberEditor value={content.angle ?? 0} setValue={(v) => update(c => { if (isStarContent(c)) { c.angle = v === 0 ? undefined : v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -129,7 +130,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create star',
     icon,
-    useCommand({ onEnd, type, strokeStyleId }) {
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create star',
         ([p0, p1]) => onEnd({
@@ -140,10 +141,11 @@ export function getCommand(ctx: PluginContext): Command {
               x: p0.x,
               y: p0.y,
               outerRadius,
-              innerRadius: outerRadius * 0,
+              innerRadius: outerRadius * 0.5,
               count: 5,
               angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
               strokeStyleId,
+              fillStyleId,
             } as StarContent)
           }
         }),
@@ -160,10 +162,11 @@ export function getCommand(ctx: PluginContext): Command {
           x: p0.x,
           y: p0.y,
           outerRadius,
-          innerRadius: outerRadius * 0,
+          innerRadius: outerRadius * 0.5,
           count: 5,
           angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
           strokeStyleId,
+          fillStyleId,
         })
       }
       return {

@@ -85,7 +85,7 @@ export default () => {
               items={value.inlineArrayExample.map((f, i) => <StringEditor value={f} setValue={update((draft, v) => draft.inlineArrayExample[i] = v)} />)}
             />,
             'A optional example': [
-              <BooleanEditor value={value.optionalExample !== undefined} setValue={update((draft, v) => draft.optionalExample = v ? '' : undefined)} style={{ marginRight: '5px' }} />,
+              <BooleanEditor value={value.optionalExample !== undefined} setValue={update((draft, v) => draft.optionalExample = v ? '' : undefined)} />,
               value.optionalExample !== undefined ? <StringEditor value={value.optionalExample} setValue={update((draft, v) => draft.optionalExample = v)} /> : undefined,
             ],
             'A enum example': <EnumEditor value={value.enumExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumExample = v)} />,

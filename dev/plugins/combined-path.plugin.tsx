@@ -94,10 +94,11 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     render(content, renderCtx) {
       const geometries = getGeometries(content)
       const strokeStyleContent = ctx.getStrokeStyleContent(content, renderCtx.contents)
+      const fillStyleContent = ctx.getFillStyleContent(content, renderCtx.contents)
       const options = {
         ...renderCtx,
-        fillColor: renderCtx.getFillColor(content),
-        fillPattern: renderCtx.getFillPattern(content),
+        fillColor: renderCtx.getFillColor(fillStyleContent),
+        fillPattern: renderCtx.getFillPattern(fillStyleContent),
         strokeColor: renderCtx.getStrokeColor(strokeStyleContent),
         strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray,
@@ -112,11 +113,11 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     propertyPanel(content, update, contents) {
       return {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }
 
@@ -134,10 +135,11 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create combined path',
-    execute({ contents, selected, strokeStyleId }) {
+    execute({ contents, selected, strokeStyleId, fillStyleId }) {
       const newContent: CombinedPathContent = {
         type: 'combined path',
         strokeStyleId,
+        fillStyleId,
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
       }
       for (let i = contents.length; i >= 0; i--) {
