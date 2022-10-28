@@ -120,7 +120,7 @@ export function Renderer(props: {
     const sortedContents = getSortedContents(props.contents).contents
     children = renderCache.current.get(sortedContents, () => {
       sortedContents.forEach((content) => {
-        if (!content) {
+        if (!content || content.visible === false) {
           return
         }
         renderContent(content, w => w)
@@ -130,7 +130,7 @@ export function Renderer(props: {
   } else {
     const sortedContents = getSortedContents(previewContents).contents
     sortedContents.forEach((content) => {
-      if (!content) {
+      if (!content || content.visible === false) {
         return
       }
       if (!visibleContents.has(content)) {

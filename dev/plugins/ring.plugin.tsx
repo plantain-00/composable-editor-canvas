@@ -3,7 +3,7 @@ import type * as core from '../../src'
 import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 
-export type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model.FillFields & core.Position & {
+export type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.Position & {
   outerRadius: number
   innerRadius: number
 }
@@ -11,8 +11,9 @@ export type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model
 export function getModel(ctx: PluginContext): model.Model<RingContent> {
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta)
-      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta)
+      const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
+      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, angleDelta)
+      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, angleDelta)
       const points = [...points1, ...points2]
       const lines1 = Array.from(ctx.iteratePolygonLines(points1))
       const lines2 = Array.from(ctx.iteratePolygonLines(points2))
@@ -42,6 +43,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     type: 'ring',
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.angleDeltaModel,
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
@@ -91,6 +93,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
         innerRadius: <ctx.NumberEditor value={content.innerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.innerRadius = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getAngleDeltaContentPropertyPanel(content, update),
       }
     },
     getRefIds: ctx.getStrokeAndFillRefIds,

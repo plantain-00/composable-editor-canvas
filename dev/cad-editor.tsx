@@ -594,6 +594,7 @@ export const CADEditor = React.forwardRef((props: {
       applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
     }
     const zPanel: JSX.Element[] = []
+    const visiblePanel: JSX.Element[] = []
     selectedContents.forEach(target => {
       types.add(target.content.type)
       const id = target.path[0]
@@ -619,8 +620,10 @@ export const CADEditor = React.forwardRef((props: {
       if (target.content.z !== undefined) {
         zPanel.push(<NumberEditor value={target.content.z} setValue={(v) => contentsUpdater(c => { c.z = v })} />)
       }
+      visiblePanel.push(<BooleanEditor value={target.content.visible !== false} setValue={(v) => contentsUpdater(c => { c.visible = v ? undefined : false })} />)
     })
     propertyPanels.z = zPanel
+    propertyPanels.visible = visiblePanel
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
         {Array.from(types).join(',')}

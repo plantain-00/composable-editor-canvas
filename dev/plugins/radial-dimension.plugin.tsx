@@ -119,16 +119,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
-    getRefIds(content) {
-      const refIds: number[] = []
-      if (typeof content.refId === 'number') {
-        refIds.push(content.refId)
-      }
-      if (typeof content.strokeStyleId === 'number') {
-        refIds.push(content.strokeStyleId)
-      }
-      return refIds.length > 0 ? refIds : undefined
-    },
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.refId === 'number' ? [content.refId] : [])],
     updateRefId(content, update) {
       const newRefId = update(content.refId)
       if (newRefId !== undefined) {

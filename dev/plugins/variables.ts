@@ -790,7 +790,7 @@ function getModel(ctx) {
   }
   function getArcGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.arcToPolyline(content, ctx.angleDelta);
+      const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta);
       const geometries = {
         lines: Array.from(ctx.iteratePolylineLines(points)),
         points,
@@ -975,6 +975,7 @@ function getModel(ctx) {
       type: "arc",
       ...ctx.strokeModel,
       ...ctx.fillModel,
+      ...ctx.angleDeltaModel,
       move(content, offset) {
         content.x += offset.x;
         content.y += offset.y;
@@ -1186,7 +1187,8 @@ function getModel(ctx) {
             })
           }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-          ...ctx.getFillContentPropertyPanel(content, update, contents)
+          ...ctx.getFillContentPropertyPanel(content, update, contents),
+          ...ctx.getAngleDeltaContentPropertyPanel(content, update)
         };
       },
       getRefIds: ctx.getStrokeAndFillRefIds,
@@ -2475,7 +2477,7 @@ export {
 function getModel(ctx) {
   function getEllipseGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseToPolygon(content, ctx.angleDelta);
+      const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
       const polylinePoints = ctx.polygonToPolyline(points);
       return {
@@ -2494,7 +2496,7 @@ function getModel(ctx) {
   }
   function getEllipseArcGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseArcToPolyline(content, ctx.angleDelta);
+      const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolylineLines(points));
       return {
         lines,
@@ -2515,6 +2517,7 @@ function getModel(ctx) {
     type: "ellipse",
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.angleDeltaModel,
     move(content, offset) {
       content.cx += offset.x;
       content.cy += offset.y;
@@ -2701,7 +2704,8 @@ function getModel(ctx) {
           }) : void 0
         ],
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update, contents)
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getAngleDeltaContentPropertyPanel(content, update)
       };
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
@@ -2713,6 +2717,7 @@ function getModel(ctx) {
       type: "ellipse arc",
       ...ctx.strokeModel,
       ...ctx.fillModel,
+      ...ctx.angleDeltaModel,
       move: ellipseModel.move,
       rotate: ellipseModel.rotate,
       mirror: ellipseModel.mirror,
@@ -2916,7 +2921,8 @@ function getModel(ctx) {
             })
           }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-          ...ctx.getFillContentPropertyPanel(content, update, contents)
+          ...ctx.getFillContentPropertyPanel(content, update, contents),
+          ...ctx.getAngleDeltaContentPropertyPanel(content, update)
         };
       },
       getRefIds: ctx.getStrokeAndFillRefIds,
@@ -3139,6 +3145,2156 @@ export {
   getModel,
   isEllipseArcContent,
   isEllipseContent
+};
+`,
+`var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// node_modules/tslib/tslib.js
+var require_tslib = __commonJS({
+  "node_modules/tslib/tslib.js"(exports, module) {
+    var __extends2;
+    var __assign2;
+    var __rest2;
+    var __decorate2;
+    var __param2;
+    var __metadata2;
+    var __awaiter2;
+    var __generator2;
+    var __exportStar2;
+    var __values2;
+    var __read2;
+    var __spread2;
+    var __spreadArrays2;
+    var __spreadArray2;
+    var __await2;
+    var __asyncGenerator2;
+    var __asyncDelegator2;
+    var __asyncValues2;
+    var __makeTemplateObject2;
+    var __importStar2;
+    var __importDefault2;
+    var __classPrivateFieldGet2;
+    var __classPrivateFieldSet2;
+    var __classPrivateFieldIn2;
+    var __createBinding2;
+    (function(factory) {
+      var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+      if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function(exports2) {
+          factory(createExporter(root, createExporter(exports2)));
+        });
+      } else if (typeof module === "object" && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+      } else {
+        factory(createExporter(root));
+      }
+      function createExporter(exports2, previous) {
+        if (exports2 !== root) {
+          if (typeof Object.create === "function") {
+            Object.defineProperty(exports2, "__esModule", { value: true });
+          } else {
+            exports2.__esModule = true;
+          }
+        }
+        return function(id, v) {
+          return exports2[id] = previous ? previous(id, v) : v;
+        };
+      }
+    })(function(exporter) {
+      var extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d, b) {
+        d.__proto__ = b;
+      } || function(d, b) {
+        for (var p in b)
+          if (Object.prototype.hasOwnProperty.call(b, p))
+            d[p] = b[p];
+      };
+      __extends2 = function(d, b) {
+        if (typeof b !== "function" && b !== null)
+          throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() {
+          this.constructor = d;
+        }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+      };
+      __assign2 = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+              t[p] = s[p];
+        }
+        return t;
+      };
+      __rest2 = function(s, e) {
+        var t = {};
+        for (var p in s)
+          if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
+          for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+              t[p[i]] = s[p[i]];
+          }
+        return t;
+      };
+      __decorate2 = function(decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+          r = Reflect.decorate(decorators, target, key, desc);
+        else
+          for (var i = decorators.length - 1; i >= 0; i--)
+            if (d = decorators[i])
+              r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+      };
+      __param2 = function(paramIndex, decorator) {
+        return function(target, key) {
+          decorator(target, key, paramIndex);
+        };
+      };
+      __metadata2 = function(metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
+          return Reflect.metadata(metadataKey, metadataValue);
+      };
+      __awaiter2 = function(thisArg, _arguments, P, generator) {
+        function adopt(value) {
+          return value instanceof P ? value : new P(function(resolve) {
+            resolve(value);
+          });
+        }
+        return new (P || (P = Promise))(function(resolve, reject) {
+          function fulfilled(value) {
+            try {
+              step(generator.next(value));
+            } catch (e) {
+              reject(e);
+            }
+          }
+          function rejected(value) {
+            try {
+              step(generator["throw"](value));
+            } catch (e) {
+              reject(e);
+            }
+          }
+          function step(result) {
+            result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+          }
+          step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+      };
+      __generator2 = function(thisArg, body) {
+        var _ = { label: 0, sent: function() {
+          if (t[0] & 1)
+            throw t[1];
+          return t[1];
+        }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+          return this;
+        }), g;
+        function verb(n) {
+          return function(v) {
+            return step([n, v]);
+          };
+        }
+        function step(op) {
+          if (f)
+            throw new TypeError("Generator is already executing.");
+          while (_)
+            try {
+              if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done)
+                return t;
+              if (y = 0, t)
+                op = [op[0] & 2, t.value];
+              switch (op[0]) {
+                case 0:
+                case 1:
+                  t = op;
+                  break;
+                case 4:
+                  _.label++;
+                  return { value: op[1], done: false };
+                case 5:
+                  _.label++;
+                  y = op[1];
+                  op = [0];
+                  continue;
+                case 7:
+                  op = _.ops.pop();
+                  _.trys.pop();
+                  continue;
+                default:
+                  if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+                    _ = 0;
+                    continue;
+                  }
+                  if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+                    _.label = op[1];
+                    break;
+                  }
+                  if (op[0] === 6 && _.label < t[1]) {
+                    _.label = t[1];
+                    t = op;
+                    break;
+                  }
+                  if (t && _.label < t[2]) {
+                    _.label = t[2];
+                    _.ops.push(op);
+                    break;
+                  }
+                  if (t[2])
+                    _.ops.pop();
+                  _.trys.pop();
+                  continue;
+              }
+              op = body.call(thisArg, _);
+            } catch (e) {
+              op = [6, e];
+              y = 0;
+            } finally {
+              f = t = 0;
+            }
+          if (op[0] & 5)
+            throw op[1];
+          return { value: op[0] ? op[1] : void 0, done: true };
+        }
+      };
+      __exportStar2 = function(m, o) {
+        for (var p in m)
+          if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p))
+            __createBinding2(o, m, p);
+      };
+      __createBinding2 = Object.create ? function(o, m, k, k2) {
+        if (k2 === void 0)
+          k2 = k;
+        var desc = Object.getOwnPropertyDescriptor(m, k);
+        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+          desc = { enumerable: true, get: function() {
+            return m[k];
+          } };
+        }
+        Object.defineProperty(o, k2, desc);
+      } : function(o, m, k, k2) {
+        if (k2 === void 0)
+          k2 = k;
+        o[k2] = m[k];
+      };
+      __values2 = function(o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m)
+          return m.call(o);
+        if (o && typeof o.length === "number")
+          return {
+            next: function() {
+              if (o && i >= o.length)
+                o = void 0;
+              return { value: o && o[i++], done: !o };
+            }
+          };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+      };
+      __read2 = function(o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m)
+          return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+          while ((n === void 0 || n-- > 0) && !(r = i.next()).done)
+            ar.push(r.value);
+        } catch (error) {
+          e = { error };
+        } finally {
+          try {
+            if (r && !r.done && (m = i["return"]))
+              m.call(i);
+          } finally {
+            if (e)
+              throw e.error;
+          }
+        }
+        return ar;
+      };
+      __spread2 = function() {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+          ar = ar.concat(__read2(arguments[i]));
+        return ar;
+      };
+      __spreadArrays2 = function() {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++)
+          s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+          for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+        return r;
+      };
+      __spreadArray2 = function(to, from, pack) {
+        if (pack || arguments.length === 2)
+          for (var i = 0, l = from.length, ar; i < l; i++) {
+            if (ar || !(i in from)) {
+              if (!ar)
+                ar = Array.prototype.slice.call(from, 0, i);
+              ar[i] = from[i];
+            }
+          }
+        return to.concat(ar || Array.prototype.slice.call(from));
+      };
+      __await2 = function(v) {
+        return this instanceof __await2 ? (this.v = v, this) : new __await2(v);
+      };
+      __asyncGenerator2 = function(thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator)
+          throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+          return this;
+        }, i;
+        function verb(n) {
+          if (g[n])
+            i[n] = function(v) {
+              return new Promise(function(a, b) {
+                q.push([n, v, a, b]) > 1 || resume(n, v);
+              });
+            };
+        }
+        function resume(n, v) {
+          try {
+            step(g[n](v));
+          } catch (e) {
+            settle(q[0][3], e);
+          }
+        }
+        function step(r) {
+          r.value instanceof __await2 ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+        }
+        function fulfill(value) {
+          resume("next", value);
+        }
+        function reject(value) {
+          resume("throw", value);
+        }
+        function settle(f, v) {
+          if (f(v), q.shift(), q.length)
+            resume(q[0][0], q[0][1]);
+        }
+      };
+      __asyncDelegator2 = function(o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw", function(e) {
+          throw e;
+        }), verb("return"), i[Symbol.iterator] = function() {
+          return this;
+        }, i;
+        function verb(n, f) {
+          i[n] = o[n] ? function(v) {
+            return (p = !p) ? { value: __await2(o[n](v)), done: n === "return" } : f ? f(v) : v;
+          } : f;
+        }
+      };
+      __asyncValues2 = function(o) {
+        if (!Symbol.asyncIterator)
+          throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator], i;
+        return m ? m.call(o) : (o = typeof __values2 === "function" ? __values2(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+          return this;
+        }, i);
+        function verb(n) {
+          i[n] = o[n] && function(v) {
+            return new Promise(function(resolve, reject) {
+              v = o[n](v), settle(resolve, reject, v.done, v.value);
+            });
+          };
+        }
+        function settle(resolve, reject, d, v) {
+          Promise.resolve(v).then(function(v2) {
+            resolve({ value: v2, done: d });
+          }, reject);
+        }
+      };
+      __makeTemplateObject2 = function(cooked, raw) {
+        if (Object.defineProperty) {
+          Object.defineProperty(cooked, "raw", { value: raw });
+        } else {
+          cooked.raw = raw;
+        }
+        return cooked;
+      };
+      var __setModuleDefault = Object.create ? function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+      } : function(o, v) {
+        o["default"] = v;
+      };
+      __importStar2 = function(mod) {
+        if (mod && mod.__esModule)
+          return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k in mod)
+            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
+              __createBinding2(result, mod, k);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+      __importDefault2 = function(mod) {
+        return mod && mod.__esModule ? mod : { "default": mod };
+      };
+      __classPrivateFieldGet2 = function(receiver, state, kind, f) {
+        if (kind === "a" && !f)
+          throw new TypeError("Private accessor was defined without a getter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+          throw new TypeError("Cannot read private member from an object whose class did not declare it");
+        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+      };
+      __classPrivateFieldSet2 = function(receiver, state, value, kind, f) {
+        if (kind === "m")
+          throw new TypeError("Private method is not writable");
+        if (kind === "a" && !f)
+          throw new TypeError("Private accessor was defined without a setter");
+        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+          throw new TypeError("Cannot write private member to an object whose class did not declare it");
+        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+      };
+      __classPrivateFieldIn2 = function(state, receiver) {
+        if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function")
+          throw new TypeError("Cannot use 'in' operator on non-object");
+        return typeof state === "function" ? receiver === state : state.has(receiver);
+      };
+      exporter("__extends", __extends2);
+      exporter("__assign", __assign2);
+      exporter("__rest", __rest2);
+      exporter("__decorate", __decorate2);
+      exporter("__param", __param2);
+      exporter("__metadata", __metadata2);
+      exporter("__awaiter", __awaiter2);
+      exporter("__generator", __generator2);
+      exporter("__exportStar", __exportStar2);
+      exporter("__createBinding", __createBinding2);
+      exporter("__values", __values2);
+      exporter("__read", __read2);
+      exporter("__spread", __spread2);
+      exporter("__spreadArrays", __spreadArrays2);
+      exporter("__spreadArray", __spreadArray2);
+      exporter("__await", __await2);
+      exporter("__asyncGenerator", __asyncGenerator2);
+      exporter("__asyncDelegator", __asyncDelegator2);
+      exporter("__asyncValues", __asyncValues2);
+      exporter("__makeTemplateObject", __makeTemplateObject2);
+      exporter("__importStar", __importStar2);
+      exporter("__importDefault", __importDefault2);
+      exporter("__classPrivateFieldGet", __classPrivateFieldGet2);
+      exporter("__classPrivateFieldSet", __classPrivateFieldSet2);
+      exporter("__classPrivateFieldIn", __classPrivateFieldIn2);
+    });
+  }
+});
+
+// dev/plugins/coordinate-axis.plugin.tsx
+function isCoordinateAxisContent(content) {
+  return content.type === "coordinate axis";
+}
+
+// node_modules/tslib/modules/index.js
+var import_tslib = __toESM(require_tslib(), 1);
+var {
+  __extends,
+  __assign,
+  __rest,
+  __decorate,
+  __param,
+  __metadata,
+  __awaiter,
+  __generator,
+  __exportStar,
+  __createBinding,
+  __values,
+  __read,
+  __spread,
+  __spreadArrays,
+  __spreadArray,
+  __await,
+  __asyncGenerator,
+  __asyncDelegator,
+  __asyncValues,
+  __makeTemplateObject,
+  __importStar,
+  __importDefault,
+  __classPrivateFieldGet,
+  __classPrivateFieldSet,
+  __classPrivateFieldIn
+} = import_tslib.default;
+
+// node_modules/expression-engine/browser/tokenizer.js
+function tokenizeExpression(expression) {
+  return new Tokenizer(expression).toTokens();
+}
+var Tokenizer = function() {
+  function Tokenizer2(source, locale) {
+    this.source = source;
+    this.index = 0;
+    this.previousToken = {
+      type: "EOFToken",
+      range: [0, 0]
+    };
+    this.locale = getLocale(locale);
+  }
+  Tokenizer2.prototype.toTokens = function() {
+    var tokens = [];
+    var token = this.nextToken();
+    while (token.type !== "EOFToken") {
+      tokens.push(token);
+      token = this.nextToken();
+    }
+    return tokens;
+  };
+  Tokenizer2.prototype.nextToken = function() {
+    if (this.index >= this.source.length) {
+      this.previousToken = {
+        type: "EOFToken",
+        range: [this.source.length, this.source.length]
+      };
+    } else {
+      var c = this.source[this.index];
+      if (c === " ") {
+        this.index++;
+        this.previousToken = this.nextToken();
+      } else if (c === '"' || c === "'") {
+        this.previousToken = this.nextStringToken(c);
+      } else if (c === ".") {
+        if (this.source[this.index + 1] === "." && this.source[this.index + 2] === ".") {
+          this.previousToken = this.nextPunctuator(c);
+        } else if (this.previousToken.type === "EOFToken" || this.previousToken.type === "PunctuatorToken" && numberPunctuators.includes(this.previousToken.value)) {
+          this.previousToken = this.nextNumericToken(true);
+        } else {
+          this.previousToken = this.nextPunctuator(c);
+        }
+      } else if (c >= "0" && c <= "9") {
+        this.previousToken = this.nextNumericToken(false);
+      } else if (punctuators.includes(c)) {
+        this.previousToken = this.nextPunctuator(c);
+      } else {
+        this.previousToken = this.nextIdentifierToken();
+      }
+    }
+    return this.previousToken;
+  };
+  Tokenizer2.prototype.nextPunctuator = function(c) {
+    var startIndex = this.index;
+    if (c === ">" || c === "<" || c === "=" || c === "!") {
+      if (this.source[this.index + 1] === "=") {
+        if ((c === "=" || c === "!") && this.source[this.index + 2] === "=") {
+          c += "==";
+          this.index += 2;
+        } else {
+          c += "=";
+          this.index++;
+        }
+      } else if (c === ">" && this.source[this.index + 1] === ">") {
+        if (this.source[this.index + 2] === ">") {
+          c += ">>";
+          this.index += 2;
+        } else {
+          c += ">";
+          this.index++;
+        }
+      } else if (c === "<" && this.source[this.index + 1] === "<") {
+        c += "<";
+        this.index++;
+      } else if (c === "=" && this.source[this.index + 1] === ">") {
+        c += ">";
+        this.index++;
+      }
+    } else if ((c === "&" || c === "|") && this.source[this.index + 1] === c) {
+      c += c;
+      this.index++;
+    } else if (c === "*" && this.source[this.index + 1] === "*") {
+      c += "*";
+      this.index++;
+    } else if (c === "?" && (this.source[this.index + 1] === "." || this.source[this.index + 1] === "?")) {
+      c += this.source[this.index + 1];
+      this.index++;
+    } else if (c === "." && this.source[this.index + 1] === "." && this.source[this.index + 1] === ".") {
+      c += "..";
+      this.index += 2;
+    } else if (c === "|" && this.source[this.index + 1] === ">") {
+      c += ">";
+      this.index++;
+    }
+    this.index++;
+    return {
+      type: "PunctuatorToken",
+      value: c,
+      range: [startIndex, this.index]
+    };
+  };
+  Tokenizer2.prototype.nextIdentifierToken = function() {
+    var index = this.findEndOfIdentifier();
+    if (index === void 0) {
+      var range_1 = [this.index, this.source.length];
+      var token_1 = this.getExplicitIdentifierToken(this.source.substring(this.index), range_1);
+      this.index = this.source.length;
+      return token_1;
+    }
+    var range = [this.index, index];
+    var token = this.getExplicitIdentifierToken(this.source.substring(this.index, index), range);
+    this.index = index;
+    return token;
+  };
+  Tokenizer2.prototype.getExplicitIdentifierToken = function(tokenName, range) {
+    if (tokenName === "true" || tokenName === "false") {
+      return {
+        type: "BooleanLiteral",
+        value: tokenName === "true",
+        range
+      };
+    }
+    if (tokenName === "this") {
+      return {
+        type: "KeywordToken",
+        name: tokenName,
+        range
+      };
+    }
+    if (tokenName === "null") {
+      return {
+        type: "NullLiteral",
+        range
+      };
+    }
+    if (tokenName === "and") {
+      return {
+        type: "PunctuatorToken",
+        value: "&&",
+        range
+      };
+    }
+    if (tokenName === "or") {
+      return {
+        type: "PunctuatorToken",
+        value: "||",
+        range
+      };
+    }
+    if (tokenName === "not") {
+      return {
+        type: "PunctuatorToken",
+        value: "!",
+        range
+      };
+    }
+    if (tokenName === "await") {
+      return {
+        type: "PunctuatorToken",
+        value: tokenName,
+        range
+      };
+    }
+    return {
+      type: "Identifier",
+      name: tokenName,
+      range
+    };
+  };
+  Tokenizer2.prototype.findEndOfIdentifier = function() {
+    for (var i = this.index; i < this.source.length; i++) {
+      var c = this.source[i];
+      if (c === " " || c === '"' || c === "'" || c === "." || punctuators.includes(c)) {
+        return i;
+      }
+    }
+    return void 0;
+  };
+  Tokenizer2.prototype.nextNumericToken = function(hasDecimalPoint) {
+    var startIndex = this.index;
+    var letterRange = function(a) {
+      return a >= "0" && a <= "9";
+    };
+    var multiplier;
+    var powerStartIndex = this.index;
+    for (var i = this.index + 1; i < this.source.length; i++) {
+      var c = this.source[i];
+      if (c === ".") {
+        if (hasDecimalPoint) {
+          throw new Error(replaceLocaleParameters(this.locale.multipleDecimalPoint, i));
+        }
+        hasDecimalPoint = true;
+      } else if (letterRange(c)) {
+        continue;
+      } else if (i === 1 && this.source[0] === "0" && (c === "x" || c === "X" || c === "b" || c === "B" || c === "o" || c === "O")) {
+        if (c === "x" || c === "X") {
+          letterRange = function(a) {
+            return a >= "0" && a <= "9" || a >= "a" && a <= "f";
+          };
+        } else if (c === "b" || c === "B") {
+          letterRange = function(a) {
+            return a >= "0" && a <= "1";
+          };
+        } else {
+          letterRange = function(a) {
+            return a >= "0" && a <= "7";
+          };
+        }
+        continue;
+      } else if (multiplier === void 0 && (c === "e" || c === "E")) {
+        multiplier = +this.source.substring(this.index, i);
+        powerStartIndex = i + 1;
+        continue;
+      } else if (multiplier !== void 0 && c === "-") {
+        continue;
+      } else if (c === "_") {
+        continue;
+      } else {
+        var value_1 = multiplier === void 0 ? this.getNumber(this.index, i) : multiplier * Math.pow(10, this.getNumber(powerStartIndex, i));
+        this.index = i;
+        return {
+          type: "NumericLiteral",
+          value: value_1,
+          range: [startIndex, this.index]
+        };
+      }
+    }
+    var value = multiplier === void 0 ? this.getNumber(this.index) : multiplier * Math.pow(10, this.getNumber(powerStartIndex));
+    this.index = this.source.length;
+    return {
+      type: "NumericLiteral",
+      value,
+      range: [startIndex, this.index]
+    };
+  };
+  Tokenizer2.prototype.getNumber = function(startIndex, endIndex) {
+    return +Array.from(this.source.substring(startIndex, endIndex)).filter(function(a) {
+      return a !== "_";
+    }).join("");
+  };
+  Tokenizer2.prototype.nextStringToken = function(c) {
+    var startIndex = this.index;
+    this.index++;
+    var index = this.findEndOfString(c);
+    if (index === void 0) {
+      throw new Error(replaceLocaleParameters(this.locale.expect, c, startIndex));
+    }
+    var token = this.source.substring(this.index, index);
+    this.index = index + 1;
+    return {
+      type: "StringLiteral",
+      value: token,
+      range: [startIndex, this.index]
+    };
+  };
+  Tokenizer2.prototype.findEndOfString = function(c) {
+    for (var i = this.index; i < this.source.length; i++) {
+      if (this.source[i] === c) {
+        return i;
+      }
+    }
+    return void 0;
+  };
+  return Tokenizer2;
+}();
+var numberPunctuators = [
+  "*",
+  "/",
+  "%",
+  "+",
+  "-",
+  ">",
+  "<",
+  "=",
+  "!",
+  "&",
+  "^",
+  "|"
+];
+var punctuators = __spreadArray(__spreadArray([
+  "(",
+  ")",
+  "[",
+  "]",
+  "{",
+  "}"
+], __read(numberPunctuators)), [
+  "?",
+  ":",
+  ",",
+  "~"
+]);
+
+// node_modules/expression-engine/browser/parser.js
+function parseExpression(tokens, locale) {
+  return new Parser(locale).parseExpression(tokens, getTokensRange(tokens));
+}
+var Parser = function() {
+  function Parser2(locale) {
+    this.locale = getLocale(locale);
+  }
+  Parser2.prototype.parseExpression = function(tokens, range) {
+    var e_1, _a;
+    if (tokens.length === 0) {
+      throw new Error(this.locale.emptyExpression);
+    }
+    if (tokens.length === 1) {
+      return this.parseLiteral(tokens[0]);
+    }
+    if (tokens.length === 2) {
+      return this.parseUnaryExpression(tokens, range);
+    }
+    var firstToken = tokens[0];
+    var lastToken = tokens[tokens.length - 1];
+    if (firstToken.type === "PunctuatorToken" && firstToken.value === "{" && lastToken.type === "PunctuatorToken" && lastToken.value === "}") {
+      return this.parseObjectLiteral(tokens, range);
+    }
+    if (tokens.length === 3) {
+      var _b = __read(tokens, 3), left = _b[0], operator_1 = _b[1], right = _b[2];
+      if (operator_1.type === "PunctuatorToken") {
+        if (callOperators.includes(operator_1.value)) {
+          return this.parseMemberExpression(left, operator_1, right, range);
+        }
+        if (operator_1.value === "=>") {
+          return {
+            type: "ArrowFunctionExpression",
+            params: left.type === "FunctionParamsExpression" ? left.params : [left],
+            body: right,
+            range
+          };
+        }
+        if (priorizedBinaryOperators.some(function(p) {
+          return p.some(function(c) {
+            return c === operator_1.value;
+          });
+        })) {
+          return this.parseBinaryExpression(left, operator_1, right, range);
+        }
+      } else if (right.type === "PunctuatorToken" && postfixUnaryOperators.includes(right.value)) {
+        var expression = this.parseExpression([operator_1, right], [operator_1.range[0], range[1]]);
+        return this.parseExpression([left, expression], range);
+      }
+    }
+    if (tokens.some(function(t) {
+      return t.type === "PunctuatorToken" && t.value === "(";
+    })) {
+      var newTokens = this.parseGroup(tokens);
+      if (newTokens.length !== tokens.length) {
+        return this.parseExpression(newTokens, getTokensRange(tokens));
+      }
+    }
+    if (tokens.some(function(t) {
+      return t.type === "PunctuatorToken" && t.value === "[";
+    })) {
+      var newTokens = this.parseArrayLiteral(tokens);
+      if (newTokens.length !== tokens.length) {
+        return this.parseExpression(newTokens, getTokensRange(tokens));
+      }
+    }
+    if (tokens.some(function(t) {
+      return t.type === "PunctuatorToken" && (callOperators.includes(t.value) || t.value === "(" || t.value === "[");
+    })) {
+      return this.parseMemberOrCallExpression(tokens);
+    }
+    var postfixUnaryOperatorIndex = this.getPostfixUnaryOperatorIndex(tokens);
+    if (postfixUnaryOperatorIndex >= 0) {
+      var token1 = tokens[postfixUnaryOperatorIndex - 1];
+      var token2 = tokens[postfixUnaryOperatorIndex];
+      var postfixUnaryOperatorRange = [token1.range[0], token2.range[1]];
+      var newTokens = this.parseExpression([token1, token2], postfixUnaryOperatorRange);
+      tokens.splice(postfixUnaryOperatorIndex - 1, 2, newTokens);
+      return this.parseExpression(tokens, range);
+    }
+    var prefixUnaryOperatorIndex = this.getPrefixUnaryOperatorIndex(tokens);
+    if (prefixUnaryOperatorIndex >= 0) {
+      var token1 = tokens[prefixUnaryOperatorIndex];
+      var token2 = tokens[prefixUnaryOperatorIndex + 1];
+      var prefixUnaryOperatorRange = [token1.range[0], token2.range[1]];
+      var newTokens = this.parseExpression([token1, token2], prefixUnaryOperatorRange);
+      tokens.splice(prefixUnaryOperatorIndex, 2, newTokens);
+      return this.parseExpression(tokens, range);
+    }
+    var _loop_1 = function(operators2) {
+      if (tokens.some(function(t) {
+        return t.type === "PunctuatorToken" && operators2.includes(t.value);
+      })) {
+        return { value: this_1.parsePreviousExpression(tokens, operators2, range) };
+      }
+    };
+    var this_1 = this;
+    try {
+      for (var priorizedBinaryOperators_1 = __values(priorizedBinaryOperators), priorizedBinaryOperators_1_1 = priorizedBinaryOperators_1.next(); !priorizedBinaryOperators_1_1.done; priorizedBinaryOperators_1_1 = priorizedBinaryOperators_1.next()) {
+        var operators = priorizedBinaryOperators_1_1.value;
+        var state_1 = _loop_1(operators);
+        if (typeof state_1 === "object")
+          return state_1.value;
+      }
+    } catch (e_1_1) {
+      e_1 = { error: e_1_1 };
+    } finally {
+      try {
+        if (priorizedBinaryOperators_1_1 && !priorizedBinaryOperators_1_1.done && (_a = priorizedBinaryOperators_1.return))
+          _a.call(priorizedBinaryOperators_1);
+      } finally {
+        if (e_1)
+          throw e_1.error;
+      }
+    }
+    if (tokens.length === 5) {
+      return this.parseConditionalExpression(tokens, range);
+    }
+    var functionArrowIndex = getFunctionArrowIndex(0, tokens);
+    if (functionArrowIndex >= 0) {
+      var functionParamsExpression = this.parseFunctionParameters(tokens.slice(0, functionArrowIndex), [tokens[0].range[0], tokens[functionArrowIndex - 1].range[1]]);
+      var bodyExpression = this.parseExpression(tokens.slice(functionArrowIndex + 1), [tokens[functionArrowIndex + 1].range[0], tokens[tokens.length - 1].range[1]]);
+      return {
+        type: "ArrowFunctionExpression",
+        params: functionParamsExpression.params,
+        body: bodyExpression,
+        range
+      };
+    }
+    throw new Error(replaceLocaleParameters(this.locale.unexpectToken, range[0], range[1]));
+  };
+  Parser2.prototype.parseObjectLiteral = function(tokens, range) {
+    var propertyExpressions = [];
+    var keyTokens = [];
+    var valueTokens = [];
+    var keyPart = true;
+    var saveTokens = function() {
+      var token2 = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        token2[_i] = arguments[_i];
+      }
+      if (keyPart) {
+        keyTokens.push.apply(keyTokens, __spreadArray([], __read(token2)));
+      } else {
+        valueTokens.push.apply(valueTokens, __spreadArray([], __read(token2)));
+      }
+    };
+    for (var j = 1; j < tokens.length - 1; j++) {
+      var token = tokens[j];
+      if (token.type === "PunctuatorToken") {
+        if (groupStarts.includes(token.value)) {
+          var groupEnd = this.findGroupEnd(tokens, j, token.value);
+          saveTokens.apply(void 0, __spreadArray([], __read(tokens.slice(j, groupEnd + 1))));
+          j = groupEnd;
+        } else if (token.value === ",") {
+          propertyExpressions.push(this.parseProperty(keyTokens, valueTokens));
+          keyTokens = [];
+          valueTokens = [];
+          keyPart = true;
+        } else if (token.value === ":") {
+          keyPart = false;
+        } else {
+          saveTokens(token);
+        }
+      } else {
+        saveTokens(token);
+      }
+    }
+    if (keyTokens.length > 0) {
+      propertyExpressions.push(this.parseProperty(keyTokens, valueTokens));
+    }
+    return {
+      type: "ObjectExpression",
+      properties: propertyExpressions,
+      range
+    };
+  };
+  Parser2.prototype.parseProperty = function(keyTokens, valueTokens) {
+    if (keyTokens.length === 2 && valueTokens.length === 0) {
+      var _a = __read(keyTokens, 2), operator = _a[0], token = _a[1];
+      if (operator.type === "PunctuatorToken" && operator.value === "..." && !isToken(token)) {
+        return {
+          type: "SpreadElement",
+          argument: token,
+          range: [operator.range[0], token.range[1]]
+        };
+      }
+    }
+    var key = this.parseExpression(keyTokens, getTokensRange(keyTokens));
+    if (key.type !== "Identifier" && key.type !== "StringLiteral" && key.type !== "NumericLiteral") {
+      throw new Error(replaceLocaleParameters(this.locale.invalidPropertyName, key.range[0]));
+    }
+    if (valueTokens.length === 0) {
+      return {
+        type: "Property",
+        key,
+        shorthand: true,
+        value: key,
+        range: key.range
+      };
+    }
+    var value = this.parseExpression(valueTokens, getTokensRange(valueTokens));
+    return {
+      type: "Property",
+      key,
+      shorthand: false,
+      value,
+      range: [key.range[0], value.range[1]]
+    };
+  };
+  Parser2.prototype.parseMemberExpression = function(left, operator, right, range) {
+    var expression = {
+      type: "MemberExpression",
+      object: this.parseTokenOrExpression(left),
+      property: this.parseTokenOrExpression(right),
+      range
+    };
+    if (operator.value === "?.") {
+      expression.optional = true;
+    }
+    return expression;
+  };
+  Parser2.prototype.parseGroup = function(tokens) {
+    var newTokens = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken" && token.value === "(") {
+        var index = this.findGroupEnd(tokens, i, token.value);
+        var isFunctionCall = this.hasPreviousExpression(tokens, i);
+        if (isFunctionCall) {
+          newTokens.push(token);
+          continue;
+        }
+        var newToken = tokens.slice(i + 1, index);
+        i = index;
+        if (getFunctionArrowIndex(index, tokens) !== -1) {
+          newTokens.push(this.parseFunctionParameters(newToken, [token.range[0], tokens[index].range[1]]));
+          continue;
+        }
+        newTokens.push(this.parseExpression(newToken, getTokensRange(newToken)));
+      } else {
+        newTokens.push(token);
+      }
+    }
+    return newTokens;
+  };
+  Parser2.prototype.parseFunctionParameters = function(tokens, range) {
+    var expression = {
+      type: "FunctionParamsExpression",
+      params: [],
+      range
+    };
+    var pattern;
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (pattern === void 0) {
+        if (token.type !== "Identifier") {
+          if (token.type === "PunctuatorToken" && token.value === "..." && i < tokens.length - 1) {
+            var nextToken = tokens[i + 1];
+            if (nextToken.type === "Identifier") {
+              i++;
+              pattern = {
+                type: "RestElement",
+                argument: nextToken,
+                range: [token.range[0], nextToken.range[1]]
+              };
+              continue;
+            }
+          }
+          throw new Error(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]));
+        }
+        pattern = token;
+        continue;
+      }
+      if (token.type === "PunctuatorToken") {
+        if (token.value === ",") {
+          expression.params.push(pattern);
+          pattern = void 0;
+          continue;
+        }
+        if (token.value === "=" && pattern.type === "Identifier" && i < tokens.length - 1) {
+          var nextToken = tokens[i + 1];
+          if (!isToken(nextToken)) {
+            i++;
+            pattern = {
+              type: "AssignmentPattern",
+              left: pattern,
+              right: nextToken,
+              range: [pattern.range[0], nextToken.range[1]]
+            };
+            continue;
+          }
+        }
+      }
+      throw new Error(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]));
+    }
+    if (pattern) {
+      expression.params.push(pattern);
+    }
+    return expression;
+  };
+  Parser2.prototype.parseArrayLiteral = function(tokens) {
+    var newTokens = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken" && token.value === "[") {
+        var index = this.findGroupEnd(tokens, i, token.value);
+        var isMemberAccess = this.hasPreviousExpression(tokens, i);
+        if (isMemberAccess) {
+          newTokens.push(token);
+        } else {
+          var elementExpressions = this.parseItems(tokens, i, index);
+          newTokens.push({
+            type: "ArrayExpression",
+            elements: elementExpressions,
+            range: [token.range[0], tokens[index].range[1]]
+          });
+          i = index;
+        }
+      } else {
+        newTokens.push(token);
+      }
+    }
+    return newTokens;
+  };
+  Parser2.prototype.parseBinaryExpression = function(left, operator, right, range) {
+    if (operator.value === "&&" || operator.value === "||" || operator.value === "??") {
+      return {
+        type: "LogicalExpression",
+        left: this.parseTokenOrExpression(left),
+        operator: operator.value,
+        right: this.parseTokenOrExpression(right),
+        range
+      };
+    }
+    return {
+      type: "BinaryExpression",
+      left: this.parseTokenOrExpression(left),
+      operator: operator.value,
+      right: this.parseTokenOrExpression(right),
+      range
+    };
+  };
+  Parser2.prototype.parseLiteral = function(token) {
+    if (token.type === "KeywordToken") {
+      return {
+        type: "ThisExpression",
+        range: token.range
+      };
+    }
+    if (!isToken(token)) {
+      return token;
+    }
+    throw new Error(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]));
+  };
+  Parser2.prototype.getPrefixUnaryOperatorIndex = function(tokens) {
+    for (var i = tokens.length - 2; i >= 0; i--) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken" && prefixUnaryOperators.includes(token.value) && (i === 0 || tokens[i - 1].type === "PunctuatorToken") && tokens[i + 1].type !== "PunctuatorToken") {
+        return i;
+      }
+    }
+    return -1;
+  };
+  Parser2.prototype.getPostfixUnaryOperatorIndex = function(tokens) {
+    for (var i = 1; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken" && postfixUnaryOperators.includes(token.value) && (i === tokens.length - 1 || tokens[i + 1].type === "PunctuatorToken") && tokens[i - 1].type !== "PunctuatorToken") {
+        return i;
+      }
+    }
+    return -1;
+  };
+  Parser2.prototype.parseMemberOrCallExpression = function(tokens) {
+    var newTokens = [];
+    var expectCall = false;
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken") {
+        if (!expectCall && token.value === "?.") {
+          expectCall = true;
+          continue;
+        }
+        if (expectCall && token.value !== "[" && token.value !== "(") {
+          throw new Error(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]));
+        }
+        if (callOperators.includes(token.value)) {
+          var object = newTokens.pop();
+          newTokens.push(this.parseExpression([object, token, tokens[i + 1]], getHeadTailRange(object, tokens[i + 1])));
+          i++;
+        } else if (token.value === "[") {
+          var index = this.findGroupEnd(tokens, i, token.value);
+          var object = newTokens.pop();
+          var groupedTokens = tokens.slice(i + 1, index);
+          var property = this.parseExpression(groupedTokens, getTokensRange(groupedTokens));
+          var memberExpression = {
+            type: "MemberExpression",
+            object: this.parseTokenOrExpression(object),
+            property: this.parseTokenOrExpression(property),
+            range: [object.range[0], tokens[index].range[1]]
+          };
+          if (expectCall) {
+            memberExpression.optional = true;
+          }
+          newTokens.push(memberExpression);
+          i = index;
+        } else if (token.value === "(") {
+          var index = this.findGroupEnd(tokens, i, token.value);
+          var argumentsExpressions = this.parseItems(tokens, i, index);
+          var lastToken = newTokens.pop();
+          var callExpression = {
+            type: "CallExpression",
+            callee: this.parseExpression([lastToken], lastToken.range),
+            arguments: argumentsExpressions,
+            range: [lastToken.range[0], tokens[index].range[1]]
+          };
+          if (expectCall) {
+            callExpression.optional = true;
+          }
+          newTokens.push(callExpression);
+          i = index;
+        } else {
+          newTokens.push(token);
+        }
+      } else {
+        if (expectCall) {
+          var object = newTokens.pop();
+          newTokens.push({
+            type: "MemberExpression",
+            object: this.parseTokenOrExpression(object),
+            property: this.parseTokenOrExpression(token),
+            range: [object.range[0], tokens[i].range[1]],
+            optional: true
+          });
+          expectCall = false;
+        } else {
+          newTokens.push(token);
+        }
+      }
+    }
+    return this.parseExpression(newTokens, getTokensRange(newTokens));
+  };
+  Parser2.prototype.parsePreviousExpression = function(tokens, operators, range) {
+    var newTokens = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken" && operators.includes(token.value)) {
+        var previousToken = newTokens.pop();
+        var newRange = void 0;
+        if (i + 2 < tokens.length - 1) {
+          if (newTokens.length === 0) {
+            newRange = [range[0], tokens[i + 2].range[0] - 1];
+          } else {
+            newRange = [previousToken.range[0], tokens[i + 2].range[0] - 1];
+          }
+        } else if (i === tokens.length - 2) {
+          newRange = [previousToken.range[0], range[1]];
+        } else {
+          newRange = [previousToken.range[0], tokens[i + 1].range[1]];
+        }
+        newTokens.push(this.parseExpression([previousToken, tokens[i], tokens[i + 1]], newRange));
+        i++;
+      } else {
+        newTokens.push(token);
+      }
+    }
+    return this.parseExpression(newTokens, range);
+  };
+  Parser2.prototype.parseUnaryExpression = function(tokens, range) {
+    var _a = __read(tokens, 2), operator = _a[0], token = _a[1];
+    if (operator.type === "PunctuatorToken" && token.type === "PunctuatorToken") {
+      if (operator.value === "[" && token.value === "]") {
+        return {
+          type: "ArrayExpression",
+          elements: [],
+          range
+        };
+      } else if (operator.value === "{" && token.value === "}") {
+        return {
+          type: "ObjectExpression",
+          properties: [],
+          range
+        };
+      }
+    }
+    if (operator.type === "PunctuatorToken" && prefixUnaryOperators.includes(operator.value) && !isToken(token)) {
+      return {
+        type: "UnaryExpression",
+        operator: operator.value,
+        argument: token,
+        range
+      };
+    }
+    if (token.type === "PunctuatorToken" && postfixUnaryOperators.includes(token.value) && !isToken(operator)) {
+      return {
+        type: "UnaryExpression",
+        operator: "%",
+        argument: operator,
+        range
+      };
+    }
+    throw new Error(replaceLocaleParameters(this.locale.expectUnaryOperator, range[0]));
+  };
+  Parser2.prototype.hasPreviousExpression = function(tokens, i) {
+    if (i === 0) {
+      return false;
+    }
+    var token = tokens[i - 1];
+    if (token.type !== "PunctuatorToken" || token.value === ")" || token.value === "]") {
+      return true;
+    }
+    if (token.value === "?." && i > 1) {
+      var previousToken = tokens[i - 2];
+      return previousToken.type !== "PunctuatorToken" || previousToken.value === ")" || previousToken.value === "]";
+    }
+    return false;
+  };
+  Parser2.prototype.parseItems = function(tokens, startMarkIndex, endMarkIndex) {
+    var itemExpressions = [];
+    var itemTokens = [];
+    for (var j = startMarkIndex + 1; j < endMarkIndex; j++) {
+      var item = tokens[j];
+      if (item.type === "PunctuatorToken") {
+        if (groupStarts.includes(item.value)) {
+          var groupEnd = this.findGroupEnd(tokens, j, item.value);
+          itemTokens.push.apply(itemTokens, __spreadArray([], __read(tokens.slice(j, groupEnd + 1))));
+          j = groupEnd;
+        } else if (item.value === ",") {
+          itemExpressions.push(this.parseMayBeSpreadExpression(itemTokens, getTokensRange(itemTokens)));
+          itemTokens = [];
+        } else {
+          itemTokens.push(item);
+        }
+      } else {
+        itemTokens.push(item);
+      }
+    }
+    if (itemTokens.length > 0) {
+      itemExpressions.push(this.parseMayBeSpreadExpression(itemTokens, getTokensRange(itemTokens)));
+    }
+    return itemExpressions;
+  };
+  Parser2.prototype.parseMayBeSpreadExpression = function(itemTokens, range) {
+    if (itemTokens.length === 2) {
+      var _a = __read(itemTokens, 2), operator = _a[0], token = _a[1];
+      if (operator.type === "PunctuatorToken" && operator.value === "..." && !isToken(token)) {
+        return {
+          type: "SpreadElement",
+          argument: token,
+          range
+        };
+      }
+    }
+    return this.parseExpression(itemTokens, range);
+  };
+  Parser2.prototype.parseConditionalExpression = function(tokens, range) {
+    var _a = __read(tokens, 5), test = _a[0], operator1 = _a[1], consequent = _a[2], operator2 = _a[3], alternate = _a[4];
+    if (operator1.type === "PunctuatorToken" && operator1.value === "?" && operator2.type === "PunctuatorToken" && operator2.value === ":") {
+      test.range[1] = operator1.range[0] - 1;
+      return {
+        type: "ConditionalExpression",
+        test: this.parseTokenOrExpression(test),
+        consequent: this.parseTokenOrExpression(consequent),
+        alternate: this.parseTokenOrExpression(alternate),
+        range
+      };
+    }
+    throw new Error(replaceLocaleParameters(this.locale.expectConditionalOperator, operator1.range[0], operator2.range[0]));
+  };
+  Parser2.prototype.parseTokenOrExpression = function(token) {
+    return isToken(token) ? this.parseExpression([token], token.range) : token;
+  };
+  Parser2.prototype.findGroupEnd = function(tokens, start, startMark) {
+    var endMark = groupEnds[startMark];
+    var count = 1;
+    for (var i = start + 1; i < tokens.length; i++) {
+      var token = tokens[i];
+      if (token.type === "PunctuatorToken") {
+        if (token.value === startMark) {
+          count++;
+        } else if (token.value === endMark) {
+          count--;
+          if (count === 0) {
+            return i;
+          }
+        }
+      }
+    }
+    throw new Error(replaceLocaleParameters(this.locale.expect, endMark, start));
+  };
+  return Parser2;
+}();
+function getTokensRange(tokens) {
+  return [tokens[0].range[0], tokens[tokens.length - 1].range[1]];
+}
+function getHeadTailRange(head, tail) {
+  return [head.range[0], tail.range[1]];
+}
+function getFunctionArrowIndex(index, tokens) {
+  if (index < tokens.length - 1) {
+    var nextToken = tokens[index + 1];
+    if (nextToken.type === "PunctuatorToken" && nextToken.value === "=>") {
+      return index + 1;
+    }
+  }
+  return -1;
+}
+var priorizedBinaryOperators = [
+  ["**"],
+  ["*", "/", "%"],
+  ["+", "-"],
+  ["<<", ">>", ">>>"],
+  [">", "<", ">=", "<="],
+  ["==", "!=", "===", "!=="],
+  ["&&"],
+  ["&"],
+  ["^"],
+  ["|"],
+  ["||", "??"],
+  ["|>"]
+];
+var prefixUnaryOperators = ["+", "-", "!", "~", "await"];
+var postfixUnaryOperators = ["%"];
+var callOperators = [".", "?."];
+var groupEnds = {
+  "{": "}",
+  "[": "]",
+  "(": ")"
+};
+var groupStarts = Object.keys(groupEnds);
+function isToken(token) {
+  return token.type === "EOFToken" || token.type === "PunctuatorToken" || token.type === "KeywordToken";
+}
+
+// node_modules/expression-engine/browser/locale.js
+var defaultLocale = {
+  multipleDecimalPoint: "Multiple decimal point: {0}",
+  expect: "Expect {0}: {1}",
+  unexpectToken: "Unexpected token: {0} {1}",
+  expectUnaryOperator: "Expect unary operator: {0}",
+  expectConditionalOperator: "Expect conditional operator: {0} {1}",
+  invalidPropertyName: "Invalid property name: {0}",
+  emptyExpression: "Empty expression",
+  invalidFunctionParameter: "Invalid function parameter: {0}"
+};
+function getLocale(locale) {
+  return locale || defaultLocale;
+}
+function replaceLocaleParameters(locale) {
+  var parameters = [];
+  for (var _i = 1; _i < arguments.length; _i++) {
+    parameters[_i - 1] = arguments[_i];
+  }
+  for (var i = 0; i < parameters.length; i++) {
+    locale = locale.replace("{" + i + "}", parameters[i].toString());
+  }
+  return locale;
+}
+
+// node_modules/expression-engine/browser/evaluator.js
+function evaluateExpression(expression, context, locale, customData) {
+  var evaluator = isAsync(expression) ? AsyncEvaluator : Evaluator;
+  var isCustomData = Array.isArray(customData) ? function(value) {
+    return customData.some(function(c) {
+      return value instanceof c;
+    });
+  } : customData;
+  return new evaluator(locale, isCustomData).evalutate(expression, context, true);
+}
+var Evaluator = function() {
+  function Evaluator2(locale, isCustomData) {
+    this.isCustomData = isCustomData;
+    this.locale = getLocale(locale);
+  }
+  Evaluator2.prototype.evalutate = function(expression, context, isFirstIdentifier) {
+    return evalutate(expression, context, isFirstIdentifier, this);
+  };
+  Evaluator2.prototype.evaluateBinaryExpression = function(expression, context) {
+    var left = this.evalutate(expression.left, context, true);
+    var right = this.evalutate(expression.right, context, true);
+    return evaluateBinaryExpression(expression, left, right, this.locale, this.isCustomData);
+  };
+  Evaluator2.prototype.evaluateLogicalExpression = function(expression, context) {
+    var left = this.evalutate(expression.left, context, true);
+    if (expression.operator === "&&") {
+      return left && this.evalutate(expression.right, context, true);
+    }
+    if (expression.operator === "||") {
+      return left || this.evalutate(expression.right, context, true);
+    }
+    if (expression.operator === "??") {
+      return left !== null && left !== void 0 ? left : this.evalutate(expression.right, context, true);
+    }
+    throw new Error(this.locale.unexpectToken);
+  };
+  Evaluator2.prototype.evaluateUnaryExpression = function(expression, context) {
+    var value = this.evalutate(expression.argument, context, true);
+    return evaluateUnaryExpression(expression, value, this.locale);
+  };
+  return Evaluator2;
+}();
+var AsyncEvaluator = function() {
+  function AsyncEvaluator2(locale, isCustomData) {
+    this.isCustomData = isCustomData;
+    this.locale = getLocale(locale);
+  }
+  AsyncEvaluator2.prototype.evalutate = function(expression, context, isFirstIdentifier) {
+    return evalutate(expression, context, isFirstIdentifier, this);
+  };
+  AsyncEvaluator2.prototype.evaluateBinaryExpression = function(expression, context) {
+    return __awaiter(this, void 0, void 0, function() {
+      var left, right;
+      return __generator(this, function(_a) {
+        switch (_a.label) {
+          case 0:
+            return [4, this.evalutate(expression.left, context, true)];
+          case 1:
+            left = _a.sent();
+            return [4, this.evalutate(expression.right, context, true)];
+          case 2:
+            right = _a.sent();
+            return [2, evaluateBinaryExpression(expression, left, right, this.locale, this.isCustomData)];
+        }
+      });
+    });
+  };
+  AsyncEvaluator2.prototype.evaluateLogicalExpression = function(expression, context) {
+    var left = this.evalutate(expression.left, context, true);
+    if (expression.operator === "&&") {
+      return left && this.evalutate(expression.right, context, true);
+    }
+    if (expression.operator === "||") {
+      return left || this.evalutate(expression.right, context, true);
+    }
+    if (expression.operator === "??") {
+      return left !== null && left !== void 0 ? left : this.evalutate(expression.right, context, true);
+    }
+    throw new Error(this.locale.unexpectToken);
+  };
+  AsyncEvaluator2.prototype.evaluateUnaryExpression = function(expression, context) {
+    return __awaiter(this, void 0, void 0, function() {
+      var value;
+      return __generator(this, function(_a) {
+        switch (_a.label) {
+          case 0:
+            return [4, this.evalutate(expression.argument, context, true)];
+          case 1:
+            value = _a.sent();
+            return [2, evaluateUnaryExpression(expression, value, this.locale)];
+        }
+      });
+    });
+  };
+  return AsyncEvaluator2;
+}();
+function evalutate(expression, context, isFirstIdentifier, protocol) {
+  var e_1, _a, e_2, _b, e_3, _c;
+  if (expression.type === "BinaryExpression") {
+    return protocol.evaluateBinaryExpression(expression, context);
+  }
+  if (expression.type === "MemberExpression") {
+    var object = protocol.evalutate(expression.object, context, true);
+    var property = protocol.evalutate(expression.property, context, false);
+    if (expression.optional && !object) {
+      return void 0;
+    }
+    if (!["length", "name", "toString", "valueOf", "toLocaleString"].includes(property) && (property in Object.prototype || property in Function.prototype)) {
+      throw new Error('No access to property "' + property + '"');
+    }
+    var value = object[property];
+    return typeof value === "function" ? value.bind(object) : value;
+  }
+  if (expression.type === "ConditionalExpression") {
+    var test = protocol.evalutate(expression.test, context, true);
+    if (test) {
+      return protocol.evalutate(expression.consequent, context, true);
+    }
+    return protocol.evalutate(expression.alternate, context, true);
+  }
+  if (expression.type === "CallExpression") {
+    var callee = protocol.evalutate(expression.callee, context, true);
+    var args = [];
+    try {
+      for (var _d = __values(expression.arguments), _e = _d.next(); !_e.done; _e = _d.next()) {
+        var a = _e.value;
+        if (a.type === "SpreadElement") {
+          args.push.apply(args, __spreadArray([], __read(protocol.evalutate(a.argument, context, true))));
+        } else {
+          args.push(protocol.evalutate(a, context, true));
+        }
+      }
+    } catch (e_1_1) {
+      e_1 = { error: e_1_1 };
+    } finally {
+      try {
+        if (_e && !_e.done && (_a = _d.return))
+          _a.call(_d);
+      } finally {
+        if (e_1)
+          throw e_1.error;
+      }
+    }
+    return callee.apply(void 0, __spreadArray([], __read(args)));
+  }
+  if (expression.type === "LogicalExpression") {
+    return protocol.evaluateLogicalExpression(expression, context);
+  }
+  if (expression.type === "UnaryExpression") {
+    return protocol.evaluateUnaryExpression(expression, context);
+  }
+  if (expression.type === "Identifier" || expression.type === "ThisExpression") {
+    var identifier = expression.type === "Identifier" ? expression.name : "this";
+    if (isFirstIdentifier) {
+      return context[identifier];
+    }
+    return identifier;
+  }
+  if (expression.type === "NumericLiteral") {
+    return expression.value;
+  }
+  if (expression.type === "StringLiteral") {
+    return expression.value;
+  }
+  if (expression.type === "NullLiteral") {
+    return null;
+  }
+  if (expression.type === "BooleanLiteral") {
+    return expression.value;
+  }
+  if (expression.type === "ArrayExpression") {
+    var items = [];
+    try {
+      for (var _f = __values(expression.elements), _g = _f.next(); !_g.done; _g = _f.next()) {
+        var e = _g.value;
+        if (e.type === "SpreadElement") {
+          items.push.apply(items, __spreadArray([], __read(protocol.evalutate(e.argument, context, true))));
+        } else {
+          items.push(protocol.evalutate(e, context, true));
+        }
+      }
+    } catch (e_2_1) {
+      e_2 = { error: e_2_1 };
+    } finally {
+      try {
+        if (_g && !_g.done && (_b = _f.return))
+          _b.call(_f);
+      } finally {
+        if (e_2)
+          throw e_2.error;
+      }
+    }
+    return items;
+  }
+  if (expression.type === "ObjectExpression") {
+    var result = {};
+    try {
+      for (var _h = __values(expression.properties), _j = _h.next(); !_j.done; _j = _h.next()) {
+        var property = _j.value;
+        if (property.type === "Property") {
+          var key = property.key.type === "Identifier" ? property.key.name : property.key.value;
+          result[key] = protocol.evalutate(property.value, context, true);
+        } else {
+          Object.assign(result, protocol.evalutate(property.argument, context, true));
+        }
+      }
+    } catch (e_3_1) {
+      e_3 = { error: e_3_1 };
+    } finally {
+      try {
+        if (_j && !_j.done && (_c = _h.return))
+          _c.call(_h);
+      } finally {
+        if (e_3)
+          throw e_3.error;
+      }
+    }
+    return result;
+  }
+  if (expression.type === "ArrowFunctionExpression") {
+    return function() {
+      var params = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        params[_i] = arguments[_i];
+      }
+      var newContext;
+      if (params.length === 0) {
+        newContext = context;
+      } else {
+        newContext = __assign({}, context);
+        for (var i = 0; i < params.length && i < expression.params.length; i++) {
+          var pattern = expression.params[i];
+          if (pattern.type === "Identifier") {
+            newContext[pattern.name] = params[i];
+          } else if (pattern.type === "AssignmentPattern") {
+            if (params[i] === void 0) {
+              newContext[pattern.left.name] = protocol.evalutate(pattern.right, newContext, true);
+            } else {
+              newContext[pattern.left.name] = params[i];
+            }
+          } else {
+            newContext[pattern.argument.name] = params.slice(i);
+          }
+        }
+      }
+      return protocol.evalutate(expression.body, newContext, true);
+    };
+  }
+  throw new Error(protocol.locale.unexpectToken);
+}
+function evaluateBinaryExpression(expression, left, right, locale, isCustomData) {
+  if (isCustomData) {
+    if (isCustomData(left)) {
+      if (expression.operator === "+" && left.add) {
+        return left.add(right);
+      }
+      if (expression.operator === "-" && left.subtract) {
+        return left.subtract(right);
+      }
+      if (expression.operator === "*" && left.multiply) {
+        return left.multiply(right);
+      }
+      if (expression.operator === "/" && left.divide) {
+        return left.divide(right);
+      }
+      if (expression.operator === "%" && left.remainer) {
+        return left.remainer(right);
+      }
+      if (expression.operator === "**" && left.power) {
+        return left.power(right);
+      }
+      if ((expression.operator === "==" || expression.operator === "===") && left.equal) {
+        return left.equal(right);
+      }
+      if ((expression.operator === "!=" || expression.operator === "!==") && left.equal) {
+        return !left.equal(right);
+      }
+      if (expression.operator === "<" && left.lessThan) {
+        return left.lessThan(right);
+      }
+      if (expression.operator === ">" && left.greaterThan) {
+        return left.greaterThan(right);
+      }
+      if (expression.operator === "<=" && left.lessThanOrEqual) {
+        return left.lessThanOrEqual(right);
+      }
+      if (expression.operator === ">" && left.greaterThanOrEqual) {
+        return left.greaterThanOrEqual(right);
+      }
+    }
+    if (isCustomData(right)) {
+      if (expression.operator === "+" && right.added) {
+        return right.added(left);
+      }
+      if (expression.operator === "-" && right.subtracted) {
+        return right.subtracted(left);
+      }
+      if (expression.operator === "*" && right.multiplied) {
+        return right.multiplied(left);
+      }
+      if (expression.operator === "/" && right.divided) {
+        return right.divided(left);
+      }
+      if (expression.operator === "%" && right.remainered) {
+        return right.remainered(left);
+      }
+      if (expression.operator === "**" && right.powered) {
+        return right.powered(left);
+      }
+      if ((expression.operator === "==" || expression.operator === "===") && right.equal) {
+        return right.equal(left);
+      }
+      if ((expression.operator === "!=" || expression.operator === "!==") && right.equal) {
+        return !right.equal(left);
+      }
+      if (expression.operator === "<" && right.greaterThanOrEqual) {
+        return right.greaterThanOrEqual(left);
+      }
+      if (expression.operator === ">" && right.lessThanOrEqual) {
+        return right.lessThanOrEqual(left);
+      }
+      if (expression.operator === "<=" && right.greaterThan) {
+        return right.greaterThan(left);
+      }
+      if (expression.operator === ">=" && right.lessThan) {
+        return right.lessThan(left);
+      }
+    }
+  }
+  if (expression.operator === "+") {
+    if (typeof left === "string") {
+      return left + right;
+    }
+    if (typeof left !== "number" || isNaN(left)) {
+      throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]));
+    }
+    if (typeof right === "string") {
+      return left + right;
+    }
+    if (typeof right !== "number" || isNaN(right)) {
+      throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]));
+    }
+    return left + right;
+  }
+  if (expression.operator === "==" || expression.operator === "===" || expression.operator === "!=" || expression.operator === "!==") {
+    return expression.operator === "==" || expression.operator === "===" ? left === right : left !== right;
+  }
+  if (expression.operator === "|>") {
+    return right(left);
+  }
+  if (typeof left !== "number") {
+    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]));
+  }
+  if (typeof right !== "number") {
+    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]));
+  }
+  if (expression.operator === "-") {
+    return left - right;
+  }
+  if (expression.operator === "*") {
+    return left * right;
+  }
+  if (expression.operator === "/") {
+    return left / right;
+  }
+  if (expression.operator === "%") {
+    return left % right;
+  }
+  if (expression.operator === ">") {
+    return left > right;
+  }
+  if (expression.operator === ">=") {
+    return left >= right;
+  }
+  if (expression.operator === "<") {
+    return left < right;
+  }
+  if (expression.operator === "<=") {
+    return left <= right;
+  }
+  if (expression.operator === "**") {
+    return Math.pow(left, right);
+  }
+  if (expression.operator === ">>") {
+    return left >> right;
+  }
+  if (expression.operator === "<<") {
+    return left << right;
+  }
+  if (expression.operator === ">>>") {
+    return left >>> right;
+  }
+  if (expression.operator === "&") {
+    return left & right;
+  }
+  if (expression.operator === "^") {
+    return left ^ right;
+  }
+  if (expression.operator === "|") {
+    return left | right;
+  }
+  throw new Error(locale.unexpectToken);
+}
+function evaluateUnaryExpression(expression, value, locale) {
+  if (expression.operator === "!") {
+    return !value;
+  }
+  if (expression.operator === "+" && (typeof value === "number" || typeof value === "string")) {
+    return +value;
+  }
+  if (typeof value !== "number" || isNaN(value)) {
+    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.argument.range[0]));
+  }
+  if (expression.operator === "-") {
+    return -value;
+  }
+  if (expression.operator === "~") {
+    return ~value;
+  }
+  if (expression.operator === "%") {
+    return value / 100;
+  }
+  if (expression.operator === "await") {
+    return value;
+  }
+  throw new Error(locale.unexpectToken);
+}
+function isAsync(expression) {
+  if (expression.type === "NumericLiteral") {
+    return false;
+  }
+  if (expression.type === "StringLiteral") {
+    return false;
+  }
+  if (expression.type === "Identifier") {
+    return false;
+  }
+  if (expression.type === "ThisExpression") {
+    return false;
+  }
+  if (expression.type === "NullLiteral") {
+    return false;
+  }
+  if (expression.type === "BooleanLiteral") {
+    return false;
+  }
+  if (expression.type === "SpreadElement" || expression.type === "RestElement") {
+    return isAsync(expression.argument);
+  }
+  if (expression.type === "AssignmentPattern") {
+    return isAsync(expression.left) || isAsync(expression.right);
+  }
+  if (expression.type === "ArrayExpression") {
+    return expression.elements.some(function(e) {
+      return isAsync(e);
+    });
+  }
+  if (expression.type === "ArrowFunctionExpression") {
+    return expression.params.some(function(e) {
+      return isAsync(e);
+    }) || isAsync(expression.body);
+  }
+  if (expression.type === "UnaryExpression") {
+    if (expression.operator === "await") {
+      return true;
+    }
+    return isAsync(expression.argument);
+  }
+  if (expression.type === "BinaryExpression" || expression.type === "LogicalExpression") {
+    return isAsync(expression.left) || isAsync(expression.right);
+  }
+  if (expression.type === "MemberExpression") {
+    return isAsync(expression.object) || isAsync(expression.property);
+  }
+  if (expression.type === "CallExpression") {
+    return expression.arguments.some(function(e) {
+      return isAsync(e);
+    }) || isAsync(expression.callee);
+  }
+  if (expression.type === "ConditionalExpression") {
+    return isAsync(expression.test) || isAsync(expression.consequent) || isAsync(expression.alternate);
+  }
+  if (expression.type === "Property") {
+    return isAsync(expression.key) || isAsync(expression.value);
+  }
+  if (expression.type === "ObjectExpression") {
+    return expression.properties.some(function(e) {
+      return isAsync(e);
+    });
+  }
+  return expression.params.some(function(e) {
+    return isAsync(e);
+  });
+}
+
+// dev/plugins/equation.plugin.tsx
+function getModel(ctx) {
+  const equationCache = new ctx.WeakmapCache2();
+  function getGeometriesFromCache(content, contents) {
+    const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
+    if (axis) {
+      return equationCache.get(content, axis, () => {
+        if (content.expression) {
+          try {
+            const expression = parseExpression(tokenizeExpression(content.expression));
+            const points = [];
+            const segmentCount = content.segmentCount ?? ctx.defaultSegmentCount;
+            if (content.dependentVariable === "y") {
+              const step = (axis.xMax - axis.xMin) / segmentCount;
+              for (let x = axis.xMin; x <= axis.xMax; x += step) {
+                const y = evaluateExpression(expression, {
+                  Math,
+                  x
+                });
+                if (typeof y === "number" && !isNaN(y)) {
+                  points.push({ x: x + axis.x, y: y * (axis.flipY ? -1 : 1) + axis.y });
+                }
+              }
+            } else {
+              const step = (axis.yMax - axis.yMin) / segmentCount;
+              for (let y = axis.yMin; y <= axis.yMax; y += step) {
+                const x = evaluateExpression(expression, {
+                  Math,
+                  y
+                });
+                if (typeof x === "number" && !isNaN(x)) {
+                  points.push({ x: x + axis.x, y: y * (axis.flipY ? -1 : 1) + axis.y });
+                }
+              }
+            }
+            const lines = Array.from(ctx.iteratePolylineLines(points));
+            return {
+              points,
+              lines,
+              bounding: ctx.getPointsBounding(points),
+              renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+            };
+          } catch (e) {
+            console.info(e);
+          }
+        }
+        return { lines: [], points: [], renderingLines: [] };
+      });
+    }
+    return { lines: [], points: [], renderingLines: [] };
+  }
+  const React = ctx.React;
+  return {
+    type: "equation",
+    ...ctx.strokeModel,
+    ...ctx.segmentCountModel,
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      const { points } = getGeometriesFromCache(content, contents);
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
+      const options = {
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        dashArray: strokeStyleContent.dashArray
+      };
+      return target.renderPolyline(points, options);
+    },
+    getGeometries: getGeometriesFromCache,
+    propertyPanel(content, update, contents) {
+      return {
+        dependentVariable: /* @__PURE__ */ React.createElement(ctx.EnumEditor, {
+          value: content.dependentVariable,
+          enums: ["x", "y"],
+          setValue: (v) => update((c) => {
+            if (isEquationContent(c)) {
+              c.dependentVariable = v;
+            }
+          })
+        }),
+        expression: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
+          value: content.expression,
+          setValue: (v) => update((c) => {
+            if (isEquationContent(c)) {
+              c.expression = v;
+            }
+          })
+        }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getSegmentCountContentPropertyPanel(content, update)
+      };
+    },
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.axisId === "number" ? [content.axisId] : []],
+    updateRefId(content, update) {
+      const newAxisId = update(content.axisId);
+      if (newAxisId !== void 0) {
+        content.axisId = newAxisId;
+      }
+      ctx.updateStrokeRefIds(content, update);
+    }
+  };
+}
+function isEquationContent(content) {
+  return content.type === "equation";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polyline", {
+    points: "7,93 88,93",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "7,12 7,93",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "97,93 68,101 68,85",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "7,3 15,32 1,32",
+    strokeWidth: "0",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "currentColor",
+    stroke: "currentColor"
+  }), /* @__PURE__ */ React.createElement("polyline", {
+    points: "7,93 8,85 9,81 10,78 11,76 12,74 12,72 13,71 14,69 15,68 16,66 17,65 18,64 19,62 20,61 21,60 21,59 22,58 23,57 24,56 25,55 26,54 27,53 28,52 29,51 29,51 30,50 31,49 32,48 33,47 34,47 35,46 36,45 37,44 38,44 38,43 39,42 40,41 41,41 42,40 43,39 44,39 45,38 46,37 47,37 47,36 48,35 49,35 50,34 51,34 52,33 53,32 54,32 55,31 56,31 56,30 57,30 58,29 59,28 60,28 61,27 62,27 63,26 64,26 65,25 65,25 66,24 67,24 68,23 69,23 70,22 71,22 72,21 73,21 74,20 74,20 75,19 76,19 77,18 78,18 79,17 80,17 81,16 82,16 83,15 84,15 84,14 85,14 86,13 87,13 88,13 89,12 90,12 91,11 92,11 93,10 93,10 94,9 95,9 96,9",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "create equation",
+    icon,
+    useCommand({ onEnd, type, selected }) {
+      const [dependentVariable, setDependentVariable] = React.useState("y");
+      const enabled = type === "create equation";
+      let message = "";
+      if (enabled) {
+        message = dependentVariable === "x" ? "input f(y)" : "input f(x)";
+      }
+      const { input, setCursorPosition, clearText, setInputPosition, resetInput } = ctx.useCursorInput(message, enabled ? (e, text) => {
+        if (e.key === "Enter") {
+          onEnd({
+            updateContents(contents) {
+              contents.push({
+                type: "equation",
+                axisId: selected[0].path[0],
+                dependentVariable,
+                expression: text
+              });
+            }
+          });
+          clearText();
+        }
+      } : void 0);
+      const reset = () => {
+        resetInput();
+        setDependentVariable("y");
+      };
+      ctx.useKey((e) => e.key === "Escape", reset, [resetInput, setDependentVariable]);
+      return {
+        input,
+        onStart() {
+        },
+        onMove(p, viewportPosition) {
+          setInputPosition(viewportPosition || p);
+          setCursorPosition(p);
+        },
+        subcommand: enabled ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setDependentVariable(dependentVariable === "x" ? "y" : "x"),
+          style: { position: "relative" }
+        }, "f(", dependentVariable, ")")) : void 0,
+        reset
+      };
+    },
+    contentSelectable: isCoordinateAxisContent,
+    selectCount: 1
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isEquationContent
 };
 `,
 `// dev/plugins/explode.plugin.tsx
@@ -5746,16 +7902,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    getRefIds(content) {
-      const refIds = [];
-      if (typeof content.refId === "number") {
-        refIds.push(content.refId);
-      }
-      if (typeof content.strokeStyleId === "number") {
-        refIds.push(content.strokeStyleId);
-      }
-      return refIds.length > 0 ? refIds : void 0;
-    },
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.refId === "number" ? [content.refId] : []],
     updateRefId(content, update) {
       const newRefId = update(content.refId);
       if (newRefId !== void 0) {
@@ -6347,8 +8494,9 @@ export {
 function getModel(ctx) {
   function getRingGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta);
-      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, ctx.angleDelta);
+      const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta;
+      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
+      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
       const points = [...points1, ...points2];
       const lines1 = Array.from(ctx.iteratePolygonLines(points1));
       const lines2 = Array.from(ctx.iteratePolygonLines(points2));
@@ -6378,6 +8526,7 @@ function getModel(ctx) {
     type: "ring",
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.angleDeltaModel,
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
@@ -6454,7 +8603,8 @@ function getModel(ctx) {
           })
         }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update, contents)
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getAngleDeltaContentPropertyPanel(content, update)
       };
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
@@ -6756,6 +8906,7 @@ function getModel(ctx) {
     return ctx.getGeometriesFromCache(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y]);
       let points = [];
+      const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount;
       if (inputPoints.length > 2) {
         if (content.fitting) {
           const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points);
@@ -6834,6 +8985,7 @@ function getModel(ctx) {
     type: "spline",
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.segmentCountModel,
     move(content, offset) {
       for (const point of content.points) {
         point.x += offset.x;
@@ -6912,7 +9064,8 @@ function getModel(ctx) {
           })
         }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-        ...ctx.getFillContentPropertyPanel(content, update, contents)
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getSegmentCountContentPropertyPanel(content, update)
       };
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
@@ -6924,6 +9077,7 @@ function getModel(ctx) {
       type: "spline arrow",
       ...ctx.strokeModel,
       ...ctx.arrowModel,
+      ...ctx.segmentCountModel,
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
@@ -6990,7 +9144,8 @@ function getModel(ctx) {
             })
           }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
-          ...ctx.getArrowContentPropertyPanel(content, update)
+          ...ctx.getArrowContentPropertyPanel(content, update),
+          ...ctx.getSegmentCountContentPropertyPanel(content, update)
         };
       },
       getRefIds: ctx.getStrokeRefIds,
@@ -7004,7 +9159,6 @@ function isSplineContent(content) {
 function isSplineArrowContent(content) {
   return content.type === "spline arrow";
 }
-var splineSegmentCount = 100;
 function getCommand(ctx) {
   const React = ctx.React;
   const icon1 = /* @__PURE__ */ React.createElement("svg", {

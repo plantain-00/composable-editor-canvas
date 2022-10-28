@@ -12,6 +12,7 @@ export const controlStyle: React.CSSProperties = {
   padding: '0.375rem 0.75rem',
   fontSize: '1rem',
   fontWeight: 400,
+  fontFamily: 'monospace',
   lineHeight: 1.5,
   color: '#212529',
   backgroundColor: '#fff',
