@@ -5,11 +5,11 @@ import type * as model from '../models/model'
 import bspline from 'b-spline'
 import type { LineContent } from './line-polyline.plugin'
 
-export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & {
+export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & {
   points: core.Position[]
   fitting?: boolean
 }
-export type SplineArrowContent = model.BaseContent<'spline arrow'> & model.StrokeFields & model.ArrowFields & {
+export type SplineArrowContent = model.BaseContent<'spline arrow'> & model.StrokeFields & model.ArrowFields & model.SegmentCountFields & {
   points: core.Position[]
   fitting?: boolean
 }
@@ -19,6 +19,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     return ctx.getGeometriesFromCache(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y])
       let points: core.Position[] = []
+      const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
       if (inputPoints.length > 2) {
         if (content.fitting) {
           const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points)
@@ -97,6 +98,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     type: 'spline',
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.segmentCountModel,
     move(content, offset) {
       for (const point of content.points) {
         point.x += offset.x
@@ -151,6 +153,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getSegmentCountContentPropertyPanel(content, update),
       }
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
@@ -162,6 +165,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       type: 'spline arrow',
       ...ctx.strokeModel,
       ...ctx.arrowModel,
+      ...ctx.segmentCountModel,
       move: splineModel.move,
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
@@ -204,6 +208,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
           fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineArrowContent(c)) { c.fitting = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getArrowContentPropertyPanel(content, update),
+          ...ctx.getSegmentCountContentPropertyPanel(content, update),
         }
       },
       getRefIds: ctx.getStrokeRefIds,
@@ -218,8 +223,6 @@ export function isSplineContent(content: model.BaseContent): content is SplineCo
 export function isSplineArrowContent(content: model.BaseContent): content is SplineArrowContent {
   return content.type === 'spline arrow'
 }
-
-const splineSegmentCount = 100
 
 export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React

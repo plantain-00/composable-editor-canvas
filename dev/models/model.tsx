@@ -6,6 +6,7 @@ import { LineContent } from '../plugins/line-polyline.plugin'
 export interface BaseContent<T extends string = string> {
   type: T
   z?: number
+  visible?: boolean
 }
 
 export interface StrokeFields {
@@ -33,6 +34,14 @@ export interface ArrowFields {
   arrowSize?: number
 }
 
+export interface SegmentCountFields {
+  segmentCount?: number
+}
+
+export interface AngleDeltaFields {
+  angleDelta?: number
+}
+
 export const strokeModel = {
   isStroke: true,
 }
@@ -49,7 +58,22 @@ export const arrowModel = {
   isArrow: true,
 }
 
-export type Model<T> = Partial<typeof strokeModel & typeof fillModel & typeof containerModel & typeof arrowModel> & {
+export const segmentCountModel = {
+  isSegmentCount: true,
+}
+
+export const angleDeltaModel = {
+  isAngleDelta: true,
+}
+
+type FeatureModels = typeof strokeModel &
+  typeof fillModel &
+  typeof containerModel &
+  typeof arrowModel &
+  typeof segmentCountModel &
+  typeof angleDeltaModel
+
+export type Model<T> = Partial<FeatureModels> & {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
@@ -381,6 +405,30 @@ export function getArrowContentPropertyPanel(
   }
 }
 
+export function getSegmentCountContentPropertyPanel(
+  content: SegmentCountFields,
+  update: (recipe: (content: BaseContent) => void) => void,
+) {
+  return {
+    segmentCount: [
+      <BooleanEditor value={content.segmentCount !== undefined} setValue={(v) => update(c => { if (isSegmentCountContent(c)) { c.segmentCount = v ? defaultSegmentCount : undefined } })} />,
+      content.segmentCount !== undefined ? <NumberEditor value={content.segmentCount} setValue={(v) => update(c => { if (isSegmentCountContent(c)) { c.segmentCount = v } })} /> : undefined,
+    ],
+  }
+}
+
+export function getAngleDeltaContentPropertyPanel(
+  content: AngleDeltaFields,
+  update: (recipe: (content: BaseContent) => void) => void,
+) {
+  return {
+    angleDelta: [
+      <BooleanEditor value={content.angleDelta !== undefined} setValue={(v) => update(c => { if (isAngleDeltaContent(c)) { c.angleDelta = v ? defaultAngleDelta : undefined } })} />,
+      content.angleDelta !== undefined ? <NumberEditor value={content.angleDelta} setValue={(v) => update(c => { if (isAngleDeltaContent(c)) { c.angleDelta = v } })} /> : undefined,
+    ],
+  }
+}
+
 export function isStrokeContent(content: BaseContent): content is (BaseContent & StrokeFields) {
   return !!getContentModel(content)?.isStroke
 }
@@ -395,6 +443,12 @@ export function isContainerContent(content: BaseContent): content is (BaseConten
 
 export function isArrowContent(content: BaseContent): content is (BaseContent & ArrowFields) {
   return !!getContentModel(content)?.isArrow
+}
+export function isSegmentCountContent(content: BaseContent): content is (BaseContent & SegmentCountFields) {
+  return !!getContentModel(content)?.isSegmentCount
+}
+export function isAngleDeltaContent(content: BaseContent): content is (BaseContent & AngleDeltaFields) {
+  return !!getContentModel(content)?.isAngleDelta
 }
 
 export function hasFill(content: FillFields) {
@@ -422,8 +476,9 @@ export function getFillStyleContent(content: FillFields, contents: readonly Null
   return content
 }
 
+export const defaultSegmentCount = 100
 export const defaultStrokeColor = 0x000000
-export const angleDelta = 5
+export const defaultAngleDelta = 5
 
 export const dimensionStyle = {
   margin: 5,

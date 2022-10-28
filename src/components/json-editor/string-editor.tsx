@@ -42,6 +42,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
           if (e.key === 'Enter') {
             onComplete()
           }
+          e.stopPropagation()
         }}
         onBlur={onComplete}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}
@@ -68,6 +69,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
           if (e.key === 'Enter') {
             onComplete()
           }
+          e.stopPropagation()
         }}
         onBlur={onComplete}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}

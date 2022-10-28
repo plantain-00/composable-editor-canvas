@@ -7,7 +7,7 @@ import type { PolygonContent } from './polygon.plugin'
 import type { TextContent } from './text.plugin'
 
 export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & model.FillFields & core.Circle
-export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.FillFields & core.Arc
+export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.Arc
 
 export function getModel(ctx: PluginContext) {
   function getCircleGeometries(content: Omit<CircleContent, "type">) {
@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext) {
   }
   function getArcGeometries(content: Omit<ArcContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.arcToPolyline(content, ctx.angleDelta)
+      const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const geometries = {
         lines: Array.from(ctx.iteratePolylineLines(points)),
         points,
@@ -181,6 +181,7 @@ export function getModel(ctx: PluginContext) {
       type: 'arc',
       ...ctx.strokeModel,
       ...ctx.fillModel,
+      ...ctx.angleDeltaModel,
       move(content, offset) {
         content.x += offset.x
         content.y += offset.y
@@ -351,6 +352,7 @@ export function getModel(ctx: PluginContext) {
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents),
+          ...ctx.getAngleDeltaContentPropertyPanel(content, update),
         }
       },
       getRefIds: ctx.getStrokeAndFillRefIds,

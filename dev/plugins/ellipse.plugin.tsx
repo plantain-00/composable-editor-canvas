@@ -4,13 +4,13 @@ import type { Command } from '../commands/command'
 import type * as model from '../models/model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type EllipseContent = model.BaseContent<'ellipse'> & model.StrokeFields & model.FillFields & core.Ellipse
-export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeFields & model.FillFields & core.EllipseArc
+export type EllipseContent = model.BaseContent<'ellipse'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.Ellipse
+export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.EllipseArc
 
 export function getModel(ctx: PluginContext) {
   function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseToPolygon(content, ctx.angleDelta)
+      const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolygonLines(points))
       const polylinePoints = ctx.polygonToPolyline(points)
       return {
@@ -29,7 +29,7 @@ export function getModel(ctx: PluginContext) {
   }
   function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseArcToPolyline(content, ctx.angleDelta)
+      const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolylineLines(points))
       return {
         lines,
@@ -50,6 +50,7 @@ export function getModel(ctx: PluginContext) {
     type: 'ellipse',
     ...ctx.strokeModel,
     ...ctx.fillModel,
+    ...ctx.angleDeltaModel,
     move(content, offset) {
       content.cx += offset.x
       content.cy += offset.y
@@ -195,6 +196,7 @@ export function getModel(ctx: PluginContext) {
         ],
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getAngleDeltaContentPropertyPanel(content, update),
       }
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
@@ -206,6 +208,7 @@ export function getModel(ctx: PluginContext) {
       type: 'ellipse arc',
       ...ctx.strokeModel,
       ...ctx.fillModel,
+      ...ctx.angleDeltaModel,
       move: ellipseModel.move,
       rotate: ellipseModel.rotate,
       mirror: ellipseModel.mirror,
@@ -347,6 +350,7 @@ export function getModel(ctx: PluginContext) {
           counterclockwise: <ctx.BooleanEditor value={content.counterclockwise === true} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.counterclockwise = v ? true : undefined } })} />,
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents),
+          ...ctx.getAngleDeltaContentPropertyPanel(content, update),
         }
       },
       getRefIds: ctx.getStrokeAndFillRefIds,

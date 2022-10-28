@@ -52,6 +52,7 @@ export function NumberEditor(props: JsonEditorProps<number> & {
         if (e.key === 'Enter') {
           onComplete()
         }
+        e.stopPropagation()
       }}
       onBlur={onComplete}
     />
