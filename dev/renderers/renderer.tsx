@@ -187,6 +187,9 @@ export function Renderer(props: {
 
   const assistentContentsChildren: unknown[] = []
   props.assistentContents?.forEach((content) => {
+    if (props.simplified && content.type === 'text') {
+      return
+    }
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
       assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
