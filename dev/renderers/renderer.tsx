@@ -183,18 +183,23 @@ export function Renderer(props: {
         }
       }
     }
-
-    props.assistentContents?.forEach((content) => {
-      renderContent(content, w => w)
-    })
   }
 
+  const assistentContentsChildren: unknown[] = []
+  props.assistentContents?.forEach((content) => {
+    const ContentRender = getContentModel(content)?.render
+    if (ContentRender) {
+      assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
+    }
+  })
+
   merger.flushLast()
+  const result = assistentContentsChildren.length === 0 ? children : [...children, ...assistentContentsChildren]
   if (props.debug) {
     console.info(Date.now() - now, children.length)
   }
 
-  return target.renderResult(children, props.width, props.height, {
+  return target.renderResult(result, props.width, props.height, {
     attributes: {
       style: {
         position: 'absolute',
