@@ -402,7 +402,7 @@ export const CADEditor = React.forwardRef((props: {
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p)
     }
-    if (operations.type !== 'operate' && !simplified) {
+    if (operations.type !== 'operate') {
       if (editPoint) {
         onEditClick(p)
       } else if (hovering.length > 0) {
@@ -435,11 +435,13 @@ export const CADEditor = React.forwardRef((props: {
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       onCommandMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), viewportPosition)
     }
-    if (operations.type !== 'operate' && !simplified) {
+    if (operations.type !== 'operate') {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), selectedContents)
       // hover by position
-      const indexes = getSortedContents(editingContent).indexes
-      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
+      if (!simplified) {
+        const indexes = getSortedContents(editingContent).indexes
+        setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
+      }
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
