@@ -1,10 +1,10 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, isSamePath, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit, isSamePath, Debug } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './models/model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './commands/command'
-import { registerRenderer, MemoizedRenderer, visibleContents, contentVisible } from './renderers/renderer'
+import { registerRenderer, MemoizedRenderer } from './renderers/renderer'
 import RTree from 'rtree'
 
 import * as core from '../src'
@@ -43,7 +43,7 @@ export const CADEditor = React.forwardRef((props: {
   panelVisible?: boolean
   printMode?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
-  const now = Date.now()
+  const debug = new Debug(props.debug)
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
     {},
     (p, s) => {
@@ -275,6 +275,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
+  debug.mark('before assisten contents')
   const assistentContents: BaseContent[] = [
     ...getSnapAssistentContents(
       (circle) => ({ type: 'circle', ...circle, strokeColor: 0x00ff00 } as CircleContent),
@@ -284,17 +285,18 @@ export const CADEditor = React.forwardRef((props: {
     ...commandAssistentContents,
   ]
 
-  let updatedContents: readonly Nullable<BaseContent>[] | undefined
-  if (updateEditPreview) {
-    const [r, patches, reversePatches] = produceWithPatches(editingContent, (draft) => {
-      const result = updateEditPreview((path) => getContentByIndex(draft, path))
-      if (result?.assistentContents) {
-        assistentContents.push(...result.assistentContents)
+  const result = updateEditPreview()
+  previewPatches.push(...result?.patches ?? [])
+  previewReversePatches.push(...result?.reversePatches ?? [])
+  assistentContents.push(...result?.assistentContents ?? [])
+  for (const { content, path } of selectedContents) {
+    if (path.length === 1) {
+      let c = content
+      if (editPoint && isSamePath(editPoint.path, path)) {
+        c = result?.result ?? content
       }
-    })
-    updatedContents = r
-    previewPatches.push(...patches)
-    previewReversePatches.push(...reversePatches)
+      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
+    }
   }
 
   const r = updateSelectedContents(state)
@@ -302,16 +304,6 @@ export const CADEditor = React.forwardRef((props: {
   for (const [patches, reversePatches] of r.patches) {
     previewPatches.push(...patches)
     previewReversePatches.push(...reversePatches)
-  }
-
-  for (const { content, path } of selectedContents) {
-    if (path.length === 1) {
-      let c = content
-      if (editPoint && isSamePath(editPoint.path, path) && updatedContents) {
-        c = getContentByIndex(updatedContents, path) ?? content
-      }
-      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
-    }
   }
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
@@ -438,10 +430,8 @@ export const CADEditor = React.forwardRef((props: {
     if (operations.type !== 'operate') {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), selectedContents)
       // hover by position
-      if (!simplified) {
-        const indexes = getSortedContents(editingContent).indexes
-        setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
-      }
+      const indexes = getSortedContents(editingContent).indexes
+      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
@@ -490,16 +480,14 @@ export const CADEditor = React.forwardRef((props: {
     }
     return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
   }
+  debug.mark('before search')
   const start = reverseTransformPosition({ x: 0, y: 0 }, transform)
   const end = reverseTransformPosition({ x: width, y: height }, transform)
-  const searchResult = getContentsInRange({
+  const searchResult = new Set(getContentsInRange({
     start,
     end,
-  })
-  visibleContents.clear()
-  visibleContents.add(...searchResult)
-  visibleContents.add(...assistentContents)
-  const simplified = searchResult.length > 1000
+  }))
+  const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
     const newRTree = RTree()
@@ -520,6 +508,7 @@ export const CADEditor = React.forwardRef((props: {
     setRTree(newRTree)
   }
 
+  const operatorVisible = props.onApplyPatchesFromSelf !== undefined
   const minimapHeight = 100
   const minimapWidth = 100
   const [minimapTransform, setMinimapTransform] = React.useState<{ x: number, y: number, scale: number, bounding: TwoPointsFormRegion }>()
@@ -564,9 +553,9 @@ export const CADEditor = React.forwardRef((props: {
           width={minimapWidth}
           height={minimapHeight}
           backgroundColor={props.backgroundColor}
-          simplified
           debug={props.debug}
           printMode={props.printMode}
+          operatorVisible={operatorVisible}
         />
         <div style={{
           position: 'absolute',
@@ -638,7 +627,7 @@ export const CADEditor = React.forwardRef((props: {
     )
   }
   if (props.debug) {
-    console.info(Date.now() - now, searchResult.length)
+    console.info(debug.print())
   }
 
   const main = (
@@ -661,8 +650,9 @@ export const CADEditor = React.forwardRef((props: {
           width={width}
           height={height}
           backgroundColor={props.backgroundColor}
-          simplified={simplified}
           printMode={props.printMode}
+          operatorVisible={operatorVisible}
+          debug={props.debug}
         />}
         {minimap}
         {position && <span style={{ position: 'absolute', right: 0 }}>{position.x},{position.y}</span>}

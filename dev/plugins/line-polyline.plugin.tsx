@@ -196,24 +196,20 @@ export function getCommand(ctx: PluginContext): Command[] {
               dashArray: [4 / scale],
               points: [start, { x: start.x + r, y: start.y }]
             },
-            {
-              type: 'text',
-              x: (start.x + end.x) / 2 - 20,
-              y: (start.y + end.y) / 2 + 4,
-              text: r.toFixed(2),
-              color: inputMode === 'length' ? 0xff0000 : 0xffcccc,
-              fontSize: 16 / scale,
-              fontFamily: 'monospace',
-            },
-            {
-              type: 'text',
-              x: end.x + 10,
-              y: end.y - 10,
-              text: `${angle.toFixed(1)}°`,
-              color: inputMode === 'angle' ? 0xff0000 : 0xffcccc,
-              fontSize: 16 / scale,
-              fontFamily: 'monospace',
-            },
+            ...ctx.getAssistentText(
+              r.toFixed(2),
+              16 / scale,
+              (start.x + end.x) / 2 - 20,
+              (start.y + end.y) / 2 + 4,
+              inputMode === 'length' ? 0xff0000 : 0xffcccc,
+            ),
+            ...ctx.getAssistentText(
+              `${angle.toFixed(1)}°`,
+              16 / scale,
+              end.x + 10,
+              end.y - 10,
+              inputMode === 'angle' ? 0xff0000 : 0xffcccc,
+            ),
           )
         }
         if (line) {
@@ -264,24 +260,20 @@ export function getCommand(ctx: PluginContext): Command[] {
               dashArray: [4 / scale],
               points: [start, { x: start.x + r, y: start.y }]
             },
-            {
-              type: 'text',
-              x: (start.x + end.x) / 2 - 20,
-              y: (start.y + end.y) / 2 + 4,
-              text: r.toFixed(2),
-              color: inputMode === 'length' ? 0xff0000 : 0xffcccc,
-              fontSize: 16 / scale,
-              fontFamily: 'monospace',
-            },
-            {
-              type: 'text',
-              x: end.x + 10,
-              y: end.y - 10,
-              text: `${angle.toFixed(1)}°`,
-              color: inputMode === 'angle' ? 0xff0000 : 0xffcccc,
-              fontSize: 16 / scale,
-              fontFamily: 'monospace',
-            },
+            ...ctx.getAssistentText(
+              r.toFixed(2),
+              16 / scale,
+              (start.x + end.x) / 2 - 20,
+              (start.y + end.y) / 2 + 4,
+              inputMode === 'length' ? 0xff0000 : 0xffcccc,
+            ),
+            ...ctx.getAssistentText(
+              `${angle.toFixed(1)}°`,
+              16 / scale,
+              end.x + 10,
+              end.y - 10,
+              inputMode === 'angle' ? 0xff0000 : 0xffcccc,
+            ),
           )
         }
         if (line) {

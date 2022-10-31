@@ -1,8 +1,10 @@
+import { produceWithPatches } from "immer"
 import type { Draft } from "immer/dist/types/types-external"
 import * as React from "react"
 import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
 import { useKey } from "./use-key"
+import { prependPatchPath } from "./use-partial-edit"
 import { SelectPath } from "./use-selected"
 
 /**
@@ -20,7 +22,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
     getAngleSnap: (angle: number) => number | undefined,
   }>,
 ) {
-  const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { path: TPath, angleSnapStartPoint?: Position }>()
+  const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { path: TPath, content: T, angleSnapStartPoint?: Position }>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
   const cursorWidth = 5 / (options?.scale ?? 1)
@@ -60,12 +62,24 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       return assistentContents
     },
-    updateEditPreview: editPoint && startPosition && cursorPosition ? (getContentByPath: (path: TPath) => Draft<T> | undefined) => {
-      const content = getContentByPath(editPoint.path)
-      if (content) {
-        return editPoint.update(content, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
+    updateEditPreview() {
+      if (editPoint && startPosition && cursorPosition) {
+        let assistentContents: T[] | undefined
+        const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
+          const r = editPoint.update(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
+          if (r) {
+            assistentContents = r.assistentContents
+          }
+        })
+        return {
+          result,
+          patches: prependPatchPath(patches, editPoint.path),
+          reversePatches: prependPatchPath(reversePatches, editPoint.path),
+          assistentContents,
+        }
       }
-    } : undefined,
+      return
+    },
     onEditMove(p: Position, selectedContents: readonly { content: T, path: TPath }[]) {
       if (readOnly) {
         return
@@ -84,7 +98,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
         if (editPoints) {
           const t = editPoints.editPoints.find((e) => getTwoNumbersDistance(e.x, p.x) <= cursorWidth && getTwoNumbersDistance(e.y, p.y) <= cursorWidth)
           if (t) {
-            setEditPoint({ ...t, path, angleSnapStartPoint: editPoints.angleSnapStartPoint })
+            setEditPoint({ ...t, content, path, angleSnapStartPoint: editPoints.angleSnapStartPoint })
             return
           }
         }
@@ -110,5 +124,10 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
  */
 export type EditPoint<T> = Position & {
   cursor: string
-  update: (content: Draft<T>, props: { cursor: Position, start: Position, scale: number }) => { assistentContents?: T[] } | void
+  update: (
+    content: Draft<T>,
+    props: { cursor: Position, start: Position, scale: number },
+  ) => {
+    assistentContents?: T[]
+  } | void
 }

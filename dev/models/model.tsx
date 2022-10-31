@@ -1,7 +1,8 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
-import { LineContent } from '../plugins/line-polyline.plugin'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, MapCache3, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import type { LineContent } from '../plugins/line-polyline.plugin'
+import type { TextContent } from '../plugins/text.plugin'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -109,6 +110,7 @@ export interface RenderContext<V> {
   getStrokeColor(content: StrokeFields & FillFields): number | undefined
   getFillColor(content: FillFields): number | undefined
   getFillPattern: (content: FillFields) => Pattern<V> | undefined
+  isAssistence?: boolean
 }
 interface RenderIfSelectedContext<V> {
   color: number
@@ -809,4 +811,27 @@ export function getArrowPoints(from: Position, to: Position, content: ArrowField
     distance,
     endPoint: getPointByLengthAndDirection(to, distance, from),
   }
+}
+
+export const assistentTextCache = new MapCache3<string, number, number, object>()
+export function getAssistentText(text: string, fontSize: number, x: number, y: number, color = 0xff0000): TextContent[] {
+  fontSize = Math.round(fontSize)
+  if (fontSize < 12) {
+    fontSize = 12
+  }
+  const texts: TextContent[] = []
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    assistentTextCache.get(c, fontSize, color, () => ({}))
+    texts.push({
+      type: 'text',
+      x: x + i * fontSize * 0.6,
+      y: y,
+      text: c,
+      color,
+      fontSize,
+      fontFamily: 'monospace',
+    })
+  }
+  return texts
 }

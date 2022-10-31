@@ -476,7 +476,7 @@ function isBlockReferenceContent(content) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents);
+    return !ctx.contentIsReferenced(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", {
@@ -1337,15 +1337,12 @@ function getCommand(ctx) {
           } else {
             assistentContents.push(
               { type: "line", points: [startPosition, cursorPosition], dashArray: [4 / scale] },
-              {
-                type: "text",
-                x: (startPosition.x + cursorPosition.x) / 2 - 20,
-                y: (startPosition.y + cursorPosition.y) / 2 + 4,
-                text: ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-                color: 16711680,
-                fontSize: 16 / scale,
-                fontFamily: "monospace"
-              }
+              ...ctx.getAssistentText(
+                ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+                16 / scale,
+                (startPosition.x + cursorPosition.x) / 2 - 20,
+                (startPosition.y + cursorPosition.y) / 2 + 4
+              )
             );
           }
         }
@@ -1379,15 +1376,12 @@ function getCommand(ctx) {
           } else {
             assistentContents.push(
               { type: "line", points: [startPosition, cursorPosition], dashArray: [4 / scale] },
-              {
-                type: "text",
-                x: (startPosition.x + cursorPosition.x) / 2 - 20,
-                y: (startPosition.y + cursorPosition.y) / 2 + 4,
-                text: ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-                color: 16711680,
-                fontSize: 16 / scale,
-                fontFamily: "monospace"
-              }
+              ...ctx.getAssistentText(
+                ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+                16 / scale,
+                (startPosition.x + cursorPosition.x) / 2 - 20,
+                (startPosition.y + cursorPosition.y) / 2 + 4
+              )
             );
           }
         }
@@ -1678,7 +1672,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
+    return !ctx.contentIsReferenced(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", {
@@ -5825,7 +5819,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return ctx.getContentModel(content)?.getRefIds === void 0 && !ctx.contentIsReferenced(content, contents);
+    return !ctx.contentIsReferenced(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", {
@@ -6293,24 +6287,20 @@ function getCommand(ctx) {
               dashArray: [4 / scale],
               points: [start, { x: start.x + r, y: start.y }]
             },
-            {
-              type: "text",
-              x: (start.x + end.x) / 2 - 20,
-              y: (start.y + end.y) / 2 + 4,
-              text: r.toFixed(2),
-              color: inputMode === "length" ? 16711680 : 16764108,
-              fontSize: 16 / scale,
-              fontFamily: "monospace"
-            },
-            {
-              type: "text",
-              x: end.x + 10,
-              y: end.y - 10,
-              text: \`\${angle.toFixed(1)}\\xB0\`,
-              color: inputMode === "angle" ? 16711680 : 16764108,
-              fontSize: 16 / scale,
-              fontFamily: "monospace"
-            }
+            ...ctx.getAssistentText(
+              r.toFixed(2),
+              16 / scale,
+              (start.x + end.x) / 2 - 20,
+              (start.y + end.y) / 2 + 4,
+              inputMode === "length" ? 16711680 : 16764108
+            ),
+            ...ctx.getAssistentText(
+              \`\${angle.toFixed(1)}\\xB0\`,
+              16 / scale,
+              end.x + 10,
+              end.y - 10,
+              inputMode === "angle" ? 16711680 : 16764108
+            )
           );
         }
         if (line) {
@@ -6361,24 +6351,20 @@ function getCommand(ctx) {
               dashArray: [4 / scale],
               points: [start, { x: start.x + r, y: start.y }]
             },
-            {
-              type: "text",
-              x: (start.x + end.x) / 2 - 20,
-              y: (start.y + end.y) / 2 + 4,
-              text: r.toFixed(2),
-              color: inputMode === "length" ? 16711680 : 16764108,
-              fontSize: 16 / scale,
-              fontFamily: "monospace"
-            },
-            {
-              type: "text",
-              x: end.x + 10,
-              y: end.y - 10,
-              text: \`\${angle.toFixed(1)}\\xB0\`,
-              color: inputMode === "angle" ? 16711680 : 16764108,
-              fontSize: 16 / scale,
-              fontFamily: "monospace"
-            }
+            ...ctx.getAssistentText(
+              r.toFixed(2),
+              16 / scale,
+              (start.x + end.x) / 2 - 20,
+              (start.y + end.y) / 2 + 4,
+              inputMode === "length" ? 16711680 : 16764108
+            ),
+            ...ctx.getAssistentText(
+              \`\${angle.toFixed(1)}\\xB0\`,
+              16 / scale,
+              end.x + 10,
+              end.y - 10,
+              inputMode === "angle" ? 16711680 : 16764108
+            )
           );
         }
         if (line) {
@@ -6836,24 +6822,18 @@ function getCommand(ctx) {
             dashArray: [4 / scale],
             points: [start, { x: start.x + r, y: start.y }]
           },
-          {
-            type: "text",
-            x: (start.x + end.x) / 2 - 20,
-            y: (start.y + end.y) / 2 + 4,
-            text: r.toFixed(2),
-            color: 16711680,
-            fontSize: 16 / scale,
-            fontFamily: "monospace"
-          },
-          {
-            type: "text",
-            x: end.x + 10,
-            y: end.y - 10,
-            text: \`\${angle.toFixed(1)}\\xB0\`,
-            color: 16711680,
-            fontSize: 16 / scale,
-            fontFamily: "monospace"
-          },
+          ...ctx.getAssistentText(
+            r.toFixed(2),
+            16 / scale,
+            (start.x + end.x) / 2 - 20,
+            (start.y + end.y) / 2 + 4
+          ),
+          ...ctx.getAssistentText(
+            \`\${angle.toFixed(1)}\\xB0\`,
+            16 / scale,
+            end.x + 10,
+            end.y - 10
+          ),
           {
             type: "line",
             points: [startPosition, cursorPosition]
@@ -9845,9 +9825,16 @@ function getModel(ctx) {
         };
       });
     },
-    render(content, { target, transformColor }) {
+    render(content, { target, transformColor, isAssistence }) {
       const color = transformColor(content.color);
-      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey: content });
+      let cacheKey;
+      if (isAssistence) {
+        cacheKey = ctx.assistentTextCache.get(content.text, content.fontSize, content.color);
+      }
+      if (!cacheKey) {
+        cacheKey = content;
+      }
+      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey });
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {

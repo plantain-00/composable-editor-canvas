@@ -208,13 +208,13 @@ function Canvas(props: {
 
     const rerender = () => setImageLoadStatus(c => c + 1)
     render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
-      const now = Date.now()
+      const now = performance.now()
       renderer(graphics.map(g => g(strokeWidthScale, rerender)).flat(), backgroundColor, x, y, scale)
       if (props.debug) {
-        console.info(Date.now() - now)
+        console.info(Math.round(performance.now() - now))
       }
     }
-  }, [ref.current])
+  }, [ref.current, props.debug])
 
   React.useEffect(() => {
     if (render.current) {

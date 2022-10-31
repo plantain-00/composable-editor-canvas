@@ -47,24 +47,18 @@ export function getCommand(ctx: PluginContext): Command {
             dashArray: [4 / scale],
             points: [start, { x: start.x + r, y: start.y }]
           },
-          {
-            type: 'text',
-            x: (start.x + end.x) / 2 - 20,
-            y: (start.y + end.y) / 2 + 4,
-            text: r.toFixed(2),
-            color: 0xff0000,
-            fontSize: 16 / scale,
-            fontFamily: 'monospace',
-          },
-          {
-            type: 'text',
-            x: end.x + 10,
-            y: end.y - 10,
-            text: `${angle.toFixed(1)}°`,
-            color: 0xff0000,
-            fontSize: 16 / scale,
-            fontFamily: 'monospace',
-          },
+          ...ctx.getAssistentText(
+            r.toFixed(2),
+            16 / scale,
+            (start.x + end.x) / 2 - 20,
+            (start.y + end.y) / 2 + 4,
+          ),
+          ...ctx.getAssistentText(
+            `${angle.toFixed(1)}°`,
+            16 / scale,
+            end.x + 10,
+            end.y - 10,
+          ),
           {
             type: 'line',
             points: [startPosition, cursorPosition]

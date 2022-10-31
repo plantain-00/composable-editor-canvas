@@ -426,15 +426,12 @@ export function getCommand(ctx: PluginContext): Command[] {
           } else {
             assistentContents.push(
               { type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] },
-              {
-                type: 'text',
-                x: (startPosition.x + cursorPosition.x) / 2 - 20,
-                y: (startPosition.y + cursorPosition.y) / 2 + 4,
-                text: ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-                color: 0xff0000,
-                fontSize: 16 / scale,
-                fontFamily: 'monospace',
-              },
+              ...ctx.getAssistentText(
+                ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+                16 / scale,
+                (startPosition.x + cursorPosition.x) / 2 - 20,
+                (startPosition.y + cursorPosition.y) / 2 + 4,
+              ),
             )
           }
         }
@@ -468,15 +465,12 @@ export function getCommand(ctx: PluginContext): Command[] {
           } else {
             assistentContents.push(
               { type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] },
-              {
-                type: 'text',
-                x: (startPosition.x + cursorPosition.x) / 2 - 20,
-                y: (startPosition.y + cursorPosition.y) / 2 + 4,
-                text: ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
-                color: 0xff0000,
-                fontSize: 16 / scale,
-                fontFamily: 'monospace',
-              },
+              ...ctx.getAssistentText(
+                ctx.getTwoPointsDistance(startPosition, cursorPosition).toFixed(2),
+                16 / scale,
+                (startPosition.x + cursorPosition.x) / 2 - 20,
+                (startPosition.y + cursorPosition.y) / 2 + 4,
+              ),
             )
           }
         }
