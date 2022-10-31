@@ -143,8 +143,9 @@ export default () => {
   const [canUndo, setCanUndo] = React.useState(false)
   const [canRedo, setCanRedo] = React.useState(false)
   const [operation, setOperation] = React.useState<string>()
-  const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-combination2:input-fiixed', false)
+  const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-combination2:input-fixed', false)
   const [backgroundColor, setBackgroundColor] = useLocalStorageState('composable-editor-canvas-combination2:background-color', 0xffffff)
+  const [debug, setDebug] = useLocalStorageState('composable-editor-canvas-combination2:debug', false)
   const offsetX = React.useContext(OffsetXContext)
   const size = useWindowSize()
 
@@ -167,7 +168,7 @@ export default () => {
           setOperation={setOperation}
           inputFixed={inputFixed}
           backgroundColor={backgroundColor}
-          debug
+          debug={debug}
           panelVisible={panelVisible}
           printMode={printMode}
         />
@@ -200,6 +201,10 @@ export default () => {
         <span>
           <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
           <label htmlFor='print mode'>print mode</label>
+        </span>
+        <span>
+          <input type='checkbox' checked={debug} id='debug' onChange={() => setDebug(!debug)} />
+          <label htmlFor='debug'>debug</label>
         </span>
         <select value={renderTarget} onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
           {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}

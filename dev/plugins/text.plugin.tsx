@@ -62,9 +62,16 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render(content, { target, transformColor }) {
+    render(content, { target, transformColor, isAssistence }) {
       const color = transformColor(content.color)
-      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey: content })
+      let cacheKey: object | undefined
+      if (isAssistence) {
+        cacheKey = ctx.assistentTextCache.get(content.text, content.fontSize, content.color)
+      }
+      if (!cacheKey) {
+        cacheKey = content
+      }
+      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey })
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {

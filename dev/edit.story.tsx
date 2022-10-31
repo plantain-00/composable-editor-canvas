@@ -1,4 +1,3 @@
-import produce from "immer"
 import React from "react"
 import { Circle, getTwoPointsDistance, Region, useEdit } from "../src"
 
@@ -25,10 +24,9 @@ export default () => {
     }),
   )
   const assistentContents: Region[] = []
-  const circle = produce(content, (draft) => {
-    updateEditPreview?.(() => draft)
-    assistentContents.push(...getEditAssistentContents(draft, (rect) => rect))
-  })
+  const newContent = updateEditPreview()
+  const circle = newContent?.result ?? content
+  assistentContents.push(...getEditAssistentContents(circle, (rect) => rect))
 
   return (
     <>

@@ -123,8 +123,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
 
 export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
-    return ctx.getContentModel(content)?.getRefIds === undefined &&
-      !ctx.contentIsReferenced(content, contents) &&
+    return !ctx.contentIsReferenced(content, contents) &&
       (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content))
   }
   const React = ctx.React

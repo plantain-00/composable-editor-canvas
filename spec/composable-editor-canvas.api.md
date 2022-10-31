@@ -8,6 +8,7 @@
 
 import type { Draft } from 'immer/dist/types/types-external';
 import type { Patch } from 'immer/dist/types/types-external';
+import { Patch as Patch_2 } from 'immer';
 import * as React_2 from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
 
@@ -133,6 +134,17 @@ export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Grap
 
 // @public (undocumented)
 export function dashedPolylineToLines(points: Position[], dashArray?: number[], skippedLines?: number[], dashOffset?: number): Position[][];
+
+// @public (undocumented)
+export class Debug {
+    constructor(enabled?: boolean | undefined);
+    // (undocumented)
+    add(name: string, value: number): void;
+    // (undocumented)
+    mark(name: string): void;
+    // (undocumented)
+    print(): string;
+}
 
 // @public (undocumented)
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean): T[];
@@ -777,7 +789,17 @@ export const m3: {
 // @public (undocumented)
 export class MapCache2<TKey1, TKey2, TValue> {
     // (undocumented)
+    get(key1: TKey1, key2: TKey2): TValue | undefined;
+    // (undocumented)
     get(key1: TKey1, key2: TKey2, func: () => TValue): TValue;
+}
+
+// @public (undocumented)
+export class MapCache3<TKey1, TKey2, TKey3, TValue> {
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, key3: TKey3): TValue | undefined;
+    // (undocumented)
+    get(key1: TKey1, key2: TKey2, key3: TKey3, func: () => TValue): TValue;
 }
 
 // @public (undocumented)
@@ -1376,13 +1398,17 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
         };
     } & {
         path: TPath;
+        content: T;
         angleSnapStartPoint?: Position | undefined;
     }) | undefined;
     editLastPosition: Position | undefined;
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
-    updateEditPreview: ((getContentByPath: (path: TPath) => Draft<T> | undefined) => void | {
-        assistentContents?: T[] | undefined;
-    }) | undefined;
+    updateEditPreview(): {
+        result: T;
+        patches: Patch_2[];
+        reversePatches: Patch_2[];
+        assistentContents: T[] | undefined;
+    } | undefined;
     onEditMove(p: Position, selectedContents: readonly {
         content: T;
         path: TPath;
