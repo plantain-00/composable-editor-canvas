@@ -307,6 +307,11 @@ export type Filter = {
 };
 
 // @public (undocumented)
+export const focusedOnInput: {
+    value: boolean;
+};
+
+// @public (undocumented)
 export function formatNumber(n: number, precision?: number): number;
 
 // @public (undocumented)
@@ -1579,6 +1584,14 @@ export function usePathClickCreate(enabled: boolean, onEnd: (path: PathCommand[]
     reset: () => void;
     setInputType(type: PathCommand['type']): void;
     cursorPosition: Position | undefined;
+};
+
+// @public (undocumented)
+export function usePenClickCreate(enabled: boolean, onEnd: () => void): {
+    points: Position[];
+    onClick(p: Position): void;
+    onMove(p: Position): void;
+    reset: () => void;
 };
 
 // @public (undocumented)

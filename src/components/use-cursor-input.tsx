@@ -15,7 +15,9 @@ export function useCursorInput(
   const [inputPosition, setInputPosition] = React.useState<Position>()
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   React.useEffect(() => {
-    inputRef.current?.focus()
+    if (!focusedOnInput.value) {
+      inputRef.current?.focus()
+    }
   })
 
   const resetInput = () => {
@@ -53,4 +55,11 @@ export function useCursorInput(
       </span>
     ) : undefined,
   }
+}
+
+/**
+ * @public
+ */
+export const focusedOnInput = {
+  value: false
 }
