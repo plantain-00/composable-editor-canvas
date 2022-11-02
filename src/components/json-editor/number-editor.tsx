@@ -1,4 +1,5 @@
 import * as React from "react"
+import { focusedOnInput } from ".."
 import { colorStringToNumber, getColorString } from "../react-render-target/react-svg-render-target"
 import { controlStyle, JsonEditorProps } from "./common"
 
@@ -52,9 +53,20 @@ export function NumberEditor(props: JsonEditorProps<number> & {
         if (e.key === 'Enter') {
           onComplete()
         }
+        if (e.key === 'Escape') {
+          return
+        }
         e.stopPropagation()
       }}
-      onBlur={onComplete}
+      onBlur={() => {
+        focusedOnInput.value = false
+        setTimeout(() => {
+          onComplete()
+        }, 0)
+      }}
+      onFocus={() => {
+        focusedOnInput.value = true
+      }}
     />
   )
 }

@@ -43,6 +43,7 @@ A composable editor canvas library.
 + `useTextClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=text-click-create.story>
 + `useImageClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=image-click-create.story>
 + `usePathClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=path-click-create.story>
++ `usePenClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=pen-click-create.story>
 + `ReactRenderTarget` `reactSvgRenderTarget` `reactCanvasRenderTarget` <https://plantain-00.github.io/composable-editor-canvas/?p=react-render-target.story>
 + `useWindowSize` <https://plantain-00.github.io/composable-editor-canvas/?p=window-size.story>
 + `useSelected` <https://plantain-00.github.io/composable-editor-canvas/?p=use-selected.story>

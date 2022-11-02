@@ -1,4 +1,5 @@
 import * as React from "react"
+import { focusedOnInput } from ".."
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**
@@ -42,9 +43,20 @@ export function StringEditor(props: JsonEditorProps<string> & {
           if (e.key === 'Enter') {
             onComplete()
           }
+          if (e.key === 'Escape') {
+            return
+          }
           e.stopPropagation()
         }}
-        onBlur={onComplete}
+        onBlur={() => {
+          focusedOnInput.value = false
+          setTimeout(() => {
+            onComplete()
+          }, 0)
+        }}
+        onFocus={() => {
+          focusedOnInput.value = true
+        }}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
     )
@@ -69,9 +81,20 @@ export function StringEditor(props: JsonEditorProps<string> & {
           if (e.key === 'Enter') {
             onComplete()
           }
+          if (e.key === 'Escape') {
+            return
+          }
           e.stopPropagation()
         }}
-        onBlur={onComplete}
+        onBlur={() => {
+          focusedOnInput.value = false
+          setTimeout(() => {
+            onComplete()
+          }, 0)
+        }}
+        onFocus={() => {
+          focusedOnInput.value = true
+        }}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
       {preview}
