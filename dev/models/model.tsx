@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, getTextSize, isSamePoint, iterateIntersectionPoints, MapCache2, MapCache3, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, isSamePoint, iterateIntersectionPoints, MapCache3, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import type { LineContent } from '../plugins/line-polyline.plugin'
 import type { TextContent } from '../plugins/text.plugin'
 
@@ -486,11 +486,6 @@ export const dimensionStyle = {
   margin: 5,
   arrowAngle: 15,
   arrowSize: 10,
-}
-
-const textSizeMap = new MapCache2<string, string, Size | undefined>()
-export function getTextSizeFromCache(font: string, text: string) {
-  return textSizeMap.get(font, text, () => getTextSize(font, text))
 }
 
 export function getPolylineEditPoints(

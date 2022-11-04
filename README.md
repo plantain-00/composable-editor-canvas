@@ -53,9 +53,11 @@ A composable editor canvas library.
 + `getRadialDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=radial-dimension.story>
 + `getLinearDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=linear-dimension.story>
 + `useJsonEditorData` <https://plantain-00.github.io/composable-editor-canvas/?p=json-editor.story>
++ `useFlowLayoutCursor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-cursor.story>
 
 ## combinations
 
 + combination 1: <https://plantain-00.github.io/composable-editor-canvas/?p=index>
 + combination-2.story: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-2.story>
 + whiteboard: <https://plantain-00.github.io/composable-editor-canvas/?p=whiteboard>
++ combination-3.story: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-3.story>

@@ -636,6 +636,9 @@ export function getTextSize(font: string, text: string): {
 } | undefined;
 
 // @public (undocumented)
+export function getTextSizeFromCache(font: string, text: string): Size | undefined;
+
+// @public (undocumented)
 export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position): {
     r: number;
     x: number;
@@ -779,6 +782,9 @@ export interface LinearGradient {
 
 // @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export function loadFlowLayoutText<T>(text: string, fontSize: number, fontFamily: string, getTextContent: (text: string, width: number) => T): T[];
 
 // @public (undocumented)
 export const m3: {
@@ -1481,6 +1487,46 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 
 // @public (undocumented)
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
+
+// @public (undocumented)
+export function useFlowLayoutCursor<T extends {
+    text: string;
+    width: number;
+}>(props: {
+    state: readonly T[];
+    width: number;
+    fontSize: number;
+    fontFamily: string;
+    lineHeight: number;
+    setState(recipe: (draft: WritableDraft<T>[]) => void): void;
+    getTextContent(text: string, width: number): WritableDraft<T>;
+    processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
+    onPaste?(e: React_2.ClipboardEvent<HTMLInputElement>): void;
+    onLocationChanged?(location: number): void;
+}): {
+    inputText: (text: string) => void;
+    arrowLeft: (shift?: boolean) => void;
+    arrowRight: (shift?: boolean) => void;
+    arrowUp: (shift?: boolean) => void;
+    arrowDown: (shift?: boolean) => void;
+    selectAll: () => void;
+    getCopiedContents: (cut?: boolean) => T[] | undefined;
+    onMouseDown: (e: React_2.MouseEvent<HTMLDivElement>) => void;
+    onMouseUp: (e: React_2.MouseEvent<HTMLDivElement>) => void;
+    onMouseMove: (e: React_2.MouseEvent<HTMLDivElement>) => void;
+    range: {
+        min: number;
+        max: number;
+    } | undefined;
+    backspace: () => void;
+    paste: () => void;
+    iterateContentPosition: () => Generator<Position & {
+        i: number;
+        content: T;
+    }, void, unknown>;
+    isSelected: (index: number) => boolean | undefined;
+    cursor: JSX.Element;
+};
 
 // @public (undocumented)
 export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) => void): {
