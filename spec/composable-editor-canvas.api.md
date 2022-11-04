@@ -1173,6 +1173,7 @@ export function Scrollbar(props: {
     type: 'horizontal' | 'vertical';
     contentSize: number;
     containerSize: number;
+    align?: 'head' | 'center' | 'tail';
     onChange: (value: number) => void;
     style?: React_2.CSSProperties;
 }): JSX.Element | null;
@@ -1495,6 +1496,7 @@ export function useFlowLayoutCursor<T extends {
 }>(props: {
     state: readonly T[];
     width: number;
+    height: number;
     fontSize: number;
     fontFamily: string;
     lineHeight: number;
@@ -1503,29 +1505,15 @@ export function useFlowLayoutCursor<T extends {
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onPaste?(e: React_2.ClipboardEvent<HTMLInputElement>): void;
     onLocationChanged?(location: number): void;
+    style?: React_2.CSSProperties;
 }): {
-    inputText: (text: string) => void;
-    arrowLeft: (shift?: boolean) => void;
-    arrowRight: (shift?: boolean) => void;
-    arrowUp: (shift?: boolean) => void;
-    arrowDown: (shift?: boolean) => void;
-    selectAll: () => void;
-    getCopiedContents: (cut?: boolean) => T[] | undefined;
-    onMouseDown: (e: React_2.MouseEvent<HTMLDivElement>) => void;
-    onMouseUp: (e: React_2.MouseEvent<HTMLDivElement>) => void;
-    onMouseMove: (e: React_2.MouseEvent<HTMLDivElement>) => void;
-    range: {
-        min: number;
-        max: number;
-    } | undefined;
-    backspace: () => void;
-    paste: () => void;
-    iterateContentPosition: () => Generator<Position & {
+    layoutResult: (Position & {
         i: number;
         content: T;
-    }, void, unknown>;
+    })[];
     isSelected: (index: number) => boolean | undefined;
-    cursor: JSX.Element;
+    scrollY: number;
+    container: (children: React_2.ReactNode) => JSX.Element;
 };
 
 // @public (undocumented)
@@ -1791,6 +1779,10 @@ export function useWheelScroll<T extends HTMLElement>(options?: Partial<{
     initialPosition: Position;
     localStorageXKey: string;
     localStorageYKey: string;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
 }>): {
     ref: React_2.MutableRefObject<T | null>;
     x: number;

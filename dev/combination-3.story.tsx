@@ -1,5 +1,5 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutCursor } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutCursor, reactSvgRenderTarget } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
@@ -19,6 +19,7 @@ export default () => {
   const fontFamily = 'monospace'
   const width = 400
   const height = 200
+  const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
 
   React.useEffect(() => {
     (async () => {
@@ -88,6 +89,14 @@ export default () => {
         }}
         defaultValue={initialState.map(s => s.text).join('')}
       />
+      <div>
+        {[reactCanvasRenderTarget, reactSvgRenderTarget].map((t) => (
+          <span key={t.type}>
+            <input type='checkbox' checked={target.type === t.type} id={t.type} onChange={(e) => e.target.checked ? setTarget(t) : undefined} />
+            <label htmlFor={t.type}>{t.type}</label>
+          </span>
+        ))}
+      </div>
       <RichTextEditor
         ref={editorRef}
         initialState={initialState}
@@ -97,6 +106,7 @@ export default () => {
         fontFamily={fontFamily}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
         onSendLocation={onSendLocation}
+        target={target}
       />
     </div>
   )
@@ -110,15 +120,17 @@ const RichTextEditor = React.forwardRef((props: {
   fontFamily: string
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendLocation?: (location: number) => void
+  target: ReactRenderTarget<unknown>
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const lineHeight = props.fontSize * 1.2
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
-  const { cursor, onMouseDown, onMouseUp, onMouseMove, isSelected, iterateContentPosition } = useFlowLayoutCursor({
+  const { container, isSelected, layoutResult } = useFlowLayoutCursor({
     state,
     setState,
     width: props.width,
+    height: props.height,
     fontSize: props.fontSize,
     fontFamily: props.fontFamily,
     lineHeight,
@@ -161,9 +173,9 @@ const RichTextEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const target: ReactRenderTarget<unknown> = reactCanvasRenderTarget
+  const target = props.target
   const children: unknown[] = []
-  for (const { x, y, i, content } of iterateContentPosition()) {
+  for (const { x, y, i, content } of layoutResult) {
     if (isSelected(i)) {
       children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
     }
@@ -176,30 +188,8 @@ const RichTextEditor = React.forwardRef((props: {
     }
     children.push(target.renderText(x + content.width / 2, y + props.fontSize, content.text, 0x000000, props.fontSize, props.fontFamily, { textAlign: 'center' }))
   }
-  const result = target.renderResult(children, props.width, props.height, {
-    attributes: {
-      onMouseDown,
-      onMouseMove,
-      onMouseUp,
-      style: {
-        cursor: 'text',
-      }
-    }
-  })
-  return (
-    <div
-      style={{
-        position: 'relative',
-        width: props.width + 'px',
-        height: props.height + 'px',
-        border: '1px solid black',
-      }}
-      onMouseLeave={onMouseUp}
-    >
-      {cursor}
-      {result}
-    </div>
-  )
+  const result = target.renderResult(children, props.width, props.height)
+  return container(result)
 })
 
 export interface RichTextEditorRef {

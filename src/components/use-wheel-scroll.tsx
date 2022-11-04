@@ -12,10 +12,18 @@ export function useWheelScroll<T extends HTMLElement>(
     initialPosition: Position
     localStorageXKey: string
     localStorageYKey: string
+    minX: number
+    maxX: number
+    minY: number
+    maxY: number
   }>
 ) {
   const maxOffsetX = options?.maxOffsetX ?? -1
   const maxOffsetY = options?.maxOffsetY ?? -1
+  const minX = options?.minX
+  const maxX = options?.maxX
+  const minY = options?.minY
+  const maxY = options?.maxY
   const [x, setX] = useLocalStorageState(options?.localStorageXKey, options?.initialPosition?.x ?? 0)
   const [y, setY] = useLocalStorageState(options?.localStorageYKey, options?.initialPosition?.y ?? 0)
   const ref = React.useRef<T | null>(null)
@@ -28,16 +36,30 @@ export function useWheelScroll<T extends HTMLElement>(
       if (!e.ctrlKey) {
         e.preventDefault()
         setX((x) => {
-          if (maxOffsetX >= 0) {
-            return Math.max(-maxOffsetX, Math.min(maxOffsetX, x - e.deltaX))
+          let result = x - e.deltaX
+          if (minX !== undefined) {
+            result = Math.max(minX, result)
           }
-          return x - e.deltaX
+          if (maxX !== undefined) {
+            result = Math.min(maxX, result)
+          }
+          if (maxOffsetX >= 0) {
+            result = Math.max(-maxOffsetX, Math.min(maxOffsetX, result))
+          }
+          return result
         })
         setY((y) => {
-          if (maxOffsetY >= 0) {
-            return Math.max(-maxOffsetY, Math.min(maxOffsetY, y - e.deltaY))
+          let result = y - e.deltaY
+          if (minY !== undefined) {
+            result = Math.max(minY, result)
           }
-          return y - e.deltaY
+          if (maxY !== undefined) {
+            result = Math.min(maxY, result)
+          }
+          if (maxOffsetY >= 0) {
+            result = Math.max(-maxOffsetY, Math.min(maxOffsetY, result))
+          }
+          return result
         })
       }
     }
@@ -45,7 +67,7 @@ export function useWheelScroll<T extends HTMLElement>(
     return () => {
       ref.current?.removeEventListener('wheel', wheelHandler)
     }
-  }, [ref.current, maxOffsetX, maxOffsetY])
+  }, [ref.current, maxOffsetX, maxOffsetY, minX, maxX, minY, maxY])
 
   return {
     ref,
