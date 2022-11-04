@@ -1,3 +1,6 @@
+import { Size } from "./geometry"
+import { MapCache2 } from "./weakmap-cache"
+
 /**
  * @public
  */
@@ -13,6 +16,14 @@ export function getTextSize(font: string, text: string) {
     }
   }
   return undefined
+}
+
+const textSizeMap = new MapCache2<string, string, Size | undefined>()
+/**
+ * @public
+ */
+export function getTextSizeFromCache(font: string, text: string) {
+  return textSizeMap.get(font, text, () => getTextSize(font, text))
 }
 
 /**
