@@ -10,6 +10,7 @@ export function Scrollbar(props: {
   type: 'horizontal' | 'vertical'
   contentSize: number
   containerSize: number
+  align?: 'head' | 'center' | 'tail'
   onChange: (value: number) => void
   style?: React.CSSProperties
 }) {
@@ -19,7 +20,7 @@ export function Scrollbar(props: {
     transformOffset: ({ x, y }) => {
       const newOffset = Math.max(Math.min(type === 'vertical' ? y : x, containerSize - scrollbarSize), 0)
       if (newOffset !== offset) {
-        props.onChange((newOffset + scrollbarSize / 2 - containerSize / 2) * scale)
+        props.onChange((newOffset - alignOffset) * scale)
       }
       return { x, y }
     }
@@ -31,10 +32,11 @@ export function Scrollbar(props: {
 
   // 滚动条尺寸
   const scrollbarSize = Math.max(12, contentSize ? containerSize * containerSize / contentSize : 0)
+  const alignOffset = (containerSize / 2 - scrollbarSize / 2) * (props.align === 'head' ? 0 : props.align === 'tail' ? 2 : 1)
   // 内容移动距离与滚动条滚动距离的比例，根据滚动到底时内容移动的距离来算
   const scale = -(contentSize - containerSize) / (containerSize - scrollbarSize)
   // 相对上、左，滚动条滚动距离
-  const offset = props.value / scale + containerSize / 2 - scrollbarSize / 2
+  const offset = props.value / scale + alignOffset
 
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
