@@ -24,7 +24,8 @@ export default () => {
 
   const target: ReactRenderTarget<unknown> = reactCanvasRenderTarget
   const children: unknown[] = []
-  for (const { x, y, i, content } of layoutResult) {
+  for (const { x, y, i, content, visible } of layoutResult) {
+    if (!visible) continue
     if (isSelected(i)) {
       children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
     }

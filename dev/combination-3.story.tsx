@@ -1,5 +1,5 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutCursor, reactSvgRenderTarget } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutCursor, reactSvgRenderTarget, Position } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
@@ -20,6 +20,7 @@ export default () => {
   const width = 400
   const height = 200
   const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
+  const [autoHeight, setAutoHeight] = React.useState(false)
 
   React.useEffect(() => {
     (async () => {
@@ -86,16 +87,21 @@ export default () => {
           width: width + 'px',
           height: height + 'px',
           padding: '2px',
+          resize: 'none',
         }}
         defaultValue={initialState.map(s => s.text).join('')}
       />
       <div>
         {[reactCanvasRenderTarget, reactSvgRenderTarget].map((t) => (
-          <span key={t.type}>
-            <input type='checkbox' checked={target.type === t.type} id={t.type} onChange={(e) => e.target.checked ? setTarget(t) : undefined} />
-            <label htmlFor={t.type}>{t.type}</label>
-          </span>
+          <label key={t.type}>
+            <input type='radio' checked={target.type === t.type} onChange={() => setTarget(t)} />
+            {t.type}
+          </label>
         ))}
+        <label>
+          <input type='checkbox' checked={autoHeight} onChange={(e) => setAutoHeight(e.target.checked)} />
+          autoHeight
+        </label>
       </div>
       <RichTextEditor
         ref={editorRef}
@@ -107,6 +113,7 @@ export default () => {
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
         onSendLocation={onSendLocation}
         target={target}
+        autoHeight={autoHeight}
       />
     </div>
   )
@@ -121,12 +128,13 @@ const RichTextEditor = React.forwardRef((props: {
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendLocation?: (location: number) => void
   target: ReactRenderTarget<unknown>
+  autoHeight: boolean
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const lineHeight = props.fontSize * 1.2
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
-  const { container, isSelected, layoutResult } = useFlowLayoutCursor({
+  const { container, isSelected, layoutResult, actualHeight, cursor, inputText } = useFlowLayoutCursor({
     state,
     setState,
     width: props.width,
@@ -136,6 +144,9 @@ const RichTextEditor = React.forwardRef((props: {
     lineHeight,
     getTextContent: (text, width) => ({ text, width, type: 'text' as const }),
     processInput(e) {
+      if (processAtInput(e)) {
+        return true
+      }
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'z') {
           // eslint-disable-next-line plantain/promise-not-await
@@ -146,7 +157,9 @@ const RichTextEditor = React.forwardRef((props: {
       return false
     },
     onLocationChanged: props.onSendLocation,
+    autoHeight: props.autoHeight,
   })
+  const { processAtInput, suggestions, getRenderAtStyle } = useAt(cursor, lineHeight, inputText)
   const [othersLocation, setOthersLocation] = React.useState<{ location: number, operator: string }[]>([])
 
   React.useImperativeHandle<RichTextEditorRef, RichTextEditorRef>(ref, () => ({
@@ -175,9 +188,20 @@ const RichTextEditor = React.forwardRef((props: {
 
   const target = props.target
   const children: unknown[] = []
-  for (const { x, y, i, content } of layoutResult) {
+  for (const { x, y, i, content, visible } of layoutResult) {
+    if (!visible) continue
+    let color = 0x000000
+    let backgroundColor: number | undefined
+    const style = getRenderAtStyle(content.text)
+    if (style) {
+      color = style.color
+      backgroundColor = style.backgroundColor
+    }
     if (isSelected(i)) {
-      children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
+      backgroundColor = 0xB3D6FD
+    }
+    if (backgroundColor !== undefined) {
+      children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
     }
     const others = othersLocation.filter(c => c.location === i)
     if (others.length > 0) {
@@ -186,11 +210,100 @@ const RichTextEditor = React.forwardRef((props: {
         target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, props.fontFamily),
       )
     }
-    children.push(target.renderText(x + content.width / 2, y + props.fontSize, content.text, 0x000000, props.fontSize, props.fontFamily, { textAlign: 'center' }))
+    children.push(target.renderText(x + content.width / 2, y + props.fontSize, content.text, color, props.fontSize, props.fontFamily, { textAlign: 'center' }))
   }
-  const result = target.renderResult(children, props.width, props.height)
-  return container(result)
+  const result = target.renderResult(children, props.width, actualHeight)
+  return (
+    <div style={{ position: 'relative' }}>
+      {container(result)}
+      {suggestions}
+    </div>
+  )
 })
+
+function useAt(cursor: Position, lineHeight: number, inputText: (text: string[]) => void) {
+  const [at, setAt] = React.useState('')
+  const [atIndex, setAtIndex] = React.useState(0)
+
+  return {
+    getRenderAtStyle(text: string) {
+      if (text.length > 1 && text.startsWith('@')) {
+        return {
+          color: 0xffffff,
+          backgroundColor: 0x0000ff,
+        }
+      }
+      return
+    },
+    processAtInput(e: React.KeyboardEvent<HTMLInputElement>) {
+      if (at) {
+        if (e.key.length === 1 && e.key >= 'a' && e.key <= 'z') {
+          setAt(a => a + e.key)
+          e.preventDefault()
+          return true
+        }
+        if (e.key === 'Enter' && at) {
+          inputText([at + '_' + atIndex, ' '])
+          setAt('')
+          return true
+        }
+        if (e.key === 'Escape') {
+          setAt('')
+          e.preventDefault()
+          return true
+        }
+        if (e.key === 'ArrowDown') {
+          setAtIndex((atIndex + 1) % 5)
+          e.preventDefault()
+          return true
+        }
+        if (e.key === 'ArrowUp') {
+          setAtIndex((atIndex + 4) % 5)
+          e.preventDefault()
+          return true
+        }
+        if (e.key === 'Backspace') {
+          if (at.length > 1) {
+            setAt(a => a.slice(0, a.length - 1))
+          } else {
+            setAt('')
+          }
+          e.preventDefault()
+          return true
+        }
+      }
+      if (e.key === '@') {
+        setAt('@')
+        e.preventDefault()
+        return true
+      }
+      return false
+    },
+    suggestions: at && <div
+      style={{
+        position: 'absolute',
+        left: cursor.x + 'px',
+        top: cursor.y + lineHeight + 'px',
+        background: 'white',
+        width: '100px',
+        border: '1px solid black',
+      }}
+    >
+      <div>{at}</div>
+      {new Array<number>(5).fill(0).map((_, i) => <div
+        key={i}
+        style={{ background: atIndex === i ? '#ccc' : undefined }}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          inputText([at + '_' + i, ' '])
+          setAt('')
+        }}
+      >
+        {at + '_' + i}
+      </div>)}
+    </div>,
+  }
+}
 
 export interface RichTextEditorRef {
   handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }): void

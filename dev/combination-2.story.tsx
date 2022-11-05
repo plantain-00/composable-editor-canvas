@@ -194,35 +194,35 @@ export default () => {
         <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
         {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
         {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
-        {!readOnly && <span>
-          <input type='checkbox' checked={panelVisible} id='panel' onChange={() => setPanelVisible(!panelVisible)} />
-          <label htmlFor='panel'>panel</label>
-        </span>}
-        <span>
-          <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
-          <label htmlFor='print mode'>print mode</label>
-        </span>
-        <span>
-          <input type='checkbox' checked={debug} id='debug' onChange={() => setDebug(!debug)} />
-          <label htmlFor='debug'>debug</label>
-        </span>
+        {!readOnly && <label>
+          <input type='checkbox' checked={panelVisible} onChange={() => setPanelVisible(!panelVisible)} />
+          panel
+        </label>}
+        <label>
+          <input type='checkbox' checked={printMode} onChange={() => setPrintMode(!printMode)} />
+          print mode
+        </label>
+        <label>
+          <input type='checkbox' checked={debug} onChange={() => setDebug(!debug)} />
+          debug
+        </label>
         <select value={renderTarget} onChange={(e) => setRenderTarget(e.target.value)} style={{ position: 'relative' }}>
           {getAllRendererTypes().map((type) => <option key={type} value={type}>{type}</option>)}
         </select>
         {!readOnly && allSnapTypes.map((type) => (
-          <span key={type} style={{ position: 'relative' }}>
-            <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
-            <label htmlFor={type}>{type}</label>
-          </span>
+          <label key={type} style={{ position: 'relative' }}>
+            <input type='checkbox' checked={snapTypes.includes(type)} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
+            {type}
+          </label>
         ))}
-        <span style={{ position: 'relative' }}>
-          <input type='checkbox' checked={readOnly} id='read only' onChange={(e) => setReadOnly(e.target.checked)} />
-          <label htmlFor='read only'>read only</label>
-        </span>
-        {!readOnly && <span style={{ position: 'relative' }}>
-          <input type='checkbox' checked={inputFixed} id='input fixed' onChange={(e) => setInputFixed(e.target.checked)} />
-          <label htmlFor='input fixed'>input fixed</label>
-        </span>}
+        <label style={{ position: 'relative' }}>
+          <input type='checkbox' checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} />
+          read only
+        </label>
+        {!readOnly && <label style={{ position: 'relative' }}>
+          <input type='checkbox' checked={inputFixed} onChange={(e) => setInputFixed(e.target.checked)} />
+          input fixed
+        </label>}
         <input type='color' style={{ position: 'relative' }} value={getColorString(backgroundColor)} onChange={(e) => setBackgroundColor(colorStringToNumber(e.target.value))} />
       </div>
     </div>

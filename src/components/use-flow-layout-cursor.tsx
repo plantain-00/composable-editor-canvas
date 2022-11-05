@@ -1,5 +1,5 @@
-import type { WritableDraft } from "immer/dist/types/types-external"
 import * as React from "react"
+import { useEvent, useGlobalMouseUp } from "."
 import { getTextSizeFromCache, Position } from "../utils"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
@@ -15,19 +15,28 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
   fontSize: number
   fontFamily: string
   lineHeight: number
-  setState(recipe: (draft: WritableDraft<T>[]) => void): void
-  getTextContent(text: string, width: number): WritableDraft<T>
+  setState(recipe: (draft: T[]) => void): void
+  getTextContent(text: string, width: number): T
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
   onPaste?(e: React.ClipboardEvent<HTMLInputElement>): void
   onLocationChanged?(location: number): void
   style?: React.CSSProperties
+  autoHeight?: boolean
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
+  const [contentHeight, setContentHeight] = React.useState(0)
 
-  const inputText = (text: string) => {
-    const newCharacters = loadFlowLayoutText(text, props.fontSize, props.fontFamily, props.getTextContent)
+  const inputText = (text: string | string[]) => {
+    const newCharacters: T[] = []
+    if (Array.isArray(text)) {
+      for (const t of text) {
+        newCharacters.push(...loadFlowLayoutText(t, props.fontSize, props.fontFamily, props.getTextContent, true))
+      }
+    } else {
+      newCharacters.push(...loadFlowLayoutText(text, props.fontSize, props.fontFamily, props.getTextContent))
+    }
     if (range) {
       setLocation(range.min + text.length)
       setSelectionStart(undefined)
@@ -102,7 +111,7 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     setLocation(positionToLocation({
       x: cursorX,
       y: cursorY - props.lineHeight / 2 + scrollY,
-    }))
+    }, false))
   }
   const arrowDown = (shift = false) => {
     if (!shift && range) {
@@ -116,7 +125,7 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     setLocation(positionToLocation({
       x: cursorX,
       y: cursorY + props.lineHeight * 3 / 2 + scrollY,
-    }))
+    }, false))
   }
   const selectAll = () => {
     setSelectionStart(0)
@@ -139,7 +148,6 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     })
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
     if (e.nativeEvent.isComposing) {
       return
     }
@@ -166,8 +174,10 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
         }
         return
       }
+    } else {
+      e.preventDefault()
+      inputText(e.key)
     }
-    inputText(e.key)
   }
   const onCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     inputText(e.data)
@@ -192,10 +202,14 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       y: e.clientY - bounding.top,
     }
   }
-  const positionToLocation = ({ x, y }: Position) => {
+  const positionToLocation = ({ x, y }: Position, ignoreInvisible = true) => {
+    if (y < scrollY) {
+      return 0
+    }
     const minY = y - props.lineHeight
     let result: number | undefined
     for (const p of layoutResult) {
+      if (ignoreInvisible && !p.visible) continue
       if (p.y >= minY && p.y <= y) {
         if (Math.abs(p.x - x) < p.content.width / 2) {
           return p.i
@@ -223,20 +237,29 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     if (downLocation.current === undefined) {
       return
     }
-    const p = positionToLocation(getPosition(e))
+    const s = getPosition(e)
+    const p = positionToLocation(s, false)
+    setLocation(p)
     if (p === downLocation.current) {
-      setLocation(p)
       setSelectionStart(undefined)
     } else {
-      setLocation(p)
       setSelectionStart(downLocation.current)
+    }
+    if (!props.autoHeight) {
+      if (s.y >= 0 && s.y <= props.lineHeight) {
+        setY(y => filterY(y + 2))
+      } else if (s.y <= props.height && s.y >= props.height - props.lineHeight) {
+        setY(y => filterY(y - 2))
+      }
     }
   }
   const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove(e)
     ref.current?.focus()
-    downLocation.current = undefined
   }
+  useGlobalMouseUp(useEvent(() => {
+    downLocation.current = undefined
+  }))
   const onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const p = positionToLocation(getPosition(e))
     let start: number | undefined
@@ -281,14 +304,20 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       index: props.state.length,
     }
   }
-  const isVisible = (y: number) => y >= -props.lineHeight && y <= props.height
+  const isVisible = (y: number) => props.autoHeight ? true : y >= -props.lineHeight && y <= props.height
 
-  const [contentHeight, setContentHeight] = React.useState(0)
-  const { ref: scrollRef, y: scrollY, setY } = useWheelScroll<HTMLDivElement>({
-    minY: contentHeight > props.height ? props.height - contentHeight : 0,
+  const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
+    minY: props.autoHeight ? 0 : contentHeight > props.height ? props.height - contentHeight : 0,
     maxY: 0,
+    disabled: props.autoHeight,
   })
-  const layoutResult: (Position & { i: number, content: T })[] = []
+  React.useEffect(() => {
+    if (props.autoHeight) {
+      setY(0)
+    }
+  }, [props.autoHeight, setY])
+
+  const layoutResult: (Position & { i: number, content: T, visible: boolean })[] = []
   {
     let x = 0
     let y = scrollY
@@ -301,9 +330,7 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     }
     const addResult = (newLine: boolean) => {
       const content = props.state[i]
-      if (visible) {
-        layoutResult.push({ x, y, i, content })
-      }
+      layoutResult.push({ x, y, i, content, visible })
       if (newLine) {
         toNewLine()
       } else {
@@ -352,6 +379,7 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       }
       addResult(false)
     }
+    layoutResult.push({ x, y, i, content: props.getTextContent('', 0), visible })
     const newContentHeight = y + props.lineHeight - scrollY
     if (contentHeight < newContentHeight) {
       setContentHeight(newContentHeight)
@@ -359,20 +387,14 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
   }
 
   const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location) } : undefined
-  const lastLayoutResult = layoutResult[layoutResult.length - 1]
-  let cursorX = lastLayoutResult ? lastLayoutResult.x + lastLayoutResult.content.width : 0
-  let cursorY = lastLayoutResult ? (lastLayoutResult.y - scrollY) : 0
-  for (const p of layoutResult) {
-    if (p.i === location) {
-      cursorX = p.x
-      cursorY = p.y - scrollY
-      break
-    }
-  }
+  const p = layoutResult[location] ?? layoutResult[layoutResult.length - 1]
+  const cursorX = p.x
+  const cursorY = p.y - scrollY
 
   const lastLocation = React.useRef<number>()
+  const lastCursorY = React.useRef<number>()
   React.useEffect(() => {
-    if (lastLocation.current === location) {
+    if ((lastLocation.current === location && lastCursorY.current === cursorY) || props.autoHeight) {
       return
     }
     const y = cursorY + scrollY
@@ -382,22 +404,33 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       setY(props.height - props.lineHeight - cursorY)
     }
     lastLocation.current = location
-  }, [location, cursorY])
+    lastCursorY.current = cursorY
+  }, [location, cursorY, scrollY])
 
   React.useEffect(() => {
     props.onLocationChanged?.(location)
   }, [location])
 
+  let actualHeight = props.height
+  if (props.autoHeight && contentHeight > props.height) {
+    actualHeight = contentHeight
+  }
+
   return {
     layoutResult,
     isSelected: (index: number) => range && index >= range.min && index < range.max,
-    scrollY,
+    cursor: {
+      x: cursorX,
+      y: cursorY + scrollY,
+    },
+    actualHeight,
+    inputText,
     container: (children: React.ReactNode) => (
       <div
         style={{
           position: 'relative',
           width: props.width + 'px',
-          height: props.height + 'px',
+          height: actualHeight + 'px',
           border: '1px solid black',
           clipPath: 'inset(0px 0px)',
           ...props.style,
@@ -422,14 +455,6 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
           onPaste={props.onPaste ?? onPaste}
           onBlur={onBlur}
         />
-        <Scrollbar
-          value={scrollY}
-          type='vertical'
-          containerSize={props.height}
-          contentSize={contentHeight}
-          onChange={setY}
-          align='head'
-        />
         {children}
         <div
           onMouseDown={onMouseDown}
@@ -438,6 +463,14 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
           onDoubleClick={onDoubleClick}
           style={{ inset: '0px', cursor: 'text', position: 'absolute' }}
         ></div>
+        {!props.autoHeight && <Scrollbar
+          value={scrollY}
+          type='vertical'
+          containerSize={props.height}
+          contentSize={contentHeight}
+          onChange={setY}
+          align='head'
+        />}
       </div>
     ),
   }
@@ -459,8 +492,16 @@ export function loadFlowLayoutText<T>(
   fontSize: number,
   fontFamily: string,
   getTextContent: (text: string, width: number) => T,
+  whole = false,
 ) {
   const newCharacters: T[] = []
+  if (whole) {
+    const size = getTextSizeFromCache(`${fontSize}px ${fontFamily}`, text)
+    if (size) {
+      newCharacters.push(getTextContent(text, size.width))
+    }
+    return newCharacters
+  }
   for (const c of text) {
     const size = getTextSizeFromCache(`${fontSize}px ${fontFamily}`, c)
     if (size) {
