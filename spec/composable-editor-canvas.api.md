@@ -784,7 +784,7 @@ export interface LinearGradient {
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
-export function loadFlowLayoutText<T>(text: string, fontSize: number, fontFamily: string, getTextContent: (text: string, width: number) => T): T[];
+export function loadFlowLayoutText<T>(text: string, fontSize: number, fontFamily: string, getTextContent: (text: string, width: number) => T, whole?: boolean): T[];
 
 // @public (undocumented)
 export const m3: {
@@ -1500,21 +1500,31 @@ export function useFlowLayoutCursor<T extends {
     fontSize: number;
     fontFamily: string;
     lineHeight: number;
-    setState(recipe: (draft: WritableDraft<T>[]) => void): void;
-    getTextContent(text: string, width: number): WritableDraft<T>;
+    setState(recipe: (draft: T[]) => void): void;
+    getTextContent(text: string, width: number): T;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onPaste?(e: React_2.ClipboardEvent<HTMLInputElement>): void;
     onLocationChanged?(location: number): void;
     style?: React_2.CSSProperties;
+    autoHeight?: boolean;
 }): {
     layoutResult: (Position & {
         i: number;
         content: T;
+        visible: boolean;
     })[];
     isSelected: (index: number) => boolean | undefined;
-    scrollY: number;
+    cursor: {
+        x: number;
+        y: number;
+    };
+    actualHeight: number;
+    inputText: (text: string | string[]) => void;
     container: (children: React_2.ReactNode) => JSX.Element;
 };
+
+// @public (undocumented)
+export function useGlobalMouseUp(handler: (e: MouseEvent) => void): void;
 
 // @public (undocumented)
 export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) => void): {
@@ -1783,12 +1793,15 @@ export function useWheelScroll<T extends HTMLElement>(options?: Partial<{
     maxX: number;
     minY: number;
     maxY: number;
+    disabled: boolean;
 }>): {
     ref: React_2.MutableRefObject<T | null>;
     x: number;
     y: number;
     setX: React_2.Dispatch<React_2.SetStateAction<number>>;
     setY: React_2.Dispatch<React_2.SetStateAction<number>>;
+    filterX: (result: number) => number;
+    filterY: (result: number) => number;
 };
 
 // @public (undocumented)

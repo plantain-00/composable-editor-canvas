@@ -31,15 +31,15 @@ export const WhiteBoard = () => {
         onChange={onChange}
       />
       <div style={{ position: 'relative' }}>
-        <span>
-          <input type='checkbox' checked={printMode} id='print mode' onChange={() => setPrintMode(!printMode)} />
-          <label htmlFor='print mode'>print mode</label>
-        </span>
+        <label>
+          <input type='checkbox' checked={printMode} onChange={() => setPrintMode(!printMode)} />
+          print mode
+        </label>
         {allSnapTypes.map((type) => (
-          <span key={type}>
-            <input type='checkbox' checked={snapTypes.includes(type)} id={type} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
-            <label htmlFor={type}>{type}</label>
-          </span>
+          <label key={type}>
+            <input type='checkbox' checked={snapTypes.includes(type)} onChange={(e) => setSnapTypes(e.target.checked ? [...snapTypes, type] : snapTypes.filter((d) => d !== type))} />
+            {type}
+          </label>
         ))}
       </div>
       <div style={{ position: 'relative' }}>
