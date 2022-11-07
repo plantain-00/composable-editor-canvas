@@ -1,5 +1,6 @@
 import React from "react"
-import { useJsonEditorData, ArrayEditor, BooleanEditor, DialogContainer, EnumArrayEditor, EnumEditor, NumberEditor, ObjectArrayEditor, ObjectEditor, StringEditor } from '../src'
+import { useJsonEditorData, ArrayEditor, BooleanEditor, DialogContainer, EnumArrayEditor, EnumEditor, NumberEditor, ObjectArrayEditor, ObjectEditor, StringEditor, ExpressionEditor } from '../src'
+import { math } from "./math"
 
 export default () => {
   const [readOnly, setReadOnly] = React.useState(false)
@@ -52,6 +53,7 @@ export default () => {
     ],
     enumTitlesExample: 'enum 1' as 'enum 1' | 'enum 2',
     enumArrayExample: ['foo'] as ('foo' | 'bar')[],
+    expressionExample: '1 + 2 = 3',
   })
 
   return (
@@ -119,6 +121,7 @@ export default () => {
             />,
             'A enum titles example': <EnumEditor enumTitles={['enum title 1', 'enum title 2']} value={value.enumTitlesExample} enums={['enum 1', 'enum 2'] as const} setValue={update((draft, v) => draft.enumTitlesExample = v)} />,
             'A enum array example': <EnumArrayEditor enumTitles={['foo title', 'bar title']} value={value.enumArrayExample} enums={['foo', 'bar'] as const} setValue={update((draft, v) => draft.enumArrayExample = v)} />,
+            'A expression example': <ExpressionEditor suggestionSources={math} value={value.expressionExample} setValue={update((draft, v) => draft.expressionExample = v)} />,
           }}
           readOnly={readOnly}
         />

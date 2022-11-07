@@ -12,6 +12,7 @@ const config: Configuration = {
         entryPoints: sourceFiles.map(s => s.fileName),
         write: false,
         outdir: '.',
+        target: 'ES2018',
         bundle: true,
       })
       return [{
