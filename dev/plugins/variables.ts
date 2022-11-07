@@ -39,9 +39,10 @@ function getModel(ctx) {
       content.p2 = ctx.getSymmetryPoint(content.p2, line);
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content));
+      const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
       const { regions, renderingLines } = getArrowGeometriesFromCache(content);
       const children = [];
       for (const line of renderingLines) {
@@ -266,8 +267,9 @@ function getModel(ctx) {
       return void 0;
     }
     return ctx.produce(target, (draft) => {
-      model.rotate?.(draft, block.base, content.angle, contents);
-      model.move?.(draft, content);
+      var _a, _b;
+      (_a = model.rotate) == null ? void 0 : _a.call(model, draft, block.base, content.angle, contents);
+      (_b = model.move) == null ? void 0 : _b.call(model, draft, content);
     });
   }
   function getBlockReferenceGeometries(content, contents) {
@@ -278,12 +280,13 @@ function getModel(ctx) {
         const points = [];
         const renderingLines = [];
         block.contents.forEach((c) => {
+          var _a, _b;
           if (!c) {
             return;
           }
           const extracted = extractContentInBlockReference(c, content, block, contents);
           if (extracted) {
-            const r = ctx.getContentModel(c)?.getGeometries?.(extracted);
+            const r = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, extracted);
             if (r) {
               lines.push(...r.lines);
               points.push(...r.points);
@@ -399,13 +402,14 @@ function getModel(ctx) {
         return blockSnapPointsCache.get(block, content, () => {
           const result = [];
           block.contents.forEach((c) => {
+            var _a;
             if (!c) {
               return;
             }
             const model = ctx.getContentModel(c);
             const extracted = extractContentInBlockReference(c, content, block, contents);
             if (extracted) {
-              const r = model?.getSnapPoints?.(extracted, contents);
+              const r = (_a = model == null ? void 0 : model.getSnapPoints) == null ? void 0 : _a.call(model, extracted, contents);
               if (r) {
                 result.push(...r);
               }
@@ -621,7 +625,8 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       const newContents = [];
       contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+        var _a, _b, _c, _d;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
           let intersectionPoints = [];
           for (let i = 0; i < contents.length; i++) {
             const c = contents[i];
@@ -632,7 +637,7 @@ function getCommand(ctx) {
           }
           intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
           if (intersectionPoints.length > 0) {
-            const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints);
+            const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.break) == null ? void 0 : _d.call(_c, content, intersectionPoints);
             if (result) {
               newContents.push(...result);
               contents[index] = void 0;
@@ -644,7 +649,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
-      return model?.break !== void 0 && !ctx.contentIsReferenced(content, contents);
+      return (model == null ? void 0 : model.break) !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "BR",
     icon
@@ -790,7 +795,8 @@ function getModel(ctx) {
   }
   function getArcGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta);
+      var _a;
+      const points = ctx.arcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const geometries = {
         lines: Array.from(ctx.iteratePolylineLines(points)),
         points,
@@ -846,12 +852,13 @@ function getModel(ctx) {
         }));
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+        var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
         const options = {
           fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+          strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(fillStyleContent)
         };
         if (strokeStyleContent.dashArray) {
@@ -1033,12 +1040,13 @@ function getModel(ctx) {
         return result.length > 1 ? result : void 0;
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+        var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
         const options = {
           fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+          strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(fillStyleContent)
         };
         if (strokeStyleContent.dashArray) {
@@ -1354,7 +1362,7 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition,
+          lastPosition: middlePosition != null ? middlePosition : startPosition,
           reset
         };
       },
@@ -1437,7 +1445,7 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition,
+          lastPosition: middlePosition != null ? middlePosition : startPosition,
           reset
         };
       },
@@ -1512,7 +1520,8 @@ function getCommand(ctx) {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getContentModel(d)?.move?.(d, offset);
+                  var _a, _b;
+                  (_b = (_a = ctx.getContentModel(d)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, d, offset);
                 })
               ]
             };
@@ -1529,7 +1538,8 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.move !== void 0;
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) !== void 0;
     },
     hotkey: "CO",
     icon
@@ -1566,10 +1576,11 @@ function getModel(ctx) {
       const remains = [];
       const boundings = [];
       content.contents.forEach((c) => {
+        var _a, _b;
         if (!c) {
           return;
         }
-        const r = ctx.getContentModel(c)?.getGeometries?.(c);
+        const r = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c);
         if (r) {
           lines.push(...r.lines);
           points.push(...r.points);
@@ -1642,6 +1653,7 @@ function getModel(ctx) {
     explode: ctx.getContainerExplode,
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {
+      var _a;
       const geometries = getGeometries(content);
       const strokeStyleContent = ctx.getStrokeStyleContent(content, renderCtx.contents);
       const fillStyleContent = ctx.getFillStyleContent(content, renderCtx.contents);
@@ -1650,7 +1662,7 @@ function getModel(ctx) {
         fillColor: renderCtx.getFillColor(fillStyleContent),
         fillPattern: renderCtx.getFillPattern(fillStyleContent),
         strokeColor: renderCtx.getStrokeColor(strokeStyleContent),
-        strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: renderCtx.transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray
       };
       return renderCtx.target.renderGroup(geometries.renderingLines.map((line) => {
@@ -1752,10 +1764,14 @@ function getCommand(ctx) {
   return {
     name: "compress",
     execute({ contents }) {
+      var _a, _b;
       const newIndexes = [];
       let validContentCount = 0;
       const invalidContentsIndex = [];
-      const contentIsValid = (d) => !!d && (ctx.getContentModel(d)?.isValid?.(d) ?? true);
+      const contentIsValid = (d) => {
+        var _a2, _b2, _c;
+        return !!d && ((_c = (_b2 = (_a2 = ctx.getContentModel(d)) == null ? void 0 : _a2.isValid) == null ? void 0 : _b2.call(_a2, d)) != null ? _c : true);
+      };
       contents.forEach((d, i) => {
         if (contentIsValid(d)) {
           newIndexes.push(validContentCount);
@@ -1772,7 +1788,7 @@ function getCommand(ctx) {
         contents.splice(i, 1);
       });
       for (const content of ctx.iterateAllContents(contents)) {
-        ctx.getContentModel(content)?.updateRefId?.(content, (refId) => typeof refId === "number" ? newIndexes[refId] : void 0);
+        (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.updateRefId) == null ? void 0 : _b.call(_a, content, (refId) => typeof refId === "number" ? newIndexes[refId] : void 0);
       }
       ctx.contentIndexCache.clear();
     },
@@ -1842,9 +1858,10 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content));
+      const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
       const { regions, renderingLines } = getGeometriesFromCache(content);
       const children = [];
       for (const line of renderingLines) {
@@ -2054,10 +2071,11 @@ function getCommand(ctx) {
       const copiedContents = [];
       const boundingPoints = [];
       ids.forEach((id) => {
+        var _a, _b;
         const content = contents[id];
         if (content) {
-          const geometries = ctx.getContentModel(content)?.getGeometries?.(content, contents);
-          if (geometries?.bounding) {
+          const geometries = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents);
+          if (geometries == null ? void 0 : geometries.bounding) {
             boundingPoints.push(geometries.bounding.start, geometries.bounding.end);
           }
           copiedContents.unshift({
@@ -2123,9 +2141,10 @@ function getCommand(ctx) {
           };
           copyData.contents.forEach((c) => {
             assistentContents.push(ctx.produce(c.content, (draft) => {
+              var _a, _b;
               const model = ctx.getContentModel(draft);
-              model?.move?.(draft, offset);
-              model?.updateRefId?.(draft, (d) => {
+              (_a = model == null ? void 0 : model.move) == null ? void 0 : _a.call(model, draft, offset);
+              (_b = model == null ? void 0 : model.updateRefId) == null ? void 0 : _b.call(model, draft, (d) => {
                 if (typeof d === "number") {
                   const index = copyData.contents.findIndex((c2) => c2.id === d);
                   if (index >= 0 && index < assistentContents.length) {
@@ -2154,9 +2173,10 @@ function getCommand(ctx) {
                   });
                   copyData.contents.forEach((c) => {
                     contents.push(ctx.produce(c.content, (draft) => {
+                      var _a, _b;
                       const model = ctx.getContentModel(draft);
-                      model?.move?.(draft, offset);
-                      model?.updateRefId?.(draft, (d) => typeof d === "number" ? idMap[d] : void 0);
+                      (_a = model == null ? void 0 : model.move) == null ? void 0 : _a.call(model, draft, offset);
+                      (_b = model == null ? void 0 : model.updateRefId) == null ? void 0 : _b.call(model, draft, (d) => typeof d === "number" ? idMap[d] : void 0);
                     }));
                   });
                 }
@@ -2181,10 +2201,11 @@ function getCommand(ctx) {
   ];
 }
 function* iterateRefContents(id, contents, ctx) {
+  var _a, _b;
   yield id;
   const content = contents[id];
   if (content) {
-    const refIds = ctx.getContentModel(content)?.getRefIds?.(content);
+    const refIds = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getRefIds) == null ? void 0 : _b.call(_a, content);
     if (refIds) {
       for (const refId of refIds) {
         yield* iterateRefContents(refId, contents, ctx);
@@ -2352,7 +2373,8 @@ function getCommand(ctx) {
     name: "delete",
     execute({ contents, selected }) {
       contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+        var _a, _b;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
           contents[index] = void 0;
         }
       });
@@ -2409,7 +2431,8 @@ function getCommand(ctx) {
     icon: startIcon,
     execute({ contents, selected, setEditingContentPath }) {
       contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
+        var _a, _b;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
           setEditingContentPath(contentSelectable(content) ? [index, "contents"] : void 0);
         }
       });
@@ -2471,7 +2494,8 @@ export {
 function getModel(ctx) {
   function getEllipseGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta);
+      var _a;
+      const points = ctx.ellipseToPolygon(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
       const polylinePoints = ctx.polygonToPolyline(points);
       return {
@@ -2490,7 +2514,8 @@ function getModel(ctx) {
   }
   function getEllipseArcGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta);
+      var _a;
+      const points = ctx.ellipseArcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolylineLines(points));
       return {
         lines,
@@ -2517,16 +2542,18 @@ function getModel(ctx) {
       content.cy += offset.y;
     },
     rotate(content, center, angle) {
+      var _a;
       const p = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy }, center, -angle);
       content.cx = p.x;
       content.cy = p.y;
-      content.angle = (content.angle ?? 0) + angle;
+      content.angle = ((_a = content.angle) != null ? _a : 0) + angle;
     },
     mirror(content, line, angle) {
+      var _a;
       const p = ctx.getSymmetryPoint({ x: content.cx, y: content.cy }, line);
       content.cx = p.x;
       content.cy = p.y;
-      content.angle = 2 * angle - (content.angle ?? 0);
+      content.angle = 2 * angle - ((_a = content.angle) != null ? _a : 0);
     },
     break(content, points) {
       if (points.length < 2) {
@@ -2542,12 +2569,13 @@ function getModel(ctx) {
       }));
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent)
       };
       if (strokeStyleContent.dashArray) {
@@ -2561,8 +2589,9 @@ function getModel(ctx) {
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
+        var _a;
         const center = { x: content.cx, y: content.cy };
-        const rotate = -(content.angle ?? 0);
+        const rotate = -((_a = content.angle) != null ? _a : 0);
         const left = ctx.rotatePositionByCenter({ x: content.cx - content.rx, y: content.cy }, center, rotate);
         const right = ctx.rotatePositionByCenter({ x: content.cx + content.rx, y: content.cy }, center, rotate);
         const top = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy - content.ry }, center, rotate);
@@ -2752,12 +2781,13 @@ function getModel(ctx) {
         return result.length > 1 ? result : void 0;
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+        var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
         const options = {
           fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+          strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(fillStyleContent),
           dashArray: strokeStyleContent.dashArray
         };
@@ -2774,10 +2804,11 @@ function getModel(ctx) {
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
+          var _a;
           const center = { x: content.cx, y: content.cy };
           const startAngle = content.startAngle / 180 * Math.PI;
           const endAngle = content.endAngle / 180 * Math.PI;
-          const rotate = -(content.angle ?? 0);
+          const rotate = -((_a = content.angle) != null ? _a : 0);
           return {
             editPoints: [
               {
@@ -2797,10 +2828,11 @@ function getModel(ctx) {
                 ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, center, rotate),
                 cursor: ctx.getResizeCursor(content.startAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
+                  var _a2;
                   if (!isEllipseArcContent(c)) {
                     return;
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, content.angle ?? 0);
+                  const p = ctx.rotatePositionByCenter(cursor, center, (_a2 = content.angle) != null ? _a2 : 0);
                   c.startAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI;
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [center, cursor] }] };
@@ -2810,10 +2842,11 @@ function getModel(ctx) {
                 ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, center, rotate),
                 cursor: ctx.getResizeCursor(content.endAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
+                  var _a2;
                   if (!isEllipseArcContent(c)) {
                     return;
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, content.angle ?? 0);
+                  const p = ctx.rotatePositionByCenter(cursor, center, (_a2 = content.angle) != null ? _a2 : 0);
                   c.endAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI;
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [center, cursor] }] };
@@ -3049,7 +3082,7 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition,
+          lastPosition: middlePosition != null ? middlePosition : startPosition,
           reset
         };
       },
@@ -3125,7 +3158,7 @@ function getCommand(ctx) {
           input,
           onMove,
           assistentContents,
-          lastPosition: middlePosition ?? startPosition,
+          lastPosition: middlePosition != null ? middlePosition : startPosition,
           reset
         };
       },
@@ -5087,6 +5120,441 @@ function isAsync(expression) {
   });
 }
 
+// dev/math.ts
+var math = [
+  {
+    "name": "Math",
+    "members": [
+      {
+        "name": "E",
+        "comment": "The mathematical constant e. This is Euler's number, the base of natural logarithms."
+      },
+      {
+        "name": "LN10",
+        "comment": "The natural logarithm of 10."
+      },
+      {
+        "name": "LN2",
+        "comment": "The natural logarithm of 2."
+      },
+      {
+        "name": "LOG2E",
+        "comment": "The base-2 logarithm of e."
+      },
+      {
+        "name": "LOG10E",
+        "comment": "The base-10 logarithm of e."
+      },
+      {
+        "name": "PI",
+        "comment": "Pi. This is the ratio of the circumference of a circle to its diameter."
+      },
+      {
+        "name": "SQRT1_2",
+        "comment": "The square root of 0.5, or, equivalently, one divided by the square root of 2."
+      },
+      {
+        "name": "SQRT2",
+        "comment": "The square root of 2."
+      },
+      {
+        "name": "abs",
+        "comment": "Returns the absolute value of a number (the value without regard to whether it is positive or negative).\\r\\nFor example, the absolute value of -5 is the same as the absolute value of 5.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression for which the absolute value is needed.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "acos",
+        "comment": "Returns the arc cosine (or inverse cosine) of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "asin",
+        "comment": "Returns the arcsine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "atan",
+        "comment": "Returns the arctangent of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression for which the arctangent is needed.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "atan2",
+        "comment": "Returns the angle (in radians) from the X axis to a point.",
+        "parameters": [
+          {
+            "name": "y",
+            "comment": "A numeric expression representing the cartesian y-coordinate.",
+            "optional": false
+          },
+          {
+            "name": "x",
+            "comment": "A numeric expression representing the cartesian x-coordinate.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "ceil",
+        "comment": "Returns the smallest integer greater than or equal to its numeric argument.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "cos",
+        "comment": "Returns the cosine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "exp",
+        "comment": "Returns e (the base of natural logarithms) raised to a power.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression representing the power of e.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "floor",
+        "comment": "Returns the greatest integer less than or equal to its numeric argument.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "log",
+        "comment": "Returns the natural logarithm (base e) of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "max",
+        "comment": "Returns the larger of a set of supplied numeric expressions.",
+        "parameters": [
+          {
+            "name": "values",
+            "comment": "Numeric expressions to be evaluated.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "min",
+        "comment": "Returns the smaller of a set of supplied numeric expressions.",
+        "parameters": [
+          {
+            "name": "values",
+            "comment": "Numeric expressions to be evaluated.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "pow",
+        "comment": "Returns the value of a base expression taken to a specified power.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "The base value of the expression.",
+            "optional": false
+          },
+          {
+            "name": "y",
+            "comment": "The exponent value of the expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "random",
+        "comment": "Returns a pseudorandom number between 0 and 1.",
+        "parameters": []
+      },
+      {
+        "name": "round",
+        "comment": "Returns a supplied numeric expression rounded to the nearest integer.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "The value to be rounded to the nearest integer.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "sin",
+        "comment": "Returns the sine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "sqrt",
+        "comment": "Returns the square root of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "tan",
+        "comment": "Returns the tangent of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "clz32",
+        "comment": "Returns the number of leading zero bits in the 32-bit binary representation of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "imul",
+        "comment": "Returns the result of 32-bit multiplication of two numbers.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "First number",
+            "optional": false
+          },
+          {
+            "name": "y",
+            "comment": "Second number",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "sign",
+        "comment": "Returns the sign of the x, indicating whether x is positive, negative or zero.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "The numeric expression to test",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "log10",
+        "comment": "Returns the base 10 logarithm of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "log2",
+        "comment": "Returns the base 2 logarithm of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "log1p",
+        "comment": "Returns the natural logarithm of 1 + x.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "expm1",
+        "comment": "Returns the result of (e^x - 1), which is an implementation-dependent approximation to\\r\\nsubtracting 1 from the exponential function of x (e raised to the power of x, where e\\r\\nis the base of the natural logarithms).",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "cosh",
+        "comment": "Returns the hyperbolic cosine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "sinh",
+        "comment": "Returns the hyperbolic sine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "tanh",
+        "comment": "Returns the hyperbolic tangent of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "acosh",
+        "comment": "Returns the inverse hyperbolic cosine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "asinh",
+        "comment": "Returns the inverse hyperbolic sine of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "atanh",
+        "comment": "Returns the inverse hyperbolic tangent of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression that contains an angle measured in radians.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "hypot",
+        "comment": "Returns the square root of the sum of squares of its arguments.",
+        "parameters": [
+          {
+            "name": "values",
+            "comment": "Values to compute the square root for.\\r\\nIf no arguments are passed, the result is +0.\\r\\nIf there is only one argument, the result is the absolute value.\\r\\nIf any argument is +Infinity or -Infinity, the result is +Infinity.\\r\\nIf any argument is NaN, the result is NaN.\\r\\nIf all arguments are either +0 or \\u22120, the result is +0.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "trunc",
+        "comment": "Returns the integral part of the a numeric expression, x, removing any fractional digits.\\r\\nIf x is already an integer, the result is x.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "fround",
+        "comment": "Returns the nearest single precision float representation of a number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "cbrt",
+        "comment": "Returns an implementation-dependent approximation to the cube root of number.",
+        "parameters": [
+          {
+            "name": "x",
+            "comment": "A numeric expression.",
+            "optional": false
+          }
+        ]
+      }
+    ]
+  }
+];
+
 // dev/plugins/equation.plugin.tsx
 function getModel(ctx) {
   const equationCache = new ctx.WeakmapCache2();
@@ -5094,11 +5562,12 @@ function getModel(ctx) {
     const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
     if (axis) {
       return equationCache.get(content, axis, () => {
+        var _a;
         if (content.expression) {
           try {
             const expression = parseExpression(tokenizeExpression(content.expression));
             const points = [];
-            const segmentCount = content.segmentCount ?? ctx.defaultSegmentCount;
+            const segmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
             if (content.dependentVariable === "y") {
               const step = (axis.xMax - axis.xMin) / segmentCount;
               for (let x = axis.xMin; x <= axis.xMax; x += step) {
@@ -5144,11 +5613,12 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.segmentCountModel,
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
       const { points } = getGeometriesFromCache(content, contents);
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const options = {
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray
       };
       return target.renderPolyline(points, options);
@@ -5165,7 +5635,8 @@ function getModel(ctx) {
             }
           })
         }),
-        expression: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
+        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, {
+          suggestionSources: math,
           value: content.expression,
           setValue: (v) => update((c) => {
             if (isEquationContent(c)) {
@@ -5335,8 +5806,9 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       const newContents = [];
       contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          const result = ctx.getContentModel(content)?.explode?.(content, contents);
+        var _a, _b, _c, _d;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
+          const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.explode) == null ? void 0 : _d.call(_c, content, contents);
           if (result) {
             newContents.push(...result);
             contents[index] = void 0;
@@ -5347,7 +5819,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
-      return model?.explode !== void 0 && !ctx.contentIsReferenced(content, contents);
+      return (model == null ? void 0 : model.explode) !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "X",
     icon
@@ -5395,26 +5867,32 @@ function getCommand(ctx) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected)) {
           const model = ctx.getContentModel(content);
-          if (model?.render) {
+          if (model == null ? void 0 : model.render) {
             let color;
             if (ctx.isFillContent(content) && content.fillColor !== void 0) {
               color = content.fillColor;
             } else if (ctx.isStrokeContent(content)) {
               color = content.strokeColor;
             }
-            color = color ?? ctx.defaultStrokeColor;
+            color = color != null ? color : ctx.defaultStrokeColor;
             const svg = ctx.renderToStaticMarkup(model.render(content, {
               target: ctx.reactSvgRenderTarget,
               transformColor: (c) => c,
               transformStrokeWidth: (w) => w,
               getFillColor: (c) => c.fillColor,
-              getStrokeColor: (c) => c.strokeColor ?? (ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor),
+              getStrokeColor: (c) => {
+                var _a;
+                return (_a = c.strokeColor) != null ? _a : ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor;
+              },
               getFillPattern: (c) => c.fillPattern ? {
                 width: c.fillPattern.width,
                 height: c.fillPattern.height,
-                pattern: () => ctx.reactSvgRenderTarget.renderPath(c.fillPattern?.lines ?? [], {
-                  strokeColor: c.fillPattern?.strokeColor ?? ctx.defaultStrokeColor
-                })
+                pattern: () => {
+                  var _a, _b, _c, _d;
+                  return ctx.reactSvgRenderTarget.renderPath((_b = (_a = c.fillPattern) == null ? void 0 : _a.lines) != null ? _b : [], {
+                    strokeColor: (_d = (_c = c.fillPattern) == null ? void 0 : _c.strokeColor) != null ? _d : ctx.defaultStrokeColor
+                  });
+                }
               } : void 0,
               contents
             })(index, 1, 1));
@@ -6093,10 +6571,11 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const options = {
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray
       };
       return target.renderPolyline(content.points, options);
@@ -6172,12 +6651,13 @@ function getModel(ctx) {
         return lines.map((line) => ({ type: "line", points: line }));
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
+        var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
         const options = {
           fillColor: getFillColor(fillStyleContent),
           strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+          strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
           fillPattern: getFillPattern(fillStyleContent)
         };
         return target.renderPolyline(content.points, { ...options, dashArray: strokeStyleContent.dashArray });
@@ -6405,9 +6885,10 @@ export {
 function getModel(ctx) {
   function getLinearDimensionGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
+      var _a, _b;
       return ctx.getLinearDimensionGeometries(content, {
-        arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
-        arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+        arrowAngle: (_a = content.arrowAngle) != null ? _a : ctx.dimensionStyle.arrowAngle,
+        arrowSize: (_b = content.arrowSize) != null ? _b : ctx.dimensionStyle.arrowSize,
         margin: ctx.dimensionStyle.margin
       }, getTextPosition);
     });
@@ -6432,9 +6913,10 @@ function getModel(ctx) {
       content.position.y += offset.y;
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content));
+      const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
       const { regions, lines } = getLinearDimensionGeometriesFromCache(content);
       const children = [];
       for (const line of lines) {
@@ -6744,7 +7226,7 @@ function getCommand(ctx) {
           style: { position: "relative" }
         }, direct ? "direct" : "axis")) : void 0,
         assistentContents,
-        lastPosition: p2 ?? p1
+        lastPosition: p2 != null ? p2 : p1
       };
     },
     icon
@@ -6847,7 +7329,7 @@ function getCommand(ctx) {
         reset,
         onMove(p, viewportPosition) {
           setCursorPosition(p);
-          setInputPosition(viewportPosition ?? p);
+          setInputPosition(viewportPosition != null ? viewportPosition : p);
         },
         assistentContents
       };
@@ -6930,7 +7412,8 @@ function getCommand(ctx) {
             const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI;
             if (changeOriginal) {
               const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-                ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents);
+                var _a, _b;
+                (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, draft, line, angle, contents);
               });
               return {
                 patches
@@ -6939,7 +7422,8 @@ function getCommand(ctx) {
             return {
               newContents: [
                 ctx.produce(content, (d) => {
-                  ctx.getContentModel(d)?.mirror?.(d, line, angle, contents);
+                  var _a, _b;
+                  (_b = (_a = ctx.getContentModel(d)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, d, line, angle, contents);
                 })
               ]
             };
@@ -6960,7 +7444,8 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.mirror !== void 0;
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) !== void 0;
     },
     hotkey: "MI",
     icon
@@ -7020,7 +7505,8 @@ function getCommand(ctx) {
         updateSelectedContent(content) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getContentModel(content)?.move?.(draft, offset);
+              var _a, _b;
+              (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, draft, offset);
             });
             return {
               patches
@@ -7038,7 +7524,8 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.move !== void 0;
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) !== void 0;
     },
     hotkey: "M",
     icon
@@ -7124,12 +7611,13 @@ function getModel(ctx) {
       }
     },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray,
         fillPattern: getFillPattern(fillStyleContent)
       };
@@ -7567,10 +8055,11 @@ function getModel(ctx) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
     },
     render(content, { target, transformStrokeWidth, getStrokeColor, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const options = {
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray
       };
       return target.renderPolyline(content.points, options);
@@ -7673,12 +8162,13 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray
       };
@@ -7825,9 +8315,10 @@ function getModel(ctx) {
     const target = ctx.getReference(content.refId, contents, contentSelectable);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
+        var _a, _b;
         return ctx.getRadialDimensionGeometries(content, target, {
-          arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
-          arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
+          arrowAngle: (_a = content.arrowAngle) != null ? _a : ctx.dimensionStyle.arrowAngle,
+          arrowSize: (_b = content.arrowSize) != null ? _b : ctx.dimensionStyle.arrowSize,
           margin: ctx.dimensionStyle.margin
         }, getTextPosition);
       });
@@ -7851,9 +8342,10 @@ function getModel(ctx) {
       content.position.y += offset.y;
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content));
+      const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents);
       const children = [];
       for (const line of lines) {
@@ -8161,12 +8653,13 @@ function getModel(ctx) {
       content.angle = 2 * angle - content.angle;
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent)
       };
       if (strokeStyleContent.dashArray) {
@@ -8359,7 +8852,8 @@ export {
 function getModel(ctx) {
   function getRegularPolygonGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const angle = -(content.angle ?? 0);
+      var _a;
+      const angle = -((_a = content.angle) != null ? _a : 0);
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle);
       const points = [];
       for (let i = 0; i < content.count; i++) {
@@ -8390,12 +8884,13 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray
       };
@@ -8564,7 +9059,8 @@ export {
 function getModel(ctx) {
   function getRingGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta;
+      var _a;
+      const angleDelta = (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta;
       const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
       const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
       const points = [...points1, ...points2];
@@ -8602,12 +9098,13 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray
       };
@@ -8808,7 +9305,7 @@ function getCommand(ctx) {
       }
       const { input, setInputPosition } = ctx.useCursorInput(message);
       let assistentContents;
-      if (startPosition && offset?.angle !== void 0) {
+      if (startPosition && (offset == null ? void 0 : offset.angle) !== void 0) {
         const r = ctx.getTwoPointsDistance(startPosition, offset);
         assistentContents = [
           {
@@ -8847,19 +9344,21 @@ function getCommand(ctx) {
           }
         }, changeOriginal ? "create new(N)" : "change original(Y)") : void 0,
         updateSelectedContent(content, contents) {
-          if (startPosition && offset?.angle !== void 0) {
+          if (startPosition && (offset == null ? void 0 : offset.angle) !== void 0) {
             const angle = offset.angle;
             if (!changeOriginal) {
               return {
                 newContents: [
                   ctx.produce(content, (d) => {
-                    ctx.getContentModel(d)?.rotate?.(d, startPosition, angle, contents);
+                    var _a, _b;
+                    (_b = (_a = ctx.getContentModel(d)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, d, startPosition, angle, contents);
                   })
                 ]
               };
             }
             const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getContentModel(content)?.rotate?.(draft, startPosition, angle, contents);
+              var _a, _b;
+              (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, draft, startPosition, angle, contents);
             });
             return {
               patches
@@ -8871,7 +9370,8 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.rotate !== void 0;
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) !== void 0;
     },
     hotkey: "RO"
   };
@@ -8974,9 +9474,10 @@ var import_b_spline = __toESM(require_b_spline());
 function getModel(ctx) {
   function getSplineGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
+      var _a;
       const inputPoints = content.points.map((p) => [p.x, p.y]);
       let points = [];
-      const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount;
+      const splineSegmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
       if (inputPoints.length > 2) {
         if (content.fitting) {
           const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points);
@@ -9069,13 +9570,14 @@ function getModel(ctx) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const { points } = getSplineGeometries(content);
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray
       };
@@ -9152,9 +9654,10 @@ function getModel(ctx) {
       rotate: splineModel.rotate,
       mirror: splineModel.mirror,
       render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
+        var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const strokeColor = getStrokeColor(strokeStyleContent);
-        const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content));
+        const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
         const { regions, renderingLines } = getSplineArrowGeometries(content);
         const children = [];
         for (const line of renderingLines) {
@@ -9429,7 +9932,8 @@ export {
 function getModel(ctx) {
   function getStarGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const angle = -(content.angle ?? 0);
+      var _a;
+      const angle = -((_a = content.angle) != null ? _a : 0);
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle);
       const p1 = ctx.rotatePositionByCenter({ x: content.x + content.innerRadius, y: content.y }, content, angle + 180 / content.count);
       const points = [];
@@ -9465,12 +9969,13 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
       const options = {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray
       };
@@ -9516,6 +10021,7 @@ function getModel(ctx) {
     },
     getGeometries: getStarGeometriesFromCache,
     propertyPanel(content, update, contents) {
+      var _a;
       return {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
           value: content.x,
@@ -9558,7 +10064,7 @@ function getModel(ctx) {
           })
         }),
         angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.angle ?? 0,
+          value: (_a = content.angle) != null ? _a : 0,
           setValue: (v) => update((c) => {
             if (isStarContent(c)) {
               c.angle = v === 0 ? void 0 : v;
@@ -9683,9 +10189,10 @@ function getModel(ctx) {
       content.y += offset.y;
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, transformColor }) {
+      var _a;
       const options = {
         strokeColor: getStrokeColor(content),
-        strokeWidth: transformStrokeWidth(content.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
+        strokeWidth: transformStrokeWidth((_a = content.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: content.dashArray
       };
       return target.renderGroup([

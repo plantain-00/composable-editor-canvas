@@ -277,6 +277,29 @@ export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> 
 export function equals(a: number, b: number): boolean;
 
 // @public (undocumented)
+export function ExpressionEditor(props: JsonEditorProps<string> & {
+    height?: number;
+    fontSize?: number;
+    target?: ReactRenderTarget<unknown>;
+    autoHeight?: boolean;
+    suggestionSources?: ExpressionSuggesionSource[];
+}): JSX.Element;
+
+// @public (undocumented)
+export interface ExpressionSuggesionSource {
+    // (undocumented)
+    comment?: string;
+    // (undocumented)
+    members?: ExpressionSuggesionSource[];
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    optional?: boolean;
+    // (undocumented)
+    parameters?: ExpressionSuggesionSource[];
+}
+
+// @public (undocumented)
 export type Filter = {
     type: 'brightness';
     value: number;
@@ -714,7 +737,13 @@ export { Image_2 as Image }
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
+export function isLetter(c: string): boolean;
+
+// @public (undocumented)
 export const isMacKeyboard: boolean;
+
+// @public (undocumented)
+export function isNumber(c: string): boolean;
 
 // @public (undocumented)
 export function isSamePath<T extends SelectPath = SelectPath>(path1: T | undefined, path2: T | undefined): boolean;
@@ -1503,10 +1532,12 @@ export function useFlowLayoutCursor<T extends {
     setState(recipe: (draft: T[]) => void): void;
     getTextContent(text: string, width: number): T;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
-    onPaste?(e: React_2.ClipboardEvent<HTMLInputElement>): void;
     onLocationChanged?(location: number): void;
     style?: React_2.CSSProperties;
     autoHeight?: boolean;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    onFocus?: () => void;
 }): {
     layoutResult: (Position & {
         i: number;
@@ -1519,7 +1550,9 @@ export function useFlowLayoutCursor<T extends {
         y: number;
     };
     actualHeight: number;
-    inputText: (text: string | string[]) => void;
+    inputText: (text: string | string[], textLocation?: number) => void;
+    location: number;
+    setLocation: React_2.Dispatch<React_2.SetStateAction<number>>;
     container: (children: React_2.ReactNode) => JSX.Element;
 };
 

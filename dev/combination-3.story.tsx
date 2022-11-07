@@ -21,6 +21,7 @@ export default () => {
   const height = 200
   const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
   const [autoHeight, setAutoHeight] = React.useState(false)
+  const [readOnly, setReadOnly] = React.useState(false)
 
   React.useEffect(() => {
     (async () => {
@@ -89,6 +90,7 @@ export default () => {
           padding: '2px',
           resize: 'none',
         }}
+        readOnly={readOnly}
         defaultValue={initialState.map(s => s.text).join('')}
       />
       <div>
@@ -102,6 +104,10 @@ export default () => {
           <input type='checkbox' checked={autoHeight} onChange={(e) => setAutoHeight(e.target.checked)} />
           autoHeight
         </label>
+        <label>
+          <input type='checkbox' checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} />
+          readOnly
+        </label>
       </div>
       <RichTextEditor
         ref={editorRef}
@@ -114,6 +120,7 @@ export default () => {
         onSendLocation={onSendLocation}
         target={target}
         autoHeight={autoHeight}
+        readOnly={readOnly}
       />
     </div>
   )
@@ -129,6 +136,7 @@ const RichTextEditor = React.forwardRef((props: {
   onSendLocation?: (location: number) => void
   target: ReactRenderTarget<unknown>
   autoHeight: boolean
+  readOnly: boolean
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const lineHeight = props.fontSize * 1.2
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
@@ -142,6 +150,7 @@ const RichTextEditor = React.forwardRef((props: {
     fontSize: props.fontSize,
     fontFamily: props.fontFamily,
     lineHeight,
+    readOnly: props.readOnly,
     getTextContent: (text, width) => ({ text, width, type: 'text' as const }),
     processInput(e) {
       if (processAtInput(e)) {

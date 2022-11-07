@@ -18,17 +18,20 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
   setState(recipe: (draft: T[]) => void): void
   getTextContent(text: string, width: number): T
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
-  onPaste?(e: React.ClipboardEvent<HTMLInputElement>): void
   onLocationChanged?(location: number): void
   style?: React.CSSProperties
   autoHeight?: boolean
+  readOnly?: boolean
+  onBlur?: () => void
+  onFocus?: () => void
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
 
-  const inputText = (text: string | string[]) => {
+  const inputText = (text: string | string[], textLocation = text.length) => {
+    if (props.readOnly) return
     const newCharacters: T[] = []
     if (Array.isArray(text)) {
       for (const t of text) {
@@ -38,19 +41,20 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       newCharacters.push(...loadFlowLayoutText(text, props.fontSize, props.fontFamily, props.getTextContent))
     }
     if (range) {
-      setLocation(range.min + text.length)
+      setLocation(range.min + textLocation)
       setSelectionStart(undefined)
       props.setState(draft => {
         draft.splice(range.min, range.max - range.min, ...newCharacters)
       })
       return
     }
-    setLocation(location + text.length)
+    setLocation(location + textLocation)
     props.setState(draft => {
       draft.splice(location, 0, ...newCharacters)
     })
   }
   const backspace = () => {
+    if (props.readOnly) return
     if (range) {
       setLocation(range.min)
       setSelectionStart(undefined)
@@ -141,6 +145,7 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     return props.state.slice(range.min, range.max)
   }
   const paste = () => {
+    if (props.readOnly) return
     navigator.clipboard.readText().then(v => {
       if (v) {
         inputText(v)
@@ -185,13 +190,10 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
       ref.current.value = ''
     }
   }
-  const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    paste()
-  }
   const onBlur = () => {
     setSelectionStart(undefined)
     props.onLocationChanged?.(-1)
+    props.onBlur?.()
   }
   const downLocation = React.useRef<number>()
   const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -425,6 +427,8 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
     },
     actualHeight,
     inputText,
+    location,
+    setLocation,
     container: (children: React.ReactNode) => (
       <div
         style={{
@@ -439,7 +443,6 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
         ref={scrollRef}
       >
         <input
-          autoFocus
           ref={ref}
           style={{
             border: 0,
@@ -449,11 +452,12 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
             left: cursorX + 'px',
             top: cursorY + scrollY + 'px',
             fontSize: props.fontSize + 'px',
+            opacity: props.readOnly ? 0 : undefined,
           }}
           onKeyDown={onKeyDown}
           onCompositionEnd={onCompositionEnd}
-          onPaste={props.onPaste ?? onPaste}
           onBlur={onBlur}
+          onFocus={props.onFocus}
         />
         {children}
         <div
@@ -478,10 +482,17 @@ export function useFlowLayoutCursor<T extends { text: string, width: number }>(p
 
 function isWordCharactor(c: string) {
   if (c === '.') return true
-  if (c >= 'a' && c <= 'z') return true
-  if (c >= 'A' && c <= 'Z') return true
-  if (c >= '0' && c <= '9') return true
+  if (isLetter(c)) return true
+  if (isNumber(c)) return true
   return false
+}
+
+export function isLetter(c: string) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+export function isNumber(c: string) {
+  return c >= '0' && c <= '9'
 }
 
 /**
