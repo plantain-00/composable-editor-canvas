@@ -330,6 +330,14 @@ export type Filter = {
 };
 
 // @public (undocumented)
+export interface FlowLayoutText {
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    width: number;
+}
+
+// @public (undocumented)
 export const focusedOnInput: {
     value: boolean;
 };
@@ -813,7 +821,7 @@ export interface LinearGradient {
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
 
 // @public (undocumented)
-export function loadFlowLayoutText<T>(text: string, fontSize: number, fontFamily: string, getTextContent: (text: string, width: number) => T, whole?: boolean): T[];
+export function loadFlowLayoutText(text: string, fontSize: number, fontFamily: string, whole?: boolean): FlowLayoutText[];
 
 // @public (undocumented)
 export const m3: {
@@ -1519,18 +1527,14 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
-export function useFlowLayoutCursor<T extends {
-    text: string;
-    width: number;
-}>(props: {
-    state: readonly T[];
+export function useFlowLayoutEditor(props: {
+    state: readonly FlowLayoutText[];
     width: number;
     height: number;
     fontSize: number;
     fontFamily: string;
     lineHeight: number;
-    setState(recipe: (draft: T[]) => void): void;
-    getTextContent(text: string, width: number): T;
+    setState(recipe: (draft: FlowLayoutText[]) => void): void;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onLocationChanged?(location: number): void;
     style?: React_2.CSSProperties;
@@ -1541,19 +1545,24 @@ export function useFlowLayoutCursor<T extends {
 }): {
     layoutResult: (Position & {
         i: number;
-        content: T;
+        content: FlowLayoutText;
         visible: boolean;
     })[];
-    isSelected: (index: number) => boolean | undefined;
     cursor: {
         x: number;
         y: number;
     };
-    actualHeight: number;
     inputText: (text: string | string[], textLocation?: number) => void;
     location: number;
     setLocation: React_2.Dispatch<React_2.SetStateAction<number>>;
-    container: (children: React_2.ReactNode) => JSX.Element;
+    renderEditor: (renderProps: {
+        target: ReactRenderTarget<unknown>;
+        getTextColors?: ((index: number) => {
+            color?: number;
+            backgroundColor?: number;
+        } | undefined) | undefined;
+        children?: unknown[] | undefined;
+    }) => JSX.Element;
 };
 
 // @public (undocumented)

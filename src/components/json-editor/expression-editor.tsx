@@ -1,5 +1,5 @@
 import * as React from "react"
-import { focusedOnInput, isLetter, isNumber, loadFlowLayoutText, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutCursor, useUndoRedo } from ".."
+import { focusedOnInput, isLetter, isNumber, loadFlowLayoutText, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutEditor, useUndoRedo } from ".."
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**
@@ -17,16 +17,15 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const fontSize = props.fontSize ?? 16
   const fontFamily = props.style?.fontFamily ?? controlStyle.fontFamily ?? 'monospace'
   const lineHeight = fontSize * 1.2
-  const getTextContent = (text: string, width: number) => ({ text, width })
 
-  const initialState = React.useRef(loadFlowLayoutText(props.value, fontSize, fontFamily, getTextContent))
+  const initialState = React.useRef(loadFlowLayoutText(props.value, fontSize, fontFamily))
   const [width, setWidth] = React.useState(250)
   const { state, setState, undo, redo } = useUndoRedo(initialState.current)
   const [suggestions, setSuggestions] = React.useState<ExpressionSuggesionSource[]>([])
   const [suggestionIndex, setSuggestionIndex] = React.useState(0)
   const [suggestionText, setSuggestionText] = React.useState('')
   const [suggestion, setSuggestion] = React.useState<ExpressionSuggesionSource>()
-  const { container, isSelected, layoutResult, actualHeight, location, cursor, setLocation, inputText } = useFlowLayoutCursor({
+  const { renderEditor, layoutResult, location, cursor, setLocation, inputText } = useFlowLayoutEditor({
     state,
     setState,
     width,
@@ -34,7 +33,6 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     fontSize,
     fontFamily,
     lineHeight,
-    getTextContent,
     readOnly: props.readOnly,
     processInput(e) {
       if (e.key === 'Escape') {
@@ -159,7 +157,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   }, [state, location])
 
   React.useEffect(() => {
-    initialState.current = loadFlowLayoutText(props.value, fontSize, fontFamily, getTextContent)
+    initialState.current = loadFlowLayoutText(props.value, fontSize, fontFamily)
   }, [props.value])
 
   const ref = React.useRef<HTMLDivElement | null>(null)
@@ -191,20 +189,16 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const useSuggestion = (index: number) => {
     const suggestion = suggestions[index]
     setState(draft => {
-      draft.splice(location - suggestionText.length, suggestionText.length, ...loadFlowLayoutText(suggestion.name, fontSize, fontFamily, getTextContent))
+      draft.splice(location - suggestionText.length, suggestionText.length, ...loadFlowLayoutText(suggestion.name, fontSize, fontFamily))
     })
     setLocation(location - suggestionText.length + suggestion.name.length)
     setSuggestions([])
   }
 
-  const children: unknown[] = []
-  for (const { x, y, i, content, visible } of layoutResult) {
-    if (!visible) continue
-    let color = 0x000000
+  const getTextColors = (i: number) => {
+    let color: number | undefined
     let backgroundColor: number | undefined
-    if (isSelected(i)) {
-      backgroundColor = 0xB3D6FD
-    }
+    const content = layoutResult[i].content
     if (isNumber(content.text)) {
       let headIsLetter = false
       for (let j = i - 1; j >= 0; j--) {
@@ -226,15 +220,11 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
         color = 0x0c840a
       }
     }
-    if (backgroundColor !== undefined) {
-      children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
-    }
-    children.push(target.renderText(x + content.width / 2, y + fontSize, content.text, color, fontSize, fontFamily, { textAlign: 'center' }))
+    return { color, backgroundColor }
   }
-  const result = target.renderResult(children, width, actualHeight)
   return (
     <div ref={ref} style={{ position: 'relative', ...controlStyle, ...props.style, ...extraStyle }}>
-      {container(result)}
+      {renderEditor({ target, getTextColors })}
       {suggestions.length > 0 && <div
         style={{
           position: 'absolute',

@@ -1,20 +1,14 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutCursor, reactSvgRenderTarget, Position } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutEditor, reactSvgRenderTarget, Position, FlowLayoutText } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
-
-interface CharacterContent {
-  type: 'text'
-  text: string
-  width: number
-}
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
 
 export default () => {
-  const [initialState, setInitialState] = React.useState<readonly CharacterContent[]>()
+  const [initialState, setInitialState] = React.useState<readonly FlowLayoutText[]>()
   const fontSize = 20
   const fontFamily = 'monospace'
   const width = 400
@@ -27,7 +21,7 @@ export default () => {
     (async () => {
       try {
         const res = await fetch(`https://storage.yorkyao.com/${key}`)
-        const json: readonly CharacterContent[] = await res.json()
+        const json: readonly FlowLayoutText[] = await res.json()
         setInitialState(json)
       } catch {
         setInitialState([])
@@ -127,7 +121,7 @@ export default () => {
 }
 
 const RichTextEditor = React.forwardRef((props: {
-  initialState: readonly CharacterContent[]
+  initialState: readonly FlowLayoutText[]
   width: number
   height: number
   fontSize: number
@@ -142,7 +136,7 @@ const RichTextEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
-  const { container, isSelected, layoutResult, actualHeight, cursor, inputText } = useFlowLayoutCursor({
+  const { renderEditor, layoutResult, cursor, inputText } = useFlowLayoutEditor({
     state,
     setState,
     width: props.width,
@@ -151,7 +145,6 @@ const RichTextEditor = React.forwardRef((props: {
     fontFamily: props.fontFamily,
     lineHeight,
     readOnly: props.readOnly,
-    getTextContent: (text, width) => ({ text, width, type: 'text' as const }),
     processInput(e) {
       if (processAtInput(e)) {
         return true
@@ -195,36 +188,30 @@ const RichTextEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const target = props.target
-  const children: unknown[] = []
-  for (const { x, y, i, content, visible } of layoutResult) {
-    if (!visible) continue
-    let color = 0x000000
+  const getTextColors = (i: number) => {
+    let color: number | undefined
     let backgroundColor: number | undefined
-    const style = getRenderAtStyle(content.text)
+    const style = getRenderAtStyle(layoutResult[i].content.text)
     if (style) {
       color = style.color
       backgroundColor = style.backgroundColor
     }
-    if (isSelected(i)) {
-      backgroundColor = 0xB3D6FD
-    }
-    if (backgroundColor !== undefined) {
-      children.push(target.renderRect(x, y, content.width, lineHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
-    }
+    return { color, backgroundColor }
+  }
+  const children: unknown[] = []
+  for (const { x, y, i, visible } of layoutResult) {
+    if (!visible) continue
     const others = othersLocation.filter(c => c.location === i)
     if (others.length > 0) {
       children.push(
-        target.renderRect(x, y, 2, lineHeight, { fillColor: 0xff0000, strokeWidth: 0 }),
-        target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, props.fontFamily),
+        props.target.renderRect(x, y, 2, lineHeight, { fillColor: 0xff0000, strokeWidth: 0 }),
+        props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, props.fontFamily),
       )
     }
-    children.push(target.renderText(x + content.width / 2, y + props.fontSize, content.text, color, props.fontSize, props.fontFamily, { textAlign: 'center' }))
   }
-  const result = target.renderResult(children, props.width, actualHeight)
   return (
     <div style={{ position: 'relative' }}>
-      {container(result)}
+      {renderEditor({ target: props.target, getTextColors, children })}
       {suggestions}
     </div>
   )
