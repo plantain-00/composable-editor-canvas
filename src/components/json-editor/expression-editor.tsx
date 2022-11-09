@@ -1,5 +1,5 @@
 import * as React from "react"
-import { focusedOnInput, isLetter, isNumber, loadFlowLayoutText, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutEditor, useUndoRedo } from ".."
+import { focusedOnInput, isLetter, isNumber, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutTextEditor, useUndoRedo } from ".."
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**
@@ -18,14 +18,14 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const fontFamily = props.style?.fontFamily ?? controlStyle.fontFamily ?? 'monospace'
   const lineHeight = fontSize * 1.2
 
-  const initialState = React.useRef(loadFlowLayoutText(props.value, fontSize, fontFamily))
+  const initialState = React.useRef(props.value.split(''))
   const [width, setWidth] = React.useState(250)
   const { state, setState, undo, redo } = useUndoRedo(initialState.current)
   const [suggestions, setSuggestions] = React.useState<ExpressionSuggesionSource[]>([])
   const [suggestionIndex, setSuggestionIndex] = React.useState(0)
   const [suggestionText, setSuggestionText] = React.useState('')
   const [suggestion, setSuggestion] = React.useState<ExpressionSuggesionSource>()
-  const { renderEditor, layoutResult, location, cursor, setLocation, inputText } = useFlowLayoutEditor({
+  const { renderEditor, layoutResult, location, cursor, setLocation, inputText } = useFlowLayoutTextEditor({
     state,
     setState,
     width,
@@ -96,11 +96,11 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     }
     setSuggestions([])
     setSuggestion(undefined)
-    const key = state[location - 1].text
+    const key = state[location - 1]
     if (isLetter(key) || isNumber(key) || key == '.') {
       let start: number | undefined
       for (let i = location - 1; i >= 0 && i < state.length; i--) {
-        const key = state[i].text
+        const key = state[i]
         if (isLetter(key) || isNumber(key) || key == '.') {
           start = i
         } else {
@@ -110,7 +110,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
       if (start === undefined) {
         return
       }
-      const text = state.slice(start, location).map(s => s.text).join('').split('.')
+      const text = state.slice(start, location).join('').split('.')
       let result = props.suggestionSources
       for (let i = 0; i < text.length; i++) {
         if (i !== text.length - 1) {
@@ -134,7 +134,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     } else if (key === '(') {
       let start: number | undefined
       for (let i = location - 2; i >= 0 && i < state.length; i--) {
-        const key = state[i].text
+        const key = state[i]
         if (isLetter(key) || isNumber(key) || key == '.') {
           start = i
         } else {
@@ -142,7 +142,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
         }
       }
       if (start === undefined) return
-      const text = state.slice(start, location - 1).map(s => s.text).join('').split('.')
+      const text = state.slice(start, location - 1).join('').split('.')
       let result = props.suggestionSources
       let s: ExpressionSuggesionSource | undefined
       for (let i = 0; i < text.length; i++) {
@@ -157,7 +157,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   }, [state, location])
 
   React.useEffect(() => {
-    initialState.current = loadFlowLayoutText(props.value, fontSize, fontFamily)
+    initialState.current = props.value.split('')
   }, [props.value])
 
   const ref = React.useRef<HTMLDivElement | null>(null)
@@ -176,7 +176,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
 
   const onComplete = () => {
     if (!props.readOnly) {
-      const value = state.map(s => s.text).join('')
+      const value = state.join('')
       if (value !== props.value) {
         props.setValue(value)
       }
@@ -189,7 +189,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const useSuggestion = (index: number) => {
     const suggestion = suggestions[index]
     setState(draft => {
-      draft.splice(location - suggestionText.length, suggestionText.length, ...loadFlowLayoutText(suggestion.name, fontSize, fontFamily))
+      draft.splice(location - suggestionText.length, suggestionText.length, ...suggestion.name.split(''))
     })
     setLocation(location - suggestionText.length + suggestion.name.length)
     setSuggestions([])
@@ -199,10 +199,10 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     let color: number | undefined
     let backgroundColor: number | undefined
     const content = layoutResult[i].content
-    if (isNumber(content.text)) {
+    if (isNumber(content)) {
       let headIsLetter = false
       for (let j = i - 1; j >= 0; j--) {
-        const c = layoutResult[j].content.text
+        const c = layoutResult[j].content
         if (isNumber(c)) {
           headIsLetter = false
         } else if (isLetter(c)) {
@@ -214,8 +214,8 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
       if (!headIsLetter) {
         color = 0x0c840a
       }
-    } else if (content.text === '.' && i < layoutResult.length - 1) {
-      const next = layoutResult[i + 1].content.text
+    } else if (content === '.' && i < layoutResult.length - 1) {
+      const next = layoutResult[i + 1].content
       if (isNumber(next)) {
         color = 0x0c840a
       }

@@ -1,5 +1,5 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutEditor, reactSvgRenderTarget, Position, FlowLayoutText } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutTextEditor, reactSvgRenderTarget, Position } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
@@ -8,7 +8,7 @@ const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
 
 export default () => {
-  const [initialState, setInitialState] = React.useState<readonly FlowLayoutText[]>()
+  const [initialState, setInitialState] = React.useState<readonly string[]>()
   const fontSize = 20
   const fontFamily = 'monospace'
   const width = 400
@@ -21,7 +21,7 @@ export default () => {
     (async () => {
       try {
         const res = await fetch(`https://storage.yorkyao.com/${key}`)
-        const json: readonly FlowLayoutText[] = await res.json()
+        const json: readonly string[] = await res.json()
         setInitialState(json)
       } catch {
         setInitialState([])
@@ -85,7 +85,7 @@ export default () => {
           resize: 'none',
         }}
         readOnly={readOnly}
-        defaultValue={initialState.map(s => s.text).join('')}
+        defaultValue={initialState.join('')}
       />
       <div>
         {[reactCanvasRenderTarget, reactSvgRenderTarget].map((t) => (
@@ -121,7 +121,7 @@ export default () => {
 }
 
 const RichTextEditor = React.forwardRef((props: {
-  initialState: readonly FlowLayoutText[]
+  initialState: readonly string[]
   width: number
   height: number
   fontSize: number
@@ -136,7 +136,7 @@ const RichTextEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
-  const { renderEditor, layoutResult, cursor, inputText } = useFlowLayoutEditor({
+  const { renderEditor, layoutResult, cursor, inputText } = useFlowLayoutTextEditor({
     state,
     setState,
     width: props.width,
@@ -191,7 +191,7 @@ const RichTextEditor = React.forwardRef((props: {
   const getTextColors = (i: number) => {
     let color: number | undefined
     let backgroundColor: number | undefined
-    const style = getRenderAtStyle(layoutResult[i].content.text)
+    const style = getRenderAtStyle(layoutResult[i].content)
     if (style) {
       color = style.color
       backgroundColor = style.backgroundColor

@@ -47,7 +47,6 @@ export const WhiteBoard = () => {
           if (p.icon) {
             const svg = React.cloneElement<React.HTMLAttributes<unknown>>(p.icon, {
               onClick: () => editorRef.current?.startOperation({ type: 'command', name: p.name }),
-              key: p.name,
               style: {
                 width: '20px',
                 height: '20px',
@@ -57,7 +56,7 @@ export const WhiteBoard = () => {
               },
             })
             return (
-              <span title={p.name}>
+              <span title={p.name} key={p.name}>
                 {svg}
               </span>
             )

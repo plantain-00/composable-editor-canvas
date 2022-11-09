@@ -1,6 +1,6 @@
 import * as React from "react"
-import { ReactRenderTarget, useEvent, useGlobalMouseUp } from "."
-import { getTextSizeFromCache, Position } from "../utils"
+import { useEvent, useGlobalMouseUp } from "."
+import { Position } from "../utils"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -8,14 +8,13 @@ import { useWheelScroll } from "./use-wheel-scroll"
 /**
  * @public
  */
-export function useFlowLayoutEditor(props: {
-  state: readonly FlowLayoutText[]
+export function useFlowLayoutEditor<T>(props: {
+  state: readonly T[]
   width: number
   height: number
-  fontSize: number
-  fontFamily: string
   lineHeight: number
-  setState(recipe: (draft: FlowLayoutText[]) => void): void
+  setState(recipe: (draft: T[]) => void): void
+  getWidth: (content: T) => number
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
   onLocationChanged?(location: number): void
   style?: React.CSSProperties
@@ -23,33 +22,31 @@ export function useFlowLayoutEditor(props: {
   readOnly?: boolean
   onBlur?: () => void
   onFocus?: () => void
+  isNewLineContent?: (content: T) => boolean
+  isPartOfComposition?: (content: T) => boolean
+  getComposition?: (index: number) => { index: number, width: number }
+  endContent: T
+  onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
+  onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
 
-  const inputText = (text: string | string[], textLocation = text.length) => {
+  const inputContent = (newContents: T[], contentLocation = newContents.length) => {
     if (props.readOnly) return
-    const newCharacters: FlowLayoutText[] = []
-    if (Array.isArray(text)) {
-      for (const t of text) {
-        newCharacters.push(...loadFlowLayoutText(t, props.fontSize, props.fontFamily, true))
-      }
-    } else {
-      newCharacters.push(...loadFlowLayoutText(text, props.fontSize, props.fontFamily))
-    }
     if (range) {
-      setLocation(range.min + textLocation)
+      setLocation(range.min + contentLocation)
       setSelectionStart(undefined)
       props.setState(draft => {
-        draft.splice(range.min, range.max - range.min, ...newCharacters)
+        draft.splice(range.min, range.max - range.min, ...newContents)
       })
       return
     }
-    setLocation(location + textLocation)
+    setLocation(location + contentLocation)
     props.setState(draft => {
-      draft.splice(location, 0, ...newCharacters)
+      draft.splice(location, 0, ...newContents)
     })
   }
   const backspace = () => {
@@ -143,14 +140,6 @@ export function useFlowLayoutEditor(props: {
     }
     return props.state.slice(range.min, range.max)
   }
-  const paste = () => {
-    if (props.readOnly) return
-    navigator.clipboard.readText().then(v => {
-      if (v) {
-        inputText(v)
-      }
-    })
-  }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
       return
@@ -162,7 +151,6 @@ export function useFlowLayoutEditor(props: {
       return
     }
     if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
-    if (e.key === 'Enter') return inputText('\n')
     if (e.key === 'Backspace') return backspace()
     if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
     if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
@@ -170,23 +158,8 @@ export function useFlowLayoutEditor(props: {
     if (e.key === 'ArrowDown') return arrowDown(e.shiftKey)
     if (metaKeyIfMacElseCtrlKey(e)) {
       if (e.key === 'a') return selectAll()
-      if (e.key === 'v') return paste()
-      if (e.key === 'c' || e.key === 'x') {
-        const contents = getCopiedContents(e.key === 'x')
-        if (contents) {
-          navigator.clipboard.writeText(contents.map(c => c.text).join(''))
-        }
-        return
-      }
     } else {
       e.preventDefault()
-      inputText(e.key)
-    }
-  }
-  const onCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
-    inputText(e.data)
-    if (ref.current) {
-      ref.current.value = ''
     }
   }
   const onBlur = () => {
@@ -212,7 +185,7 @@ export function useFlowLayoutEditor(props: {
     for (const p of layoutResult) {
       if (ignoreInvisible && !p.visible) continue
       if (p.y >= minY && p.y <= y) {
-        if (Math.abs(p.x - x) < p.content.width / 2) {
+        if (Math.abs(p.x - x) < props.getWidth(p.content) / 2) {
           return p.i
         }
         result = p.i
@@ -261,50 +234,7 @@ export function useFlowLayoutEditor(props: {
   useGlobalMouseUp(useEvent(() => {
     downLocation.current = undefined
   }))
-  const onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const p = positionToLocation(getPosition(e))
-    let start: number | undefined
-    for (let i = p - 1; i >= 0; i--) {
-      if (isWordCharactor(props.state[i].text)) {
-        start = i
-      } else {
-        break
-      }
-    }
-    let end: number | undefined
-    for (let i = p; i < props.state.length; i++) {
-      if (isWordCharactor(props.state[i].text)) {
-        end = i + 1
-      } else {
-        break
-      }
-    }
-    if (end !== undefined) {
-      setSelectionStart(start ?? p)
-      setLocation(end)
-    } else if (start !== undefined) {
-      setSelectionStart(start)
-    }
-  }
 
-  const findWord = (index: number) => {
-    let width = props.state[index].width
-    for (let i = index + 1; i < props.state.length; i++) {
-      const content = props.state[i]
-      if (isWordCharactor(content.text)) {
-        width += content.width
-      } else {
-        return {
-          width,
-          index: i,
-        }
-      }
-    }
-    return {
-      width,
-      index: props.state.length,
-    }
-  }
   const isVisible = (y: number) => props.autoHeight ? true : y >= -props.lineHeight && y <= props.height
 
   const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
@@ -318,7 +248,7 @@ export function useFlowLayoutEditor(props: {
     }
   }, [props.autoHeight, setY])
 
-  const layoutResult: (Position & { i: number, content: FlowLayoutText, visible: boolean })[] = []
+  const layoutResult: (Position & { i: number, content: T, visible: boolean })[] = []
   {
     let x = 0
     let y = scrollY
@@ -335,18 +265,18 @@ export function useFlowLayoutEditor(props: {
       if (newLine) {
         toNewLine()
       } else {
-        x += content.width
+        x += props.getWidth(content)
       }
       i++
     }
     while (i < props.state.length) {
       const content = props.state[i]
-      if (content.text === '\n') {
+      if (props.isNewLineContent?.(content)) {
         addResult(true)
         continue
       }
-      if (isWordCharactor(content.text)) {
-        const w = findWord(i)
+      if (props.getComposition && props.isPartOfComposition?.(content)) {
+        const w = props.getComposition(i)
         // a b|
         if (x + w.width <= props.width) {
           while (i < w.index) {
@@ -367,7 +297,7 @@ export function useFlowLayoutEditor(props: {
         }
         // abc|d
         while (i < w.index) {
-          if (x + props.state[i].width > props.width) {
+          if (x + props.getWidth(props.state[i]) > props.width) {
             toNewLine()
           }
           addResult(false)
@@ -375,12 +305,12 @@ export function useFlowLayoutEditor(props: {
         continue
       }
       // a|b
-      if (x + content.width > props.width) {
+      if (x + props.getWidth(content) > props.width) {
         toNewLine()
       }
       addResult(false)
     }
-    layoutResult.push({ x, y, i, content: { text: '', width: 0 }, visible })
+    layoutResult.push({ x, y, i, content: props.endContent, visible })
     const newContentHeight = y + props.lineHeight - scrollY
     if (contentHeight < newContentHeight) {
       setContentHeight(newContentHeight)
@@ -419,35 +349,23 @@ export function useFlowLayoutEditor(props: {
   const isSelected = (index: number) => range && index >= range.min && index < range.max
 
   return {
+    ref,
+    range,
     layoutResult,
     cursor: {
       x: cursorX,
       y: cursorY + scrollY,
     },
-    inputText,
+    inputContent,
     location,
     setLocation,
-    renderEditor: (renderProps: {
-      target: ReactRenderTarget<unknown>,
-      getTextColors?: (index: number) => { color?: number, backgroundColor?: number } | undefined,
-      children?: unknown[],
-    }) => {
-      const children: unknown[] = []
-      for (const { x, y, i, content, visible } of layoutResult) {
-        if (!visible) continue
-        const colors = renderProps.getTextColors?.(i) ?? {}
-        if (isSelected(i)) {
-          colors.backgroundColor = 0xB3D6FD
-        }
-        if (colors.backgroundColor !== undefined) {
-          children.push(renderProps.target.renderRect(x, y, content.width, props.lineHeight, { fillColor: colors.backgroundColor, strokeWidth: 0 }))
-        }
-        children.push(renderProps.target.renderText(x + content.width / 2, y + props.fontSize, content.text, colors.color ?? 0x000000, props.fontSize, props.fontFamily, { textAlign: 'center' }))
-      }
-      if (renderProps.children) {
-        children.push(...renderProps.children)
-      }
-      const result = renderProps.target.renderResult(children, props.width, actualHeight)
+    getCopiedContents,
+    isSelected,
+    actualHeight,
+    setSelectionStart,
+    getPosition,
+    positionToLocation,
+    renderEditor: (children: JSX.Element, cursorHeight: number) => {
       return <div
         style={{
           position: 'relative',
@@ -469,20 +387,20 @@ export function useFlowLayoutEditor(props: {
             position: 'absolute',
             left: cursorX + 'px',
             top: cursorY + scrollY + 'px',
-            fontSize: props.fontSize + 'px',
+            fontSize: cursorHeight / 1.2 + 'px',
             opacity: props.readOnly ? 0 : undefined,
           }}
           onKeyDown={onKeyDown}
-          onCompositionEnd={onCompositionEnd}
+          onCompositionEnd={props.onCompositionEnd}
           onBlur={onBlur}
           onFocus={props.onFocus}
         />
-        {result}
+        {children}
         <div
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
-          onDoubleClick={onDoubleClick}
+          onDoubleClick={props.onDoubleClick}
           style={{ inset: '0px', cursor: 'text', position: 'absolute' }}
         ></div>
         {!props.autoHeight && <Scrollbar
@@ -496,53 +414,4 @@ export function useFlowLayoutEditor(props: {
       </div>
     },
   }
-}
-
-/**
- * @public
- */
-export interface FlowLayoutText {
-  text: string
-  width: number
-}
-
-function isWordCharactor(c: string) {
-  if (c === '.') return true
-  if (isLetter(c)) return true
-  if (isNumber(c)) return true
-  return false
-}
-
-export function isLetter(c: string) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
-export function isNumber(c: string) {
-  return c >= '0' && c <= '9'
-}
-
-/**
- * @public
- */
-export function loadFlowLayoutText(
-  text: string,
-  fontSize: number,
-  fontFamily: string,
-  whole = false,
-) {
-  const newCharacters: FlowLayoutText[] = []
-  if (whole) {
-    const size = getTextSizeFromCache(`${fontSize}px ${fontFamily}`, text)
-    if (size) {
-      newCharacters.push({ text, width: size.width })
-    }
-    return newCharacters
-  }
-  for (const c of text) {
-    const size = getTextSizeFromCache(`${fontSize}px ${fontFamily}`, c)
-    if (size) {
-      newCharacters.push({ text: c, width: size.width })
-    }
-  }
-  return newCharacters
 }
