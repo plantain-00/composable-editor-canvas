@@ -54,6 +54,7 @@ A composable editor canvas library.
 + `getLinearDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=linear-dimension.story>
 + `useJsonEditorData` <https://plantain-00.github.io/composable-editor-canvas/?p=json-editor.story>
 + `useFlowLayoutEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-editor.story>
++ `useFlowLayoutTextEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-text-editor.story>
 
 ## combinations
 

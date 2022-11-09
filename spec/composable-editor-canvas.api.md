@@ -330,14 +330,6 @@ export type Filter = {
 };
 
 // @public (undocumented)
-export interface FlowLayoutText {
-    // (undocumented)
-    text: string;
-    // (undocumented)
-    width: number;
-}
-
-// @public (undocumented)
 export const focusedOnInput: {
     value: boolean;
 };
@@ -819,9 +811,6 @@ export interface LinearGradient {
 
 // @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
-
-// @public (undocumented)
-export function loadFlowLayoutText(text: string, fontSize: number, fontFamily: string, whole?: boolean): FlowLayoutText[];
 
 // @public (undocumented)
 export const m3: {
@@ -1527,14 +1516,68 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
-export function useFlowLayoutEditor(props: {
-    state: readonly FlowLayoutText[];
+export function useFlowLayoutEditor<T>(props: {
+    state: readonly T[];
+    width: number;
+    height: number;
+    lineHeight: number;
+    setState(recipe: (draft: T[]) => void): void;
+    getWidth: (content: T) => number;
+    processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
+    onLocationChanged?(location: number): void;
+    style?: React_2.CSSProperties;
+    autoHeight?: boolean;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    onFocus?: () => void;
+    isNewLineContent?: (content: T) => boolean;
+    isPartOfComposition?: (content: T) => boolean;
+    getComposition?: (index: number) => {
+        index: number;
+        width: number;
+    };
+    endContent: T;
+    onCompositionEnd?: React_2.CompositionEventHandler<HTMLInputElement>;
+    onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
+}): {
+    ref: React_2.MutableRefObject<HTMLInputElement | null>;
+    range: {
+        min: number;
+        max: number;
+    } | undefined;
+    layoutResult: (Position & {
+        i: number;
+        content: T;
+        visible: boolean;
+    })[];
+    cursor: {
+        x: number;
+        y: number;
+    };
+    inputContent: (newContents: T[], contentLocation?: number) => void;
+    location: number;
+    setLocation: React_2.Dispatch<React_2.SetStateAction<number>>;
+    getCopiedContents: (cut?: boolean) => T[] | undefined;
+    isSelected: (index: number) => boolean | undefined;
+    actualHeight: number;
+    setSelectionStart: React_2.Dispatch<React_2.SetStateAction<number | undefined>>;
+    getPosition: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        x: number;
+        y: number;
+    };
+    positionToLocation: ({ x, y }: Position, ignoreInvisible?: boolean) => number;
+    renderEditor: (children: JSX.Element, cursorHeight: number) => JSX.Element;
+};
+
+// @public (undocumented)
+export function useFlowLayoutTextEditor(props: {
+    state: readonly string[];
     width: number;
     height: number;
     fontSize: number;
     fontFamily: string;
     lineHeight: number;
-    setState(recipe: (draft: FlowLayoutText[]) => void): void;
+    setState(recipe: (draft: string[]) => void): void;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onLocationChanged?(location: number): void;
     style?: React_2.CSSProperties;
@@ -1545,7 +1588,7 @@ export function useFlowLayoutEditor(props: {
 }): {
     layoutResult: (Position & {
         i: number;
-        content: FlowLayoutText;
+        content: string;
         visible: boolean;
     })[];
     cursor: {
