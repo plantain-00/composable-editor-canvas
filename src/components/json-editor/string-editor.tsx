@@ -12,6 +12,9 @@ export function StringEditor(props: JsonEditorProps<string> & {
   const [text, setText] = React.useState(props.value)
   React.useEffect(() => {
     setText(props.value)
+    return () => {
+      focusedOnInput.value = false
+    }
   }, [props.value])
   const onComplete = () => {
     if (!props.readOnly && text !== props.value) {
