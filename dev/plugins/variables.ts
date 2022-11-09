@@ -2390,6 +2390,219 @@ export {
   getCommand
 };
 `,
+`// dev/plugins/diamond.plugin.tsx
+function getModel(ctx) {
+  function getGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      const points = [
+        { x: content.x, y: content.y - content.height / 2 },
+        { x: content.x + content.width / 2, y: content.y },
+        { x: content.x, y: content.y + content.height / 2 },
+        { x: content.x - content.width / 2, y: content.y }
+      ];
+      const lines = Array.from(ctx.iteratePolygonLines(points));
+      return {
+        lines,
+        points,
+        bounding: ctx.getPointsBounding(points),
+        renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
+        regions: ctx.hasFill(content) ? [
+          {
+            lines,
+            points
+          }
+        ] : void 0
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "diamond",
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
+    move(content, offset) {
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    explode(content) {
+      const { lines } = getGeometries(content);
+      return lines.map((line) => ({ type: "line", points: line }));
+    },
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
+      const fillStyleContent = ctx.getFillStyleContent(content, contents);
+      const options = {
+        fillColor: getFillColor(fillStyleContent),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
+        fillPattern: getFillPattern(fillStyleContent)
+      };
+      const { points } = getGeometries(content);
+      return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray });
+    },
+    getOperatorRenderPosition(content) {
+      const { points } = getGeometries(content);
+      return points[0];
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { points } = getGeometries(content);
+        return {
+          editPoints: [
+            { x: content.x, y: content.y, direction: "center" },
+            { ...points[0], direction: "top" },
+            { ...points[1], direction: "right" },
+            { ...points[2], direction: "bottom" },
+            { ...points[3], direction: "left" }
+          ].map((p) => ({
+            x: p.x,
+            y: p.y,
+            cursor: ctx.getResizeCursor(0, p.direction),
+            update(c, { cursor, start, scale }) {
+              if (!isDiamondContent(c)) {
+                return;
+              }
+              const offset = ctx.getResizeOffset(start, cursor, p.direction);
+              if (!offset) {
+                return;
+              }
+              c.x += offset.x + offset.width / 2;
+              c.y += offset.y + offset.height / 2;
+              c.width += offset.width;
+              c.height += offset.height;
+              return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+            }
+          }))
+        };
+      });
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { points, lines } = getGeometries(content);
+        return [
+          { x: content.x, y: content.y, type: "center" },
+          ...points.map((p) => ({ ...p, type: "endpoint" })),
+          ...lines.map(([start, end]) => ({
+            x: (start.x + end.x) / 2,
+            y: (start.y + end.y) / 2,
+            type: "midpoint"
+          }))
+        ];
+      });
+    },
+    getGeometries,
+    canSelectPart: true,
+    propertyPanel(content, update, contents) {
+      return {
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.x,
+          setValue: (v) => update((c) => {
+            if (isDiamondContent(c)) {
+              c.x = v;
+            }
+          })
+        }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.y,
+          setValue: (v) => update((c) => {
+            if (isDiamondContent(c)) {
+              c.y = v;
+            }
+          })
+        }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.width,
+          setValue: (v) => update((c) => {
+            if (isDiamondContent(c)) {
+              c.width = v;
+            }
+          })
+        }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.height,
+          setValue: (v) => update((c) => {
+            if (isDiamondContent(c)) {
+              c.height = v;
+            }
+          })
+        }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getFillContentPropertyPanel(content, update, contents)
+      };
+    },
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds
+  };
+}
+function isDiamondContent(content) {
+  return content.type === "diamond";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("polygon", {
+    points: "52,5 97,50 52,96 6,50",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor"
+  }));
+  return {
+    name: "create diamond",
+    icon,
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+        type === "create diamond",
+        (c) => onEnd({
+          updateContents: (contents) => contents.push({
+            type: "diamond",
+            x: (c[0].x + c[1].x) / 2,
+            y: (c[0].y + c[1].y) / 2,
+            width: Math.abs(c[0].x - c[1].x),
+            height: Math.abs(c[0].y - c[1].y),
+            strokeStyleId,
+            fillStyleId
+          })
+        }),
+        {
+          once: true
+        }
+      );
+      const assistentContents = [];
+      if (line) {
+        assistentContents.push({
+          type: "diamond",
+          x: (line[0].x + line[1].x) / 2,
+          y: (line[0].y + line[1].y) / 2,
+          width: Math.abs(line[0].x - line[1].x),
+          height: Math.abs(line[0].y - line[1].y),
+          strokeStyleId,
+          fillStyleId
+        });
+      }
+      return {
+        onStart: onClick,
+        input,
+        onMove,
+        assistentContents,
+        lastPosition,
+        reset
+      };
+    },
+    selectCount: 0
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isDiamondContent
+};
+`,
 `// dev/plugins/edit-container.plugin.tsx
 function getCommand(ctx) {
   function contentSelectable(c) {
@@ -9378,6 +9591,261 @@ function getCommand(ctx) {
 }
 export {
   getCommand
+};
+`,
+`// dev/plugins/rounded-rect.plugin.tsx
+function getModel(ctx) {
+  function getGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      var _a, _b, _c, _d;
+      const reactPoints = [
+        { x: content.x - content.width / 2, y: content.y - content.height / 2 },
+        { x: content.x + content.width / 2, y: content.y - content.height / 2 },
+        { x: content.x + content.width / 2, y: content.y + content.height / 2 },
+        { x: content.x - content.width / 2, y: content.y + content.height / 2 }
+      ];
+      const points = [
+        ...ctx.arcToPolyline({
+          x: content.x + content.width / 2 - content.radius,
+          y: content.y - content.height / 2 + content.radius,
+          r: content.radius,
+          startAngle: -90,
+          endAngle: 0
+        }, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta),
+        ...ctx.arcToPolyline({
+          x: content.x + content.width / 2 - content.radius,
+          y: content.y + content.height / 2 - content.radius,
+          r: content.radius,
+          startAngle: 0,
+          endAngle: 90
+        }, (_b = content.angleDelta) != null ? _b : ctx.defaultAngleDelta),
+        ...ctx.arcToPolyline({
+          x: content.x - content.width / 2 + content.radius,
+          y: content.y + content.height / 2 - content.radius,
+          r: content.radius,
+          startAngle: 90,
+          endAngle: 180
+        }, (_c = content.angleDelta) != null ? _c : ctx.defaultAngleDelta),
+        ...ctx.arcToPolyline({
+          x: content.x - content.width / 2 + content.radius,
+          y: content.y - content.height / 2 + content.radius,
+          r: content.radius,
+          startAngle: 180,
+          endAngle: 270
+        }, (_d = content.angleDelta) != null ? _d : ctx.defaultAngleDelta)
+      ];
+      const lines = Array.from(ctx.iteratePolygonLines(points));
+      return {
+        lines,
+        points: reactPoints,
+        bounding: ctx.getPointsBounding(reactPoints),
+        renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
+        regions: ctx.hasFill(content) ? [
+          {
+            lines,
+            points
+          }
+        ] : void 0
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "rounded rect",
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
+    ...ctx.angleDeltaModel,
+    move(content, offset) {
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      var _a;
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
+      const fillStyleContent = ctx.getFillStyleContent(content, contents);
+      const options = {
+        fillColor: getFillColor(fillStyleContent),
+        strokeColor: getStrokeColor(strokeStyleContent),
+        strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
+        fillPattern: getFillPattern(fillStyleContent)
+      };
+      const { renderingLines } = getGeometries(content);
+      return target.renderPath(renderingLines, options);
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { points } = getGeometries(content);
+        return {
+          editPoints: [
+            { x: content.x, y: content.y, direction: "center" },
+            { ...points[0], direction: "left-top" },
+            { ...points[1], direction: "right-top" },
+            { ...points[2], direction: "right-bottom" },
+            { ...points[3], direction: "left-bottom" }
+          ].map((p) => ({
+            x: p.x,
+            y: p.y,
+            cursor: ctx.getResizeCursor(0, p.direction),
+            update(c, { cursor, start, scale }) {
+              if (!isRoundedRectContent(c)) {
+                return;
+              }
+              const offset = ctx.getResizeOffset(start, cursor, p.direction);
+              if (!offset) {
+                return;
+              }
+              c.x += offset.x + offset.width / 2;
+              c.y += offset.y + offset.height / 2;
+              c.width += offset.width;
+              c.height += offset.height;
+              return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+            }
+          }))
+        };
+      });
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { points, lines } = getGeometries(content);
+        return [
+          { x: content.x, y: content.y, type: "center" },
+          ...points.map((p) => ({ ...p, type: "endpoint" })),
+          ...lines.map(([start, end]) => ({
+            x: (start.x + end.x) / 2,
+            y: (start.y + end.y) / 2,
+            type: "midpoint"
+          }))
+        ];
+      });
+    },
+    getGeometries,
+    canSelectPart: true,
+    propertyPanel(content, update, contents) {
+      return {
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.x,
+          setValue: (v) => update((c) => {
+            if (isRoundedRectContent(c)) {
+              c.x = v;
+            }
+          })
+        }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.y,
+          setValue: (v) => update((c) => {
+            if (isRoundedRectContent(c)) {
+              c.y = v;
+            }
+          })
+        }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.width,
+          setValue: (v) => update((c) => {
+            if (isRoundedRectContent(c)) {
+              c.width = v;
+            }
+          })
+        }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.height,
+          setValue: (v) => update((c) => {
+            if (isRoundedRectContent(c)) {
+              c.height = v;
+            }
+          })
+        }),
+        radius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+          value: content.radius,
+          setValue: (v) => update((c) => {
+            if (isRoundedRectContent(c)) {
+              c.radius = v;
+            }
+          })
+        }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getFillContentPropertyPanel(content, update, contents),
+        ...ctx.getAngleDeltaContentPropertyPanel(content, update)
+      };
+    },
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds
+  };
+}
+function isRoundedRectContent(content) {
+  return content.type === "rounded rect";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 100 100"
+  }, /* @__PURE__ */ React.createElement("path", {
+    d: "M 35 11 L 65 11 L 65 11 L 67 11 L 69 11 L 71 12 L 73 13 L 75 13 L 77 14 L 79 16 L 81 17 L 82 18 L 84 20 L 85 22 L 86 24 L 87 25 L 88 27 L 89 30 L 89 32 L 89 34 L 90 36 L 90 36 L 90 66 L 90 66 L 89 68 L 89 70 L 89 72 L 88 74 L 87 76 L 86 78 L 85 80 L 84 82 L 82 83 L 81 85 L 79 86 L 77 87 L 75 88 L 73 89 L 71 90 L 69 90 L 67 90 L 65 91 L 65 91 L 35 91 L 35 91 L 33 90 L 31 90 L 29 90 L 26 89 L 24 88 L 23 87 L 21 86 L 19 85 L 17 83 L 16 82 L 15 80 L 13 78 L 12 76 L 12 74 L 11 72 L 10 70 L 10 68 L 10 66 L 10 66 L 10 36 L 10 36 L 10 34 L 10 32 L 11 30 L 12 27 L 12 25 L 13 23 L 15 22 L 16 20 L 17 18 L 19 17 L 21 16 L 22 14 L 24 13 L 26 13 L 29 12 L 31 11 L 33 11 L 35 11",
+    strokeWidth: "5",
+    strokeMiterlimit: "10",
+    strokeLinejoin: "miter",
+    strokeLinecap: "butt",
+    fill: "none",
+    stroke: "currentColor",
+    fillRule: "evenodd"
+  }));
+  return {
+    name: "create rounded rect",
+    icon,
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+        type === "create rounded rect",
+        (c) => onEnd({
+          updateContents: (contents) => {
+            const width = Math.abs(c[0].x - c[1].x);
+            const height = Math.abs(c[0].y - c[1].y);
+            contents.push({
+              type: "rounded rect",
+              x: (c[0].x + c[1].x) / 2,
+              y: (c[0].y + c[1].y) / 2,
+              width,
+              height,
+              radius: Math.round(Math.min(width, height) / 4),
+              strokeStyleId,
+              fillStyleId
+            });
+          }
+        }),
+        {
+          once: true
+        }
+      );
+      const assistentContents = [];
+      if (line) {
+        const width = Math.abs(line[0].x - line[1].x);
+        const height = Math.abs(line[0].y - line[1].y);
+        assistentContents.push({
+          type: "rounded rect",
+          x: (line[0].x + line[1].x) / 2,
+          y: (line[0].y + line[1].y) / 2,
+          width,
+          height,
+          radius: Math.round(Math.min(width, height) / 4),
+          strokeStyleId,
+          fillStyleId
+        });
+      }
+      return {
+        onStart: onClick,
+        input,
+        onMove,
+        assistentContents,
+        lastPosition,
+        reset
+      };
+    },
+    selectCount: 0
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isRoundedRectContent
 };
 `,
 `var __create = Object.create;

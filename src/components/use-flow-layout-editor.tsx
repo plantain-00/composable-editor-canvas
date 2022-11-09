@@ -181,16 +181,19 @@ export function useFlowLayoutEditor<T>(props: {
       return 0
     }
     const minY = y - props.lineHeight
-    let result: number | undefined
+    let result: (typeof layoutResult)[number] | undefined
     for (const p of layoutResult) {
       if (ignoreInvisible && !p.visible) continue
       if (p.y >= minY && p.y <= y) {
-        if (Math.abs(p.x - x) < props.getWidth(p.content) / 2) {
+        if (
+          x <= p.x + props.getWidth(p.content) / 2 &&
+          (!result || result.y + props.getWidth(result.content) / 2 <= x)
+        ) {
           return p.i
         }
-        result = p.i
+        result = p
       } else if (result !== undefined) {
-        return result
+        return result.i
       }
     }
     return props.state.length

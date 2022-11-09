@@ -12,6 +12,9 @@ export function NumberEditor(props: JsonEditorProps<number> & {
   const [text, setText] = React.useState(props.type === 'color' ? getColorString(props.value) : props.value.toString())
   React.useEffect(() => {
     setText(props.type === 'color' ? getColorString(props.value) : props.value.toString())
+    return () => {
+      focusedOnInput.value = false
+    }
   }, [props.value])
   const onComplete = () => {
     if (props.readOnly) {

@@ -605,6 +605,9 @@ export function drawDashedPolyline(
   skippedLines?: number[],
   dashOffset = 0,
 ) {
+  if (dashArray.length % 2 === 1) {
+    dashArray = [...dashArray, ...dashArray]
+  }
   let startDistance = dashOffset
   points.forEach((p, i) => {
     if (i === 0 || skippedLines?.includes(i - 1)) {

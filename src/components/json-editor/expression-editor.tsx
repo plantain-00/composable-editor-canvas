@@ -158,6 +158,9 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
 
   React.useEffect(() => {
     initialState.current = props.value.split('')
+    return () => {
+      focusedOnInput.value = false
+    }
   }, [props.value])
 
   const ref = React.useRef<HTMLDivElement | null>(null)
