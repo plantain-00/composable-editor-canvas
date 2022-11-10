@@ -14,8 +14,9 @@ export function useCursorInput(
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
   const [inputPosition, setInputPosition] = React.useState<Position>()
   const inputRef = React.useRef<HTMLInputElement | null>(null)
-  React.useEffect(() => {
-    if (!focusedOnInput.value) {
+  React.useLayoutEffect(() => {
+    const tagName = document.activeElement?.tagName
+    if (tagName !== 'INPUT' && tagName !== 'TEXTAREA') {
       inputRef.current?.focus()
     }
   })
@@ -55,11 +56,4 @@ export function useCursorInput(
       </span>
     ) : undefined,
   }
-}
-
-/**
- * @public
- */
-export const focusedOnInput = {
-  value: false
 }

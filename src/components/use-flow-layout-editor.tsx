@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
-import { Position } from "../utils"
+import { flowLayout, getFlowLayoutLocation, Position } from "../utils"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -176,27 +176,8 @@ export function useFlowLayoutEditor<T>(props: {
       y: e.clientY - bounding.top,
     }
   }
-  const positionToLocation = ({ x, y }: Position, ignoreInvisible = true) => {
-    if (y < scrollY) {
-      return 0
-    }
-    const minY = y - props.lineHeight
-    let result: (typeof layoutResult)[number] | undefined
-    for (const p of layoutResult) {
-      if (ignoreInvisible && !p.visible) continue
-      if (p.y >= minY && p.y <= y) {
-        if (
-          x <= p.x + props.getWidth(p.content) / 2 &&
-          (!result || result.y + props.getWidth(result.content) / 2 <= x)
-        ) {
-          return p.i
-        }
-        result = p
-      } else if (result !== undefined) {
-        return result.i
-      }
-    }
-    return props.state.length
+  const positionToLocation = (p: Position, ignoreInvisible = true) => {
+    return getFlowLayoutLocation(p, props.lineHeight, layoutResult, scrollY, props.getWidth, ignoreInvisible)
   }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -238,8 +219,6 @@ export function useFlowLayoutEditor<T>(props: {
     downLocation.current = undefined
   }))
 
-  const isVisible = (y: number) => props.autoHeight ? true : y >= -props.lineHeight && y <= props.height
-
   const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
     minY: props.autoHeight ? 0 : contentHeight > props.height ? props.height - contentHeight : 0,
     maxY: 0,
@@ -251,73 +230,21 @@ export function useFlowLayoutEditor<T>(props: {
     }
   }, [props.autoHeight, setY])
 
-  const layoutResult: (Position & { i: number, content: T, visible: boolean })[] = []
-  {
-    let x = 0
-    let y = scrollY
-    let i = 0
-    let visible = isVisible(y)
-    const toNewLine = () => {
-      y += props.lineHeight
-      visible = isVisible(y)
-      x = 0
-    }
-    const addResult = (newLine: boolean) => {
-      const content = props.state[i]
-      layoutResult.push({ x, y, i, content, visible })
-      if (newLine) {
-        toNewLine()
-      } else {
-        x += props.getWidth(content)
-      }
-      i++
-    }
-    while (i < props.state.length) {
-      const content = props.state[i]
-      if (props.isNewLineContent?.(content)) {
-        addResult(true)
-        continue
-      }
-      if (props.getComposition && props.isPartOfComposition?.(content)) {
-        const w = props.getComposition(i)
-        // a b|
-        if (x + w.width <= props.width) {
-          while (i < w.index) {
-            addResult(false)
-          }
-          continue
-        }
-        // a b|c
-        if (x > 0) {
-          toNewLine()
-        }
-        // abc|
-        if (w.width <= props.width) {
-          while (i < w.index) {
-            addResult(false)
-          }
-          continue
-        }
-        // abc|d
-        while (i < w.index) {
-          if (x + props.getWidth(props.state[i]) > props.width) {
-            toNewLine()
-          }
-          addResult(false)
-        }
-        continue
-      }
-      // a|b
-      if (x + props.getWidth(content) > props.width) {
-        toNewLine()
-      }
-      addResult(false)
-    }
-    layoutResult.push({ x, y, i, content: props.endContent, visible })
-    const newContentHeight = y + props.lineHeight - scrollY
-    if (contentHeight < newContentHeight) {
-      setContentHeight(newContentHeight)
-    }
+  const { layoutResult, newContentHeight } = flowLayout({
+    state: props.state,
+    width: props.width,
+    height: props.height,
+    lineHeight: props.lineHeight,
+    getWidth: props.getWidth,
+    autoHeight: props.autoHeight,
+    isNewLineContent: props.isNewLineContent,
+    isPartOfComposition: props.isPartOfComposition,
+    getComposition: props.getComposition,
+    endContent: props.endContent,
+    scrollY,
+  })
+  if (contentHeight < newContentHeight) {
+    setContentHeight(newContentHeight)
   }
 
   const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location) } : undefined

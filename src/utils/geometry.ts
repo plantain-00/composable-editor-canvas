@@ -608,12 +608,12 @@ export function drawDashedPolyline(
   if (dashArray.length % 2 === 1) {
     dashArray = [...dashArray, ...dashArray]
   }
-  let startDistance = dashOffset
+  if (dashArray.reduce((p, c) => p + c) <= 0) return
   points.forEach((p, i) => {
     if (i === 0 || skippedLines?.includes(i - 1)) {
       g.moveTo(p.x, p.y)
     } else {
-      startDistance = drawDashedLine(g, points[i - 1], p, dashArray, startDistance)
+      dashOffset = drawDashedLine(g, points[i - 1], p, dashArray, dashOffset)
     }
   })
 }
@@ -626,38 +626,39 @@ export function drawDashedLine(
   p1: Position,
   p2: Position,
   dashArray: number[],
-  startDistance = 0,
+  dashOffset = 0,
 ) {
   if (dashArray.length % 2 === 1) {
     dashArray = [...dashArray, ...dashArray]
   }
+  const dashTotalLength = dashArray.reduce((p, c) => p + c)
+  if (dashTotalLength <= 0) return dashOffset
   let distance = getTwoPointsDistance(p1, p2)
+  const newDashOffset = (dashOffset + distance) % dashTotalLength
   let p = p1
   while (distance > 0) {
-    let offset = 0
     for (let i = 0; i < dashArray.length; i++) {
-      let length = dashArray[i]
-      if (startDistance > 0) {
-        if (length <= startDistance) {
-          startDistance -= length
+      let dashLength = dashArray[i]
+      if (dashOffset > 0) {
+        if (dashLength <= dashOffset) {
+          dashOffset -= dashLength
           continue
         }
-        length = length - startDistance
-        startDistance = 0
+        dashLength -= dashOffset
+        dashOffset = 0
       }
       const operate = i % 2 === 0 ? 'lineTo' : 'moveTo'
-      if (length >= distance) {
+      if (dashLength >= distance) {
         g[operate](p2.x, p2.y)
-        return offset + distance
+        return newDashOffset
       }
-      const end = getPointByLengthAndDirection(p, length, p2)
+      const end = getPointByLengthAndDirection(p, dashLength, p2)
       g[operate](end.x, end.y)
-      distance -= length
-      offset += length
+      distance -= dashLength
       p = end
     }
   }
-  return 0
+  return newDashOffset
 }
 
 function getValueBetween2PointsByPercent(n1: number, n2: number, percent: number) {
