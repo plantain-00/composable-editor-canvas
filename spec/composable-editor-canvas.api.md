@@ -174,7 +174,7 @@ export function DragMask(props: {
 export function drawDashedLine(g: {
     moveTo: (x: number, y: number) => void;
     lineTo: (x: number, y: number) => void;
-}, p1: Position, p2: Position, dashArray: number[], startDistance?: number): number;
+}, p1: Position, p2: Position, dashArray: number[], dashOffset?: number): number;
 
 // @public (undocumented)
 export function drawDashedPolyline(g: {
@@ -330,9 +330,35 @@ export type Filter = {
 };
 
 // @public (undocumented)
-export const focusedOnInput: {
-    value: boolean;
+export function flowLayout<T>(props: {
+    state: readonly T[];
+    width: number;
+    height: number;
+    lineHeight: number;
+    getWidth: (content: T) => number;
+    autoHeight?: boolean;
+    isNewLineContent?: (content: T) => boolean;
+    isPartOfComposition?: (content: T) => boolean;
+    getComposition?: (index: number) => {
+        index: number;
+        width: number;
+    };
+    endContent: T;
+    scrollY: number;
+}): {
+    layoutResult: FlowLayoutResult<T>[];
+    newContentHeight: number;
 };
+
+// @public (undocumented)
+export interface FlowLayoutResult<T> extends Position {
+    // (undocumented)
+    content: T;
+    // (undocumented)
+    i: number;
+    // (undocumented)
+    visible: boolean;
+}
 
 // @public (undocumented)
 export function formatNumber(n: number, precision?: number): number;
@@ -428,6 +454,9 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 
 // @public (undocumented)
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
+
+// @public (undocumented)
+export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number, layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number;
 
 // @public (undocumented)
 export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
@@ -1545,11 +1574,7 @@ export function useFlowLayoutEditor<T>(props: {
         min: number;
         max: number;
     } | undefined;
-    layoutResult: (Position & {
-        i: number;
-        content: T;
-        visible: boolean;
-    })[];
+    layoutResult: FlowLayoutResult<T>[];
     cursor: {
         x: number;
         y: number;
@@ -1565,7 +1590,7 @@ export function useFlowLayoutEditor<T>(props: {
         x: number;
         y: number;
     };
-    positionToLocation: ({ x, y }: Position, ignoreInvisible?: boolean) => number;
+    positionToLocation: (p: Position, ignoreInvisible?: boolean) => number;
     renderEditor: (children: JSX.Element, cursorHeight: number) => JSX.Element;
 };
 
@@ -1586,11 +1611,7 @@ export function useFlowLayoutTextEditor(props: {
     onBlur?: () => void;
     onFocus?: () => void;
 }): {
-    layoutResult: (Position & {
-        i: number;
-        content: string;
-        visible: boolean;
-    })[];
+    layoutResult: FlowLayoutResult<string>[];
     cursor: {
         x: number;
         y: number;

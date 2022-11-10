@@ -1,5 +1,5 @@
 import * as React from "react"
-import { focusedOnInput, isLetter, isNumber, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutTextEditor, useUndoRedo } from ".."
+import { isLetter, isNumber, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutTextEditor, useUndoRedo } from ".."
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**
@@ -74,13 +74,9 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     },
     autoHeight: props.autoHeight,
     onBlur: () => {
-      focusedOnInput.value = false
       setTimeout(() => {
         onComplete()
       }, 0)
-    },
-    onFocus: () => {
-      focusedOnInput.value = true
     },
     style: {
       border: 'unset',
@@ -158,9 +154,6 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
 
   React.useEffect(() => {
     initialState.current = props.value.split('')
-    return () => {
-      focusedOnInput.value = false
-    }
   }, [props.value])
 
   const ref = React.useRef<HTMLDivElement | null>(null)

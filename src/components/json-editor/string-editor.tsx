@@ -1,5 +1,4 @@
 import * as React from "react"
-import { focusedOnInput } from ".."
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**
@@ -12,9 +11,6 @@ export function StringEditor(props: JsonEditorProps<string> & {
   const [text, setText] = React.useState(props.value)
   React.useEffect(() => {
     setText(props.value)
-    return () => {
-      focusedOnInput.value = false
-    }
   }, [props.value])
   const onComplete = () => {
     if (!props.readOnly && text !== props.value) {
@@ -52,13 +48,9 @@ export function StringEditor(props: JsonEditorProps<string> & {
           e.stopPropagation()
         }}
         onBlur={() => {
-          focusedOnInput.value = false
           setTimeout(() => {
             onComplete()
           }, 0)
-        }}
-        onFocus={() => {
-          focusedOnInput.value = true
         }}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
@@ -90,13 +82,9 @@ export function StringEditor(props: JsonEditorProps<string> & {
           e.stopPropagation()
         }}
         onBlur={() => {
-          focusedOnInput.value = false
           setTimeout(() => {
             onComplete()
           }, 0)
-        }}
-        onFocus={() => {
-          focusedOnInput.value = true
         }}
         style={{ ...controlStyle, ...props.style, ...extraStyle }}
       />
