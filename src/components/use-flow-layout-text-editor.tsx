@@ -127,12 +127,8 @@ export function useFlowLayoutTextEditor(props: {
   const inputText = (text: string | string[], textLocation = text.length) => {
     if (props.readOnly) return
     const result: string[] = []
-    if (Array.isArray(text)) {
-      for (const t of text) {
-        result.push(...loadFlowLayoutText(t, true))
-      }
-    } else {
-      result.push(...loadFlowLayoutText(text))
+    for (const t of text) {
+      result.push(t)
     }
     inputContent(result, textLocation)
   }
@@ -191,15 +187,4 @@ export function isLetter(c: string) {
 
 export function isNumber(c: string) {
   return c >= '0' && c <= '9'
-}
-
-function loadFlowLayoutText(text: string, whole = false) {
-  if (whole) {
-    return [text]
-  }
-  const result: string[] = []
-  for (const c of text) {
-    result.push(c)
-  }
-  return result
 }

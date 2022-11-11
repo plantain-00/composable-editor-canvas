@@ -111,7 +111,7 @@ export function getFlowLayoutLocation<T>(
     return 0
   }
   const minY = y - lineHeight
-  let result: (typeof layoutResult)[number] | undefined
+  let result: FlowLayoutResult<T> | undefined
   for (const p of layoutResult) {
     if (ignoreInvisible && !p.visible) continue
     if (p.y >= minY && p.y <= y) {
