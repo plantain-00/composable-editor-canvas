@@ -1467,6 +1467,10 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
         path: TPath;
         content: T;
         angleSnapStartPoint?: Position | undefined;
+        relatedEditPoints: (EditPoint<T> & {
+            path: TPath;
+            content: T;
+        })[];
     }) | undefined;
     editLastPosition: Position | undefined;
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
@@ -1474,7 +1478,8 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
         result: T;
         patches: Patch_2[];
         reversePatches: Patch_2[];
-        assistentContents: T[] | undefined;
+        assistentContents: T[];
+        relatedEditPointResults: Map<T, T>;
     } | undefined;
     onEditMove(p: Position, selectedContents: readonly {
         content: T;

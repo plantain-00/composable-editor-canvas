@@ -275,7 +275,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
-  debug.mark('before assisten contents')
+  debug.mark('before assistent contents')
   const assistentContents: BaseContent[] = [
     ...getSnapAssistentContents(
       (circle) => ({ type: 'circle', ...circle, strokeColor: 0x00ff00 } as CircleContent),
@@ -294,6 +294,8 @@ export const CADEditor = React.forwardRef((props: {
       let c = content
       if (editPoint && isSamePath(editPoint.path, path)) {
         c = result?.result ?? content
+      } else {
+        c = result?.relatedEditPointResults.get(content) ?? content
       }
       assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
     }
