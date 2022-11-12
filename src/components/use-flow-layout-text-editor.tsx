@@ -169,7 +169,7 @@ export function useFlowLayoutTextEditor(props: {
         children.push(...renderProps.children)
       }
       const result = renderProps.target.renderResult(children, props.width, actualHeight)
-      return renderEditor(result, props.lineHeight)
+      return renderEditor(result)
     },
   }
 }

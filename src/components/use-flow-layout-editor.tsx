@@ -12,7 +12,7 @@ export function useFlowLayoutEditor<T>(props: {
   state: readonly T[]
   width: number
   height: number
-  lineHeight: number
+  lineHeight: number | ((content: T) => number)
   setState(recipe: (draft: T[]) => void): void
   getWidth: (content: T) => number
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
@@ -104,13 +104,13 @@ export function useFlowLayoutEditor<T>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
-    if (cursorY < props.lineHeight) {
+    if (cursorY < firstLineHeight || cursorRow <= 0) {
       setLocation(0)
       return
     }
     setLocation(positionToLocation({
       x: cursorX,
-      y: cursorY - props.lineHeight / 2 + scrollY,
+      y: cursorY - lineHeights[cursorRow - 1] / 2 + scrollY,
     }, false))
   }
   const arrowDown = (shift = false) => {
@@ -122,9 +122,13 @@ export function useFlowLayoutEditor<T>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
+    if (cursorRow >= lineHeights.length - 1) {
+      setLocation(props.state.length)
+      return
+    }
     setLocation(positionToLocation({
       x: cursorX,
-      y: cursorY + props.lineHeight * 3 / 2 + scrollY,
+      y: cursorY + lineHeights[cursorRow] + lineHeights[cursorRow + 1] / 2 + scrollY,
     }, false))
   }
   const selectAll = () => {
@@ -177,7 +181,7 @@ export function useFlowLayoutEditor<T>(props: {
     }
   }
   const positionToLocation = (p: Position, ignoreInvisible = true) => {
-    return getFlowLayoutLocation(p, props.lineHeight, layoutResult, scrollY, props.getWidth, ignoreInvisible)
+    return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible)
   }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -204,9 +208,9 @@ export function useFlowLayoutEditor<T>(props: {
       setSelectionStart(downLocation.current)
     }
     if (!props.autoHeight) {
-      if (s.y >= 0 && s.y <= props.lineHeight) {
+      if (s.y >= 0 && s.y <= firstLineHeight) {
         setY(y => filterY(y + 2))
-      } else if (s.y <= props.height && s.y >= props.height - props.lineHeight) {
+      } else if (s.y <= props.height && s.y >= props.height - lastLineHeight) {
         setY(y => filterY(y - 2))
       }
     }
@@ -230,7 +234,7 @@ export function useFlowLayoutEditor<T>(props: {
     }
   }, [props.autoHeight, setY])
 
-  const { layoutResult, newContentHeight } = flowLayout({
+  const { layoutResult, newContentHeight, lineHeights } = flowLayout({
     state: props.state,
     width: props.width,
     height: props.height,
@@ -246,11 +250,14 @@ export function useFlowLayoutEditor<T>(props: {
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
   }
+  const firstLineHeight = lineHeights[0]
+  const lastLineHeight = lineHeights[lineHeights.length - 1]
 
   const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location) } : undefined
   const p = layoutResult[location] ?? layoutResult[layoutResult.length - 1]
   const cursorX = p.x
   const cursorY = p.y - scrollY
+  const cursorRow = p.row
 
   const lastLocation = React.useRef<number>()
   const lastCursorY = React.useRef<number>()
@@ -261,12 +268,12 @@ export function useFlowLayoutEditor<T>(props: {
     const y = cursorY + scrollY
     if (y < 0) {
       setY(-cursorY)
-    } else if (y > props.height - props.lineHeight) {
-      setY(props.height - props.lineHeight - cursorY)
+    } else if (y > props.height - lastLineHeight) {
+      setY(props.height - lastLineHeight - cursorY)
     }
     lastLocation.current = location
     lastCursorY.current = cursorY
-  }, [location, cursorY, scrollY])
+  }, [location, cursorY, scrollY, lastLineHeight])
 
   React.useEffect(() => {
     props.onLocationChanged?.(location)
@@ -282,9 +289,11 @@ export function useFlowLayoutEditor<T>(props: {
     ref,
     range,
     layoutResult,
+    lineHeights,
     cursor: {
       x: cursorX,
       y: cursorY + scrollY,
+      row: cursorRow,
     },
     inputContent,
     location,
@@ -295,7 +304,7 @@ export function useFlowLayoutEditor<T>(props: {
     setSelectionStart,
     getPosition,
     positionToLocation,
-    renderEditor: (children: JSX.Element, cursorHeight: number) => {
+    renderEditor: (children: JSX.Element) => {
       return <div
         style={{
           position: 'relative',
@@ -317,7 +326,7 @@ export function useFlowLayoutEditor<T>(props: {
             position: 'absolute',
             left: cursorX + 'px',
             top: cursorY + scrollY + 'px',
-            fontSize: cursorHeight / 1.2 + 'px',
+            fontSize: lineHeights[cursorRow] / 1.2 + 'px',
             opacity: props.readOnly ? 0 : undefined,
           }}
           onKeyDown={onKeyDown}

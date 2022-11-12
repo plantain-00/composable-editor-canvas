@@ -334,7 +334,7 @@ export function flowLayout<T>(props: {
     state: readonly T[];
     width: number;
     height: number;
-    lineHeight: number;
+    lineHeight: number | ((content: T) => number);
     getWidth: (content: T) => number;
     autoHeight?: boolean;
     isNewLineContent?: (content: T) => boolean;
@@ -348,14 +348,19 @@ export function flowLayout<T>(props: {
 }): {
     layoutResult: FlowLayoutResult<T>[];
     newContentHeight: number;
+    lineHeights: number[];
 };
 
 // @public (undocumented)
 export interface FlowLayoutResult<T> extends Position {
     // (undocumented)
+    column: number;
+    // (undocumented)
     content: T;
     // (undocumented)
     i: number;
+    // (undocumented)
+    row: number;
     // (undocumented)
     visible: boolean;
 }
@@ -456,7 +461,7 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
 
 // @public (undocumented)
-export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number, layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number;
+export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number | number[], layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number;
 
 // @public (undocumented)
 export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
@@ -1554,7 +1559,7 @@ export function useFlowLayoutEditor<T>(props: {
     state: readonly T[];
     width: number;
     height: number;
-    lineHeight: number;
+    lineHeight: number | ((content: T) => number);
     setState(recipe: (draft: T[]) => void): void;
     getWidth: (content: T) => number;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
@@ -1580,9 +1585,11 @@ export function useFlowLayoutEditor<T>(props: {
         max: number;
     } | undefined;
     layoutResult: FlowLayoutResult<T>[];
+    lineHeights: number[];
     cursor: {
         x: number;
         y: number;
+        row: number;
     };
     inputContent: (newContents: T[], contentLocation?: number) => void;
     location: number;
@@ -1596,7 +1603,7 @@ export function useFlowLayoutEditor<T>(props: {
         y: number;
     };
     positionToLocation: (p: Position, ignoreInvisible?: boolean) => number;
-    renderEditor: (children: JSX.Element, cursorHeight: number) => JSX.Element;
+    renderEditor: (children: JSX.Element) => JSX.Element;
 };
 
 // @public (undocumented)
@@ -1620,6 +1627,7 @@ export function useFlowLayoutTextEditor(props: {
     cursor: {
         x: number;
         y: number;
+        row: number;
     };
     inputText: (text: string | string[], textLocation?: number) => void;
     location: number;
