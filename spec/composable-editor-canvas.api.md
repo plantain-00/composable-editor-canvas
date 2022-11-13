@@ -88,6 +88,9 @@ export interface Bounding {
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
 
 // @public (undocumented)
+export function Button(props: React_2.DetailedHTMLProps<React_2.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>): JSX.Element;
+
+// @public (undocumented)
 export interface Circle extends Position {
     // (undocumented)
     r: number;
@@ -675,6 +678,12 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
+export function getTextComposition<T>(index: number, state: readonly T[], getTextWidth: (c: T) => number, getContentText: (c: T) => string): {
+    width: number;
+    index: number;
+};
+
+// @public (undocumented)
 export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight'];
     fontStyle: React.CSSProperties['fontStyle'];
@@ -742,6 +751,12 @@ export function getTwoPointsDistance(point1: Position, point2: Position): number
 export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion;
 
 // @public (undocumented)
+export function getWordByDoubleClick<T>(state: readonly T[], location: number, getContentText: (c: T) => string): {
+    newSelectionStart: number | undefined;
+    newLocation: number | undefined;
+};
+
+// @public (undocumented)
 export interface GradientStop {
     // (undocumented)
     color: number;
@@ -787,6 +802,9 @@ export function isSamePoint(p1: Position, p2: Position): boolean;
 
 // @public (undocumented)
 export function isSelected<T extends SelectPath = SelectPath>(value: T, selected: readonly T[]): boolean;
+
+// @public (undocumented)
+export function isWordCharactor(c: string): boolean;
 
 // @public (undocumented)
 export function isZero(value: number): boolean;
@@ -1578,6 +1596,7 @@ export function useFlowLayoutEditor<T>(props: {
     endContent: T;
     onCompositionEnd?: React_2.CompositionEventHandler<HTMLInputElement>;
     onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
+    keepSelectionOnBlur?: boolean;
 }): {
     ref: React_2.MutableRefObject<HTMLInputElement | null>;
     range: {

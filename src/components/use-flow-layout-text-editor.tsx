@@ -24,27 +24,8 @@ export function useFlowLayoutTextEditor(props: {
   onFocus?: () => void
 }) {
   const font = `${props.fontSize}px ${props.fontFamily}`
-  function getTextWidth(text: string) {
-    return getTextSizeFromCache(font, text)?.width ?? 0
-  }
-  const getComposition = (index: number) => {
-    let width = getTextWidth(props.state[index])
-    for (let i = index + 1; i < props.state.length; i++) {
-      const content = props.state[i]
-      if (isWordCharactor(content)) {
-        width += getTextWidth(content)
-      } else {
-        return {
-          width,
-          index: i,
-        }
-      }
-    }
-    return {
-      width,
-      index: props.state.length,
-    }
-  }
+  const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
+  const getComposition = (index: number) => getTextComposition(index, props.state, getTextWidth, c => c)
   const { inputContent, getCopiedContents, ref, layoutResult, cursor, location, setLocation, isSelected, renderEditor, actualHeight, setSelectionStart, positionToLocation, getPosition } = useFlowLayoutEditor({
     state: props.state,
     width: props.width,
@@ -99,28 +80,9 @@ export function useFlowLayoutTextEditor(props: {
     },
     onDoubleClick(e) {
       const p = positionToLocation(getPosition(e))
-      let start: number | undefined
-      for (let i = p - 1; i >= 0; i--) {
-        if (isWordCharactor(props.state[i])) {
-          start = i
-        } else {
-          break
-        }
-      }
-      let end: number | undefined
-      for (let i = p; i < props.state.length; i++) {
-        if (isWordCharactor(props.state[i])) {
-          end = i + 1
-        } else {
-          break
-        }
-      }
-      if (end !== undefined) {
-        setSelectionStart(start ?? p)
-        setLocation(end)
-      } else if (start !== undefined) {
-        setSelectionStart(start)
-      }
+      const { newSelectionStart, newLocation } = getWordByDoubleClick(props.state, p, c => c)
+      if (newSelectionStart !== undefined) setSelectionStart(newSelectionStart)
+      if (newLocation !== undefined) setLocation(newLocation)
     },
   })
 
@@ -160,10 +122,11 @@ export function useFlowLayoutTextEditor(props: {
         if (isSelected(i)) {
           colors.backgroundColor = 0xB3D6FD
         }
+        const textWidth = getTextWidth(content)
         if (colors.backgroundColor !== undefined) {
-          children.push(renderProps.target.renderRect(x, y, getTextWidth(content), props.lineHeight, { fillColor: colors.backgroundColor, strokeWidth: 0 }))
+          children.push(renderProps.target.renderRect(x, y, textWidth, props.lineHeight, { fillColor: colors.backgroundColor, strokeWidth: 0 }))
         }
-        children.push(renderProps.target.renderText(x + getTextWidth(content) / 2, y + props.fontSize, content, colors.color ?? 0x000000, props.fontSize, props.fontFamily, { textAlign: 'center' }))
+        children.push(renderProps.target.renderText(x + textWidth / 2, y + props.fontSize, content, colors.color ?? 0x000000, props.fontSize, props.fontFamily, { textAlign: 'center' }))
       }
       if (renderProps.children) {
         children.push(...renderProps.children)
@@ -174,7 +137,72 @@ export function useFlowLayoutTextEditor(props: {
   }
 }
 
-function isWordCharactor(c: string) {
+/**
+ * @public
+ */
+export function getWordByDoubleClick<T>(
+  state: readonly T[],
+  location: number,
+  getContentText: (c: T) => string,
+) {
+  let start: number | undefined
+  for (let i = location - 1; i >= 0; i--) {
+    if (isWordCharactor(getContentText(state[i]))) {
+      start = i
+    } else {
+      break
+    }
+  }
+  let end: number | undefined
+  for (let i = location; i < state.length; i++) {
+    if (isWordCharactor(getContentText(state[i]))) {
+      end = i + 1
+    } else {
+      break
+    }
+  }
+  let newSelectionStart: number | undefined
+  let newLocation: number | undefined
+  if (end !== undefined) {
+    newSelectionStart = start ?? location
+    newLocation = end
+  } else if (start !== undefined) {
+    newSelectionStart = start
+  }
+  return { newSelectionStart, newLocation }
+}
+
+/**
+ * @public
+ */
+export function getTextComposition<T>(
+  index: number,
+  state: readonly T[],
+  getTextWidth: (c: T) => number,
+  getContentText: (c: T) => string,
+) {
+  let width = getTextWidth(state[index])
+  for (let i = index + 1; i < state.length; i++) {
+    const content = state[i]
+    if (isWordCharactor(getContentText(content))) {
+      width += getTextWidth(content)
+    } else {
+      return {
+        width,
+        index: i,
+      }
+    }
+  }
+  return {
+    width,
+    index: state.length,
+  }
+}
+
+/**
+ * @public
+ */
+export function isWordCharactor(c: string) {
   if (c === '.') return true
   if (isLetter(c)) return true
   if (isNumber(c)) return true

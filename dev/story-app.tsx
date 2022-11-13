@@ -8,6 +8,15 @@ import { stories } from './import-stories'
 import { App } from '.'
 import { useDragMove } from '../src'
 import { WhiteBoard } from './whiteboard'
+import { Combination2 } from './combination-2'
+import { Combination3 } from './combination-3'
+
+const combinations = [
+  { path: 'whiteboard', name: 'whiteboard', component: WhiteBoard },
+  { path: 'index', name: 'combination 1', component: App },
+  { path: 'whiteboard2', name: 'combination 2', component: Combination2 },
+  { path: 'whiteboard3', name: 'combination 3', component: Combination3 },
+]
 
 function StoryApp() {
   const [, search] = useLocation(React)
@@ -18,21 +27,16 @@ function StoryApp() {
   if (!search) {
     return (
       <ul style={{ margin: '20px 50px' }}>
-        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=whiteboard')}>whiteboard</li>
+        {combinations.map((s) => <li style={{ cursor: 'pointer' }} key={s.path} onClick={() => navigateTo(location.pathname + '?p=' + s.path)}>{s.name}</li>)}
         {stories.map((s) => <li style={{ cursor: 'pointer' }} key={s.path} onClick={() => navigateTo(location.pathname + '?p=' + s.path)}>{s.name} {s.path}</li>)}
-        <li style={{ cursor: 'pointer' }} onClick={() => navigateTo(location.pathname + '?p=index')}>combination 1</li>
       </ul>
     )
   }
   const path = search.substring('?p='.length)
-  if (path === 'index') {
+  const combination = combinations.find(p => p.path === path)
+  if (combination) {
     return (
-      <App />
-    )
-  }
-  if (path === 'whiteboard') {
-    return (
-      <WhiteBoard />
+      <combination.component />
     )
   }
   for (const story of stories) {

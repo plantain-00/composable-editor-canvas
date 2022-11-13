@@ -1,5 +1,8 @@
 import * as React from "react"
 
+/**
+ * @public
+ */
 export function useKey(
   filter: (e: KeyboardEvent) => boolean,
   handler: (e: KeyboardEvent) => void,

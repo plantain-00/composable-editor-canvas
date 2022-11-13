@@ -1,5 +1,5 @@
 import * as React from "react"
-import { buttonStyle } from "./common"
+import { Button } from "."
 
 /**
  * @public
@@ -11,7 +11,7 @@ export function DialogContainer(props: {
   const [visible, setVisible] = React.useState(false)
   return (
     <>
-      <button style={buttonStyle} onClick={() => setVisible(true)}>{editIcon}</button>
+      <Button onClick={() => setVisible(true)}>{editIcon}</Button>
       {visible && <div
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2 }}
         onClick={() => setVisible(false)}
