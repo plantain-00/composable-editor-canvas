@@ -28,6 +28,7 @@ export function useFlowLayoutEditor<T>(props: {
   endContent: T
   onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
+  keepSelectionOnBlur?: boolean
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
@@ -167,7 +168,9 @@ export function useFlowLayoutEditor<T>(props: {
     }
   }
   const onBlur = () => {
-    setSelectionStart(undefined)
+    if (!props.keepSelectionOnBlur) {
+      setSelectionStart(undefined)
+    }
     props.onLocationChanged?.(-1)
     props.onBlur?.()
   }

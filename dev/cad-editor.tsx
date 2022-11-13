@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit, isSamePath, Debug } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit, isSamePath, Debug, useWindowSize } from '../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './models/model'
@@ -26,8 +26,6 @@ registerRenderer(reactCanvasRenderTarget)
 export const CADEditor = React.forwardRef((props: {
   id: string
   initialState: readonly Nullable<BaseContent>[]
-  width: number
-  height: number
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendSelection?: (selectedContents: readonly number[]) => void
   onChange?: (state: readonly Nullable<BaseContent>[]) => void
@@ -44,6 +42,7 @@ export const CADEditor = React.forwardRef((props: {
   printMode?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
+  const { width, height } = useWindowSize()
   const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
     {},
     (p, s) => {
@@ -64,7 +63,7 @@ export const CADEditor = React.forwardRef((props: {
       onChange: (c) => props.onSendSelection?.(c.map((s) => s[0]))
     },
   )
-  const { snapTypes, renderTarget, readOnly, inputFixed, width, height } = props
+  const { snapTypes, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
     onChange({ patches, oldState, newState }) {

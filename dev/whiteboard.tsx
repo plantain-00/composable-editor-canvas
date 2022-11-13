@@ -1,15 +1,14 @@
 import React from 'react'
-import { SnapPointType, allSnapTypes, Nullable, useWindowSize, useLocalStorageState } from '../src'
+import { SnapPointType, allSnapTypes, Nullable, useLocalStorageState } from '../src'
 import { BaseContent } from './models/model'
 import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 
-export const WhiteBoard = () => {
+export function WhiteBoard() {
   const [, onChange, initialState] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [])
   const editorRef = React.useRef<CADEditorRef | null>(null)
   const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-whiteboard:snaps', allSnapTypes)
   const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-whiteboard:print-mode', false)
   const [operation, setOperation] = React.useState<string>()
-  const size = useWindowSize()
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
   if (!pluginLoaded) {
     return null
@@ -20,8 +19,6 @@ export const WhiteBoard = () => {
         ref={editorRef}
         id='whiteboard'
         initialState={initialState}
-        width={size.width}
-        height={size.height}
         snapTypes={snapTypes}
         renderTarget='svg'
         setOperation={setOperation}

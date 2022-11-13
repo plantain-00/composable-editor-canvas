@@ -1,10 +1,9 @@
 import React from 'react'
-import { useWindowSize, SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable, useLocalStorageState } from '../src'
+import { SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable, useLocalStorageState } from '../src'
 import { Patch } from 'immer'
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent } from './models/model'
 import { getAllRendererTypes } from './renderers/renderer'
-import { OffsetXContext } from './story-app'
 import type { EllipseContent } from './plugins/ellipse.plugin'
 import { CADEditor, CADEditorRef, usePlugins } from './cad-editor'
 import type { RectContent } from './plugins/rect.plugin'
@@ -16,7 +15,7 @@ const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
 const key = 'combination-2.json'
 
-export default () => {
+export function Combination2() {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
   const [coEdit, setCoEdit] = React.useState(true)
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
@@ -146,8 +145,6 @@ export default () => {
   const [inputFixed, setInputFixed] = useLocalStorageState('composable-editor-canvas-combination2:input-fixed', false)
   const [backgroundColor, setBackgroundColor] = useLocalStorageState('composable-editor-canvas-combination2:background-color', 0xffffff)
   const [debug, setDebug] = useLocalStorageState('composable-editor-canvas-combination2:debug', false)
-  const offsetX = React.useContext(OffsetXContext)
-  const size = useWindowSize()
 
   return (
     <div style={{ height: '100%' }}>
@@ -156,8 +153,6 @@ export default () => {
           ref={editorRef}
           id='combination2'
           initialState={initialState}
-          width={size.width / 2 + offsetX}
-          height={size.height}
           onApplyPatchesFromSelf={onApplyPatchesFromSelf}
           onSendSelection={onSendSelection}
           readOnly={readOnly}
@@ -173,7 +168,7 @@ export default () => {
           printMode={printMode}
         />
       )}
-      <div style={{ position: 'fixed', width: `calc(50% + ${offsetX}px)` }}>
+      <div style={{ position: 'fixed', width: '100%' }}>
         {!readOnly && pluginCommandTypes.map((p) => {
           if (p.icon) {
             return React.cloneElement(p.icon, {
