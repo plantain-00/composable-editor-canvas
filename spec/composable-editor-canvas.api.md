@@ -336,10 +336,9 @@ export type Filter = {
 export function flowLayout<T>(props: {
     state: readonly T[];
     width: number;
-    height: number;
+    height?: number;
     lineHeight: number | ((content: T) => number);
     getWidth: (content: T) => number;
-    autoHeight?: boolean;
     isNewLineContent?: (content: T) => boolean;
     isPartOfComposition?: (content: T) => boolean;
     getComposition?: (index: number) => {
@@ -1205,6 +1204,11 @@ export class RenderingLinesMerger {
 
 // @public (undocumented)
 export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly PartStyle[], points: Position[], options?: Partial<PathStrokeOptions<T>>): T;
+
+// @public (undocumented)
+export type RequiredField<T, K extends keyof T> = T & {
+    [P in K]-?: T[P];
+};
 
 // @public (undocumented)
 export function ResizeBar(props: {

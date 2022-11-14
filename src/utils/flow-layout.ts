@@ -6,17 +6,16 @@ import { Position } from "./geometry"
 export function flowLayout<T>(props: {
   state: readonly T[]
   width: number
-  height: number
+  height?: number
   lineHeight: number | ((content: T) => number)
   getWidth: (content: T) => number
-  autoHeight?: boolean
   isNewLineContent?: (content: T) => boolean
   isPartOfComposition?: (content: T) => boolean
   getComposition?: (index: number) => { index: number, width: number }
   endContent: T
   scrollY: number
 }) {
-  const isVisible = (y: number) => props.autoHeight
+  const isVisible = (y: number) => props.height === undefined
     ? true
     : (lineHeights.length > 0 ? y >= -lineHeights[0] : true) && y <= props.height
 

@@ -39,9 +39,6 @@ export function StringEditor(props: JsonEditorProps<string> & {
           setText(e.target.value)
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            onComplete()
-          }
           if (e.key === 'Escape') {
             return
           }

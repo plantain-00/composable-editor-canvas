@@ -10835,18 +10835,54 @@ export {
 `,
 `// dev/plugins/text.plugin.tsx
 function getModel(ctx) {
+  const textLayoutResultCache = new ctx.WeakmapCache();
+  function getTextLayoutResult(content) {
+    return textLayoutResultCache.get(content, () => {
+      var _a;
+      const state = content.text.split("");
+      const getTextWidth = (text) => {
+        var _a2, _b;
+        return (_b = (_a2 = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text)) == null ? void 0 : _a2.width) != null ? _b : 0;
+      };
+      return ctx.flowLayout({
+        state,
+        width: content.width,
+        lineHeight: (_a = content.lineHeight) != null ? _a : content.fontSize * 1.2,
+        getWidth: getTextWidth,
+        endContent: "",
+        isNewLineContent: (content2) => content2 === "\\n",
+        isPartOfComposition: (content2) => ctx.isWordCharactor(content2),
+        getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c),
+        scrollY: 0
+      });
+    });
+  }
+  function hasWidth(content) {
+    return content.width !== void 0;
+  }
   function getTextGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const size = ctx.getTextSize(\`\${content.fontSize}px \${content.fontFamily}\`, content.text);
-      if (!size) {
-        throw "not supported";
+      let points;
+      if (hasWidth(content)) {
+        const { newContentHeight } = getTextLayoutResult(content);
+        points = [
+          { x: content.x, y: content.y + newContentHeight },
+          { x: content.x + content.width, y: content.y + newContentHeight },
+          { x: content.x + content.width, y: content.y },
+          { x: content.x, y: content.y }
+        ];
+      } else {
+        const size = ctx.getTextSize(\`\${content.fontSize}px \${content.fontFamily}\`, content.text);
+        if (!size) {
+          throw "not supported";
+        }
+        points = [
+          { x: content.x, y: content.y - size.height },
+          { x: content.x + size.width, y: content.y - size.height },
+          { x: content.x + size.width, y: content.y },
+          { x: content.x, y: content.y }
+        ];
       }
-      const points = [
-        { x: content.x, y: content.y - size.height },
-        { x: content.x + size.width, y: content.y - size.height },
-        { x: content.x + size.width, y: content.y },
-        { x: content.x, y: content.y }
-      ];
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines: [],
@@ -10891,6 +10927,7 @@ function getModel(ctx) {
       });
     },
     render(content, { target, transformColor, isAssistence }) {
+      var _a, _b;
       const color = transformColor(content.color);
       let cacheKey;
       if (isAssistence) {
@@ -10898,6 +10935,15 @@ function getModel(ctx) {
       }
       if (!cacheKey) {
         cacheKey = content;
+      }
+      if (hasWidth(content)) {
+        const { layoutResult } = getTextLayoutResult(content);
+        const children = [];
+        for (const { x, y, content: text } of layoutResult) {
+          const textWidth = (_b = (_a = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text)) == null ? void 0 : _a.width) != null ? _b : 0;
+          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + content.fontSize, text, content.color, content.fontSize, content.fontFamily, { textAlign: "center", cacheKey }));
+        }
+        return target.renderGroup(children);
       }
       return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey });
     },
@@ -10937,6 +10983,7 @@ function getModel(ctx) {
           })
         }),
         text: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
+          textarea: true,
           value: content.text,
           setValue: (v) => update((c) => {
             if (isTextContent(c)) {
@@ -10952,7 +10999,43 @@ function getModel(ctx) {
               c.color = v;
             }
           })
-        })
+        }),
+        width: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+            value: content.width !== void 0,
+            setValue: (v) => update((c) => {
+              if (isTextContent(c)) {
+                c.width = v ? 600 : void 0;
+              }
+            })
+          }),
+          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+            value: content.width,
+            setValue: (v) => update((c) => {
+              if (isTextContent(c)) {
+                c.width = v;
+              }
+            })
+          }) : void 0
+        ],
+        lineHeight: [
+          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
+            value: content.lineHeight !== void 0,
+            setValue: (v) => update((c) => {
+              if (isTextContent(c)) {
+                c.lineHeight = v ? content.fontSize * 1.2 : void 0;
+              }
+            })
+          }) : void 0,
+          content.width !== void 0 && content.lineHeight !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
+            value: content.lineHeight,
+            setValue: (v) => update((c) => {
+              if (isTextContent(c)) {
+                c.lineHeight = v;
+              }
+            })
+          }) : void 0
+        ]
       };
     }
   };
