@@ -240,10 +240,9 @@ export function useFlowLayoutEditor<T>(props: {
   const { layoutResult, newContentHeight, lineHeights } = flowLayout({
     state: props.state,
     width: props.width,
-    height: props.height,
+    height: props.autoHeight ? undefined : props.height,
     lineHeight: props.lineHeight,
     getWidth: props.getWidth,
-    autoHeight: props.autoHeight,
     isNewLineContent: props.isNewLineContent,
     isPartOfComposition: props.isPartOfComposition,
     getComposition: props.getComposition,
