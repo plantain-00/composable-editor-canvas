@@ -1,5 +1,6 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, NumberEditor, StringEditor, ObjectEditor, BooleanEditor } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick } from "../src"
+import { NumberEditor, StringEditor, ObjectEditor, BooleanEditor, Button } from "react-composable-json-editor"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
@@ -312,9 +313,30 @@ const RichTextEditor = React.forwardRef((props: {
       })
     }
   }
+  const updateParagraph = (recipe: (richText: RichText) => void) => {
+    let start = 0
+    let end = state.length - 1
+    for (let i = range?.min ?? location; i >= 0; i--) {
+      if (state[i]?.text === '\n') {
+        start = i + 1
+        break
+      }
+    }
+    for (let i = range?.max ?? location; i < state.length; i++) {
+      if (state[i].text === '\n') {
+        end = i
+        break
+      }
+    }
+    setState(draft => {
+      for (let i = start; i <= end && i < state.length; i++) {
+        recipe(draft[i])
+      }
+    })
+  }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', margin: '10px' }}>
       {renderEditor(result)}
       {suggestions}
       <ObjectEditor
@@ -330,6 +352,7 @@ const RichTextEditor = React.forwardRef((props: {
           'background color': <NumberEditor type='color' value={backgroundColor ?? 0} setValue={v => updateSelection(c => c.backgroundColor = v ? v : undefined)} />,
         }}
       />
+      <Button onClick={() => updateParagraph(c => { c.bold = true; c.fontSize = defaultFontSize * 2 })} >h1</Button>
     </div>
   )
 })

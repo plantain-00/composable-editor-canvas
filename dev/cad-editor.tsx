@@ -1,5 +1,7 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, ObjectEditor, BooleanEditor, NumberEditor, zoomToFit, isSamePath, Debug, useWindowSize } from '../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize } from '../src'
+import * as jsonEditor from "react-composable-json-editor"
+import { BooleanEditor, NumberEditor, ObjectEditor } from "react-composable-json-editor"
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './models/model'
@@ -699,7 +701,7 @@ export function usePlugins() {
 
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup }
+  const ctx: PluginContext = { ...core, ...model, ...jsonEditor, React, produce, produceWithPatches, renderToStaticMarkup }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {
