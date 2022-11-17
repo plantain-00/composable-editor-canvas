@@ -7,6 +7,7 @@
 /// <reference types="react" />
 
 import type { Draft } from 'immer/dist/types/types-external';
+import { JsonEditorProps } from 'react-composable-json-editor';
 import type { Patch } from 'immer/dist/types/types-external';
 import { Patch as Patch_2 } from 'immer';
 import * as React_2 from 'react';
@@ -54,23 +55,8 @@ export function arcToPolyline(content: Arc, angleDelta: number): {
     y: number;
 }[];
 
-// Warning: (ae-forgotten-export) The symbol "ArrayProps" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export function ArrayEditor(props: ArrayProps & {
-    items: JSX.Element[];
-    title?: (index: number) => string;
-    inline?: boolean;
-    readOnly?: boolean;
-}): JSX.Element;
-
 // @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
-
-// Warning: (ae-forgotten-export) The symbol "JsonEditorProps" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element;
 
 // @public (undocumented)
 export interface Bounding {
@@ -86,9 +72,6 @@ export interface Bounding {
 
 // @public (undocumented)
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
-
-// @public (undocumented)
-export function Button(props: React_2.DetailedHTMLProps<React_2.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>): JSX.Element;
 
 // @public (undocumented)
 export interface Circle extends Position {
@@ -157,12 +140,6 @@ export function deduplicatePosition(array: Position[]): Position[];
 
 // @public (undocumented)
 export const defaultMiterLimit = 10;
-
-// @public (undocumented)
-export function DialogContainer(props: {
-    children: JSX.Element;
-    readOnly?: boolean;
-}): JSX.Element;
 
 // @public (undocumented)
 export function DragMask(props: {
@@ -264,19 +241,6 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
 export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
 
 // @public (undocumented)
-export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & {
-    enums: readonly T[];
-    enumTitles?: readonly string[];
-}): JSX.Element;
-
-// @public (undocumented)
-export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> & {
-    enums: readonly T[];
-    enumTitles?: readonly string[];
-    select?: boolean;
-}): JSX.Element;
-
-// @public (undocumented)
 export function equals(a: number, b: number): boolean;
 
 // @public (undocumented)
@@ -354,6 +318,16 @@ export function flowLayout<T>(props: {
 };
 
 // @public (undocumented)
+export interface FlowLayoutBlock<T> {
+    // (undocumented)
+    blockEnd: number;
+    // (undocumented)
+    blockStart: number;
+    // (undocumented)
+    children: readonly T[];
+}
+
+// @public (undocumented)
 export interface FlowLayoutResult<T> extends Position {
     // (undocumented)
     column: number;
@@ -382,15 +356,6 @@ export interface GeneralFormLine {
 
 // @public (undocumented)
 export function getAngleSnapPosition(startPosition: Position | undefined, newPosition: Position, getAngleSnap?: (angle: number) => number | undefined): Position;
-
-// @public (undocumented)
-export function getArrayEditorProps<T, V>(getArray: (v: Draft<V>) => T[], defaultValue: T, update: (recipe: (draft: Draft<V>) => void) => void): {
-    add: () => void;
-    remove: (i: number) => void;
-    copy: (i: number) => void;
-    moveUp: (i: number) => void;
-    moveDown: (i: number) => void;
-};
 
 // @public (undocumented)
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number): Position[];
@@ -463,7 +428,7 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
 
 // @public (undocumented)
-export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number | number[], layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number;
+export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number | number[], layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number | undefined;
 
 // @public (undocumented)
 export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
@@ -906,24 +871,6 @@ export function normalizeAngleRange(content: AngleRange): void;
 export type Nullable<T> = T | undefined | null;
 
 // @public (undocumented)
-export function NumberEditor(props: JsonEditorProps<number> & {
-    type?: React_2.HTMLInputTypeAttribute;
-}): JSX.Element;
-
-// @public (undocumented)
-export function ObjectArrayEditor(props: ArrayProps & {
-    properties: Record<string, JSX.Element>[];
-    readOnly?: boolean;
-}): JSX.Element | null;
-
-// @public (undocumented)
-export function ObjectEditor(props: {
-    properties: Record<string, JSX.Element | (JSX.Element | undefined)[]>;
-    inline?: boolean;
-    readOnly?: boolean;
-}): JSX.Element;
-
-// @public (undocumented)
 export interface PartStyle {
     // (undocumented)
     color: number;
@@ -1286,12 +1233,6 @@ export type SnapPoint = Position & {
 export type SnapPointType = typeof allSnapTypes[number];
 
 // @public (undocumented)
-export function StringEditor(props: JsonEditorProps<string> & {
-    type?: React_2.HTMLInputTypeAttribute;
-    textarea?: boolean;
-}): JSX.Element;
-
-// @public (undocumented)
 type Text_2 = Position & TextStyle & {
     text: string;
     color: number;
@@ -1577,6 +1518,59 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
+export function useFlowLayoutBlockEditor<T>(props: {
+    state: readonly FlowLayoutBlock<T>[];
+    width: number;
+    height: number;
+    lineHeight: number | ((content: T) => number);
+    setState(recipe: (draft: Draft<FlowLayoutBlock<T>>[]) => void): void;
+    getWidth: (content: T) => number;
+    processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
+    onLocationChanged?(location?: [number, number]): void;
+    style?: React_2.CSSProperties;
+    autoHeight?: boolean;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    onFocus?: () => void;
+    isNewLineContent?: (content: T) => boolean;
+    isPartOfComposition?: (content: T) => boolean;
+    getComposition?: (index: number) => {
+        index: number;
+        width: number;
+    };
+    endContent: T;
+    onCompositionEnd?: React_2.CompositionEventHandler<HTMLInputElement>;
+    onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
+    keepSelectionOnBlur?: boolean;
+}): {
+    ref: React_2.MutableRefObject<HTMLInputElement | null>;
+    range: {
+        min: [number, number];
+        max: [number, number];
+    } | undefined;
+    layoutResult: FlowLayoutResult<T>[][];
+    lineHeights: number[];
+    cursor: {
+        x: number;
+        y: number;
+        row: number;
+    };
+    inputContent: (newContents: readonly FlowLayoutBlock<T>[]) => void;
+    location: [number, number];
+    setLocation: React_2.Dispatch<React_2.SetStateAction<[number, number]>>;
+    getCopiedContents: (cut?: boolean) => FlowLayoutBlock<T>[] | undefined;
+    isSelected: (loc: [number, number]) => boolean | undefined;
+    actualHeight: number;
+    setSelectionStart: React_2.Dispatch<React_2.SetStateAction<[number, number] | undefined>>;
+    getPosition: (e: React_2.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        x: number;
+        y: number;
+    };
+    positionToLocation: (p: Position, ignoreInvisible?: boolean) => [number, number];
+    renderEditor: (children: JSX.Element) => JSX.Element;
+};
+
+// @public (undocumented)
 export function useFlowLayoutEditor<T>(props: {
     state: readonly T[];
     width: number;
@@ -1675,19 +1669,6 @@ export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) =>
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element;
-};
-
-// @public (undocumented)
-export function useJsonEditorData<V>(defaultValue: V): {
-    value: V;
-    update: <T>(recipe: (draft: Draft<V>, v: T) => void) => (v: T) => void;
-    getArrayProps: <T_1>(getArray: (v: Draft<V>) => T_1[], defaultValue: T_1) => {
-        add: () => void;
-        remove: (i: number) => void;
-        copy: (i: number) => void;
-        moveUp: (i: number) => void;
-        moveDown: (i: number) => void;
-    };
 };
 
 // @public (undocumented)

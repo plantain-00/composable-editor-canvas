@@ -156,5 +156,8 @@ export function getFlowLayoutLocation<T>(
       return result.i
     }
   }
-  return layoutResult.length - 1
+  if (result !== undefined) {
+    return result.i
+  }
+  return
 }

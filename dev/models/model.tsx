@@ -1,6 +1,7 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, breakPolylineToPolylines, Circle, EditPoint, EnumEditor, GeneralFormLine, getArrayEditorProps, getColorString, getPointByLengthAndDirection, getPointsBounding, isSamePoint, iterateIntersectionPoints, MapCache3, Nullable, NumberEditor, ObjectArrayEditor, ObjectEditor, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isSamePoint, iterateIntersectionPoints, MapCache3, Nullable, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, TwoPointsFormRegion, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor } from "react-composable-json-editor"
 import type { LineContent } from '../plugins/line-polyline.plugin'
 import type { TextContent } from '../plugins/text.plugin'
 

@@ -44,7 +44,7 @@ A composable editor canvas library.
 + `useImageClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=image-click-create.story>
 + `usePathClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=path-click-create.story>
 + `usePenClickCreate` <https://plantain-00.github.io/composable-editor-canvas/?p=pen-click-create.story>
-+ `ReactRenderTarget` `reactSvgRenderTarget` `reactCanvasRenderTarget` <https://plantain-00.github.io/composable-editor-canvas/?p=react-render-target.story>
++ `ReactRenderTarget` `reactSvgRenderTarget` `reactCanvasRenderTarget` `reactWebglRenderTarget` <https://plantain-00.github.io/composable-editor-canvas/?p=react-render-target.story>
 + `useWindowSize` <https://plantain-00.github.io/composable-editor-canvas/?p=window-size.story>
 + `useSelected` <https://plantain-00.github.io/composable-editor-canvas/?p=use-selected.story>
 + `useEdit` <https://plantain-00.github.io/composable-editor-canvas/?p=edit.story>
@@ -52,9 +52,10 @@ A composable editor canvas library.
 + `useSelectBeforeOperate` <https://plantain-00.github.io/composable-editor-canvas/?p=select-before-operate.story>
 + `getRadialDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=radial-dimension.story>
 + `getLinearDimensionGeometries` <https://plantain-00.github.io/composable-editor-canvas/?p=linear-dimension.story>
-+ `useJsonEditorData` <https://plantain-00.github.io/composable-editor-canvas/?p=json-editor.story>
++ `ExpressionEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=expression-editor.story>
 + `useFlowLayoutEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-editor.story>
 + `useFlowLayoutTextEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-text-editor.story>
++ `useFlowLayoutBlockEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-block-editor.story>
 
 ## combinations
 
