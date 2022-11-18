@@ -14,9 +14,9 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
   state: readonly V[]
   width: number
   height: number
-  lineHeight: number | ((content: T) => number)
+  lineHeight: number | ((content: T, block: V) => number)
   setState(recipe: (draft: Draft<V>[]) => void): void
-  getWidth: (content: T) => number
+  getWidth: (content: T, block: V) => number
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
   onLocationChanged?(location?: [number, number]): void
   style?: React.CSSProperties
@@ -270,7 +270,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
       if (layoutResult[i].length > 0 && layoutResult[i][0].y > p.y) {
         return [i, 0]
       }
-      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, props.getWidth, ignoreInvisible)
+      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible)
       if (loc !== undefined) {
         return [i, loc]
       }
@@ -332,26 +332,31 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
   let newContentHeight = 0
   const lineHeights: number[] = []
   let row = 0
+  let blockEnd = 0
   const getComposition = props.getComposition
+  const lineHeight = props.lineHeight
   props.state.forEach((block, blockIndex) => {
+    const blockStart = Math.max(block.blockStart ?? 0, blockEnd)
     const r = flowLayout({
       state: block.children,
       width: props.width,
       height: props.autoHeight ? undefined : props.height,
-      lineHeight: props.lineHeight,
-      getWidth: props.getWidth,
+      lineHeight: typeof lineHeight === 'number' ? lineHeight : (c) => lineHeight(c, block),
+      getWidth: c => props.getWidth(c, block),
       isNewLineContent: props.isNewLineContent,
       isPartOfComposition: props.isPartOfComposition,
       getComposition: getComposition ? (i) => getComposition(blockIndex, i) : undefined,
       endContent: props.endContent,
-      scrollY: scrollY + newContentHeight + block.blockStart,
+      scrollY: scrollY + newContentHeight + blockStart,
       row,
     })
     layoutResult.push(r.layoutResult)
-    newContentHeight += r.newContentHeight + block.blockStart + block.blockEnd
+    newContentHeight += r.newContentHeight + blockStart
     lineHeights.push(...r.lineHeights)
     row += r.lineHeights.length
+    blockEnd = block.blockEnd ?? 0
   })
+  newContentHeight += blockEnd
 
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
@@ -477,8 +482,14 @@ function compareLocations(c1: [number, number], c2: [number, number]) {
 /**
  * @public
  */
-export interface FlowLayoutBlock<T> {
+export interface FlowLayoutBlock<T> extends Partial<FlowLayoutBlockStyle> {
   children: readonly T[]
+}
+
+/**
+ * @public
+ */
+export interface FlowLayoutBlockStyle {
   blockStart: number
   blockEnd: number
 }

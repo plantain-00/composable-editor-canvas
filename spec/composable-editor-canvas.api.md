@@ -319,13 +319,17 @@ export function flowLayout<T>(props: {
 };
 
 // @public (undocumented)
-export interface FlowLayoutBlock<T> {
+export interface FlowLayoutBlock<T> extends Partial<FlowLayoutBlockStyle> {
+    // (undocumented)
+    children: readonly T[];
+}
+
+// @public (undocumented)
+export interface FlowLayoutBlockStyle {
     // (undocumented)
     blockEnd: number;
     // (undocumented)
     blockStart: number;
-    // (undocumented)
-    children: readonly T[];
 }
 
 // @public (undocumented)
@@ -791,18 +795,6 @@ export function iteratePolygonLines(points: Position[]): Generator<[Position, Po
 export function iteratePolylineLines(points: Position[]): Generator<[Position, Position], void, unknown>;
 
 // @public (undocumented)
-export interface LastRenderingLines {
-    // (undocumented)
-    dashArray?: number[];
-    // (undocumented)
-    line: Position[][];
-    // (undocumented)
-    strokeColor: number;
-    // (undocumented)
-    strokeWidth: number;
-}
-
-// @public (undocumented)
 export interface LinearDimension extends TextStyle {
     // (undocumented)
     direct?: boolean;
@@ -858,6 +850,18 @@ export class MapCache3<TKey1, TKey2, TKey3, TValue> {
 
 // @public (undocumented)
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number];
+
+// @public (undocumented)
+export class Merger<T, V> {
+    constructor(flush: (last: {
+        type: T;
+        target: V[];
+    }) => void, equals: (a: T, b: T) => boolean, getTarget: (data: T) => V);
+    // (undocumented)
+    flushLast(): void;
+    // (undocumented)
+    push(data: T): void;
+}
 
 // @public (undocumented)
 export function metaKeyIfMacElseCtrlKey(e: React_2.KeyboardEvent | KeyboardEvent): boolean;
@@ -1134,20 +1138,6 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw_3>;
 
 // @public (undocumented)
 export interface Region extends Position, Size {
-}
-
-// @public (undocumented)
-export class RenderingLinesMerger {
-    constructor(flush: (lines: LastRenderingLines) => void);
-    // (undocumented)
-    flushLast(): void;
-    // (undocumented)
-    push(line: {
-        line: Position[];
-        strokeColor: number;
-        dashArray?: number[];
-        strokeWidth: number;
-    }): void;
 }
 
 // @public (undocumented)
@@ -1523,9 +1513,9 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
     state: readonly V[];
     width: number;
     height: number;
-    lineHeight: number | ((content: T) => number);
+    lineHeight: number | ((content: T, block: V) => number);
     setState(recipe: (draft: Draft<V>[]) => void): void;
-    getWidth: (content: T) => number;
+    getWidth: (content: T, block: V) => number;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onLocationChanged?(location?: [number, number]): void;
     style?: React_2.CSSProperties;

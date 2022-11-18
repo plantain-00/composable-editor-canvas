@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, RenderingLinesMerger, useValueChanged, WeakmapCache } from "../../src"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath } from "../../src"
 import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, StrokeFields } from "../models/model"
 
 export function Renderer(props: {
@@ -69,12 +69,21 @@ export function Renderer(props: {
 
   debug.mark('before contents')
   let children: unknown[] = []
-  const merger = new RenderingLinesMerger(
-    (last) => children.push(target.renderPath(last.line, {
-      strokeColor: last.strokeColor,
-      dashArray: last.dashArray,
-      strokeWidth: last.strokeWidth,
-    }))
+  const merger = new Merger<{
+    line: Position[]
+    strokeColor: number
+    dashArray?: number[]
+    strokeWidth: number
+  }, Position[]>(
+    (last) => children.push(target.renderPath(last.target, {
+      strokeColor: last.type.strokeColor,
+      dashArray: last.type.dashArray,
+      strokeWidth: last.type.strokeWidth,
+    })),
+    (a, b) => a.strokeColor === b.strokeColor &&
+      a.strokeWidth === b.strokeWidth &&
+      isSamePath(a.dashArray, b.dashArray),
+    a => a.line,
   )
   const sortedContents = getSortedContents(props.contents).contents
   children = renderCache.current.get(sortedContents, () => {

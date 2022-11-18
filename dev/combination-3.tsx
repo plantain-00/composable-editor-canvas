@@ -1,5 +1,5 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, FlowLayoutBlock } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, FlowLayoutBlock, getColorString, Merger } from "../src"
 import { NumberEditor, StringEditor, ObjectEditor, BooleanEditor, Button } from "react-composable-json-editor"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
@@ -11,10 +11,11 @@ const key = 'combination-3.json'
 export function Combination3() {
   const [initialState, setInitialState] = React.useState<readonly RichTextBlock[]>()
   const width = 500
-  const height = 400
+  const height = 300
   const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
   const [autoHeight, setAutoHeight] = React.useState(false)
   const [readOnly, setReadOnly] = React.useState(false)
+  const [html, setHtml] = React.useState('')
 
   React.useEffect(() => {
     (async () => {
@@ -33,6 +34,7 @@ export function Combination3() {
         onApplyPatchesFromSelf(r[1], r[2])
       } else {
         setInitialState(json)
+        setHtml(blocksToHtml(json))
       }
     })()
   }, [])
@@ -105,28 +107,44 @@ export function Combination3() {
         height={height}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
         onSendLocation={onSendLocation}
+        onChange={(data) => setHtml(blocksToHtml(data.newState))}
         target={target}
         autoHeight={autoHeight}
         readOnly={readOnly}
       />
-    </div>
+      <div
+        dangerouslySetInnerHTML={{ __html: html }}
+        style={{
+          width: width + 'px',
+          height: height + 'px',
+          margin: '10px',
+          fontFamily: defaultFontFamily,
+          overflowY: 'auto',
+          border: '1px solid',
+          fontSize: defaultFontSize + 'px',
+        }}
+      ></div>
+    </div >
   )
 }
 
-interface RichText {
+interface RichText extends Partial<RichTextStyle> {
   text: string
-  fontSize: number
-  fontFamily: string
-  bold?: boolean
-  italic?: boolean
-  underline?: boolean
-  passThrough?: boolean
-  color?: number
-  backgroundColor?: number
 }
 
-interface RichTextBlock extends FlowLayoutBlock<RichText> {
-  type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p'
+interface RichTextStyle {
+  fontSize: number
+  fontFamily: string
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  passThrough: boolean
+  color: number
+  backgroundColor: number
+}
+
+interface RichTextBlock extends FlowLayoutBlock<RichText>, Partial<RichTextStyle> {
+  type: BlockType
 }
 
 const lineHeightRatio = 1.2
@@ -139,23 +157,25 @@ const RichTextEditor = React.forwardRef((props: {
   height: number
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendLocation?: (location: [number, number]) => void
+  onChange?: (data: { newState: readonly RichTextBlock[] }) => void
   target: ReactRenderTarget<unknown>
   autoHeight: boolean
   readOnly: boolean
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
+    onChange: props.onChange,
   })
 
-  const getTextWidth = (c: RichText) => getTextSizeFromCache(`${c.fontSize}px ${c.fontFamily}`, c.text)?.width ?? 0
-  const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, getTextWidth, c => c.text)
+  const getTextWidth = (c: RichText, b: RichTextBlock) => getTextSizeFromCache(`${c.fontSize ?? b.fontSize ?? defaultFontSize}px ${c.fontFamily ?? b.fontFamily ?? defaultFontFamily}`, c.text)?.width ?? 0
+  const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getTextWidth(c, state[blockIndex]), c => c.text)
 
   const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor({
     state,
     setState,
     width: props.width,
     height: props.height,
-    lineHeight: c => c.fontSize * lineHeightRatio,
+    lineHeight: (c, b) => (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio,
     readOnly: props.readOnly,
     processInput(e) {
       if (processAtInput(e)) {
@@ -195,7 +215,7 @@ const RichTextEditor = React.forwardRef((props: {
     isNewLineContent: content => content.text === '\n',
     isPartOfComposition: content => isWordCharactor(content.text),
     getComposition,
-    endContent: { text: '', fontFamily: defaultFontFamily, fontSize: defaultFontSize },
+    endContent: { text: '' },
     onCompositionEnd(e) {
       inputText(e.data)
       if (editorRef.current) {
@@ -211,28 +231,26 @@ const RichTextEditor = React.forwardRef((props: {
     keepSelectionOnBlur: true,
   })
   let currentContent: RichText | undefined
+  let currentBlock: RichTextBlock | undefined
   if (range) {
-    currentContent = state[range.min[0]].children[range.min[1]]
+    currentBlock = state[range.min[0]]
+    currentContent = currentBlock.children[range.min[1]]
   } else {
-    const block = state[location[0]]
-    if (block) {
-      currentContent = block.children[location[1]] ?? block.children[block.children.length - 1]
+    currentBlock = state[location[0]]
+    if (currentBlock) {
+      currentContent = currentBlock.children[location[1]] ?? currentBlock.children[currentBlock.children.length - 1]
     }
   }
-  const fontSize = currentContent ? currentContent.fontSize : defaultFontSize
-  const fontFamily = currentContent ? currentContent.fontFamily : defaultFontFamily
-  const bold = currentContent ? currentContent.bold : undefined
-  const italic = currentContent ? currentContent.italic : undefined
-  const underline = currentContent ? currentContent.underline : undefined
-  const passThrough = currentContent ? currentContent.passThrough : undefined
-  const color = currentContent ? currentContent.color : undefined
-  const backgroundColor = currentContent ? currentContent.backgroundColor : undefined
 
-  const inputText = (text: string | string[]) => {
+  const inputText = (text: string | (string | RichText)[]) => {
     if (props.readOnly) return
     const result: RichText[] = []
     for (const t of text) {
-      result.push({ text: t, fontFamily, fontSize, bold, italic, underline, passThrough, color, backgroundColor })
+      if (typeof t === 'string') {
+        result.push({ ...currentContent, text: t })
+      } else {
+        result.push({ ...currentContent, ...t })
+      }
     }
     inputContent([{ children: result, type: 'p', blockStart: 0, blockEnd: 0 }])
   }
@@ -244,7 +262,7 @@ const RichTextEditor = React.forwardRef((props: {
           inputContent(JSON.parse(v))
         } catch {
           inputContent([{
-            children: v.split('').map(s => ({ text: s, fontSize: defaultFontSize, fontFamily: defaultFontFamily })),
+            children: v.split('').map(s => ({ text: s })),
             blockStart: 0,
             blockEnd: 0,
             type: 'p',
@@ -254,7 +272,7 @@ const RichTextEditor = React.forwardRef((props: {
     })
   }
 
-  const { processAtInput, suggestions, getRenderAtStyle } = useAt(cursor, lineHeights[cursor.row], inputText)
+  const { processAtInput, suggestions } = useAt(cursor, lineHeights[cursor.row], inputText)
   const [othersLocation, setOthersLocation] = React.useState<{ location: [number, number], operator: string }[]>([])
 
   React.useImperativeHandle<RichTextEditorRef, RichTextEditorRef>(ref, () => ({
@@ -282,46 +300,39 @@ const RichTextEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const getTextColors = (blockIndex: number, contentIndex: number, content: RichText) => {
-    let color = content.color
-    let backgroundColor = content.backgroundColor
-    const style = getRenderAtStyle(layoutResult[blockIndex][contentIndex].content.text)
-    if (style) {
-      color = style.color
-      backgroundColor = style.backgroundColor
-    }
-    return { color, backgroundColor }
-  }
   const children: unknown[] = []
-
   layoutResult.forEach((r, blockIndex) => {
     r.forEach(({ x, y, content, visible, row }, contentIndex) => {
       if (!visible) return
-      const colors = getTextColors(blockIndex, contentIndex, content) ?? {}
+      const block = state[blockIndex]
+      const color = content.color ?? block.color ?? 0x000000
+      let backgroundColor = content.backgroundColor ?? block.backgroundColor
       if (isSelected([blockIndex, contentIndex])) {
-        colors.backgroundColor = 0xB3D6FD
+        backgroundColor = 0xB3D6FD
       }
-      const textWidth = getTextWidth(content)
+      const textWidth = getTextWidth(content, block)
       const lineHeight = lineHeights[row]
-      if (colors.backgroundColor !== undefined) {
-        children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: colors.backgroundColor, strokeWidth: 0 }))
+      if (backgroundColor !== undefined) {
+        children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
       }
-      children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, colors.color ?? 0x000000, content.fontSize, content.fontFamily, {
+      const bold = content.bold || block.bold
+      children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, content.fontSize ?? block.fontSize ?? defaultFontSize, content.fontFamily ?? block.fontFamily ?? defaultFontFamily, {
         textAlign: 'center',
-        fontWeight: content.bold ? 'bold' : undefined,
-        fontStyle: content.italic ? 'italic' : undefined,
+        fontWeight: bold ? 'bold' : undefined,
+        fontStyle: content.italic || block.italic ? 'italic' : undefined,
       }))
-      if (content.underline) {
-        children.push(props.target.renderPolyline([{ x, y: y + lineHeight }, { x: x + textWidth, y: y + lineHeight }], { strokeColor: colors.color ?? 0x000000 }))
+      const decorationThickness = bold ? 2.5 : 1
+      if (content.underline || block.underline) {
+        children.push(props.target.renderPolyline([{ x, y: y + lineHeight }, { x: x + textWidth, y: y + lineHeight }], { strokeColor: color, strokeWidth: decorationThickness }))
       }
-      if (content.passThrough) {
-        children.push(props.target.renderPolyline([{ x, y: y + lineHeight / 2 }, { x: x + textWidth, y: y + lineHeight / 2 }], { strokeColor: colors.color ?? 0x000000 }))
+      if (content.passThrough || block.passThrough) {
+        children.push(props.target.renderPolyline([{ x, y: y + lineHeight / 2 }, { x: x + textWidth, y: y + lineHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
       }
       const others = othersLocation.filter(c => c.location[0] === blockIndex && c.location[1] === contentIndex)
       if (others.length > 0) {
         children.push(
           props.target.renderRect(x, y, 2, lineHeight, { fillColor: 0xff0000, strokeWidth: 0 }),
-          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, content.fontFamily),
+          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, content.fontFamily ?? block.fontFamily ?? defaultFontFamily),
         )
       }
     })
@@ -342,108 +353,149 @@ const RichTextEditor = React.forwardRef((props: {
       })
     }
   }
-  const updateParagraph = (type: RichTextBlock['type']) => {
+  const updateParagraph = (type: BlockType) => {
     const updateBlock = (b: RichTextBlock) => {
       b.type = type
-      if (type === 'h1') {
-        b.blockStart = defaultFontSize * 2 * 0.67
-        b.blockEnd = defaultFontSize * 2 * 0.67
-      } else if (type === 'h2') {
-        b.blockStart = defaultFontSize * 1.5 * 0.83
-        b.blockEnd = defaultFontSize * 1.5 * 0.83
-      } else if (type === 'h3') {
-        b.blockStart = defaultFontSize * 1.17
-        b.blockEnd = defaultFontSize * 1.17
-      } else if (type === 'h4') {
-        b.blockStart = defaultFontSize
-        b.blockEnd = defaultFontSize
-      } else if (type === 'h5') {
-        b.blockStart = defaultFontSize * 0.83
-        b.blockEnd = defaultFontSize * 0.83
-      } else if (type === 'h6') {
-        b.blockStart = defaultFontSize * 0.67 * 2.33
-        b.blockEnd = defaultFontSize * 0.67 * 2.33
-      } else if (type === 'p') {
-        b.blockStart = defaultFontSize * 0.3
-        b.blockEnd = defaultFontSize * 0.3
-      }
-    }
-    const updateText = (c: RichText) => {
-      c.bold = true
-      if (type === 'h1') {
-        c.fontSize = defaultFontSize * 2
-      } else if (type === 'h2') {
-        c.fontSize = defaultFontSize * 1.5
-      } else if (type === 'h3') {
-        c.fontSize = defaultFontSize * 1.17
-      } else if (type === 'h4') {
-        c.fontSize = defaultFontSize
-      } else if (type === 'h5') {
-        c.fontSize = defaultFontSize * 0.83
-      } else if (type === 'h6') {
-        c.fontSize = defaultFontSize * 0.67
-      } else if (type === 'p') {
-        c.fontSize = defaultFontSize
-        c.bold = false
-      }
+      const block = presetBlocks[type]
+      b.blockStart = defaultFontSize * block.fontSize * block.blockStart
+      b.blockEnd = defaultFontSize * block.fontSize * block.blockEnd
+      b.bold = block.bold
+      b.fontSize = defaultFontSize * block.fontSize
     }
     if (!range) {
       setState(draft => {
-        const block = draft[location[0]]
-        updateBlock(block)
-        for (const text of block.children) {
-          updateText(text)
-        }
+        updateBlock(draft[location[0]])
       })
       return
     }
     setState(draft => {
       for (let i = range.min[0]; i <= range.max[0]; i++) {
-        const block = draft[i]
-        updateBlock(block)
-        for (const text of block.children) {
-          updateText(text)
-        }
+        updateBlock(draft[i])
       }
     })
   }
 
   return (
     <div style={{ position: 'relative', margin: '10px' }}>
-      {renderEditor(result)}
+      <div style={{ display: 'flex' }}>
+        {renderEditor(result)}
+        <ObjectEditor
+          inline
+          properties={{
+            'font size': <NumberEditor value={currentContent?.fontSize ?? currentBlock?.fontSize ?? defaultFontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '50px' }} />,
+            'font family': <StringEditor value={currentContent?.fontFamily ?? currentBlock?.fontFamily ?? defaultFontFamily} setValue={v => updateSelection(c => c.fontFamily = v)} style={{ width: '100px' }} />,
+            bold: <BooleanEditor value={(currentContent?.bold ?? currentBlock?.bold) === true} setValue={v => updateSelection(c => c.bold = v ? true : undefined)} />,
+            italic: <BooleanEditor value={(currentContent?.italic ?? currentBlock?.italic) === true} setValue={v => updateSelection(c => c.italic = v ? true : undefined)} />,
+            underline: <BooleanEditor value={(currentContent?.underline ?? currentBlock?.underline) === true} setValue={v => updateSelection(c => c.underline = v ? true : undefined)} />,
+            'pass through': <BooleanEditor value={(currentContent?.passThrough ?? currentBlock?.passThrough) === true} setValue={v => updateSelection(c => c.passThrough = v ? true : undefined)} />,
+            color: <NumberEditor type='color' value={currentContent?.color ?? currentBlock?.color ?? 0} setValue={v => updateSelection(c => c.color = v ? v : undefined)} />,
+            'background color': <NumberEditor type='color' value={currentContent?.backgroundColor ?? currentBlock?.backgroundColor ?? 0xffffff} setValue={v => updateSelection(c => c.backgroundColor = v ? v : undefined)} />,
+            block: <div>{presetBlockTypes.map(t => <Button key={t} style={{ fontWeight: state[location[0]]?.type === t ? 'bold' : undefined }} onClick={() => updateParagraph(t)}>{t}</Button>)}</div>
+          }}
+        />
+      </div>
       {suggestions}
-      <ObjectEditor
-        inline
-        properties={{
-          'font size': <NumberEditor value={fontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '50px' }} />,
-          'font family': <StringEditor value={fontFamily} setValue={v => updateSelection(c => c.fontFamily = v)} style={{ width: '100px' }} />,
-          bold: <BooleanEditor value={bold === true} setValue={v => updateSelection(c => c.bold = v ? true : undefined)} />,
-          italic: <BooleanEditor value={italic === true} setValue={v => updateSelection(c => c.italic = v ? true : undefined)} />,
-          underline: <BooleanEditor value={underline === true} setValue={v => updateSelection(c => c.underline = v ? true : undefined)} />,
-          'pass through': <BooleanEditor value={passThrough === true} setValue={v => updateSelection(c => c.passThrough = v ? true : undefined)} />,
-          color: <NumberEditor type='color' value={color ?? 0} setValue={v => updateSelection(c => c.color = v ? v : undefined)} />,
-          'background color': <NumberEditor type='color' value={backgroundColor ?? 0} setValue={v => updateSelection(c => c.backgroundColor = v ? v : undefined)} />,
-        }}
-      />
-      {(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'] as const).map(t => <Button key={t} onClick={() => updateParagraph(t)}>{t}</Button>)}
     </div>
   )
 })
 
-function useAt(cursor: Position, cursorHeight: number, inputText: (text: string[]) => void) {
+const presetBlocks = {
+  h1: {
+    fontSize: 2,
+    bold: true,
+    blockStart: 0.67,
+    blockEnd: 0.67,
+  },
+  h2: {
+    fontSize: 1.5,
+    bold: true,
+    blockStart: 0.83,
+    blockEnd: 0.83,
+  },
+  h3: {
+    fontSize: 1.17,
+    bold: true,
+    blockStart: 1.17,
+    blockEnd: 1.17,
+  },
+  h4: {
+    fontSize: 1,
+    bold: true,
+    blockStart: 1,
+    blockEnd: 1,
+  },
+  h5: {
+    fontSize: 0.83,
+    bold: true,
+    blockStart: 1,
+    blockEnd: 1,
+  },
+  h6: {
+    fontSize: 0.67,
+    bold: true,
+    blockStart: 2.33,
+    blockEnd: 2.33,
+  },
+  p: {
+    fontSize: 1,
+    bold: undefined,
+    blockStart: 1,
+    blockEnd: 1,
+  },
+}
+const getKeys: <T>(obj: T) => (keyof T)[] = Object.keys
+const presetBlockTypes = getKeys(presetBlocks)
+
+type BlockType = keyof typeof presetBlocks
+
+function blocksToHtml(blocks: readonly RichTextBlock[]) {
+  return blocks.map(b => {
+    let children = ''
+    const merger = new Merger<RichText, string>(
+      last => children += `<span style="${richTextStyleToHtmlStyle(last.type)}">${last.target.join('')}</span>`,
+      (a, b) => a.backgroundColor === b.backgroundColor &&
+        a.bold === b.bold &&
+        a.color === b.color &&
+        a.fontFamily === b.fontFamily &&
+        a.fontSize === b.fontSize &&
+        a.italic === b.italic &&
+        a.passThrough === b.passThrough &&
+        a.underline === b.underline,
+      a => a.text,
+    )
+    b.children.forEach(c => merger.push(c))
+    merger.flushLast()
+    let style = richTextStyleToHtmlStyle(b)
+    if (b.blockStart) style += `margin-block-start: ${b.blockStart}px;`
+    if (b.blockEnd) style += `margin-block-end: ${b.blockEnd}px;`
+    return `<${b.type} style="${style}">${children}</${b.type}>`
+  }).join('')
+}
+
+function richTextStyleToHtmlStyle(c: Partial<RichTextStyle>) {
+  let style = ''
+  if (c.backgroundColor !== undefined) style += `background-color: ${getColorString(c.backgroundColor)};`
+  if (c.bold) style += 'font-weight: bold;'
+  if (c.color !== undefined) style += `color: ${getColorString(c.color)};`
+  if (c.fontFamily) style += `font-family: ${c.fontFamily};`
+  if (c.fontSize) style += `font-size: ${c.fontSize}px;`
+  if (c.italic) style += `font-style: italic;`
+  const textDecorations: string[] = []
+  if (c.passThrough) textDecorations.push('line-through')
+  if (c.underline) textDecorations.push('underline')
+  if (textDecorations.length > 0) style += `text-decoration: ${textDecorations.join(' ')};`
+  return style
+}
+
+function useAt(cursor: Position, cursorHeight: number, inputText: (text: (string | RichText)[]) => void) {
   const [at, setAt] = React.useState('')
   const [atIndex, setAtIndex] = React.useState(0)
+  const style = {
+    color: 0xffffff,
+    backgroundColor: 0x0000ff,
+  }
 
   return {
-    getRenderAtStyle(text: string) {
-      if (text.length > 1 && text.startsWith('@')) {
-        return {
-          color: 0xffffff,
-          backgroundColor: 0x0000ff,
-        }
-      }
-      return
-    },
     processAtInput(e: React.KeyboardEvent<HTMLInputElement>) {
       if (at) {
         if (e.key.length === 1 && e.key >= 'a' && e.key <= 'z') {
@@ -452,7 +504,7 @@ function useAt(cursor: Position, cursorHeight: number, inputText: (text: string[
           return true
         }
         if (e.key === 'Enter' && at) {
-          inputText([at + '_' + atIndex, ' '])
+          inputText([{ text: at + '_' + atIndex, ...style }, ' '])
           setAt('')
           return true
         }
@@ -504,7 +556,7 @@ function useAt(cursor: Position, cursorHeight: number, inputText: (text: string[
         style={{ background: atIndex === i ? '#ccc' : undefined }}
         onMouseDown={(e) => {
           e.preventDefault()
-          inputText([at + '_' + i, ' '])
+          inputText([{ text: at + '_' + i, ...style }, ' '])
           setAt('')
         }}
       >

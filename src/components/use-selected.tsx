@@ -70,6 +70,9 @@ export function isSelected<T extends SelectPath = SelectPath>(value: T, selected
   return selected.some((v) => isSamePath(value, v))
 }
 
+/**
+ * @public
+ */
 export function isSamePath<T extends SelectPath = SelectPath>(path1: T | undefined, path2: T | undefined) {
   if (path1 && path2) {
     if (path1.length !== path2.length) {
