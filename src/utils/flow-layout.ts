@@ -14,6 +14,7 @@ export function flowLayout<T>(props: {
   getComposition?: (index: number) => { index: number, width: number }
   endContent: T
   scrollY: number
+  row?: number
 }) {
   const isVisible = (y: number) => props.height === undefined
     ? true
@@ -24,7 +25,7 @@ export function flowLayout<T>(props: {
   let x = 0
   let y = props.scrollY
   let i = 0
-  let row = 0
+  let row = props.row ?? 0
   let column = 0
   let visible = isVisible(y)
   let maxLineHeight = 0
@@ -142,7 +143,8 @@ export function getFlowLayoutLocation<T>(
     return y - (typeof lineHeight === 'number' ? lineHeight : lineHeight[row])
   }
   let result: FlowLayoutResult<T> | undefined
-  for (const p of layoutResult) {
+  for (let i = 0; i < layoutResult.length; i++) {
+    const p = layoutResult[i]
     if (ignoreInvisible && !p.visible) continue
     if (p.y >= getMinY(p.row) && p.y <= y) {
       if (
@@ -152,8 +154,8 @@ export function getFlowLayoutLocation<T>(
         return p.i
       }
       result = p
-    } else if (result !== undefined) {
-      return result.i
+    } else if (result !== undefined && i !== layoutResult.length - 1) {
+      return result.i + 1
     }
   }
   if (result !== undefined) {

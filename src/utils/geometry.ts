@@ -1124,7 +1124,9 @@ export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean)
 /**
  * @public
  */
-export function equals(a: number, b: number) {
+export function equals(a: number | undefined, b: number | undefined) {
+  if (a === undefined && b === undefined) return true
+  if (a === undefined || b === undefined) return false
   return isZero(a - b)
 }
 

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
-import { flowLayout, getFlowLayoutLocation, Position } from "../utils"
+import { equals, flowLayout, getFlowLayoutLocation, Position } from "../utils"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -264,7 +264,7 @@ export function useFlowLayoutEditor<T>(props: {
   const lastLocation = React.useRef<number>()
   const lastCursorY = React.useRef<number>()
   React.useEffect(() => {
-    if ((lastLocation.current === location && lastCursorY.current === cursorY) || props.autoHeight) {
+    if ((equals(lastLocation.current, location) && equals(lastCursorY.current, cursorY)) || props.autoHeight) {
       return
     }
     const y = cursorY + scrollY
