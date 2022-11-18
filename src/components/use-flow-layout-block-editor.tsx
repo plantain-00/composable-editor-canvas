@@ -2,7 +2,7 @@ import { castDraft } from "immer"
 import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
-import { flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position } from "../utils"
+import { equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position } from "../utils"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -10,12 +10,12 @@ import { useWheelScroll } from "./use-wheel-scroll"
 /**
  * @public
  */
-export function useFlowLayoutBlockEditor<T>(props: {
-  state: readonly FlowLayoutBlock<T>[]
+export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props: {
+  state: readonly V[]
   width: number
   height: number
   lineHeight: number | ((content: T) => number)
-  setState(recipe: (draft: Draft<FlowLayoutBlock<T>>[]) => void): void
+  setState(recipe: (draft: Draft<V>[]) => void): void
   getWidth: (content: T) => number
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
   onLocationChanged?(location?: [number, number]): void
@@ -26,7 +26,7 @@ export function useFlowLayoutBlockEditor<T>(props: {
   onFocus?: () => void
   isNewLineContent?: (content: T) => boolean
   isPartOfComposition?: (content: T) => boolean
-  getComposition?: (index: number) => { index: number, width: number }
+  getComposition?: (blockIndex: number, contentIndex: number) => { index: number, width: number }
   endContent: T
   onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
@@ -38,7 +38,7 @@ export function useFlowLayoutBlockEditor<T>(props: {
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
 
-  const inputContent = (newContents: readonly FlowLayoutBlock<T>[]) => {
+  const inputContent = (newContents: readonly V[]) => {
     if (props.readOnly) return
     if (range) {
       const [blockIndex, contentIndex] = range.min
@@ -64,10 +64,10 @@ export function useFlowLayoutBlockEditor<T>(props: {
           draft[maxBlockIndex].children.splice(0, maxContentIndex)
           draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
         } else {
-          draft.splice(blockIndex + 1, 0, ...castDraft(newContents), {
+          draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
             ...props.state[blockIndex],
-            children: castDraft(props.state[blockIndex].children.slice(maxContentIndex)),
-          })
+            children: props.state[blockIndex].children.slice(maxContentIndex),
+          }))
         }
       })
       return
@@ -83,10 +83,10 @@ export function useFlowLayoutBlockEditor<T>(props: {
     setLocation([blockLocation + newContents.length + 1, 0])
     props.setState(draft => {
       draft[blockLocation].children.splice(contentLocation, props.state[blockLocation].children.length - contentLocation)
-      draft.splice(blockLocation + 1, 0, ...castDraft(newContents), {
+      draft.splice(blockLocation + 1, 0, ...castDraft(newContents), castDraft({
         ...props.state[blockLocation],
-        children: castDraft(props.state[blockLocation].children.slice(contentLocation)),
-      })
+        children: props.state[blockLocation].children.slice(contentLocation),
+      }))
     })
   }
   const backspace = () => {
@@ -198,7 +198,7 @@ export function useFlowLayoutBlockEditor<T>(props: {
     setSelectionStart([0, 0])
     setLocation([props.state.length - 1, props.state[props.state.length - 1].children.length])
   }
-  const getCopiedContents = (cut = false): FlowLayoutBlock<T>[] | undefined => {
+  const getCopiedContents = (cut = false): V[] | undefined => {
     if (range === undefined) {
       return
     }
@@ -208,7 +208,7 @@ export function useFlowLayoutBlockEditor<T>(props: {
     const [blockIndex, contentIndex] = range.min
     const [maxBlockIndex, maxContentIndex] = range.max
     const endIndex = blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length
-    const result: FlowLayoutBlock<T>[] = [{
+    const result: V[] = [{
       ...props.state[blockIndex],
       children: props.state[blockIndex].children.slice(contentIndex, endIndex),
     }]
@@ -331,9 +331,9 @@ export function useFlowLayoutBlockEditor<T>(props: {
   const layoutResult: FlowLayoutResult<T>[][] = []
   let newContentHeight = 0
   const lineHeights: number[] = []
-  const rows: number[] = []
   let row = 0
-  for (const block of props.state) {
+  const getComposition = props.getComposition
+  props.state.forEach((block, blockIndex) => {
     const r = flowLayout({
       state: block.children,
       width: props.width,
@@ -342,16 +342,16 @@ export function useFlowLayoutBlockEditor<T>(props: {
       getWidth: props.getWidth,
       isNewLineContent: props.isNewLineContent,
       isPartOfComposition: props.isPartOfComposition,
-      getComposition: props.getComposition,
+      getComposition: getComposition ? (i) => getComposition(blockIndex, i) : undefined,
       endContent: props.endContent,
       scrollY: scrollY + newContentHeight + block.blockStart,
+      row,
     })
     layoutResult.push(r.layoutResult)
     newContentHeight += r.newContentHeight + block.blockStart + block.blockEnd
     lineHeights.push(...r.lineHeights)
-    rows.push(row)
     row += r.lineHeights.length
-  }
+  })
 
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
@@ -363,15 +363,17 @@ export function useFlowLayoutBlockEditor<T>(props: {
   if (selectionStart !== undefined) {
     range = compareLocations(selectionStart, location) > 0 ? { min: location, max: selectionStart } : { min: selectionStart, max: location }
   }
-  const p = layoutResult[blockLocation][contentLocation]
-  const cursorX = p.x
-  const cursorY = p.y - scrollY
-  const cursorRow = p.row + rows[blockLocation]
+  const p = layoutResult[blockLocation]?.[contentLocation]
+  const cursorX = p?.x ?? 0
+  const cursorY = (p?.y ?? 0) - scrollY
+  const cursorRow = p?.row ?? 0
 
   const lastLocation = React.useRef<[number, number]>()
   const lastCursorY = React.useRef<number>()
   React.useEffect(() => {
-    if ((lastLocation.current === location && lastCursorY.current === cursorY) || props.autoHeight) {
+    if ((equals(lastLocation.current?.[0], location[0]) &&
+      equals(lastLocation.current?.[1], location[1]) &&
+      equals(lastCursorY.current, cursorY)) || props.autoHeight) {
       return
     }
     const y = cursorY + scrollY

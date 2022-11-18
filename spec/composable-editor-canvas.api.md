@@ -241,7 +241,7 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
 export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
 
 // @public (undocumented)
-export function equals(a: number, b: number): boolean;
+export function equals(a: number | undefined, b: number | undefined): boolean;
 
 // @public (undocumented)
 export function ExpressionEditor(props: JsonEditorProps<string> & {
@@ -311,6 +311,7 @@ export function flowLayout<T>(props: {
     };
     endContent: T;
     scrollY: number;
+    row?: number;
 }): {
     layoutResult: FlowLayoutResult<T>[];
     newContentHeight: number;
@@ -1518,12 +1519,12 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
-export function useFlowLayoutBlockEditor<T>(props: {
-    state: readonly FlowLayoutBlock<T>[];
+export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props: {
+    state: readonly V[];
     width: number;
     height: number;
     lineHeight: number | ((content: T) => number);
-    setState(recipe: (draft: Draft<FlowLayoutBlock<T>>[]) => void): void;
+    setState(recipe: (draft: Draft<V>[]) => void): void;
     getWidth: (content: T) => number;
     processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
     onLocationChanged?(location?: [number, number]): void;
@@ -1534,7 +1535,7 @@ export function useFlowLayoutBlockEditor<T>(props: {
     onFocus?: () => void;
     isNewLineContent?: (content: T) => boolean;
     isPartOfComposition?: (content: T) => boolean;
-    getComposition?: (index: number) => {
+    getComposition?: (blockIndex: number, contentIndex: number) => {
         index: number;
         width: number;
     };
@@ -1555,10 +1556,10 @@ export function useFlowLayoutBlockEditor<T>(props: {
         y: number;
         row: number;
     };
-    inputContent: (newContents: readonly FlowLayoutBlock<T>[]) => void;
+    inputContent: (newContents: readonly V[]) => void;
     location: [number, number];
     setLocation: React_2.Dispatch<React_2.SetStateAction<[number, number]>>;
-    getCopiedContents: (cut?: boolean) => FlowLayoutBlock<T>[] | undefined;
+    getCopiedContents: (cut?: boolean) => V[] | undefined;
     isSelected: (loc: [number, number]) => boolean | undefined;
     actualHeight: number;
     setSelectionStart: React_2.Dispatch<React_2.SetStateAction<[number, number] | undefined>>;
