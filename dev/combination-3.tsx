@@ -1,5 +1,5 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, FlowLayoutBlock, getColorString, Merger } from "../src"
+import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, reactSvgRenderTarget, Position, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, FlowLayoutBlock, getColorString, Merger, FlowLayoutBlockStyle } from "../src"
 import { NumberEditor, StringEditor, ObjectEditor, BooleanEditor, Button } from "react-composable-json-editor"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
@@ -229,6 +229,7 @@ const RichTextEditor = React.forwardRef((props: {
       if (newLocation !== undefined) setLocation([blockIndex, newLocation])
     },
     keepSelectionOnBlur: true,
+    isSameType: (a, b) => a.type === b?.type,
   })
   let currentContent: RichText | undefined
   let currentBlock: RichTextBlock | undefined
@@ -301,22 +302,42 @@ const RichTextEditor = React.forwardRef((props: {
   }), [applyPatchFromOtherOperators])
 
   const children: unknown[] = []
+  let decimalindex = 0
   layoutResult.forEach((r, blockIndex) => {
+    const block = state[blockIndex]
+    const first = r[0]
+    const blockFontSize = block.fontSize ?? defaultFontSize
+    const blockColor = block.color ?? 0x000000
+    const blockFontFamily = block.fontFamily ?? defaultFontFamily
+    decimalindex = block.listStyleType === 'decimal' ? decimalindex + 1 : 0
+    if (block.listStyleType === 'disc') {
+      const lineHeight = lineHeights[first.row]
+      const radius = blockFontSize / 7
+      children.push(props.target.renderCircle(first.x - blockFontSize + radius, first.y + lineHeight / 2, radius, { fillColor: blockColor, strokeWidth: 0 }))
+    } else if (block.listStyleType === 'decimal') {
+      const lineHeight = lineHeights[first.row]
+      const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
+      children.push(props.target.renderText(first.x - blockFontSize + blockFontSize / 3, first.y - offsetY + lineHeight / lineHeightRatio, decimalindex + '.', blockColor, blockFontSize, blockFontFamily, { textAlign: 'right', }))
+    }
     r.forEach(({ x, y, content, visible, row }, contentIndex) => {
       if (!visible) return
-      const block = state[blockIndex]
-      const color = content.color ?? block.color ?? 0x000000
-      let backgroundColor = content.backgroundColor ?? block.backgroundColor
-      if (isSelected([blockIndex, contentIndex])) {
-        backgroundColor = 0xB3D6FD
-      }
+      const color = content.color ?? blockColor
+      const backgroundColor = content.backgroundColor ?? block.backgroundColor
+      const fontFamily = content.fontFamily ?? blockFontFamily
+      const fontSize = content.fontSize ?? blockFontSize
       const textWidth = getTextWidth(content, block)
       const lineHeight = lineHeights[row]
-      if (backgroundColor !== undefined) {
-        children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
+      if (isSelected([blockIndex, contentIndex])) {
+        children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
       }
+      const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
+      if (backgroundColor !== undefined) {
+        const textHeight = fontSize * lineHeightRatio
+        children.push(props.target.renderRect(x, y + Math.max(lineHeight - offsetY - textHeight, 0), textWidth, textHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
+      }
+      y -= offsetY
       const bold = content.bold || block.bold
-      children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, content.fontSize ?? block.fontSize ?? defaultFontSize, content.fontFamily ?? block.fontFamily ?? defaultFontFamily, {
+      children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, fontSize, fontFamily, {
         textAlign: 'center',
         fontWeight: bold ? 'bold' : undefined,
         fontStyle: content.italic || block.italic ? 'italic' : undefined,
@@ -326,26 +347,31 @@ const RichTextEditor = React.forwardRef((props: {
         children.push(props.target.renderPolyline([{ x, y: y + lineHeight }, { x: x + textWidth, y: y + lineHeight }], { strokeColor: color, strokeWidth: decorationThickness }))
       }
       if (content.passThrough || block.passThrough) {
-        children.push(props.target.renderPolyline([{ x, y: y + lineHeight / 2 }, { x: x + textWidth, y: y + lineHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
+        const textHeight = fontSize
+        children.push(props.target.renderPolyline([{ x, y: y + lineHeight - textHeight / 2 }, { x: x + textWidth, y: y + lineHeight - textHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
       }
       const others = othersLocation.filter(c => c.location[0] === blockIndex && c.location[1] === contentIndex)
       if (others.length > 0) {
         children.push(
           props.target.renderRect(x, y, 2, lineHeight, { fillColor: 0xff0000, strokeWidth: 0 }),
-          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, content.fontFamily ?? block.fontFamily ?? defaultFontFamily),
+          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, fontFamily),
         )
       }
     })
   })
   const result = props.target.renderResult(children, props.width, actualHeight)
 
-  const updateSelection = (recipe: (richText: RichText) => void) => {
+  const updateSelection = (recipe: (richText: Partial<RichTextStyle>) => void) => {
     if (range) {
       setState(draft => {
         for (let i = range.min[0]; i <= range.max[0]; i++) {
           const block = draft[i]
           const start = i === range.min[0] ? range.min[1] : 0
           const end = i === range.max[0] ? range.max[1] : block.children.length
+          if (start === 0 && end === block.children.length) {
+            recipe(block)
+            continue
+          }
           for (let j = start; j < end; j++) {
             recipe(block.children[j])
           }
@@ -357,19 +383,25 @@ const RichTextEditor = React.forwardRef((props: {
     const updateBlock = (b: RichTextBlock) => {
       b.type = type
       const block = presetBlocks[type]
-      b.blockStart = defaultFontSize * block.fontSize * block.blockStart
-      b.blockEnd = defaultFontSize * block.fontSize * block.blockEnd
+      const fontSize = defaultFontSize * (block.fontSize ?? 1)
+      b.blockStart = fontSize * (block.blockStart ?? 0)
+      b.blockEnd = fontSize * (block.blockEnd ?? 0)
+      b.inlineStart = block.inlineStart
+      b.listStyleType = block.listStyleType
       b.bold = block.bold
-      b.fontSize = defaultFontSize * block.fontSize
+      b.fontSize = fontSize
     }
     if (!range) {
       setState(draft => {
-        updateBlock(draft[location[0]])
+        const i = location[0]
+        updateBlock(draft[i])
       })
       return
     }
     setState(draft => {
-      for (let i = range.min[0]; i <= range.max[0]; i++) {
+      const startBlockIndex = range.min[0]
+      const endBlockIndex = range.max[0]
+      for (let i = startBlockIndex; i <= endBlockIndex; i++) {
         updateBlock(draft[i])
       }
     })
@@ -399,7 +431,7 @@ const RichTextEditor = React.forwardRef((props: {
   )
 })
 
-const presetBlocks = {
+const presetBlocks: Record<string, Partial<RichTextStyle & FlowLayoutBlockStyle>> = {
   h1: {
     fontSize: 2,
     bold: true,
@@ -437,19 +469,28 @@ const presetBlocks = {
     blockEnd: 2.33,
   },
   p: {
-    fontSize: 1,
-    bold: undefined,
     blockStart: 1,
     blockEnd: 1,
   },
+  ul: {
+    blockStart: 1,
+    blockEnd: 1,
+    inlineStart: 40,
+    listStyleType: 'disc',
+  },
+  ol: {
+    blockStart: 1,
+    blockEnd: 1,
+    inlineStart: 40,
+    listStyleType: 'decimal',
+  },
 }
-const getKeys: <T>(obj: T) => (keyof T)[] = Object.keys
-const presetBlockTypes = getKeys(presetBlocks)
+const presetBlockTypes = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol"] as const
 
-type BlockType = keyof typeof presetBlocks
+type BlockType = typeof presetBlockTypes[number]
 
 function blocksToHtml(blocks: readonly RichTextBlock[]) {
-  return blocks.map(b => {
+  return blocks.map((b, blockIndex) => {
     let children = ''
     const merger = new Merger<RichText, string>(
       last => children += `<span style="${richTextStyleToHtmlStyle(last.type)}">${last.target.join('')}</span>`,
@@ -468,6 +509,17 @@ function blocksToHtml(blocks: readonly RichTextBlock[]) {
     let style = richTextStyleToHtmlStyle(b)
     if (b.blockStart) style += `margin-block-start: ${b.blockStart}px;`
     if (b.blockEnd) style += `margin-block-end: ${b.blockEnd}px;`
+    if (b.inlineStart) style += `padding-inline-start: ${b.inlineStart}px;`
+    if (b.type === 'ul' || b.type === 'ol') {
+      children = `<li>${children}</li>`
+      if (blocks[blockIndex - 1]?.type !== b.type) {
+        children = `<${b.type} style="${style}">${children}`
+      }
+      if (blocks[blockIndex + 1]?.type !== b.type) {
+        children = `${children}</${b.type}>`
+      }
+      return children
+    }
     return `<${b.type} style="${style}">${children}</${b.type}>`
   }).join('')
 }

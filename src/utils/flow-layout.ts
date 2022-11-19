@@ -13,6 +13,7 @@ export function flowLayout<T>(props: {
   isPartOfComposition?: (content: T) => boolean
   getComposition?: (index: number) => { index: number, width: number }
   endContent: T
+  scrollX?: number
   scrollY: number
   row?: number
 }) {
@@ -22,7 +23,7 @@ export function flowLayout<T>(props: {
 
   const layoutResult: FlowLayoutResult<T>[] = []
   const lineHeights: number[] = []
-  let x = 0
+  let x = props.scrollX ?? 0
   let y = props.scrollY
   let i = 0
   let row = props.row ?? 0
