@@ -31,6 +31,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
   onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
   keepSelectionOnBlur?: boolean
+  isSameType?: (a: V, b: V | undefined) => boolean
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
@@ -336,7 +337,9 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
   const getComposition = props.getComposition
   const lineHeight = props.lineHeight
   props.state.forEach((block, blockIndex) => {
-    const blockStart = Math.max(block.blockStart ?? 0, blockEnd)
+    const start = block.listStyleType && props.isSameType?.(block, props.state[blockIndex - 1]) ? 0 : (block.blockStart ?? 0)
+    const end = block.listStyleType && props.isSameType?.(block, props.state[blockIndex + 1]) ? 0 : (block.blockEnd ?? 0)
+    const blockStart = Math.max(start, blockEnd)
     const r = flowLayout({
       state: block.children,
       width: props.width,
@@ -347,6 +350,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
       isPartOfComposition: props.isPartOfComposition,
       getComposition: getComposition ? (i) => getComposition(blockIndex, i) : undefined,
       endContent: props.endContent,
+      scrollX: block.inlineStart,
       scrollY: scrollY + newContentHeight + blockStart,
       row,
     })
@@ -354,7 +358,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
     newContentHeight += r.newContentHeight + blockStart
     lineHeights.push(...r.lineHeights)
     row += r.lineHeights.length
-    blockEnd = block.blockEnd ?? 0
+    blockEnd = end
   })
   newContentHeight += blockEnd
 
@@ -492,4 +496,6 @@ export interface FlowLayoutBlock<T> extends Partial<FlowLayoutBlockStyle> {
 export interface FlowLayoutBlockStyle {
   blockStart: number
   blockEnd: number
+  inlineStart: number
+  listStyleType: 'disc' | 'decimal'
 }

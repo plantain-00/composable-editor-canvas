@@ -310,6 +310,7 @@ export function flowLayout<T>(props: {
         width: number;
     };
     endContent: T;
+    scrollX?: number;
     scrollY: number;
     row?: number;
 }): {
@@ -330,6 +331,10 @@ export interface FlowLayoutBlockStyle {
     blockEnd: number;
     // (undocumented)
     blockStart: number;
+    // (undocumented)
+    inlineStart: number;
+    // (undocumented)
+    listStyleType: 'disc' | 'decimal';
 }
 
 // @public (undocumented)
@@ -1533,6 +1538,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
     onCompositionEnd?: React_2.CompositionEventHandler<HTMLInputElement>;
     onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
     keepSelectionOnBlur?: boolean;
+    isSameType?: (a: V, b: V | undefined) => boolean;
 }): {
     ref: React_2.MutableRefObject<HTMLInputElement | null>;
     range: {
