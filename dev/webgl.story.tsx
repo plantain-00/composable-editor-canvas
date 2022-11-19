@@ -108,6 +108,7 @@ export default () => {
     if (!ref.current) {
       return
     }
+    const canvas = ref.current
     const gl = ref.current.getContext("webgl", { antialias: true, stencil: true });
     if (!gl) {
       return
@@ -197,7 +198,7 @@ export default () => {
     render.current = (gs, x, y, scale) => {
       gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
       gl.useProgram(programInfo.program);
-      twgl.resizeCanvasToDisplaySize(gl.canvas);
+      twgl.resizeCanvasToDisplaySize(canvas);
       gl.clearColor(...gs.backgroundColor)
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 

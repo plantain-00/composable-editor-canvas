@@ -403,7 +403,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
   return (graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    twgl.resizeCanvasToDisplaySize(gl.canvas);
+    twgl.resizeCanvasToDisplaySize(canvas);
     gl.clearColor(...backgroundColor)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
