@@ -5,7 +5,7 @@ import './vender/prism.css'
 
 import { navigateTo, useLocation } from '@protocol-based-web-framework/router'
 import { stories } from './import-stories'
-import { App } from '.'
+import { App } from './content-editor'
 import { useDragMove } from '../src'
 import { WhiteBoard } from './whiteboard'
 import { Combination2 } from './combination-2'

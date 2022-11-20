@@ -3,7 +3,7 @@ import { buildSync } from 'esbuild'
 
 const config: Configuration = {
   files: [
-    './dev/plugins/*.plugin.tsx',
+    './dev/cad-editor/plugins/*.plugin.tsx',
   ],
   plugins: [
     (_typeDeclarations, _, sourceFiles) => {
@@ -16,7 +16,7 @@ const config: Configuration = {
         bundle: true,
       })
       return [{
-        path: './dev/plugins/variables.ts',
+        path: './dev/cad-editor/plugins/variables.ts',
         content: `export const pluginScripts = [\n` + result.outputFiles.map(s => {
           return `\`${s.text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,`
         }).join('\n') + '\n]',
