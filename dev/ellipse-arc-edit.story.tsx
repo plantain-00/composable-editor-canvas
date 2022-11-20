@@ -1,7 +1,7 @@
 import produce from "immer"
 import React from "react"
 import { EllipseArc, EllipseArcEditBar, ellipseArcToPolyline, normalizeAngleRange, useEllipseArcEdit } from "../src"
-import { defaultAngleDelta } from "./models/model"
+import { defaultAngleDelta } from "./cad-editor/model"
 
 export default () => {
   const [content, setContent] = React.useState<EllipseArc>({ cx: 200, cy: 200, rx: 100, ry: 150, angle: 45, startAngle: -30, endAngle: 120 })

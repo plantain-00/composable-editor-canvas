@@ -1,6 +1,6 @@
 import React from "react"
 import { Circle, getRadialDimensionGeometries, getRadialDimensionTextPosition, getRotateTransform, getTextSize, RadialDimension } from "../src"
-import { dimensionStyle } from "./models/model"
+import { dimensionStyle } from "./cad-editor/model"
 
 export default () => {
   const circle: Circle = {
