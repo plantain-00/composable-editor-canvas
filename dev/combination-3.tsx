@@ -3,8 +3,12 @@ import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget } from
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import { produceWithPatches } from "immer"
-import { defaultFontFamily, defaultFontSize, RichTextBlock, RichTextEditor, RichTextEditorRef } from "./rich-text-editor/rich-text-editor"
+import { RichTextEditor, RichTextEditorPlugin, RichTextEditorRef } from "./rich-text-editor/rich-text-editor"
 import { blocksToHtml } from "./rich-text-editor/export-to-html"
+import { defaultFontFamily, defaultFontSize, RichTextBlock } from "./rich-text-editor/model"
+import { h1, h2, h3, h4, h5, h6, ol, p, ul } from "./rich-text-editor/plugins/blocks"
+import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough, underline } from './rich-text-editor/plugins/styles'
+import { useAt } from "./rich-text-editor/plugins/at"
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
@@ -17,6 +21,20 @@ export function Combination3() {
   const [autoHeight, setAutoHeight] = React.useState(false)
   const [readOnly, setReadOnly] = React.useState(false)
   const [html, setHtml] = React.useState('')
+  const plugin = React.useRef<RichTextEditorPlugin>({
+    blocks: { h1, h2, h3, h4, h5, h6, p, ul, ol },
+    styles: {
+      'font size': fontSize,
+      'font family': fontFamily,
+      bold,
+      italic,
+      underline,
+      'pass through': passThrough,
+      color,
+      'background color': backgroundColor,
+    },
+    hooks: [useAt],
+  })
 
   React.useEffect(() => {
     (async () => {
@@ -113,6 +131,7 @@ export function Combination3() {
         autoHeight={autoHeight}
         readOnly={readOnly}
         operator={me}
+        plugin={plugin.current}
       />
       <div
         dangerouslySetInnerHTML={{ __html: html }}

@@ -1,9 +1,9 @@
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, FlowLayoutBlock, FlowLayoutBlockStyle } from "../../src"
-import { NumberEditor, StringEditor, ObjectEditor, BooleanEditor, Button } from "react-composable-json-editor"
+import { metaKeyIfMacElseCtrlKey, ReactRenderTarget, usePatchBasedUndoRedo, useFlowLayoutBlockEditor, getTextSizeFromCache, getTextComposition, isWordCharactor, getWordByDoubleClick, getKeys } from "../../src"
+import { ObjectEditor, Button } from "react-composable-json-editor"
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
-import { useAt } from "./at"
+import { BlockType, defaultFontFamily, defaultFontSize, lineHeightRatio, RichText, RichTextBlock, RichTextEditorPluginBlock, RichTextEditorPluginHook, RichTextEditorPluginStyle, RichTextStyle } from "./model"
 
 export const RichTextEditor = React.forwardRef((props: {
   initialState: readonly RichTextBlock[]
@@ -16,6 +16,7 @@ export const RichTextEditor = React.forwardRef((props: {
   autoHeight: boolean
   readOnly: boolean
   operator: string
+  plugin?: RichTextEditorPlugin
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
@@ -33,8 +34,10 @@ export const RichTextEditor = React.forwardRef((props: {
     lineHeight: (c, b) => (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio,
     readOnly: props.readOnly,
     processInput(e) {
-      if (processAtInput(e)) {
-        return true
+      for (const processAtInput of hooksProcessInputs) {
+        if (processAtInput(e)) {
+          return true
+        }
       }
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'z') {
@@ -128,7 +131,17 @@ export const RichTextEditor = React.forwardRef((props: {
     })
   }
 
-  const { processAtInput, suggestions } = useAt(cursor, lineHeights[cursor.row], inputText)
+  const hooksProcessInputs: ((e: React.KeyboardEvent<HTMLInputElement>) => boolean)[] = []
+  const hooksUIs: React.ReactNode[] = []
+  const properties: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {}
+  if (props.plugin?.hooks) {
+    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText }
+    props.plugin.hooks.forEach((useHook, i) => {
+      const { processInput, ui } = useHook(hooksProps)
+      if (processInput) hooksProcessInputs.push(processInput)
+      if (ui) hooksUIs.push(React.cloneElement(ui, { key: i }))
+    })
+  }
   const [othersLocation, setOthersLocation] = React.useState<{ location: [number, number], operator: string }[]>([])
 
   React.useImperativeHandle<RichTextEditorRef, RichTextEditorRef>(ref, () => ({
@@ -236,15 +249,23 @@ export const RichTextEditor = React.forwardRef((props: {
   }
   const updateParagraph = (type: BlockType) => {
     const updateBlock = (b: RichTextBlock) => {
+      if (!props.plugin?.blocks) return
       b.type = type
-      const block = presetBlocks[type]
+      const block = props.plugin.blocks[type]
+      if (!block) return
       const fontSize = defaultFontSize * (block.fontSize ?? 1)
       b.blockStart = fontSize * (block.blockStart ?? 0)
       b.blockEnd = fontSize * (block.blockEnd ?? 0)
       b.inlineStart = block.inlineStart
       b.listStyleType = block.listStyleType
       b.bold = block.bold
+      b.italic = block.italic
       b.fontSize = fontSize
+      b.fontFamily = block.fontFamily
+      b.underline = block.underline
+      b.passThrough = block.passThrough
+      b.color = block.color
+      b.backgroundColor = block.backgroundColor
     }
     if (!range) {
       setState(draft => {
@@ -262,110 +283,31 @@ export const RichTextEditor = React.forwardRef((props: {
     })
   }
 
+  if (props.plugin?.styles) {
+    for (const key in props.plugin.styles) {
+      properties[key] = props.plugin.styles[key](currentContent, currentBlock, updateSelection)
+    }
+  }
+  if (props.plugin?.blocks) {
+    properties.block = <div>{getKeys(props.plugin.blocks).map(t => <Button key={t} style={{ fontWeight: state[location[0]]?.type === t ? 'bold' : undefined }} onClick={() => updateParagraph(t)}>{t}</Button>)}</div>
+  }
+
   return (
     <div style={{ position: 'relative', margin: '10px' }}>
       <div style={{ display: 'flex' }}>
         {renderEditor(result)}
-        <ObjectEditor
-          inline
-          properties={{
-            'font size': <NumberEditor value={currentContent?.fontSize ?? currentBlock?.fontSize ?? defaultFontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '50px' }} />,
-            'font family': <StringEditor value={currentContent?.fontFamily ?? currentBlock?.fontFamily ?? defaultFontFamily} setValue={v => updateSelection(c => c.fontFamily = v)} style={{ width: '100px' }} />,
-            bold: <BooleanEditor value={(currentContent?.bold ?? currentBlock?.bold) === true} setValue={v => updateSelection(c => c.bold = v ? true : undefined)} />,
-            italic: <BooleanEditor value={(currentContent?.italic ?? currentBlock?.italic) === true} setValue={v => updateSelection(c => c.italic = v ? true : undefined)} />,
-            underline: <BooleanEditor value={(currentContent?.underline ?? currentBlock?.underline) === true} setValue={v => updateSelection(c => c.underline = v ? true : undefined)} />,
-            'pass through': <BooleanEditor value={(currentContent?.passThrough ?? currentBlock?.passThrough) === true} setValue={v => updateSelection(c => c.passThrough = v ? true : undefined)} />,
-            color: <NumberEditor type='color' value={currentContent?.color ?? currentBlock?.color ?? 0} setValue={v => updateSelection(c => c.color = v ? v : undefined)} />,
-            'background color': <NumberEditor type='color' value={currentContent?.backgroundColor ?? currentBlock?.backgroundColor ?? 0xffffff} setValue={v => updateSelection(c => c.backgroundColor = v ? v : undefined)} />,
-            block: <div>{presetBlockTypes.map(t => <Button key={t} style={{ fontWeight: state[location[0]]?.type === t ? 'bold' : undefined }} onClick={() => updateParagraph(t)}>{t}</Button>)}</div>
-          }}
-        />
+        <ObjectEditor inline properties={properties} />
       </div>
-      {suggestions}
+      {hooksUIs}
     </div>
   )
 })
 
-const lineHeightRatio = 1.2
-export const defaultFontSize = 16
-export const defaultFontFamily = 'monospace'
-
-export interface RichText extends Partial<RichTextStyle> {
-  text: string
+export interface RichTextEditorPlugin {
+  blocks?: Partial<Record<BlockType, RichTextEditorPluginBlock>>
+  styles?: Record<string, RichTextEditorPluginStyle>
+  hooks?: RichTextEditorPluginHook[]
 }
-
-export interface RichTextStyle {
-  fontSize: number
-  fontFamily: string
-  bold: boolean
-  italic: boolean
-  underline: boolean
-  passThrough: boolean
-  color: number
-  backgroundColor: number
-}
-
-export interface RichTextBlock extends FlowLayoutBlock<RichText>, Partial<RichTextStyle> {
-  type: BlockType
-}
-
-const presetBlocks: Record<BlockType, Partial<RichTextStyle & FlowLayoutBlockStyle>> = {
-  h1: {
-    fontSize: 2,
-    bold: true,
-    blockStart: 0.67,
-    blockEnd: 0.67,
-  },
-  h2: {
-    fontSize: 1.5,
-    bold: true,
-    blockStart: 0.83,
-    blockEnd: 0.83,
-  },
-  h3: {
-    fontSize: 1.17,
-    bold: true,
-    blockStart: 1.17,
-    blockEnd: 1.17,
-  },
-  h4: {
-    fontSize: 1,
-    bold: true,
-    blockStart: 1,
-    blockEnd: 1,
-  },
-  h5: {
-    fontSize: 0.83,
-    bold: true,
-    blockStart: 1,
-    blockEnd: 1,
-  },
-  h6: {
-    fontSize: 0.67,
-    bold: true,
-    blockStart: 2.33,
-    blockEnd: 2.33,
-  },
-  p: {
-    blockStart: 1,
-    blockEnd: 1,
-  },
-  ul: {
-    blockStart: 1,
-    blockEnd: 1,
-    inlineStart: 40,
-    listStyleType: 'disc',
-  },
-  ol: {
-    blockStart: 1,
-    blockEnd: 1,
-    inlineStart: 40,
-    listStyleType: 'decimal',
-  },
-}
-const presetBlockTypes = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol"] as const
-
-type BlockType = typeof presetBlockTypes[number]
 
 export interface RichTextEditorRef {
   handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }): void

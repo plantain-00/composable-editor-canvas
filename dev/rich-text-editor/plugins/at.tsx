@@ -1,8 +1,7 @@
 import React from "react"
-import { Position } from "../../src"
-import { RichText } from "./rich-text-editor"
+import { RichTextEditorPluginHook } from "../model"
 
-export function useAt(cursor: Position, cursorHeight: number, inputText: (text: (string | RichText)[]) => void) {
+export const useAt: RichTextEditorPluginHook = ({ cursor, cursorHeight, inputText }) => {
   const [at, setAt] = React.useState('')
   const [atIndex, setAtIndex] = React.useState(0)
   const style = {
@@ -11,7 +10,7 @@ export function useAt(cursor: Position, cursorHeight: number, inputText: (text: 
   }
 
   return {
-    processAtInput(e: React.KeyboardEvent<HTMLInputElement>) {
+    processInput(e: React.KeyboardEvent<HTMLInputElement>) {
       if (at) {
         if (e.key.length === 1 && e.key >= 'a' && e.key <= 'z') {
           setAt(a => a + e.key)
@@ -55,7 +54,7 @@ export function useAt(cursor: Position, cursorHeight: number, inputText: (text: 
       }
       return false
     },
-    suggestions: at && <div
+    ui: at ? <div
       style={{
         position: 'absolute',
         left: cursor.x + 'px',
@@ -77,6 +76,6 @@ export function useAt(cursor: Position, cursorHeight: number, inputText: (text: 
       >
         {at + '_' + i}
       </div>)}
-    </div>,
+    </div> : undefined,
   }
 }

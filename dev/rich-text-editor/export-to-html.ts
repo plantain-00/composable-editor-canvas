@@ -1,5 +1,5 @@
 import { getColorString, Merger } from '../../src'
-import type { RichTextStyle, RichTextBlock, RichText } from './rich-text-editor'
+import { RichText, RichTextBlock, RichTextStyle } from './model'
 
 export function blocksToHtml(blocks: readonly RichTextBlock[]) {
   return blocks.map((b, blockIndex) => {
