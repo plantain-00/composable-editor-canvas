@@ -481,6 +481,9 @@ export function getImageGraphic(url: string, x: number, y: number, width: number
 export function getItemByPath<T>(target: unknown, path: SelectPath): T;
 
 // @public (undocumented)
+export const getKeys: <T>(obj: T) => (keyof T)[];
+
+// @public (undocumented)
 export function getLinearDimensionGeometries(content: LinearDimension, dimensionStyle: {
     margin: number;
     arrowAngle: number;
