@@ -143,11 +143,12 @@ export function useFlowLayoutTextEditor(props: {
 export function getWordByDoubleClick<T>(
   state: readonly T[],
   location: number,
-  getContentText: (c: T) => string,
+  getContentText: (c: T) => string | undefined,
 ) {
   let start: number | undefined
   for (let i = location - 1; i >= 0; i--) {
-    if (isWordCharactor(getContentText(state[i]))) {
+    const text = getContentText(state[i])
+    if (text && isWordCharactor(text)) {
       start = i
     } else {
       break
@@ -155,7 +156,8 @@ export function getWordByDoubleClick<T>(
   }
   let end: number | undefined
   for (let i = location; i < state.length; i++) {
-    if (isWordCharactor(getContentText(state[i]))) {
+    const text = getContentText(state[i])
+    if (text && isWordCharactor(text)) {
       end = i + 1
     } else {
       break
@@ -179,12 +181,13 @@ export function getTextComposition<T>(
   index: number,
   state: readonly T[],
   getTextWidth: (c: T) => number,
-  getContentText: (c: T) => string,
+  getContentText: (c: T) => string | undefined,
 ) {
   let width = getTextWidth(state[index])
   for (let i = index + 1; i < state.length; i++) {
     const content = state[i]
-    if (isWordCharactor(getContentText(content))) {
+    const text = getContentText(content)
+    if (text && isWordCharactor(text)) {
       width += getTextWidth(content)
     } else {
       return {

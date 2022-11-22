@@ -3844,9 +3844,9 @@ raw-body@2.5.1:
     unpipe "1.0.0"
 
 react-composable-json-editor@8:
-  version "8.3.3"
-  resolved "https://registry.npmmirror.com/react-composable-json-editor/-/react-composable-json-editor-8.3.3.tgz#007706eb9ad34fdc3502327c8c7e3978d831ef7b"
-  integrity sha512-FRCItyhyKLk8/DxmekLF5P6CVYxgPcNPJMJ1xkj9OStN4GvTxjHu+f/aAamXI8xRGLMQ4Iu1M8jHG9z+qbxLQA==
+  version "8.3.4"
+  resolved "https://registry.npmjs.org/react-composable-json-editor/-/react-composable-json-editor-8.3.4.tgz#882a6bfd40a2297284661311c5ec08817670bac7"
+  integrity sha512-4OLkojCWWN66cN4CcvT1sDFIdNNbUPL1BtSHWTF2CzyKup7EMIb5wmVYIHPLO+1Ce8pQTH3PQgC1jTXQ/7zpsA==
   dependencies:
     immer ">=8"
 

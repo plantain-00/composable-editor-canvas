@@ -1,7 +1,7 @@
 import { getColorString, Merger } from '../../src'
-import { RichText, RichTextBlock, RichTextStyle } from './model'
+import { isText, RichText, RichTextBlock, RichTextInline, RichTextStyle } from './model'
 
-export function blocksToHtml(blocks: readonly RichTextBlock[]) {
+export function blocksToHtml(blocks: readonly RichTextBlock[], exportToHtmls: ((richText: RichTextInline) => string | undefined)[]) {
   return blocks.map((b, blockIndex) => {
     let children = ''
     const merger = new Merger<RichText, string>(
@@ -16,7 +16,19 @@ export function blocksToHtml(blocks: readonly RichTextBlock[]) {
         a.underline === b.underline,
       a => a.text,
     )
-    b.children.forEach(c => merger.push(c))
+    b.children.forEach(c => {
+      for (const exportToHtml of exportToHtmls) {
+        const r = exportToHtml(c)
+        if (r) {
+          merger.flushLast()
+          children += r
+          return
+        }
+      }
+      if (isText(c)) {
+        merger.push(c)
+      }
+    })
     merger.flushLast()
     let style = richTextStyleToHtmlStyle(b)
     if (b.blockStart) style += `margin-block-start: ${b.blockStart}px;`
@@ -36,7 +48,7 @@ export function blocksToHtml(blocks: readonly RichTextBlock[]) {
   }).join('')
 }
 
-function richTextStyleToHtmlStyle(c: Partial<RichTextStyle>) {
+export function richTextStyleToHtmlStyle(c: Partial<RichTextStyle>) {
   let style = ''
   if (c.backgroundColor !== undefined) style += `background-color: ${getColorString(c.backgroundColor)};`
   if (c.bold) style += 'font-weight: bold;'

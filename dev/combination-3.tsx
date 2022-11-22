@@ -4,11 +4,12 @@ import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import { produceWithPatches } from "immer"
 import { RichTextEditor, RichTextEditorPlugin, RichTextEditorRef } from "./rich-text-editor/rich-text-editor"
-import { blocksToHtml } from "./rich-text-editor/export-to-html"
 import { defaultFontFamily, defaultFontSize, RichTextBlock } from "./rich-text-editor/model"
 import { h1, h2, h3, h4, h5, h6, ol, p, ul } from "./rich-text-editor/plugins/blocks"
 import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough, underline } from './rich-text-editor/plugins/styles'
 import { useAt } from "./rich-text-editor/plugins/at"
+import { useLink } from "./rich-text-editor/plugins/link"
+import { image, useImage } from "./rich-text-editor/plugins/image"
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
@@ -33,7 +34,8 @@ export function Combination3() {
       color,
       'background color': backgroundColor,
     },
-    hooks: [useAt],
+    hooks: [useAt, useLink, useImage],
+    inlines: [image],
   })
 
   React.useEffect(() => {
@@ -53,7 +55,6 @@ export function Combination3() {
         onApplyPatchesFromSelf(r[1], r[2])
       } else {
         setInitialState(json)
-        setHtml(blocksToHtml(json))
       }
     })()
   }, [])
@@ -126,7 +127,7 @@ export function Combination3() {
         height={height}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
         onSendLocation={onSendLocation}
-        onChange={(data) => setHtml(blocksToHtml(data.newState))}
+        onExport={setHtml}
         target={target}
         autoHeight={autoHeight}
         readOnly={readOnly}
@@ -143,6 +144,8 @@ export function Combination3() {
           overflowY: 'auto',
           border: '1px solid',
           fontSize: defaultFontSize + 'px',
+          position: 'absolute',
+          top: '330px',
         }}
       ></div>
     </div >

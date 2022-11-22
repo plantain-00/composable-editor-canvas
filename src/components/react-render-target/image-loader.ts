@@ -18,15 +18,17 @@ const images = new Map<string, ImageBitmap | (() => void)[]>()
 
 export function getImageFromCache(
   url: string,
-  rerender: () => void,
-  crossOrigin?: "anonymous" | "use-credentials" | "",
-  callback?: (imageBitmap: ImageBitmap) => void
+  options?: Partial<{
+    rerender: () => void,
+    crossOrigin: "anonymous" | "use-credentials" | "",
+    callback: (imageBitmap: ImageBitmap) => void
+  }>
 ) {
   const image = images.get(url)
   if (!image) {
     images.set(url, [])
     // eslint-disable-next-line plantain/promise-not-await
-    loadImage(url, crossOrigin).then(image => {
+    loadImage(url, options?.crossOrigin).then(image => {
       createImageBitmap(image).then(imageBitmap => {
         const listeners = images.get(url)
         images.set(url, imageBitmap)
@@ -35,18 +37,18 @@ export function getImageFromCache(
             listener()
           })
         }
-        callback?.(imageBitmap)
-        rerender()
+        options?.callback?.(imageBitmap)
+        options?.rerender?.()
       })
     })
     return
   }
   if (Array.isArray(image)) {
     image.push(() => {
-      rerender()
+      options?.rerender?.()
     })
     return
   }
-  callback?.(image)
+  options?.callback?.(image)
   return image
 }

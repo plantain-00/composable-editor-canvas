@@ -212,7 +212,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
   },
   renderImage(url, x, y, width, height, options) {
     return (ctx, _, rerender) => {
-      const image = getImageFromCache(url, rerender, options?.crossOrigin)
+      const image = getImageFromCache(url, { rerender, crossOrigin: options?.crossOrigin })
       if (image) {
         const opacity = ctx.globalAlpha
         ctx.save()
