@@ -72,13 +72,8 @@ export function useImageClickCreate(
               reader.onloadend = () => {
                 const base64 = reader.result
                 if (typeof base64 === 'string') {
-                  getImageFromCache(
-                    base64,
-                    () => {
-                      //
-                    },
-                    undefined,
-                    (image) => {
+                  getImageFromCache(base64, {
+                    callback(image) {
                       setImage({
                         x: 0,
                         y: 0,
@@ -87,6 +82,7 @@ export function useImageClickCreate(
                         url: base64,
                       })
                     },
+                  },
                   )
                 }
               }

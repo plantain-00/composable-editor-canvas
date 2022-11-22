@@ -98,6 +98,7 @@ export function useCommands(
         strokeStyleId,
         fillStyleId,
       })
+      if (!type) return
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
       }

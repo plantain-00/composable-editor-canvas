@@ -10,7 +10,7 @@ import { useWheelScroll } from "./use-wheel-scroll"
 /**
  * @public
  */
-export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props: {
+export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowLayoutBlock<T>, P extends T = T>(props: {
   state: readonly V[]
   width: number
   height: number
@@ -27,7 +27,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
   isNewLineContent?: (content: T) => boolean
   isPartOfComposition?: (content: T) => boolean
   getComposition?: (blockIndex: number, contentIndex: number) => { index: number, width: number }
-  endContent: T
+  endContent: P
   onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
   keepSelectionOnBlur?: boolean

@@ -3,7 +3,8 @@ import { metaKeyIfMacElseCtrlKey, ReactRenderTarget, usePatchBasedUndoRedo, useF
 import { ObjectEditor, Button } from "react-composable-json-editor"
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
-import { BlockType, defaultFontFamily, defaultFontSize, lineHeightRatio, RichText, RichTextBlock, RichTextEditorPluginBlock, RichTextEditorPluginHook, RichTextEditorPluginStyle, RichTextStyle } from "./model"
+import { BlockType, defaultFontFamily, defaultFontSize, isText, lineHeightRatio, RichText, RichTextBlock, RichTextEditorPluginBlock, RichTextEditorPluginHook, RichTextEditorPluginInline, RichTextEditorPluginStyle, RichTextInline, RichTextStyle } from "./model"
+import { blocksToHtml } from "./export-to-html"
 
 export const RichTextEditor = React.forwardRef((props: {
   initialState: readonly RichTextBlock[]
@@ -11,7 +12,7 @@ export const RichTextEditor = React.forwardRef((props: {
   height: number
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendLocation?: (location: [number, number]) => void
-  onChange?: (data: { newState: readonly RichTextBlock[] }) => void
+  onExport?: (html: string) => void
   target: ReactRenderTarget<unknown>
   autoHeight: boolean
   readOnly: boolean
@@ -20,18 +21,35 @@ export const RichTextEditor = React.forwardRef((props: {
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
-    onChange: props.onChange,
   })
 
-  const getTextWidth = (c: RichText, b: RichTextBlock) => getTextSizeFromCache(`${c.fontSize ?? b.fontSize ?? defaultFontSize}px ${c.fontFamily ?? b.fontFamily ?? defaultFontFamily}`, c.text)?.width ?? 0
-  const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getTextWidth(c, state[blockIndex]), c => c.text)
+  const getWidth = (c: RichTextInline, b: RichTextBlock) => {
+    if (isText(c)) return getTextSizeFromCache(`${c.fontSize ?? b.fontSize ?? defaultFontSize}px ${c.fontFamily ?? b.fontFamily ?? defaultFontFamily}`, c.text)?.width ?? 0
+    if (props.plugin?.inlines) {
+      for (const inline of props.plugin.inlines) {
+        const width = inline.getWidth(c)
+        if (width !== undefined) return width
+      }
+    }
+    return 0
+  }
+  const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getWidth(c, state[blockIndex]), c => isText(c) ? c.text : undefined)
 
-  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor({
+  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
     state,
     setState,
     width: props.width,
     height: props.height,
-    lineHeight: (c, b) => (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio,
+    lineHeight: (c, b) => {
+      if (isText(c)) return (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio
+      if (props.plugin?.inlines) {
+        for (const inline of props.plugin.inlines) {
+          const lineHeight = inline.getLineHeight(c)
+          if (lineHeight !== undefined) return lineHeight
+        }
+      }
+      return 0
+    },
     readOnly: props.readOnly,
     processInput(e) {
       for (const processAtInput of hooksProcessInputs) {
@@ -69,9 +87,9 @@ export const RichTextEditor = React.forwardRef((props: {
     },
     onLocationChanged: props.onSendLocation,
     autoHeight: props.autoHeight,
-    getWidth: getTextWidth,
-    isNewLineContent: content => content.text === '\n',
-    isPartOfComposition: content => isWordCharactor(content.text),
+    getWidth,
+    isNewLineContent: c => isText(c) && c.text === '\n',
+    isPartOfComposition: c => isText(c) && isWordCharactor(c.text),
     getComposition,
     endContent: { text: '' },
     onCompositionEnd(e) {
@@ -82,31 +100,30 @@ export const RichTextEditor = React.forwardRef((props: {
     },
     onDoubleClick(e) {
       const [blockIndex, contentIndex] = positionToLocation(getPosition(e))
-      const { newSelectionStart, newLocation } = getWordByDoubleClick(state[blockIndex].children, contentIndex, c => c.text)
+      const { newSelectionStart, newLocation } = getWordByDoubleClick(state[blockIndex].children, contentIndex, c => isText(c) ? c.text : undefined)
       if (newSelectionStart !== undefined) setSelectionStart([blockIndex, newSelectionStart])
       if (newLocation !== undefined) setLocation([blockIndex, newLocation])
     },
     keepSelectionOnBlur: true,
     isSameType: (a, b) => a.type === b?.type,
   })
-  let currentContent: RichText | undefined
-  let currentBlock: RichTextBlock | undefined
-  if (range) {
-    currentBlock = state[range.min[0]]
-    currentContent = currentBlock.children[range.min[1]]
-  } else {
-    currentBlock = state[location[0]]
-    if (currentBlock) {
-      currentContent = currentBlock.children[location[1]] ?? currentBlock.children[currentBlock.children.length - 1]
+  const currentLocation = range ? range.min : location
+  const getCurrentContent = (draft: readonly RichTextBlock[]): { currentBlock: RichTextBlock, currentContent?: RichTextInline } => {
+    const block = draft[currentLocation[0]]
+    return {
+      currentBlock: block,
+      currentContent: block ? block.children[location[1] <= 0 ? 0 : location[1] - 1] ?? block.children[block.children.length - 1] : undefined,
     }
   }
+  const { currentBlock, currentContent } = getCurrentContent(state)
 
-  const inputText = (text: string | (string | RichText)[]) => {
+  const inputText = (text: string | (string | RichTextInline)[]) => {
     if (props.readOnly) return
-    const result: RichText[] = []
+    const result: RichTextInline[] = []
     for (const t of text) {
       if (typeof t === 'string') {
-        result.push({ ...currentContent, text: t })
+        const newText: RichText = { ...currentContent, text: t, kind: undefined }
+        result.push(newText)
       } else {
         result.push({ ...currentContent, ...t })
       }
@@ -121,7 +138,7 @@ export const RichTextEditor = React.forwardRef((props: {
           inputContent(JSON.parse(v))
         } catch {
           inputContent([{
-            children: v.split('').map(s => ({ text: s })),
+            children: v.split('').map(s => ({ text: s, kind: undefined })),
             blockStart: 0,
             blockEnd: 0,
             type: 'p',
@@ -130,16 +147,29 @@ export const RichTextEditor = React.forwardRef((props: {
       }
     })
   }
+  const updateCurrentContent = (recipe: (richText: RichTextInline) => void) => {
+    setState(draft => {
+      const current = getCurrentContent(draft)
+      if (current.currentContent) {
+        recipe(current.currentContent)
+      }
+    })
+  }
 
-  const hooksProcessInputs: ((e: React.KeyboardEvent<HTMLInputElement>) => boolean)[] = []
+  const hooksProcessInputs: NonNullable<ReturnType<RichTextEditorPluginHook>['processInput']>[] = []
   const hooksUIs: React.ReactNode[] = []
-  const properties: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {}
+  const properties: ReturnType<RichTextEditorPluginHook>['propertyPanel'] = {}
+  const exportToHtmls: NonNullable<ReturnType<RichTextEditorPluginHook>['exportToHtml']>[] = []
+  const hooksRenders: NonNullable<ReturnType<RichTextEditorPluginHook>['render']>[] = []
   if (props.plugin?.hooks) {
-    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText }
+    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText, currentContent, updateCurrentContent }
     props.plugin.hooks.forEach((useHook, i) => {
-      const { processInput, ui } = useHook(hooksProps)
+      const { processInput, ui, propertyPanel, exportToHtml, render } = useHook(hooksProps)
       if (processInput) hooksProcessInputs.push(processInput)
       if (ui) hooksUIs.push(React.cloneElement(ui, { key: i }))
+      if (exportToHtml) exportToHtmls.push(exportToHtml)
+      if (propertyPanel) Object.assign(properties, propertyPanel)
+      if (render) hooksRenders.push(render)
     })
   }
   const [othersLocation, setOthersLocation] = React.useState<{ location: [number, number], operator: string }[]>([])
@@ -169,6 +199,10 @@ export const RichTextEditor = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
+  React.useEffect(() => {
+    props.onExport?.(blocksToHtml(state, exportToHtmls))
+  }, [state])
+
   const children: unknown[] = []
   let decimalindex = 0
   layoutResult.forEach((r, blockIndex) => {
@@ -189,40 +223,50 @@ export const RichTextEditor = React.forwardRef((props: {
     }
     r.forEach(({ x, y, content, visible, row }, contentIndex) => {
       if (!visible) return
-      const color = content.color ?? blockColor
-      const backgroundColor = content.backgroundColor ?? block.backgroundColor
-      const fontFamily = content.fontFamily ?? blockFontFamily
-      const fontSize = content.fontSize ?? blockFontSize
-      const textWidth = getTextWidth(content, block)
       const lineHeight = lineHeights[row]
-      if (isSelected([blockIndex, contentIndex])) {
-        children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
-      }
-      const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
-      if (backgroundColor !== undefined) {
-        const textHeight = fontSize * lineHeightRatio
-        children.push(props.target.renderRect(x, y + Math.max(lineHeight - offsetY - textHeight, 0), textWidth, textHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
-      }
-      y -= offsetY
-      const bold = content.bold || block.bold
-      children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, fontSize, fontFamily, {
-        textAlign: 'center',
-        fontWeight: bold ? 'bold' : undefined,
-        fontStyle: content.italic || block.italic ? 'italic' : undefined,
-      }))
-      const decorationThickness = bold ? 2.5 : 1
-      if (content.underline || block.underline) {
-        children.push(props.target.renderPolyline([{ x, y: y + lineHeight }, { x: x + textWidth, y: y + lineHeight }], { strokeColor: color, strokeWidth: decorationThickness }))
-      }
-      if (content.passThrough || block.passThrough) {
-        const textHeight = fontSize
-        children.push(props.target.renderPolyline([{ x, y: y + lineHeight - textHeight / 2 }, { x: x + textWidth, y: y + lineHeight - textHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
+      if (isText(content)) {
+        const color = content.color ?? blockColor
+        const backgroundColor = content.backgroundColor ?? block.backgroundColor
+        const fontFamily = content.fontFamily ?? blockFontFamily
+        const fontSize = content.fontSize ?? blockFontSize
+        const textWidth = getWidth(content, block)
+        if (isSelected([blockIndex, contentIndex])) {
+          children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
+        }
+        const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
+        if (backgroundColor !== undefined) {
+          const textHeight = fontSize * lineHeightRatio
+          children.push(props.target.renderRect(x, y + Math.max(lineHeight - offsetY - textHeight, 0), textWidth, textHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
+        }
+        y -= offsetY
+        const bold = content.bold || block.bold
+        children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, fontSize, fontFamily, {
+          textAlign: 'center',
+          fontWeight: bold ? 'bold' : undefined,
+          fontStyle: content.italic || block.italic ? 'italic' : undefined,
+        }))
+        const decorationThickness = bold ? 2.5 : 1
+        if (content.underline || block.underline) {
+          children.push(props.target.renderPolyline([{ x, y: y + lineHeight }, { x: x + textWidth, y: y + lineHeight }], { strokeColor: color, strokeWidth: decorationThickness }))
+        }
+        if (content.passThrough || block.passThrough) {
+          const textHeight = fontSize
+          children.push(props.target.renderPolyline([{ x, y: y + lineHeight - textHeight / 2 }, { x: x + textWidth, y: y + lineHeight - textHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
+        }
+      } else {
+        for (const render of hooksRenders) {
+          const renderResult = render(content, props.target, x, y + lineHeight)
+          if (renderResult) {
+            children.push(renderResult)
+            break
+          }
+        }
       }
       const others = othersLocation.filter(c => c.location[0] === blockIndex && c.location[1] === contentIndex)
       if (others.length > 0) {
         children.push(
           props.target.renderRect(x, y, 2, lineHeight, { fillColor: 0xff0000, strokeWidth: 0 }),
-          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, fontFamily),
+          props.target.renderText(x, y + 12 + lineHeight, others.map(h => h.operator).join(','), 0xff0000, 12, blockFontFamily),
         )
       }
     })
@@ -241,7 +285,10 @@ export const RichTextEditor = React.forwardRef((props: {
             continue
           }
           for (let j = start; j < end; j++) {
-            recipe(block.children[j])
+            const child = block.children[j]
+            if (isText(child)) {
+              recipe(child)
+            }
           }
         }
       })
@@ -283,7 +330,7 @@ export const RichTextEditor = React.forwardRef((props: {
     })
   }
 
-  if (props.plugin?.styles) {
+  if (props.plugin?.styles && currentContent && isText(currentContent)) {
     for (const key in props.plugin.styles) {
       properties[key] = props.plugin.styles[key](currentContent, currentBlock, updateSelection)
     }
@@ -307,6 +354,7 @@ export interface RichTextEditorPlugin {
   blocks?: Partial<Record<BlockType, RichTextEditorPluginBlock>>
   styles?: Record<string, RichTextEditorPluginStyle>
   hooks?: RichTextEditorPluginHook[]
+  inlines?: RichTextEditorPluginInline[]
 }
 
 export interface RichTextEditorRef {

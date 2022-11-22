@@ -471,6 +471,13 @@ export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?:
 })[];
 
 // @public (undocumented)
+export function getImageFromCache(url: string, options?: Partial<{
+    rerender: () => void;
+    crossOrigin: "anonymous" | "use-credentials" | "";
+    callback: (imageBitmap: ImageBitmap) => void;
+}>): ImageBitmap | undefined;
+
+// @public (undocumented)
 export function getImageGraphic(url: string, x: number, y: number, width: number, height: number, rerender: () => void, options?: Partial<{
     opacity: number;
     crossOrigin: "anonymous" | "use-credentials" | "";
@@ -655,7 +662,7 @@ export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine): {
 };
 
 // @public (undocumented)
-export function getTextComposition<T>(index: number, state: readonly T[], getTextWidth: (c: T) => number, getContentText: (c: T) => string): {
+export function getTextComposition<T>(index: number, state: readonly T[], getTextWidth: (c: T) => number, getContentText: (c: T) => string | undefined): {
     width: number;
     index: number;
 };
@@ -728,7 +735,7 @@ export function getTwoPointsDistance(point1: Position, point2: Position): number
 export function getTwoPointsFormRegion(p1: Position, p2: Position): TwoPointsFormRegion;
 
 // @public (undocumented)
-export function getWordByDoubleClick<T>(state: readonly T[], location: number, getContentText: (c: T) => string): {
+export function getWordByDoubleClick<T>(state: readonly T[], location: number, getContentText: (c: T) => string | undefined): {
     newSelectionStart: number | undefined;
     newLocation: number | undefined;
 };
@@ -1517,7 +1524,7 @@ export function useEllipseEdit<T = void>(onEnd: () => void, options?: EditOption
 export function useEvent<T>(handler: (e: T) => void): (e: T) => void;
 
 // @public (undocumented)
-export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props: {
+export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowLayoutBlock<T>, P extends T = T>(props: {
     state: readonly V[];
     width: number;
     height: number;
@@ -1537,7 +1544,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T>>(props:
         index: number;
         width: number;
     };
-    endContent: T;
+    endContent: P;
     onCompositionEnd?: React_2.CompositionEventHandler<HTMLInputElement>;
     onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
     keepSelectionOnBlur?: boolean;

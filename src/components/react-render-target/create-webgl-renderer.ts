@@ -742,7 +742,7 @@ export function getImageGraphic(
     filters: Filter[]
   }>,
 ): Graphic | undefined {
-  const image = getImageFromCache(url, rerender, options?.crossOrigin)
+  const image = getImageFromCache(url, { rerender, crossOrigin: options?.crossOrigin })
   if (!image) {
     return
   }

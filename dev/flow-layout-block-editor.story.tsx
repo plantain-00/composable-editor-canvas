@@ -12,7 +12,7 @@ export default () => {
     blockEnd: 5
   })))
   const width = 400
-  const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, getCopiedContents } = useFlowLayoutBlockEditor({
+  const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, getCopiedContents } = useFlowLayoutBlockEditor<{ radius: number, color: number }>({
     state,
     setState: recipe => setState(produce(state, recipe)),
     width,
