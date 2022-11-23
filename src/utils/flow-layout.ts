@@ -136,18 +136,30 @@ export function getFlowLayoutLocation<T>(
   scrollY: number,
   getWidth: (content: T) => number,
   ignoreInvisible = true,
+  getHeight?: (content: T) => number | undefined,
 ) {
   if (y < scrollY) {
     return 0
   }
-  const getMinY = (row: number) => {
-    return y - (typeof lineHeight === 'number' ? lineHeight : lineHeight[row])
+  const getLineHeight = (row: number) => {
+    return typeof lineHeight === 'number' ? lineHeight : lineHeight[row]
   }
   let result: FlowLayoutResult<T> | undefined
   for (let i = 0; i < layoutResult.length; i++) {
     const p = layoutResult[i]
     if (ignoreInvisible && !p.visible) continue
-    if (p.y >= getMinY(p.row) && p.y <= y) {
+    const lineHeight = getLineHeight(p.row)
+    const height = getHeight?.(p.content)
+    if (
+      height !== undefined &&
+      y >= p.y + lineHeight - height &&
+      y <= p.y + lineHeight &&
+      x >= p.x &&
+      x <= p.x + getWidth(p.content)
+    ) {
+      return p.i + 1
+    }
+    if (y >= p.y && y <= p.y + lineHeight) {
       if (
         x <= p.x + getWidth(p.content) / 2 &&
         (!result || result.x + getWidth(result.content) / 2 <= x)

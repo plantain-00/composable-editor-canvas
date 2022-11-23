@@ -33,6 +33,15 @@ export const RichTextEditor = React.forwardRef((props: {
     }
     return 0
   }
+  const getHeight = (c: RichTextInline) => {
+    if (props.plugin?.inlines) {
+      for (const inline of props.plugin.inlines) {
+        const height = inline?.getHeight?.(c)
+        if (height !== undefined) return height
+      }
+    }
+    return
+  }
   const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getWidth(c, state[blockIndex]), c => isText(c) ? c.text : undefined)
 
   const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
@@ -106,16 +115,20 @@ export const RichTextEditor = React.forwardRef((props: {
     },
     keepSelectionOnBlur: true,
     isSameType: (a, b) => a.type === b?.type,
+    getHeight,
   })
   const currentLocation = range ? range.min : location
-  const getCurrentContent = (draft: readonly RichTextBlock[]): { currentBlock: RichTextBlock, currentContent?: RichTextInline } => {
-    const block = draft[currentLocation[0]]
+  const getCurrentContent = (draft: readonly RichTextBlock[]) => {
+    const blockIndex = currentLocation[0]
+    const block = draft[blockIndex]
+    const contentIndex = block ? location[1] <= 0 ? 0 : location[1] - 1 ?? block.children.length - 1 : undefined
     return {
       currentBlock: block,
-      currentContent: block ? block.children[location[1] <= 0 ? 0 : location[1] - 1] ?? block.children[block.children.length - 1] : undefined,
+      currentContent: contentIndex !== undefined ? block.children[contentIndex] : undefined,
+      currentContentLayout: blockIndex !== undefined && contentIndex !== undefined ? layoutResult[blockIndex][contentIndex] : undefined
     }
   }
-  const { currentBlock, currentContent } = getCurrentContent(state)
+  const { currentBlock, currentContent, currentContentLayout } = getCurrentContent(state)
 
   const inputText = (text: string | (string | RichTextInline)[]) => {
     if (props.readOnly) return
@@ -162,7 +175,7 @@ export const RichTextEditor = React.forwardRef((props: {
   const exportToHtmls: NonNullable<ReturnType<RichTextEditorPluginHook>['exportToHtml']>[] = []
   const hooksRenders: NonNullable<ReturnType<RichTextEditorPluginHook>['render']>[] = []
   if (props.plugin?.hooks) {
-    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText, currentContent, updateCurrentContent }
+    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText, currentContent, currentContentLayout, updateCurrentContent }
     props.plugin.hooks.forEach((useHook, i) => {
       const { processInput, ui, propertyPanel, exportToHtml, render } = useHook(hooksProps)
       if (processInput) hooksProcessInputs.push(processInput)

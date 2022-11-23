@@ -1,4 +1,4 @@
-import { FlowLayoutBlock, FlowLayoutBlockStyle, Position, ReactRenderTarget } from "../../src"
+import { FlowLayoutBlock, FlowLayoutBlockStyle, FlowLayoutResult, Position, ReactRenderTarget } from "../../src"
 
 export const lineHeightRatio = 1.2
 export const defaultFontSize = 16
@@ -40,6 +40,7 @@ export type RichTextEditorPluginBlock = Partial<RichTextStyle & FlowLayoutBlockS
 export interface RichTextEditorPluginInline {
   getLineHeight: (content: RichTextInline) => number | undefined
   getWidth: (content: RichTextInline) => number | undefined
+  getHeight?: (content: RichTextInline) => number | undefined
 }
 
 export type RichTextEditorPluginStyle = (
@@ -51,7 +52,8 @@ export type RichTextEditorPluginStyle = (
 export type RichTextEditorPluginHook = <T>(props: {
   cursor: Position
   cursorHeight: number
-  currentContent: RichTextInline | undefined,
+  currentContent: RichTextInline | undefined
+  currentContentLayout: FlowLayoutResult<RichTextInline> | undefined
   inputText: (text: (string | RichTextInline)[]) => void
   updateCurrentContent: (recipe: (richText: RichTextInline) => void) => void
 }) => {
