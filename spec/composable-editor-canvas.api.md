@@ -438,7 +438,7 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse): number;
 export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number): number;
 
 // @public (undocumented)
-export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number | number[], layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean): number | undefined;
+export function getFlowLayoutLocation<T>({ x, y }: Position, lineHeight: number | number[], layoutResult: FlowLayoutResult<T>[], scrollY: number, getWidth: (content: T) => number, ignoreInvisible?: boolean, getHeight?: (content: T) => number | undefined): number | undefined;
 
 // @public (undocumented)
 export function getGroupGraphics(children: Graphic[], matrix?: Matrix, options?: Partial<{
@@ -1549,6 +1549,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     onDoubleClick?: React_2.MouseEventHandler<HTMLDivElement>;
     keepSelectionOnBlur?: boolean;
     isSameType?: (a: V, b: V | undefined) => boolean;
+    getHeight?: (content: T) => number | undefined;
 }): {
     ref: React_2.MutableRefObject<HTMLInputElement | null>;
     range: {

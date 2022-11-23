@@ -3,6 +3,7 @@ import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
 import { equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position } from "../utils"
+import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -32,6 +33,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
   keepSelectionOnBlur?: boolean
   isSameType?: (a: V, b: V | undefined) => boolean
+  getHeight?: (content: T) => number | undefined
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
@@ -271,7 +273,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       if (layoutResult[i].length > 0 && layoutResult[i][0].y > p.y) {
         return [i, 0]
       }
-      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible)
+      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible, props.getHeight)
       if (loc !== undefined) {
         return [i, loc]
       }
@@ -442,17 +444,22 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
           style={{
             border: 0,
             outline: 'none',
-            width: '1px',
+            width: '0px',
             position: 'absolute',
-            left: cursorX + 'px',
-            top: cursorY + scrollY + 'px',
-            fontSize: lineHeights[cursorRow] / 1.2 + 'px',
-            opacity: props.readOnly ? 0 : undefined,
+            opacity: 0,
           }}
           onKeyDown={onKeyDown}
           onCompositionEnd={props.onCompositionEnd}
           onBlur={onBlur}
           onFocus={props.onFocus}
+        />
+        <Cursor
+          style={{
+            left: cursorX + 'px',
+            top: cursorY + scrollY + 'px',
+            height: lineHeights[cursorRow] + 'px',
+            opacity: props.readOnly ? 0 : undefined,
+          }}
         />
         {children}
         <div

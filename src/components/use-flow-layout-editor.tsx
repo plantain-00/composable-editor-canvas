@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
 import { equals, flowLayout, getFlowLayoutLocation, Position } from "../utils"
+import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -324,17 +325,22 @@ export function useFlowLayoutEditor<T>(props: {
           style={{
             border: 0,
             outline: 'none',
-            width: '1px',
+            width: '0px',
             position: 'absolute',
-            left: cursorX + 'px',
-            top: cursorY + scrollY + 'px',
-            fontSize: lineHeights[cursorRow] / 1.2 + 'px',
-            opacity: props.readOnly ? 0 : undefined,
+            opacity: 0,
           }}
           onKeyDown={onKeyDown}
           onCompositionEnd={props.onCompositionEnd}
           onBlur={onBlur}
           onFocus={props.onFocus}
+        />
+        <Cursor
+          style={{
+            left: cursorX + 'px',
+            top: cursorY + scrollY + 'px',
+            height: lineHeights[cursorRow] + 'px',
+            opacity: props.readOnly ? 0 : undefined,
+          }}
         />
         {children}
         <div
