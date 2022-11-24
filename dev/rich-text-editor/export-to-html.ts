@@ -34,6 +34,7 @@ export function blocksToHtml(blocks: readonly RichTextBlock[], exportToHtmls: ((
     if (b.blockStart) style += `margin-block-start: ${b.blockStart}px;`
     if (b.blockEnd) style += `margin-block-end: ${b.blockEnd}px;`
     if (b.inlineStart) style += `padding-inline-start: ${b.inlineStart}px;`
+    if (b.void) return `<${b.type} style="${style}">`
     if (b.type === 'ul' || b.type === 'ol') {
       children = `<li>${children}</li>`
       if (blocks[blockIndex - 1]?.type !== b.type) {

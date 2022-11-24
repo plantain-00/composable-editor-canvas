@@ -1,6 +1,6 @@
 import produce from "immer"
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutBlockEditor } from "../src"
+import { FlowLayoutBlock, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutBlockEditor } from "../src"
 
 export default () => {
   const [state, setState] = React.useState(() => new Array(3).fill(0).map(() => ({
@@ -12,7 +12,7 @@ export default () => {
     blockEnd: 5
   })))
   const width = 400
-  const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, getCopiedContents } = useFlowLayoutBlockEditor<{ radius: number, color: number }>({
+  const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, inputInline, getCopiedContents } = useFlowLayoutBlockEditor<{ radius: number, color: number }>({
     state,
     setState: recipe => setState(produce(state, recipe)),
     width,
@@ -27,7 +27,12 @@ export default () => {
           // eslint-disable-next-line plantain/promise-not-await
           navigator.clipboard.readText().then(v => {
             if (v) {
-              inputContent(JSON.parse(v))
+              const contents: FlowLayoutBlock<{ radius: number, color: number }>[] = JSON.parse(v)
+              if (contents.length === 1) {
+                inputInline(contents[0].children)
+              } else {
+                inputContent(contents)
+              }
             }
           })
           e.preventDefault()

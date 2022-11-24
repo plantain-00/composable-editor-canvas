@@ -335,6 +335,8 @@ export interface FlowLayoutBlockStyle {
     inlineStart: number;
     // (undocumented)
     listStyleType: 'disc' | 'decimal';
+    // (undocumented)
+    void: boolean;
 }
 
 // @public (undocumented)
@@ -1564,6 +1566,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
         row: number;
     };
     inputContent: (newContents: readonly V[]) => void;
+    inputInline: (items: readonly T[]) => void;
     location: [number, number];
     setLocation: React_2.Dispatch<React_2.SetStateAction<[number, number]>>;
     getCopiedContents: (cut?: boolean) => V[] | undefined;
@@ -1574,7 +1577,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
         x: number;
         y: number;
     };
-    positionToLocation: (p: Position, ignoreInvisible?: boolean) => [number, number];
+    positionToLocation: (p: Position, ignoreInvisible?: boolean, forward?: boolean) => [number, number];
     renderEditor: (children: JSX.Element) => JSX.Element;
 };
 

@@ -47,19 +47,6 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       const [blockIndex, contentIndex] = range.min
       const [maxBlockIndex, maxContentIndex] = range.max
       setSelectionStart(undefined)
-      if (newContents.length === 1) {
-        const items = newContents[0].children
-        setLocation([blockIndex, contentIndex + items.length])
-        props.setState(draft => {
-          const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
-          const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-          draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
-          if (maxBlockIndex > blockIndex) {
-            draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-          }
-        })
-        return
-      }
       setLocation([blockIndex + newContents.length + 1, 0])
       props.setState(draft => {
         draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
@@ -75,14 +62,6 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       })
       return
     }
-    if (newContents.length === 1) {
-      const items = newContents[0].children
-      setLocation([blockLocation, contentLocation + items.length])
-      props.setState(draft => {
-        draft[blockLocation].children.splice(contentLocation, 0, ...castDraft(items))
-      })
-      return
-    }
     setLocation([blockLocation + newContents.length + 1, 0])
     props.setState(draft => {
       draft[blockLocation].children.splice(contentLocation, props.state[blockLocation].children.length - contentLocation)
@@ -90,6 +69,28 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
         ...props.state[blockLocation],
         children: props.state[blockLocation].children.slice(contentLocation),
       }))
+    })
+  }
+  const inputInline = (items: readonly T[]) => {
+    if (props.readOnly) return
+    if (range) {
+      const [blockIndex, contentIndex] = range.min
+      const [maxBlockIndex, maxContentIndex] = range.max
+      setSelectionStart(undefined)
+      setLocation([blockIndex, contentIndex + items.length])
+      props.setState(draft => {
+        const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
+        const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
+        draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
+        if (maxBlockIndex > blockIndex) {
+          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
+        }
+      })
+      return
+    }
+    setLocation([blockLocation, contentLocation + items.length])
+    props.setState(draft => {
+      draft[blockLocation].children.splice(contentLocation, 0, ...castDraft(items))
     })
   }
   const backspace = () => {
@@ -140,7 +141,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     if (contentLocation !== 0) {
       setLocation([blockLocation, contentLocation - 1])
     } else {
-      setLocation([blockLocation - 1, props.state[blockLocation - 1].children.length])
+      setLocation(skipVoidBlock([blockLocation - 1, props.state[blockLocation - 1].children.length], true))
     }
   }
   const arrowRight = (shift = false) => {
@@ -158,7 +159,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     if (contentLocation !== props.state[blockLocation].children.length) {
       setLocation([blockLocation, contentLocation + 1])
     } else {
-      setLocation([blockLocation + 1, 0])
+      setLocation(skipVoidBlock([blockLocation + 1, 0]))
     }
   }
   const arrowUp = (shift = false) => {
@@ -177,7 +178,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     setLocation(positionToLocation({
       x: cursorX,
       y: cursorY - lineHeights[cursorRow - 1] / 2 + scrollY,
-    }, false))
+    }, false, true))
   }
   const arrowDown = (shift = false) => {
     if (!shift && range) {
@@ -268,14 +269,26 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       y: e.clientY - bounding.top,
     }
   }
-  const positionToLocation = (p: Position, ignoreInvisible = true): [number, number] => {
+  const skipVoidBlock = ([i, j]: [number, number], forward?: boolean) => {
+    while (props.state[i].void) {
+      if (forward) {
+        i--
+        j = props.state[i].children.length
+      } else {
+        i++
+        j = 0
+      }
+    }
+    return [i, j] as [number, number]
+  }
+  const positionToLocation = (p: Position, ignoreInvisible = true, forward?: boolean): [number, number] => {
     for (let i = 0; i < layoutResult.length; i++) {
       if (layoutResult[i].length > 0 && layoutResult[i][0].y > p.y) {
-        return [i, 0]
+        return skipVoidBlock([i, 0], forward)
       }
       const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible, props.getHeight)
       if (loc !== undefined) {
-        return [i, loc]
+        return skipVoidBlock([i, loc], forward)
       }
     }
     return [props.state.length - 1, props.state[props.state.length - 1].children.length]
@@ -357,7 +370,10 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       row,
     })
     layoutResult.push(r.layoutResult)
-    newContentHeight += r.newContentHeight + blockStart
+    if (!block.void) {
+      newContentHeight += r.newContentHeight
+    }
+    newContentHeight += blockStart
     lineHeights.push(...r.lineHeights)
     row += r.lineHeights.length
     blockEnd = end
@@ -418,6 +434,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       row: cursorRow,
     },
     inputContent,
+    inputInline,
     location,
     setLocation,
     getCopiedContents,
@@ -505,4 +522,5 @@ export interface FlowLayoutBlockStyle {
   blockEnd: number
   inlineStart: number
   listStyleType: 'disc' | 'decimal'
+  void: boolean
 }
