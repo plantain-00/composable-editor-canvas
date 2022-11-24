@@ -44,7 +44,7 @@ export const RichTextEditor = React.forwardRef((props: {
   }
   const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getWidth(c, state[blockIndex]), c => isText(c) ? c.text : undefined)
 
-  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
+  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, inputInline, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
     state,
     setState,
     width: props.width,
@@ -141,21 +141,21 @@ export const RichTextEditor = React.forwardRef((props: {
         result.push({ ...currentContent, ...t })
       }
     }
-    inputContent([{ children: result, type: 'p', blockStart: 0, blockEnd: 0 }])
+    inputInline(result)
   }
   const paste = () => {
     if (props.readOnly) return
     navigator.clipboard.readText().then(v => {
       if (v) {
         try {
-          inputContent(JSON.parse(v))
+          const contents: readonly RichTextBlock[] = JSON.parse(v)
+          if (contents.length === 1) {
+            inputInline(contents[0].children)
+          } else {
+            inputContent(contents)
+          }
         } catch {
-          inputContent([{
-            children: v.split('').map(s => ({ text: s, kind: undefined })),
-            blockStart: 0,
-            blockEnd: 0,
-            type: 'p',
-          }])
+          inputInline(v.split('').map(s => ({ text: s, kind: undefined })))
         }
       }
     })
@@ -175,7 +175,7 @@ export const RichTextEditor = React.forwardRef((props: {
   const exportToHtmls: NonNullable<ReturnType<RichTextEditorPluginHook>['exportToHtml']>[] = []
   const hooksRenders: NonNullable<ReturnType<RichTextEditorPluginHook>['render']>[] = []
   if (props.plugin?.hooks) {
-    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText, currentContent, currentContentLayout, updateCurrentContent }
+    const hooksProps = { cursor, cursorHeight: lineHeights[cursor.row], inputText, inputContent, currentContent, currentContentLayout, updateCurrentContent }
     props.plugin.hooks.forEach((useHook, i) => {
       const { processInput, ui, propertyPanel, exportToHtml, render } = useHook(hooksProps)
       if (processInput) hooksProcessInputs.push(processInput)
@@ -217,14 +217,23 @@ export const RichTextEditor = React.forwardRef((props: {
   }, [state])
 
   const children: unknown[] = []
-  let decimalindex = 0
+  let decimalIndex = 0
   layoutResult.forEach((r, blockIndex) => {
     const block = state[blockIndex]
     const first = r[0]
     const blockFontSize = block.fontSize ?? defaultFontSize
     const blockColor = block.color ?? 0x000000
     const blockFontFamily = block.fontFamily ?? defaultFontFamily
-    decimalindex = block.listStyleType === 'decimal' ? decimalindex + 1 : 0
+    if (props.plugin?.blocks) {
+      for (const { render } of Object.values(props.plugin.blocks)) {
+        const renderResult = render?.(block, props.target, first.x, first.y, props.width)
+        if (renderResult) {
+          children.push(renderResult)
+          break
+        }
+      }
+    }
+    decimalIndex = block.listStyleType === 'decimal' ? decimalIndex + 1 : 0
     if (block.listStyleType === 'disc') {
       const lineHeight = lineHeights[first.row]
       const radius = blockFontSize / 7
@@ -232,7 +241,7 @@ export const RichTextEditor = React.forwardRef((props: {
     } else if (block.listStyleType === 'decimal') {
       const lineHeight = lineHeights[first.row]
       const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
-      children.push(props.target.renderText(first.x - blockFontSize + blockFontSize / 3, first.y - offsetY + lineHeight / lineHeightRatio, decimalindex + '.', blockColor, blockFontSize, blockFontFamily, { textAlign: 'right', }))
+      children.push(props.target.renderText(first.x - blockFontSize + blockFontSize / 3, first.y - offsetY + lineHeight / lineHeightRatio, decimalIndex + '.', blockColor, blockFontSize, blockFontFamily, { textAlign: 'right', }))
     }
     r.forEach(({ x, y, content, visible, row }, contentIndex) => {
       if (!visible) return
@@ -308,11 +317,15 @@ export const RichTextEditor = React.forwardRef((props: {
     }
   }
   const updateParagraph = (type: BlockType) => {
+    if (!props.plugin?.blocks) return
+    const block = props.plugin.blocks[type]
+    if (!block) return
+    if (block.void) {
+      inputContent([{ ...block, type, children: [] }])
+      return
+    }
     const updateBlock = (b: RichTextBlock) => {
-      if (!props.plugin?.blocks) return
       b.type = type
-      const block = props.plugin.blocks[type]
-      if (!block) return
       const fontSize = defaultFontSize * (block.fontSize ?? 1)
       b.blockStart = fontSize * (block.blockStart ?? 0)
       b.blockEnd = fontSize * (block.blockEnd ?? 0)

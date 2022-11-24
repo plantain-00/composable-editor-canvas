@@ -60,3 +60,15 @@ export const ol: RichTextEditorPluginBlock = {
   inlineStart: 40,
   listStyleType: 'decimal',
 }
+
+export const hr: RichTextEditorPluginBlock = {
+  blockStart: 0.5,
+  blockEnd: 0.5,
+  void: true,
+  render(content, target, x, y, width) {
+    if (content.type === 'hr') {
+      return target.renderPolyline([{ x, y }, { x: x + width, y }], { strokeColor: content.color })
+    }
+    return
+  }
+}

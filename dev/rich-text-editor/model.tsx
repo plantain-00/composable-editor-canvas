@@ -35,7 +35,9 @@ export function isText(content: RichTextInline): content is RichText {
   return content.kind === undefined
 }
 
-export type RichTextEditorPluginBlock = Partial<RichTextStyle & FlowLayoutBlockStyle>
+export type RichTextEditorPluginBlock = Partial<RichTextStyle & FlowLayoutBlockStyle> & {
+  render?: <T>(content: RichTextBlock, target: ReactRenderTarget<T>, x: number, y: number, width: number) => (T | undefined)
+}
 
 export interface RichTextEditorPluginInline {
   getLineHeight: (content: RichTextInline) => number | undefined
@@ -55,6 +57,7 @@ export type RichTextEditorPluginHook = <T>(props: {
   currentContent: RichTextInline | undefined
   currentContentLayout: FlowLayoutResult<RichTextInline> | undefined
   inputText: (text: (string | RichTextInline)[]) => void
+  inputContent: (contents: readonly RichTextBlock[]) => void
   updateCurrentContent: (recipe: (richText: RichTextInline) => void) => void
 }) => {
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
