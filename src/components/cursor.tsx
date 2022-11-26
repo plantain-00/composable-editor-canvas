@@ -11,7 +11,7 @@ export function Cursor(props: {
             50%, 99.9% { opacity: 1; }
         }`}
       </style>
-      <div style={{
+      <span style={{
         display: 'inline-block',
         position: 'absolute',
         width: '1px',
@@ -19,7 +19,7 @@ export function Cursor(props: {
         borderLeft: '1px solid black',
         userSelect: 'none',
         ...props.style,
-      }}></div>
+      }}></span>
     </>
   )
 }

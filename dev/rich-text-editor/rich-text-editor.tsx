@@ -18,10 +18,12 @@ export const RichTextEditor = React.forwardRef((props: {
   readOnly: boolean
   operator: string
   plugin?: RichTextEditorPlugin
+  useHtml?: boolean
 }, ref: React.ForwardedRef<RichTextEditorRef>) => {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
+  const [html, setHtml] = React.useState('')
 
   const getWidth = (c: RichTextInline, b: RichTextBlock) => {
     if (isText(c)) return getTextSizeFromCache(`${c.fontSize ?? b.fontSize ?? defaultFontSize}px ${c.fontFamily ?? b.fontFamily ?? defaultFontFamily}`, c.text)?.width ?? 0
@@ -44,13 +46,19 @@ export const RichTextEditor = React.forwardRef((props: {
   }
   const getComposition = (blockIndex: number, index: number) => getTextComposition(index, state[blockIndex].children, c => getWidth(c, state[blockIndex]), c => isText(c) ? c.text : undefined)
 
-  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, inputInline, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
+  const { renderEditor, layoutResult, cursor, isSelected, actualHeight, lineHeights, inputContent, inputInline, getCopiedContents, ref: editorRef, positionToLocation, getPosition, setSelectionStart, setLocation, range, location, scrollY } = useFlowLayoutBlockEditor<RichTextInline, RichTextBlock, RichText>({
     state,
     setState,
     width: props.width,
     height: props.height,
     lineHeight: (c, b) => {
-      if (isText(c)) return (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio
+      if (isText(c)) {
+        let lineHeight = (c.fontSize ?? b.fontSize ?? defaultFontSize) * lineHeightRatio
+        if (c.verticalAlign) {
+          lineHeight += Math.abs(c.verticalAlign) * lineHeight * 2
+        }
+        return lineHeight
+      }
       if (props.plugin?.inlines) {
         for (const inline of props.plugin.inlines) {
           const lineHeight = inline.getLineHeight(c)
@@ -198,17 +206,16 @@ export const RichTextEditor = React.forwardRef((props: {
         console.error(error)
       }
     },
-    handleLocationEvent(data: { location: [number, number], operator: string }) {
+    handleLocationEvent(data: { location?: [number, number], operator: string }) {
       setOthersLocation(produce(othersLocation, (draft) => {
         const index = othersLocation.findIndex((s) => s.operator === data.operator)
         if (index >= 0) {
-          const block = state[data.location[0]]
-          if (block && block.children[data.location[1]]) {
+          if (data.location && state[data.location[0]]?.children?.[data.location[1]]) {
             draft[index].location = data.location
           } else {
             draft.splice(index, 1)
           }
-        } else {
+        } else if (data.location) {
           draft.push({ location: data.location, operator: data.operator })
         }
       }))
@@ -216,7 +223,9 @@ export const RichTextEditor = React.forwardRef((props: {
   }), [applyPatchFromOtherOperators])
 
   React.useEffect(() => {
-    props.onExport?.(blocksToHtml(state, exportToHtmls))
+    const h = blocksToHtml(state, exportToHtmls)
+    setHtml(h)
+    props.onExport?.(h)
   }, [state])
 
   const children: unknown[] = []
@@ -227,7 +236,7 @@ export const RichTextEditor = React.forwardRef((props: {
     const blockFontSize = block.fontSize ?? defaultFontSize
     const blockColor = block.color ?? 0x000000
     const blockFontFamily = block.fontFamily ?? defaultFontFamily
-    if (props.plugin?.blocks) {
+    if (props.plugin?.blocks && !props.useHtml) {
       for (const { render } of Object.values(props.plugin.blocks)) {
         const renderResult = render?.(block, props.target, first.x, first.y, props.width)
         if (renderResult) {
@@ -237,11 +246,11 @@ export const RichTextEditor = React.forwardRef((props: {
       }
     }
     decimalIndex = block.listStyleType === 'decimal' ? decimalIndex + 1 : 0
-    if (block.listStyleType === 'disc') {
+    if (!props.useHtml && block.listStyleType === 'disc') {
       const lineHeight = lineHeights[first.row]
       const radius = blockFontSize / 7
       children.push(props.target.renderCircle(first.x - blockFontSize + radius, first.y + lineHeight / 2, radius, { fillColor: blockColor, strokeWidth: 0 }))
-    } else if (block.listStyleType === 'decimal') {
+    } else if (!props.useHtml && block.listStyleType === 'decimal') {
       const lineHeight = lineHeights[first.row]
       const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
       children.push(props.target.renderText(first.x - blockFontSize + blockFontSize / 3, first.y - offsetY + lineHeight / lineHeightRatio, decimalIndex + '.', blockColor, blockFontSize, blockFontFamily, { textAlign: 'right', }))
@@ -258,12 +267,16 @@ export const RichTextEditor = React.forwardRef((props: {
         if (isSelected([blockIndex, contentIndex])) {
           children.push(props.target.renderRect(x, y, textWidth, lineHeight, { fillColor: 0xB3D6FD, strokeWidth: 0 }))
         }
+        if (props.useHtml) return
         const offsetY = (lineHeightRatio - 1) / 2 / lineHeightRatio * lineHeight * 2
         if (backgroundColor !== undefined) {
           const textHeight = fontSize * lineHeightRatio
           children.push(props.target.renderRect(x, y + Math.max(lineHeight - offsetY - textHeight, 0), textWidth, textHeight, { fillColor: backgroundColor, strokeWidth: 0 }))
         }
         y -= offsetY
+        if (content.verticalAlign) {
+          y -= content.verticalAlign * lineHeight
+        }
         const bold = content.bold || block.bold
         children.push(props.target.renderText(x + textWidth / 2, y + lineHeight / lineHeightRatio, content.text, color, fontSize, fontFamily, {
           textAlign: 'center',
@@ -278,7 +291,7 @@ export const RichTextEditor = React.forwardRef((props: {
           const textHeight = fontSize
           children.push(props.target.renderPolyline([{ x, y: y + lineHeight - textHeight / 2 }, { x: x + textWidth, y: y + lineHeight - textHeight / 2 }], { strokeColor: color, strokeWidth: decorationThickness }))
         }
-      } else {
+      } else if (!props.useHtml) {
         for (const render of hooksRenders) {
           const renderResult = render(content, props.target, x, y + lineHeight)
           if (renderResult) {
@@ -296,7 +309,7 @@ export const RichTextEditor = React.forwardRef((props: {
       }
     })
   })
-  const result = props.target.renderResult(children, props.width, actualHeight)
+  let result = props.target.renderResult(children, props.width, actualHeight)
 
   const updateSelection = (recipe: (richText: Partial<RichTextStyle>) => void) => {
     if (range) {
@@ -388,6 +401,25 @@ export const RichTextEditor = React.forwardRef((props: {
     properties.block = <div>{getKeys(props.plugin.blocks).map(t => <Button key={t} style={{ fontWeight: state[location[0]]?.type === t ? 'bold' : undefined }} onClick={() => updateParagraph(t)}>{t}</Button>)}</div>
   }
 
+  if (props.useHtml) {
+    result = (
+      <>
+        {result}
+        <div
+          dangerouslySetInnerHTML={{ __html: html }}
+          style={{
+            width: props.width + 'px',
+            height: props.height + 'px',
+            fontFamily: defaultFontFamily,
+            fontSize: defaultFontSize + 'px',
+            position: 'absolute',
+            top: `${scrollY}px`,
+          }}
+        ></div>
+      </>
+    )
+  }
+
   return (
     <div style={{ position: 'relative', margin: '10px' }}>
       <div style={{ display: 'flex' }}>
@@ -407,6 +439,7 @@ function updateRichTextStyle(target: Partial<RichTextStyle>, source: Partial<Ric
   target.passThrough = source.passThrough
   target.color = source.color
   target.backgroundColor = source.backgroundColor
+  target.verticalAlign = source.verticalAlign
 }
 
 export interface RichTextEditorPlugin {
@@ -419,5 +452,5 @@ export interface RichTextEditorPlugin {
 
 export interface RichTextEditorRef {
   handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }): void
-  handleLocationEvent(data: { location: [number, number], operator: string }): void
+  handleLocationEvent(data: { location?: [number, number], operator: string }): void
 }

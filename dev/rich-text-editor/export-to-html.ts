@@ -49,6 +49,7 @@ export function blocksToHtml(blocks: readonly RichTextBlock[], exportToHtmls: ((
       }
       return children
     }
+    children = children || '<br>'
     return `<${b.type} style="${style}">${children}</${b.type}>`
   }).join('')
 }

@@ -1578,6 +1578,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
         y: number;
     };
     positionToLocation: (p: Position, ignoreInvisible?: boolean, forward?: boolean) => [number, number];
+    scrollY: number;
     renderEditor: (children: JSX.Element) => JSX.Element;
 };
 
