@@ -1,6 +1,6 @@
 import { FlowLayoutBlock, FlowLayoutBlockStyle, FlowLayoutResult, Position, ReactRenderTarget } from "../../src"
 
-export const lineHeightRatio = 1.2
+export const lineHeightRatio = 1.14
 export const defaultFontSize = 16
 export const defaultFontFamily = 'monospace'
 
@@ -19,6 +19,7 @@ export interface RichTextStyle {
   passThrough: boolean
   color: number
   backgroundColor: number
+  verticalAlign: number
 }
 
 export type BlockType = keyof JSX.IntrinsicElements

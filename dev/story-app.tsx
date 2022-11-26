@@ -14,8 +14,8 @@ import { Combination3 } from './combination-3'
 const combinations = [
   { path: 'whiteboard', name: 'whiteboard', component: WhiteBoard },
   { path: 'index', name: 'combination 1', component: App },
-  { path: 'whiteboard2', name: 'combination 2', component: Combination2 },
-  { path: 'whiteboard3', name: 'combination 3', component: Combination3 },
+  { path: 'combination2', name: 'combination 2', component: Combination2 },
+  { path: 'combination3', name: 'combination 3', component: Combination3 },
 ]
 
 function StoryApp() {

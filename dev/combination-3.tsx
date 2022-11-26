@@ -10,7 +10,7 @@ import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough
 import { useAt } from "./rich-text-editor/plugins/at"
 import { useLink } from "./rich-text-editor/plugins/link"
 import { image, useImage } from "./rich-text-editor/plugins/image"
-import { code, mark, span } from "./rich-text-editor/plugins/inline"
+import { code, mark, span, sub, sup } from "./rich-text-editor/plugins/inline"
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
@@ -22,6 +22,7 @@ export function Combination3() {
   const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
   const [autoHeight, setAutoHeight] = React.useState(false)
   const [readOnly, setReadOnly] = React.useState(false)
+  const [useHtml, setUseHtml] = React.useState(false)
   const [html, setHtml] = React.useState('')
   const plugin = React.useRef<RichTextEditorPlugin>({
     blocks: { h1, h2, h3, h4, h5, h6, p, ul, ol, hr },
@@ -37,7 +38,7 @@ export function Combination3() {
     },
     hooks: [useAt, useLink, useImage],
     inlines: [image],
-    textInlines: { span, code, mark },
+    textInlines: { span, code, mark, sub, sup },
   })
 
   React.useEffect(() => {
@@ -74,7 +75,7 @@ export function Combination3() {
       ws.current.send(JSON.stringify({ method: 'patch', operations, reversePatches, operator: me }))
     }
   }
-  const onSendLocation = (location: [number, number]) => {
+  const onSendLocation = (location?: [number, number]) => {
     if (ws.current && ws.current.readyState === ws.current.OPEN) {
       ws.current.send(JSON.stringify({ method: 'location', location, operator: me }))
     }
@@ -121,6 +122,10 @@ export function Combination3() {
           <input type='checkbox' checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} />
           readOnly
         </label>
+        <label>
+          <input type='checkbox' checked={useHtml} onChange={(e) => setUseHtml(e.target.checked)} />
+          useHtml
+        </label>
       </div>
       <RichTextEditor
         ref={editorRef}
@@ -133,6 +138,7 @@ export function Combination3() {
         target={target}
         autoHeight={autoHeight}
         readOnly={readOnly}
+        useHtml={useHtml}
         operator={me}
         plugin={plugin.current}
       />

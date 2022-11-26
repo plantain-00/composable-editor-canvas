@@ -443,6 +443,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     setSelectionStart,
     getPosition,
     positionToLocation,
+    scrollY,
     renderEditor: (children: JSX.Element) => {
       return <div
         style={{
