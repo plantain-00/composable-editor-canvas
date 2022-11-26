@@ -39,6 +39,8 @@ export type RichTextEditorPluginBlock = Partial<RichTextStyle & FlowLayoutBlockS
   render?: <T>(content: RichTextBlock, target: ReactRenderTarget<T>, x: number, y: number, width: number) => (T | undefined)
 }
 
+export type RichTextEditorPluginTextInline = Partial<RichTextStyle>
+
 export interface RichTextEditorPluginInline {
   getLineHeight: (content: RichTextInline) => number | undefined
   getWidth: (content: RichTextInline) => number | undefined

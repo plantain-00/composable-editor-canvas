@@ -3,7 +3,7 @@ import { BooleanEditor, NumberEditor, StringEditor } from "react-composable-json
 import { defaultFontFamily, defaultFontSize, RichTextEditorPluginStyle } from "../model"
 
 export const fontSize: RichTextEditorPluginStyle = (currentContent, currentBlock, updateSelection) => {
-  return <NumberEditor value={currentContent?.fontSize ?? currentBlock?.fontSize ?? defaultFontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '50px' }} />
+  return <NumberEditor value={currentContent?.fontSize ?? currentBlock?.fontSize ?? defaultFontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '100px' }} />
 }
 
 export const fontFamily: RichTextEditorPluginStyle = (currentContent, currentBlock, updateSelection) => {

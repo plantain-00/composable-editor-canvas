@@ -5,7 +5,10 @@ export function blocksToHtml(blocks: readonly RichTextBlock[], exportToHtmls: ((
   return blocks.map((b, blockIndex) => {
     let children = ''
     const merger = new Merger<RichText, string>(
-      last => children += `<span style="${richTextStyleToHtmlStyle(last.type)}">${last.target.join('')}</span>`,
+      last => {
+        const tag = last.type.type ?? 'span'
+        return children += `<${tag} style="${richTextStyleToHtmlStyle(last.type)}">${new Option(last.target.join('')).innerHTML}</${tag}>`
+      },
       (a, b) => a.backgroundColor === b.backgroundColor &&
         a.bold === b.bold &&
         a.color === b.color &&
@@ -13,7 +16,8 @@ export function blocksToHtml(blocks: readonly RichTextBlock[], exportToHtmls: ((
         a.fontSize === b.fontSize &&
         a.italic === b.italic &&
         a.passThrough === b.passThrough &&
-        a.underline === b.underline,
+        a.underline === b.underline &&
+        a.type === b.type,
       a => a.text,
     )
     b.children.forEach(c => {

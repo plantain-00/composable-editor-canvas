@@ -47,7 +47,7 @@ export const useLink: RichTextEditorPluginHook = ({ inputText, currentContent, u
     exportToHtml(richText) {
       if (isLink(richText)) {
         const target = richText.targetBlank ? ' target="_blank"' : ''
-        return `<a style="${richTextStyleToHtmlStyle(richText)}"${target} href="${richText.url}">${richText.text}</a>`
+        return `<a style="${richTextStyleToHtmlStyle(richText)}"${target} href="${richText.url}">${new Option(richText.text).innerHTML}</a>`
       }
       return
     },
