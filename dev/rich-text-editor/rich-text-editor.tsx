@@ -3,7 +3,7 @@ import { metaKeyIfMacElseCtrlKey, ReactRenderTarget, usePatchBasedUndoRedo, useF
 import { ObjectEditor, Button } from "react-composable-json-editor"
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
-import { BlockType, defaultFontFamily, defaultFontSize, isText, lineHeightRatio, RichText, RichTextBlock, RichTextEditorPluginBlock, RichTextEditorPluginHook, RichTextEditorPluginInline, RichTextEditorPluginStyle, RichTextInline, RichTextStyle } from "./model"
+import { BlockType, defaultFontFamily, defaultFontSize, isText, lineHeightRatio, RichText, RichTextBlock, RichTextEditorPluginBlock, RichTextEditorPluginHook, RichTextEditorPluginInline, RichTextEditorPluginStyle, RichTextEditorPluginTextInline, RichTextInline, RichTextStyle } from "./model"
 import { blocksToHtml } from "./export-to-html"
 
 export const RichTextEditor = React.forwardRef((props: {
@@ -83,7 +83,10 @@ export const RichTextEditor = React.forwardRef((props: {
           const contents = getCopiedContents(e.key === 'x')
           if (contents) {
             // eslint-disable-next-line plantain/promise-not-await
-            navigator.clipboard.writeText(JSON.stringify(contents))
+            navigator.clipboard.write([new ClipboardItem({
+              'text/plain': new Blob([JSON.stringify(contents)], { type: 'text/plain' }),
+              'text/html': new Blob([blocksToHtml(state, exportToHtmls)], { type: 'text/html' }),
+            })])
           }
           return true
         }
@@ -316,6 +319,29 @@ export const RichTextEditor = React.forwardRef((props: {
       })
     }
   }
+  const updateTextInline = (type: BlockType) => {
+    if (!props.plugin?.textInlines) return
+    const textInline = props.plugin.textInlines[type]
+    if (!textInline) return
+    if (range) {
+      setState(draft => {
+        for (let i = range.min[0]; i <= range.max[0]; i++) {
+          const block = draft[i]
+          const start = i === range.min[0] ? range.min[1] : 0
+          const end = i === range.max[0] ? range.max[1] : block.children.length
+          const fontSize = textInline.fontSize ? textInline.fontSize * (block.fontSize ?? defaultFontSize) : undefined
+          for (let j = start; j < end; j++) {
+            const child = block.children[j]
+            if (isText(child)) {
+              child.type = type
+              updateRichTextStyle(child, textInline)
+              child.fontSize = fontSize
+            }
+          }
+        }
+      })
+    }
+  }
   const updateParagraph = (type: BlockType) => {
     if (!props.plugin?.blocks) return
     const block = props.plugin.blocks[type]
@@ -331,14 +357,8 @@ export const RichTextEditor = React.forwardRef((props: {
       b.blockEnd = fontSize * (block.blockEnd ?? 0)
       b.inlineStart = block.inlineStart
       b.listStyleType = block.listStyleType
-      b.bold = block.bold
-      b.italic = block.italic
-      b.fontSize = fontSize
-      b.fontFamily = block.fontFamily
-      b.underline = block.underline
-      b.passThrough = block.passThrough
-      b.color = block.color
-      b.backgroundColor = block.backgroundColor
+      updateRichTextStyle(b, block)
+      b.fontSize = block.fontSize ? fontSize : undefined
     }
     if (!range) {
       setState(draft => {
@@ -361,6 +381,9 @@ export const RichTextEditor = React.forwardRef((props: {
       properties[key] = props.plugin.styles[key](currentContent, currentBlock, updateSelection)
     }
   }
+  if (props.plugin?.textInlines) {
+    properties.textInlines = <div>{getKeys(props.plugin.textInlines).map(t => <Button key={t} style={{ fontWeight: currentContent && isText(currentContent) && currentContent.type === t ? 'bold' : undefined }} onClick={() => updateTextInline(t)}>{t}</Button>)}</div>
+  }
   if (props.plugin?.blocks) {
     properties.block = <div>{getKeys(props.plugin.blocks).map(t => <Button key={t} style={{ fontWeight: state[location[0]]?.type === t ? 'bold' : undefined }} onClick={() => updateParagraph(t)}>{t}</Button>)}</div>
   }
@@ -376,11 +399,22 @@ export const RichTextEditor = React.forwardRef((props: {
   )
 })
 
+function updateRichTextStyle(target: Partial<RichTextStyle>, source: Partial<RichTextStyle>) {
+  target.bold = source.bold
+  target.italic = source.italic
+  target.fontFamily = source.fontFamily
+  target.underline = source.underline
+  target.passThrough = source.passThrough
+  target.color = source.color
+  target.backgroundColor = source.backgroundColor
+}
+
 export interface RichTextEditorPlugin {
   blocks?: Partial<Record<BlockType, RichTextEditorPluginBlock>>
   styles?: Record<string, RichTextEditorPluginStyle>
   hooks?: RichTextEditorPluginHook[]
   inlines?: RichTextEditorPluginInline[]
+  textInlines?: Partial<Record<BlockType, RichTextEditorPluginTextInline>>
 }
 
 export interface RichTextEditorRef {

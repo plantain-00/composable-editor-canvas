@@ -10,7 +10,7 @@ import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough
 import { useAt } from "./rich-text-editor/plugins/at"
 import { useLink } from "./rich-text-editor/plugins/link"
 import { image, useImage } from "./rich-text-editor/plugins/image"
-import { useCode } from "./rich-text-editor/plugins/code"
+import { code, mark, span } from "./rich-text-editor/plugins/inline"
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
@@ -35,8 +35,9 @@ export function Combination3() {
       color,
       'background color': backgroundColor,
     },
-    hooks: [useAt, useLink, useImage, useCode],
+    hooks: [useAt, useLink, useImage],
     inlines: [image],
+    textInlines: { span, code, mark },
   })
 
   React.useEffect(() => {
