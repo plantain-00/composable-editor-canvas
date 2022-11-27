@@ -763,6 +763,13 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 };
 
 // @public (undocumented)
+export function HtmlEditor(props: {
+    initialState: readonly HtmlElementNode[];
+    width: number;
+    height: number;
+}): JSX.Element;
+
+// @public (undocumented)
 type Image_2 = Region & {
     url: string;
 };
@@ -2051,6 +2058,7 @@ export function zoomToFit(bounding: TwoPointsFormRegion | undefined, { width, he
 
 // Warnings were encountered during analysis:
 //
+// dist/nodejs/components/html-editor.d.ts:6:5 - (ae-forgotten-export) The symbol "HtmlElementNode" needs to be exported by the entry point index.d.ts
 // dist/nodejs/components/react-render-target/create-webgl-renderer.d.ts:79:5 - (ae-forgotten-export) The symbol "FilterGraphic" needs to be exported by the entry point index.d.ts
 // dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:12:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 

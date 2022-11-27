@@ -457,26 +457,17 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
         onMouseLeave={onMouseUp}
         ref={scrollRef}
       >
-        <input
+        <Cursor
           ref={ref}
-          style={{
-            border: 0,
-            outline: 'none',
-            width: '0px',
-            position: 'absolute',
-            opacity: 0,
-          }}
           onKeyDown={onKeyDown}
           onCompositionEnd={props.onCompositionEnd}
           onBlur={onBlur}
           onFocus={props.onFocus}
-        />
-        <Cursor
+          readOnly={props.readOnly}
           style={{
             left: cursorX + 'px',
             top: cursorY + scrollY + 'px',
             height: lineHeights[cursorRow] + 'px',
-            opacity: props.readOnly ? 0 : undefined,
           }}
         />
         {children}
