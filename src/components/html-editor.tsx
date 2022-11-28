@@ -1,6 +1,8 @@
 import { castDraft } from "immer"
 import React from "react"
 import { Cursor } from "./cursor"
+import { useEvent } from "./use-event"
+import { useGlobalMouseUp } from "./use-global-mouseup"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { usePatchBasedUndoRedo } from "./use-patch-based-undo-redo"
 import { isSamePath } from "./use-selected"
@@ -23,12 +25,15 @@ export function HtmlEditor(props: {
   })
   const [parentPath, setParentPath] = React.useState<number[]>([0])
   const [contentPath, setContentPath] = React.useState<number>(0)
+  const [selectionStart, setSelectionStart] = React.useState<number[]>()
   const cursorRef = React.useRef<HTMLInputElement | null>(null)
   const rootRef = React.useRef<HTMLInputElement | null>(null)
   const cursortRef = React.useRef<HTMLElement | null>(null)
   const cursorRight = React.useRef(false)
   const cursorRect = React.useRef<DOMRect>()
   const [cursorStyle, setCursorStyle] = React.useState<React.CSSProperties>()
+  const fullPath = [...parentPath, contentPath]
+  const endPath = getEndPath(state)
 
   const inputText = (text: string) => {
     const items: HtmlElementNode[] = [{ tag: 'span', children: text }]
@@ -51,12 +56,30 @@ export function HtmlEditor(props: {
       })
     }
   }
-  const arrowLeft = () => {
+  const arrowLeft = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setParentPath(range.min.parent)
+      setContentPath(range.min.content)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(fullPath)
+    }
     if (contentPath !== 0) {
       setContentPath(contentPath - 1)
     }
   }
-  const arrowRight = () => {
+  const arrowRight = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setParentPath(range.max.parent)
+      setContentPath(range.max.content)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(fullPath)
+    }
     const parent = getParentByPath(state, parentPath)
     if (parent && contentPath !== parent.length) {
       setContentPath(contentPath + 1)
@@ -73,7 +96,16 @@ export function HtmlEditor(props: {
       contentPath: +dataset.contentPath,
     }
   }
-  const arrowUp = () => {
+  const arrowUp = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setParentPath(range.min.parent)
+      setContentPath(range.min.content)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(fullPath)
+    }
     if (!cursorRect.current) return
     const rect = cursorRect.current
     const p = getPathByPoint(rect.x + rect.width / 2 + (cursorRight.current ? rect.width : 0), rect.y - rect.height * 0.5)
@@ -81,7 +113,16 @@ export function HtmlEditor(props: {
     setParentPath(p.parentPath)
     setContentPath(p.contentPath)
   }
-  const arrowDown = () => {
+  const arrowDown = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setParentPath(range.max.parent)
+      setContentPath(range.max.content)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(fullPath)
+    }
     if (!cursorRect.current) return
     const rect = cursorRect.current
     const p = getPathByPoint(rect.x + rect.width / 2 + (cursorRight.current ? rect.width : 0), rect.y + rect.height * 1.5)
@@ -114,10 +155,10 @@ export function HtmlEditor(props: {
       return
     }
     if (e.key === 'Backspace') return backspace()
-    if (e.key === 'ArrowLeft') return arrowLeft()
-    if (e.key === 'ArrowRight') return arrowRight()
-    if (e.key === 'ArrowUp') return arrowUp()
-    if (e.key === 'ArrowDown') return arrowDown()
+    if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
+    if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
+    if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)
+    if (e.key === 'ArrowDown') return arrowDown(e.shiftKey)
     if (e.key === 'Enter') return enter()
     if (metaKeyIfMacElseCtrlKey(e)) {
       if (e.key === 'z') {
@@ -137,9 +178,43 @@ export function HtmlEditor(props: {
       cursorRef.current.value = ''
     }
   }
-  const onMouseUp = () => {
+  const downLocation = React.useRef<number[]>()
+  const onMouseUp = (e: React.MouseEvent, pp: number[], cp: number) => {
+    onMouseMove(e, pp, cp)
     cursorRef.current?.focus()
+    downLocation.current = undefined
   }
+  const onMouseMove = (e: React.MouseEvent, pp: number[], cp: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (downLocation.current === undefined) {
+      return
+    }
+    setParentPath(pp)
+    setContentPath(cp)
+    if (isSamePath([...pp, cp], downLocation.current)) {
+      setSelectionStart(undefined)
+    } else {
+      setSelectionStart(downLocation.current)
+    }
+  }
+  const onMouseDown = (e: React.MouseEvent, pp: number[], cp: number) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (e.shiftKey) {
+      if (selectionStart === undefined) {
+        setSelectionStart(fullPath)
+      }
+      setParentPath(pp)
+      setContentPath(cp)
+    } else {
+      downLocation.current = [...pp, cp]
+    }
+  }
+  useGlobalMouseUp(useEvent(() => {
+    downLocation.current = undefined
+  }))
+
   React.useLayoutEffect(() => {
     if (!cursortRef.current) return
     if (!rootRef.current) return
@@ -152,6 +227,14 @@ export function HtmlEditor(props: {
       height: rect.height + 'px',
     })
   }, [state, parentPath, contentPath, cursortRef.current, rootRef.current, cursorRight.current])
+
+  let range: { min: { parent: number[], content: number, full: number[] }, max: { parent: number[], content: number, full: number[] } } | undefined
+  if (selectionStart !== undefined) {
+    const selection = { full: selectionStart, parent: selectionStart.slice(0, selectionStart.length - 1), content: selectionStart[selectionStart.length - 1] }
+    const cursor = { full: fullPath, parent: parentPath, content: contentPath }
+    range = comparePath(selectionStart, fullPath) > 0 ? { min: cursor, max: selection } : { min: selection, max: cursor }
+  }
+  const isSelected = (loc: number[]) => range && comparePath(loc, range.min.full) >= 0 && comparePath(loc, range.max.full) < 0
 
   const render = (element: HtmlElementNode, index: number, path: number[]): JSX.Element => {
     let ref: React.MutableRefObject<HTMLElement | null> | undefined
@@ -170,15 +253,14 @@ export function HtmlEditor(props: {
         {
           key: index,
           ref,
+          style: {
+            backgroundColor: isSelected([...path, index]) ? '#B3D6FD' : undefined,
+          },
           'data-parent-path': path.join(),
           'data-content-path': index,
-          onClick: (e: React.MouseEvent) => {
-            // type-coverage:ignore-next-line
-            const rect = (e.target as HTMLElement).getBoundingClientRect()
-            setParentPath(path)
-            setContentPath(e.clientX - rect.left < rect.width / 2 ? index : index + 1)
-            e.stopPropagation()
-          },
+          onMouseDown: (e: React.MouseEvent) => onMouseDown(e, path, getTargetContentPath(e, index)),
+          onMouseMove: (e: React.MouseEvent) => onMouseMove(e, path, getTargetContentPath(e, index)),
+          onMouseUp: (e: React.MouseEvent) => onMouseUp(e, path, getTargetContentPath(e, index)),
         },
         element.children,
       )
@@ -195,11 +277,9 @@ export function HtmlEditor(props: {
         ref,
         'data-parent-path': path.join(),
         'data-content-path': element.children.length,
-        onClick: (e: React.MouseEvent) => {
-          setParentPath(path)
-          setContentPath(element.children.length)
-          e.stopPropagation()
-        },
+        onMouseDown: (e: React.MouseEvent) => onMouseDown(e, path, element.children.length),
+        onMouseMove: (e: React.MouseEvent) => onMouseMove(e, path, element.children.length),
+        onMouseUp: (e: React.MouseEvent) => onMouseUp(e, path, element.children.length),
       },
       [
         ...element.children.map((c, j) => {
@@ -232,7 +312,9 @@ export function HtmlEditor(props: {
               fontFamily: 'monospace',
               fontSize: '16px',
             }}
-            onMouseUp={onMouseUp}
+            onMouseDown={e => onMouseDown(e, ...endPath)}
+            onMouseMove={e => onMouseMove(e, ...endPath)}
+            onMouseUp={e => onMouseUp(e, ...endPath)}
           >
             <Cursor
               ref={cursorRef}
@@ -253,6 +335,20 @@ interface HtmlElementNode {
   children: HtmlElementNode[] | string
 }
 
+function getTargetContentPath(e: React.MouseEvent, index: number) {
+  // type-coverage:ignore-next-line
+  const rect = (e.target as HTMLElement).getBoundingClientRect()
+  return e.clientX - rect.left < rect.width / 2 ? index : index + 1
+}
+
+function comparePath(c1: number[], c2: number[]) {
+  for (let i = 0; i < c1.length && i < c2.length; i++) {
+    if (c1[i] < c2[i]) return -1
+    if (c1[i] > c2[i]) return 1
+  }
+  return 0
+}
+
 function getParentByPath(target: readonly HtmlElementNode[], path: number[]) {
   let result = target
   for (const p of path) {
@@ -261,4 +357,19 @@ function getParentByPath(target: readonly HtmlElementNode[], path: number[]) {
     result = children
   }
   return castDraft(result)
+}
+
+function getEndPath(target: readonly HtmlElementNode[]) {
+  const result: number[] = []
+  let children: string | readonly HtmlElementNode[] | undefined = target
+  while (children && typeof children !== 'string') {
+    const index: number = children.length - 1
+    result.push(index)
+    children = children[index]?.children
+  }
+  const index = result.length - 1
+  return [
+    result.slice(0, index),
+    result[index] + 1,
+  ] as const
 }
