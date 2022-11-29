@@ -7,9 +7,8 @@
 /// <reference types="react" />
 
 import type { Draft } from 'immer/dist/types/types-external';
-import { JsonEditorProps } from 'react-composable-json-editor';
+import type { JsonEditorProps } from 'react-composable-json-editor';
 import type { Patch } from 'immer/dist/types/types-external';
-import { Patch as Patch_2 } from 'immer';
 import * as React_2 from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
 
@@ -56,7 +55,7 @@ export function arcToPolyline(content: Arc, angleDelta: number): {
 }[];
 
 // @public (undocumented)
-export function bindMultipleRefs<T>(...refs: (React.ForwardedRef<T> | React.MutableRefObject<T | null>)[]): (r: T) => void;
+export function bindMultipleRefs<T>(...refs: (React_2.ForwardedRef<T> | React_2.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
 export interface Bounding {
@@ -72,6 +71,9 @@ export interface Bounding {
 
 // @public (undocumented)
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
+
+// @public (undocumented)
+export type CanvasDraw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, rerender: () => void) => void;
 
 // @public (undocumented)
 export interface Circle extends Position {
@@ -178,6 +180,18 @@ export type EditBarPosition<T> = Position & {
 };
 
 // @public (undocumented)
+export type EditData<T, V> = V & {
+    data?: T;
+    cursor: React_2.CSSProperties['cursor'];
+};
+
+// @public (undocumented)
+export type EditOptions = Partial<{
+    transform: (p: Position) => Position;
+    getAngleSnap: (angle: number) => number | undefined;
+}>;
+
+// @public (undocumented)
 export type EditPoint<T> = Position & {
     cursor: string;
     update: (content: Draft<T>, props: {
@@ -267,6 +281,20 @@ export interface ExpressionSuggesionSource {
 }
 
 // @public (undocumented)
+export interface FillStyle {
+    // (undocumented)
+    fillColor: number;
+    // (undocumented)
+    fillLinearGradient: LinearGradient;
+    // (undocumented)
+    fillOpacity: number;
+    // (undocumented)
+    fillPattern: PatternGraphic;
+    // (undocumented)
+    fillRadialGradient: RadialGradient;
+}
+
+// @public (undocumented)
 export type Filter = {
     type: 'brightness';
     value: number;
@@ -294,6 +322,15 @@ export type Filter = {
 } | {
     type: 'blur';
     value: number;
+};
+
+// @public (undocumented)
+export type FilterGraphic = {
+    type: 'color matrix';
+    value: number[];
+} | {
+    type: 'blur';
+    value: [number, number];
 };
 
 // @public (undocumented)
@@ -542,9 +579,6 @@ export function getPathCommandEndPoint(pathCommands: PathCommand[], index: numbe
 // @public (undocumented)
 export function getPathCommandsPoints(pathCommands: PathCommand[]): Position[][];
 
-// Warning: (ae-forgotten-export) The symbol "StrokeStyle" needs to be exported by the entry point index.d.ts
-// Warning: (ae-forgotten-export) The symbol "FillStyle" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
 export function getPathGraphics(points: Position[][], strokeWidthScale: number, options?: Partial<StrokeStyle & PathLineStyleOptions & FillStyle & {
     closed: boolean;
@@ -671,8 +705,8 @@ export function getTextComposition<T>(index: number, state: readonly T[], getTex
 
 // @public (undocumented)
 export function getTextGraphic(x: number, y: number, text: string, fill: number | PatternGraphic | undefined, fontSize: number, fontFamily: string, options?: Partial<StrokeStyle & {
-    fontWeight: React.CSSProperties['fontWeight'];
-    fontStyle: React.CSSProperties['fontStyle'];
+    fontWeight: React_2.CSSProperties['fontWeight'];
+    fontStyle: React_2.CSSProperties['fontStyle'];
     textAlign: 'left' | 'center' | 'right';
     textBaseline: 'alphabetic' | 'top' | 'middle' | 'bottom';
     fillOpacity: number;
@@ -752,9 +786,6 @@ export interface GradientStop {
     opacity?: number;
 }
 
-// Warning: (ae-forgotten-export) The symbol "LineOrTriangleGraphic" needs to be exported by the entry point index.d.ts
-// Warning: (ae-forgotten-export) The symbol "TextureGraphic" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
     matrix?: Matrix;
@@ -765,9 +796,20 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 // @public (undocumented)
 export function HtmlEditor(props: {
     initialState: readonly HtmlElementNode[];
+    onChange: React_2.Dispatch<React_2.SetStateAction<readonly HtmlElementNode[]>>;
     width: number;
     height: number;
 }): JSX.Element;
+
+// @public (undocumented)
+export interface HtmlElementNode {
+    // (undocumented)
+    children: HtmlElementNode[] | string;
+    // (undocumented)
+    style?: React_2.CSSProperties;
+    // (undocumented)
+    tag: keyof JSX.IntrinsicElements;
+}
 
 // @public (undocumented)
 type Image_2 = Region & {
@@ -844,6 +886,18 @@ export interface LinearGradient {
 
 // @public (undocumented)
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion): boolean;
+
+// @public (undocumented)
+export interface LineOrTriangleGraphic {
+    // (undocumented)
+    color?: [number, number, number, number];
+    // (undocumented)
+    colors?: number[];
+    // (undocumented)
+    points: number[];
+    // (undocumented)
+    type: 'triangles' | 'lines' | 'line strip' | 'triangle strip' | 'triangle fan';
+}
 
 // @public (undocumented)
 export const m3: {
@@ -1061,10 +1115,8 @@ export interface RadialGradient {
     stops: GradientStop[];
 }
 
-// Warning: (ae-forgotten-export) The symbol "Draw_2" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
-export const reactCanvasRenderTarget: ReactRenderTarget<Draw_2>;
+export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw>;
 
 // @public (undocumented)
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -1150,15 +1202,11 @@ export interface ReactRenderTarget<T = JSX.Element> {
     type: string;
 }
 
-// Warning: (ae-forgotten-export) The symbol "Draw" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
-export const reactSvgRenderTarget: ReactRenderTarget<Draw>;
+export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw>;
 
-// Warning: (ae-forgotten-export) The symbol "Draw_3" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
-export const reactWebglRenderTarget: ReactRenderTarget<Draw_3>;
+export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw>;
 
 // @public (undocumented)
 export interface Region extends Position, Size {
@@ -1248,6 +1296,29 @@ export type SnapPoint = Position & {
 export type SnapPointType = typeof allSnapTypes[number];
 
 // @public (undocumented)
+export interface StrokeStyle {
+    // (undocumented)
+    dashArray: number[];
+    // (undocumented)
+    dashOffset: number;
+    // (undocumented)
+    strokeColor: number;
+    // (undocumented)
+    strokeLinearGradient: LinearGradient;
+    // (undocumented)
+    strokeOpacity: number;
+    // (undocumented)
+    strokePattern: PatternGraphic;
+    // (undocumented)
+    strokeRadialGradient: RadialGradient;
+    // (undocumented)
+    strokeWidth: number;
+}
+
+// @public (undocumented)
+export type SvgDraw = (key: React_2.Key, scale: number, strokeWidthScale: number) => JSX.Element;
+
+// @public (undocumented)
 type Text_2 = Position & TextStyle & {
     text: string;
     color: number;
@@ -1260,6 +1331,26 @@ export interface TextStyle {
     fontFamily: string;
     // (undocumented)
     fontSize: number;
+}
+
+// @public (undocumented)
+export interface TextureGraphic {
+    // (undocumented)
+    color?: [number, number, number, number];
+    // (undocumented)
+    filters?: FilterGraphic[];
+    // (undocumented)
+    height?: number;
+    // (undocumented)
+    src: ImageData | ImageBitmap;
+    // (undocumented)
+    type: 'texture';
+    // (undocumented)
+    width?: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public (undocumented)
@@ -1296,8 +1387,6 @@ export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center 
     reset: () => void;
 };
 
-// Warning: (ae-forgotten-export) The symbol "EditOptions" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
 export function useCircleArcEdit<T = void>(onEnd: () => void, options?: EditOptions): {
     offset: Arc & {
@@ -1353,6 +1442,19 @@ export function useCursorInput(message: string, onKeyDown?: (e: React_2.Keyboard
     setInputPosition: React_2.Dispatch<React_2.SetStateAction<Position | undefined>>;
     clearText(): void;
     input: JSX.Element | undefined;
+};
+
+// @public (undocumented)
+export function useDragEdit<V, T = void>(onEnd: () => void, onDragging: (start: Position & {
+    data: EditData<T, V>;
+}, end: Position) => void, reset: () => void, options?: Partial<{
+    transform: (p: Position) => Position;
+}>): {
+    dragStartPosition: (Position & {
+        data: EditData<T, V>;
+    }) | undefined;
+    onStart(e: React_2.MouseEvent<HTMLOrSVGElement, MouseEvent>, data: EditData<T, V>): void;
+    mask: JSX.Element | undefined;
 };
 
 // @public (undocumented)
@@ -1459,8 +1561,8 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(onEnd: () => v
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V): V[];
     updateEditPreview(): {
         result: T;
-        patches: Patch_2[];
-        reversePatches: Patch_2[];
+        patches: Patch[];
+        reversePatches: Patch[];
         assistentContents: T[];
         relatedEditPointResults: Map<T, T>;
     } | undefined;
@@ -2042,6 +2144,9 @@ export class WeaksetCache<T extends object> {
 }
 
 // @public (undocumented)
+export type WebglDraw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[];
+
+// @public (undocumented)
 export interface ZoomOptions {
     // (undocumented)
     max: number;
@@ -2055,12 +2160,6 @@ export function zoomToFit(bounding: TwoPointsFormRegion | undefined, { width, he
     x: number;
     y: number;
 } | undefined;
-
-// Warnings were encountered during analysis:
-//
-// dist/nodejs/components/html-editor.d.ts:6:5 - (ae-forgotten-export) The symbol "HtmlElementNode" needs to be exported by the entry point index.d.ts
-// dist/nodejs/components/react-render-target/create-webgl-renderer.d.ts:79:5 - (ae-forgotten-export) The symbol "FilterGraphic" needs to be exported by the entry point index.d.ts
-// dist/nodejs/components/use-edit/use-circle-arc-edit.d.ts:12:5 - (ae-forgotten-export) The symbol "EditData" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

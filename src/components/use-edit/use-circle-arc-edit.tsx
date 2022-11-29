@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Arc, getAngleSnapPosition } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
-import { EditOptions, useEdit } from "./use-edit"
+import { EditOptions, useDragEdit } from "./use-edit"
 
 /**
  * @public
@@ -12,7 +12,7 @@ export function useCircleArcEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Arc & { data?: T }>({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useEdit<{ type: 'center' | 'start angle' | 'end angle' | 'radius' } & Arc, T>(
+  const { onStart, mask } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' | 'radius' } & Arc, T>(
     onEnd,
     (start, end) => {
       end = getAngleSnapPosition(start.data, end, options?.getAngleSnap)

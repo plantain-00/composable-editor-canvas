@@ -1,5 +1,5 @@
 import { produceWithPatches } from "immer"
-import type { Draft } from "immer/dist/types/types-external"
+import type { Draft, Patch } from "immer/dist/types/types-external"
 import * as React from "react"
 import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
@@ -62,7 +62,13 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       return assistentContents
     },
-    updateEditPreview() {
+    updateEditPreview(): {
+      result: T;
+      patches: Patch[];
+      reversePatches: Patch[];
+      assistentContents: T[];
+      relatedEditPointResults: Map<T, T>;
+    } | undefined {
       if (editPoint && startPosition && cursorPosition) {
         const assistentContents: T[] = []
         const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {

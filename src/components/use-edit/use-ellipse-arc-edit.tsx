@@ -1,7 +1,7 @@
 import * as React from "react"
 import { EllipseArc, Position, rotatePositionByCenter } from "../../utils"
 import { getAngleSnapPosition } from "../use-create/use-circle-click-create"
-import { EditOptions, useEdit } from "./use-edit"
+import { EditOptions, useDragEdit } from "./use-edit"
 
 /**
  * @public
@@ -12,7 +12,7 @@ export function useEllipseArcEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<EllipseArc & { data?: T }>({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useEdit<{ type: 'center' | 'start angle' | 'end angle' } & EllipseArc, T>(
+  const { onStart, mask } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' } & EllipseArc, T>(
     onEnd,
     (start, end) => {
       end = getAngleSnapPosition({ x: start.data.cx, y: start.data.cy }, end, options?.getAngleSnap)

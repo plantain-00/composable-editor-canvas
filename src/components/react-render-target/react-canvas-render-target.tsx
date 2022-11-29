@@ -6,7 +6,7 @@ import { getImageFromCache } from "./image-loader"
 /**
  * @public
  */
-export const reactCanvasRenderTarget: ReactRenderTarget<Draw> = {
+export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
   type: 'canvas',
   renderResult(children, width, height, options) {
     return (
@@ -277,7 +277,7 @@ function renderStroke(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<PathStrokeOptions<Draw> & PathLineStyleOptions>,
+  options?: Partial<PathStrokeOptions<CanvasDraw> & PathLineStyleOptions>,
 ) {
   const strokeWidth = (options?.strokeWidth ?? 1) * strokeWidthScale
   if (strokeWidth) {
@@ -293,7 +293,7 @@ function renderStroke(
 
 function getPattern(
   ctx: CanvasRenderingContext2D,
-  pattern: Pattern<Draw>,
+  pattern: Pattern<CanvasDraw>,
   strokeWidthScale: number,
   rerender: () => void,
 ) {
@@ -321,7 +321,7 @@ function renderFill(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<PathFillOptions<Draw>>,
+  options?: Partial<PathFillOptions<CanvasDraw>>,
   fillCallback?: () => void,
 ) {
   if (options?.clip !== undefined) {
@@ -363,7 +363,7 @@ function renderPatternOrGradient(
   ctx: CanvasRenderingContext2D,
   strokeWidthScale: number,
   rerender: () => void,
-  options?: Partial<PathStrokeOptions<Draw> & PathLineStyleOptions>,
+  options?: Partial<PathStrokeOptions<CanvasDraw> & PathLineStyleOptions>,
 ) {
   if (options?.strokePattern) {
     const pattern = getPattern(ctx, options.strokePattern, strokeWidthScale, rerender)
@@ -387,7 +387,10 @@ function renderPatternOrGradient(
   }
 }
 
-type Draw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, rerender: () => void) => void
+/**
+ * @public
+ */
+export type CanvasDraw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, rerender: () => void) => void
 
 function Canvas(props: {
   width: number,
@@ -395,7 +398,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  draws: Draw[]
+  draws: CanvasDraw[]
   transform?: {
     x: number
     y: number

@@ -6,7 +6,7 @@ import { colorNumberToRec, createWebglRenderer, getGroupGraphics, getImageGraphi
 /**
  * @public
  */
-export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
+export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
     return (
@@ -163,7 +163,10 @@ export const reactWebglRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-type Draw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[]
+/**
+ * @public
+ */
+export type WebglDraw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[]
 
 function Canvas(props: {
   width: number,
@@ -171,7 +174,7 @@ function Canvas(props: {
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
     style: React.CSSProperties
   }>,
-  graphics: Draw[]
+  graphics: WebglDraw[]
   transform?: {
     x: number
     y: number
