@@ -1,6 +1,7 @@
 import * as React from "react"
 import { isLetter, isNumber, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutTextEditor, useUndoRedo } from "."
-import { controlStyle, JsonEditorProps } from "react-composable-json-editor"
+import { controlStyle } from "react-composable-json-editor"
+import type { JsonEditorProps } from "react-composable-json-editor"
 
 /**
  * @public

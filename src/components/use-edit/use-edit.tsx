@@ -10,12 +10,18 @@ export type EditData<T, V> = V & {
   cursor: React.CSSProperties['cursor']
 }
 
+/**
+ * @public
+ */
 export type EditOptions = Partial<{
   transform: (p: Position) => Position
   getAngleSnap: (angle: number) => number | undefined
 }>
 
-export function useEdit<V, T = void>(
+/**
+ * @public
+ */
+export function useDragEdit<V, T = void>(
   onEnd: () => void,
   onDragging: (start: Position & { data: EditData<T, V> }, end: Position) => void,
   reset: () => void,

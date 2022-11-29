@@ -5,7 +5,7 @@ import { defaultMiterLimit, getPerpendicularPoint, getParallelLinesByDistance, g
 /**
  * @public
  */
-export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
+export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
   type: 'svg',
   renderResult(children, width, height, options) {
     const x = options?.transform?.x ?? 0
@@ -270,7 +270,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<Draw> = {
   },
 }
 
-type Draw = (key: React.Key, scale: number, strokeWidthScale: number) => JSX.Element
+/**
+ * @public
+ */
+export type SvgDraw = (key: React.Key, scale: number, strokeWidthScale: number) => JSX.Element
 
 function renderFilters(
   children: (filter: string | undefined) => JSX.Element,
@@ -369,7 +372,7 @@ function renderFilters(
 
 function renderPattern(
   children: (fill: string, stroke: string | undefined, scale: number, strokeWidthScale: number) => JSX.Element,
-  options?: Partial<PathFillOptions<Draw> & PathStrokeOptions<Draw>>,
+  options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
   noDefaultStrokeColor?: boolean,
 ) {
   return (key: React.Key, scale: number, strokeWidthScale: number) => {

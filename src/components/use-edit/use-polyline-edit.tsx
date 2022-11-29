@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { getAngleSnapPosition, Position } from "../.."
-import { EditOptions, useEdit } from "./use-edit"
+import { EditOptions, useDragEdit } from "./use-edit"
 
 /**
  * @public
@@ -12,7 +12,7 @@ export function usePolylineEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Position & { pointIndexes: number[], data?: T }>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask, dragStartPosition } = useEdit<{ pointIndexes: number[] }, T>(
+  const { onStart, mask, dragStartPosition } = useDragEdit<{ pointIndexes: number[] }, T>(
     onEnd,
     (start, end) => {
       end = getAngleSnapPosition(start, end, options?.getAngleSnap)

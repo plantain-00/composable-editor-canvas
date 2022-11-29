@@ -1,18 +1,25 @@
 import * as twgl from 'twgl.js'
 import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getPerpendicularPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache, Bounding } from "../../utils"
 import earcut from 'earcut'
+import type * as React from "react"
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { getColorString } from './react-svg-render-target'
 
-interface LineOrTriangleGraphic {
+/**
+ * @public
+ */
+export interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines' | 'line strip' | 'triangle strip' | 'triangle fan'
   points: number[]
   color?: [number, number, number, number]
   colors?: number[]
 }
 
-interface TextureGraphic {
+/**
+ * @public
+ */
+export interface TextureGraphic {
   type: 'texture'
   color?: [number, number, number, number]
   x: number
@@ -23,7 +30,10 @@ interface TextureGraphic {
   filters?: FilterGraphic[]
 }
 
-type FilterGraphic =
+/**
+ * @public
+ */
+export type FilterGraphic =
   | {
     type: 'color matrix'
     value: number[]
@@ -911,7 +921,10 @@ export function getGroupGraphics(
   }))
 }
 
-interface StrokeStyle {
+/**
+ * @public
+ */
+export interface StrokeStyle {
   strokeColor: number
   strokeWidth: number
   dashArray: number[]
@@ -922,7 +935,10 @@ interface StrokeStyle {
   strokeRadialGradient: RadialGradient
 }
 
-interface FillStyle {
+/**
+ * @public
+ */
+export interface FillStyle {
   fillColor: number
   fillOpacity: number
   fillPattern: PatternGraphic
