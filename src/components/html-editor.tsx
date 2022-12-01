@@ -1,7 +1,7 @@
 import { castDraft } from "immer"
 import * as React from "react"
 import { Button, StringEditor } from "react-composable-json-editor"
-import { Region } from "../utils"
+import { Position, Region } from "../utils"
 import { Cursor } from "./cursor"
 import { useEvent } from "./use-event"
 import { useGlobalMouseUp } from "./use-global-mouseup"
@@ -27,17 +27,15 @@ export function HtmlEditor(props: {
       props.onChange(newState)
     },
   })
-  const [parentPath, setParentPath] = React.useState<number[]>([0])
-  const [contentPath, setContentPath] = React.useState<number>(0)
+  const startPath = getStartOrEndPath(state, 'start')
+  const [parentPath, setParentPath] = React.useState<number[]>(startPath[0])
+  const [contentPath, setContentPath] = React.useState<number>(startPath[1])
   const [selectionStart, setSelectionStart] = React.useState<number[]>()
   const cursorRef = React.useRef<HTMLInputElement | null>(null)
   const rootRef = React.useRef<HTMLDivElement | null>(null)
-  const cursortRef = React.useRef<HTMLElement | null>(null)
-  const cursorRight = React.useRef(false)
-  const cursorRect = React.useRef<Region>()
-  const [cursorStyle, setCursorStyle] = React.useState<React.CSSProperties>()
+  const [cursorRect, setCursorRect] = React.useState<Region>()
   const fullPath = [...parentPath, contentPath]
-  const endPath = getEndPath(state)
+  const endPath = getStartOrEndPath(state, 'end')
 
   const inputInline = (items: HtmlElementNode[]) => {
     setContentPath(contentPath + items.length)
@@ -105,17 +103,6 @@ export function HtmlEditor(props: {
       setContentPath(contentPath + 1)
     }
   }
-  const getPathByPoint = (x: number, y: number) => {
-    const element = document.elementFromPoint(x, y)
-    if (!element) return
-    // type-coverage:ignore-next-line
-    const dataset = (element as HTMLElement).dataset
-    if (!dataset.parentPath || !dataset.contentPath) return
-    return {
-      parentPath: dataset.parentPath.split(',').map(s => +s),
-      contentPath: +dataset.contentPath,
-    }
-  }
   const arrowUp = (shift = false) => {
     if (!shift && range) {
       setSelectionStart(undefined)
@@ -126,12 +113,10 @@ export function HtmlEditor(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(fullPath)
     }
-    if (!cursorRect.current) return
-    const rect = cursorRect.current
-    const p = getPathByPoint(rect.x + rect.width / 2 + (cursorRight.current ? rect.width : 0), rect.y - rect.height * 0.5)
-    if (!p) return
-    setParentPath(p.parentPath)
-    setContentPath(p.contentPath)
+    if (!cursorRect) return
+    const p = getPathByPoint({ x: cursorRect.x - cursorRect.width / 2, y: cursorRect.y - cursorRect.height * 0.5 })
+    setParentPath(p[0])
+    setContentPath(p[1])
   }
   const arrowDown = (shift = false) => {
     if (!shift && range) {
@@ -143,12 +128,10 @@ export function HtmlEditor(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(fullPath)
     }
-    if (!cursorRect.current) return
-    const rect = cursorRect.current
-    const p = getPathByPoint(rect.x + rect.width / 2 + (cursorRight.current ? rect.width : 0), rect.y + rect.height * 1.5)
-    if (!p) return
-    setParentPath(p.parentPath)
-    setContentPath(p.contentPath)
+    if (!cursorRect) return
+    const p = getPathByPoint({ x: cursorRect.x - cursorRect.width / 2, y: cursorRect.y + cursorRect.height * 1.5 })
+    setParentPath(p[0])
+    setContentPath(p[1])
   }
   const enter = () => {
     const grandParentPath = parentPath.slice(0, parentPath.length - 1)
@@ -210,18 +193,46 @@ export function HtmlEditor(props: {
       cursorRef.current.value = ''
     }
   }
+  const getPathByPoint = (p: Position): readonly [number[], number] => {
+    let last: { path: [number[], number], result: HtmlLayoutResult } | undefined
+    if (layoutResults.current) {
+      for (const r of iterateHtmlLayoutResults(layoutResults.current, [])) {
+        const { path, result } = r
+        if (
+          p.x >= result.rect.x &&
+          p.y >= result.rect.y &&
+          p.x <= result.rect.x + result.rect.width &&
+          p.y <= result.rect.y + result.rect.height
+        ) {
+          if (p.x < result.rect.x + result.rect.width / 2) {
+            return path
+          }
+          return [path[0], path[1] + 1]
+        }
+        if (p.y < result.rect.y && p.y > result.rect.y - result.rect.height) {
+          return path
+        }
+      }
+    }
+    return last?.path ?? endPath
+  }
+  const getPath = (e: React.MouseEvent): readonly [number[], number] => {
+    const rect = rootRef.current?.getBoundingClientRect()
+    const p = { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) }
+    return getPathByPoint(p)
+  }
   const downLocation = React.useRef<number[]>()
-  const onMouseUp = (e: React.MouseEvent, pp: number[], cp: number) => {
-    onMouseMove(e, pp, cp)
+  const onMouseUp = (e: React.MouseEvent) => {
+    onMouseMove(e)
     cursorRef.current?.focus()
     downLocation.current = undefined
   }
-  const onMouseMove = (e: React.MouseEvent, pp: number[], cp: number) => {
-    e.stopPropagation()
+  const onMouseMove = (e: React.MouseEvent) => {
     e.preventDefault()
     if (downLocation.current === undefined) {
       return
     }
+    const [pp, cp] = getPath(e)
     setParentPath(pp)
     setContentPath(cp)
     if (isSamePath([...pp, cp], downLocation.current)) {
@@ -230,9 +241,9 @@ export function HtmlEditor(props: {
       setSelectionStart(downLocation.current)
     }
   }
-  const onMouseDown = (e: React.MouseEvent, pp: number[], cp: number) => {
-    e.stopPropagation()
+  const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
+    const [pp, cp] = getPath(e)
     if (e.shiftKey) {
       if (selectionStart === undefined) {
         setSelectionStart(fullPath)
@@ -247,17 +258,28 @@ export function HtmlEditor(props: {
     downLocation.current = undefined
   }))
 
+  const layoutResults = React.useRef<HtmlLayoutResult[]>()
   React.useLayoutEffect(() => {
-    if (!cursortRef.current) return
     if (!rootRef.current) return
-    const rect = getHtmlElementRect(cursortRef.current)
-    cursorRect.current = rect
-    setCursorStyle({
-      left: (rect.x - 1 + (cursorRight.current ? rect.width : 0)) + 'px',
-      top: rect.y + 'px',
-      height: rect.height + 'px',
-    })
-  }, [state, parentPath, contentPath, cursortRef.current, rootRef.current, cursorRight.current])
+    layoutResults.current = getHtmlLayout(rootRef.current.children, rootRef.current.getBoundingClientRect())
+  }, [state, rootRef.current])
+  React.useEffect(() => {
+    if (!layoutResults.current) return
+    const parentResult = getLayoutResultByPath(layoutResults.current, parentPath)
+    let rect: Region | undefined
+    if (parentResult) {
+      if (contentPath === 0) {
+        rect = parentResult[0].rect
+      } else {
+        const previous = parentResult[contentPath - 1].rect
+        rect = {
+          ...previous,
+          x: previous.x + previous.width,
+        }
+      }
+    }
+    setCursorRect(rect)
+  }, [layoutResults.current, parentPath, contentPath])
 
   let range: { min: { parent: number[], content: number, full: number[] }, max: { parent: number[], content: number, full: number[] } } | undefined
   if (selectionStart !== undefined) {
@@ -268,6 +290,7 @@ export function HtmlEditor(props: {
   const isSelected = (loc: number[]) => range && comparePath(loc, range.min.full) >= 0 && comparePath(loc, range.max.full) < 0
   const currentParent = getParentByPath(state, range?.max.parent ?? parentPath)
   const currentContent = currentParent?.[Math.max((range?.max.content ?? contentPath) - 1, 0)]
+  const currentBlock = getParentHtmlElement(state, range?.max.parent ?? parentPath)
   const updateSelection = (recipe: (content: HtmlElementNode) => void) => {
     if (range) {
       setState(draft => {
@@ -279,53 +302,35 @@ export function HtmlEditor(props: {
       })
     }
   }
+  const updateBlock = (tag: keyof JSX.IntrinsicElements) => {
+    setState(draft => {
+      const currentParentHtmlElement = getParentHtmlElement(draft, range?.max.parent ?? parentPath)
+      if (currentParentHtmlElement) {
+        currentParentHtmlElement.tag = tag
+      }
+    })
+  }
 
   const render = (element: HtmlElementNode, index: number, path: number[]): JSX.Element => {
-    let ref: React.MutableRefObject<HTMLElement | null> | undefined
     if (typeof element.children === 'string') {
-      if (isSamePath(path, parentPath)) {
-        if (contentPath === 0 && index === 0) {
-          ref = cursortRef
-          cursorRight.current = false
-        } else if (contentPath !== 0 && index === contentPath - 1) {
-          ref = cursortRef
-          cursorRight.current = true
-        }
-      }
       return React.createElement(
         element.tag,
         {
           key: index,
-          ref,
           style: {
             ...element.style,
             backgroundColor: isSelected([...path, index]) ? '#B3D6FD' : element.style?.backgroundColor,
           },
-          'data-parent-path': path.join(),
-          'data-content-path': index,
-          onMouseDown: (e: React.MouseEvent) => onMouseDown(e, path, getTargetContentPath(e, index)),
-          onMouseMove: (e: React.MouseEvent) => onMouseMove(e, path, getTargetContentPath(e, index)),
-          onMouseUp: (e: React.MouseEvent) => onMouseUp(e, path, getTargetContentPath(e, index)),
         },
         element.children,
       )
     }
     path = [...path, index]
-    if (isSamePath(path, parentPath) && element.children.length === 0) {
-      ref = cursortRef
-      cursorRight.current = false
-    }
     return React.createElement(
       element.tag,
       {
         key: index,
-        ref,
         style: element.style,
-        'data-parent-path': path.join(),
-        'data-content-path': element.children.length,
-        onMouseDown: (e: React.MouseEvent) => onMouseDown(e, path, element.children.length),
-        onMouseMove: (e: React.MouseEvent) => onMouseMove(e, path, element.children.length),
-        onMouseUp: (e: React.MouseEvent) => onMouseUp(e, path, element.children.length),
       },
       [
         ...element.children.map((c, j) => {
@@ -363,6 +368,13 @@ export function HtmlEditor(props: {
               onClick={() => updateSelection(c => { c.tag = currentContent?.tag !== tag ? tag : 'span' })}
             >{tag}</Button>
           ))}
+          {(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'] as const).map(tag => (
+            <Button
+              key={tag}
+              style={{ fontWeight: currentBlock?.tag === tag ? 'bold' : undefined }}
+              onClick={() => updateBlock(tag)}
+            >{tag}</Button>
+          ))}
           <StringEditor type='color' value={currentContent?.style?.color ?? '#000000'} setValue={v => updateSelection(c => { if (!c.style) { c.style = {} }; c.style.color = v ? v : undefined })} />
           <StringEditor type='color' value={currentContent?.style?.backgroundColor ?? '#ffffff'} setValue={v => updateSelection(c => { if (!c.style) { c.style = {} }; c.style.backgroundColor = v ? v : undefined })} />
           <StringEditor value={currentContent?.style?.fontSize?.toString?.() ?? '16px'} setValue={v => updateSelection(c => { if (!c.style) { c.style = {} }; c.style.fontSize = v })} style={{ width: '50px' }} />
@@ -376,8 +388,17 @@ export function HtmlEditor(props: {
             border: '1px solid black',
             clipPath: 'inset(0px 0px)',
           }}
-          ref={rootRef}
         >
+          <Cursor
+            ref={cursorRef}
+            onKeyDown={onKeyDown}
+            onCompositionEnd={onCompositionEnd}
+            style={cursorRect ? {
+              left: cursorRect.x + 'px',
+              top: cursorRect.y + 'px',
+              height: cursorRect.height + 'px',
+            } : undefined}
+          />
           <div
             style={{
               width: props.width + 'px',
@@ -389,16 +410,11 @@ export function HtmlEditor(props: {
               whiteSpace: 'pre-wrap',
               overflowWrap: 'break-word',
             }}
-            onMouseDown={e => onMouseDown(e, ...endPath)}
-            onMouseMove={e => onMouseMove(e, ...endPath)}
-            onMouseUp={e => onMouseUp(e, ...endPath)}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            ref={rootRef}
           >
-            <Cursor
-              ref={cursorRef}
-              onKeyDown={onKeyDown}
-              onCompositionEnd={onCompositionEnd}
-              style={cursorStyle}
-            />
             {state.map((s, i) => render(s, i, []))}
           </div>
         </div>
@@ -412,20 +428,63 @@ export function HtmlEditor(props: {
  */
 export interface HtmlElementNode {
   tag: keyof JSX.IntrinsicElements
-  children: HtmlElementNode[] | string
+  children: readonly HtmlElementNode[] | string
   style?: React.CSSProperties
 }
 
-function getTargetContentPath(e: React.MouseEvent, index: number) {
-  // type-coverage:ignore-next-line
-  const rect = getHtmlElementRect(e.target as HTMLElement)
-  return e.clientX - rect.x < rect.width / 2 ? index : index + 1
+function getHtmlLayout(elements: HTMLCollection, rootRect: DOMRect): HtmlLayoutResult[] {
+  const result: HtmlLayoutResult[] = []
+  for (let i = 0; i < elements.length; i++) {
+    const element = elements[i]
+    if (element.tagName === 'BR') {
+      const rect = element.getBoundingClientRect()
+      result.push({
+        rect: {
+          x: rect.x - rootRect.x,
+          y: rect.y - rootRect.y,
+          width: rect.width,
+          height: rect.height,
+        },
+      })
+      continue
+    }
+    // type-coverage:ignore-next-line
+    const rect = getHtmlElementRect(element as HTMLElement)
+    if (element.children.length === 0) {
+      result.push({
+        rect,
+      })
+    } else {
+      result.push({
+        rect,
+        children: getHtmlLayout(element.children, rootRect)
+      })
+    }
+  }
+  return result
+}
+
+interface HtmlLayoutResult {
+  children?: HtmlLayoutResult[]
+  rect: Region
+}
+
+function* iterateHtmlLayoutResults(results: HtmlLayoutResult[], path: number[]): Generator<{ path: [number[], number], result: HtmlLayoutResult }, void, unknown> {
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i]
+    if (!result.children) {
+      yield { result, path: [path, i] }
+    } else {
+      const childPath = [...path, i]
+      yield* iterateHtmlLayoutResults(result.children, childPath)
+    }
+  }
 }
 
 function getHtmlElementRect(element: HTMLElement) {
   return {
     x: element.offsetLeft,
-    y: element.offsetTop + 1,
+    y: element.offsetTop,
     width: element.offsetWidth,
     height: element.offsetHeight,
   }
@@ -460,17 +519,39 @@ function getParentByPath(target: readonly HtmlElementNode[], path: number[]) {
   return castDraft(result)
 }
 
-function getEndPath(target: readonly HtmlElementNode[]) {
+function getParentHtmlElement(target: readonly HtmlElementNode[], path: number[]) {
+  let result: HtmlElementNode = {
+    tag: 'div',
+    children: target,
+  }
+  for (const p of path) {
+    if (!result.children || typeof result.children === 'string') return
+    result = result.children[p]
+  }
+  return castDraft(result)
+}
+
+function getLayoutResultByPath(target: HtmlLayoutResult[], path: number[]) {
+  let result = target
+  for (const p of path) {
+    const children = result[p]?.children
+    if (!children || typeof children === 'string') return
+    result = children
+  }
+  return result
+}
+
+function getStartOrEndPath(target: readonly HtmlElementNode[], type: 'start' | 'end') {
   const result: number[] = []
   let children: string | readonly HtmlElementNode[] | undefined = target
   while (children && typeof children !== 'string') {
-    const index: number = children.length - 1
+    const index: number = type === 'start' ? 0 : children.length - 1
     result.push(index)
     children = children[index]?.children
   }
   const index = result.length - 1
   return [
     result.slice(0, index),
-    result[index] + 1,
+    result[index] + (type === 'start' ? 0 : 1),
   ] as const
 }
