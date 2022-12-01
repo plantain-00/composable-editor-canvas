@@ -804,7 +804,7 @@ export function HtmlEditor(props: {
 // @public (undocumented)
 export interface HtmlElementNode {
     // (undocumented)
-    children: HtmlElementNode[] | string;
+    children: readonly HtmlElementNode[] | string;
     // (undocumented)
     style?: React_2.CSSProperties;
     // (undocumented)
