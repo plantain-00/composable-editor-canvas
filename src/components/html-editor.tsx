@@ -1,4 +1,4 @@
-import { castDraft } from "immer"
+import produce, { castDraft } from "immer"
 import * as React from "react"
 import { Button, StringEditor } from "react-composable-json-editor"
 import { Position, Region } from "../utils"
@@ -64,12 +64,35 @@ export function HtmlEditor(props: {
     inputInline(result)
   }
   const backspace = () => {
+    if (isSamePath(startPath[0], parentPath) && startPath[1] === contentPath) {
+      return
+    }
     if (contentPath !== 0) {
       setContentPath(contentPath - 1)
       setState(draft => {
         const parent = getParentByPath(draft, parentPath)
         if (parent) {
           parent.splice(contentPath - 1, 1)
+        }
+      })
+    } else if (parentPath[parentPath.length - 1] !== 0) {
+      const previousParentPath = produce(parentPath, draft => {
+        draft[parentPath.length - 1]--
+      })
+      setParentPath(previousParentPath)
+      const previousParent = getParentByPath(state, previousParentPath)
+      if (previousParent) {
+        setContentPath(previousParent.length)
+      }
+      const parent = getParentByPath(state, parentPath)
+      setState(draft => {
+        const previousParent = getParentByPath(draft, previousParentPath)
+        if (previousParent && parent) {
+          previousParent.push(...parent)
+        }
+        const grandParent = getParentByPath(draft, parentPath.slice(0, parentPath.length - 1))
+        if (grandParent) {
+          grandParent.splice(parentPath[parentPath.length - 1], 1)
         }
       })
     }
@@ -196,8 +219,8 @@ export function HtmlEditor(props: {
   const getPathByPoint = (p: Position): readonly [number[], number] => {
     let last: { path: [number[], number], result: HtmlLayoutResult } | undefined
     if (layoutResults.current) {
-      for (const r of iterateHtmlLayoutResults(layoutResults.current, [])) {
-        const { path, result } = r
+      let previous: [number[], number] | undefined
+      for (const { path, result } of iterateHtmlLayoutResults(layoutResults.current, [])) {
         if (
           p.x >= result.rect.x &&
           p.y >= result.rect.y &&
@@ -210,8 +233,12 @@ export function HtmlEditor(props: {
           return [path[0], path[1] + 1]
         }
         if (p.y < result.rect.y && p.y > result.rect.y - result.rect.height) {
+          if (path[1] === 0 && previous) {
+            return previous
+          }
           return path
         }
+        previous = path
       }
     }
     return last?.path ?? endPath
@@ -261,7 +288,7 @@ export function HtmlEditor(props: {
   const layoutResults = React.useRef<HtmlLayoutResult[]>()
   React.useLayoutEffect(() => {
     if (!rootRef.current) return
-    layoutResults.current = getHtmlLayout(rootRef.current.children, rootRef.current.getBoundingClientRect())
+    layoutResults.current = getHtmlLayout(rootRef.current.children)
   }, [state, rootRef.current])
   React.useEffect(() => {
     if (!layoutResults.current) return
@@ -336,7 +363,7 @@ export function HtmlEditor(props: {
         ...element.children.map((c, j) => {
           return render(c, j, path)
         }),
-        <br key={-1} />
+        <span key={-1}>{'\u200B'}</span>,
       ],
     )
   }
@@ -432,22 +459,10 @@ export interface HtmlElementNode {
   style?: React.CSSProperties
 }
 
-function getHtmlLayout(elements: HTMLCollection, rootRect: DOMRect): HtmlLayoutResult[] {
+function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult[] {
   const result: HtmlLayoutResult[] = []
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
-    if (element.tagName === 'BR') {
-      const rect = element.getBoundingClientRect()
-      result.push({
-        rect: {
-          x: rect.x - rootRect.x,
-          y: rect.y - rootRect.y,
-          width: rect.width,
-          height: rect.height,
-        },
-      })
-      continue
-    }
     // type-coverage:ignore-next-line
     const rect = getHtmlElementRect(element as HTMLElement)
     if (element.children.length === 0) {
@@ -457,7 +472,7 @@ function getHtmlLayout(elements: HTMLCollection, rootRect: DOMRect): HtmlLayoutR
     } else {
       result.push({
         rect,
-        children: getHtmlLayout(element.children, rootRect)
+        children: getHtmlLayout(element.children)
       })
     }
   }
