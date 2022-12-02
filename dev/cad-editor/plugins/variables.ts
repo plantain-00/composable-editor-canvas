@@ -90,48 +90,42 @@ function getModel(ctx) {
     getGeometries: getArrowGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        p1: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p1.x,
-              setValue: (v) => update((c) => {
+        p1: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p1.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p1.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.y, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p1.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
-        p2: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p2.x,
-              setValue: (v) => update((c) => {
+        ),
+        p2: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p2.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p2.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.y, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p2.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
+        ),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -145,13 +139,7 @@ function isArrowContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 512 512"
-  }, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22l0 88L32 208c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l288 0 0 88c0 9.6 5.7 18.2 14.5 22z"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22l0 88L32 208c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l288 0 0 88c0 9.6 5.7 18.2 14.5 22z" }));
   return {
     name: "create arrow",
     hotkey: "AR",
@@ -235,27 +223,24 @@ function getModel(ctx) {
     getGeometries: ctx.getContainerGeometries,
     propertyPanel(content, update) {
       return {
-        base: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.base.x,
-              setValue: (v) => update((c) => {
+        base: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.base.x, setValue: (v) => update((c) => {
                 if (isBlockContent(c)) {
                   c.base.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.base.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.base.y, setValue: (v) => update((c) => {
                 if (isBlockContent(c)) {
                   c.base.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        })
+        )
       };
     }
   };
@@ -423,38 +408,26 @@ function getModel(ctx) {
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update) {
       return {
-        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.refId,
-          setValue: (v) => update((c) => {
-            if (isBlockReferenceContent(c)) {
-              c.refId = v;
-            }
-          })
-        }) : [],
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isBlockReferenceContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isBlockReferenceContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.angle,
-          setValue: (v) => update((c) => {
-            if (isBlockReferenceContent(c)) {
-              c.angle = v;
-            }
-          })
-        })
+        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.refId = v;
+          }
+        }) }) : [],
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.angle = v;
+          }
+        }) })
       };
     },
     getRefIds(content) {
@@ -483,20 +456,8 @@ function getCommand(ctx) {
     return !ctx.contentIsReferenced(content, contents);
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 576 512"
-  }, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H456.6C467.6 12.9 488.3 0 512 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM456.6 96H119.4c-5.6 9.7-13.7 17.8-23.4 23.4V392.6c9.7 5.6 17.8 13.7 23.4 23.4H456.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4zM128 160c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160zM256 320h32c35.3 0 64-28.7 64-64V224h64c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H288c-17.7 0-32-14.3-32-32V320z"
-  }));
-  const referenceIcon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 640 512"
-  }, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H328.6C339.6 12.9 360.3 0 384 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V232.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM119.4 96c-5.6 9.7-13.7 17.8-23.4 23.4V232.6c9.7 5.6 17.8 13.7 23.4 23.4H328.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4H119.4zm192 384c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V352h64v40.6c9.7 5.6 17.8 13.7 23.4 23.4H520.6c5.6-9.7 13.7-17.8 23.4-23.4V279.4c-9.7-5.6-17.8-13.7-23.4-23.4h-46c-5.4-15.4-14.6-28.9-26.5-39.6V192h72.6c11.1-19.1 31.7-32 55.4-32c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H311.4z"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 576 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H456.6C467.6 12.9 488.3 0 512 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM456.6 96H119.4c-5.6 9.7-13.7 17.8-23.4 23.4V392.6c9.7 5.6 17.8 13.7 23.4 23.4H456.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4zM128 160c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160zM256 320h32c35.3 0 64-28.7 64-64V224h64c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H288c-17.7 0-32-14.3-32-32V320z" }));
+  const referenceIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 640 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H328.6C339.6 12.9 360.3 0 384 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V232.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM119.4 96c-5.6 9.7-13.7 17.8-23.4 23.4V232.6c9.7 5.6 17.8 13.7 23.4 23.4H328.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4H119.4zm192 384c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V352h64v40.6c9.7 5.6 17.8 13.7 23.4 23.4H520.6c5.6-9.7 13.7-17.8 23.4-23.4V279.4c-9.7-5.6-17.8-13.7-23.4-23.4h-46c-5.4-15.4-14.6-28.9-26.5-39.6V192h72.6c11.1-19.1 31.7-32 55.4-32c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H311.4z" }));
   const blockCommand = {
     name: "create block",
     useCommand({ onEnd, type }) {
@@ -613,13 +574,7 @@ export {
 `// dev/cad-editor/plugins/break.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 640 512"
-  }, /* @__PURE__ */ React.createElement("path", {
-    fill: "currentColor",
-    d: "M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L489.3 358.2l90.5-90.5c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114l-96 96-31.9-25C430.9 239.6 420.1 175.1 377 132c-52.2-52.3-134.5-56.2-191.3-11.7L38.8 5.1zM239 162c30.1-14.9 67.7-9.9 92.8 15.3c20 20 27.5 48.3 21.7 74.5L239 162zM406.6 416.4L220.9 270c-2.1 39.8 12.2 80.1 42.2 110c38.9 38.9 94.4 51 143.6 36.3zm-290-228.5L60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5l61.8-61.8-50.6-39.9z"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 640 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L489.3 358.2l90.5-90.5c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114l-96 96-31.9-25C430.9 239.6 420.1 175.1 377 132c-52.2-52.3-134.5-56.2-191.3-11.7L38.8 5.1zM239 162c30.1-14.9 67.7-9.9 92.8 15.3c20 20 27.5 48.3 21.7 74.5L239 162zM406.6 416.4L220.9 270c-2.1 39.8 12.2 80.1 42.2 110c38.9 38.9 94.4 51 143.6 36.3zm-290-228.5L60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5l61.8-61.8-50.6-39.9z" }));
   return {
     name: "break",
     execute({ contents, selected }) {
@@ -699,16 +654,7 @@ function getCommand(ctx) {
     return result;
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "11,12 57,12 86,41 86,86",
-    strokeWidth: "3",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "11,12 57,12 86,41 86,86", strokeWidth: "3", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }));
   return {
     name: "chamfer",
     useCommand({ onEnd, type, selected, scale }) {
@@ -947,30 +893,21 @@ function getModel(ctx) {
       getGeometries: getCircleGeometries,
       propertyPanel(content, update, contents) {
         return {
-          x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.x,
-            setValue: (v) => update((c) => {
-              if (isCircleContent(c)) {
-                c.x = v;
-              }
-            })
-          }),
-          y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.y,
-            setValue: (v) => update((c) => {
-              if (isCircleContent(c)) {
-                c.y = v;
-              }
-            })
-          }),
-          r: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.r,
-            setValue: (v) => update((c) => {
-              if (isCircleContent(c)) {
-                c.r = v;
-              }
-            })
-          }),
+          x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+            if (isCircleContent(c)) {
+              c.x = v;
+            }
+          }) }),
+          y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+            if (isCircleContent(c)) {
+              c.y = v;
+            }
+          }) }),
+          r: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.r, setValue: (v) => update((c) => {
+            if (isCircleContent(c)) {
+              c.r = v;
+            }
+          }) }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents)
         };
@@ -1146,54 +1083,36 @@ function getModel(ctx) {
       getGeometries: getArcGeometries,
       propertyPanel(content, update, contents) {
         return {
-          x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.x,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.x = v;
-              }
-            })
-          }),
-          y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.y,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.y = v;
-              }
-            })
-          }),
-          r: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.r,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.r = v;
-              }
-            })
-          }),
-          startAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.startAngle,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.startAngle = v;
-              }
-            })
-          }),
-          endAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.endAngle,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.endAngle = v;
-              }
-            })
-          }),
-          counterclockwise: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.counterclockwise === true,
-            setValue: (v) => update((c) => {
-              if (isArcContent(c)) {
-                c.counterclockwise = v ? true : void 0;
-              }
-            })
-          }),
+          x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.x = v;
+            }
+          }) }),
+          y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.y = v;
+            }
+          }) }),
+          r: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.r, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.r = v;
+            }
+          }) }),
+          startAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.startAngle, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.startAngle = v;
+            }
+          }) }),
+          endAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.endAngle, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.endAngle = v;
+            }
+          }) }),
+          counterclockwise: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.counterclockwise === true, setValue: (v) => update((c) => {
+            if (isArcContent(c)) {
+              c.counterclockwise = v ? true : void 0;
+            }
+          }) }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents),
           ...ctx.getAngleDeltaContentPropertyPanel(content, update)
@@ -1212,116 +1131,11 @@ function isArcContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const circleIcon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "44",
-    cy: "48",
-    r: "39",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "44,48 66,15",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  const icon2 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "44",
-    cy: "48",
-    r: "39",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "18",
-    cy: "20",
-    r: "12",
-    strokeWidth: "0",
-    vectorEffect: "non-scaling-stroke",
-    fill: "currentColor",
-    stroke: "#000000"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "72",
-    cy: "76",
-    r: "12",
-    strokeWidth: "0",
-    vectorEffect: "non-scaling-stroke",
-    fill: "currentColor",
-    stroke: "#000000"
-  }));
-  const icon3 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "44",
-    cy: "48",
-    r: "39",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "18",
-    cy: "20",
-    r: "12",
-    strokeWidth: "0",
-    vectorEffect: "non-scaling-stroke",
-    fill: "currentColor",
-    stroke: "#000000"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "36",
-    cy: "87",
-    r: "12",
-    strokeWidth: "0",
-    vectorEffect: "non-scaling-stroke",
-    fill: "currentColor",
-    stroke: "#000000"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "80",
-    cy: "28",
-    r: "12",
-    strokeWidth: "0",
-    vectorEffect: "non-scaling-stroke",
-    fill: "currentColor",
-    stroke: "#000000"
-  }));
-  const circleIcon4 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "44",
-    cy: "48",
-    r: "39",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "25,82 66,15",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  const arcIcon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: "M 31 80 A 35 35 0 1 0 25 24",
-    strokeWidth: "2",
-    vectorEffect: "non-scaling-stroke",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const circleIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "44", cy: "48", r: "39", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "44,48 66,15", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "44", cy: "48", r: "39", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "20", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("circle", { cx: "72", cy: "76", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }));
+  const icon3 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "44", cy: "48", r: "39", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "18", cy: "20", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("circle", { cx: "36", cy: "87", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("circle", { cx: "80", cy: "28", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }));
+  const circleIcon4 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "44", cy: "48", r: "39", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "25,82 66,15", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }));
+  const arcIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("path", { d: "M 31 80 A 35 35 0 1 0 25 24", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }));
   return [
     {
       name: "create circle",
@@ -1465,32 +1279,7 @@ export {
 `// dev/cad-editor/plugins/clone.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("rect", {
-    x: "8",
-    y: "27",
-    width: "62",
-    height: "65",
-    strokeWidth: "3",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("rect", {
-    x: "30",
-    y: "8",
-    width: "62",
-    height: "65",
-    strokeWidth: "3",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "8", y: "27", width: "62", height: "65", strokeWidth: "3", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "30", y: "8", width: "62", height: "65", strokeWidth: "3", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "clone",
     useCommand({ onEnd, transform, type, scale }) {
@@ -1687,18 +1476,7 @@ function getCommand(ctx) {
     return !ctx.contentIsReferenced(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "36,93 40,92 43,90 47,88 51,86 55,84 58,81 62,79 65,76 69,73 72,70 75,67 78,64 80,60 83,57 85,54 86,51 88,47 89,44 90,41 90,38 91,36 90,33 90,31 89,28 88,26 87,25 85,23 83,22 81,21 78,20 76,20 73,20 69,20 66,20 63,21 59,22 55,23 52,25 48,27 44,29 40,31 37,34 33,36 30,39 26,42 23,45 20,48 17,51 15,55 12,58 10,61 9,64 36,93",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "36,93 40,92 43,90 47,88 51,86 55,84 58,81 62,79 65,76 69,73 72,70 75,67 78,64 80,60 83,57 85,54 86,51 88,47 89,44 90,41 90,38 91,36 90,33 90,31 89,28 88,26 87,25 85,23 83,22 81,21 78,20 76,20 73,20 69,20 66,20 63,21 59,22 55,23 52,25 48,27 44,29 40,31 37,34 33,36 30,39 26,42 23,45 20,48 17,51 15,55 12,58 10,61 9,64 36,93", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "create combined path",
     execute({ contents, selected, strokeStyleId, fillStyleId }) {
@@ -1727,40 +1505,7 @@ export {
 `// dev/cad-editor/plugins/compress.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("rect", {
-    x: "10",
-    y: "44",
-    width: "81",
-    height: "20",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("rect", {
-    x: "9",
-    y: "69",
-    width: "81",
-    height: "20",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "42,6 57,6 57,31 73,31 51,44 27,32 42,32",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "10", y: "44", width: "81", height: "20", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "9", y: "69", width: "81", height: "20", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "42,6 57,6 57,31 73,31 51,44 27,32 42,32", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "compress",
     execute({ contents }) {
@@ -1897,62 +1642,41 @@ function getModel(ctx) {
     getGeometries: getGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        xMin: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.xMin,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.xMin = v;
-            }
-          })
-        }),
-        xMax: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.xMax,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.xMax = v;
-            }
-          })
-        }),
-        yMin: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.yMin,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.yMin = v;
-            }
-          })
-        }),
-        yMax: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.yMax,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.yMax = v;
-            }
-          })
-        }),
-        flipY: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.flipY === true,
-          setValue: (v) => update((c) => {
-            if (isCoordinateAxisContent(c)) {
-              c.flipY = v ? true : void 0;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        xMin: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.xMin, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.xMin = v;
+          }
+        }) }),
+        xMax: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.xMax, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.xMax = v;
+          }
+        }) }),
+        yMin: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.yMin, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.yMin = v;
+          }
+        }) }),
+        yMax: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.yMax, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.yMax = v;
+          }
+        }) }),
+        flipY: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.flipY === true, setValue: (v) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.flipY = v ? true : void 0;
+          }
+        }) }),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -1966,42 +1690,7 @@ function isCoordinateAxisContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "0,50 95,50",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "50,5 50,100",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "100,50 82,58 82,42",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "50,0 58,18 42,18",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "0,50 95,50", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "50,5 50,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "100,50 82,58 82,42", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "50,0 58,18 42,18", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "create coordinate axis",
     selectCount: 0,
@@ -2248,38 +1937,7 @@ function getCommand(ctx) {
     return result;
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "10,87 89,87",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "17",
-    cy: "40",
-    r: "16",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "60",
-    cy: "57",
-    r: "30",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "10,87 89,87", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "17", cy: "40", r: "16", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "60", cy: "57", r: "30", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create tangent tangent radius circle",
     useCommand({ onEnd, type, selected, scale }) {
@@ -2349,26 +2007,7 @@ export {
 `// dev/cad-editor/plugins/delete.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "17,21 80,84",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "77,23 19,81",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "17,21 80,84", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "77,23 19,81", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "delete",
     execute({ contents, selected }) {
@@ -2495,38 +2134,26 @@ function getModel(ctx) {
     canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isDiamondContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isDiamondContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (isDiamondContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (isDiamondContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isDiamondContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isDiamondContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (isDiamondContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (isDiamondContent(c)) {
+            c.height = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -2540,18 +2167,7 @@ function isDiamondContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "52,5 97,50 52,96 6,50",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "52,5 97,50 52,96 6,50", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create diamond",
     icon,
@@ -2609,36 +2225,7 @@ function getCommand(ctx) {
     return ctx.isContainerContent(c);
   }
   const React = ctx.React;
-  const startIcon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "42,73 42,74 41,75 41,77 41,78 40,79 39,81 39,82 38,83 37,84 36,85 35,86 34,86 32,87 31,88 30,88 28,88 27,89 26,89 24,89 23,88 21,88 20,88 19,87 17,86 16,86 15,85 14,84 13,83 12,82 12,81 11,79 10,78 10,77 10,75 9,74 9,73 9,71 10,70 10,68 10,67 11,66 12,64 12,63 13,62 14,61 15,60 16,59 17,59 19,58 20,57 21,57 23,57 24,56 25,56 27,56 28,57 30,57 31,57 32,58 34,59 35,59 36,60 37,61 38,62 39,63 39,64 40,66 41,67 41,68 41,70 42,71 42,73",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "12,10 76,10 76,45 12,45",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "70,93 93,52 46,52",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const startIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "42,73 42,74 41,75 41,77 41,78 40,79 39,81 39,82 38,83 37,84 36,85 35,86 34,86 32,87 31,88 30,88 28,88 27,89 26,89 24,89 23,88 21,88 20,88 19,87 17,86 16,86 15,85 14,84 13,83 12,82 12,81 11,79 10,78 10,77 10,75 9,74 9,73 9,71 10,70 10,68 10,67 11,66 12,64 12,63 13,62 14,61 15,60 16,59 17,59 19,58 20,57 21,57 23,57 24,56 25,56 27,56 28,57 30,57 31,57 32,58 34,59 35,59 36,60 37,61 38,62 39,63 39,64 40,66 41,67 41,68 41,70 42,71 42,73", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "12,10 76,10 76,45 12,45", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "70,93 93,52 46,52", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   const startCommand = {
     name: "start edit container",
     icon: startIcon,
@@ -2653,42 +2240,7 @@ function getCommand(ctx) {
     contentSelectable,
     selectCount: 1
   };
-  const cancelIcon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "37,82 32,77 45,64 34,52 22,65 16,58 4,90",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "83,40 78,34 65,46 53,35 67,24 61,17 94,8",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "60,82 66,78 53,64 64,53 76,66 83,60 93,93",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "17,38 22,32 35,45 46,34 34,23 40,16 7,5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const cancelIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "37,82 32,77 45,64 34,52 22,65 16,58 4,90", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "83,40 78,34 65,46 53,35 67,24 61,17 94,8", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "60,82 66,78 53,64 64,53 76,66 83,60 93,93", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "17,38 22,32 35,45 46,34 34,23 40,16 7,5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   const cancelCommand = {
     name: "cancel edit container",
     execute({ setEditingContentPath }) {
@@ -2889,55 +2441,37 @@ function getModel(ctx) {
     getGeometries: getEllipseGeometries,
     propertyPanel(content, update, contents) {
       return {
-        cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.cx,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.cx = v;
-            }
-          })
-        }),
-        cy: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.cy,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.cy = v;
-            }
-          })
-        }),
-        rx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.rx,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.rx = v;
-            }
-          })
-        }),
-        ry: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.ry,
-          setValue: (v) => update((c) => {
-            if (isEllipseContent(c)) {
-              c.ry = v;
-            }
-          })
-        }),
+        cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cx, setValue: (v) => update((c) => {
+          if (isEllipseContent(c)) {
+            c.cx = v;
+          }
+        }) }),
+        cy: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cy, setValue: (v) => update((c) => {
+          if (isEllipseContent(c)) {
+            c.cy = v;
+          }
+        }) }),
+        rx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rx, setValue: (v) => update((c) => {
+          if (isEllipseContent(c)) {
+            c.rx = v;
+          }
+        }) }),
+        ry: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ry, setValue: (v) => update((c) => {
+          if (isEllipseContent(c)) {
+            c.ry = v;
+          }
+        }) }),
         angle: [
-          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.angle !== void 0,
-            setValue: (v) => update((c) => {
-              if (isEllipseContent(c)) {
-                c.angle = v ? 0 : void 0;
-              }
-            })
-          }),
-          content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.angle,
-            setValue: (v) => update((c) => {
-              if (isEllipseContent(c)) {
-                c.angle = v;
-              }
-            })
-          }) : void 0
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.angle !== void 0, setValue: (v) => update((c) => {
+            if (isEllipseContent(c)) {
+              c.angle = v ? 0 : void 0;
+            }
+          }) }),
+          content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+            if (isEllipseContent(c)) {
+              c.angle = v;
+            }
+          }) }) : void 0
         ],
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
@@ -3086,80 +2620,53 @@ function getModel(ctx) {
       getGeometries: getEllipseArcGeometries,
       propertyPanel(content, update, contents) {
         return {
-          cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.cx,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.cx = v;
-              }
-            })
-          }),
-          cy: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.cy,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.cy = v;
-              }
-            })
-          }),
-          rx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.rx,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.rx = v;
-              }
-            })
-          }),
-          ry: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.ry,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.ry = v;
-              }
-            })
-          }),
+          cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cx, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.cx = v;
+            }
+          }) }),
+          cy: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cy, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.cy = v;
+            }
+          }) }),
+          rx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rx, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.rx = v;
+            }
+          }) }),
+          ry: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ry, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.ry = v;
+            }
+          }) }),
           angle: [
-            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-              value: content.angle !== void 0,
-              setValue: (v) => update((c) => {
-                if (isEllipseArcContent(c)) {
-                  c.angle = v ? 0 : void 0;
-                }
-              })
-            }),
-            content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.angle,
-              setValue: (v) => update((c) => {
-                if (isEllipseArcContent(c)) {
-                  c.angle = v;
-                }
-              })
-            }) : void 0
+            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.angle !== void 0, setValue: (v) => update((c) => {
+              if (isEllipseArcContent(c)) {
+                c.angle = v ? 0 : void 0;
+              }
+            }) }),
+            content.angle !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+              if (isEllipseArcContent(c)) {
+                c.angle = v;
+              }
+            }) }) : void 0
           ],
-          startAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.startAngle,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.startAngle = v;
-              }
-            })
-          }),
-          endAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.endAngle,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.endAngle = v;
-              }
-            })
-          }),
-          counterclockwise: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.counterclockwise === true,
-            setValue: (v) => update((c) => {
-              if (isEllipseArcContent(c)) {
-                c.counterclockwise = v ? true : void 0;
-              }
-            })
-          }),
+          startAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.startAngle, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.startAngle = v;
+            }
+          }) }),
+          endAngle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.endAngle, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.endAngle = v;
+            }
+          }) }),
+          counterclockwise: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.counterclockwise === true, setValue: (v) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.counterclockwise = v ? true : void 0;
+            }
+          }) }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents),
           ...ctx.getAngleDeltaContentPropertyPanel(content, update)
@@ -3178,88 +2685,9 @@ function isEllipseArcContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon1 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("ellipse", {
-    cx: "50",
-    cy: "50",
-    rx: "42",
-    ry: "25",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "50",
-    cy: "50",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "92",
-    cy: "50",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
-  const icon2 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("ellipse", {
-    cx: "50",
-    cy: "50",
-    rx: "42",
-    ry: "25",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "8",
-    cy: "50",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "92",
-    cy: "50",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
-  const icon3 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "7,71 8,69 8,66 9,64 10,61 12,58 14,55 16,52 18,49 21,46 23,43 27,40 30,38 33,35 37,32 40,30 44,28 48,25 51,23 55,22 59,20 62,19 66,18 69,17 72,16 76,16 78,16 81,16 84,17 86,17 88,18 89,19 91,21 92,22 92,24 93,26 93,29 92,31 92,34 91,36 90,39 88,42 86,45 84,48 82,51 79,54 77,57 73,60 70,62 67,65 63,68 60,70 56,72 52,75 49,77 45,78 41,80 38,81 34,82",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "50", cy: "50", rx: "42", ry: "25", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "50", cy: "50", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "92", cy: "50", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("ellipse", { cx: "50", cy: "50", rx: "42", ry: "25", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "8", cy: "50", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "92", cy: "50", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
+  const icon3 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "7,71 8,69 8,66 9,64 10,61 12,58 14,55 16,52 18,49 21,46 23,43 27,40 30,38 33,35 37,32 40,30 44,28 48,25 51,23 55,22 59,20 62,19 66,18 69,17 72,16 76,16 78,16 81,16 84,17 86,17 88,18 89,19 91,21 92,22 92,24 93,26 93,29 92,31 92,34 91,36 90,39 88,42 86,45 84,48 82,51 79,54 77,57 73,60 70,62 67,65 63,68 60,70 56,72 52,75 49,77 45,78 41,80 38,81 34,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return [
     {
       name: "create ellipse",
@@ -5839,24 +5267,16 @@ function getModel(ctx) {
     getGeometries: getGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        dependentVariable: /* @__PURE__ */ React.createElement(ctx.EnumEditor, {
-          value: content.dependentVariable,
-          enums: ["x", "y"],
-          setValue: (v) => update((c) => {
-            if (isEquationContent(c)) {
-              c.dependentVariable = v;
-            }
-          })
-        }),
-        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, {
-          suggestionSources: math,
-          value: content.expression,
-          setValue: (v) => update((c) => {
-            if (isEquationContent(c)) {
-              c.expression = v;
-            }
-          })
-        }),
+        dependentVariable: /* @__PURE__ */ React.createElement(ctx.EnumEditor, { value: content.dependentVariable, enums: ["x", "y"], setValue: (v) => update((c) => {
+          if (isEquationContent(c)) {
+            c.dependentVariable = v;
+          }
+        }) }),
+        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: math, value: content.expression, setValue: (v) => update((c) => {
+          if (isEquationContent(c)) {
+            c.expression = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getSegmentCountContentPropertyPanel(content, update)
       };
@@ -5876,50 +5296,7 @@ function isEquationContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "7,93 88,93",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "7,12 7,93",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "97,93 68,101 68,85",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "7,3 15,32 1,32",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "7,93 8,85 9,81 10,78 11,76 12,74 12,72 13,71 14,69 15,68 16,66 17,65 18,64 19,62 20,61 21,60 21,59 22,58 23,57 24,56 25,55 26,54 27,53 28,52 29,51 29,51 30,50 31,49 32,48 33,47 34,47 35,46 36,45 37,44 38,44 38,43 39,42 40,41 41,41 42,40 43,39 44,39 45,38 46,37 47,37 47,36 48,35 49,35 50,34 51,34 52,33 53,32 54,32 55,31 56,31 56,30 57,30 58,29 59,28 60,28 61,27 62,27 63,26 64,26 65,25 65,25 66,24 67,24 68,23 69,23 70,22 71,22 72,21 73,21 74,20 74,20 75,19 76,19 77,18 78,18 79,17 80,17 81,16 82,16 83,15 84,15 84,14 85,14 86,13 87,13 88,13 89,12 90,12 91,11 92,11 93,10 93,10 94,9 95,9 96,9",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "7,93 88,93", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "7,12 7,93", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "97,93 68,101 68,85", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "7,3 15,32 1,32", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "7,93 8,85 9,81 10,78 11,76 12,74 12,72 13,71 14,69 15,68 16,66 17,65 18,64 19,62 20,61 21,60 21,59 22,58 23,57 24,56 25,55 26,54 27,53 28,52 29,51 29,51 30,50 31,49 32,48 33,47 34,47 35,46 36,45 37,44 38,44 38,43 39,42 40,41 41,41 42,40 43,39 44,39 45,38 46,37 47,37 47,36 48,35 49,35 50,34 51,34 52,33 53,32 54,32 55,31 56,31 56,30 57,30 58,29 59,28 60,28 61,27 62,27 63,26 64,26 65,25 65,25 66,24 67,24 68,23 69,23 70,22 71,22 72,21 73,21 74,20 74,20 75,19 76,19 77,18 78,18 79,17 80,17 81,16 82,16 83,15 84,15 84,14 85,14 86,13 87,13 88,13 89,12 90,12 91,11 92,11 93,10 93,10 94,9 95,9 96,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create equation",
     icon,
@@ -5958,10 +5335,7 @@ function getCommand(ctx) {
           setInputPosition(viewportPosition || p);
           setCursorPosition(p);
         },
-        subcommand: enabled ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
-          onClick: () => setDependentVariable(dependentVariable === "x" ? "y" : "x"),
-          style: { position: "relative" }
-        }, "f(", dependentVariable, ")")) : void 0,
+        subcommand: enabled ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", { onClick: () => setDependentVariable(dependentVariable === "x" ? "y" : "x"), style: { position: "relative" } }, "f(", dependentVariable, ")")) : void 0,
         reset
       };
     },
@@ -5978,42 +5352,7 @@ export {
 `// dev/cad-editor/plugins/explode.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "17,11 83,11",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "80,91 16,91",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "9,84 9,19",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "90,19 90,85",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "17,11 83,11", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "80,91 16,91", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "9,84 9,19", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "90,19 90,85", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "explode",
     execute({ contents, selected }) {
@@ -6045,34 +5384,7 @@ export {
 `// dev/cad-editor/plugins/export-jsx.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "25,13 7,51 22,90",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "75,13 93,51 78,90",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "64,15 51,90",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "25,13 7,51 22,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "75,13 93,51 78,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "64,15 51,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "export jsx",
     execute({ contents, selected }) {
@@ -6197,53 +5509,38 @@ function getModel(ctx) {
     getGeometries: getGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.isCurrent === true,
-          setValue: (v) => update((c, draft) => {
-            if (ctx.isFillStyleContent(c)) {
-              const currentFillStyle = ctx.getFillStyles(contents).find((s) => s.content.isCurrent);
-              if (currentFillStyle) {
-                const c2 = draft[currentFillStyle.index];
-                if (c2 && ctx.isFillStyleContent(c2)) {
-                  c2.isCurrent = void 0;
-                }
+        isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.isCurrent === true, setValue: (v) => update((c, draft) => {
+          if (ctx.isFillStyleContent(c)) {
+            const currentFillStyle = ctx.getFillStyles(contents).find((s) => s.content.isCurrent);
+            if (currentFillStyle) {
+              const c2 = draft[currentFillStyle.index];
+              if (c2 && ctx.isFillStyleContent(c2)) {
+                c2.isCurrent = void 0;
               }
-              c.isCurrent = v ? true : void 0;
             }
-          })
-        }),
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (ctx.isFillStyleContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (ctx.isFillStyleContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (ctx.isFillStyleContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (ctx.isFillStyleContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
+            c.isCurrent = v ? true : void 0;
+          }
+        }) }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (ctx.isFillStyleContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (ctx.isFillStyleContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (ctx.isFillStyleContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (ctx.isFillStyleContent(c)) {
+            c.height = v;
+          }
+        }) }),
         ...ctx.getFillContentPropertyPanel(content, update)
       };
     }
@@ -6251,46 +5548,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("rect", {
-    x: "5",
-    y: "6",
-    width: "89",
-    height: "39",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("pattern", {
-    id: "1",
-    patternUnits: "userSpaceOnUse",
-    width: "20",
-    height: "20"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: "M 0 10 L 10 0 M 20 10 L 10 20",
-    strokeWidth: "1",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor",
-    fillRule: "evenodd"
-  })), /* @__PURE__ */ React.createElement("rect", {
-    x: "5",
-    y: "55",
-    width: "89",
-    height: "39",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "url(#1)",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "5", y: "6", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "1", patternUnits: "userSpaceOnUse", width: "20", height: "20" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 10 L 10 0 M 20 10 L 10 20", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("rect", { x: "5", y: "55", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "url(#1)", stroke: "currentColor" }));
   return {
     name: "create fill style",
     selectCount: 0,
@@ -6395,34 +5653,7 @@ function getCommand(ctx) {
     });
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "9,10 92,10",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "92,10 92,93",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("path", {
-    d: "M 92 60 A 50 50 0 0 0 42 10",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "9,10 92,10", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "92,10 92,93", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("path", { d: "M 92 60 A 50 50 0 0 0 42 10", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "fillet",
     useCommand({ onEnd, type, selected, scale }) {
@@ -6513,39 +5744,7 @@ function getCommand(ctx) {
     return !ctx.contentIsReferenced(content, contents);
   }
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "28",
-    cy: "73",
-    r: "22",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "93,78 97,48 71,34 49,56 63,82",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("rect", {
-    x: "7",
-    y: "8",
-    width: "50",
-    height: "37",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "73", r: "22", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "93,78 97,48 71,34 49,56 63,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "8", width: "50", height: "37", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create group",
     execute({ contents, selected }) {
@@ -6635,46 +5834,31 @@ function getModel(ctx) {
     getGeometries: getImageGeometries,
     propertyPanel(content, update) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isImageContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isImageContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (isImageContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (isImageContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
-        url: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.url,
-          setValue: (v) => update((c) => {
-            if (isImageContent(c)) {
-              c.url = v;
-            }
-          })
-        })
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isImageContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isImageContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (isImageContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (isImageContent(c)) {
+            c.height = v;
+          }
+        }) }),
+        url: /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.url, setValue: (v) => update((c) => {
+          if (isImageContent(c)) {
+            c.url = v;
+          }
+        }) })
       };
     }
   };
@@ -6684,28 +5868,7 @@ function isImageContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "100,100 100,50 66,67 28,11 0,36 0,100",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "70",
-    cy: "22",
-    r: "13",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "100,100 100,50 66,67 28,11 0,36 0,100", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "70", cy: "22", r: "13", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "create image",
     useCommand({ onEnd, type }) {
@@ -6815,35 +5978,35 @@ function getModel(ctx) {
     getGeometries: getPolylineGeometries,
     propertyPanel(content, update, contents) {
       return {
-        points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-          inline: true,
-          ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
-            if (isLineContent(c)) {
-              v(c);
-            }
-          })),
-          items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+        points: /* @__PURE__ */ React.createElement(
+          ctx.ArrayEditor,
+          {
             inline: true,
-            properties: {
-              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.x,
-                setValue: (v) => update((c) => {
-                  if (isLineContent(c)) {
-                    c.points[i].x = v;
-                  }
-                })
-              }),
-              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.y,
-                setValue: (v) => update((c) => {
-                  if (isLineContent(c)) {
-                    c.points[i].y = v;
-                  }
-                })
-              })
-            }
-          }))
-        }),
+            ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+              if (isLineContent(c)) {
+                v(c);
+              }
+            })),
+            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+              ctx.ObjectEditor,
+              {
+                inline: true,
+                properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
+                    if (isLineContent(c)) {
+                      c.points[i].x = v;
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.y, setValue: (v) => update((c) => {
+                    if (isLineContent(c)) {
+                      c.points[i].y = v;
+                    }
+                  }) })
+                }
+              }
+            ))
+          }
+        ),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
@@ -6881,35 +6044,35 @@ function getModel(ctx) {
       canSelectPart: true,
       propertyPanel(content, update, contents) {
         return {
-          points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-            inline: true,
-            ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
-              if (isPolyLineContent(c)) {
-                v(c);
-              }
-            })),
-            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+          points: /* @__PURE__ */ React.createElement(
+            ctx.ArrayEditor,
+            {
               inline: true,
-              properties: {
-                x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                  value: f.x,
-                  setValue: (v) => update((c) => {
-                    if (isPolyLineContent(c)) {
-                      c.points[i].x = v;
-                    }
-                  })
-                }),
-                y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                  value: f.y,
-                  setValue: (v) => update((c) => {
-                    if (isPolyLineContent(c)) {
-                      c.points[i].y = v;
-                    }
-                  })
-                })
-              }
-            }))
-          }),
+              ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+                if (isPolyLineContent(c)) {
+                  v(c);
+                }
+              })),
+              items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+                ctx.ObjectEditor,
+                {
+                  inline: true,
+                  properties: {
+                    x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
+                      if (isPolyLineContent(c)) {
+                        c.points[i].x = v;
+                      }
+                    }) }),
+                    y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.y, setValue: (v) => update((c) => {
+                      if (isPolyLineContent(c)) {
+                        c.points[i].y = v;
+                      }
+                    }) })
+                  }
+                }
+              ))
+            }
+          ),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents)
         };
@@ -6925,30 +6088,8 @@ function isPolyLineContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon1 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "10,87 87,9",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  const icon2 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "12,86 38,24 62,64 88,13",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "10,87 87,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "12,86 38,24 62,64 88,13", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return [
     {
       name: "create line",
@@ -7070,15 +6211,19 @@ function getCommand(ctx) {
           assistentContents,
           lastPosition,
           reset,
-          subcommand: type === "create polyline" && positions.length > 2 ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
-            onClick: () => {
-              onEnd({
-                updateContents: (contents) => contents.push({ points: positions, type: "polygon" })
-              });
-              reset();
+          subcommand: type === "create polyline" && positions.length > 2 ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              onClick: () => {
+                onEnd({
+                  updateContents: (contents) => contents.push({ points: positions, type: "polygon" })
+                });
+                reset();
+              },
+              style: { position: "relative" }
             },
-            style: { position: "relative" }
-          }, "close")) : void 0
+            "close"
+          )) : void 0
         };
       },
       selectCount: 0,
@@ -7176,111 +6321,87 @@ function getModel(ctx) {
     getGeometries: getLinearDimensionGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        p1: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p1.x,
-              setValue: (v) => update((c) => {
+        p1: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p1.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p1.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.y, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p1.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
-        p2: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p2.x,
-              setValue: (v) => update((c) => {
+        ),
+        p2: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p2.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.p2.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.y, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p2.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
-        position: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.position.x,
-              setValue: (v) => update((c) => {
+        ),
+        position: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.position.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.position.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.y, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.position.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
-        direct: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.direct === true,
-          setValue: (v) => update((c) => {
-            if (isLinearDimensionContent(c)) {
-              c.direct = v ? true : void 0;
-            }
-          })
-        }),
+        ),
+        direct: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.direct === true, setValue: (v) => update((c) => {
+          if (isLinearDimensionContent(c)) {
+            c.direct = v ? true : void 0;
+          }
+        }) }),
         text: [
-          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.text !== void 0,
-            setValue: (v) => update((c) => {
-              if (isLinearDimensionContent(c)) {
-                c.text = v ? "" : void 0;
-              }
-            })
-          }),
-          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-            value: content.text,
-            setValue: (v) => update((c) => {
-              if (isLinearDimensionContent(c)) {
-                c.text = v;
-              }
-            })
-          }) : void 0
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.text !== void 0, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c)) {
+              c.text = v ? "" : void 0;
+            }
+          }) }),
+          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.text, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c)) {
+              c.text = v;
+            }
+          }) }) : void 0
         ],
-        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.fontSize,
-          setValue: (v) => update((c) => {
-            if (isLinearDimensionContent(c)) {
-              c.fontSize = v;
-            }
-          })
-        }),
-        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.fontFamily,
-          setValue: (v) => update((c) => {
-            if (isLinearDimensionContent(c)) {
-              c.fontFamily = v;
-            }
-          })
-        }),
+        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.fontSize, setValue: (v) => update((c) => {
+          if (isLinearDimensionContent(c)) {
+            c.fontSize = v;
+          }
+        }) }),
+        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.fontFamily, setValue: (v) => update((c) => {
+          if (isLinearDimensionContent(c)) {
+            c.fontFamily = v;
+          }
+        }) }),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -7294,70 +6415,7 @@ function isLinearDimensionContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "15",
-    cy: "83",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "82",
-    cy: "84",
-    r: "10",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "15,83 14,7",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "82,84 82,6",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "14,25 81,25",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "66,34 83,24 65,15",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "29,34 12,25 29,15",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "15", cy: "83", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "82", cy: "84", r: "10", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "15,83 14,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "82,84 82,6", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "14,25 81,25", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "66,34 83,24 65,15", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "29,34 12,25 29,15", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "create linear dimension",
     selectCount: 0,
@@ -7429,15 +6487,12 @@ function getCommand(ctx) {
             });
           }
         },
-        subcommand: type ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
-          onClick: () => {
-            if (result) {
-              setResult({ ...result, direct: !direct });
-            }
-            setDirect(!direct);
-          },
-          style: { position: "relative" }
-        }, direct ? "direct" : "axis")) : void 0,
+        subcommand: type ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", { onClick: () => {
+          if (result) {
+            setResult({ ...result, direct: !direct });
+          }
+          setDirect(!direct);
+        }, style: { position: "relative" } }, direct ? "direct" : "axis")) : void 0,
         assistentContents,
         lastPosition: p2 != null ? p2 : p1
       };
@@ -7454,36 +6509,7 @@ export {
 `// dev/cad-editor/plugins/measure.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "9,14 43,92",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "94,14 93,21 92,28 91,36 88,43 86,49 82,56 78,62 74,68 69,74 63,79 57,83 51,87 44,91",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "9,14 94,14",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "9,14 43,92", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "94,14 93,21 92,28 91,36 88,43 86,49 82,56 78,62 74,68 69,74 63,79 57,83 51,87 44,91", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "9,14 94,14", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "measure",
     useCommand({ transform, type, scale }) {
@@ -7558,35 +6584,7 @@ export {
 `// dev/cad-editor/plugins/mirror.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "9,91 38,46 9,10",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "50,0 50,100",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "90,91 62,46 91,10",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "9,91 38,46 9,10", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "50,0 50,100", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "90,91 62,46 91,10", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "mirror",
     useCommand({ onEnd, transform, type, scale }) {
@@ -7612,12 +6610,16 @@ function getCommand(ctx) {
         mask: type ? mask : void 0,
         input,
         reset,
-        subcommand: type ? /* @__PURE__ */ React.createElement("button", {
-          onClick: (e) => {
-            setChangeOriginal(!changeOriginal);
-            e.stopPropagation();
-          }
-        }, changeOriginal ? "create new(N)" : "change original(Y)") : void 0,
+        subcommand: type ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              setChangeOriginal(!changeOriginal);
+              e.stopPropagation();
+            }
+          },
+          changeOriginal ? "create new(N)" : "change original(Y)"
+        ) : void 0,
         updateSelectedContent(content, contents) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
@@ -7671,30 +6673,7 @@ export {
 `// dev/cad-editor/plugins/move.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "9,60 55,60 55,91 9,91",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("rect", {
-    x: "44",
-    y: "10",
-    width: "46",
-    height: "31",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "9,60 55,60 55,91 9,91", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "44", y: "10", width: "46", height: "31", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "move",
     useCommand({ onEnd, transform, type, scale }) {
@@ -7953,20 +6932,18 @@ function getModel(ctx) {
     getGeometries: getPathGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        commands: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-          inline: true,
-          ...ctx.getArrayEditorProps((v) => v.commands, { type: "line", to: { x: 0, y: 0 } }, (v) => update((c) => {
-            if (isPathContent(c)) {
-              v(c);
-            }
-          })),
-          items: content.commands.map((f, i) => {
-            const properties = {
-              type: /* @__PURE__ */ React.createElement(ctx.EnumEditor, {
-                select: true,
-                value: f.type,
-                enums: ["move", "line", "arc", "bezierCurve", "quadraticCurve", "close"],
-                setValue: (v) => update((c) => {
+        commands: /* @__PURE__ */ React.createElement(
+          ctx.ArrayEditor,
+          {
+            inline: true,
+            ...ctx.getArrayEditorProps((v) => v.commands, { type: "line", to: { x: 0, y: 0 } }, (v) => update((c) => {
+              if (isPathContent(c)) {
+                v(c);
+              }
+            })),
+            items: content.commands.map((f, i) => {
+              const properties = {
+                type: /* @__PURE__ */ React.createElement(ctx.EnumEditor, { select: true, value: f.type, enums: ["move", "line", "arc", "bezierCurve", "quadraticCurve", "close"], setValue: (v) => update((c) => {
                   if (isPathContent(c)) {
                     if (v === "move" || v === "line") {
                       c.commands[i] = {
@@ -7999,156 +6976,108 @@ function getModel(ctx) {
                       };
                     }
                   }
-                })
-              })
-            };
-            if (f.type === "arc") {
-              properties.from = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-                inline: true,
-                properties: {
-                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.from.x,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "arc") {
-                          m.from.x = v;
-                        }
+                }) })
+              };
+              if (f.type === "arc") {
+                properties.from = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.from.x, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "arc") {
+                        m.from.x = v;
                       }
-                    })
-                  }),
-                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.from.y,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "arc") {
-                          m.from.y = v;
-                        }
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.from.y, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "arc") {
+                        m.from.y = v;
                       }
-                    })
-                  })
-                }
-              });
-            } else if (f.type === "bezierCurve") {
-              properties.cp1 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-                inline: true,
-                properties: {
-                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp1.x,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "bezierCurve") {
-                          m.cp1.x = v;
-                        }
+                    }
+                  }) })
+                } });
+              } else if (f.type === "bezierCurve") {
+                properties.cp1 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp1.x, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp1.x = v;
                       }
-                    })
-                  }),
-                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp1.y,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "bezierCurve") {
-                          m.cp1.y = v;
-                        }
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp1.y, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp1.y = v;
                       }
-                    })
-                  })
-                }
-              });
-              properties.cp2 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-                inline: true,
-                properties: {
-                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp2.x,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "bezierCurve") {
-                          m.cp2.x = v;
-                        }
+                    }
+                  }) })
+                } });
+                properties.cp2 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp2.x, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp2.x = v;
                       }
-                    })
-                  }),
-                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp2.y,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "bezierCurve") {
-                          m.cp2.y = v;
-                        }
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp2.y, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp2.y = v;
                       }
-                    })
-                  })
-                }
-              });
-            } else if (f.type === "quadraticCurve") {
-              properties.cp = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-                inline: true,
-                properties: {
-                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp.x,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "quadraticCurve") {
-                          m.cp.x = v;
-                        }
+                    }
+                  }) })
+                } });
+              } else if (f.type === "quadraticCurve") {
+                properties.cp = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp.x, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "quadraticCurve") {
+                        m.cp.x = v;
                       }
-                    })
-                  }),
-                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.cp.y,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type === "quadraticCurve") {
-                          m.cp.y = v;
-                        }
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp.y, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "quadraticCurve") {
+                        m.cp.y = v;
                       }
-                    })
-                  })
-                }
-              });
-            }
-            if (f.type !== "close") {
-              properties.to = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-                inline: true,
-                properties: {
-                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.to.x,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type !== "close") {
-                          m.to.x = v;
-                        }
+                    }
+                  }) })
+                } });
+              }
+              if (f.type !== "close") {
+                properties.to = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.to.x, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type !== "close") {
+                        m.to.x = v;
                       }
-                    })
-                  }),
-                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                    value: f.to.y,
-                    setValue: (v) => update((c) => {
-                      if (isPathContent(c)) {
-                        const m = c.commands[i];
-                        if (m.type !== "close") {
-                          m.to.y = v;
-                        }
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.to.y, setValue: (v) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type !== "close") {
+                        m.to.y = v;
                       }
-                    })
-                  })
-                }
-              });
-            }
-            return /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-              inline: true,
-              properties
-            });
-          })
-        }),
+                    }
+                  }) })
+                } });
+              }
+              return /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties });
+            })
+          }
+        ),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -8162,18 +7091,7 @@ function isPathContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: " M 8 8 L 40 7 A 50 50 0 0 1 91 57 Q 91 91, 17 90 C 50 72, 50 31, 8 24 Z",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("path", { d: " M 8 8 L 40 7 A 50 50 0 0 1 91 57 Q 91 91, 17 90 C 50 72, 50 31, 8 24 Z", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create path",
     hotkey: "P",
@@ -8222,11 +7140,7 @@ function getCommand(ctx) {
         input,
         onMove,
         reset,
-        subcommand: type === "create path" ? /* @__PURE__ */ React.createElement("span", null, ["line", "arc", "bezierCurve", "quadraticCurve", "close"].map((m) => /* @__PURE__ */ React.createElement("button", {
-          key: m,
-          onClick: () => setInputType(m),
-          style: { position: "relative" }
-        }, m))) : void 0,
+        subcommand: type === "create path" ? /* @__PURE__ */ React.createElement("span", null, ["line", "arc", "bezierCurve", "quadraticCurve", "close"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, onClick: () => setInputType(m), style: { position: "relative" } }, m))) : void 0,
         assistentContents
       };
     },
@@ -8293,13 +7207,7 @@ function isPenContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    viewBox: "0 0 1024 1024",
-    xmlns: "http://www.w3.org/2000/svg"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: "m199.04 672.64 193.984 112 224-387.968-193.92-112-224 388.032zm-23.872 60.16 32.896 148.288 144.896-45.696L175.168 732.8zM455.04 229.248l193.92 112 56.704-98.112-193.984-112-56.64 98.112zM104.32 708.8l384-665.024 304.768 175.936L409.152 884.8h.064l-248.448 78.336L104.32 708.8zm384 254.272v-64h448v64h-448z",
-    fill: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 1024 1024", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("path", { d: "m199.04 672.64 193.984 112 224-387.968-193.92-112-224 388.032zm-23.872 60.16 32.896 148.288 144.896-45.696L175.168 732.8zM455.04 229.248l193.92 112 56.704-98.112-193.984-112-56.64 98.112zM104.32 708.8l384-665.024 304.768 175.936L409.152 884.8h.064l-248.448 78.336L104.32 708.8zm384 254.272v-64h448v64h-448z", fill: "currentColor" }));
   return {
     name: "create pen",
     useCommand({ onEnd, type, strokeStyleId }) {
@@ -8410,35 +7318,35 @@ function getModel(ctx) {
     canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
-        points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-          inline: true,
-          ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
-            if (isPolygonContent(c)) {
-              v(c);
-            }
-          })),
-          items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+        points: /* @__PURE__ */ React.createElement(
+          ctx.ArrayEditor,
+          {
             inline: true,
-            properties: {
-              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.x,
-                setValue: (v) => update((c) => {
-                  if (isPolygonContent(c)) {
-                    c.points[i].x = v;
-                  }
-                })
-              }),
-              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.y,
-                setValue: (v) => update((c) => {
-                  if (isPolygonContent(c)) {
-                    c.points[i].y = v;
-                  }
-                })
-              })
-            }
-          }))
-        }),
+            ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+              if (isPolygonContent(c)) {
+                v(c);
+              }
+            })),
+            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+              ctx.ObjectEditor,
+              {
+                inline: true,
+                properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
+                    if (isPolygonContent(c)) {
+                      c.points[i].x = v;
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.y, setValue: (v) => update((c) => {
+                    if (isPolygonContent(c)) {
+                      c.points[i].y = v;
+                    }
+                  }) })
+                }
+              }
+            ))
+          }
+        ),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -8452,18 +7360,7 @@ function isPolygonContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "10,81 86,83 88,39 52,10 12,35",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "10,81 86,83 88,39 52,10 12,35", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create polygon",
     useCommand({ onEnd, type, scale, strokeStyleId, fillStyleId }) {
@@ -8492,13 +7389,7 @@ function getCommand(ctx) {
         input,
         onMove,
         reset,
-        subcommand: type === "create polygon" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", {
-          onClick: startSetSides,
-          style: { position: "relative" }
-        }, "set sides(S)"), /* @__PURE__ */ React.createElement("button", {
-          onClick: () => setCreateType(createType === "edge" ? "point" : "edge"),
-          style: { position: "relative" }
-        }, createType, "(T)")) : void 0,
+        subcommand: type === "create polygon" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("button", { onClick: startSetSides, style: { position: "relative" } }, "set sides(S)"), /* @__PURE__ */ React.createElement("button", { onClick: () => setCreateType(createType === "edge" ? "point" : "edge"), style: { position: "relative" } }, createType, "(T)")) : void 0,
         assistentContents,
         lastPosition: startPosition
       };
@@ -8610,69 +7501,51 @@ function getModel(ctx) {
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.refId,
-          setValue: (v) => update((c) => {
-            if (isRadialDimensionReferenceContent(c)) {
-              c.refId = v;
-            }
-          })
-        }) : [],
-        position: /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
-          inline: true,
-          properties: {
-            x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.position.x,
-              setValue: (v) => update((c) => {
+        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
+          if (isRadialDimensionReferenceContent(c)) {
+            c.refId = v;
+          }
+        }) }) : [],
+        position: /* @__PURE__ */ React.createElement(
+          ctx.ObjectEditor,
+          {
+            inline: true,
+            properties: {
+              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.x, setValue: (v) => update((c) => {
                 if (isRadialDimensionReferenceContent(c)) {
                   c.position.x = v;
                 }
-              })
-            }),
-            y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-              value: content.position.y,
-              setValue: (v) => update((c) => {
+              }) }),
+              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.y, setValue: (v) => update((c) => {
                 if (isRadialDimensionReferenceContent(c)) {
                   c.position.y = v;
                 }
-              })
-            })
+              }) })
+            }
           }
-        }),
+        ),
         text: [
-          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.text !== void 0,
-            setValue: (v) => update((c) => {
-              if (isRadialDimensionReferenceContent(c)) {
-                c.text = v ? "" : void 0;
-              }
-            })
-          }),
-          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-            value: content.text,
-            setValue: (v) => update((c) => {
-              if (isRadialDimensionReferenceContent(c)) {
-                c.text = v;
-              }
-            })
-          }) : void 0
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.text !== void 0, setValue: (v) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.text = v ? "" : void 0;
+            }
+          }) }),
+          content.text !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.text, setValue: (v) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.text = v;
+            }
+          }) }) : void 0
         ],
-        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.fontSize,
-          setValue: (v) => update((c) => {
-            if (isRadialDimensionReferenceContent(c)) {
-              c.fontSize = v;
-            }
-          })
-        }),
-        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.fontFamily,
-          setValue: (v) => update((c) => {
-            if (isRadialDimensionReferenceContent(c)) {
-              c.fontFamily = v;
-            }
-          })
-        }),
+        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.fontSize, setValue: (v) => update((c) => {
+          if (isRadialDimensionReferenceContent(c)) {
+            c.fontSize = v;
+          }
+        }) }),
+        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.fontFamily, setValue: (v) => update((c) => {
+          if (isRadialDimensionReferenceContent(c)) {
+            c.fontFamily = v;
+          }
+        }) }),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -8695,36 +7568,7 @@ function contentSelectable(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "36",
-    cy: "64",
-    r: "31",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "36,64 90,9",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polygon", {
-    points: "75,32 65,22 54,44",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "36", cy: "64", r: "31", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "36,64 90,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "75,32 65,22 54,44", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   return {
     name: "create radial dimension",
     selectCount: 1,
@@ -8939,46 +7783,31 @@ function getModel(ctx) {
     canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isRectContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isRectContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (isRectContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (isRectContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
-        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.angle,
-          setValue: (v) => update((c) => {
-            if (isRectContent(c)) {
-              c.angle = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isRectContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isRectContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (isRectContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (isRectContent(c)) {
+            c.height = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+          if (isRectContent(c)) {
+            c.angle = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -8992,21 +7821,7 @@ function isRectContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("rect", {
-    x: "11",
-    y: "26",
-    width: "79",
-    height: "48",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "11", y: "26", width: "79", height: "48", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create rect",
     icon,
@@ -9147,46 +7962,31 @@ function getModel(ctx) {
     getGeometries: getRegularPolygonGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isRegularPolygonContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isRegularPolygonContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        radius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.radius,
-          setValue: (v) => update((c) => {
-            if (isRegularPolygonContent(c)) {
-              c.radius = v;
-            }
-          })
-        }),
-        count: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.count,
-          setValue: (v) => update((c) => {
-            if (isRegularPolygonContent(c)) {
-              c.count = v;
-            }
-          })
-        }),
-        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.angle,
-          setValue: (v) => update((c) => {
-            if (isRegularPolygonContent(c)) {
-              c.angle = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        radius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.radius, setValue: (v) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.radius = v;
+          }
+        }) }),
+        count: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.count, setValue: (v) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.count = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.angle = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -9200,18 +8000,7 @@ function isRegularPolygonContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "91,40 53,7 10,33 22,82 72,85",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "91,40 53,7 10,33 22,82 72,85", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create regular polygon",
     icon,
@@ -9350,38 +8139,26 @@ function getModel(ctx) {
     getGeometries: getRingGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isRingContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isRingContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        outerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.outerRadius,
-          setValue: (v) => update((c) => {
-            if (isRingContent(c)) {
-              c.outerRadius = v;
-            }
-          })
-        }),
-        innerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.innerRadius,
-          setValue: (v) => update((c) => {
-            if (isRingContent(c)) {
-              c.innerRadius = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isRingContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isRingContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        outerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.outerRadius, setValue: (v) => update((c) => {
+          if (isRingContent(c)) {
+            c.outerRadius = v;
+          }
+        }) }),
+        innerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.innerRadius, setValue: (v) => update((c) => {
+          if (isRingContent(c)) {
+            c.innerRadius = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
         ...ctx.getAngleDeltaContentPropertyPanel(content, update)
@@ -9396,26 +8173,7 @@ function isRingContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "91,50 91,53 91,57 90,60 89,64 87,67 86,70 84,74 82,76 79,79 76,82 74,84 70,86 67,87 64,89 60,90 57,91 53,91 50,91 46,91 42,91 39,90 35,89 32,87 29,86 25,84 23,82 20,79 17,76 15,74 13,70 12,67 10,64 9,60 8,57 8,53 8,50 8,46 8,42 9,39 10,35 12,32 13,29 15,25 17,23 20,20 23,17 25,15 29,13 32,12 35,10 39,9 42,8 46,8 49,8 53,8 57,8 60,9 64,10 67,12 70,13 74,15 76,17 79,20 82,23 84,25 86,29 87,32 89,35 90,39 91,42 91,46 91,49",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "70,50 70,51 70,53 70,55 69,57 68,58 68,60 67,62 66,63 64,64 63,66 62,67 60,68 58,68 57,69 55,70 53,70 51,70 50,70 48,70 46,70 44,70 42,69 41,68 39,68 37,67 36,66 35,64 33,63 32,62 31,60 31,58 30,57 29,55 29,53 29,51 29,50 29,48 29,46 29,44 30,42 31,41 31,39 32,37 33,36 35,35 36,33 37,32 39,31 41,31 42,30 44,29 46,29 48,29 49,29 51,29 53,29 55,29 57,30 58,31 60,31 62,32 63,33 64,35 66,36 67,37 68,39 68,41 69,42 70,44 70,46 70,48 70,49",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "91,50 91,53 91,57 90,60 89,64 87,67 86,70 84,74 82,76 79,79 76,82 74,84 70,86 67,87 64,89 60,90 57,91 53,91 50,91 46,91 42,91 39,90 35,89 32,87 29,86 25,84 23,82 20,79 17,76 15,74 13,70 12,67 10,64 9,60 8,57 8,53 8,50 8,46 8,42 9,39 10,35 12,32 13,29 15,25 17,23 20,20 23,17 25,15 29,13 32,12 35,10 39,9 42,8 46,8 49,8 53,8 57,8 60,9 64,10 67,12 70,13 74,15 76,17 79,20 82,23 84,25 86,29 87,32 89,35 90,39 91,42 91,46 91,49", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "70,50 70,51 70,53 70,55 69,57 68,58 68,60 67,62 66,63 64,64 63,66 62,67 60,68 58,68 57,69 55,70 53,70 51,70 50,70 48,70 46,70 44,70 42,69 41,68 39,68 37,67 36,66 35,64 33,63 32,62 31,60 31,58 30,57 29,55 29,53 29,51 29,50 29,48 29,46 29,44 30,42 31,41 31,39 32,37 33,36 35,35 36,33 37,32 39,31 41,31 42,30 44,29 46,29 48,29 49,29 51,29 53,29 55,29 57,30 58,31 60,31 62,32 63,33 64,35 66,36 67,37 68,39 68,41 69,42 70,44 70,46 70,48 70,49", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create ring",
     icon,
@@ -9474,31 +8232,7 @@ export {
 `// dev/cad-editor/plugins/rotate.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "5,66 66,66 66,94 5,94",
-    strokeWidth: "5",
-    strokeDasharray: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("rect", {
-    x: "35",
-    y: "26",
-    width: "61",
-    height: "28",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor",
-    transform: "rotate(56,66,40)"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "5,66 66,66 66,94 5,94", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "35", y: "26", width: "61", height: "28", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", transform: "rotate(56,66,40)" }));
   return {
     name: "rotate",
     icon,
@@ -9550,12 +8284,16 @@ function getCommand(ctx) {
           setInputPosition(p);
         },
         reset,
-        subcommand: type ? /* @__PURE__ */ React.createElement("button", {
-          onClick: (e) => {
-            setChangeOriginal(!changeOriginal);
-            e.stopPropagation();
-          }
-        }, changeOriginal ? "create new(N)" : "change original(Y)") : void 0,
+        subcommand: type ? /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              setChangeOriginal(!changeOriginal);
+              e.stopPropagation();
+            }
+          },
+          changeOriginal ? "create new(N)" : "change original(Y)"
+        ) : void 0,
         updateSelectedContent(content, contents) {
           if (startPosition && (offset == null ? void 0 : offset.angle) !== void 0) {
             const angle = offset.angle;
@@ -9722,46 +8460,31 @@ function getModel(ctx) {
     canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isRoundedRectContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isRoundedRectContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (isRoundedRectContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (isRoundedRectContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
-        radius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.radius,
-          setValue: (v) => update((c) => {
-            if (isRoundedRectContent(c)) {
-              c.radius = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.height = v;
+          }
+        }) }),
+        radius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.radius, setValue: (v) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.radius = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
         ...ctx.getAngleDeltaContentPropertyPanel(content, update)
@@ -9776,19 +8499,7 @@ function isRoundedRectContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: "M 35 11 L 65 11 L 65 11 L 67 11 L 69 11 L 71 12 L 73 13 L 75 13 L 77 14 L 79 16 L 81 17 L 82 18 L 84 20 L 85 22 L 86 24 L 87 25 L 88 27 L 89 30 L 89 32 L 89 34 L 90 36 L 90 36 L 90 66 L 90 66 L 89 68 L 89 70 L 89 72 L 88 74 L 87 76 L 86 78 L 85 80 L 84 82 L 82 83 L 81 85 L 79 86 L 77 87 L 75 88 L 73 89 L 71 90 L 69 90 L 67 90 L 65 91 L 65 91 L 35 91 L 35 91 L 33 90 L 31 90 L 29 90 L 26 89 L 24 88 L 23 87 L 21 86 L 19 85 L 17 83 L 16 82 L 15 80 L 13 78 L 12 76 L 12 74 L 11 72 L 10 70 L 10 68 L 10 66 L 10 66 L 10 36 L 10 36 L 10 34 L 10 32 L 11 30 L 12 27 L 12 25 L 13 23 L 15 22 L 16 20 L 17 18 L 19 17 L 21 16 L 22 14 L 24 13 L 26 13 L 29 12 L 31 11 L 33 11 L 35 11",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor",
-    fillRule: "evenodd"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("path", { d: "M 35 11 L 65 11 L 65 11 L 67 11 L 69 11 L 71 12 L 73 13 L 75 13 L 77 14 L 79 16 L 81 17 L 82 18 L 84 20 L 85 22 L 86 24 L 87 25 L 88 27 L 89 30 L 89 32 L 89 34 L 90 36 L 90 36 L 90 66 L 90 66 L 89 68 L 89 70 L 89 72 L 88 74 L 87 76 L 86 78 L 85 80 L 84 82 L 82 83 L 81 85 L 79 86 L 77 87 L 75 88 L 73 89 L 71 90 L 69 90 L 67 90 L 65 91 L 65 91 L 35 91 L 35 91 L 33 90 L 31 90 L 29 90 L 26 89 L 24 88 L 23 87 L 21 86 L 19 85 L 17 83 L 16 82 L 15 80 L 13 78 L 12 76 L 12 74 L 11 72 L 10 70 L 10 68 L 10 66 L 10 66 L 10 36 L 10 36 L 10 34 L 10 32 L 11 30 L 12 27 L 12 25 L 13 23 L 15 22 L 16 20 L 17 18 L 19 17 L 21 16 L 22 14 L 24 13 L 26 13 L 29 12 L 31 11 L 33 11 L 35 11", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" }));
   return {
     name: "create rounded rect",
     icon,
@@ -10066,43 +8777,40 @@ function getModel(ctx) {
     getGeometries: getSplineGeometries,
     propertyPanel(content, update, contents) {
       return {
-        points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-          inline: true,
-          ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
-            if (isSplineContent(c)) {
-              v(c);
-            }
-          })),
-          items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+        points: /* @__PURE__ */ React.createElement(
+          ctx.ArrayEditor,
+          {
             inline: true,
-            properties: {
-              x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.x,
-                setValue: (v) => update((c) => {
-                  if (isSplineContent(c)) {
-                    c.points[i].x = v;
-                  }
-                })
-              }),
-              y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                value: f.y,
-                setValue: (v) => update((c) => {
-                  if (isSplineContent(c)) {
-                    c.points[i].y = v;
-                  }
-                })
-              })
-            }
-          }))
-        }),
-        fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.fitting === true,
-          setValue: (v) => update((c) => {
-            if (isSplineContent(c)) {
-              c.fitting = v ? true : void 0;
-            }
-          })
-        }),
+            ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+              if (isSplineContent(c)) {
+                v(c);
+              }
+            })),
+            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+              ctx.ObjectEditor,
+              {
+                inline: true,
+                properties: {
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
+                    if (isSplineContent(c)) {
+                      c.points[i].x = v;
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.y, setValue: (v) => update((c) => {
+                    if (isSplineContent(c)) {
+                      c.points[i].y = v;
+                    }
+                  }) })
+                }
+              }
+            ))
+          }
+        ),
+        fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.fitting === true, setValue: (v) => update((c) => {
+          if (isSplineContent(c)) {
+            c.fitting = v ? true : void 0;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
         ...ctx.getSegmentCountContentPropertyPanel(content, update)
@@ -10147,43 +8855,40 @@ function getModel(ctx) {
       getGeometries: getSplineArrowGeometries,
       propertyPanel(content, update, contents) {
         return {
-          points: /* @__PURE__ */ React.createElement(ctx.ArrayEditor, {
-            inline: true,
-            ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
-              if (isSplineArrowContent(c)) {
-                v(c);
-              }
-            })),
-            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(ctx.ObjectEditor, {
+          points: /* @__PURE__ */ React.createElement(
+            ctx.ArrayEditor,
+            {
               inline: true,
-              properties: {
-                x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                  value: f.x,
-                  setValue: (v) => update((c) => {
-                    if (isSplineArrowContent(c)) {
-                      c.points[i].x = v;
-                    }
-                  })
-                }),
-                y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-                  value: f.y,
-                  setValue: (v) => update((c) => {
-                    if (isSplineArrowContent(c)) {
-                      c.points[i].y = v;
-                    }
-                  })
-                })
-              }
-            }))
-          }),
-          fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.fitting === true,
-            setValue: (v) => update((c) => {
-              if (isSplineArrowContent(c)) {
-                c.fitting = v ? true : void 0;
-              }
-            })
-          }),
+              ...ctx.getArrayEditorProps((v) => v.points, { x: 0, y: 0 }, (v) => update((c) => {
+                if (isSplineArrowContent(c)) {
+                  v(c);
+                }
+              })),
+              items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+                ctx.ObjectEditor,
+                {
+                  inline: true,
+                  properties: {
+                    x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
+                      if (isSplineArrowContent(c)) {
+                        c.points[i].x = v;
+                      }
+                    }) }),
+                    y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.y, setValue: (v) => update((c) => {
+                      if (isSplineArrowContent(c)) {
+                        c.points[i].y = v;
+                      }
+                    }) })
+                  }
+                }
+              ))
+            }
+          ),
+          fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.fitting === true, setValue: (v) => update((c) => {
+            if (isSplineArrowContent(c)) {
+              c.fitting = v ? true : void 0;
+            }
+          }) }),
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getArrowContentPropertyPanel(content, update),
           ...ctx.getSegmentCountContentPropertyPanel(content, update)
@@ -10202,130 +8907,9 @@ function isSplineArrowContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon1 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "13",
-    cy: "22",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "28",
-    cy: "79",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "63",
-    cy: "22",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "85",
-    cy: "80",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "13,22 14,24 14,26 15,29 15,31 16,33 17,34 17,36 18,38 18,40 19,41 20,43 20,44 21,46 22,47 22,49 23,50 23,51 24,52 25,53 25,54 26,55 27,56 27,56 28,57 29,58 29,58 30,59 31,59 31,59 32,60 33,60 33,60 34,60 35,60 35,60 36,60 37,60 37,59 38,59 39,58 39,58 40,57 41,57 41,56 42,55 43,55 43,54 44,53 45,52 46,51 46,49 47,48 48,47 48,46 49,46 50,45 50,44 51,44 52,43 53,43 53,42 54,42 55,42 56,41 56,41 57,41 58,41 59,41 59,41 60,42 61,42 62,42 63,43 63,43 64,44 65,44 66,45 67,46 67,47 68,47 69,48 70,49 71,51 71,52 72,53 73,54 74,56 75,57 76,59 76,60 77,62 78,64 79,65 80,67 81,69 82,71 82,73 83,75 84,78 85,80",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  const icon2 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("circle", {
-    cx: "13",
-    cy: "22",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "28",
-    cy: "79",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "63",
-    cy: "22",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("circle", {
-    cx: "85",
-    cy: "80",
-    r: "5",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "13,22 13,23 13,24 13,25 13,26 13,27 14,28 14,29 14,30 14,31 14,31 14,32 14,33 14,34 14,35 14,36 14,37 15,38 15,39 15,40 15,41 15,42 15,43 15,43 15,44 15,45 15,46 15,47 16,48 16,49 16,49 16,50 16,51 16,52 16,53 16,54 16,54 17,55 17,56 17,57 17,58 17,58 17,59 17,60 17,61 18,61 18,62 18,63 18,63 18,64 18,65 18,65 18,66 19,67 19,67 19,68 19,69 19,69 19,70 19,70 20,71 20,71 20,72 20,72 20,73 20,73 21,74 21,74 21,75 21,75 21,75 21,76 22,76 22,77 22,77 22,77 22,78 23,78 23,78 23,78 23,79 23,79 24,79 24,79 24,79 24,79 25,80 25,80 25,80 25,80 25,80 26,80 26,80 26,80 26,80 27,80 27,80 27,79 27,79 28,79 28,79 28,79 29,79 29,78 29,78 29,78 30,77 30,77 30,77 31,76 31,76 31,76 32,75 32,75 32,74 32,74 33,73 33,73 33,72 34,72 34,71 34,71 35,70 35,69 35,69 36,68 36,68 37,67 37,66 37,66 38,65 38,64 38,64 39,63 39,62 39,62 40,61 40,60 40,59 41,59 41,58 42,57 42,56 42,56 43,55 43,54 43,53 44,53 44,52 45,51 45,50 45,50 46,49 46,48 46,47 47,47 47,46 48,45 48,44 48,44 49,43 49,42 50,41 50,41 50,40 51,39 51,39 51,38 52,37 52,37 53,36 53,35 53,35 54,34 54,33 54,33 55,32 55,31 55,31 56,30 56,30 57,29 57,29 57,28 58,28 58,27 58,27 59,26 59,26 59,25 60,25 60,25 60,24 61,24 61,24 61,23 62,23 62,23 62,22 63,22 63,22 63,22 64,22 64,22 64,21 65,21 65,21 65,21 65,21 66,21 66,21 66,21 67,21 67,21 67,22 67,22 68,22 68,22 68,22 69,22 69,23 69,23 69,23 70,23 70,24 70,24 70,24 71,25 71,25 71,25 71,26 72,26 72,27 72,27 72,27 73,28 73,28 73,29 73,29 73,30 74,31 74,31 74,32 74,32 75,33 75,33 75,34 75,35 75,35 76,36 76,37 76,37 76,38 76,39 77,39 77,40 77,41 77,42 77,42 78,43 78,44 78,45 78,46 78,46 79,47 79,48 79,49 79,50 79,50 80,51 80,52 80,53 80,54 80,55 80,56 81,57 81,57 81,58 81,59 81,60 82,61 82,62 82,63 82,64 82,65 82,66 83,67 83,68 83,69 83,69 83,70 83,71 84,72 84,73 84,74 84,75 84,76 84,77 85,78 85,79 85,80",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
-  const icon3 = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "8,93 8,90 8,87 8,83 8,81 8,78 9,75 9,72 9,70 9,67 10,65 10,62 10,60 11,58 11,56 12,54 12,53 13,51 13,49 14,48 15,46 15,45 16,44 17,43 17,42 18,41 19,40 20,39 21,39 22,38 23,38 24,38 25,38 26,37 27,37 28,38 29,38 30,38 32,38 33,39 34,40 36,40 37,41 38,42 40,43 41,44 43,45 44,46 46,48 47,49 49,51 51,53 52,54 54,55 55,57 57,58 58,59 60,60 61,61 62,62 64,62 65,63 66,63 68,64 69,64 70,64 71,64 72,64 73,64 74,64 75,64 76,63 77,63 78,62 79,62 80,61 81,60 81,59 82,58 83,56 83,55 84,54 85,52 85,51 86,49 86,47 87,45 87,43 88,41 88,39 88,37 89,34 89,32 89,29 89,26 90,24 90,21 90,18 90,17",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "90,8 98,37 82,37",
-    strokeWidth: "0",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "currentColor",
-    stroke: "currentColor"
-  }));
+  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "13", cy: "22", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "79", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "63", cy: "22", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "85", cy: "80", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "13,22 14,24 14,26 15,29 15,31 16,33 17,34 17,36 18,38 18,40 19,41 20,43 20,44 21,46 22,47 22,49 23,50 23,51 24,52 25,53 25,54 26,55 27,56 27,56 28,57 29,58 29,58 30,59 31,59 31,59 32,60 33,60 33,60 34,60 35,60 35,60 36,60 37,60 37,59 38,59 39,58 39,58 40,57 41,57 41,56 42,55 43,55 43,54 44,53 45,52 46,51 46,49 47,48 48,47 48,46 49,46 50,45 50,44 51,44 52,43 53,43 53,42 54,42 55,42 56,41 56,41 57,41 58,41 59,41 59,41 60,42 61,42 62,42 63,43 63,43 64,44 65,44 66,45 67,46 67,47 68,47 69,48 70,49 71,51 71,52 72,53 73,54 74,56 75,57 76,59 76,60 77,62 78,64 79,65 80,67 81,69 82,71 82,73 83,75 84,78 85,80", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "13", cy: "22", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "79", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "63", cy: "22", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "85", cy: "80", r: "5", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "13,22 13,23 13,24 13,25 13,26 13,27 14,28 14,29 14,30 14,31 14,31 14,32 14,33 14,34 14,35 14,36 14,37 15,38 15,39 15,40 15,41 15,42 15,43 15,43 15,44 15,45 15,46 15,47 16,48 16,49 16,49 16,50 16,51 16,52 16,53 16,54 16,54 17,55 17,56 17,57 17,58 17,58 17,59 17,60 17,61 18,61 18,62 18,63 18,63 18,64 18,65 18,65 18,66 19,67 19,67 19,68 19,69 19,69 19,70 19,70 20,71 20,71 20,72 20,72 20,73 20,73 21,74 21,74 21,75 21,75 21,75 21,76 22,76 22,77 22,77 22,77 22,78 23,78 23,78 23,78 23,79 23,79 24,79 24,79 24,79 24,79 25,80 25,80 25,80 25,80 25,80 26,80 26,80 26,80 26,80 27,80 27,80 27,79 27,79 28,79 28,79 28,79 29,79 29,78 29,78 29,78 30,77 30,77 30,77 31,76 31,76 31,76 32,75 32,75 32,74 32,74 33,73 33,73 33,72 34,72 34,71 34,71 35,70 35,69 35,69 36,68 36,68 37,67 37,66 37,66 38,65 38,64 38,64 39,63 39,62 39,62 40,61 40,60 40,59 41,59 41,58 42,57 42,56 42,56 43,55 43,54 43,53 44,53 44,52 45,51 45,50 45,50 46,49 46,48 46,47 47,47 47,46 48,45 48,44 48,44 49,43 49,42 50,41 50,41 50,40 51,39 51,39 51,38 52,37 52,37 53,36 53,35 53,35 54,34 54,33 54,33 55,32 55,31 55,31 56,30 56,30 57,29 57,29 57,28 58,28 58,27 58,27 59,26 59,26 59,25 60,25 60,25 60,24 61,24 61,24 61,23 62,23 62,23 62,22 63,22 63,22 63,22 64,22 64,22 64,21 65,21 65,21 65,21 65,21 66,21 66,21 66,21 67,21 67,21 67,22 67,22 68,22 68,22 68,22 69,22 69,23 69,23 69,23 70,23 70,24 70,24 70,24 71,25 71,25 71,25 71,26 72,26 72,27 72,27 72,27 73,28 73,28 73,29 73,29 73,30 74,31 74,31 74,32 74,32 75,33 75,33 75,34 75,35 75,35 76,36 76,37 76,37 76,38 76,39 77,39 77,40 77,41 77,42 77,42 78,43 78,44 78,45 78,46 78,46 79,47 79,48 79,49 79,50 79,50 80,51 80,52 80,53 80,54 80,55 80,56 81,57 81,57 81,58 81,59 81,60 82,61 82,62 82,63 82,64 82,65 82,66 83,67 83,68 83,69 83,69 83,70 83,71 84,72 84,73 84,74 84,75 84,76 84,77 85,78 85,79 85,80", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  const icon3 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "8,93 8,90 8,87 8,83 8,81 8,78 9,75 9,72 9,70 9,67 10,65 10,62 10,60 11,58 11,56 12,54 12,53 13,51 13,49 14,48 15,46 15,45 16,44 17,43 17,42 18,41 19,40 20,39 21,39 22,38 23,38 24,38 25,38 26,37 27,37 28,38 29,38 30,38 32,38 33,39 34,40 36,40 37,41 38,42 40,43 41,44 43,45 44,46 46,48 47,49 49,51 51,53 52,54 54,55 55,57 57,58 58,59 60,60 61,61 62,62 64,62 65,63 66,63 68,64 69,64 70,64 71,64 72,64 73,64 74,64 75,64 76,63 77,63 78,62 79,62 80,61 81,60 81,59 82,58 83,56 83,55 84,54 85,52 85,51 86,49 86,47 87,45 87,43 88,41 88,39 88,37 89,34 89,32 89,29 89,26 90,24 90,21 90,18 90,17", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "90,8 98,37 82,37", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
   const splineCommand = {
     name: "create spline",
     type: [
@@ -10491,54 +9075,36 @@ function getModel(ctx) {
     propertyPanel(content, update, contents) {
       var _a;
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        outerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.outerRadius,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.outerRadius = v;
-            }
-          })
-        }),
-        innerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.innerRadius,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.innerRadius = v;
-            }
-          })
-        }),
-        count: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.count,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.count = v;
-            }
-          })
-        }),
-        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: (_a = content.angle) != null ? _a : 0,
-          setValue: (v) => update((c) => {
-            if (isStarContent(c)) {
-              c.angle = v === 0 ? void 0 : v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        outerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.outerRadius, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.outerRadius = v;
+          }
+        }) }),
+        innerRadius: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.innerRadius, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.innerRadius = v;
+          }
+        }) }),
+        count: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.count, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.count = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_a = content.angle) != null ? _a : 0, setValue: (v) => update((c) => {
+          if (isStarContent(c)) {
+            c.angle = v === 0 ? void 0 : v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
@@ -10552,18 +9118,7 @@ function isStarContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polygon", {
-    points: "75,84 70,56 90,36 62,32 49,7 37,33 9,37 29,56 25,84 50,71",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "75,84 70,56 90,36 62,32 49,7 37,33 9,37 29,56 25,84 50,71", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create star",
     icon,
@@ -10696,53 +9251,38 @@ function getModel(ctx) {
     getGeometries: getGeometriesFromCache,
     propertyPanel(content, update, contents) {
       return {
-        isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-          value: content.isCurrent === true,
-          setValue: (v) => update((c, draft) => {
-            if (ctx.isStrokeStyleContent(c)) {
-              const currentStrokeStyle = ctx.getStrokeStyles(contents).find((s) => s.content.isCurrent);
-              if (currentStrokeStyle) {
-                const c2 = draft[currentStrokeStyle.index];
-                if (c2 && ctx.isStrokeStyleContent(c2)) {
-                  c2.isCurrent = void 0;
-                }
+        isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.isCurrent === true, setValue: (v) => update((c, draft) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            const currentStrokeStyle = ctx.getStrokeStyles(contents).find((s) => s.content.isCurrent);
+            if (currentStrokeStyle) {
+              const c2 = draft[currentStrokeStyle.index];
+              if (c2 && ctx.isStrokeStyleContent(c2)) {
+                c2.isCurrent = void 0;
               }
-              c.isCurrent = v ? true : void 0;
             }
-          })
-        }),
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (ctx.isStrokeStyleContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (ctx.isStrokeStyleContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.width,
-          setValue: (v) => update((c) => {
-            if (ctx.isStrokeStyleContent(c)) {
-              c.width = v;
-            }
-          })
-        }),
-        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.height,
-          setValue: (v) => update((c) => {
-            if (ctx.isStrokeStyleContent(c)) {
-              c.height = v;
-            }
-          })
-        }),
+            c.isCurrent = v ? true : void 0;
+          }
+        }) }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        width: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            c.width = v;
+          }
+        }) }),
+        height: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.height, setValue: (v) => update((c) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            c.height = v;
+          }
+        }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
     }
@@ -10750,44 +9290,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "0,22 100,22",
-    strokeWidth: "5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "0,45 100,45",
-    strokeWidth: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "0,65 100,65",
-    strokeWidth: "5",
-    strokeDasharray: "10 5",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "0,81 100,81",
-    strokeWidth: "5",
-    strokeDasharray: "15",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "0,22 100,22", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,45 100,45", strokeWidth: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,65 100,65", strokeWidth: "5", strokeDasharray: "10 5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,81 100,81", strokeWidth: "5", strokeDasharray: "15", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create stroke style",
     selectCount: 0,
@@ -10950,91 +9453,59 @@ function getModel(ctx) {
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {
       return {
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.x,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.x = v;
-            }
-          })
-        }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.y,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.y = v;
-            }
-          })
-        }),
-        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          value: content.fontSize,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.fontSize = v;
-            }
-          })
-        }),
-        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          value: content.fontFamily,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.fontFamily = v;
-            }
-          })
-        }),
-        text: /* @__PURE__ */ React.createElement(ctx.StringEditor, {
-          textarea: true,
-          value: content.text,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.text = v;
-            }
-          })
-        }),
-        color: /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-          type: "color",
-          value: content.color,
-          setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.color = v;
-            }
-          })
-        }),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.fontSize, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.fontSize = v;
+          }
+        }) }),
+        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.fontFamily, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.fontFamily = v;
+          }
+        }) }),
+        text: /* @__PURE__ */ React.createElement(ctx.StringEditor, { textarea: true, value: content.text, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.text = v;
+          }
+        }) }),
+        color: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { type: "color", value: content.color, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.color = v;
+          }
+        }) }),
         width: [
-          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.width !== void 0,
-            setValue: (v) => update((c) => {
-              if (isTextContent(c)) {
-                c.width = v ? 600 : void 0;
-              }
-            })
-          }),
-          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.width,
-            setValue: (v) => update((c) => {
-              if (isTextContent(c)) {
-                c.width = v;
-              }
-            })
-          }) : void 0
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.width !== void 0, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.width = v ? 600 : void 0;
+            }
+          }) }),
+          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.width = v;
+            }
+          }) }) : void 0
         ],
         lineHeight: [
-          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.BooleanEditor, {
-            value: content.lineHeight !== void 0,
-            setValue: (v) => update((c) => {
-              if (isTextContent(c)) {
-                c.lineHeight = v ? content.fontSize * 1.2 : void 0;
-              }
-            })
-          }) : void 0,
-          content.width !== void 0 && content.lineHeight !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, {
-            value: content.lineHeight,
-            setValue: (v) => update((c) => {
-              if (isTextContent(c)) {
-                c.lineHeight = v;
-              }
-            })
-          }) : void 0
+          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.lineHeight !== void 0, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.lineHeight = v ? content.fontSize * 1.2 : void 0;
+            }
+          }) }) : void 0,
+          content.width !== void 0 && content.lineHeight !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.lineHeight, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.lineHeight = v;
+            }
+          }) }) : void 0
         ]
       };
     }
@@ -11045,26 +9516,7 @@ function isTextContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", {
-    xmlns: "http://www.w3.org/2000/svg",
-    viewBox: "0 0 100 100"
-  }, /* @__PURE__ */ React.createElement("polyline", {
-    points: "16,22 83,22",
-    strokeWidth: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }), /* @__PURE__ */ React.createElement("polyline", {
-    points: "49,22 49,89",
-    strokeWidth: "10",
-    strokeMiterlimit: "10",
-    strokeLinejoin: "miter",
-    strokeLinecap: "butt",
-    fill: "none",
-    stroke: "currentColor"
-  }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "16,22 83,22", strokeWidth: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "49,22 49,89", strokeWidth: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return {
     name: "create text",
     icon,
