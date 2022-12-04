@@ -1,21 +1,24 @@
 import React from "react"
 import { NumberEditor, StringEditor } from "react-composable-json-editor"
-import { getImageFromCache, ResizeBar, Size, useDragResize } from "../../../src"
-import { RichTextEditorPluginHook, RichTextEditorPluginInline, RichTextInline } from "../model"
+import { getImageFromCache, HtmlEditorPluginInline, ResizeBar, HtmlTextInline, Size, useDragResize } from "../../../src"
+import { RichTextEditorPluginHook } from "../model"
 
 export interface RichTextImage extends Size {
   kind: 'image'
   url: string
 }
 
-export function isRichTextImage(content: RichTextInline): content is RichTextImage {
+export function isRichTextImage(content: HtmlTextInline): content is RichTextImage {
   return content.kind === 'image'
 }
 
-export const image: RichTextEditorPluginInline = {
-  getLineHeight: content => isRichTextImage(content) ? content.height : undefined,
-  getWidth: content => isRichTextImage(content) ? content.width : undefined,
-  getHeight: content => isRichTextImage(content) ? content.height : undefined,
+export const image: HtmlEditorPluginInline = {
+  render(content) {
+    if (isRichTextImage(content)) {
+      return <img style={{ width: `${content.width}px`, height: `${content.height}px` }} src={content.url} />
+    }
+    return
+  },
 }
 
 export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, currentContentLayout, cursorHeight, updateCurrentContent }) => {
@@ -67,26 +70,6 @@ export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, 
   }
   return {
     propertyPanel,
-    exportToHtml(content) {
-      if (isRichTextImage(content)) {
-        return `<img style="width: ${content.width}px; height: ${content.height}px" src="${content.url}" />`
-      }
-      return
-    },
-    render(content, target, x, y) {
-      if (isRichTextImage(content)) {
-        let width = content.width
-        let height = content.height
-        if (content === currentContent) {
-          x += offset.x
-          y += offset.y
-          width += offset.width
-          height += offset.height
-        }
-        return target.renderImage(content.url, x, y - content.height, width, height)
-      }
-      return
-    },
     ui: currentContent && isRichTextImage(currentContent) && currentContentLayout ? <div
       style={{
         width: `${currentContent.width + offset.width}px`,

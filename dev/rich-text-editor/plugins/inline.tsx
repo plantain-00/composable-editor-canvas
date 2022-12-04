@@ -1,21 +1,13 @@
-import { RichTextEditorPluginTextInline } from "../model";
+import { HtmlEditorPluginTextInline } from "../../../src"
 
-export const span: RichTextEditorPluginTextInline = {}
+export const span: HtmlEditorPluginTextInline = {}
 
-export const code: RichTextEditorPluginTextInline = {
-  fontFamily: 'monospace',
+export const code: HtmlEditorPluginTextInline = {
+  backgroundColor: 0xf2f1f1,
 }
 
-export const mark: RichTextEditorPluginTextInline = {
-  backgroundColor: 0xffff00,
-}
+export const mark: HtmlEditorPluginTextInline = {}
 
-export const sub: RichTextEditorPluginTextInline = {
-  fontSize: 0.83,
-  verticalAlign: -0.25,
-}
+export const sub: HtmlEditorPluginTextInline = {}
 
-export const sup: RichTextEditorPluginTextInline = {
-  fontSize: 0.83,
-  verticalAlign: 0.25,
-}
+export const sup: HtmlEditorPluginTextInline = {}

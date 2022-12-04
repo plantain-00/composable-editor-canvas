@@ -58,6 +58,9 @@ export function arcToPolyline(content: Arc, angleDelta: number): {
 export function bindMultipleRefs<T>(...refs: (React_2.ForwardedRef<T> | React_2.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
+export type BlockType = keyof JSX.IntrinsicElements;
+
+// @public (undocumented)
 export interface Bounding {
     // (undocumented)
     xMax: number;
@@ -118,6 +121,9 @@ export function combineStripTriangleColors(colors: number[][]): number[];
 export function combineStripTriangles(triangles: number[][]): number[];
 
 // @public (undocumented)
+export function compareLocations(c1: [number, number], c2: [number, number]): 0 | 1 | -1;
+
+// @public (undocumented)
 export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => void) | undefined;
 
 // @public (undocumented)
@@ -139,6 +145,12 @@ export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean)
 
 // @public (undocumented)
 export function deduplicatePosition(array: Position[]): Position[];
+
+// @public (undocumented)
+export const defaultFontFamily = "monospace";
+
+// @public (undocumented)
+export const defaultFontSize = 16;
 
 // @public (undocumented)
 export const defaultMiterLimit = 10;
@@ -794,21 +806,69 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 };
 
 // @public (undocumented)
-export function HtmlEditor(props: {
-    initialState: readonly HtmlElementNode[];
-    onChange: React_2.Dispatch<React_2.SetStateAction<readonly HtmlElementNode[]>>;
-    width: number;
-    height: number;
-}): JSX.Element;
+export interface HtmlBlock extends FlowLayoutBlock<HtmlTextInline>, Partial<HtmlTextStyle> {
+    // (undocumented)
+    type: BlockType;
+}
 
 // @public (undocumented)
-export interface HtmlElementNode {
+export interface HtmlEditorPlugin {
     // (undocumented)
-    children: readonly HtmlElementNode[] | string;
+    blocks?: Partial<Record<BlockType, HtmlEditorPluginBlock>>;
     // (undocumented)
-    style?: React_2.CSSProperties;
+    inlines?: HtmlEditorPluginInline[];
     // (undocumented)
-    tag: keyof JSX.IntrinsicElements;
+    textInlines?: Partial<Record<BlockType, HtmlEditorPluginTextInline>>;
+}
+
+// @public (undocumented)
+export type HtmlEditorPluginBlock = Partial<HtmlTextStyle & FlowLayoutBlockStyle>;
+
+// @public (undocumented)
+export interface HtmlEditorPluginInline {
+    // (undocumented)
+    render?: (htmlText: HtmlTextInline) => JSX.Element | undefined;
+}
+
+// @public (undocumented)
+export type HtmlEditorPluginTextInline = Partial<HtmlTextStyle>;
+
+// @public (undocumented)
+export interface HtmlText extends Partial<HtmlTextStyle> {
+    // (undocumented)
+    kind?: string;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    type?: string;
+}
+
+// @public (undocumented)
+export interface HtmlTextInline {
+    // (undocumented)
+    kind?: string;
+}
+
+// @public (undocumented)
+export interface HtmlTextStyle {
+    // (undocumented)
+    backgroundColor: number;
+    // (undocumented)
+    bold: boolean;
+    // (undocumented)
+    color: number;
+    // (undocumented)
+    fontFamily: string;
+    // (undocumented)
+    fontSize: number;
+    // (undocumented)
+    italic: boolean;
+    // (undocumented)
+    passThrough: boolean;
+    // (undocumented)
+    underline: boolean;
+    // (undocumented)
+    verticalAlign: number;
 }
 
 // @public (undocumented)
@@ -819,6 +879,9 @@ export { Image_2 as Image }
 
 // @public (undocumented)
 export function isBetween(target: number, a: number, b: number): boolean;
+
+// @public (undocumented)
+export function isHtmlText(content: HtmlTextInline): content is HtmlText;
 
 // @public (undocumented)
 export function isLetter(c: string): boolean;
@@ -1211,6 +1274,9 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw>;
 // @public (undocumented)
 export interface Region extends Position, Size {
 }
+
+// @public (undocumented)
+export function renderHtmlTextStyle(c: Partial<HtmlTextStyle>): React_2.CSSProperties;
 
 // @public (undocumented)
 export function renderPartStyledPolyline<T>(target: ReactRenderTarget<T>, partsStyles: readonly PartStyle[], points: Position[], options?: Partial<PathStrokeOptions<T>>): T;
@@ -1782,6 +1848,41 @@ export function useFlowLayoutTextEditor(props: {
 
 // @public (undocumented)
 export function useGlobalMouseUp(handler: (e: MouseEvent) => void): void;
+
+// @public (undocumented)
+export function useHtmlEditor(props: {
+    state: readonly HtmlBlock[];
+    width: number;
+    height: number;
+    setState(recipe: (draft: Draft<HtmlBlock>[]) => void): void;
+    processInput?(e: React_2.KeyboardEvent<HTMLInputElement>): boolean;
+    onLocationChanged?(location?: [number, number]): void;
+    style?: React_2.CSSProperties;
+    autoHeight?: boolean;
+    readOnly?: boolean;
+    onBlur?: () => void;
+    onFocus?: () => void;
+    plugin?: HtmlEditorPlugin;
+}): {
+    currentContent: HtmlTextInline | undefined;
+    currentBlock: HtmlBlock;
+    currentContentLayout: Region | undefined;
+    updateSelection: (recipe: (htmlText: Partial<HtmlTextStyle>) => void) => void;
+    updateTextInline: (type: BlockType) => void;
+    updateParagraph: (type: BlockType) => void;
+    updateCurrentContent: (recipe: (richText: HtmlTextInline) => void) => void;
+    inputText: (text: string | (string | HtmlTextInline)[]) => void;
+    layoutResult: Region[][] | undefined;
+    cursor: {
+        x: number;
+        y: number;
+        height: number;
+    };
+    inputContent: (newContents: readonly HtmlBlock[]) => void;
+    location: [number, number];
+    scrollY: number;
+    renderEditor: (children: JSX.Element) => JSX.Element;
+};
 
 // @public (undocumented)
 export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) => void): {

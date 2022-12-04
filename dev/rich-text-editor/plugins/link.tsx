@@ -1,16 +1,33 @@
 import React from "react"
-import { RichTextEditorPluginHook, RichText, isText, RichTextInline } from "../model"
+import { RichTextEditorPluginHook } from "../model"
 import { BooleanEditor, StringEditor } from "react-composable-json-editor";
-import { richTextStyleToHtmlStyle } from "../export-to-html";
+import { HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline } from "../../../src";
 
-interface Link extends RichText {
+interface Link extends HtmlText {
   url: string
   type: 'link'
   targetBlank?: boolean
 }
 
-function isLink(data: RichTextInline): data is Link {
-  return isText(data) && data.type === 'link'
+function isLink(data: HtmlTextInline): data is Link {
+  return isHtmlText(data) && data.type === 'link'
+}
+
+export const link: HtmlEditorPluginInline = {
+  render(content) {
+    if (isLink(content)) {
+      return (
+        <a
+          style={renderHtmlTextStyle(content)}
+          target={content.targetBlank ? '_blank' : ''}
+          href={content.url}
+        >
+          {content.text}
+        </a>
+      )
+    }
+    return
+  },
 }
 
 export const useLink: RichTextEditorPluginHook = ({ inputText, currentContent, updateCurrentContent }) => {
@@ -23,8 +40,6 @@ export const useLink: RichTextEditorPluginHook = ({ inputText, currentContent, u
           const link: Link = {
             type: 'link',
             text: v,
-            underline: true,
-            color: 0x551A8A,
             targetBlank: true,
             url: v,
           }
@@ -44,12 +59,5 @@ export const useLink: RichTextEditorPluginHook = ({ inputText, currentContent, u
   }
   return {
     propertyPanel,
-    exportToHtml(richText) {
-      if (isLink(richText)) {
-        const target = richText.targetBlank ? ' target="_blank"' : ''
-        return `<a style="${richTextStyleToHtmlStyle(richText)}"${target} href="${richText.url}">${new Option(richText.text).innerHTML}</a>`
-      }
-      return
-    },
   }
 }

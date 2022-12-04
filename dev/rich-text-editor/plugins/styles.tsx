@@ -1,6 +1,7 @@
 import React from "react"
 import { BooleanEditor, NumberEditor, StringEditor } from "react-composable-json-editor"
-import { defaultFontFamily, defaultFontSize, RichTextEditorPluginStyle } from "../model"
+import { defaultFontFamily, defaultFontSize } from "../../../src"
+import { RichTextEditorPluginStyle } from "../model"
 
 export const fontSize: RichTextEditorPluginStyle = (currentContent, currentBlock, updateSelection) => {
   return <NumberEditor value={currentContent?.fontSize ?? currentBlock?.fontSize ?? defaultFontSize} setValue={v => updateSelection(c => c.fontSize = v)} style={{ width: '100px' }} />

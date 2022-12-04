@@ -1,14 +1,13 @@
 import React from "react"
-import { reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget } from "../src"
+import { HtmlBlock } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { Patch } from "immer/dist/types/types-external"
 import { produceWithPatches } from "immer"
 import { RichTextEditor, RichTextEditorPlugin, RichTextEditorRef } from "./rich-text-editor/rich-text-editor"
-import { defaultFontFamily, defaultFontSize, RichTextBlock } from "./rich-text-editor/model"
 import { h1, h2, h3, h4, h5, h6, hr, ol, p, ul } from "./rich-text-editor/plugins/blocks"
 import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough, underline } from './rich-text-editor/plugins/styles'
 import { useAt } from "./rich-text-editor/plugins/at"
-import { useLink } from "./rich-text-editor/plugins/link"
+import { link, useLink } from "./rich-text-editor/plugins/link"
 import { image, useImage } from "./rich-text-editor/plugins/image"
 import { code, mark, span, sub, sup } from "./rich-text-editor/plugins/inline"
 
@@ -16,14 +15,11 @@ const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
 
 export function Combination3() {
-  const [initialState, setInitialState] = React.useState<readonly RichTextBlock[]>()
+  const [initialState, setInitialState] = React.useState<readonly HtmlBlock[]>()
   const width = 500
   const height = 300
-  const [target, setTarget] = React.useState<ReactRenderTarget<unknown>>(reactCanvasRenderTarget)
-  const [autoHeight, setAutoHeight] = React.useState(false)
+  const [autoHeight, setAutoHeight] = React.useState(true)
   const [readOnly, setReadOnly] = React.useState(false)
-  const [useHtml, setUseHtml] = React.useState(false)
-  const [html, setHtml] = React.useState('')
   const plugin = React.useRef<RichTextEditorPlugin>({
     blocks: { h1, h2, h3, h4, h5, h6, p, ul, ol, hr },
     styles: {
@@ -37,13 +33,13 @@ export function Combination3() {
       'background color': backgroundColor,
     },
     hooks: [useAt, useLink, useImage],
-    inlines: [image],
+    inlines: [link, image],
     textInlines: { span, code, mark, sub, sup },
   })
 
   React.useEffect(() => {
     (async () => {
-      let json: RichTextBlock[]
+      let json: HtmlBlock[]
       try {
         const res = await fetch(`https://storage.yorkyao.com/${key}`)
         json = await res.json()
@@ -108,12 +104,6 @@ export function Combination3() {
   return (
     <div>
       <div>
-        {[reactCanvasRenderTarget, reactSvgRenderTarget].map((t) => (
-          <label key={t.type}>
-            <input type='radio' checked={target.type === t.type} onChange={() => setTarget(t)} />
-            {t.type}
-          </label>
-        ))}
         <label>
           <input type='checkbox' checked={autoHeight} onChange={(e) => setAutoHeight(e.target.checked)} />
           autoHeight
@@ -121,10 +111,6 @@ export function Combination3() {
         <label>
           <input type='checkbox' checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} />
           readOnly
-        </label>
-        <label>
-          <input type='checkbox' checked={useHtml} onChange={(e) => setUseHtml(e.target.checked)} />
-          useHtml
         </label>
       </div>
       <RichTextEditor
@@ -134,28 +120,11 @@ export function Combination3() {
         height={height}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
         onSendLocation={onSendLocation}
-        onExport={setHtml}
-        target={target}
         autoHeight={autoHeight}
         readOnly={readOnly}
-        useHtml={useHtml}
         operator={me}
         plugin={plugin.current}
       />
-      <div
-        dangerouslySetInnerHTML={{ __html: html }}
-        style={{
-          width: width + 'px',
-          height: height + 'px',
-          margin: '10px',
-          fontFamily: defaultFontFamily,
-          overflowY: 'auto',
-          border: '1px solid',
-          fontSize: defaultFontSize + 'px',
-          position: 'absolute',
-          top: '330px',
-        }}
-      ></div>
     </div >
   )
 }

@@ -491,7 +491,10 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   }
 }
 
-function compareLocations(c1: [number, number], c2: [number, number]) {
+/**
+ * @public
+ */
+export function compareLocations(c1: [number, number], c2: [number, number]) {
   if (c1[0] < c2[0]) return -1
   if (c1[0] > c2[0]) return 1
   if (c1[1] < c2[1]) return -1
