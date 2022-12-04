@@ -33,7 +33,7 @@ export function useHtmlEditor(props: {
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
   const [cursorRect, setCursorRect] = React.useState<Region>()
-  const layoutResults = React.useRef<Region[][]>()
+  const layoutResults = React.useRef<HtmlLayoutResult>()
 
   const range = selectionStart !== undefined
     ? compareLocations(selectionStart, location) > 0
@@ -48,7 +48,7 @@ export function useHtmlEditor(props: {
     return {
       currentBlock: block,
       currentContent: contentIndex !== undefined ? block.children[contentIndex] : undefined,
-      currentContentLayout: blockIndex !== undefined && contentIndex !== undefined && layoutResults.current ? layoutResults.current[blockIndex]?.[contentIndex] : undefined
+      currentContentLayout: blockIndex !== undefined && contentIndex !== undefined && layoutResults.current ? layoutResults.current.cells[blockIndex]?.[contentIndex] : undefined
     }
   }
   const { currentBlock, currentContent, currentContentLayout } = getCurrentContent(props.state)
@@ -152,6 +152,11 @@ export function useHtmlEditor(props: {
       props.setState(draft => {
         draft[blockLocation].children.splice(contentLocation - 1, 1)
       })
+    } else if (props.state[blockLocation - 1].void) {
+      setLocation([blockLocation - 1, 0])
+      props.setState(draft => {
+        draft.splice(blockLocation - 1, 1)
+      })
     } else {
       setLocation([blockLocation - 1, props.state[blockLocation - 1].children.length])
       props.setState(draft => {
@@ -209,9 +214,20 @@ export function useHtmlEditor(props: {
       setLocation([0, 0])
       return
     }
+    let layoutResult: { y: number, height: number } | undefined
+    if (layoutResults.current) {
+      for (let i = layoutResults.current.rows.length - 1; i >= 0; i--) {
+        const r = layoutResults.current.rows[i]
+        if (r.y + r.height / 2 < cursorY) {
+          layoutResult = r
+          break
+        }
+      }
+    }
+    const y = layoutResult ? layoutResult.y + layoutResult.height / 2 : cursorY - cursorHeight * 0.5
     setLocation(positionToLocation({
       x: cursorX - (cursorRect?.width ?? 0) / 2,
-      y: cursorY - cursorHeight / 2 + scrollY,
+      y: y + scrollY,
     }))
   }
   const arrowDown = (shift = false) => {
@@ -223,9 +239,11 @@ export function useHtmlEditor(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
+    const layoutResult = layoutResults.current?.rows.find(r => r.y > cursorY + cursorHeight / 2)
+    const y = layoutResult ? layoutResult.y + layoutResult.height / 2 : cursorY + cursorHeight * 1.5
     setLocation(positionToLocation({
       x: cursorX - (cursorRect?.width ?? 0) / 2,
-      y: cursorY + cursorHeight * 1.5 + scrollY,
+      y: y + scrollY,
     }))
   }
   const selectAll = () => {
@@ -347,8 +365,8 @@ export function useHtmlEditor(props: {
   const positionToLocation = (p: Position): [number, number] => {
     if (layoutResults.current) {
       let previous: [number, number] | undefined
-      for (let i = 0; i < layoutResults.current.length; i++) {
-        const block = layoutResults.current[i]
+      for (let i = 0; i < layoutResults.current.cells.length; i++) {
+        const block = layoutResults.current.cells[i]
         for (let j = 0; j < block.length; j++) {
           const result = block[j]
           if (
@@ -399,9 +417,10 @@ export function useHtmlEditor(props: {
       setSelectionStart(downLocation.current)
     }
     if (!props.autoHeight) {
-      if (s.y >= 0 && s.y <= firstLineHeight) {
+      const y = s.y + scrollY
+      if (y >= 0 && y <= firstLineHeight) {
         setY(y => filterY(y + 2))
-      } else if (s.y <= props.height && s.y >= props.height - lastLineHeight) {
+      } else if (y <= props.height && y >= props.height - lastLineHeight) {
         setY(y => filterY(y - 2))
       }
     }
@@ -431,16 +450,18 @@ export function useHtmlEditor(props: {
   }, [props.state, rootRef.current])
   React.useEffect(() => {
     if (!layoutResults.current) return
-    const parentResult = layoutResults.current[blockLocation]
+    const parentResult = layoutResults.current.cells[blockLocation]
     let rect: Region | undefined
     if (parentResult) {
       if (contentLocation === 0) {
         rect = parentResult[0]
       } else {
         const previous = parentResult[contentLocation - 1]
-        rect = {
-          ...previous,
-          x: previous.x + previous.width,
+        if (previous) {
+          rect = {
+            ...previous,
+            x: previous.x + previous.width,
+          }
         }
       }
     }
@@ -451,10 +472,10 @@ export function useHtmlEditor(props: {
   if (newContentHeight && contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
   }
-  const firstLineHeight = layoutResults.current?.[0]?.[0]?.height ?? defaultFontSize
-  const lastLineHeight = layoutResults.current?.[props.state.length - 1]?.[0]?.height ?? defaultFontSize
+  const firstLineHeight = layoutResults.current?.cells?.[0]?.[0]?.height ?? defaultFontSize
+  const lastLineHeight = layoutResults.current?.cells?.[props.state.length - 1]?.[0]?.height ?? defaultFontSize
 
-  const p = layoutResults.current?.[blockLocation]?.[contentLocation]
+  const p = layoutResults.current?.cells?.[blockLocation]?.[contentLocation]
   const cursorX = p?.x ?? 0
   const cursorY = (p?.y ?? 0) - scrollY
   const cursorHeight = p?.height ?? 0
@@ -470,12 +491,10 @@ export function useHtmlEditor(props: {
     const y = cursorY + scrollY
     if (y < 0) {
       setY(-cursorY)
-    } else if (y > props.height - lastLineHeight) {
-      setY(props.height - lastLineHeight - cursorY)
     }
     lastLocation.current = location
     lastCursorY.current = cursorY
-  }, [location, cursorY, scrollY, lastLineHeight])
+  }, [location, cursorY, scrollY])
 
   React.useEffect(() => {
     props.onLocationChanged?.(location)
@@ -721,20 +740,53 @@ function renderContents(
   return result
 }
 
-function getHtmlLayout(elements: HTMLCollection): Region[][] {
-  const result: Region[][] = []
+/**
+ * @public
+ */
+export interface HtmlLayoutResult {
+  rows: { y: number, height: number }[]
+  cells: Region[][]
+}
+
+function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult {
+  const result: HtmlLayoutResult = {
+    rows: [],
+    cells: [],
+  }
+  let row: { y: number, height: number } | undefined
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
     if (element.tagName === 'UL' || element.tagName === 'OL') {
-      result.push(...getHtmlLayout(element.children))
+      const r = getHtmlLayout(element.children)
+      if (row) {
+        result.rows.push(row)
+        row = undefined
+      }
+      result.cells.push(...r.cells)
+      result.rows.push(...r.rows)
       continue
     }
     const r: Region[] = []
     for (let j = 0; j < element.children.length; j++) {
       // type-coverage:ignore-next-line
-      r.push(getHtmlElementRect(element.children[j] as HTMLElement))
+      const rect = getHtmlElementRect(element.children[j] as HTMLElement)
+      r.push(rect)
+      if (!row) {
+        row = { y: rect.y, height: rect.height }
+      } else if (rect.y >= row.y + row.height) {
+        result.rows.push(row)
+        row = { y: rect.y, height: rect.height }
+      } else if (rect.y < row.y) {
+        row.height = Math.max(row.y + row.height - rect.y, rect.height)
+        row.y = rect.y
+      } else if (rect.y + rect.height > row.y + row.height) {
+        row.height = rect.y + rect.height - row.y
+      }
     }
-    result.push(r)
+    result.cells.push(r)
+  }
+  if (row) {
+    result.rows.push(row)
   }
   return result
 }

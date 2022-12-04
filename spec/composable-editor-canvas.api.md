@@ -834,6 +834,17 @@ export interface HtmlEditorPluginInline {
 export type HtmlEditorPluginTextInline = Partial<HtmlTextStyle>;
 
 // @public (undocumented)
+export interface HtmlLayoutResult {
+    // (undocumented)
+    cells: Region[][];
+    // (undocumented)
+    rows: {
+        y: number;
+        height: number;
+    }[];
+}
+
+// @public (undocumented)
 export interface HtmlText extends Partial<HtmlTextStyle> {
     // (undocumented)
     kind?: string;
@@ -1872,7 +1883,7 @@ export function useHtmlEditor(props: {
     updateParagraph: (type: BlockType) => void;
     updateCurrentContent: (recipe: (richText: HtmlTextInline) => void) => void;
     inputText: (text: string | (string | HtmlTextInline)[]) => void;
-    layoutResult: Region[][] | undefined;
+    layoutResult: HtmlLayoutResult | undefined;
     cursor: {
         x: number;
         y: number;

@@ -85,7 +85,7 @@ export const RichTextEditor = React.forwardRef((props: {
   }), [applyPatchFromOtherOperators])
 
   const children: JSX.Element[] = []
-  layoutResult?.forEach((r, blockIndex) => {
+  layoutResult?.cells?.forEach((r, blockIndex) => {
     const block = state[blockIndex]
     const blockFontFamily = block?.fontFamily ?? defaultFontFamily
     r.forEach(({ x, y, height }, contentIndex) => {
