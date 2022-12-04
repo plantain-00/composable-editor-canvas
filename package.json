@@ -74,7 +74,8 @@
     "twgl.js": "4 || 5"
   },
   "peerDependencies": {
-    "react": "18"
+    "react": "18",
+    "react-dom": "18"
   },
   "module": "browser/index.js",
   "unpkg": "composable-editor-canvas.min.js",

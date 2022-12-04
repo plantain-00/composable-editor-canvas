@@ -1,5 +1,6 @@
 import React from "react"
-import { RichText, RichTextEditorPluginHook } from "../model"
+import { HtmlText } from "../../../src"
+import { RichTextEditorPluginHook } from "../model"
 
 export const useAt: RichTextEditorPluginHook = ({ cursor, cursorHeight, inputText }) => {
   const [at, setAt] = React.useState('')
@@ -18,7 +19,7 @@ export const useAt: RichTextEditorPluginHook = ({ cursor, cursorHeight, inputTex
           return true
         }
         if (e.key === 'Enter' && at) {
-          const newText: RichText = { text: at + '_' + atIndex, ...style }
+          const newText: HtmlText = { text: at + '_' + atIndex, ...style }
           inputText([newText, ' '])
           setAt('')
           return true
@@ -71,7 +72,7 @@ export const useAt: RichTextEditorPluginHook = ({ cursor, cursorHeight, inputTex
         style={{ background: atIndex === i ? '#ccc' : undefined }}
         onMouseDown={(e) => {
           e.preventDefault()
-          const newText: RichText = { text: at + '_' + i, ...style }
+          const newText: HtmlText = { text: at + '_' + i, ...style }
           inputText([newText, ' '])
           setAt('')
         }}
