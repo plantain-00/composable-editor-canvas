@@ -75,7 +75,7 @@ export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, 
         width: `${currentContent.width + offset.width}px`,
         height: `${currentContent.height + offset.height}px`,
         left: `${currentContentLayout.x + offset.x}px`,
-        top: `${currentContentLayout.y + cursorHeight - currentContent.height + offset.y}px`,
+        top: `${currentContentLayout.y + offset.y}px`,
         boxSizing: 'border-box',
         position: 'absolute',
       }}
