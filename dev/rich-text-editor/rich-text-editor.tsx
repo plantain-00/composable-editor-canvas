@@ -19,6 +19,7 @@ export const RichTextEditor = React.forwardRef((props: {
   const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
+  const [resizeOffset, setResizeOffset] = React.useState({ width: 0, height: 0 })
 
   const { renderEditor, currentContent, currentBlock, currentContentLayout, inputText, layoutResult, cursor, inputContent, location, scrollY, updateSelection, updateTextInline, updateParagraph, updateCurrentContent } = useHtmlEditor({
     state,
@@ -44,13 +45,14 @@ export const RichTextEditor = React.forwardRef((props: {
     onLocationChanged: props.onSendLocation,
     autoHeight: props.autoHeight,
     plugin: props.plugin,
+    resizeOffset,
   })
 
   const hooksProcessInputs: NonNullable<ReturnType<RichTextEditorPluginHook>['processInput']>[] = []
   const hooksUIs: React.ReactNode[] = []
   const properties: ReturnType<RichTextEditorPluginHook>['propertyPanel'] = {}
   if (props.plugin?.hooks) {
-    const hooksProps = { cursor, cursorHeight: cursor.height, inputText, inputContent, currentContent, currentContentLayout, updateCurrentContent }
+    const hooksProps = { cursor, cursorHeight: cursor.height, inputText, inputContent, currentContent, currentContentLayout, updateCurrentContent, setResizeOffset }
     props.plugin.hooks.forEach((useHook, i) => {
       const { processInput, ui, propertyPanel } = useHook(hooksProps)
       if (processInput) hooksProcessInputs.push(processInput)

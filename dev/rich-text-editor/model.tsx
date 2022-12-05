@@ -1,4 +1,4 @@
-import { Position, HtmlText, HtmlBlock, HtmlTextInline, HtmlTextStyle } from "../../src"
+import { Position, HtmlText, HtmlBlock, HtmlTextInline, HtmlTextStyle, Size } from "../../src"
 
 export const lineHeightRatio = 1.14
 
@@ -16,6 +16,7 @@ export type RichTextEditorPluginHook = (props: {
   inputText: (text: (string | HtmlTextInline)[]) => void
   inputContent: (contents: readonly HtmlBlock[]) => void
   updateCurrentContent: (recipe: (richText: HtmlTextInline) => void) => void
+  setResizeOffset: (offset: Size) => void
 }) => {
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
   ui?: JSX.Element
