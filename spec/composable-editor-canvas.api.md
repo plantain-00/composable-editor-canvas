@@ -827,7 +827,7 @@ export type HtmlEditorPluginBlock = Partial<HtmlTextStyle & FlowLayoutBlockStyle
 // @public (undocumented)
 export interface HtmlEditorPluginInline {
     // (undocumented)
-    render?: (htmlText: HtmlTextInline) => JSX.Element | undefined;
+    render?: (htmlText: HtmlTextInline, resizeOffset: Size) => JSX.Element | undefined;
 }
 
 // @public (undocumented)
@@ -1281,6 +1281,15 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw>;
 
 // @public (undocumented)
 export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw>;
+
+// @public (undocumented)
+export class Reducer<T> {
+    constructor(flush: (last: T) => void, newItem: (previous: T, current: T) => boolean, reduceItem: (previous: T, current: T) => void);
+    // (undocumented)
+    flushLast(): void;
+    // (undocumented)
+    push(data: T): void;
+}
 
 // @public (undocumented)
 export interface Region extends Position, Size {
@@ -1874,6 +1883,7 @@ export function useHtmlEditor(props: {
     onBlur?: () => void;
     onFocus?: () => void;
     plugin?: HtmlEditorPlugin;
+    resizeOffset: Size;
 }): {
     currentContent: HtmlTextInline | undefined;
     currentBlock: HtmlBlock;

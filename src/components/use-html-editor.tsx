@@ -3,7 +3,7 @@ import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
 import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getColorString, getWordByDoubleClick, useEvent, useGlobalMouseUp } from "."
-import { equals, Merger, Position, Region } from "../utils"
+import { equals, Merger, Position, Reducer, Region, Size } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
@@ -25,6 +25,7 @@ export function useHtmlEditor(props: {
   onBlur?: () => void
   onFocus?: () => void
   plugin?: HtmlEditorPlugin
+  resizeOffset: Size
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
@@ -56,7 +57,7 @@ export function useHtmlEditor(props: {
   const renderInline = (c: HtmlTextInline) => {
     if (props.plugin?.inlines) {
       for (const inline of props.plugin.inlines) {
-        const result = inline?.render?.(c)
+        const result = inline?.render?.(c, props.resizeOffset)
         if (result !== undefined) return result
       }
     }
@@ -693,7 +694,7 @@ export interface HtmlEditorPlugin {
  * @public
  */
 export interface HtmlEditorPluginInline {
-  render?: (htmlText: HtmlTextInline) => JSX.Element | undefined
+  render?: (htmlText: HtmlTextInline, resizeOffset: Size) => JSX.Element | undefined
 }
 
 /**
@@ -753,15 +754,23 @@ function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult {
     rows: [],
     cells: [],
   }
-  let row: { y: number, height: number } | undefined
+  const reducer = new Reducer<{ y: number, height: number }>(
+    last => result.rows.push(last),
+    (p, c) => c.y >= p.y + p.height,
+    (p, c) => {
+      if (c.y < p.y) {
+        p.height = Math.max(p.y + p.height - c.y, c.height)
+        p.y = c.y
+      } else if (c.y + c.height > p.y + p.height) {
+        p.height = c.y + c.height - p.y
+      }
+    }
+  )
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
     if (element.tagName === 'UL' || element.tagName === 'OL') {
       const r = getHtmlLayout(element.children)
-      if (row) {
-        result.rows.push(row)
-        row = undefined
-      }
+      reducer.flushLast()
       result.cells.push(...r.cells)
       result.rows.push(...r.rows)
       continue
@@ -771,23 +780,11 @@ function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult {
       // type-coverage:ignore-next-line
       const rect = getHtmlElementRect(element.children[j] as HTMLElement)
       r.push(rect)
-      if (!row) {
-        row = { y: rect.y, height: rect.height }
-      } else if (rect.y >= row.y + row.height) {
-        result.rows.push(row)
-        row = { y: rect.y, height: rect.height }
-      } else if (rect.y < row.y) {
-        row.height = Math.max(row.y + row.height - rect.y, rect.height)
-        row.y = rect.y
-      } else if (rect.y + rect.height > row.y + row.height) {
-        row.height = rect.y + rect.height - row.y
-      }
+      reducer.push({ y: rect.y, height: rect.height })
     }
     result.cells.push(r)
   }
-  if (row) {
-    result.rows.push(row)
-  }
+  reducer.flushLast()
   return result
 }
 

@@ -13,15 +13,15 @@ export function isRichTextImage(content: HtmlTextInline): content is RichTextIma
 }
 
 export const image: HtmlEditorPluginInline = {
-  render(content) {
+  render(content, offset) {
     if (isRichTextImage(content)) {
-      return <img style={{ width: `${content.width}px`, height: `${content.height}px` }} src={content.url} />
+      return <img style={{ width: `${content.width + offset.width}px`, height: `${content.height + offset.height}px` }} src={content.url} />
     }
     return
   },
 }
 
-export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, currentContentLayout, cursorHeight, updateCurrentContent }) => {
+export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, currentContentLayout, updateCurrentContent, setResizeOffset }) => {
   const [text, setText] = React.useState('')
   const { offset, onStart, mask } = useDragResize(
     () => {
@@ -36,6 +36,9 @@ export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, 
       keepRatio: currentContent && isRichTextImage(currentContent) ? currentContent.width / currentContent.height : undefined,
     },
   )
+  React.useEffect(() => {
+    setResizeOffset(offset)
+  }, [offset.x, offset.y])
   const propertyPanel: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {
     'insert image': <StringEditor
       value={text}
@@ -76,12 +79,13 @@ export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, 
         height: `${currentContent.height + offset.height}px`,
         left: `${currentContentLayout.x + offset.x}px`,
         top: `${currentContentLayout.y + offset.y}px`,
+        border: '1px solid green',
         boxSizing: 'border-box',
         position: 'absolute',
       }}
     >
       <ResizeBar
-        directions={['left-bottom', 'left-top', 'right-bottom', 'right-top']}
+        directions={['right-bottom']}
         onMouseDown={onStart}
       />
       {mask}
