@@ -836,7 +836,9 @@ export type HtmlEditorPluginTextInline = Partial<HtmlTextStyle>;
 // @public (undocumented)
 export interface HtmlLayoutResult {
     // (undocumented)
-    cells: Region[][];
+    cells: (Region & {
+        row: number;
+    })[][];
     // (undocumented)
     rows: {
         y: number;
@@ -1887,7 +1889,9 @@ export function useHtmlEditor(props: {
 }): {
     currentContent: HtmlTextInline | undefined;
     currentBlock: HtmlBlock;
-    currentContentLayout: Region | undefined;
+    currentContentLayout: (Region & {
+        row: number;
+    }) | undefined;
     updateSelection: (recipe: (htmlText: Partial<HtmlTextStyle>) => void) => void;
     updateTextInline: (type: BlockType) => void;
     updateParagraph: (type: BlockType) => void;
