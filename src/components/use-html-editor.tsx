@@ -376,12 +376,16 @@ export function useHtmlEditor(props: {
             p.x <= result.x + result.width &&
             p.y <= result.y + result.height
           ) {
+            const content = props.state[i].children[j]
+            if (!isHtmlText(content)) {
+              return [i, j + 1]
+            }
             if (p.x < result.x + result.width / 2) {
               return [i, j]
             }
             return [i, j + 1]
           }
-          if (p.y < result.y) {
+          if (p.y < layoutResults.current.rows[result.row].y) {
             if (j === 0 && previous) {
               return previous
             }
@@ -746,10 +750,10 @@ function renderContents(
  */
 export interface HtmlLayoutResult {
   rows: { y: number, height: number }[]
-  cells: Region[][]
+  cells: (Region & { row: number })[][]
 }
 
-function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult {
+function getHtmlLayout(elements: HTMLCollection, rowIndex = 0): HtmlLayoutResult {
   const result: HtmlLayoutResult = {
     rows: [],
     cells: [],
@@ -769,18 +773,21 @@ function getHtmlLayout(elements: HTMLCollection): HtmlLayoutResult {
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
     if (element.tagName === 'UL' || element.tagName === 'OL') {
-      const r = getHtmlLayout(element.children)
       reducer.flushLast()
+      const r = getHtmlLayout(element.children, result.rows.length)
       result.cells.push(...r.cells)
       result.rows.push(...r.rows)
       continue
     }
-    const r: Region[] = []
+    const r: (Region & { row: number })[] = []
     for (let j = 0; j < element.children.length; j++) {
       // type-coverage:ignore-next-line
       const rect = getHtmlElementRect(element.children[j] as HTMLElement)
-      r.push(rect)
       reducer.push({ y: rect.y, height: rect.height })
+      r.push({
+        ...rect,
+        row: result.rows.length + rowIndex,
+      })
     }
     result.cells.push(r)
   }
