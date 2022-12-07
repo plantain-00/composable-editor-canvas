@@ -10,6 +10,8 @@ export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & m
 export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.Arc
 
 export function getModel(ctx: PluginContext) {
+  const CircleContent = ctx.and(ctx.BaseContent('circle'), ctx.StrokeFields, ctx.FillFields, ctx.Circle)
+  const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
   function getCircleGeometries(content: Omit<CircleContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
@@ -174,6 +176,7 @@ export function getModel(ctx: PluginContext) {
           ...ctx.getFillContentPropertyPanel(content, update, contents),
         }
       },
+      isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
     } as model.Model<CircleContent>,
@@ -355,6 +358,7 @@ export function getModel(ctx: PluginContext) {
           ...ctx.getAngleDeltaContentPropertyPanel(content, update),
         }
       },
+      isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
     } as model.Model<ArcContent>,

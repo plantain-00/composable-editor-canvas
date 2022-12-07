@@ -14,6 +14,13 @@ export type BlockReferenceContent = model.BaseContent<'block reference'> & core.
 
 export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model.Model<BlockReferenceContent>)[] {
   const React = ctx.React
+  const BlockContent = ctx.and(ctx.BaseContent('block'), ctx.ContainerFields, {
+    base: ctx.Position,
+  })
+  const BlockReferenceContent = ctx.and(ctx.BaseContent('block reference'), ctx.Position, {
+    refId: ctx.or(ctx.number, ctx.Content),
+    angle: ctx.number,
+  })
   const blockModel: model.Model<BlockContent> = {
     type: 'block',
     ...ctx.containerModel,
@@ -57,6 +64,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         />,
       }
     },
+    isValid: (c, p) => ctx.validate(c, BlockContent, p),
   }
   const blockLinesCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.Geometries>()
   const blockSnapPointsCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.SnapPoint[]>()
@@ -230,6 +238,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,
       }
     },
+    isValid: (c, p) => ctx.validate(c, BlockReferenceContent, p),
     getRefIds(content) {
       return typeof content.refId === 'number' ? [content.refId] : undefined
     },

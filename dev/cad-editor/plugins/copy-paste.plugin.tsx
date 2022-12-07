@@ -5,6 +5,13 @@ import type * as model from '../model'
 
 export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React
+  const CopyData: core.Validator = {
+    contents: [{
+      id: ctx.number,
+      content: ctx.Content,
+    }],
+    center: ctx.Position,
+  }
   const cutOrCopyCommand: Command = (
     {
       name: 'copy',
@@ -40,7 +47,6 @@ export function getCommand(ctx: PluginContext): Command[] {
           return
         }
         const copyData: CopyData = {
-          type: 'composable-editor-canvas',
           contents: copiedContents,
           center: ctx.getTwoPointCenter(bounding.start, bounding.end),
         }
@@ -63,21 +69,27 @@ export function getCommand(ctx: PluginContext): Command[] {
         }
         const [copyData, setCopyData] = React.useState<CopyData>()
         const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message)
-        ctx.React.useEffect(() => {
+        ctx.useValueChanged(type, () => {
           if (type) {
             (async () => {
               try {
                 const text = await navigator.clipboard.readText()
                 const copyData: CopyData = JSON.parse(text)
-                if (copyData.type === 'composable-editor-canvas') {
+                const r = ctx.validate(copyData, CopyData)
+                if (r === true) {
                   setCopyData(copyData)
+                  return
+                } else {
+                  console.info(r)
+                  reset()
+                  onEnd()
                 }
               } catch (error) {
                 console.info(error)
               }
             })()
           }
-        }, [type])
+        })
         const reset = () => {
           setCopyData(undefined)
           resetInput()
@@ -171,7 +183,6 @@ function* iterateRefContents(
 }
 
 interface CopyData {
-  type: 'composable-editor-canvas',
   contents: {
     id: number
     content: model.BaseContent

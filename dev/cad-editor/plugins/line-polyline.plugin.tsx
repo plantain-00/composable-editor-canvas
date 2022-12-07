@@ -94,7 +94,7 @@ export function getModel(ctx: PluginContext) {
       }
     },
     isValid(content) {
-      return content.points.length > 1
+      return content.points.length > 1 ? true : []
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,

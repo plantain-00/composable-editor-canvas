@@ -1,3 +1,5 @@
+import { and, boolean, number, optional } from "./validators"
+
 export function getPointByLengthAndDirection(
   startPoint: Position,
   length: number,
@@ -769,9 +771,25 @@ export interface Position {
 /**
  * @public
  */
+export const Position = {
+  x: number,
+  y: number,
+}
+
+/**
+ * @public
+ */
 export interface Size {
   width: number
   height: number
+}
+
+/**
+ * @public
+ */
+export const Size = {
+  width: number,
+  height: number,
 }
 
 /**
@@ -818,8 +836,29 @@ export interface Circle extends Position {
 /**
  * @public
  */
+export const Circle = and(Position, {
+  r: number,
+})
+
+/**
+ * @public
+ */
 export interface Arc extends Circle, AngleRange {
 }
+
+/**
+ * @public
+ */
+ export const AngleRange = {
+  startAngle: number,
+  endAngle: number,
+  counterclockwise: optional(boolean),
+}
+
+/**
+ * @public
+ */
+export const Arc = and(Circle, AngleRange)
 
 /**
  * @public

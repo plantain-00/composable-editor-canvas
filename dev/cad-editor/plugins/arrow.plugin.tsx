@@ -10,6 +10,10 @@ export type ArrowContent = model.BaseContent<'arrow'> & model.StrokeFields & mod
 }
 
 export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
+  const ArrowContent = ctx.and(ctx.BaseContent('arrow'), ctx.StrokeFields, ctx.ArrowFields, {
+    p1: ctx.Position,
+    p2: ctx.Position,
+  })
   function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content.p1, content.p2, content)
@@ -116,6 +120,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, ArrowContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
   }
