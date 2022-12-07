@@ -1,6 +1,10 @@
 export const pluginScripts = [
 `// dev/cad-editor/plugins/arrow.plugin.tsx
 function getModel(ctx) {
+  const ArrowContent = ctx.and(ctx.BaseContent("arrow"), ctx.StrokeFields, ctx.ArrowFields, {
+    p1: ctx.Position,
+    p2: ctx.Position
+  });
   function getArrowGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content.p1, content.p2, content);
@@ -130,6 +134,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, ArrowContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds
   };
@@ -189,6 +194,13 @@ export {
 `// dev/cad-editor/plugins/block.plugin.tsx
 function getModel(ctx) {
   const React = ctx.React;
+  const BlockContent = ctx.and(ctx.BaseContent("block"), ctx.ContainerFields, {
+    base: ctx.Position
+  });
+  const BlockReferenceContent = ctx.and(ctx.BaseContent("block reference"), ctx.Position, {
+    refId: ctx.or(ctx.number, ctx.Content),
+    angle: ctx.number
+  });
   const blockModel = {
     type: "block",
     ...ctx.containerModel,
@@ -242,7 +254,8 @@ function getModel(ctx) {
           }
         )
       };
-    }
+    },
+    isValid: (c, p) => ctx.validate(c, BlockContent, p)
   };
   const blockLinesCache = new ctx.WeakmapCache2();
   const blockSnapPointsCache = new ctx.WeakmapCache2();
@@ -430,6 +443,7 @@ function getModel(ctx) {
         }) })
       };
     },
+    isValid: (c, p) => ctx.validate(c, BlockReferenceContent, p),
     getRefIds(content) {
       return typeof content.refId === "number" ? [content.refId] : void 0;
     },
@@ -734,6 +748,8 @@ export {
 `,
 `// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function getModel(ctx) {
+  const CircleContent = ctx.and(ctx.BaseContent("circle"), ctx.StrokeFields, ctx.FillFields, ctx.Circle);
+  const ArcContent = ctx.and(ctx.BaseContent("arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc);
   function getCircleGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
@@ -912,6 +928,7 @@ function getModel(ctx) {
           ...ctx.getFillContentPropertyPanel(content, update, contents)
         };
       },
+      isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds
     },
@@ -1118,6 +1135,7 @@ function getModel(ctx) {
           ...ctx.getAngleDeltaContentPropertyPanel(content, update)
         };
       },
+      isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds
     }
@@ -1515,7 +1533,7 @@ function getCommand(ctx) {
       const invalidContentsIndex = [];
       const contentIsValid = (d) => {
         var _a2, _b2, _c;
-        return !!d && ((_c = (_b2 = (_a2 = ctx.getContentModel(d)) == null ? void 0 : _a2.isValid) == null ? void 0 : _b2.call(_a2, d)) != null ? _c : true);
+        return !!d && ((_c = (_b2 = (_a2 = ctx.getContentModel(d)) == null ? void 0 : _a2.isValid) == null ? void 0 : _b2.call(_a2, d)) != null ? _c : true) === true;
       };
       contents.forEach((d, i) => {
         if (contentIsValid(d)) {
@@ -1743,6 +1761,13 @@ export {
 `// dev/cad-editor/plugins/copy-paste.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
+  const CopyData = {
+    contents: [{
+      id: ctx.number,
+      content: ctx.Content
+    }],
+    center: ctx.Position
+  };
   const cutOrCopyCommand = {
     name: "copy",
     execute({ contents, selected, type }) {
@@ -1778,7 +1803,6 @@ function getCommand(ctx) {
         return;
       }
       const copyData = {
-        type: "composable-editor-canvas",
         contents: copiedContents,
         center: ctx.getTwoPointCenter(bounding.start, bounding.end)
       };
@@ -1800,21 +1824,27 @@ function getCommand(ctx) {
         }
         const [copyData, setCopyData] = React.useState();
         const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message);
-        ctx.React.useEffect(() => {
+        ctx.useValueChanged(type, () => {
           if (type) {
             (async () => {
               try {
                 const text = await navigator.clipboard.readText();
                 const copyData2 = JSON.parse(text);
-                if (copyData2.type === "composable-editor-canvas") {
+                const r = ctx.validate(copyData2, CopyData);
+                if (r === true) {
                   setCopyData(copyData2);
+                  return;
+                } else {
+                  console.info(r);
+                  reset();
+                  onEnd();
                 }
               } catch (error) {
                 console.info(error);
               }
             })();
           }
-        }, [type]);
+        });
         const reset = () => {
           setCopyData(void 0);
           resetInput();
@@ -6011,7 +6041,7 @@ function getModel(ctx) {
       };
     },
     isValid(content) {
-      return content.points.length > 1;
+      return content.points.length > 1 ? true : [];
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
@@ -7155,6 +7185,9 @@ export {
 `,
 `// dev/cad-editor/plugins/pen.plugin.tsx
 function getModel(ctx) {
+  const PenContent = ctx.and(ctx.BaseContent("pen"), ctx.StrokeFields, {
+    points: ctx.minItems(2, [ctx.Position])
+  });
   function getGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
@@ -7195,9 +7228,7 @@ function getModel(ctx) {
     propertyPanel(content, update, contents) {
       return ctx.getStrokeContentPropertyPanel(content, update, contents);
     },
-    isValid(content) {
-      return content.points.length > 1;
-    },
+    isValid: (c, p) => ctx.validate(c, PenContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds
   };

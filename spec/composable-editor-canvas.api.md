@@ -28,6 +28,20 @@ export const allDirections: readonly ["left", "right", "top", "bottom", "left-bo
 export const allSnapTypes: readonly ["endpoint", "midpoint", "center", "intersection", "nearest", "perpendicular", "grid", "angle"];
 
 // @public (undocumented)
+export const and: (...items: {
+    [key: string]: Validator;
+}[]) => {
+    [key: string]: Validator;
+};
+
+// @public (undocumented)
+export const AngleRange: {
+    startAngle: (v: unknown, path: Path) => true | Path;
+    endAngle: (v: unknown, path: Path) => true | Path;
+    counterclockwise: Validator;
+};
+
+// @public (undocumented)
 export interface AngleRange {
     // (undocumented)
     counterclockwise?: boolean;
@@ -49,16 +63,27 @@ export interface Arc extends Circle, AngleRange {
 }
 
 // @public (undocumented)
+export const Arc: {
+    [key: string]: Validator;
+};
+
+// @public (undocumented)
 export function arcToPolyline(content: Arc, angleDelta: number): {
     x: number;
     y: number;
 }[];
 
 // @public (undocumented)
+export const bigint: (v: unknown, path: Path) => true | Path;
+
+// @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React_2.ForwardedRef<T> | React_2.MutableRefObject<T | null>)[]): (r: T) => void;
 
 // @public (undocumented)
 export type BlockType = keyof JSX.IntrinsicElements;
+
+// @public (undocumented)
+export const boolean: (v: unknown, path: Path) => true | Path;
 
 // @public (undocumented)
 export interface Bounding {
@@ -83,6 +108,11 @@ export interface Circle extends Position {
     // (undocumented)
     r: number;
 }
+
+// @public (undocumented)
+export const Circle: {
+    [key: string]: Validator;
+};
 
 // @public (undocumented)
 export function CircleArcEditBar(props: {
@@ -891,6 +921,12 @@ type Image_2 = Region & {
 export { Image_2 as Image }
 
 // @public (undocumented)
+export const integer: (v: unknown, path: Path) => true | Path;
+
+// @public (undocumented)
+export const isArray: <T>(arg: unknown) => arg is T[];
+
+// @public (undocumented)
 export function isBetween(target: number, a: number, b: number): boolean;
 
 // @public (undocumented)
@@ -904,6 +940,9 @@ export const isMacKeyboard: boolean;
 
 // @public (undocumented)
 export function isNumber(c: string): boolean;
+
+// @public (undocumented)
+export function isRecord(value: unknown): value is Record<string, unknown>;
 
 // @public (undocumented)
 export function isSamePath<T extends SelectPath = SelectPath>(path1: T | undefined, path2: T | undefined): boolean;
@@ -1006,6 +1045,9 @@ export class MapCache3<TKey1, TKey2, TKey3, TValue> {
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number];
 
 // @public (undocumented)
+export const maxItems: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
 export class Merger<T, V> {
     constructor(flush: (last: {
         type: T;
@@ -1021,6 +1063,12 @@ export class Merger<T, V> {
 export function metaKeyIfMacElseCtrlKey(e: React_2.KeyboardEvent | KeyboardEvent): boolean;
 
 // @public (undocumented)
+export const minItems: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
+export const never: () => boolean;
+
+// @public (undocumented)
 export function normalizeAngleInRange(angle: number, range: AngleRange): number;
 
 // @public (undocumented)
@@ -1028,6 +1076,18 @@ export function normalizeAngleRange(content: AngleRange): void;
 
 // @public (undocumented)
 export type Nullable<T> = T | undefined | null;
+
+// @public (undocumented)
+export const Nullable: (a: Validator) => Validator;
+
+// @public (undocumented)
+export const number: (v: unknown, path: Path) => true | Path;
+
+// @public (undocumented)
+export const optional: (a: Validator) => Validator;
+
+// @public (undocumented)
+export const or: (...items: Validator[]) => Validator;
 
 // @public (undocumented)
 export interface PartStyle {
@@ -1038,6 +1098,9 @@ export interface PartStyle {
     // (undocumented)
     opacity?: number;
 }
+
+// @public (undocumented)
+export type Path = (number | string)[];
 
 // @public (undocumented)
 export type PathCommand = {
@@ -1171,6 +1234,12 @@ export interface Position {
 }
 
 // @public (undocumented)
+export const Position: {
+    x: (v: unknown, path: Path) => true | Path;
+    y: (v: unknown, path: Path) => true | Path;
+};
+
+// @public (undocumented)
 export function prependPatchPath(patches: Patch[], path?: SelectPath): Patch[];
 
 // @public (undocumented)
@@ -1285,6 +1354,9 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw>;
 export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw>;
 
 // @public (undocumented)
+export const record: (a: Validator, b: Validator) => Validator;
+
+// @public (undocumented)
 export class Reducer<T> {
     constructor(flush: (last: T) => void, newItem: (previous: T, current: T) => boolean, reduceItem: (previous: T, current: T) => void);
     // (undocumented)
@@ -1376,12 +1448,21 @@ export interface Size {
 }
 
 // @public (undocumented)
+export const Size: {
+    width: (v: unknown, path: Path) => true | Path;
+    height: (v: unknown, path: Path) => true | Path;
+};
+
+// @public (undocumented)
 export type SnapPoint = Position & {
     type: SnapPointType;
 };
 
 // @public (undocumented)
 export type SnapPointType = typeof allSnapTypes[number];
+
+// @public (undocumented)
+export const string: (v: unknown, path: Path) => true | Path;
 
 // @public (undocumented)
 export interface StrokeStyle {
@@ -1405,6 +1486,9 @@ export interface StrokeStyle {
 
 // @public (undocumented)
 export type SvgDraw = (key: React_2.Key, scale: number, strokeWidthScale: number) => JSX.Element;
+
+// @public (undocumented)
+export const symbol: (v: unknown, path: Path) => true | Path;
 
 // @public (undocumented)
 type Text_2 = Position & TextStyle & {
@@ -1450,6 +1534,9 @@ export interface Transform extends Position {
 }
 
 // @public (undocumented)
+export const tuple: (...items: Validator[]) => Validator;
+
+// @public (undocumented)
 export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine;
 
 // @public (undocumented)
@@ -1459,6 +1546,9 @@ export interface TwoPointsFormRegion {
     // (undocumented)
     start: Position;
 }
+
+// @public (undocumented)
+export const unknown: () => boolean;
 
 // @public (undocumented)
 export function useCircleArcClickCreate(type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined, onEnd: (arc: Arc) => void, options?: Partial<{
@@ -2206,6 +2296,16 @@ export function useZoom(value: number, onChange: (value: number) => void, option
         preventDefault(): void;
     }) => void;
 };
+
+// @public (undocumented)
+export function validate(value: unknown, by: Validator, path?: Path): true | Path;
+
+// @public (undocumented)
+export type Validator = {
+    (v: unknown, path: Path): true | Path;
+} | {
+    [key: string]: Validator;
+} | string | number | boolean | null | undefined | bigint | [Validator];
 
 // @public (undocumented)
 export class WeakmapCache<TKey extends object, TValue> {
