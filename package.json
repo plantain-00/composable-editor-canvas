@@ -72,6 +72,10 @@
     "tslib": "1 || 2",
     "twgl.js": "4 || 5"
   },
+  "peerDependencies": {
+    "react": "18",
+    "react-dom": "18"
+  },
   "workspaces": [
     "packages/*"
   ],
