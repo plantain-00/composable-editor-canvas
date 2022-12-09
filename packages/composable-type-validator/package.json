@@ -1,6 +1,6 @@
 {
   "name": "composable-type-validator",
-  "version": "1.8.2",
+  "version": "1.8.6",
   "description": "A composable type validator.",
   "main": "index.js",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "react-render-target",
-  "version": "1.8.2",
+  "version": "1.8.6",
   "description": "A react canvas, svg, webgl render interface.",
   "main": "index.js",
   "repository": {
