@@ -1,7 +1,7 @@
 {
   "extends": "tsconfig-plantain",
   "compilerOptions": {
-    "outDir": "../dist/browser",
+    "outDir": "../packages/composable-canvas-editor/browser",
     "declaration": true,
     "noUncheckedIndexedAccess": false,
     "target": "es5"

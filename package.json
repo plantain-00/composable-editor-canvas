@@ -1,7 +1,6 @@
 {
   "name": "composable-editor-canvas",
   "description": "A composable editor canvas library.",
-  "main": "nodejs/index.js",
   "scripts": {
     "build": "clean-scripts build",
     "start": "clean-scripts start",
@@ -9,7 +8,6 @@
     "math": "types-as-schema -p ./types-as-schema.math.ts",
     "test": "clean-scripts test",
     "release": "clean-release",
-    "release:package": "clean-release --config ./clean-release.packages.config.ts",
     "fix": "clean-scripts fix"
   },
   "repository": {
@@ -81,12 +79,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "module": "browser/index.js",
-  "unpkg": "composable-editor-canvas.min.js",
-  "jsdelivr": "composable-editor-canvas.min.js",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  },
   "typeCoverage": {
     "atLeast": 100
   }
