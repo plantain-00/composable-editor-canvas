@@ -1,4 +1,4 @@
-import { and, boolean, number, optional } from "./validators"
+import { and, boolean, minimum, number, optional } from "./validators"
 
 export function getPointByLengthAndDirection(
   startPoint: Position,
@@ -788,8 +788,8 @@ export interface Size {
  * @public
  */
 export const Size = {
-  width: number,
-  height: number,
+  width: minimum(0, number),
+  height: minimum(0, number),
 }
 
 /**
@@ -837,7 +837,7 @@ export interface Circle extends Position {
  * @public
  */
 export const Circle = and(Position, {
-  r: number,
+  r: minimum(0, number),
 })
 
 /**

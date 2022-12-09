@@ -1762,10 +1762,10 @@ export {
 function getCommand(ctx) {
   const React = ctx.React;
   const CopyData = {
-    contents: [{
+    contents: ctx.minItems(0, [{
       id: ctx.number,
       content: ctx.Content
-    }],
+    }]),
     center: ctx.Position
   };
   const cutOrCopyCommand = {
@@ -6041,7 +6041,7 @@ function getModel(ctx) {
       };
     },
     isValid(content) {
-      return content.points.length > 1 ? true : [];
+      return content.points.length > 1 ? true : { path: [], expect: "length", args: [2] };
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds

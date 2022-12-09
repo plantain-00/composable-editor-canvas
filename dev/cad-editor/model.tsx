@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { and, boolean, breakPolylineToPolylines, Circle, EditPoint, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, Validator, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
 import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor } from "react-composable-json-editor"
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
@@ -17,13 +17,13 @@ export const BaseContent = (type: Validator = string) => ({
   visible: optional(boolean),
 })
 
-export const Content = (v: unknown, path: Path) => {
+export const Content = (v: unknown, path: Path): ValidationResult => {
   if (!isRecord(v)) {
-    return path
+    return { path, expect: 'object' }
   }
   const t = v.type
   if (typeof t !== 'string') {
-    return path
+    return { path, expect: 'type' }
   }
   const model = modelCenter[t]
   if (!model?.isValid) {
@@ -40,9 +40,9 @@ export interface StrokeFields {
 }
 
 export const StrokeFields = {
-  dashArray: optional([number]),
-  strokeColor: optional(number),
-  strokeWidth: optional(number),
+  dashArray: optional([minimum(0, number)]),
+  strokeColor: optional(minimum(0, number)),
+  strokeWidth: optional(minimum(0, number)),
   strokeStyleId: optional(or(number, Content))
 }
 
@@ -56,10 +56,10 @@ export interface FillFields {
 }
 
 export const FillFields = {
-  fillColor: optional(number),
+  fillColor: optional(minimum(0, number)),
   fillPattern: optional(and(Size, {
     lines: [[Position]],
-    strokeColor: optional(number),
+    strokeColor: optional(minimum(0, number)),
   })),
   fillStyleId: optional(or(number, Content)),
 }
@@ -79,7 +79,7 @@ export interface ArrowFields {
 
 export const ArrowFields = {
   arrowAngle: optional(number),
-  arrowSize: optional(number),
+  arrowSize: optional(minimum(0, number)),
 }
 
 export interface SegmentCountFields {
@@ -91,7 +91,7 @@ export interface AngleDeltaFields {
 }
 
 export const AngleDeltaFields = {
-  angleDelta: optional(number),
+  angleDelta: optional(exclusiveMinimum(0, number)),
 }
 
 export const strokeModel = {
@@ -150,7 +150,7 @@ export type Model<T> = Partial<FeatureModels> & {
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
-  isValid?(content: Omit<T, 'type'>, path?: Path): true | Path
+  isValid?(content: Omit<T, 'type'>, path?: Path): ValidationResult
 }
 
 export interface RenderContext<V> {
