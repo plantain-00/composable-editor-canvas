@@ -1,0 +1,33 @@
+{
+  "name": "composable-editor-canvas",
+  "version": "1.8.5",
+  "description": "A composable editor canvas library.",
+  "main": "browser/index.js",
+  "module": "browser/index.js",
+  "unpkg": "composable-editor-canvas.min.js",
+  "jsdelivr": "composable-editor-canvas.min.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"
+  },
+  "author": "York Yao",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
+  },
+  "dependencies": {
+    "earcut": "2",
+    "immer": "9",
+    "react-composable-json-editor": "8",
+    "tslib": "1 || 2",
+    "twgl.js": "4 || 5"
+  },
+  "peerDependencies": {
+    "react": "18",
+    "react-dom": "18"
+  },
+  "homepage": "https://github.com/plantain-00/composable-editor-canvas#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
-  "mainEntryPointFilePath": "<projectFolder>/packages/composable-canvas-editor/browser/index.d.ts",
+  "mainEntryPointFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/index.d.ts",
   "apiReport": {
     "enabled": true,
     "reportFolder": "<projectFolder>/spec"
@@ -10,8 +10,8 @@
   },
   "dtsRollup": {
     "enabled": true,
-    "untrimmedFilePath": "<projectFolder>/packages/composable-canvas-editor/browser/index.d.ts",
-    "publicTrimmedFilePath": "<projectFolder>/packages/composable-canvas-editor/index.d.ts"
+    "untrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/index.d.ts",
+    "publicTrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/index.d.ts"
   },
   "tsdocMetadata": {
     "enabled": false
