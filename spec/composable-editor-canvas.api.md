@@ -98,6 +98,14 @@ export interface Bounding {
 }
 
 // @public (undocumented)
+export const Bounding: {
+    xMin: (v: unknown, path: Path) => ValidationResult;
+    xMax: (v: unknown, path: Path) => ValidationResult;
+    yMin: (v: unknown, path: Path) => ValidationResult;
+    yMax: (v: unknown, path: Path) => ValidationResult;
+};
+
+// @public (undocumented)
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
 
 // @public (undocumented)
@@ -260,8 +268,22 @@ export interface Ellipse {
 }
 
 // @public (undocumented)
+export const Ellipse: {
+    cx: (v: unknown, path: Path) => ValidationResult;
+    cy: (v: unknown, path: Path) => ValidationResult;
+    rx: (v: unknown, path: Path) => ValidationResult;
+    ry: (v: unknown, path: Path) => ValidationResult;
+    angle: Validator;
+};
+
+// @public (undocumented)
 export interface EllipseArc extends Ellipse, AngleRange {
 }
+
+// @public (undocumented)
+export const EllipseArc: {
+    [key: string]: Validator;
+};
 
 // @public (undocumented)
 export function EllipseArcEditBar(props: EllipseArc & {
@@ -924,6 +946,11 @@ export interface HtmlTextStyle {
 type Image_2 = Region & {
     url: string;
 };
+
+// @public (undocumented)
+const Image_2: {
+    [key: string]: Validator;
+};
 export { Image_2 as Image }
 
 // @public (undocumented)
@@ -994,6 +1021,11 @@ export interface LinearDimension extends TextStyle {
     // (undocumented)
     text?: string;
 }
+
+// @public (undocumented)
+export const LinearDimension: {
+    [key: string]: Validator;
+};
 
 // @public (undocumented)
 export interface LinearGradient {
@@ -1149,6 +1181,9 @@ export type PathCommand = {
 };
 
 // @public (undocumented)
+export const PathCommand: (v: unknown, path: Path) => ValidationResult;
+
+// @public (undocumented)
 export interface PathFillOptions<T> {
     // (undocumented)
     clip: () => T;
@@ -1275,6 +1310,11 @@ export interface RadialDimension extends TextStyle {
 }
 
 // @public (undocumented)
+export const RadialDimension: {
+    [key: string]: Validator;
+};
+
+// @public (undocumented)
 export interface RadialGradient {
     // (undocumented)
     end: Circle;
@@ -1392,6 +1432,11 @@ export class Reducer<T> {
 // @public (undocumented)
 export interface Region extends Position, Size {
 }
+
+// @public (undocumented)
+export const Region: {
+    [key: string]: Validator;
+};
 
 // @public (undocumented)
 export function renderHtmlTextStyle(c: Partial<HtmlTextStyle>): React_2.CSSProperties;
@@ -1519,6 +1564,11 @@ type Text_2 = Position & TextStyle & {
     text: string;
     color: number;
 };
+
+// @public (undocumented)
+const Text_2: {
+    [key: string]: Validator;
+};
 export { Text_2 as Text }
 
 // @public (undocumented)
@@ -1528,6 +1578,12 @@ export interface TextStyle {
     // (undocumented)
     fontSize: number;
 }
+
+// @public (undocumented)
+export const TextStyle: {
+    fontSize: (v: unknown, path: Path) => ValidationResult;
+    fontFamily: (v: unknown, path: Path) => ValidationResult;
+};
 
 // @public (undocumented)
 export interface TextureGraphic {

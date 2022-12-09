@@ -7,6 +7,7 @@ import type { LineContent } from './line-polyline.plugin'
 export type ImageContent = model.BaseContent<'image'> & core.Image
 
 export function getModel(ctx: PluginContext): model.Model<ImageContent> {
+  const ImageContent = ctx.and(ctx.BaseContent('image'), ctx.Image)
   function getImageGeometries(content: Omit<ImageContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -77,6 +78,7 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
         url: <ctx.StringEditor value={content.url} setValue={(v) => update(c => { if (isImageContent(c)) { c.url = v } })} />,
       }
     },
+    isValid: (c, p) => ctx.validate(c, ImageContent, p),
   }
 }
 

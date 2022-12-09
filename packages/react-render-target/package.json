@@ -1,7 +1,7 @@
 {
-  "name": "composable-type-validator",
+  "name": "react-render-target",
   "version": "1.8.6",
-  "description": "A composable type validator.",
+  "description": "A react canvas, svg, webgl render interface.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,6 +9,13 @@
   },
   "author": "York Yao",
   "license": "MIT",
+  "dependencies": {
+    "earcut": "2",
+    "twgl.js": "4 || 5"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },

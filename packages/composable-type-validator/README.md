@@ -36,7 +36,7 @@ const Content1 = {
 }
 validate({ pointOrId: 'a' }, Content1) // true
 validate({ pointOrId: { x: 1, y: 1 } }, Content1) // true
-validate({ pointOrId: { x: 1, z: 1 } }, Content1) // { path: ['pointOrId'], expect: "or" }
+validate({ pointOrId: { x: 1, z: 1 } }, Content1) // { path: ['pointOrId'], expect: "or", args: [{ path: [], expect: "string" }, { path: ['y'], expect: "number" }] }
 ```
 
 Inherit types:
@@ -112,10 +112,10 @@ const Image = {
 }
 type Content3 = Text | Image
 const Content3 = (v: unknown, path: Path): ValidationResult => {
-  if (!isRecord(v)) return [path, 'object']
+  if (!isRecord(v)) return { path, expect: 'object' }
   if (v.type === 'text') return validate(v, Text, path)
   if (v.type === 'image') return validate(v, Image, path)
-  return [[...path, 'type'], 'text or image']
+  return { path: [...path, 'type'], expect: 'text or image' }
 }
 validate({ type: 'text', text: 1 }, Content3) // { path: ['text'], expect: "string" }
 validate({ type: 'image', url: 1 }, Content3) // { path: ['url'], expect: "string" }

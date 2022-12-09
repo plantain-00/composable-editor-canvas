@@ -47,7 +47,6 @@
     "expression-engine": "1.8.2",
     "html-webpack-plugin": "5.5.0",
     "markdownlint-cli": "0.32.2",
-    "no-unused-export": "1.15.0",
     "protocol-based-web-framework": "4.7.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -64,17 +63,6 @@
     "webpack-cli": "5.0.0",
     "webpack-dev-server": "4.11.1",
     "ws-heartbeat": "1.2.0"
-  },
-  "dependencies": {
-    "earcut": "2",
-    "immer": "9",
-    "react-composable-json-editor": "8",
-    "tslib": "1 || 2",
-    "twgl.js": "4 || 5"
-  },
-  "peerDependencies": {
-    "react": "18",
-    "react-dom": "18"
   },
   "workspaces": [
     "packages/*"

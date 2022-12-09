@@ -116,7 +116,15 @@ export const multipleOf: (num: number, a: Validator) => Validator = (n, a) => (v
 /**
  * @public
  */
-export const or: (...items: Validator[]) => Validator = (...items) => (v, p) => items.some(a => validate(v, a, p) === true) ? true : { path: p, expect: 'or' }
+export const or: (...items: Validator[]) => Validator = (...items) => (v, p) => {
+  const args: unknown[] = []
+  for (const a of items) {
+    const r = validate(v, a)
+    if (r === true) return true
+    args.push(r)
+  }
+  return { path: p, expect: 'or', args }
+}
 /**
  * @public
  */

@@ -1,7 +1,8 @@
 import * as React from "react"
-import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, Matrix, polygonToPolyline, rotatePosition } from "../../utils"
+import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, polygonToPolyline, rotatePosition } from "../../utils/geometry"
 import { getPathCommandsPoints, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { colorNumberToRec, createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
+import { Matrix } from "../../utils/matrix"
 
 /**
  * @public

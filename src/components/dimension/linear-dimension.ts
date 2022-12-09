@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean } from "../../utils"
 
 /**
  * @public
@@ -235,3 +235,14 @@ export interface LinearDimension extends TextStyle {
   direct?: boolean
   text?: string
 }
+
+/**
+ * @public
+ */
+export const LinearDimension = and(TextStyle, {
+  p1: Position,
+  p2: Position,
+  position: Position,
+  direct: optional(boolean),
+  text: optional(string),
+})

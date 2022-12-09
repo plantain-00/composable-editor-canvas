@@ -7,6 +7,7 @@ import type { LineContent } from './line-polyline.plugin'
 export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields & model.FillFields & core.Region
 
 export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
+  const DiamondContent = ctx.and(ctx.BaseContent('diamond'), ctx.StrokeFields, ctx.FillFields, ctx.Region)
   function getGeometries(content: Omit<DiamondContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -117,6 +118,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

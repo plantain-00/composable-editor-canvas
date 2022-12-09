@@ -8,7 +8,7 @@ export type Nullable<T> = T | undefined | null
 /**
  * @public
  */
-export const Nullable = (a: Validator) => or(a, undefined, null)
+export const Nullable = (a: Validator) => or(undefined, null, a)
 
 /**
  * @public

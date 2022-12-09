@@ -85,6 +85,7 @@ export function getModel(ctx: PluginContext): model.Model<model.FillStyleContent
         ...ctx.getFillContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, ctx.FillStyleContent, p),
   }
 }
 

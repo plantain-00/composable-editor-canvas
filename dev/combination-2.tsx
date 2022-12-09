@@ -5,7 +5,7 @@ import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent } from './cad-editor/model'
 import { getAllRendererTypes } from './cad-editor/renderer'
 import type { EllipseContent } from './cad-editor/plugins/ellipse.plugin'
-import { CADEditor, CADEditorRef, usePlugins } from './cad-editor/cad-editor'
+import { CADEditor, CADEditorRef, useInitialStateValidated, usePlugins } from './cad-editor/cad-editor'
 import type { RectContent } from './cad-editor/plugins/rect.plugin'
 import type { CircleContent } from './cad-editor/plugins/circle-arc.plugin'
 import type { RegularPolygonContent } from './cad-editor/plugins/regular-polygon.plugin'
@@ -21,6 +21,7 @@ export function Combination2() {
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
   const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-combination2:panel', true)
   const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-combination2:print-mode', false)
+  const valid = useInitialStateValidated(initialState, pluginLoaded)
 
   React.useEffect(() => {
     (async () => {
@@ -148,7 +149,7 @@ export function Combination2() {
 
   return (
     <div style={{ height: '100%' }}>
-      {initialState && pluginLoaded && (
+      {initialState && pluginLoaded && valid && (
         <CADEditor
           ref={editorRef}
           id='combination2'

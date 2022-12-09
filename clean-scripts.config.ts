@@ -20,13 +20,12 @@ export default {
       ],
     },
     new Tasks([
-      {
-        name: 'composable-type-validator', entry: './src/utils/validators.ts',
-      }
+      { name: 'composable-type-validator', entry: './src/utils/validators.ts' },
+      { name: 'react-render-target', entry: './src/components/react-render-target/index.ts' },
     ].map((d) => ({
       name: d.name,
       script: [
-        `esbuild ${d.entry} --bundle --outfile=packages/${d.name}/index.js --format=esm`,
+        `esbuild ${d.entry} --bundle --external:earcut --external:twgl.js --external:react --outfile=packages/${d.name}/index.js --format=esm`,
         `api-extractor run --local -c packages/${d.name}/api-extractor.json`,
       ],
       dependencies: [],
@@ -40,7 +39,6 @@ export default {
   },
   lint: {
     ts: `eslint --ext .js,.ts ${tsFiles}`,
-    export: `no-unused-export "src/**/*.ts" "src/**/*.tsx" --strict --need-module tslib`,
     markdown: `markdownlint README.md`,
     typeCoverage: 'type-coverage -p src/tsconfig.browser.json --strict',
     typeCoverageDev: 'type-coverage -p dev --strict'

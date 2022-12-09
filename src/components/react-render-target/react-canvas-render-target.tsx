@@ -1,7 +1,10 @@
 import * as React from "react"
-import { Filter, getColorString, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline, setCanvasLineDash } from ".."
-import { defaultMiterLimit, m3 } from "../../utils"
+import { defaultMiterLimit } from "../../utils/geometry"
+import { m3 } from "../../utils/matrix"
+import { setCanvasLineDash } from "./create-webgl-renderer"
 import { getImageFromCache } from "./image-loader"
+import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { getColorString } from "./react-svg-render-target"
 
 /**
  * @public

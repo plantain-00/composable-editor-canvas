@@ -9,6 +9,10 @@ export type RingContent = model.BaseContent<'ring'> & model.StrokeFields & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<RingContent> {
+  const RingContent = ctx.and(ctx.BaseContent('ring'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Position, {
+    outerRadius: ctx.number,
+    innerRadius: ctx.number,
+  })
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
@@ -96,6 +100,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

@@ -86,6 +86,10 @@ export interface SegmentCountFields {
   segmentCount?: number
 }
 
+export const SegmentCountFields = {
+  segmentCount: optional(number)
+}
+
 export interface AngleDeltaFields {
   angleDelta?: number
 }
@@ -366,6 +370,10 @@ export type StrokeStyleContent = BaseContent<'stroke style'> & StrokeFields & Re
   isCurrent?: boolean
 }
 
+export const StrokeStyleContent = and(BaseContent('stroke style'), StrokeFields, Region, {
+  isCurrent: optional(boolean),
+})
+
 export function isStrokeStyleContent(content: BaseContent): content is StrokeStyleContent {
   return content.type === 'stroke style'
 }
@@ -373,6 +381,10 @@ export function isStrokeStyleContent(content: BaseContent): content is StrokeSty
 export type FillStyleContent = BaseContent<'fill style'> & FillFields & Region & {
   isCurrent?: boolean
 }
+
+export const FillStyleContent = and(BaseContent('fill style'), FillFields, Region, {
+  isCurrent: optional(boolean),
+})
 
 export function isFillStyleContent(content: BaseContent): content is FillStyleContent {
   return content.type === 'fill style'

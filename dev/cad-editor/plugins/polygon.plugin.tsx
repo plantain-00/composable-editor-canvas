@@ -9,6 +9,9 @@ export type PolygonContent = model.BaseContent<'polygon'> & model.StrokeFields &
 }
 
 export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
+  const PolygonContent = ctx.and(ctx.BaseContent('polygon'), ctx.StrokeFields, ctx.FillFields, {
+    points: [ctx.Position]
+  })
   function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points))
@@ -101,6 +104,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

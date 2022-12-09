@@ -1,4 +1,4 @@
-import { Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, TextStyle } from "../../utils"
+import { and, Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, optional, Position, rotatePosition, rotatePositionByCenter, Size, string, TextStyle } from "../../utils"
 
 /**
  * @public
@@ -96,3 +96,11 @@ export interface RadialDimension extends TextStyle {
   position: Position
   text?: string
 }
+
+/**
+ * @public
+ */
+export const RadialDimension = and(TextStyle, {
+  position: Position,
+  text: optional(string),
+})

@@ -11,6 +11,12 @@ export type StarContent = model.BaseContent<'star'> & model.StrokeFields & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<StarContent> {
+  const StarContent = ctx.and(ctx.BaseContent('star'), ctx.StrokeFields, ctx.FillFields, ctx.Position, {
+    outerRadius: ctx.number,
+    innerRadius: ctx.number,
+    count: ctx.number,
+    angle: ctx.optional(ctx.number),
+  })
   function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0)
@@ -111,6 +117,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

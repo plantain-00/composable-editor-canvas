@@ -15,6 +15,14 @@ export type SplineArrowContent = model.BaseContent<'spline arrow'> & model.Strok
 }
 
 export function getModel(ctx: PluginContext): model.Model<SplineContent | SplineArrowContent>[] {
+  const SplineContent = ctx.and(ctx.BaseContent('spline'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
+    points: [ctx.Position],
+    fitting: ctx.optional(ctx.boolean),
+  })
+  const SplineArrowContent = ctx.and(ctx.BaseContent('spline arrow'), ctx.StrokeFields, ctx.SegmentCountFields, {
+    points: [ctx.Position],
+    fitting: ctx.optional(ctx.boolean),
+  })
   function getSplineGeometries(content: Omit<SplineContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y])
@@ -156,6 +164,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         ...ctx.getSegmentCountContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, SplineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
@@ -211,6 +220,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
           ...ctx.getSegmentCountContentPropertyPanel(content, update),
         }
       },
+      isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
       getRefIds: ctx.getStrokeRefIds,
       updateRefId: ctx.updateStrokeRefIds,
     } as model.Model<SplineArrowContent>

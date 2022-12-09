@@ -1,10 +1,10 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate } from '../../src'
 import * as jsonEditor from "react-composable-json-editor"
 import { BooleanEditor, NumberEditor, ObjectEditor } from "react-composable-json-editor"
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { BaseContent, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -721,6 +721,27 @@ async function registerPlugins() {
     }
   }
   return commandTypes
+}
+
+const CADEditorState: Validator = [Nullable(Content)]
+
+export function useInitialStateValidated(
+  initialState: readonly Nullable<BaseContent>[] | undefined,
+  pluginLoaded: boolean,
+) {
+  const [valid, setValid] = React.useState(false)
+  React.useEffect(() => {
+    if (initialState && pluginLoaded) {
+      const r = validate(initialState, CADEditorState)
+      if (r !== true) {
+        console.error(r)
+      } else {
+        setValid(true)
+      }
+    }
+  }, [initialState, pluginLoaded])
+
+  return valid
 }
 
 function* iterateItemOrArray<T>(item: T | (T | undefined)[]): Generator<T, void, unknown> {

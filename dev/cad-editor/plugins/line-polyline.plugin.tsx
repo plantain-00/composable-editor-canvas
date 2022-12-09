@@ -11,6 +11,9 @@ export type LineContent = model.BaseContent<'line' | 'polyline'> & model.StrokeF
 }
 
 export function getModel(ctx: PluginContext) {
+  const LineContent = ctx.and(ctx.BaseContent(ctx.or('line', 'polyline')), ctx.StrokeFields, ctx.FillFields, {
+    points: ctx.minItems(2, [ctx.Position])
+  })
   function getPolylineGeometries(content: Omit<LineContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
@@ -93,9 +96,7 @@ export function getModel(ctx: PluginContext) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
-    isValid(content) {
-      return content.points.length > 1 ? true : { path: [], expect: 'length', args: [2] }
-    },
+    isValid: (c, p) => ctx.validate(c, LineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
