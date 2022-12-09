@@ -3,11 +3,11 @@ import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
 
 export default {
-  input: 'dist/browser/index.js',
+  input: 'packages/composable-canvas-editor/browser/index.js',
   plugins: [commonjs(), resolve({ browser: true }), uglify()],
   output: {
     name: 'ComposableEditorCanvas',
-    file: 'dist/composable-editor-canvas.min.js',
+    file: 'packages/composable-canvas-editor/composable-editor-canvas.min.js',
     format: 'umd'
   }
 }

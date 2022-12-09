@@ -1,7 +1,6 @@
 {
   "name": "composable-editor-canvas",
   "description": "A composable editor canvas library.",
-  "main": "nodejs/index.js",
   "scripts": {
     "build": "clean-scripts build",
     "start": "clean-scripts start",
@@ -9,7 +8,6 @@
     "math": "types-as-schema -p ./types-as-schema.math.ts",
     "test": "clean-scripts test",
     "release": "clean-release",
-    "release:package": "clean-release --config ./clean-release.packages.config.ts",
     "fix": "clean-scripts fix"
   },
   "repository": {
@@ -42,6 +40,11 @@
     "clean-release": "2.17.1",
     "clean-scripts": "1.20.2",
     "css-loader": "6.7.2",
+    "earcut": "2",
+    "immer": "9",
+    "react-composable-json-editor": "8",
+    "tslib": "1 || 2",
+    "twgl.js": "4 || 5",
     "esbuild-loader": "2.20.0",
     "eslint": "8.29.0",
     "eslint-config-prettier": "8.5.0",
@@ -67,26 +70,9 @@
     "webpack-dev-server": "4.11.1",
     "ws-heartbeat": "1.2.0"
   },
-  "dependencies": {
-    "earcut": "2",
-    "immer": "9",
-    "react-composable-json-editor": "8",
-    "tslib": "1 || 2",
-    "twgl.js": "4 || 5"
-  },
-  "peerDependencies": {
-    "react": "18",
-    "react-dom": "18"
-  },
   "workspaces": [
     "packages/*"
   ],
-  "module": "browser/index.js",
-  "unpkg": "composable-editor-canvas.min.js",
-  "jsdelivr": "composable-editor-canvas.min.js",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  },
   "typeCoverage": {
     "atLeast": 100
   }

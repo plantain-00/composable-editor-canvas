@@ -6,14 +6,11 @@ const importPlugins = 'types-as-schema -p ./types-as-schema.plugin.ts'
 
 export default {
   build: [
-    'rimraf dist/',
+    'rimraf packages/composable-canvas-editor/browser/',
     {
-      back: [
-        'tsc -p src/tsconfig.nodejs.json',
-        'api-extractor run --local'
-      ],
       front: [
         'tsc -p src/tsconfig.browser.json',
+        'api-extractor run --local',
         'rollup --config rollup.config.mjs'
       ],
       dev: [
@@ -45,7 +42,7 @@ export default {
     ts: `eslint --ext .js,.ts ${tsFiles}`,
     export: `no-unused-export "src/**/*.ts" "src/**/*.tsx" --strict --need-module tslib`,
     markdown: `markdownlint README.md`,
-    typeCoverage: 'type-coverage -p src/tsconfig.nodejs.json --strict',
+    typeCoverage: 'type-coverage -p src/tsconfig.browser.json --strict',
     typeCoverageDev: 'type-coverage -p dev --strict'
   },
   test: 'ava --timeout=30s',

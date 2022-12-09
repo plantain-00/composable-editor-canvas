@@ -104,7 +104,6 @@ dist
 .tern-port
 # Source
 .vscode
-dist
 **/*.js
 **/*.css
 !*.config.js
@@ -124,3 +123,4 @@ temp
 !**/vender/*.css
 import-stories.ts
 packages/**/*.d.ts
+packages/**/*.js
