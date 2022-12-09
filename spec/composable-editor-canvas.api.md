@@ -36,8 +36,8 @@ export const and: (...items: {
 
 // @public (undocumented)
 export const AngleRange: {
-    startAngle: (v: unknown, path: Path) => true | Path;
-    endAngle: (v: unknown, path: Path) => true | Path;
+    startAngle: (v: unknown, path: Path) => ValidationResult;
+    endAngle: (v: unknown, path: Path) => ValidationResult;
     counterclockwise: Validator;
 };
 
@@ -74,7 +74,7 @@ export function arcToPolyline(content: Arc, angleDelta: number): {
 }[];
 
 // @public (undocumented)
-export const bigint: (v: unknown, path: Path) => true | Path;
+export const bigint: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export function bindMultipleRefs<T>(...refs: (React_2.ForwardedRef<T> | React_2.MutableRefObject<T | null>)[]): (r: T) => void;
@@ -83,7 +83,7 @@ export function bindMultipleRefs<T>(...refs: (React_2.ForwardedRef<T> | React_2.
 export type BlockType = keyof JSX.IntrinsicElements;
 
 // @public (undocumented)
-export const boolean: (v: unknown, path: Path) => true | Path;
+export const boolean: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export interface Bounding {
@@ -298,6 +298,12 @@ export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position
 
 // @public (undocumented)
 export function equals(a: number | undefined, b: number | undefined): boolean;
+
+// @public (undocumented)
+export const exclusiveMaximum: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
+export const exclusiveMinimum: (num: number, a: Validator) => Validator;
 
 // @public (undocumented)
 export function ExpressionEditor(props: JsonEditorProps<string> & {
@@ -921,7 +927,7 @@ type Image_2 = Region & {
 export { Image_2 as Image }
 
 // @public (undocumented)
-export const integer: (v: unknown, path: Path) => true | Path;
+export const integer: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export const isArray: <T>(arg: unknown) => arg is T[];
@@ -1045,7 +1051,13 @@ export class MapCache3<TKey1, TKey2, TKey3, TValue> {
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number];
 
 // @public (undocumented)
+export const maximum: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
 export const maxItems: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
+export const maxLength: (num: number, a: Validator) => Validator;
 
 // @public (undocumented)
 export class Merger<T, V> {
@@ -1063,10 +1075,19 @@ export class Merger<T, V> {
 export function metaKeyIfMacElseCtrlKey(e: React_2.KeyboardEvent | KeyboardEvent): boolean;
 
 // @public (undocumented)
+export const minimum: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
 export const minItems: (num: number, a: Validator) => Validator;
 
 // @public (undocumented)
-export const never: () => boolean;
+export const minLength: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
+export const multipleOf: (num: number, a: Validator) => Validator;
+
+// @public (undocumented)
+export const never: (_: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export function normalizeAngleInRange(angle: number, range: AngleRange): number;
@@ -1081,7 +1102,7 @@ export type Nullable<T> = T | undefined | null;
 export const Nullable: (a: Validator) => Validator;
 
 // @public (undocumented)
-export const number: (v: unknown, path: Path) => true | Path;
+export const number: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export const optional: (a: Validator) => Validator;
@@ -1186,6 +1207,9 @@ export interface Pattern<T> extends Size {
 }
 
 // @public (undocumented)
+export const pattern: (regexp: RegExp, a: Validator) => Validator;
+
+// @public (undocumented)
 export type PatternGraphic = {
     graphics: Graphic[];
 } & Partial<Size>;
@@ -1235,8 +1259,8 @@ export interface Position {
 
 // @public (undocumented)
 export const Position: {
-    x: (v: unknown, path: Path) => true | Path;
-    y: (v: unknown, path: Path) => true | Path;
+    x: (v: unknown, path: Path) => ValidationResult;
+    y: (v: unknown, path: Path) => ValidationResult;
 };
 
 // @public (undocumented)
@@ -1449,8 +1473,8 @@ export interface Size {
 
 // @public (undocumented)
 export const Size: {
-    width: (v: unknown, path: Path) => true | Path;
-    height: (v: unknown, path: Path) => true | Path;
+    width: Validator;
+    height: Validator;
 };
 
 // @public (undocumented)
@@ -1462,7 +1486,7 @@ export type SnapPoint = Position & {
 export type SnapPointType = typeof allSnapTypes[number];
 
 // @public (undocumented)
-export const string: (v: unknown, path: Path) => true | Path;
+export const string: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 export interface StrokeStyle {
@@ -1488,7 +1512,7 @@ export interface StrokeStyle {
 export type SvgDraw = (key: React_2.Key, scale: number, strokeWidthScale: number) => JSX.Element;
 
 // @public (undocumented)
-export const symbol: (v: unknown, path: Path) => true | Path;
+export const symbol: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
 type Text_2 = Position & TextStyle & {
@@ -2298,11 +2322,18 @@ export function useZoom(value: number, onChange: (value: number) => void, option
 };
 
 // @public (undocumented)
-export function validate(value: unknown, by: Validator, path?: Path): true | Path;
+export function validate(value: unknown, by: Validator, path?: Path): ValidationResult;
+
+// @public (undocumented)
+export type ValidationResult = true | {
+    path: Path;
+    expect: string;
+    args?: unknown[];
+};
 
 // @public (undocumented)
 export type Validator = {
-    (v: unknown, path: Path): true | Path;
+    (v: unknown, path: Path): ValidationResult;
 } | {
     [key: string]: Validator;
 } | string | number | boolean | null | undefined | bigint | [Validator];

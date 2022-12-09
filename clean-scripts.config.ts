@@ -1,3 +1,4 @@
+import { Tasks } from 'clean-scripts'
 const tsFiles = `"src/**/*.ts" "src/**/*.tsx" "dev/**/*.ts" "dev/**/*.tsx"`
 
 const importStories = 'types-as-schema -p ./types-as-schema.config.ts'
@@ -21,6 +22,18 @@ export default {
         `tsc -p dev --noEmit`,
       ],
     },
+    new Tasks([
+      {
+        name: 'composable-type-validator', entry: './src/utils/validators.ts',
+      }
+    ].map((d) => ({
+      name: d.name,
+      script: [
+        `esbuild ${d.entry} --bundle --outfile=packages/${d.name}/index.js --format=esm`,
+        `api-extractor run --local -c packages/${d.name}/api-extractor.json`,
+      ],
+      dependencies: [],
+    }))),
     'webpack --config dev/webpack.prod.js'
   ],
   start: {
@@ -38,3 +51,4 @@ export default {
   test: 'ava --timeout=30s',
   fix: `eslint --ext .js,.ts ${tsFiles} --fix`
 }
+

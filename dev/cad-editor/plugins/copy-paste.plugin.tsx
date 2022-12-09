@@ -6,10 +6,10 @@ import type * as model from '../model'
 export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React
   const CopyData: core.Validator = {
-    contents: [{
+    contents: ctx.minItems(0, [{
       id: ctx.number,
       content: ctx.Content,
-    }],
+    }]),
     center: ctx.Position,
   }
   const cutOrCopyCommand: Command = (

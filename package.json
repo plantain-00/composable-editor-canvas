@@ -10,6 +10,7 @@
     "math": "types-as-schema -p ./types-as-schema.math.ts",
     "test": "clean-scripts test",
     "release": "clean-release",
+    "release:package": "clean-release --config ./clean-release.packages.config",
     "fix": "clean-scripts fix"
   },
   "repository": {

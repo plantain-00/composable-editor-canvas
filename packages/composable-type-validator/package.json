@@ -1,0 +1,19 @@
+{
+  "name": "composable-type-validator",
+  "version": "0.0.0",
+  "description": "A composable type validator.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"
+  },
+  "author": "York Yao",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
+  },
+  "homepage": "https://github.com/plantain-00/composable-editor-canvas#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}

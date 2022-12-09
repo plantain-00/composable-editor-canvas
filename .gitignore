@@ -123,3 +123,4 @@ temp
 !**/vender/*.js
 !**/vender/*.css
 import-stories.ts
+packages/**/*.d.ts
