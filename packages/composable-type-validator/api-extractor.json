@@ -1,6 +1,6 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
-  "mainEntryPointFilePath": "<projectFolder>/packages/composable-canvas-editor/browser/utils/validators.d.ts",
+  "mainEntryPointFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/utils/validators.d.ts",
   "apiReport": {
     "enabled": false
   },
@@ -9,7 +9,7 @@
   },
   "dtsRollup": {
     "enabled": true,
-    "untrimmedFilePath": "<projectFolder>/packages/composable-canvas-editor/browser/utils/validators.d.ts",
+    "untrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/utils/validators.d.ts",
     "publicTrimmedFilePath": "<projectFolder>/packages/composable-type-validator/index.d.ts"
   },
   "tsdocMetadata": {

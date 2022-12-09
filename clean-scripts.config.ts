@@ -6,7 +6,7 @@ const importPlugins = 'types-as-schema -p ./types-as-schema.plugin.ts'
 
 export default {
   build: [
-    'rimraf packages/composable-canvas-editor/browser/',
+    'rimraf packages/composable-editor-canvas/browser/',
     {
       front: [
         'tsc -p src/tsconfig.browser.json',

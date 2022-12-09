@@ -1,5 +1,5 @@
 {
-  "name": "composable-canvas-editor",
+  "name": "composable-editor-canvas",
   "version": "1.8.4",
   "description": "A composable editor canvas library.",
   "main": "browser/index.js",
