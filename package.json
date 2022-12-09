@@ -40,11 +40,6 @@
     "clean-release": "2.17.1",
     "clean-scripts": "1.20.2",
     "css-loader": "6.7.2",
-    "earcut": "2",
-    "immer": "9",
-    "react-composable-json-editor": "8",
-    "tslib": "1 || 2",
-    "twgl.js": "4 || 5",
     "esbuild-loader": "2.20.0",
     "eslint": "8.29.0",
     "eslint-config-prettier": "8.5.0",
@@ -69,6 +64,13 @@
     "webpack-cli": "5.0.0",
     "webpack-dev-server": "4.11.1",
     "ws-heartbeat": "1.2.0"
+  },
+  "dependencies": {
+    "earcut": "2",
+    "immer": "9",
+    "react-composable-json-editor": "8",
+    "tslib": "1 || 2",
+    "twgl.js": "4 || 5"
   },
   "workspaces": [
     "packages/*"
