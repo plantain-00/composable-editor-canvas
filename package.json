@@ -18,6 +18,7 @@
   },
   "author": "York Yao",
   "license": "MIT",
+  "private": "true",
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },
