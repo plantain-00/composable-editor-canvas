@@ -10,6 +10,10 @@ export type TextContent = model.BaseContent<'text'> & core.Text & {
 }
 
 export function getModel(ctx: PluginContext): model.Model<TextContent> {
+  const TextContent = ctx.and(ctx.BaseContent('text'), ctx.Text, {
+    width: ctx.optional(ctx.number),
+    lineHeight: ctx.optional(ctx.number),
+  })
   const textLayoutResultCache = new ctx.WeakmapCache<object, ReturnType<typeof ctx.flowLayout<string>>>()
   function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">) {
     return textLayoutResultCache.get(content, () => {
@@ -136,6 +140,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         ],
       }
     },
+    isValid: (c, p) => ctx.validate(c, TextContent, p),
   }
 }
 

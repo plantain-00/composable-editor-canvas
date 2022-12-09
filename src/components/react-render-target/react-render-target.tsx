@@ -1,5 +1,6 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, Matrix, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { Matrix } from "../../utils/matrix"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string

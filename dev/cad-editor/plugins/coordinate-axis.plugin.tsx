@@ -9,6 +9,9 @@ export type CoordinateAxisContent = model.BaseContent<'coordinate axis'> & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent> {
+  const CoordinateAxisContent = ctx.and(ctx.BaseContent('coordinate axis'),ctx.StrokeFields, ctx.ArrowFields, ctx.Position, ctx.Bounding, {
+    flipY: ctx.optional(ctx.boolean),
+  })
   function getGeometriesFromCache(content: Omit<CoordinateAxisContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const yMin = content.flipY ? -content.yMax : content.yMin
@@ -114,6 +117,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, CoordinateAxisContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
   }

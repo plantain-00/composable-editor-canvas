@@ -10,6 +10,9 @@ export type RadialDimensionReferenceContent = model.BaseContent<'radial dimensio
 }
 
 export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferenceContent> {
+  const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent('radial dimension reference'), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
+    refId: ctx.or(ctx.number, ctx.Content)
+  })
   function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const target = ctx.getReference(content.refId, contents, contentSelectable)
     if (target) {
@@ -119,6 +122,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
     getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.refId === 'number' ? [content.refId] : [])],
     updateRefId(content, update) {
       const newRefId = update(content.refId)

@@ -1376,6 +1376,7 @@ function isEllipseArcContent(content) {
 
 // dev/cad-editor/plugins/combined-path.plugin.tsx
 function getModel(ctx) {
+  const CombinedPathContent = ctx.and(ctx.BaseContent("combined path"), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields);
   const getGeometries = (content) => {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = [];
@@ -1485,6 +1486,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, CombinedPathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -1565,6 +1567,9 @@ export {
 `,
 `// dev/cad-editor/plugins/coordinate-axis.plugin.tsx
 function getModel(ctx) {
+  const CoordinateAxisContent = ctx.and(ctx.BaseContent("coordinate axis"), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, ctx.Bounding, {
+    flipY: ctx.optional(ctx.boolean)
+  });
   function getGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const yMin = content.flipY ? -content.yMax : content.yMin;
@@ -1699,6 +1704,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, CoordinateAxisContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds
   };
@@ -2061,6 +2067,7 @@ export {
 `,
 `// dev/cad-editor/plugins/diamond.plugin.tsx
 function getModel(ctx) {
+  const DiamondContent = ctx.and(ctx.BaseContent("diamond"), ctx.StrokeFields, ctx.FillFields, ctx.Region);
   function getGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -2188,6 +2195,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -2287,6 +2295,8 @@ export {
 `,
 `// dev/cad-editor/plugins/ellipse.plugin.tsx
 function getModel(ctx) {
+  const EllipseContent = ctx.and(ctx.BaseContent("ellipse"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse);
+  const EllipseArcContent = ctx.and(ctx.BaseContent("ellipse arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc);
   function getEllipseGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
@@ -2508,6 +2518,7 @@ function getModel(ctx) {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update)
       };
     },
+    isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -2702,6 +2713,7 @@ function getModel(ctx) {
           ...ctx.getAngleDeltaContentPropertyPanel(content, update)
         };
       },
+      isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds
     }
@@ -5228,6 +5240,11 @@ var math = [
 
 // dev/cad-editor/plugins/equation.plugin.tsx
 function getModel(ctx) {
+  const EquationContent = ctx.and(ctx.BaseContent("equation"), ctx.StrokeFields, ctx.SegmentCountFields, {
+    axisId: ctx.or(ctx.number, ctx.Content),
+    dependentVariable: ctx.or("x", "y"),
+    expression: ctx.string
+  });
   const equationCache = new ctx.WeakmapCache2();
   function getGeometriesFromCache(content, contents) {
     const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
@@ -5311,6 +5328,7 @@ function getModel(ctx) {
         ...ctx.getSegmentCountContentPropertyPanel(content, update)
       };
     },
+    isValid: (c, p) => ctx.validate(c, EquationContent, p),
     getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.axisId === "number" ? [content.axisId] : []],
     updateRefId(content, update) {
       const newAxisId = update(content.axisId);
@@ -5573,7 +5591,8 @@ function getModel(ctx) {
         }) }),
         ...ctx.getFillContentPropertyPanel(content, update)
       };
-    }
+    },
+    isValid: (c, p) => ctx.validate(c, ctx.FillStyleContent, p)
   };
 }
 function getCommand(ctx) {
@@ -5756,6 +5775,7 @@ export {
 `,
 `// dev/cad-editor/plugins/group.plugin.tsx
 function getModel(ctx) {
+  const GroupContent = ctx.and(ctx.BaseContent("group"), ctx.ContainerFields);
   return {
     type: "group",
     ...ctx.containerModel,
@@ -5766,7 +5786,8 @@ function getModel(ctx) {
     render: ctx.getContainerRender,
     renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: ctx.getContainerGeometries
+    getGeometries: ctx.getContainerGeometries,
+    isValid: (c, p) => ctx.validate(c, GroupContent, p)
   };
 }
 function getCommand(ctx) {
@@ -5801,6 +5822,7 @@ export {
 `,
 `// dev/cad-editor/plugins/image.plugin.tsx
 function getModel(ctx) {
+  const ImageContent = ctx.and(ctx.BaseContent("image"), ctx.Image);
   function getImageGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -5890,7 +5912,8 @@ function getModel(ctx) {
           }
         }) })
       };
-    }
+    },
+    isValid: (c, p) => ctx.validate(c, ImageContent, p)
   };
 }
 function isImageContent(content) {
@@ -5939,6 +5962,9 @@ export {
 `,
 `// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function getModel(ctx) {
+  const LineContent = ctx.and(ctx.BaseContent(ctx.or("line", "polyline")), ctx.StrokeFields, ctx.FillFields, {
+    points: ctx.minItems(2, [ctx.Position])
+  });
   function getPolylineGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
@@ -6040,9 +6066,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    isValid(content) {
-      return content.points.length > 1 ? true : { path: [], expect: "length", args: [2] };
-    },
+    isValid: (c, p) => ctx.validate(c, LineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -6271,6 +6295,7 @@ export {
 `,
 `// dev/cad-editor/plugins/linear-dimension.plugin.tsx
 function getModel(ctx) {
+  const LinearDimensionContent = ctx.and(ctx.BaseContent("linear dimension"), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension);
   function getLinearDimensionGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a, _b;
@@ -6436,6 +6461,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, LinearDimensionContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds
   };
@@ -6759,6 +6785,9 @@ export {
 `,
 `// dev/cad-editor/plugins/path.plugin.tsx
 function getModel(ctx) {
+  const PathContent = ctx.and(ctx.BaseContent("path"), ctx.StrokeFields, ctx.FillFields, {
+    commands: [ctx.PathCommand]
+  });
   function getPathGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = ctx.getPathCommandsPoints(content.commands)[0];
@@ -7112,6 +7141,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -7271,6 +7301,9 @@ export {
 `,
 `// dev/cad-editor/plugins/polygon.plugin.tsx
 function getModel(ctx) {
+  const PolygonContent = ctx.and(ctx.BaseContent("polygon"), ctx.StrokeFields, ctx.FillFields, {
+    points: [ctx.Position]
+  });
   function getPolygonGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points));
@@ -7382,6 +7415,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -7446,6 +7480,9 @@ function isArcContent(content) {
 
 // dev/cad-editor/plugins/radial-dimension.plugin.tsx
 function getModel(ctx) {
+  const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent("radial dimension reference"), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
+    refId: ctx.or(ctx.number, ctx.Content)
+  });
   function getRadialDimensionReferenceGeometriesFromCache(content, contents) {
     const target = ctx.getReference(content.refId, contents, contentSelectable);
     if (target) {
@@ -7581,6 +7618,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
     getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.refId === "number" ? [content.refId] : []],
     updateRefId(content, update) {
       const newRefId = update(content.refId);
@@ -7688,6 +7726,9 @@ export {
 `,
 `// dev/cad-editor/plugins/rect.plugin.tsx
 function getModel(ctx) {
+  const RectContent = ctx.and(ctx.BaseContent("rect"), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
+    angle: ctx.number
+  });
   function getRectGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -7843,6 +7884,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -7909,6 +7951,11 @@ export {
 `,
 `// dev/cad-editor/plugins/regular-polygon.plugin.tsx
 function getModel(ctx) {
+  const RegularPolygonContent = ctx.and(ctx.BaseContent("regular polygon"), ctx.StrokeFields, ctx.FillFields, ctx.Position, {
+    radius: ctx.number,
+    count: ctx.number,
+    angle: ctx.number
+  });
   function getRegularPolygonGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
@@ -8022,6 +8069,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -8090,6 +8138,10 @@ export {
 `,
 `// dev/cad-editor/plugins/ring.plugin.tsx
 function getModel(ctx) {
+  const RingContent = ctx.and(ctx.BaseContent("ring"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Position, {
+    outerRadius: ctx.number,
+    innerRadius: ctx.number
+  });
   function getRingGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
@@ -8195,6 +8247,7 @@ function getModel(ctx) {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update)
       };
     },
+    isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -8364,6 +8417,9 @@ export {
 `,
 `// dev/cad-editor/plugins/rounded-rect.plugin.tsx
 function getModel(ctx) {
+  const RoundedRectContent = ctx.and(ctx.BaseContent("rounded rect"), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
+    radius: ctx.number
+  });
   function getGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a, _b, _c, _d;
@@ -8521,6 +8577,7 @@ function getModel(ctx) {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update)
       };
     },
+    isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -8682,6 +8739,14 @@ var require_b_spline = __commonJS({
 // dev/cad-editor/plugins/spline.plugin.tsx
 var import_b_spline = __toESM(require_b_spline());
 function getModel(ctx) {
+  const SplineContent = ctx.and(ctx.BaseContent("spline"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
+    points: [ctx.Position],
+    fitting: ctx.optional(ctx.boolean)
+  });
+  const SplineArrowContent = ctx.and(ctx.BaseContent("spline arrow"), ctx.StrokeFields, ctx.SegmentCountFields, {
+    points: [ctx.Position],
+    fitting: ctx.optional(ctx.boolean)
+  });
   function getSplineGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
@@ -8847,6 +8912,7 @@ function getModel(ctx) {
         ...ctx.getSegmentCountContentPropertyPanel(content, update)
       };
     },
+    isValid: (c, p) => ctx.validate(c, SplineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -8925,6 +8991,7 @@ function getModel(ctx) {
           ...ctx.getSegmentCountContentPropertyPanel(content, update)
         };
       },
+      isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
       getRefIds: ctx.getStrokeRefIds,
       updateRefId: ctx.updateStrokeRefIds
     }
@@ -9013,6 +9080,12 @@ export {
 `,
 `// dev/cad-editor/plugins/star.plugin.tsx
 function getModel(ctx) {
+  const StarContent = ctx.and(ctx.BaseContent("star"), ctx.StrokeFields, ctx.FillFields, ctx.Position, {
+    outerRadius: ctx.number,
+    innerRadius: ctx.number,
+    count: ctx.number,
+    angle: ctx.optional(ctx.number)
+  });
   function getStarGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
@@ -9140,6 +9213,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds
   };
@@ -9316,7 +9390,8 @@ function getModel(ctx) {
         }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update)
       };
-    }
+    },
+    isValid: (c, p) => ctx.validate(c, ctx.StrokeStyleContent, p)
   };
 }
 function getCommand(ctx) {
@@ -9369,6 +9444,10 @@ export {
 `,
 `// dev/cad-editor/plugins/text.plugin.tsx
 function getModel(ctx) {
+  const TextContent = ctx.and(ctx.BaseContent("text"), ctx.Text, {
+    width: ctx.optional(ctx.number),
+    lineHeight: ctx.optional(ctx.number)
+  });
   const textLayoutResultCache = new ctx.WeakmapCache();
   function getTextLayoutResult(content) {
     return textLayoutResultCache.get(content, () => {
@@ -9539,7 +9618,8 @@ function getModel(ctx) {
           }) }) : void 0
         ]
       };
-    }
+    },
+    isValid: (c, p) => ctx.validate(c, TextContent, p)
   };
 }
 function isTextContent(content) {

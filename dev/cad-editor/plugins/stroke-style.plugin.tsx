@@ -92,6 +92,7 @@ export function getModel(ctx: PluginContext): model.Model<model.StrokeStyleConte
         ...ctx.getStrokeContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, ctx.StrokeStyleContent, p),
   }
 }
 

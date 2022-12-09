@@ -1,10 +1,12 @@
 import * as twgl from 'twgl.js'
-import { arcToPolyline, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getPerpendicularPoint, getParallelLinesByDistance, getPerpendicular, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, m3, Matrix, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine, WeakmapCache, WeakmapMap3Cache, WeakmapMapCache, Bounding } from "../../utils"
 import earcut from 'earcut'
 import type * as React from "react"
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { getColorString } from './react-svg-render-target'
+import { m3, Matrix } from '../../utils/matrix'
+import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 
 /**
  * @public

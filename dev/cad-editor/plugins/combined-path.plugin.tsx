@@ -9,6 +9,7 @@ import { isEllipseArcContent } from './ellipse.plugin'
 export type CombinedPathContent = model.BaseContent<'combined path'> & model.ContainerFields & model.StrokeFields & model.FillFields
 
 export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
+  const CombinedPathContent = ctx.and(ctx.BaseContent('combined path'), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields)
   const getGeometries = (content: CombinedPathContent) => {
     return ctx.getGeometriesFromCache(content, () => {
       const lines: [core.Position, core.Position][] = []
@@ -116,6 +117,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, CombinedPathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

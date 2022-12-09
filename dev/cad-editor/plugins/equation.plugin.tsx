@@ -13,6 +13,11 @@ export type EquationContent = model.BaseContent<'equation'> & model.StrokeFields
 }
 
 export function getModel(ctx: PluginContext): model.Model<EquationContent> {
+  const EquationContent = ctx.and(ctx.BaseContent('equation'), ctx.StrokeFields, ctx.SegmentCountFields, {
+    axisId: ctx.or(ctx.number, ctx.Content),
+    dependentVariable: ctx.or('x', 'y'),
+    expression: ctx.string,
+  })
   const equationCache = new ctx.WeakmapCache2<Omit<EquationContent, 'type'>, Omit<CoordinateAxisContent, "type">, model.Geometries>()
   function getGeometriesFromCache(content: Omit<EquationContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent)
@@ -86,6 +91,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
         ...ctx.getSegmentCountContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, EquationContent, p),
     getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.axisId === 'number' ? [content.axisId] : [])],
     updateRefId(content, update) {
       const newAxisId = update(content.axisId)

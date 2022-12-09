@@ -7,6 +7,7 @@ import type { LineContent } from './line-polyline.plugin'
 export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & model.ArrowFields & core.LinearDimension
 
 export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent> {
+  const LinearDimensionContent = ctx.and(ctx.BaseContent('linear dimension'), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension)
   function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       return ctx.getLinearDimensionGeometries(content, {
@@ -122,6 +123,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, LinearDimensionContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
   }

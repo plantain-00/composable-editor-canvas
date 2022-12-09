@@ -6,6 +6,7 @@ import type * as model from '../model'
 export type GroupContent = model.BaseContent<'group'> & model.ContainerFields
 
 export function getModel(ctx: PluginContext): model.Model<GroupContent> {
+  const GroupContent = ctx.and(ctx.BaseContent('group'), ctx.ContainerFields)
   return {
     type: 'group',
     ...ctx.containerModel,
@@ -17,6 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
     renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
+    isValid: (c, p) => ctx.validate(c, GroupContent, p),
   }
 }
 

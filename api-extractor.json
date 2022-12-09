@@ -15,22 +15,5 @@
   },
   "tsdocMetadata": {
     "enabled": false
-  },
-  "messages": {
-    "compilerMessageReporting": {
-      "default": {
-        "logLevel": "warning"
-      }
-    },
-    "extractorMessageReporting": {
-      "default": {
-        "logLevel": "warning"
-      }
-    },
-    "tsdocMessageReporting": {
-      "default": {
-        "logLevel": "warning"
-      }
-    }
   }
 }

@@ -1,4 +1,5 @@
-import { and, boolean, minimum, number, optional } from "./validators"
+import { isRecord } from "./is-record"
+import { and, boolean, minimum, number, optional, Path, string, validate, ValidationResult } from "./validators"
 
 export function getPointByLengthAndDirection(
   startPoint: Position,
@@ -788,8 +789,8 @@ export interface Size {
  * @public
  */
 export const Size = {
-  width: minimum(0, number),
-  height: minimum(0, number),
+  width: /* @__PURE__ */ minimum(0, number),
+  height: /* @__PURE__ */ minimum(0, number),
 }
 
 /**
@@ -803,12 +804,28 @@ export interface GeneralFormLine {
 
 export interface Region extends Position, Size { }
 
+/**
+ * @public
+ */
+export const Region = /* @__PURE__ */ and(Position, Size)
+
 export interface Ellipse {
   cx: number
   cy: number
   rx: number
   ry: number
   angle?: number
+}
+
+/**
+ * @public
+ */
+export const Ellipse = {
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  angle: /* @__PURE__ */ optional(number),
 }
 
 /**
@@ -829,6 +846,16 @@ export interface Bounding {
   yMax: number
 }
 
+/**
+ * @public
+ */
+export const Bounding = {
+  xMin: number,
+  xMax: number,
+  yMin: number,
+  yMax: number,
+}
+
 export interface Circle extends Position {
   r: number
 }
@@ -836,8 +863,8 @@ export interface Circle extends Position {
 /**
  * @public
  */
-export const Circle = and(Position, {
-  r: minimum(0, number),
+export const Circle = /* @__PURE__ */ and(Position, {
+  r: /* @__PURE__ */ minimum(0, number),
 })
 
 /**
@@ -849,22 +876,27 @@ export interface Arc extends Circle, AngleRange {
 /**
  * @public
  */
- export const AngleRange = {
+export const AngleRange = {
   startAngle: number,
   endAngle: number,
-  counterclockwise: optional(boolean),
+  counterclockwise: /* @__PURE__ */ optional(boolean),
 }
 
 /**
  * @public
  */
-export const Arc = and(Circle, AngleRange)
+export const Arc = /* @__PURE__ */ and(Circle, AngleRange)
 
 /**
  * @public
  */
 export interface EllipseArc extends Ellipse, AngleRange {
 }
+
+/**
+ * @public
+ */
+export const EllipseArc = /* @__PURE__ */ and(Ellipse, AngleRange)
 
 /**
  * @public
@@ -1353,6 +1385,42 @@ export type PathCommand =
     type: 'close'
   }
 
+/**
+ * @public
+ */
+export const PathCommand = (v: unknown, path: Path): ValidationResult => {
+  if (!isRecord(v)) return { path, expect: 'object' }
+  if (v.type === 'move') return validate(v, {
+    type: 'move',
+    to: Position,
+  }, path)
+  if (v.type === 'line') return validate(v, {
+    type: 'line',
+    to: Position,
+  }, path)
+  if (v.type === 'arc') return validate(v, {
+    type: 'arc',
+    from: Position,
+    to: Position,
+    radius: number,
+  }, path)
+  if (v.type === 'bezierCurve') return validate(v, {
+    type: 'bezierCurve',
+    cp1: Position,
+    cp2: Position,
+    to: Position,
+  }, path)
+  if (v.type === 'quadraticCurve') return validate(v, {
+    type: 'quadraticCurve',
+    cp: Position,
+    to: Position,
+  }, path)
+  if (v.type === 'close') return validate(v, {
+    type: 'close',
+  }, path)
+  return { path: [...path, 'type'], expect: 'or', args: ['move', 'line', 'arc', 'bezierCurve', 'quadraticCurve', 'close'] }
+}
+
 
 /**
  * @public
@@ -1360,6 +1428,14 @@ export type PathCommand =
 export interface TextStyle {
   fontSize: number
   fontFamily: string
+}
+
+/**
+ * @public
+ */
+export const TextStyle = {
+  fontSize: number,
+  fontFamily: string,
 }
 
 /**
@@ -1373,6 +1449,21 @@ export type Text = Position & TextStyle & {
 /**
  * @public
  */
+export const Text = /* @__PURE__ */ and(Position, TextStyle, {
+  text: string,
+  color: number,
+})
+
+/**
+ * @public
+ */
 export type Image = Region & {
   url: string
 }
+
+/**
+ * @public
+ */
+export const Image = /* @__PURE__ */ and(Region, {
+  url: string,
+})

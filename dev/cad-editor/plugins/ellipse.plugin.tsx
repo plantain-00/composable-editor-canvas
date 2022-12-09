@@ -8,6 +8,8 @@ export type EllipseContent = model.BaseContent<'ellipse'> & model.StrokeFields &
 export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.EllipseArc
 
 export function getModel(ctx: PluginContext) {
+  const EllipseContent = ctx.and(ctx.BaseContent('ellipse'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse)
+  const EllipseArcContent = ctx.and(ctx.BaseContent('ellipse arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc)
   function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta)
@@ -199,6 +201,7 @@ export function getModel(ctx: PluginContext) {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
@@ -353,6 +356,7 @@ export function getModel(ctx: PluginContext) {
           ...ctx.getAngleDeltaContentPropertyPanel(content, update),
         }
       },
+      isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
     } as model.Model<EllipseArcContent>,

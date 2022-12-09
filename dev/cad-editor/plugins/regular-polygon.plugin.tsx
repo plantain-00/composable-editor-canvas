@@ -10,6 +10,11 @@ export type RegularPolygonContent = model.BaseContent<'regular polygon'> & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent> {
+  const RegularPolygonContent = ctx.and(ctx.BaseContent('regular polygon'), ctx.StrokeFields, ctx.FillFields, ctx.Position, {
+    radius: ctx.number,
+    count: ctx.number,
+    angle: ctx.number,
+  })
   function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angle = -(content.angle ?? 0)
@@ -101,6 +106,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

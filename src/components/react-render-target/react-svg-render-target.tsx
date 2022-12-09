@@ -1,6 +1,8 @@
 import * as React from "react"
-import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from ".."
-import { defaultMiterLimit, getPerpendicularPoint, getParallelLinesByDistance, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, m3, Position, twoPointLineToGeneralFormLine, WeakmapCache } from "../../utils"
+import { defaultMiterLimit, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { m3 } from "../../utils/matrix"
+import { WeakmapCache } from "../../utils/weakmap-cache"
+import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 
 /**
  * @public

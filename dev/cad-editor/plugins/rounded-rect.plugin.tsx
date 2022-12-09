@@ -9,6 +9,9 @@ export type RoundedRectContent = model.BaseContent<'rounded rect'> & model.Strok
 }
 
 export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
+  const RoundedRectContent = ctx.and(ctx.BaseContent('rounded rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
+    radius: ctx.number
+  })
   function getGeometries(content: Omit<RoundedRectContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const reactPoints = [
@@ -144,6 +147,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
         ...ctx.getAngleDeltaContentPropertyPanel(content, update),
       }
     },
+    isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

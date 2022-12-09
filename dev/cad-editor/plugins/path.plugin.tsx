@@ -9,6 +9,9 @@ export type PathContent = model.BaseContent<'path'> & model.StrokeFields & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<PathContent> {
+  const PathContent = ctx.and(ctx.BaseContent('path'), ctx.StrokeFields, ctx.FillFields, {
+    commands: [ctx.PathCommand]
+  })
   function getPathGeometriesFromCache(content: Omit<PathContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = ctx.getPathCommandsPoints(content.commands)[0]
@@ -284,6 +287,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }

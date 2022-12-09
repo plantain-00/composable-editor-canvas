@@ -1,4 +1,4 @@
-import { equals, getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils"
+import { equals, getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils/geometry"
 
 /**
  * @public

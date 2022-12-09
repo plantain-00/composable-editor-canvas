@@ -1,0 +1,26 @@
+{
+  "name": "react-render-target",
+  "version": "1.8.2",
+  "description": "A react canvas, svg, webgl render interface.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"
+  },
+  "author": "York Yao",
+  "license": "MIT",
+  "dependencies": {
+    "earcut": "2",
+    "twgl.js": "4 || 5"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
+  "bugs": {
+    "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
+  },
+  "homepage": "https://github.com/plantain-00/composable-editor-canvas#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}

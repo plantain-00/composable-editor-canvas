@@ -9,6 +9,9 @@ export type RectContent = model.BaseContent<'rect'> & model.StrokeFields & model
 }
 
 export function getModel(ctx: PluginContext): model.Model<RectContent> {
+  const RectContent = ctx.and(ctx.BaseContent('rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
+    angle: ctx.number
+  })
   function getRectGeometries(content: Omit<RectContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -143,6 +146,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
