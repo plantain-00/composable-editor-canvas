@@ -1,6 +1,6 @@
 import * as React from "react"
-import { ReactRenderTarget } from "."
-import { getTextSizeFromCache } from "../utils"
+import { getTextSizeFromCache } from "../utils/text"
+import { ReactRenderTarget } from "./react-render-target/react-render-target"
 import { useFlowLayoutEditor } from "./use-flow-layout-editor"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 

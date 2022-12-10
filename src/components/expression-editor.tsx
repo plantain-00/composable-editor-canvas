@@ -1,7 +1,11 @@
 import * as React from "react"
-import { isLetter, isNumber, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutTextEditor, useUndoRedo } from "."
 import { controlStyle } from "react-composable-json-editor"
 import type { JsonEditorProps } from "react-composable-json-editor"
+import { reactCanvasRenderTarget } from "./react-render-target/react-canvas-render-target"
+import { ReactRenderTarget } from "./react-render-target/react-render-target"
+import { useUndoRedo } from "./use-undo-redo"
+import { metaKeyIfMacElseCtrlKey } from "./use-key"
+import { isLetter, isNumber, useFlowLayoutTextEditor } from "./use-flow-layout-text-editor"
 
 /**
  * @public

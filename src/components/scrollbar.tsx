@@ -1,6 +1,5 @@
 import * as React from "react"
-
-import { useDragMove } from "."
+import { useDragMove } from "./use-drag-move"
 
 /**
  * @public
