@@ -3,6 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import type { RectContent } from './rect.plugin'
 
 export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields & model.FillFields & core.Region
 
@@ -138,7 +139,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create diamond',
     icon,
-    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId, scale }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === 'create diamond',
         (c) => onEnd({
@@ -156,7 +157,7 @@ export function getCommand(ctx: PluginContext): Command {
           once: true,
         },
       )
-      const assistentContents: (DiamondContent)[] = []
+      const assistentContents: (DiamondContent | RectContent)[] = []
       if (line) {
         assistentContents.push({
           type: 'diamond',
@@ -166,6 +167,15 @@ export function getCommand(ctx: PluginContext): Command {
           height: Math.abs(line[0].y - line[1].y),
           strokeStyleId,
           fillStyleId,
+        })
+        assistentContents.push({
+          type: 'rect',
+          x: (line[0].x + line[1].x) / 2,
+          y: (line[0].y + line[1].y) / 2,
+          width: Math.abs(line[0].x - line[1].x),
+          height: Math.abs(line[0].y - line[1].y),
+          angle: 0,
+          dashArray: [4 / scale],
         })
       }
       return {

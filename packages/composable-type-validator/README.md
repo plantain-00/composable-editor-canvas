@@ -80,7 +80,7 @@ validate({
       p2: { x: 4, y: 4 },
     }
   ]
-}, Polyline) // { path: ['lines', 1, 'p1', 'y'], expect: "number" }
+}, Content2) // { path: ['lines', 1, 'p1', 'y'], expect: "number" }
 validate({
   lines: [
     {
@@ -88,7 +88,7 @@ validate({
       p2: { x: 2, y: 2 },
     },
   ]
-}, Polyline) // { path: ['lines'], expect: "minItems", args: [2] }
+}, Content2) // { path: ['lines'], expect: "minItems", args: [2] }
 ```
 
 Tagged types:

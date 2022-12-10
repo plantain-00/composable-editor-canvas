@@ -1,0 +1,25 @@
+{
+  "name": "use-patch-based-undo-redo",
+  "version": "1.8.7",
+  "description": "A react patch based undo/redo hook.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"
+  },
+  "author": "York Yao",
+  "license": "MIT",
+  "dependencies": {
+    "immer": "9"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
+  "bugs": {
+    "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
+  },
+  "homepage": "https://github.com/plantain-00/composable-editor-canvas#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}

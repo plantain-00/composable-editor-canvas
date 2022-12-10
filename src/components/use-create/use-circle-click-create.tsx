@@ -1,7 +1,7 @@
 import * as React from "react"
-
-import { useCursorInput, useKey } from ".."
-import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils"
+import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils/geometry"
+import { useCursorInput } from "../use-cursor-input"
+import { useKey } from "../use-key"
 
 export function useCircleClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,

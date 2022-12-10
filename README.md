@@ -8,7 +8,6 @@ A composable editor canvas library.
 ![Github CI](https://github.com/plantain-00/composable-editor-canvas/workflows/Github%20CI/badge.svg)
 [![npm version](https://badge.fury.io/js/composable-editor-canvas.svg)](https://badge.fury.io/js/composable-editor-canvas)
 [![Downloads](https://img.shields.io/npm/dm/composable-editor-canvas.svg)](https://www.npmjs.com/package/composable-editor-canvas)
-[![gzip size](https://img.badgesize.io/https://unpkg.com/composable-editor-canvas?compression=gzip)](https://unpkg.com/composable-editor-canvas)
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fplantain-00%2Fcomposable-editor-canvas%2Fmaster%2Fpackage.json)](https://github.com/plantain-00/composable-editor-canvas)
 
 ## install

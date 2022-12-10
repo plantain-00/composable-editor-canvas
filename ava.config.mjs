@@ -6,6 +6,6 @@ export default {
     "ts": "module"
   },
   "nodeArguments": [
-    "--loader=ts-node/esm"
+    "--loader=tsx",
   ]
 }

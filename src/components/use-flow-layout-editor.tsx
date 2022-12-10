@@ -1,8 +1,10 @@
 import * as React from "react"
-import { useEvent, useGlobalMouseUp } from "."
-import { equals, flowLayout, getFlowLayoutLocation, Position } from "../utils"
+import { flowLayout, getFlowLayoutLocation } from "../utils/flow-layout"
+import { equals, Position } from "../utils/geometry"
 import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
+import { useEvent } from "./use-event"
+import { useGlobalMouseUp } from "./use-global-mouseup"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"
 import { useWheelScroll } from "./use-wheel-scroll"
 

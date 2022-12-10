@@ -2139,7 +2139,7 @@ export function usePatchBasedUndoRedo<T, P>(defaultState: Readonly<T>, operator:
         patches: Patch[];
         oldState: Readonly<T>;
         newState: Readonly<T>;
-    }) => void;
+    }) => void | false;
 }>): {
     state: Readonly<T>;
     applyPatchFromOtherOperators: (patches: Patch[], reversePatches: Patch[], operator: P) => Readonly<T>;

@@ -73,8 +73,10 @@ export const CADEditor = React.forwardRef((props: {
       const removedContents = new Set<BaseContent>()
       patches = trimPatchPath(patches)
       for (const patch of patches) {
-        // type-coverage:ignore-next-line
-        const index = patch.path[0] as number
+        const index = patch.path[0]
+        if (typeof index !== 'number') {
+          continue
+        }
         if (patch.op !== 'remove' || patch.path.length > 1) {
           const newContent = getContentByPath(newState)[index]
           if (newContent) {
@@ -86,6 +88,13 @@ export const CADEditor = React.forwardRef((props: {
           if (oldContent) {
             removedContents.add(oldContent)
           }
+        }
+      }
+      for (const content of newContents) {
+        const r = validate(content, Content)
+        if (r !== true) {
+          console.error(r)
+          return false
         }
       }
       for (const content of newContents) {
@@ -112,6 +121,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
       props.onChange?.(newState)
+      return
     },
   })
   const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })

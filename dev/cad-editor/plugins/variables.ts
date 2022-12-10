@@ -2209,7 +2209,7 @@ function getCommand(ctx) {
   return {
     name: "create diamond",
     icon,
-    useCommand({ onEnd, type, strokeStyleId, fillStyleId }) {
+    useCommand({ onEnd, type, strokeStyleId, fillStyleId, scale }) {
       const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create diamond",
         (c) => onEnd({
@@ -2237,6 +2237,15 @@ function getCommand(ctx) {
           height: Math.abs(line[0].y - line[1].y),
           strokeStyleId,
           fillStyleId
+        });
+        assistentContents.push({
+          type: "rect",
+          x: (line[0].x + line[1].x) / 2,
+          y: (line[0].y + line[1].y) / 2,
+          width: Math.abs(line[0].x - line[1].x),
+          height: Math.abs(line[0].y - line[1].y),
+          angle: 0,
+          dashArray: [4 / scale]
         });
       }
       return {

@@ -4,8 +4,6 @@
   "description": "A composable editor canvas library.",
   "main": "browser/index.js",
   "module": "browser/index.js",
-  "unpkg": "composable-editor-canvas.min.js",
-  "jsdelivr": "composable-editor-canvas.min.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"

@@ -10,7 +10,7 @@ export function usePatchBasedUndoRedo<T, P>(
   operator: P,
   options?: Partial<{
     onApplyPatchesFromSelf: (patches: Patch[], reversePatches: Patch[]) => void | Promise<[Patch[], Patch[]]>
-    onChange: (data: { patches: Patch[], oldState: Readonly<T>, newState: Readonly<T> }) => void
+    onChange: (data: { patches: Patch[], oldState: Readonly<T>, newState: Readonly<T> }) => void | false
   }>,
 ) {
   const [history, setHistory] = React.useState({
@@ -26,7 +26,10 @@ export function usePatchBasedUndoRedo<T, P>(
 
   const applyPatchFromOtherOperators = (patches: Patch[], reversePatches: Patch[], operator: P) => {
     const s = applyPatches(history.state, patches)
-    options?.onChange?.({ patches, oldState: history.state, newState: s })
+    const valid = options?.onChange?.({ patches, oldState: history.state, newState: s })
+    if (valid === false) {
+      return history.state
+    }
     const newStateIndex = history.patchIndex + 1
     setHistory(produce(history, (draft) => {
       draft.patches.splice(newStateIndex, draft.patches.length, [patches, reversePatches, castDraft(operator)])
@@ -61,18 +64,21 @@ export function usePatchBasedUndoRedo<T, P>(
     undo: async (e?: { preventDefault(): void }) => {
       e?.preventDefault()
       if (canUndo) {
-        setHistory(await produce(history, async (draft) => {
+        let [patches, reversePatches] = history.patches[undoCurrentIndex]
+        const newPatches = await options?.onApplyPatchesFromSelf?.(reversePatches, patches)
+        if (newPatches) {
+          reversePatches = newPatches[0]
+          patches = newPatches[1]
+          history.patches[undoCurrentIndex][0] = patches
+          history.patches[undoCurrentIndex][1] = reversePatches
+        }
+        const newState = applyPatches(history.state, reversePatches)
+        const valid = options?.onChange?.({ patches: reversePatches, oldState: history.state, newState })
+        if (valid === false) {
+          return
+        }
+        setHistory(produce(history, (draft) => {
           draft.patchIndex = undoCurrentIndex - 1
-          let [patches, reversePatches] = history.patches[undoCurrentIndex]
-          const newPatches = await options?.onApplyPatchesFromSelf?.(reversePatches, patches)
-          if (newPatches) {
-            reversePatches = newPatches[0]
-            patches = newPatches[1]
-            history.patches[undoCurrentIndex][0] = patches
-            history.patches[undoCurrentIndex][1] = reversePatches
-          }
-          const newState = applyPatches(history.state, reversePatches)
-          options?.onChange?.({ patches: reversePatches, oldState: history.state, newState })
           draft.state = castDraft(newState)
         }))
       }
@@ -80,18 +86,21 @@ export function usePatchBasedUndoRedo<T, P>(
     redo: async (e?: { preventDefault(): void }) => {
       e?.preventDefault()
       if (canRedo) {
-        setHistory(await produce(history, async (draft) => {
+        let [patches, reversePatches] = history.patches[redoNextIndex]
+        const newPatches = await options?.onApplyPatchesFromSelf?.(patches, reversePatches)
+        if (newPatches) {
+          patches = newPatches[0]
+          reversePatches = newPatches[1]
+          history.patches[undoCurrentIndex][0] = patches
+          history.patches[undoCurrentIndex][1] = reversePatches
+        }
+        const newState = applyPatches(history.state, patches)
+        const valid = options?.onChange?.({ patches, oldState: history.state, newState })
+        if (valid === false) {
+          return
+        }
+        setHistory(produce(history, (draft) => {
           draft.patchIndex = redoNextIndex
-          let [patches, reversePatches] = history.patches[redoNextIndex]
-          const newPatches = await options?.onApplyPatchesFromSelf?.(patches, reversePatches)
-          if (newPatches) {
-            patches = newPatches[0]
-            reversePatches = newPatches[1]
-            history.patches[undoCurrentIndex][0] = patches
-            history.patches[undoCurrentIndex][1] = reversePatches
-          }
-          const newState = applyPatches(history.state, patches)
-          options?.onChange?.({ patches, oldState: history.state, newState })
           draft.state = castDraft(newState)
         }))
       }
