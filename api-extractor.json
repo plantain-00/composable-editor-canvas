@@ -10,7 +10,7 @@
   },
   "dtsRollup": {
     "enabled": true,
-    "untrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/index.d.ts",
+    "untrimmedFilePath": "",
     "publicTrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/index.d.ts"
   },
   "tsdocMetadata": {

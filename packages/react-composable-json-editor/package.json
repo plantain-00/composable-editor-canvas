@@ -1,7 +1,7 @@
 {
-  "name": "composable-type-validator",
+  "name": "react-composable-json-editor",
   "version": "1.8.8",
-  "description": "A composable type validator.",
+  "description": "A react composable json editor.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,6 +9,12 @@
   },
   "author": "York Yao",
   "license": "MIT",
+  "dependencies": {
+    "immer": "9"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },

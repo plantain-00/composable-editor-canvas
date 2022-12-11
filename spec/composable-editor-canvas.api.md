@@ -7,7 +7,6 @@
 /// <reference types="react" />
 
 import type { Draft } from 'immer/dist/types/types-external';
-import type { JsonEditorProps } from 'react-composable-json-editor';
 import type { Patch } from 'immer/dist/types/types-external';
 import * as React_2 from 'react';
 import type { WritableDraft } from 'immer/dist/types/types-external';
@@ -74,6 +73,28 @@ export function arcToPolyline(content: Arc, angleDelta: number): {
 }[];
 
 // @public (undocumented)
+export function ArrayEditor(props: ArrayProps & {
+    items: JSX.Element[];
+    title?: (index: number) => string;
+    inline?: boolean;
+    readOnly?: boolean;
+}): JSX.Element;
+
+// @public (undocumented)
+export interface ArrayProps {
+    // (undocumented)
+    add: () => void;
+    // (undocumented)
+    copy: (index: number) => void;
+    // (undocumented)
+    moveDown: (index: number) => void;
+    // (undocumented)
+    moveUp: (index: number) => void;
+    // (undocumented)
+    remove: (index: number) => void;
+}
+
+// @public (undocumented)
 export const bigint: (v: unknown, path: Path) => ValidationResult;
 
 // @public (undocumented)
@@ -84,6 +105,9 @@ export type BlockType = keyof JSX.IntrinsicElements;
 
 // @public (undocumented)
 export const boolean: (v: unknown, path: Path) => ValidationResult;
+
+// @public (undocumented)
+export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element;
 
 // @public (undocumented)
 export interface Bounding {
@@ -107,6 +131,12 @@ export const Bounding: {
 
 // @public (undocumented)
 export function breakPolylineToPolylines(lines: [Position, Position][], intersectionPoints: Position[]): Position[][];
+
+// @public (undocumented)
+export function Button(props: React_2.DetailedHTMLProps<React_2.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>): JSX.Element;
+
+// @public (undocumented)
+export const buttonStyle: React_2.CSSProperties;
 
 // @public (undocumented)
 export type CanvasDraw = (ctx: CanvasRenderingContext2D, strokeWidthScale: number, rerender: () => void) => void;
@@ -162,6 +192,9 @@ export function combineStripTriangles(triangles: number[][]): number[];
 export function compareLocations(c1: [number, number], c2: [number, number]): 0 | 1 | -1;
 
 // @public (undocumented)
+export const controlStyle: React_2.CSSProperties;
+
+// @public (undocumented)
 export function createWebglRenderer(canvas: HTMLCanvasElement): ((graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => void) | undefined;
 
 // @public (undocumented)
@@ -192,6 +225,12 @@ export const defaultFontSize = 16;
 
 // @public (undocumented)
 export const defaultMiterLimit = 10;
+
+// @public (undocumented)
+export function DialogContainer(props: {
+    children: JSX.Element;
+    readOnly?: boolean;
+}): JSX.Element;
 
 // @public (undocumented)
 export function DragMask(props: {
@@ -317,6 +356,19 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
 
 // @public (undocumented)
 export function ellipseToPolygon(content: Ellipse, angleDelta: number): Position[];
+
+// @public (undocumented)
+export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & {
+    enums: readonly T[];
+    enumTitles?: readonly string[];
+}): JSX.Element;
+
+// @public (undocumented)
+export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> & {
+    enums: readonly T[];
+    enumTitles?: readonly string[];
+    select?: boolean;
+}): JSX.Element;
 
 // @public (undocumented)
 export function equals(a: number | undefined, b: number | undefined): boolean;
@@ -475,6 +527,15 @@ export interface GeneralFormLine {
 
 // @public (undocumented)
 export function getAngleSnapPosition(startPosition: Position | undefined, newPosition: Position, getAngleSnap?: (angle: number) => number | undefined): Position;
+
+// @public (undocumented)
+export function getArrayEditorProps<T, V>(getArray: (v: Draft<V>) => T[], defaultValue: T, update: (recipe: (draft: Draft<V>) => void) => void): {
+    add: () => void;
+    remove: (i: number) => void;
+    copy: (i: number) => void;
+    moveUp: (i: number) => void;
+    moveDown: (i: number) => void;
+};
 
 // @public (undocumented)
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number): Position[];
@@ -864,6 +925,9 @@ export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {
 };
 
 // @public (undocumented)
+export const groupStyle: React_2.CSSProperties;
+
+// @public (undocumented)
 export interface HtmlBlock extends FlowLayoutBlock<HtmlTextInline>, Partial<HtmlTextStyle> {
     // (undocumented)
     type: BlockType;
@@ -1009,6 +1073,18 @@ export function iteratePolygonLines(points: Position[]): Generator<[Position, Po
 export function iteratePolylineLines(points: Position[]): Generator<[Position, Position], void, unknown>;
 
 // @public (undocumented)
+export interface JsonEditorProps<T> {
+    // (undocumented)
+    readOnly?: boolean;
+    // (undocumented)
+    setValue: (value: T) => void;
+    // (undocumented)
+    style?: React_2.CSSProperties;
+    // (undocumented)
+    value: T;
+}
+
+// @public (undocumented)
 export interface LinearDimension extends TextStyle {
     // (undocumented)
     direct?: boolean;
@@ -1135,6 +1211,24 @@ export const Nullable: (a: Validator) => Validator;
 
 // @public (undocumented)
 export const number: (v: unknown, path: Path) => ValidationResult;
+
+// @public (undocumented)
+export function NumberEditor(props: JsonEditorProps<number> & {
+    type?: React_2.HTMLInputTypeAttribute;
+}): JSX.Element;
+
+// @public (undocumented)
+export function ObjectArrayEditor(props: ArrayProps & {
+    properties: Record<string, JSX.Element>[];
+    readOnly?: boolean;
+}): JSX.Element | null;
+
+// @public (undocumented)
+export function ObjectEditor(props: {
+    properties: Record<string, JSX.Element | (JSX.Element | undefined)[]>;
+    inline?: boolean;
+    readOnly?: boolean;
+}): JSX.Element;
 
 // @public (undocumented)
 export const optional: (a: Validator) => Validator;
@@ -1532,6 +1626,12 @@ export type SnapPointType = typeof allSnapTypes[number];
 
 // @public (undocumented)
 export const string: (v: unknown, path: Path) => ValidationResult;
+
+// @public (undocumented)
+export function StringEditor(props: JsonEditorProps<string> & {
+    type?: React_2.HTMLInputTypeAttribute;
+    textarea?: boolean;
+}): JSX.Element;
 
 // @public (undocumented)
 export interface StrokeStyle {
@@ -2086,6 +2186,19 @@ export function useImageClickCreate(enabled: boolean, onEnd: (image: Image_2) =>
     onClick(p: Position): void;
     onMove(p: Position, viewportPosition?: Position): void;
     input: JSX.Element;
+};
+
+// @public (undocumented)
+export function useJsonEditorData<V>(defaultValue: V): {
+    value: V;
+    update: <T>(recipe: (draft: Draft<V>, v: T) => void) => (v: T) => void;
+    getArrayProps: <T_1>(getArray: (v: Draft<V>) => T_1[], defaultValue: T_1) => {
+        add: () => void;
+        remove: (i: number) => void;
+        copy: (i: number) => void;
+        moveUp: (i: number) => void;
+        moveDown: (i: number) => void;
+    };
 };
 
 // @public (undocumented)

@@ -55,6 +55,7 @@ A composable editor canvas library.
 + `useFlowLayoutEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-editor.story>
 + `useFlowLayoutTextEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-text-editor.story>
 + `useFlowLayoutBlockEditor` <https://plantain-00.github.io/composable-editor-canvas/?p=flow-layout-block-editor.story>
++ `useJsonEditorData` <https://plantain-00.github.io/composable-editor-canvas/?p=react-composable-json-editor.story>
 
 ## combinations
 

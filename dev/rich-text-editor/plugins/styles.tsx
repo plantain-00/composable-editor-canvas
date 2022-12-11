@@ -1,6 +1,5 @@
 import React from "react"
-import { BooleanEditor, NumberEditor, StringEditor } from "react-composable-json-editor"
-import { defaultFontFamily, defaultFontSize } from "../../../src"
+import { BooleanEditor, NumberEditor, StringEditor, defaultFontFamily, defaultFontSize } from "../../../src"
 import { RichTextEditorPluginStyle } from "../model"
 
 export const fontSize: RichTextEditorPluginStyle = (currentContent, currentBlock, updateSelection) => {

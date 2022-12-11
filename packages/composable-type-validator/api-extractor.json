@@ -9,8 +9,8 @@
   },
   "dtsRollup": {
     "enabled": true,
-    "untrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/utils/validators.d.ts",
-    "publicTrimmedFilePath": "<projectFolder>/packages/composable-type-validator/index.d.ts"
+    "untrimmedFilePath": "",
+    "publicTrimmedFilePath": "index.d.ts"
   },
   "tsdocMetadata": {
     "enabled": false

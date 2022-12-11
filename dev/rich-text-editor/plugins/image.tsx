@@ -1,6 +1,5 @@
 import React from "react"
-import { NumberEditor, StringEditor } from "react-composable-json-editor"
-import { getImageFromCache, HtmlEditorPluginInline, ResizeBar, HtmlTextInline, Size, useDragResize } from "../../../src"
+import { NumberEditor, StringEditor, getImageFromCache, HtmlEditorPluginInline, ResizeBar, HtmlTextInline, Size, useDragResize } from "../../../src"
 import { RichTextEditorPluginHook } from "../model"
 
 export interface RichTextImage extends Size {

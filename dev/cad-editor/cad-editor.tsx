@@ -1,7 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate } from '../../src'
-import * as jsonEditor from "react-composable-json-editor"
-import { BooleanEditor, NumberEditor, ObjectEditor } from "react-composable-json-editor"
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './model'
@@ -75,6 +73,13 @@ export const CADEditor = React.forwardRef((props: {
       for (const patch of patches) {
         const index = patch.path[0]
         if (typeof index !== 'number') {
+          // type-coverage:ignore-next-line
+          if (index === 'length' && patch.op === 'replace' && typeof patch.value === 'number') {
+            const oldContent = getContentByPath(oldState)[patch.value]
+            if (oldContent) {
+              removedContents.add(oldContent)
+            }
+          }
           continue
         }
         if (patch.op !== 'remove' || patch.path.length > 1) {
@@ -711,7 +716,7 @@ export function usePlugins() {
 
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx: PluginContext = { ...core, ...model, ...jsonEditor, React, produce, produceWithPatches, renderToStaticMarkup }
+  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {

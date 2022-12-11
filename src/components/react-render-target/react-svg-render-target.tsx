@@ -1,4 +1,5 @@
 import * as React from "react"
+import { getColorString } from "../../utils/color"
 import { defaultMiterLimit, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { m3 } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
@@ -549,26 +550,6 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
     x: cx + (rx * Math.cos(angleInRadians)),
     y: cy + (ry * Math.sin(angleInRadians))
   }
-}
-
-/**
- * @public
- */
-export function getColorString(color: number, alpha?: number) {
-  const s = color.toString(16)
-  let a = ''
-  if (alpha !== undefined) {
-    const f = Math.floor(alpha * 255).toString(16)
-    a = '0'.repeat(2 - f.length) + f
-  }
-  return `#${'0'.repeat(6 - s.length)}${s}${a}`
-}
-
-/**
- * @public
- */
-export function colorStringToNumber(color: string) {
-  return +`0x${color.slice(1)}`
 }
 
 /**

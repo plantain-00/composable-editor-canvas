@@ -195,6 +195,7 @@ export function validate(value: unknown, by: Validator, path: Path = []): Valida
         return r
       }
     }
+    if (Object.isFrozen(value) || Object.isSealed(value)) return true
     for (const key of Object.keys(value)) {
       if (!Object.hasOwn(by, key)) {
         delete value[key]

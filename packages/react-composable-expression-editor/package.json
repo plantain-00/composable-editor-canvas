@@ -1,7 +1,7 @@
 {
-  "name": "composable-type-validator",
+  "name": "react-composable-expression-editor",
   "version": "1.8.8",
-  "description": "A composable type validator.",
+  "description": "A react expression editor.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,6 +9,14 @@
   },
   "author": "York Yao",
   "license": "MIT",
+  "dependencies": {
+    "react-render-target": "1",
+    "react-composable-json-editor": "^1.8.8",
+    "use-undo-redo": "1"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },
