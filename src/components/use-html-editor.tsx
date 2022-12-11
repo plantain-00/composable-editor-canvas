@@ -2,8 +2,8 @@ import { castDraft } from "immer"
 import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
-import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getColorString, getWordByDoubleClick, useEvent, useGlobalMouseUp } from "."
-import { equals, Merger, Position, Reducer, Region, Size } from "../utils"
+import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick, useEvent, useGlobalMouseUp } from "."
+import { equals, getColorString, Merger, Position, Reducer, Region, Size } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "./use-key"

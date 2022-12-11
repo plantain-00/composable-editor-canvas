@@ -9,8 +9,8 @@
   },
   "dtsRollup": {
     "enabled": true,
-    "untrimmedFilePath": "<projectFolder>/packages/composable-editor-canvas/browser/utils/components/use-patch-based-undo-redo.d.ts",
-    "publicTrimmedFilePath": "<projectFolder>/packages/use-patch-based-undo-redo/index.d.ts"
+    "untrimmedFilePath": "",
+    "publicTrimmedFilePath": "index.d.ts"
   },
   "tsdocMetadata": {
     "enabled": false

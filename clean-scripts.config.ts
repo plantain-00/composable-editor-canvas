@@ -1,4 +1,4 @@
-import { build, Plugin, OnResolveArgs, OnResolveResult } from 'esbuild'
+import { build } from 'esbuild'
 const tsFiles = `"src/**/*.ts" "src/**/*.tsx" "dev/**/*.ts" "dev/**/*.tsx"`
 
 const importStories = 'types-as-schema -p ./types-as-schema.config.ts'
@@ -9,20 +9,9 @@ const packages = [
   { name: 'react-render-target', entry: './src/components/react-render-target/index.ts' },
   { name: 'use-undo-redo', entry: './src/components/use-undo-redo.tsx' },
   { name: 'use-patch-based-undo-redo', entry: './src/components/use-patch-based-undo-redo.tsx' },
-  // {
-  //   name: 'expression-editor', entry: './src/components/expression-editor.tsx', onResolve: {
-  //     filter: /^.\/react-render-target/,
-  //     callback: () => {
-  //       return { path: 'react-render-target', external: true }
-  //     },
-  //   }
-  // }
-] as {
-  name: string, entry: string, onResolve?: {
-    filter: RegExp
-    callback: (args: OnResolveArgs) => OnResolveResult
-  }
-}[]
+  { name: 'react-composable-json-editor', entry: './src/components/react-composable-json-editor/index.tsx' },
+  { name: 'react-composable-expression-editor', entry: './src/components/expression-editor.tsx' }
+]
 
 export default {
   build: [
@@ -34,11 +23,19 @@ export default {
           const outfile = `packages/${d.name}/index.js`
           return {
             [d.name]: async () => {
+              const depdendencies = packages.map(p => p.name).filter(n => n !== d.name)
               await build({
                 entryPoints: [d.entry],
                 bundle: true,
                 outfile,
-                plugins: d.onResolve ? [aliasToExternalPlugin(d.onResolve)] : [],
+                plugins: depdendencies.length > 0 ? [{
+                  name: 'alias to external',
+                  setup(build) {
+                    depdendencies.forEach(d => {
+                      build.onResolve({ filter: new RegExp('/' + d) }, () => ({ path: d, external: true }))
+                    })
+                  },
+                }] : [],
                 format: 'esm',
                 external: ['earcut', 'twgl.js', 'react', 'immer'],
               })
@@ -85,10 +82,3 @@ export default {
   },
   fix: `eslint --ext .js,.ts ${tsFiles} --fix`
 }
-
-const aliasToExternalPlugin = (e: NonNullable<(typeof packages)[number]['onResolve']>): Plugin => ({
-  name: 'alias to external',
-  setup(build) {
-    build.onResolve({ filter: e.filter }, e.callback)
-  },
-})

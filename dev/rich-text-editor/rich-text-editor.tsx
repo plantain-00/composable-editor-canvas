@@ -1,6 +1,5 @@
 import React from "react"
-import { defaultFontFamily, isHtmlText, HtmlBlock, metaKeyIfMacElseCtrlKey, usePatchBasedUndoRedo, useHtmlEditor, getKeys, HtmlEditorPlugin } from "../../src"
-import { ObjectEditor, Button } from "react-composable-json-editor"
+import { ObjectEditor, Button, defaultFontFamily, isHtmlText, HtmlBlock, metaKeyIfMacElseCtrlKey, usePatchBasedUndoRedo, useHtmlEditor, getKeys, HtmlEditorPlugin } from "../../src"
 import { Patch } from "immer/dist/types/types-external"
 import produce from "immer"
 import { RichTextEditorPluginHook, RichTextEditorPluginStyle } from "./model"

@@ -1,7 +1,6 @@
 import React from "react"
 import { RichTextEditorPluginHook } from "../model"
-import { BooleanEditor, StringEditor } from "react-composable-json-editor";
-import { HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline } from "../../../src";
+import { BooleanEditor, StringEditor, HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline } from "../../../src";
 
 interface Link extends HtmlText {
   url: string
