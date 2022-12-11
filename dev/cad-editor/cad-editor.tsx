@@ -73,6 +73,7 @@ export const CADEditor = React.forwardRef((props: {
       for (const patch of patches) {
         const index = patch.path[0]
         if (typeof index !== 'number') {
+          // type-coverage:ignore-next-line
           if (index === 'length' && patch.op === 'replace' && typeof patch.value === 'number') {
             const oldContent = getContentByPath(oldState)[patch.value]
             if (oldContent) {
