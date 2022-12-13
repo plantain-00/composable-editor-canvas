@@ -98,6 +98,15 @@ export function useCommands(
         strokeStyleId,
         fillStyleId,
       })
+      if (command.type) {
+        for (const type of command.type) {
+          if (type.hotkey) {
+            hotkeys.push({ key: type.hotkey, command: type.name })
+          }
+        }
+      } else if (command.hotkey) {
+        hotkeys.push({ key: command.hotkey, command: command.name })
+      }
       if (!type) return
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
@@ -152,15 +161,6 @@ export function useCommands(
         props.style = fixedInputStyle
         commandInputs.push(React.cloneElement(subcommand, props))
       }
-    }
-    if (command.type) {
-      for (const type of command.type) {
-        if (type.hotkey) {
-          hotkeys.push({ key: type.hotkey, command: type.name })
-        }
-      }
-    } else if (command.hotkey) {
-      hotkeys.push({ key: command.hotkey, command: command.name })
     }
   })
   return {

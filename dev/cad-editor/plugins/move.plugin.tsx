@@ -30,13 +30,15 @@ export function getCommand(ctx: PluginContext): Command {
           setInputPosition(p)
         },
         reset,
-        updateSelectedContent(content) {
+        updateSelectedContent(content, contents) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
-            const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               ctx.getContentModel(content)?.move?.(draft, offset)
             })
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents)
             return {
               patches,
+              assistentContents,
             }
           }
           return {}

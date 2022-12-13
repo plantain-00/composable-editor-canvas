@@ -2,7 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, zoomContentsToFit } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, updateReferencedContents, zoomContentsToFit } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -315,6 +315,9 @@ export const CADEditor = React.forwardRef((props: {
   previewPatches.push(...result?.patches ?? [])
   previewReversePatches.push(...result?.reversePatches ?? [])
   assistentContents.push(...result?.assistentContents ?? [])
+  if (result) {
+    assistentContents.push(...updateReferencedContents(result.content, result.result, editingContent))
+  }
   for (const { content, path } of selectedContents) {
     if (path.length === 1) {
       let c = content

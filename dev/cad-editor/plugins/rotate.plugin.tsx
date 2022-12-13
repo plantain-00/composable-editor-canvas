@@ -85,11 +85,13 @@ export function getCommand(ctx: PluginContext): Command {
                 ]
               }
             }
-            const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               ctx.getContentModel(content)?.rotate?.(draft, startPosition, angle, contents)
             })
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents)
             return {
               patches,
+              assistentContents,
             }
           }
           return {}

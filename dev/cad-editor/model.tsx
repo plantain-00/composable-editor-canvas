@@ -675,6 +675,28 @@ export function contentIsReferenced(content: object, contents: readonly Nullable
   return false
 }
 
+export function updateReferencedContents(
+  content: BaseContent,
+  newContent: BaseContent,
+  contents: readonly Nullable<BaseContent>[],
+) {
+  const assistentContents: BaseContent[] = []
+  const id = getContentIndex(content, contents)
+  for (const c of iterateAllContents(contents)) {
+    const model = getContentModel(c)
+    if (model?.getRefIds?.(c)?.includes(id)) {
+      assistentContents.push(produce(c, (draft) => {
+        model.updateRefId?.(draft, d => {
+          if (d === id) {
+            return newContent
+          }
+          return undefined
+        })
+      }))
+    }
+  }
+  return assistentContents
+}
 
 export function* iterateAllContents(contents: readonly Nullable<BaseContent>[]): Generator<BaseContent, void, unknown> {
   for (const content of contents) {
