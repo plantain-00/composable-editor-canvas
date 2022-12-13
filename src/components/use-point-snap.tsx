@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Circle, isSamePoint, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
-import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
+import { getAngleSnapPosition } from "../utils/snap"
 
 /**
  * @public

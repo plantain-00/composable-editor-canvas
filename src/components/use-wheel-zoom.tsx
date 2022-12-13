@@ -1,7 +1,7 @@
 import * as React from "react"
-
-import { getDefaultZoomOption, useLocalStorageState, ZoomOptions } from "."
-import { Position } from "../utils"
+import { Position } from "../utils/geometry"
+import { useLocalStorageState } from "./use-local-storage-state"
+import { getDefaultZoomOption, ZoomOptions } from "./use-zoom"
 
 /**
  * @public

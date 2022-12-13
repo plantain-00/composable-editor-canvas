@@ -1,7 +1,7 @@
 {
-  "name": "react-composable-expression-editor",
-  "version": "1.8.8",
-  "description": "A react expression editor.",
+  "name": "use-drag-select",
+  "version": "1.8.7",
+  "description": "A react drag select hook.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,13 +9,6 @@
   },
   "author": "York Yao",
   "license": "MIT",
-  "dependencies": {
-    "react-render-target": "1",
-    "react-composable-json-editor": "1",
-    "use-undo-redo": "1",
-    "use-wheel-scroll": "1",
-    "use-drag-move": "1"
-  },
   "peerDependencies": {
     "react": "18"
   },

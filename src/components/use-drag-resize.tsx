@@ -1,7 +1,10 @@
 import * as React from "react"
+import { getResizeCursor, ResizeDirection } from "../utils/cursor"
+import { Position, Region } from "../utils/geometry"
+import { getAngleSnapPosition } from "../utils/snap"
+import { DragMask } from "./drag-mask"
+import { useKey } from "./use-key"
 
-import { DragMask, getAngleSnapPosition, useKey } from "."
-import { getResizeCursor, Position, Region, ResizeDirection } from ".."
 
 /**
  * @public

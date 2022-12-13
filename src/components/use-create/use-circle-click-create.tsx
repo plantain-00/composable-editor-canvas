@@ -1,5 +1,6 @@
 import * as React from "react"
-import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position, rotatePositionByCenter } from "../../utils/geometry"
+import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position } from "../../utils/geometry"
+import { getAngleSnapPosition } from "../../utils/snap"
 import { useCursorInput } from "../use-cursor-input"
 import { useKey } from "../use-key"
 
@@ -169,19 +170,4 @@ function getCircle(
     return getThreePointsCircle(startPosition, middlePosition, endPosition)
   }
   return undefined
-}
-
-export function getAngleSnapPosition(
-  startPosition: Position | undefined,
-  newPosition: Position,
-  getAngleSnap?: (angle: number) => number | undefined,
-) {
-  if (getAngleSnap && startPosition) {
-    const angle = Math.atan2(newPosition.y - startPosition.y, newPosition.x - startPosition.x) * 180 / Math.PI
-    const newAngle = getAngleSnap(angle)
-    if (newAngle !== undefined && newAngle !== angle) {
-      newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)
-    }
-  }
-  return newPosition
 }

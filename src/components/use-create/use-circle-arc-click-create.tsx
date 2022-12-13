@@ -2,7 +2,8 @@ import * as React from "react"
 
 import { useKey } from ".."
 import { Arc, Position } from "../../utils"
-import { getAngleSnapPosition, useCircleClickCreate } from "./use-circle-click-create"
+import { getAngleSnapPosition } from "../../utils/snap"
+import { useCircleClickCreate } from "./use-circle-click-create"
 
 /**
  * @public

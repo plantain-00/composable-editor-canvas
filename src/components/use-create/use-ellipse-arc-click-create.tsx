@@ -1,7 +1,8 @@
 import * as React from "react"
 
-import { getAngleSnapPosition, useEllipseClickCreate, useKey } from ".."
+import { useEllipseClickCreate, useKey } from ".."
 import { EllipseArc, getEllipseAngle, Position } from "../../utils"
+import { getAngleSnapPosition } from "../../utils/snap"
 
 /**
  * @public
