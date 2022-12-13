@@ -1,6 +1,6 @@
 {
   "name": "use-wheel-scroll",
-  "version": "1.8.7",
+  "version": "1.8.9",
   "description": "A react wheel scroll hook.",
   "main": "index.js",
   "repository": {
