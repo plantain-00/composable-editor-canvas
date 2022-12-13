@@ -1,6 +1,6 @@
 import * as React from "react"
 import { EllipseArc, Position, rotatePositionByCenter } from "../../utils"
-import { getAngleSnapPosition } from "../use-create/use-circle-click-create"
+import { getAngleSnapPosition } from "../../utils/snap"
 import { EditOptions, useDragEdit } from "./use-edit"
 
 /**

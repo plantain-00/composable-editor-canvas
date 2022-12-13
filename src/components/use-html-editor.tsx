@@ -6,7 +6,7 @@ import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubl
 import { equals, getColorString, Merger, Position, Reducer, Region, Size } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
-import { metaKeyIfMacElseCtrlKey } from "./use-key"
+import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useWheelScroll } from "./use-wheel-scroll"
 
 /**

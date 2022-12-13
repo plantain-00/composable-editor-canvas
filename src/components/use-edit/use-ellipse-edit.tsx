@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Ellipse, getAngleSnapPosition } from "../.."
+import { Ellipse } from "../.."
 import { getTwoPointsDistance, Position } from "../../utils"
+import { getAngleSnapPosition } from "../../utils/snap"
 import { EditOptions, useDragEdit } from "./use-edit"
 
 /**

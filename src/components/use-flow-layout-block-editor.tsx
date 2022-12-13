@@ -5,7 +5,7 @@ import { useEvent, useGlobalMouseUp } from "."
 import { equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
-import { metaKeyIfMacElseCtrlKey } from "./use-key"
+import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useWheelScroll } from "./use-wheel-scroll"
 
 /**

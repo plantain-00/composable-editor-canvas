@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Position } from "../utils/geometry"
+import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
-import { getAngleSnapPosition } from "./use-create/use-circle-click-create"
 import { useKey } from "./use-key"
 
 export function useDragMove<T = void>(

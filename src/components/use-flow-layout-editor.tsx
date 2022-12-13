@@ -5,7 +5,7 @@ import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
 import { useEvent } from "./use-event"
 import { useGlobalMouseUp } from "./use-global-mouseup"
-import { metaKeyIfMacElseCtrlKey } from "./use-key"
+import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useWheelScroll } from "./use-wheel-scroll"
 
 /**

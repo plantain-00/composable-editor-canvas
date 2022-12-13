@@ -1,7 +1,7 @@
 import * as React from "react"
-
-import { DragMask, useKey } from "."
-import { Position } from "../utils"
+import { Position } from "../utils/geometry"
+import { DragMask } from "./drag-mask"
+import { useKey } from "./use-key"
 
 /**
  * @public
