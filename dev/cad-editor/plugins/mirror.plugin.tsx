@@ -51,11 +51,13 @@ export function getCommand(ctx: PluginContext): Command {
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end)
             const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI
             if (changeOriginal) {
-              const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+              const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents)
               })
+              const assistentContents = ctx.updateReferencedContents(content, newContent, contents)
               return {
                 patches,
+                assistentContents,
               }
             }
             return {

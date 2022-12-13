@@ -6691,12 +6691,14 @@ function getCommand(ctx) {
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
             const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI;
             if (changeOriginal) {
-              const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+              const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 var _a, _b;
                 (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, draft, line, angle, contents);
               });
+              const assistentContents = ctx.updateReferencedContents(content, newContent, contents);
               return {
-                patches
+                patches,
+                assistentContents
               };
             }
             return {
@@ -6759,14 +6761,16 @@ function getCommand(ctx) {
           setInputPosition(p);
         },
         reset,
-        updateSelectedContent(content) {
+        updateSelectedContent(content, contents) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
-            const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               var _a, _b;
               (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, draft, offset);
             });
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents);
             return {
-              patches
+              patches,
+              assistentContents
             };
           }
           return {};
@@ -8400,12 +8404,14 @@ function getCommand(ctx) {
                 ]
               };
             }
-            const [, ...patches] = ctx.produceWithPatches(content, (draft) => {
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               var _a, _b;
               (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, draft, startPosition, angle, contents);
             });
+            const assistentContents2 = ctx.updateReferencedContents(content, newContent, contents);
             return {
-              patches
+              patches,
+              assistentContents: assistentContents2
             };
           }
           return {};

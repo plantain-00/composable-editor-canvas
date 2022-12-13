@@ -63,6 +63,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       return assistentContents
     },
     updateEditPreview(): {
+      content: T
       result: T;
       patches: Patch[];
       reversePatches: Patch[];
@@ -78,6 +79,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
           }
         })
         const s = {
+          content: editPoint.content,
           result,
           patches: prependPatchPath(patches, editPoint.path),
           reversePatches: prependPatchPath(reversePatches, editPoint.path),
