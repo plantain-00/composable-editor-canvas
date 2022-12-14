@@ -141,7 +141,7 @@ export function App() {
     {
       centeredScaling: (e) => e.shiftKey,
       keepRatio: (e) => {
-        if (e.metaKey && target) {
+        if (metaKeyIfMacElseCtrlKey(e) && target) {
           return target.width / target.height
         }
         return undefined
