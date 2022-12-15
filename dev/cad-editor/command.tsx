@@ -87,6 +87,15 @@ export function useCommands(
   const lastPositions: Position[] = []
   const resets: (() => void)[] = []
   Object.values(commandCenter).forEach((command) => {
+    if (command.type) {
+      for (const type of command.type) {
+        if (type.hotkey) {
+          hotkeys.push({ key: type.hotkey, command: type.name })
+        }
+      }
+    } else if (command.hotkey) {
+      hotkeys.push({ key: command.hotkey, command: command.name })
+    }
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
       const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, lastPosition, reset } = command.useCommand({
@@ -98,15 +107,6 @@ export function useCommands(
         strokeStyleId,
         fillStyleId,
       })
-      if (command.type) {
-        for (const type of command.type) {
-          if (type.hotkey) {
-            hotkeys.push({ key: type.hotkey, command: type.name })
-          }
-        }
-      } else if (command.hotkey) {
-        hotkeys.push({ key: command.hotkey, command: command.name })
-      }
       if (!type) return
       if (mask) {
         masks.push(React.cloneElement(mask, { key: command.name }))
