@@ -2866,509 +2866,17 @@ export {
   isEllipseContent
 };
 `,
-`var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
-// node_modules/tslib/tslib.js
-var require_tslib = __commonJS({
-  "node_modules/tslib/tslib.js"(exports, module) {
-    var __extends2;
-    var __assign2;
-    var __rest2;
-    var __decorate2;
-    var __param2;
-    var __metadata2;
-    var __awaiter2;
-    var __generator2;
-    var __exportStar2;
-    var __values2;
-    var __read2;
-    var __spread2;
-    var __spreadArrays2;
-    var __spreadArray2;
-    var __await2;
-    var __asyncGenerator2;
-    var __asyncDelegator2;
-    var __asyncValues2;
-    var __makeTemplateObject2;
-    var __importStar2;
-    var __importDefault2;
-    var __classPrivateFieldGet2;
-    var __classPrivateFieldSet2;
-    var __classPrivateFieldIn2;
-    var __createBinding2;
-    (function(factory) {
-      var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
-      if (typeof define === "function" && define.amd) {
-        define("tslib", ["exports"], function(exports2) {
-          factory(createExporter(root, createExporter(exports2)));
-        });
-      } else if (typeof module === "object" && typeof module.exports === "object") {
-        factory(createExporter(root, createExporter(module.exports)));
-      } else {
-        factory(createExporter(root));
-      }
-      function createExporter(exports2, previous) {
-        if (exports2 !== root) {
-          if (typeof Object.create === "function") {
-            Object.defineProperty(exports2, "__esModule", { value: true });
-          } else {
-            exports2.__esModule = true;
-          }
-        }
-        return function(id, v) {
-          return exports2[id] = previous ? previous(id, v) : v;
-        };
-      }
-    })(function(exporter) {
-      var extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d, b) {
-        d.__proto__ = b;
-      } || function(d, b) {
-        for (var p in b)
-          if (Object.prototype.hasOwnProperty.call(b, p))
-            d[p] = b[p];
-      };
-      __extends2 = function(d, b) {
-        if (typeof b !== "function" && b !== null)
-          throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() {
-          this.constructor = d;
-        }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-      };
-      __assign2 = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-          s = arguments[i];
-          for (var p in s)
-            if (Object.prototype.hasOwnProperty.call(s, p))
-              t[p] = s[p];
-        }
-        return t;
-      };
-      __rest2 = function(s, e) {
-        var t = {};
-        for (var p in s)
-          if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-            t[p] = s[p];
-        if (s != null && typeof Object.getOwnPropertySymbols === "function")
-          for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-              t[p[i]] = s[p[i]];
-          }
-        return t;
-      };
-      __decorate2 = function(decorators, target, key, desc) {
-        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
-          r = Reflect.decorate(decorators, target, key, desc);
-        else
-          for (var i = decorators.length - 1; i >= 0; i--)
-            if (d = decorators[i])
-              r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-        return c > 3 && r && Object.defineProperty(target, key, r), r;
-      };
-      __param2 = function(paramIndex, decorator) {
-        return function(target, key) {
-          decorator(target, key, paramIndex);
-        };
-      };
-      __metadata2 = function(metadataKey, metadataValue) {
-        if (typeof Reflect === "object" && typeof Reflect.metadata === "function")
-          return Reflect.metadata(metadataKey, metadataValue);
-      };
-      __awaiter2 = function(thisArg, _arguments, P, generator) {
-        function adopt(value) {
-          return value instanceof P ? value : new P(function(resolve) {
-            resolve(value);
-          });
-        }
-        return new (P || (P = Promise))(function(resolve, reject) {
-          function fulfilled(value) {
-            try {
-              step(generator.next(value));
-            } catch (e) {
-              reject(e);
-            }
-          }
-          function rejected(value) {
-            try {
-              step(generator["throw"](value));
-            } catch (e) {
-              reject(e);
-            }
-          }
-          function step(result) {
-            result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-          }
-          step((generator = generator.apply(thisArg, _arguments || [])).next());
-        });
-      };
-      __generator2 = function(thisArg, body) {
-        var _ = { label: 0, sent: function() {
-          if (t[0] & 1)
-            throw t[1];
-          return t[1];
-        }, trys: [], ops: [] }, f, y, t, g;
-        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() {
-          return this;
-        }), g;
-        function verb(n) {
-          return function(v) {
-            return step([n, v]);
-          };
-        }
-        function step(op) {
-          if (f)
-            throw new TypeError("Generator is already executing.");
-          while (g && (g = 0, op[0] && (_ = 0)), _)
-            try {
-              if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done)
-                return t;
-              if (y = 0, t)
-                op = [op[0] & 2, t.value];
-              switch (op[0]) {
-                case 0:
-                case 1:
-                  t = op;
-                  break;
-                case 4:
-                  _.label++;
-                  return { value: op[1], done: false };
-                case 5:
-                  _.label++;
-                  y = op[1];
-                  op = [0];
-                  continue;
-                case 7:
-                  op = _.ops.pop();
-                  _.trys.pop();
-                  continue;
-                default:
-                  if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
-                    _ = 0;
-                    continue;
-                  }
-                  if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
-                    _.label = op[1];
-                    break;
-                  }
-                  if (op[0] === 6 && _.label < t[1]) {
-                    _.label = t[1];
-                    t = op;
-                    break;
-                  }
-                  if (t && _.label < t[2]) {
-                    _.label = t[2];
-                    _.ops.push(op);
-                    break;
-                  }
-                  if (t[2])
-                    _.ops.pop();
-                  _.trys.pop();
-                  continue;
-              }
-              op = body.call(thisArg, _);
-            } catch (e) {
-              op = [6, e];
-              y = 0;
-            } finally {
-              f = t = 0;
-            }
-          if (op[0] & 5)
-            throw op[1];
-          return { value: op[0] ? op[1] : void 0, done: true };
-        }
-      };
-      __exportStar2 = function(m, o) {
-        for (var p in m)
-          if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p))
-            __createBinding2(o, m, p);
-      };
-      __createBinding2 = Object.create ? function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
-        var desc = Object.getOwnPropertyDescriptor(m, k);
-        if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-          desc = { enumerable: true, get: function() {
-            return m[k];
-          } };
-        }
-        Object.defineProperty(o, k2, desc);
-      } : function(o, m, k, k2) {
-        if (k2 === void 0)
-          k2 = k;
-        o[k2] = m[k];
-      };
-      __values2 = function(o) {
-        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-        if (m)
-          return m.call(o);
-        if (o && typeof o.length === "number")
-          return {
-            next: function() {
-              if (o && i >= o.length)
-                o = void 0;
-              return { value: o && o[i++], done: !o };
-            }
-          };
-        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-      };
-      __read2 = function(o, n) {
-        var m = typeof Symbol === "function" && o[Symbol.iterator];
-        if (!m)
-          return o;
-        var i = m.call(o), r, ar = [], e;
-        try {
-          while ((n === void 0 || n-- > 0) && !(r = i.next()).done)
-            ar.push(r.value);
-        } catch (error) {
-          e = { error };
-        } finally {
-          try {
-            if (r && !r.done && (m = i["return"]))
-              m.call(i);
-          } finally {
-            if (e)
-              throw e.error;
-          }
-        }
-        return ar;
-      };
-      __spread2 = function() {
-        for (var ar = [], i = 0; i < arguments.length; i++)
-          ar = ar.concat(__read2(arguments[i]));
-        return ar;
-      };
-      __spreadArrays2 = function() {
-        for (var s = 0, i = 0, il = arguments.length; i < il; i++)
-          s += arguments[i].length;
-        for (var r = Array(s), k = 0, i = 0; i < il; i++)
-          for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-        return r;
-      };
-      __spreadArray2 = function(to, from, pack) {
-        if (pack || arguments.length === 2)
-          for (var i = 0, l = from.length, ar; i < l; i++) {
-            if (ar || !(i in from)) {
-              if (!ar)
-                ar = Array.prototype.slice.call(from, 0, i);
-              ar[i] = from[i];
-            }
-          }
-        return to.concat(ar || Array.prototype.slice.call(from));
-      };
-      __await2 = function(v) {
-        return this instanceof __await2 ? (this.v = v, this) : new __await2(v);
-      };
-      __asyncGenerator2 = function(thisArg, _arguments, generator) {
-        if (!Symbol.asyncIterator)
-          throw new TypeError("Symbol.asyncIterator is not defined.");
-        var g = generator.apply(thisArg, _arguments || []), i, q = [];
-        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
-          return this;
-        }, i;
-        function verb(n) {
-          if (g[n])
-            i[n] = function(v) {
-              return new Promise(function(a, b) {
-                q.push([n, v, a, b]) > 1 || resume(n, v);
-              });
-            };
-        }
-        function resume(n, v) {
-          try {
-            step(g[n](v));
-          } catch (e) {
-            settle(q[0][3], e);
-          }
-        }
-        function step(r) {
-          r.value instanceof __await2 ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
-        }
-        function fulfill(value) {
-          resume("next", value);
-        }
-        function reject(value) {
-          resume("throw", value);
-        }
-        function settle(f, v) {
-          if (f(v), q.shift(), q.length)
-            resume(q[0][0], q[0][1]);
-        }
-      };
-      __asyncDelegator2 = function(o) {
-        var i, p;
-        return i = {}, verb("next"), verb("throw", function(e) {
-          throw e;
-        }), verb("return"), i[Symbol.iterator] = function() {
-          return this;
-        }, i;
-        function verb(n, f) {
-          i[n] = o[n] ? function(v) {
-            return (p = !p) ? { value: __await2(o[n](v)), done: n === "return" } : f ? f(v) : v;
-          } : f;
-        }
-      };
-      __asyncValues2 = function(o) {
-        if (!Symbol.asyncIterator)
-          throw new TypeError("Symbol.asyncIterator is not defined.");
-        var m = o[Symbol.asyncIterator], i;
-        return m ? m.call(o) : (o = typeof __values2 === "function" ? __values2(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
-          return this;
-        }, i);
-        function verb(n) {
-          i[n] = o[n] && function(v) {
-            return new Promise(function(resolve, reject) {
-              v = o[n](v), settle(resolve, reject, v.done, v.value);
-            });
-          };
-        }
-        function settle(resolve, reject, d, v) {
-          Promise.resolve(v).then(function(v2) {
-            resolve({ value: v2, done: d });
-          }, reject);
-        }
-      };
-      __makeTemplateObject2 = function(cooked, raw) {
-        if (Object.defineProperty) {
-          Object.defineProperty(cooked, "raw", { value: raw });
-        } else {
-          cooked.raw = raw;
-        }
-        return cooked;
-      };
-      var __setModuleDefault = Object.create ? function(o, v) {
-        Object.defineProperty(o, "default", { enumerable: true, value: v });
-      } : function(o, v) {
-        o["default"] = v;
-      };
-      __importStar2 = function(mod) {
-        if (mod && mod.__esModule)
-          return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k in mod)
-            if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k))
-              __createBinding2(result, mod, k);
-        }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-      __importDefault2 = function(mod) {
-        return mod && mod.__esModule ? mod : { "default": mod };
-      };
-      __classPrivateFieldGet2 = function(receiver, state, kind, f) {
-        if (kind === "a" && !f)
-          throw new TypeError("Private accessor was defined without a getter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
-          throw new TypeError("Cannot read private member from an object whose class did not declare it");
-        return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-      };
-      __classPrivateFieldSet2 = function(receiver, state, value, kind, f) {
-        if (kind === "m")
-          throw new TypeError("Private method is not writable");
-        if (kind === "a" && !f)
-          throw new TypeError("Private accessor was defined without a setter");
-        if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
-          throw new TypeError("Cannot write private member to an object whose class did not declare it");
-        return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
-      };
-      __classPrivateFieldIn2 = function(state, receiver) {
-        if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function")
-          throw new TypeError("Cannot use 'in' operator on non-object");
-        return typeof state === "function" ? receiver === state : state.has(receiver);
-      };
-      exporter("__extends", __extends2);
-      exporter("__assign", __assign2);
-      exporter("__rest", __rest2);
-      exporter("__decorate", __decorate2);
-      exporter("__param", __param2);
-      exporter("__metadata", __metadata2);
-      exporter("__awaiter", __awaiter2);
-      exporter("__generator", __generator2);
-      exporter("__exportStar", __exportStar2);
-      exporter("__createBinding", __createBinding2);
-      exporter("__values", __values2);
-      exporter("__read", __read2);
-      exporter("__spread", __spread2);
-      exporter("__spreadArrays", __spreadArrays2);
-      exporter("__spreadArray", __spreadArray2);
-      exporter("__await", __await2);
-      exporter("__asyncGenerator", __asyncGenerator2);
-      exporter("__asyncDelegator", __asyncDelegator2);
-      exporter("__asyncValues", __asyncValues2);
-      exporter("__makeTemplateObject", __makeTemplateObject2);
-      exporter("__importStar", __importStar2);
-      exporter("__importDefault", __importDefault2);
-      exporter("__classPrivateFieldGet", __classPrivateFieldGet2);
-      exporter("__classPrivateFieldSet", __classPrivateFieldSet2);
-      exporter("__classPrivateFieldIn", __classPrivateFieldIn2);
-    });
-  }
-});
-
-// dev/cad-editor/plugins/coordinate-axis.plugin.tsx
+`// dev/cad-editor/plugins/coordinate-axis.plugin.tsx
 function isCoordinateAxisContent(content) {
   return content.type === "coordinate axis";
 }
-
-// node_modules/tslib/modules/index.js
-var import_tslib = __toESM(require_tslib(), 1);
-var {
-  __extends,
-  __assign,
-  __rest,
-  __decorate,
-  __param,
-  __metadata,
-  __awaiter,
-  __generator,
-  __exportStar,
-  __createBinding,
-  __values,
-  __read,
-  __spread,
-  __spreadArrays,
-  __spreadArray,
-  __await,
-  __asyncGenerator,
-  __asyncDelegator,
-  __asyncValues,
-  __makeTemplateObject,
-  __importStar,
-  __importDefault,
-  __classPrivateFieldGet,
-  __classPrivateFieldSet,
-  __classPrivateFieldIn
-} = import_tslib.default;
 
 // node_modules/expression-engine/browser/tokenizer.js
 function tokenizeExpression(expression) {
   return new Tokenizer(expression).toTokens();
 }
-var Tokenizer = function() {
-  function Tokenizer2(source, locale) {
+var Tokenizer = class {
+  constructor(source, locale) {
     this.source = source;
     this.index = 0;
     this.previousToken = {
@@ -3377,23 +2885,23 @@ var Tokenizer = function() {
     };
     this.locale = getLocale(locale);
   }
-  Tokenizer2.prototype.toTokens = function() {
-    var tokens = [];
-    var token = this.nextToken();
+  toTokens() {
+    const tokens = [];
+    let token = this.nextToken();
     while (token.type !== "EOFToken") {
       tokens.push(token);
       token = this.nextToken();
     }
     return tokens;
-  };
-  Tokenizer2.prototype.nextToken = function() {
+  }
+  nextToken() {
     if (this.index >= this.source.length) {
       this.previousToken = {
         type: "EOFToken",
         range: [this.source.length, this.source.length]
       };
     } else {
-      var c = this.source[this.index];
+      const c = this.source[this.index];
       if (c === " ") {
         this.index++;
         this.previousToken = this.nextToken();
@@ -3416,9 +2924,9 @@ var Tokenizer = function() {
       }
     }
     return this.previousToken;
-  };
-  Tokenizer2.prototype.nextPunctuator = function(c) {
-    var startIndex = this.index;
+  }
+  nextPunctuator(c) {
+    const startIndex = this.index;
     if (c === ">" || c === "<" || c === "=" || c === "!") {
       if (this.source[this.index + 1] === "=") {
         if ((c === "=" || c === "!") && this.source[this.index + 2] === "=") {
@@ -3465,21 +2973,21 @@ var Tokenizer = function() {
       value: c,
       range: [startIndex, this.index]
     };
-  };
-  Tokenizer2.prototype.nextIdentifierToken = function() {
-    var index = this.findEndOfIdentifier();
+  }
+  nextIdentifierToken() {
+    const index = this.findEndOfIdentifier();
     if (index === void 0) {
-      var range_1 = [this.index, this.source.length];
-      var token_1 = this.getExplicitIdentifierToken(this.source.substring(this.index), range_1);
+      const range2 = [this.index, this.source.length];
+      const token2 = this.getExplicitIdentifierToken(this.source.substring(this.index), range2);
       this.index = this.source.length;
-      return token_1;
+      return token2;
     }
-    var range = [this.index, index];
-    var token = this.getExplicitIdentifierToken(this.source.substring(this.index, index), range);
+    const range = [this.index, index];
+    const token = this.getExplicitIdentifierToken(this.source.substring(this.index, index), range);
     this.index = index;
     return token;
-  };
-  Tokenizer2.prototype.getExplicitIdentifierToken = function(tokenName, range) {
+  }
+  getExplicitIdentifierToken(tokenName, range) {
     if (tokenName === "true" || tokenName === "false") {
       return {
         type: "BooleanLiteral",
@@ -3533,45 +3041,37 @@ var Tokenizer = function() {
       name: tokenName,
       range
     };
-  };
-  Tokenizer2.prototype.findEndOfIdentifier = function() {
-    for (var i = this.index; i < this.source.length; i++) {
-      var c = this.source[i];
+  }
+  findEndOfIdentifier() {
+    for (let i = this.index; i < this.source.length; i++) {
+      const c = this.source[i];
       if (c === " " || c === '"' || c === "'" || c === "." || punctuators.includes(c)) {
         return i;
       }
     }
     return void 0;
-  };
-  Tokenizer2.prototype.nextNumericToken = function(hasDecimalPoint) {
-    var startIndex = this.index;
-    var letterRange = function(a) {
-      return a >= "0" && a <= "9";
-    };
-    var multiplier;
-    var powerStartIndex = this.index;
-    for (var i = this.index + 1; i < this.source.length; i++) {
-      var c = this.source[i];
+  }
+  nextNumericToken(hasDecimalPoint) {
+    const startIndex = this.index;
+    let letterRange = (a) => a >= "0" && a <= "9";
+    let multiplier;
+    let powerStartIndex = this.index;
+    for (let i = this.index + 1; i < this.source.length; i++) {
+      const c = this.source[i];
       if (c === ".") {
         if (hasDecimalPoint) {
-          throw new Error(replaceLocaleParameters(this.locale.multipleDecimalPoint, i));
+          throw new ExpressionError(replaceLocaleParameters(this.locale.multipleDecimalPoint, i), [i, i + 1]);
         }
         hasDecimalPoint = true;
       } else if (letterRange(c)) {
         continue;
       } else if (i === 1 && this.source[0] === "0" && (c === "x" || c === "X" || c === "b" || c === "B" || c === "o" || c === "O")) {
         if (c === "x" || c === "X") {
-          letterRange = function(a) {
-            return a >= "0" && a <= "9" || a >= "a" && a <= "f";
-          };
+          letterRange = (a) => a >= "0" && a <= "9" || a >= "a" && a <= "f";
         } else if (c === "b" || c === "B") {
-          letterRange = function(a) {
-            return a >= "0" && a <= "1";
-          };
+          letterRange = (a) => a >= "0" && a <= "1";
         } else {
-          letterRange = function(a) {
-            return a >= "0" && a <= "7";
-          };
+          letterRange = (a) => a >= "0" && a <= "7";
         }
         continue;
       } else if (multiplier === void 0 && (c === "e" || c === "E")) {
@@ -3583,53 +3083,50 @@ var Tokenizer = function() {
       } else if (c === "_") {
         continue;
       } else {
-        var value_1 = multiplier === void 0 ? this.getNumber(this.index, i) : multiplier * Math.pow(10, this.getNumber(powerStartIndex, i));
+        const value2 = multiplier === void 0 ? this.getNumber(this.index, i) : multiplier * 10 ** this.getNumber(powerStartIndex, i);
         this.index = i;
         return {
           type: "NumericLiteral",
-          value: value_1,
+          value: value2,
           range: [startIndex, this.index]
         };
       }
     }
-    var value = multiplier === void 0 ? this.getNumber(this.index) : multiplier * Math.pow(10, this.getNumber(powerStartIndex));
+    const value = multiplier === void 0 ? this.getNumber(this.index) : multiplier * 10 ** this.getNumber(powerStartIndex);
     this.index = this.source.length;
     return {
       type: "NumericLiteral",
       value,
       range: [startIndex, this.index]
     };
-  };
-  Tokenizer2.prototype.getNumber = function(startIndex, endIndex) {
-    return +Array.from(this.source.substring(startIndex, endIndex)).filter(function(a) {
-      return a !== "_";
-    }).join("");
-  };
-  Tokenizer2.prototype.nextStringToken = function(c) {
-    var startIndex = this.index;
+  }
+  getNumber(startIndex, endIndex) {
+    return +Array.from(this.source.substring(startIndex, endIndex)).filter((a) => a !== "_").join("");
+  }
+  nextStringToken(c) {
+    const startIndex = this.index;
     this.index++;
-    var index = this.findEndOfString(c);
+    const index = this.findEndOfString(c);
     if (index === void 0) {
-      throw new Error(replaceLocaleParameters(this.locale.expect, c, startIndex));
+      throw new ExpressionError(replaceLocaleParameters(this.locale.expect, c, startIndex), [startIndex, this.source.length]);
     }
-    var token = this.source.substring(this.index, index);
+    const token = this.source.substring(this.index, index);
     this.index = index + 1;
     return {
       type: "StringLiteral",
       value: token,
       range: [startIndex, this.index]
     };
-  };
-  Tokenizer2.prototype.findEndOfString = function(c) {
-    for (var i = this.index; i < this.source.length; i++) {
+  }
+  findEndOfString(c) {
+    for (let i = this.index; i < this.source.length; i++) {
       if (this.source[i] === c) {
         return i;
       }
     }
     return void 0;
-  };
-  return Tokenizer2;
-}();
+  }
+};
 var numberPunctuators = [
   "*",
   "/",
@@ -3644,32 +3141,31 @@ var numberPunctuators = [
   "^",
   "|"
 ];
-var punctuators = __spreadArray(__spreadArray([
+var punctuators = [
   "(",
   ")",
   "[",
   "]",
   "{",
-  "}"
-], __read(numberPunctuators), false), [
+  "}",
+  ...numberPunctuators,
   "?",
   ":",
   ",",
   "~"
-], false);
+];
 
 // node_modules/expression-engine/browser/parser.js
 function parseExpression(tokens, locale) {
   return new Parser(locale).parseExpression(tokens, getTokensRange(tokens));
 }
-var Parser = function() {
-  function Parser2(locale) {
+var Parser = class {
+  constructor(locale) {
     this.locale = getLocale(locale);
   }
-  Parser2.prototype.parseExpression = function(tokens, range, parenthesesRange) {
-    var e_1, _a;
+  parseExpression(tokens, range, parenthesesRange) {
     if (tokens.length === 0) {
-      throw new Error(this.locale.emptyExpression);
+      throw new ExpressionError(this.locale.emptyExpression, [0, 0]);
     }
     if (tokens.length === 1) {
       return this.parseLiteral(tokens[0]);
@@ -3677,18 +3173,18 @@ var Parser = function() {
     if (tokens.length === 2) {
       return this.parseUnaryExpression(tokens, parenthesesRange !== null && parenthesesRange !== void 0 ? parenthesesRange : range);
     }
-    var firstToken = tokens[0];
-    var lastToken = tokens[tokens.length - 1];
+    const firstToken = tokens[0];
+    const lastToken = tokens[tokens.length - 1];
     if (firstToken.type === "PunctuatorToken" && firstToken.value === "{" && lastToken.type === "PunctuatorToken" && lastToken.value === "}") {
       return this.parseObjectLiteral(tokens, range);
     }
     if (tokens.length === 3) {
-      var _b = __read(tokens, 3), left = _b[0], operator_1 = _b[1], right = _b[2];
-      if (operator_1.type === "PunctuatorToken") {
-        if (callOperators.includes(operator_1.value)) {
-          return this.parseMemberExpression(left, operator_1, right, range);
+      const [left, operator, right] = tokens;
+      if (operator.type === "PunctuatorToken") {
+        if (callOperators.includes(operator.value)) {
+          return this.parseMemberExpression(left, operator, right, range);
         }
-        if (operator_1.value === "=>") {
+        if (operator.value === "=>") {
           return {
             type: "ArrowFunctionExpression",
             params: left.type === "FunctionParamsExpression" ? left.params : [left],
@@ -3696,90 +3192,59 @@ var Parser = function() {
             range
           };
         }
-        if (priorizedBinaryOperators.some(function(p) {
-          return p.some(function(c) {
-            return c === operator_1.value;
-          });
-        })) {
-          return this.parseBinaryExpression(left, operator_1, right, range, parenthesesRange);
+        if (priorizedBinaryOperators.some((p) => p.some((c) => c === operator.value))) {
+          return this.parseBinaryExpression(left, operator, right, range, parenthesesRange);
         }
       } else if (right.type === "PunctuatorToken" && postfixUnaryOperators.includes(right.value)) {
-        var expression = this.parseExpression([operator_1, right], [operator_1.range[0], range[1]]);
+        const expression = this.parseExpression([operator, right], [operator.range[0], range[1]]);
         return this.parseExpression([left, expression], range);
       }
     }
-    if (tokens.some(function(t) {
-      return t.type === "PunctuatorToken" && t.value === "(";
-    })) {
-      var newTokens = this.parseGroup(tokens);
+    if (tokens.some((t) => t.type === "PunctuatorToken" && t.value === "(")) {
+      const newTokens = this.parseGroup(tokens);
       if (newTokens.length !== tokens.length) {
         return this.parseExpression(newTokens, getTokensRange(tokens));
       }
     }
-    if (tokens.some(function(t) {
-      return t.type === "PunctuatorToken" && t.value === "[";
-    })) {
-      var newTokens = this.parseArrayLiteral(tokens);
+    if (tokens.some((t) => t.type === "PunctuatorToken" && t.value === "[")) {
+      const newTokens = this.parseArrayLiteral(tokens);
       if (newTokens.length !== tokens.length) {
         return this.parseExpression(newTokens, getTokensRange(tokens));
       }
     }
-    if (tokens.some(function(t) {
-      return t.type === "PunctuatorToken" && (callOperators.includes(t.value) || t.value === "(" || t.value === "[");
-    })) {
+    if (tokens.some((t) => t.type === "PunctuatorToken" && (callOperators.includes(t.value) || t.value === "(" || t.value === "["))) {
       return this.parseMemberOrCallExpression(tokens);
     }
-    var postfixUnaryOperatorIndex = this.getPostfixUnaryOperatorIndex(tokens);
+    const postfixUnaryOperatorIndex = this.getPostfixUnaryOperatorIndex(tokens);
     if (postfixUnaryOperatorIndex >= 0) {
-      var token1 = tokens[postfixUnaryOperatorIndex - 1];
-      var token2 = tokens[postfixUnaryOperatorIndex];
-      var postfixUnaryOperatorRange = [token1.range[0], token2.range[1]];
-      var newTokens = this.parseExpression([token1, token2], postfixUnaryOperatorRange);
+      const token1 = tokens[postfixUnaryOperatorIndex - 1];
+      const token2 = tokens[postfixUnaryOperatorIndex];
+      const postfixUnaryOperatorRange = [token1.range[0], token2.range[1]];
+      const newTokens = this.parseExpression([token1, token2], postfixUnaryOperatorRange);
       tokens.splice(postfixUnaryOperatorIndex - 1, 2, newTokens);
       return this.parseExpression(tokens, range);
     }
-    var prefixUnaryOperatorIndex = this.getPrefixUnaryOperatorIndex(tokens);
+    const prefixUnaryOperatorIndex = this.getPrefixUnaryOperatorIndex(tokens);
     if (prefixUnaryOperatorIndex >= 0) {
-      var token1 = tokens[prefixUnaryOperatorIndex];
-      var token2 = tokens[prefixUnaryOperatorIndex + 1];
-      var prefixUnaryOperatorRange = [token1.range[0], token2.range[1]];
-      var newTokens = this.parseExpression([token1, token2], prefixUnaryOperatorRange);
+      const token1 = tokens[prefixUnaryOperatorIndex];
+      const token2 = tokens[prefixUnaryOperatorIndex + 1];
+      const prefixUnaryOperatorRange = [token1.range[0], token2.range[1]];
+      const newTokens = this.parseExpression([token1, token2], prefixUnaryOperatorRange);
       tokens.splice(prefixUnaryOperatorIndex, 2, newTokens);
       return this.parseExpression(tokens, range);
     }
-    var _loop_1 = function(operators2) {
-      if (tokens.some(function(t) {
-        return t.type === "PunctuatorToken" && operators2.includes(t.value);
-      })) {
-        return { value: this_1.parsePreviousExpression(tokens, operators2, range) };
-      }
-    };
-    var this_1 = this;
-    try {
-      for (var priorizedBinaryOperators_1 = __values(priorizedBinaryOperators), priorizedBinaryOperators_1_1 = priorizedBinaryOperators_1.next(); !priorizedBinaryOperators_1_1.done; priorizedBinaryOperators_1_1 = priorizedBinaryOperators_1.next()) {
-        var operators = priorizedBinaryOperators_1_1.value;
-        var state_1 = _loop_1(operators);
-        if (typeof state_1 === "object")
-          return state_1.value;
-      }
-    } catch (e_1_1) {
-      e_1 = { error: e_1_1 };
-    } finally {
-      try {
-        if (priorizedBinaryOperators_1_1 && !priorizedBinaryOperators_1_1.done && (_a = priorizedBinaryOperators_1.return))
-          _a.call(priorizedBinaryOperators_1);
-      } finally {
-        if (e_1)
-          throw e_1.error;
+    for (const operators of priorizedBinaryOperators) {
+      if (tokens.some((t) => t.type === "PunctuatorToken" && operators.includes(t.value))) {
+        return this.parsePreviousExpression(tokens, operators, range);
       }
     }
     if (tokens.length === 5) {
       return this.parseConditionalExpression(tokens, range);
     }
-    var functionArrowIndex = getFunctionArrowIndex(0, tokens);
+    const functionArrowIndex = getFunctionArrowIndex(0, tokens);
     if (functionArrowIndex >= 0) {
-      var functionParamsExpression = this.parseFunctionParameters(tokens.slice(0, functionArrowIndex), [tokens[0].range[0], tokens[functionArrowIndex - 1].range[1]]);
-      var bodyExpression = this.parseExpression(tokens.slice(functionArrowIndex + 1), [tokens[functionArrowIndex + 1].range[0], tokens[tokens.length - 1].range[1]]);
+      const functionParamsExpression = this.parseFunctionParameters(tokens.slice(0, functionArrowIndex), [tokens[0].range[0], tokens[functionArrowIndex - 1].range[1]]);
+      const bodyExpression = this.parseExpression(tokens.slice(functionArrowIndex + 1), [tokens[functionArrowIndex + 1].range[0], tokens[tokens.length - 1].range[1]]);
       return {
         type: "ArrowFunctionExpression",
         params: functionParamsExpression.params,
@@ -3787,30 +3252,26 @@ var Parser = function() {
         range
       };
     }
-    throw new Error(replaceLocaleParameters(this.locale.unexpectToken, range[0], range[1]));
-  };
-  Parser2.prototype.parseObjectLiteral = function(tokens, range) {
-    var propertyExpressions = [];
-    var keyTokens = [];
-    var valueTokens = [];
-    var keyPart = true;
-    var saveTokens = function() {
-      var token2 = [];
-      for (var _i = 0; _i < arguments.length; _i++) {
-        token2[_i] = arguments[_i];
-      }
+    throw new ExpressionError(replaceLocaleParameters(this.locale.unexpectToken, range[0], range[1]), range);
+  }
+  parseObjectLiteral(tokens, range) {
+    const propertyExpressions = [];
+    let keyTokens = [];
+    let valueTokens = [];
+    let keyPart = true;
+    const saveTokens = (...token) => {
       if (keyPart) {
-        keyTokens.push.apply(keyTokens, __spreadArray([], __read(token2), false));
+        keyTokens.push(...token);
       } else {
-        valueTokens.push.apply(valueTokens, __spreadArray([], __read(token2), false));
+        valueTokens.push(...token);
       }
     };
-    for (var j = 1; j < tokens.length - 1; j++) {
-      var token = tokens[j];
+    for (let j = 1; j < tokens.length - 1; j++) {
+      const token = tokens[j];
       if (token.type === "PunctuatorToken") {
         if (groupStarts.includes(token.value)) {
-          var groupEnd = this.findGroupEnd(tokens, j, token.value);
-          saveTokens.apply(void 0, __spreadArray([], __read(tokens.slice(j, groupEnd + 1)), false));
+          const groupEnd = this.findGroupEnd(tokens, j, token.value);
+          saveTokens(...tokens.slice(j, groupEnd + 1));
           j = groupEnd;
         } else if (token.value === ",") {
           propertyExpressions.push(this.parseProperty(keyTokens, valueTokens));
@@ -3834,10 +3295,10 @@ var Parser = function() {
       properties: propertyExpressions,
       range
     };
-  };
-  Parser2.prototype.parseProperty = function(keyTokens, valueTokens) {
+  }
+  parseProperty(keyTokens, valueTokens) {
     if (keyTokens.length === 2 && valueTokens.length === 0) {
-      var _a = __read(keyTokens, 2), operator = _a[0], token = _a[1];
+      const [operator, token] = keyTokens;
       if (operator.type === "PunctuatorToken" && operator.value === "..." && !isToken(token)) {
         return {
           type: "SpreadElement",
@@ -3846,9 +3307,9 @@ var Parser = function() {
         };
       }
     }
-    var key = this.parseExpression(keyTokens, getTokensRange(keyTokens));
+    const key = this.parseExpression(keyTokens, getTokensRange(keyTokens));
     if (key.type !== "Identifier" && key.type !== "StringLiteral" && key.type !== "NumericLiteral") {
-      throw new Error(replaceLocaleParameters(this.locale.invalidPropertyName, key.range[0]));
+      throw new ExpressionError(replaceLocaleParameters(this.locale.invalidPropertyName, key.range[0]), key.range);
     }
     if (valueTokens.length === 0) {
       return {
@@ -3859,7 +3320,7 @@ var Parser = function() {
         range: key.range
       };
     }
-    var value = this.parseExpression(valueTokens, getTokensRange(valueTokens));
+    const value = this.parseExpression(valueTokens, getTokensRange(valueTokens));
     return {
       type: "Property",
       key,
@@ -3867,9 +3328,9 @@ var Parser = function() {
       value,
       range: [key.range[0], value.range[1]]
     };
-  };
-  Parser2.prototype.parseMemberExpression = function(left, operator, right, range) {
-    var expression = {
+  }
+  parseMemberExpression(left, operator, right, range) {
+    const expression = {
       type: "MemberExpression",
       object: this.parseTokenOrExpression(left),
       property: this.parseTokenOrExpression(right),
@@ -3879,21 +3340,21 @@ var Parser = function() {
       expression.optional = true;
     }
     return expression;
-  };
-  Parser2.prototype.parseGroup = function(tokens) {
-    var newTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  parseGroup(tokens) {
+    const newTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken" && token.value === "(") {
-        var index = this.findGroupEnd(tokens, i, token.value);
-        var isFunctionCall = this.hasPreviousExpression(tokens, i);
+        const index = this.findGroupEnd(tokens, i, token.value);
+        const isFunctionCall = this.hasPreviousExpression(tokens, i);
         if (isFunctionCall) {
           newTokens.push(token);
           continue;
         }
-        var newToken = tokens.slice(i + 1, index);
+        const newToken = tokens.slice(i + 1, index);
         i = index;
-        var parenthesesRange = [token.range[0], tokens[index].range[1]];
+        const parenthesesRange = [token.range[0], tokens[index].range[1]];
         if (getFunctionArrowIndex(index, tokens) !== -1) {
           newTokens.push(this.parseFunctionParameters(newToken, parenthesesRange));
           continue;
@@ -3904,20 +3365,20 @@ var Parser = function() {
       }
     }
     return newTokens;
-  };
-  Parser2.prototype.parseFunctionParameters = function(tokens, range) {
-    var expression = {
+  }
+  parseFunctionParameters(tokens, range) {
+    const expression = {
       type: "FunctionParamsExpression",
       params: [],
       range
     };
-    var pattern;
-    for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
+    let pattern;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
       if (pattern === void 0) {
         if (token.type !== "Identifier") {
           if (token.type === "PunctuatorToken" && token.value === "..." && i < tokens.length - 1) {
-            var nextToken = tokens[i + 1];
+            const nextToken = tokens[i + 1];
             if (nextToken.type === "Identifier") {
               i++;
               pattern = {
@@ -3928,7 +3389,7 @@ var Parser = function() {
               continue;
             }
           }
-          throw new Error(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]));
+          throw new ExpressionError(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]), token.range);
         }
         pattern = token;
         continue;
@@ -3940,7 +3401,7 @@ var Parser = function() {
           continue;
         }
         if (token.value === "=" && pattern.type === "Identifier" && i < tokens.length - 1) {
-          var nextToken = tokens[i + 1];
+          const nextToken = tokens[i + 1];
           if (!isToken(nextToken)) {
             i++;
             pattern = {
@@ -3953,24 +3414,24 @@ var Parser = function() {
           }
         }
       }
-      throw new Error(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]));
+      throw new ExpressionError(replaceLocaleParameters(this.locale.invalidFunctionParameter, token.range[0]), token.range);
     }
     if (pattern) {
       expression.params.push(pattern);
     }
     return expression;
-  };
-  Parser2.prototype.parseArrayLiteral = function(tokens) {
-    var newTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  parseArrayLiteral(tokens) {
+    const newTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken" && token.value === "[") {
-        var index = this.findGroupEnd(tokens, i, token.value);
-        var isMemberAccess = this.hasPreviousExpression(tokens, i);
+        const index = this.findGroupEnd(tokens, i, token.value);
+        const isMemberAccess = this.hasPreviousExpression(tokens, i);
         if (isMemberAccess) {
           newTokens.push(token);
         } else {
-          var elementExpressions = this.parseItems(tokens, i, index);
+          const elementExpressions = this.parseItems(tokens, i, index);
           newTokens.push({
             type: "ArrayExpression",
             elements: elementExpressions,
@@ -3983,9 +3444,9 @@ var Parser = function() {
       }
     }
     return newTokens;
-  };
-  Parser2.prototype.parseBinaryExpression = function(left, operator, right, range, parenthesesRange) {
-    var result;
+  }
+  parseBinaryExpression(left, operator, right, range, parenthesesRange) {
+    let result;
     if (operator.value === "&&" || operator.value === "||" || operator.value === "??") {
       result = {
         type: "LogicalExpression",
@@ -4008,8 +3469,8 @@ var Parser = function() {
       result.parenthesesRange = parenthesesRange;
     }
     return result;
-  };
-  Parser2.prototype.parseLiteral = function(token) {
+  }
+  parseLiteral(token) {
     if (token.type === "KeywordToken") {
       return {
         type: "ThisExpression",
@@ -4019,49 +3480,49 @@ var Parser = function() {
     if (!isToken(token)) {
       return token;
     }
-    throw new Error(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]));
-  };
-  Parser2.prototype.getPrefixUnaryOperatorIndex = function(tokens) {
-    for (var i = tokens.length - 2; i >= 0; i--) {
-      var token = tokens[i];
+    throw new ExpressionError(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]), token.range);
+  }
+  getPrefixUnaryOperatorIndex(tokens) {
+    for (let i = tokens.length - 2; i >= 0; i--) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken" && prefixUnaryOperators.includes(token.value) && (i === 0 || tokens[i - 1].type === "PunctuatorToken") && tokens[i + 1].type !== "PunctuatorToken") {
         return i;
       }
     }
     return -1;
-  };
-  Parser2.prototype.getPostfixUnaryOperatorIndex = function(tokens) {
-    for (var i = 1; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  getPostfixUnaryOperatorIndex(tokens) {
+    for (let i = 1; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken" && postfixUnaryOperators.includes(token.value) && (i === tokens.length - 1 || tokens[i + 1].type === "PunctuatorToken") && tokens[i - 1].type !== "PunctuatorToken") {
         return i;
       }
     }
     return -1;
-  };
-  Parser2.prototype.parseMemberOrCallExpression = function(tokens) {
-    var newTokens = [];
-    var expectCall = false;
-    for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  parseMemberOrCallExpression(tokens) {
+    const newTokens = [];
+    let expectCall = false;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken") {
         if (!expectCall && token.value === "?.") {
           expectCall = true;
           continue;
         }
         if (expectCall && token.value !== "[" && token.value !== "(") {
-          throw new Error(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]));
+          throw new ExpressionError(replaceLocaleParameters(this.locale.unexpectToken, token.range[0], token.range[1]), token.range);
         }
         if (callOperators.includes(token.value)) {
-          var object = newTokens.pop();
+          const object = newTokens.pop();
           newTokens.push(this.parseExpression([object, token, tokens[i + 1]], getHeadTailRange(object, tokens[i + 1])));
           i++;
         } else if (token.value === "[") {
-          var index = this.findGroupEnd(tokens, i, token.value);
-          var object = newTokens.pop();
-          var groupedTokens = tokens.slice(i + 1, index);
-          var property = this.parseExpression(groupedTokens, getTokensRange(groupedTokens));
-          var memberExpression = {
+          const index = this.findGroupEnd(tokens, i, token.value);
+          const object = newTokens.pop();
+          const groupedTokens = tokens.slice(i + 1, index);
+          const property = this.parseExpression(groupedTokens, getTokensRange(groupedTokens));
+          const memberExpression = {
             type: "MemberExpression",
             object: this.parseTokenOrExpression(object),
             property: this.parseTokenOrExpression(property),
@@ -4073,10 +3534,10 @@ var Parser = function() {
           newTokens.push(memberExpression);
           i = index;
         } else if (token.value === "(") {
-          var index = this.findGroupEnd(tokens, i, token.value);
-          var argumentsExpressions = this.parseItems(tokens, i, index);
-          var lastToken = newTokens.pop();
-          var callExpression = {
+          const index = this.findGroupEnd(tokens, i, token.value);
+          const argumentsExpressions = this.parseItems(tokens, i, index);
+          const lastToken = newTokens.pop();
+          const callExpression = {
             type: "CallExpression",
             callee: this.parseExpression([lastToken], lastToken.range),
             arguments: argumentsExpressions,
@@ -4092,7 +3553,7 @@ var Parser = function() {
         }
       } else {
         if (expectCall) {
-          var object = newTokens.pop();
+          const object = newTokens.pop();
           newTokens.push({
             type: "MemberExpression",
             object: this.parseTokenOrExpression(object),
@@ -4107,14 +3568,14 @@ var Parser = function() {
       }
     }
     return this.parseExpression(newTokens, getTokensRange(newTokens));
-  };
-  Parser2.prototype.parsePreviousExpression = function(tokens, operators, range) {
-    var newTokens = [];
-    for (var i = 0; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  parsePreviousExpression(tokens, operators, range) {
+    const newTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken" && operators.includes(token.value)) {
-        var previousToken = newTokens.pop();
-        var newRange = void 0;
+        const previousToken = newTokens.pop();
+        let newRange;
         if (i + 2 < tokens.length - 1) {
           if (newTokens.length === 0) {
             newRange = [range[0], tokens[i + 2].range[0] - 1];
@@ -4133,9 +3594,9 @@ var Parser = function() {
       }
     }
     return this.parseExpression(newTokens, range);
-  };
-  Parser2.prototype.parseUnaryExpression = function(tokens, range) {
-    var _a = __read(tokens, 2), operator = _a[0], token = _a[1];
+  }
+  parseUnaryExpression(tokens, range) {
+    const [operator, token] = tokens;
     if (operator.type === "PunctuatorToken" && token.type === "PunctuatorToken") {
       if (operator.value === "[" && token.value === "]") {
         return {
@@ -4174,31 +3635,31 @@ var Parser = function() {
         range
       };
     }
-    throw new Error(replaceLocaleParameters(this.locale.expectUnaryOperator, range[0]));
-  };
-  Parser2.prototype.hasPreviousExpression = function(tokens, i) {
+    throw new ExpressionError(replaceLocaleParameters(this.locale.expectUnaryOperator, range[0]), range);
+  }
+  hasPreviousExpression(tokens, i) {
     if (i === 0) {
       return false;
     }
-    var token = tokens[i - 1];
+    const token = tokens[i - 1];
     if (token.type !== "PunctuatorToken" || token.value === ")" || token.value === "]") {
       return true;
     }
     if (token.value === "?." && i > 1) {
-      var previousToken = tokens[i - 2];
+      const previousToken = tokens[i - 2];
       return previousToken.type !== "PunctuatorToken" || previousToken.value === ")" || previousToken.value === "]";
     }
     return false;
-  };
-  Parser2.prototype.parseItems = function(tokens, startMarkIndex, endMarkIndex) {
-    var itemExpressions = [];
-    var itemTokens = [];
-    for (var j = startMarkIndex + 1; j < endMarkIndex; j++) {
-      var item = tokens[j];
+  }
+  parseItems(tokens, startMarkIndex, endMarkIndex) {
+    const itemExpressions = [];
+    let itemTokens = [];
+    for (let j = startMarkIndex + 1; j < endMarkIndex; j++) {
+      const item = tokens[j];
       if (item.type === "PunctuatorToken") {
         if (groupStarts.includes(item.value)) {
-          var groupEnd = this.findGroupEnd(tokens, j, item.value);
-          itemTokens.push.apply(itemTokens, __spreadArray([], __read(tokens.slice(j, groupEnd + 1)), false));
+          const groupEnd = this.findGroupEnd(tokens, j, item.value);
+          itemTokens.push(...tokens.slice(j, groupEnd + 1));
           j = groupEnd;
         } else if (item.value === ",") {
           itemExpressions.push(this.parseMayBeSpreadExpression(itemTokens, getTokensRange(itemTokens)));
@@ -4214,10 +3675,10 @@ var Parser = function() {
       itemExpressions.push(this.parseMayBeSpreadExpression(itemTokens, getTokensRange(itemTokens)));
     }
     return itemExpressions;
-  };
-  Parser2.prototype.parseMayBeSpreadExpression = function(itemTokens, range) {
+  }
+  parseMayBeSpreadExpression(itemTokens, range) {
     if (itemTokens.length === 2) {
-      var _a = __read(itemTokens, 2), operator = _a[0], token = _a[1];
+      const [operator, token] = itemTokens;
       if (operator.type === "PunctuatorToken" && operator.value === "..." && !isToken(token)) {
         return {
           type: "SpreadElement",
@@ -4227,9 +3688,9 @@ var Parser = function() {
       }
     }
     return this.parseExpression(itemTokens, range);
-  };
-  Parser2.prototype.parseConditionalExpression = function(tokens, range) {
-    var _a = __read(tokens, 5), test = _a[0], operator1 = _a[1], consequent = _a[2], operator2 = _a[3], alternate = _a[4];
+  }
+  parseConditionalExpression(tokens, range) {
+    const [test, operator1, consequent, operator2, alternate] = tokens;
     if (operator1.type === "PunctuatorToken" && operator1.value === "?" && operator2.type === "PunctuatorToken" && operator2.value === ":") {
       test.range[1] = operator1.range[0] - 1;
       return {
@@ -4240,16 +3701,16 @@ var Parser = function() {
         range
       };
     }
-    throw new Error(replaceLocaleParameters(this.locale.expectConditionalOperator, operator1.range[0], operator2.range[0]));
-  };
-  Parser2.prototype.parseTokenOrExpression = function(token) {
+    throw new ExpressionError(replaceLocaleParameters(this.locale.expectConditionalOperator, operator1.range[0], operator2.range[0]), [operator1.range[0], operator2.range[0]]);
+  }
+  parseTokenOrExpression(token) {
     return isToken(token) ? this.parseExpression([token], token.range) : token;
-  };
-  Parser2.prototype.findGroupEnd = function(tokens, start, startMark) {
-    var endMark = groupEnds[startMark];
-    var count = 1;
-    for (var i = start + 1; i < tokens.length; i++) {
-      var token = tokens[i];
+  }
+  findGroupEnd(tokens, start, startMark) {
+    const endMark = groupEnds[startMark];
+    let count = 1;
+    for (let i = start + 1; i < tokens.length; i++) {
+      const token = tokens[i];
       if (token.type === "PunctuatorToken") {
         if (token.value === startMark) {
           count++;
@@ -4261,10 +3722,9 @@ var Parser = function() {
         }
       }
     }
-    throw new Error(replaceLocaleParameters(this.locale.expect, endMark, start));
-  };
-  return Parser2;
-}();
+    throw new ExpressionError(replaceLocaleParameters(this.locale.expect, endMark, start), [start, tokens.length]);
+  }
+};
 function getTokensRange(tokens) {
   return [tokens[0].range[0], tokens[tokens.length - 1].range[1]];
 }
@@ -4273,7 +3733,7 @@ function getHeadTailRange(head, tail) {
 }
 function getFunctionArrowIndex(index, tokens) {
   if (index < tokens.length - 1) {
-    var nextToken = tokens[index + 1];
+    const nextToken = tokens[index + 1];
     if (nextToken.type === "PunctuatorToken" && nextToken.value === "=>") {
       return index + 1;
     }
@@ -4321,42 +3781,34 @@ var defaultLocale = {
 function getLocale(locale) {
   return locale || defaultLocale;
 }
-function replaceLocaleParameters(locale) {
-  var parameters = [];
-  for (var _i = 1; _i < arguments.length; _i++) {
-    parameters[_i - 1] = arguments[_i];
-  }
-  for (var i = 0; i < parameters.length; i++) {
-    locale = locale.replace("{".concat(i, "}"), parameters[i].toString());
+function replaceLocaleParameters(locale, ...parameters) {
+  for (let i = 0; i < parameters.length; i++) {
+    locale = locale.replace(\`{\${i}}\`, parameters[i].toString());
   }
   return locale;
 }
 
 // node_modules/expression-engine/browser/evaluator.js
 function evaluateExpression(expression, context, locale, customData) {
-  var evaluator = isAsync(expression) ? AsyncEvaluator : Evaluator;
-  var isCustomData = Array.isArray(customData) ? function(value) {
-    return customData.some(function(c) {
-      return value instanceof c;
-    });
-  } : customData;
+  const evaluator = isAsync(expression) ? AsyncEvaluator : Evaluator;
+  const isCustomData = Array.isArray(customData) ? (value) => customData.some((c) => value instanceof c) : customData;
   return new evaluator(locale, isCustomData).evalutate(expression, context, true);
 }
-var Evaluator = function() {
-  function Evaluator2(locale, isCustomData) {
+var Evaluator = class {
+  constructor(locale, isCustomData) {
     this.isCustomData = isCustomData;
     this.locale = getLocale(locale);
   }
-  Evaluator2.prototype.evalutate = function(expression, context, isFirstIdentifier) {
+  evalutate(expression, context, isFirstIdentifier) {
     return evalutate(expression, context, isFirstIdentifier, this);
-  };
-  Evaluator2.prototype.evaluateBinaryExpression = function(expression, context) {
-    var left = this.evalutate(expression.left, context, true);
-    var right = this.evalutate(expression.right, context, true);
+  }
+  evaluateBinaryExpression(expression, context) {
+    const left = this.evalutate(expression.left, context, true);
+    const right = this.evalutate(expression.right, context, true);
     return evaluateBinaryExpression(expression, left, right, this.locale, this.isCustomData);
-  };
-  Evaluator2.prototype.evaluateLogicalExpression = function(expression, context) {
-    var left = this.evalutate(expression.left, context, true);
+  }
+  evaluateLogicalExpression(expression, context) {
+    const left = this.evalutate(expression.left, context, true);
     if (expression.operator === "&&") {
       return left && this.evalutate(expression.right, context, true);
     }
@@ -4366,41 +3818,28 @@ var Evaluator = function() {
     if (expression.operator === "??") {
       return left !== null && left !== void 0 ? left : this.evalutate(expression.right, context, true);
     }
-    throw new Error(this.locale.unexpectToken);
-  };
-  Evaluator2.prototype.evaluateUnaryExpression = function(expression, context) {
-    var value = this.evalutate(expression.argument, context, true);
+    throw new ExpressionError(this.locale.unexpectToken, expression.range);
+  }
+  evaluateUnaryExpression(expression, context) {
+    const value = this.evalutate(expression.argument, context, true);
     return evaluateUnaryExpression(expression, value, this.locale);
-  };
-  return Evaluator2;
-}();
-var AsyncEvaluator = function() {
-  function AsyncEvaluator2(locale, isCustomData) {
+  }
+};
+var AsyncEvaluator = class {
+  constructor(locale, isCustomData) {
     this.isCustomData = isCustomData;
     this.locale = getLocale(locale);
   }
-  AsyncEvaluator2.prototype.evalutate = function(expression, context, isFirstIdentifier) {
+  evalutate(expression, context, isFirstIdentifier) {
     return evalutate(expression, context, isFirstIdentifier, this);
-  };
-  AsyncEvaluator2.prototype.evaluateBinaryExpression = function(expression, context) {
-    return __awaiter(this, void 0, void 0, function() {
-      var left, right;
-      return __generator(this, function(_a) {
-        switch (_a.label) {
-          case 0:
-            return [4, this.evalutate(expression.left, context, true)];
-          case 1:
-            left = _a.sent();
-            return [4, this.evalutate(expression.right, context, true)];
-          case 2:
-            right = _a.sent();
-            return [2, evaluateBinaryExpression(expression, left, right, this.locale, this.isCustomData)];
-        }
-      });
-    });
-  };
-  AsyncEvaluator2.prototype.evaluateLogicalExpression = function(expression, context) {
-    var left = this.evalutate(expression.left, context, true);
+  }
+  async evaluateBinaryExpression(expression, context) {
+    const left = await this.evalutate(expression.left, context, true);
+    const right = await this.evalutate(expression.right, context, true);
+    return evaluateBinaryExpression(expression, left, right, this.locale, this.isCustomData);
+  }
+  evaluateLogicalExpression(expression, context) {
+    const left = this.evalutate(expression.left, context, true);
     if (expression.operator === "&&") {
       return left && this.evalutate(expression.right, context, true);
     }
@@ -4410,72 +3849,47 @@ var AsyncEvaluator = function() {
     if (expression.operator === "??") {
       return left !== null && left !== void 0 ? left : this.evalutate(expression.right, context, true);
     }
-    throw new Error(this.locale.unexpectToken);
-  };
-  AsyncEvaluator2.prototype.evaluateUnaryExpression = function(expression, context) {
-    return __awaiter(this, void 0, void 0, function() {
-      var value;
-      return __generator(this, function(_a) {
-        switch (_a.label) {
-          case 0:
-            return [4, this.evalutate(expression.argument, context, true)];
-          case 1:
-            value = _a.sent();
-            return [2, evaluateUnaryExpression(expression, value, this.locale)];
-        }
-      });
-    });
-  };
-  return AsyncEvaluator2;
-}();
+    throw new ExpressionError(this.locale.unexpectToken, expression.range);
+  }
+  async evaluateUnaryExpression(expression, context) {
+    const value = await this.evalutate(expression.argument, context, true);
+    return evaluateUnaryExpression(expression, value, this.locale);
+  }
+};
 function evalutate(expression, context, isFirstIdentifier, protocol) {
-  var e_1, _a, e_2, _b, e_3, _c;
   if (expression.type === "BinaryExpression") {
     return protocol.evaluateBinaryExpression(expression, context);
   }
   if (expression.type === "MemberExpression") {
-    var object = protocol.evalutate(expression.object, context, true);
-    var property = protocol.evalutate(expression.property, context, false);
+    const object = protocol.evalutate(expression.object, context, true);
+    const property = protocol.evalutate(expression.property, context, false);
     if (expression.optional && !object) {
       return void 0;
     }
     if (!["length", "name", "toString", "valueOf", "toLocaleString"].includes(property) && (property in Object.prototype || property in Function.prototype)) {
-      throw new Error('No access to property "'.concat(property, '"'));
+      throw new ExpressionError(\`No access to property "\${property}"\`, expression.property.range);
     }
-    var value = object[property];
+    const value = object[property];
     return typeof value === "function" ? value.bind(object) : value;
   }
   if (expression.type === "ConditionalExpression") {
-    var test = protocol.evalutate(expression.test, context, true);
+    const test = protocol.evalutate(expression.test, context, true);
     if (test) {
       return protocol.evalutate(expression.consequent, context, true);
     }
     return protocol.evalutate(expression.alternate, context, true);
   }
   if (expression.type === "CallExpression") {
-    var callee = protocol.evalutate(expression.callee, context, true);
-    var args = [];
-    try {
-      for (var _d = __values(expression.arguments), _e = _d.next(); !_e.done; _e = _d.next()) {
-        var a = _e.value;
-        if (a.type === "SpreadElement") {
-          args.push.apply(args, __spreadArray([], __read(protocol.evalutate(a.argument, context, true)), false));
-        } else {
-          args.push(protocol.evalutate(a, context, true));
-        }
-      }
-    } catch (e_1_1) {
-      e_1 = { error: e_1_1 };
-    } finally {
-      try {
-        if (_e && !_e.done && (_a = _d.return))
-          _a.call(_d);
-      } finally {
-        if (e_1)
-          throw e_1.error;
+    const callee = protocol.evalutate(expression.callee, context, true);
+    const args = [];
+    for (const a of expression.arguments) {
+      if (a.type === "SpreadElement") {
+        args.push(...protocol.evalutate(a.argument, context, true));
+      } else {
+        args.push(protocol.evalutate(a, context, true));
       }
     }
-    return callee.apply(void 0, __spreadArray([], __read(args), false));
+    return callee(...args);
   }
   if (expression.type === "LogicalExpression") {
     return protocol.evaluateLogicalExpression(expression, context);
@@ -4484,7 +3898,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
     return protocol.evaluateUnaryExpression(expression, context);
   }
   if (expression.type === "Identifier" || expression.type === "ThisExpression") {
-    var identifier = expression.type === "Identifier" ? expression.name : "this";
+    const identifier = expression.type === "Identifier" ? expression.name : "this";
     if (isFirstIdentifier) {
       return context[identifier];
     }
@@ -4503,67 +3917,37 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
     return expression.value;
   }
   if (expression.type === "ArrayExpression") {
-    var items = [];
-    try {
-      for (var _f = __values(expression.elements), _g = _f.next(); !_g.done; _g = _f.next()) {
-        var e = _g.value;
-        if (e.type === "SpreadElement") {
-          items.push.apply(items, __spreadArray([], __read(protocol.evalutate(e.argument, context, true)), false));
-        } else {
-          items.push(protocol.evalutate(e, context, true));
-        }
-      }
-    } catch (e_2_1) {
-      e_2 = { error: e_2_1 };
-    } finally {
-      try {
-        if (_g && !_g.done && (_b = _f.return))
-          _b.call(_f);
-      } finally {
-        if (e_2)
-          throw e_2.error;
+    const items = [];
+    for (const e of expression.elements) {
+      if (e.type === "SpreadElement") {
+        items.push(...protocol.evalutate(e.argument, context, true));
+      } else {
+        items.push(protocol.evalutate(e, context, true));
       }
     }
     return items;
   }
   if (expression.type === "ObjectExpression") {
-    var result = {};
-    try {
-      for (var _h = __values(expression.properties), _j = _h.next(); !_j.done; _j = _h.next()) {
-        var property = _j.value;
-        if (property.type === "Property") {
-          var key = property.key.type === "Identifier" ? property.key.name : property.key.value;
-          result[key] = protocol.evalutate(property.value, context, true);
-        } else {
-          Object.assign(result, protocol.evalutate(property.argument, context, true));
-        }
-      }
-    } catch (e_3_1) {
-      e_3 = { error: e_3_1 };
-    } finally {
-      try {
-        if (_j && !_j.done && (_c = _h.return))
-          _c.call(_h);
-      } finally {
-        if (e_3)
-          throw e_3.error;
+    const result = {};
+    for (const property of expression.properties) {
+      if (property.type === "Property") {
+        const key = property.key.type === "Identifier" ? property.key.name : property.key.value;
+        result[key] = protocol.evalutate(property.value, context, true);
+      } else {
+        Object.assign(result, protocol.evalutate(property.argument, context, true));
       }
     }
     return result;
   }
   if (expression.type === "ArrowFunctionExpression") {
-    return function() {
-      var params = [];
-      for (var _i = 0; _i < arguments.length; _i++) {
-        params[_i] = arguments[_i];
-      }
-      var newContext;
+    return (...params) => {
+      let newContext;
       if (params.length === 0) {
         newContext = context;
       } else {
-        newContext = __assign({}, context);
-        for (var i = 0; i < params.length && i < expression.params.length; i++) {
-          var pattern = expression.params[i];
+        newContext = { ...context };
+        for (let i = 0; i < params.length && i < expression.params.length; i++) {
+          const pattern = expression.params[i];
           if (pattern.type === "Identifier") {
             newContext[pattern.name] = params[i];
           } else if (pattern.type === "AssignmentPattern") {
@@ -4580,7 +3964,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
       return protocol.evalutate(expression.body, newContext, true);
     };
   }
-  throw new Error(protocol.locale.unexpectToken);
+  throw new ExpressionError(protocol.locale.unexpectToken, expression.range);
 }
 function evaluateBinaryExpression(expression, left, right, locale, isCustomData) {
   if (isCustomData) {
@@ -4666,13 +4050,13 @@ function evaluateBinaryExpression(expression, left, right, locale, isCustomData)
       return left + right;
     }
     if (typeof left !== "number" || isNaN(left)) {
-      throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]));
+      throw new ExpressionError(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]), expression.left.range);
     }
     if (typeof right === "string") {
       return left + right;
     }
     if (typeof right !== "number" || isNaN(right)) {
-      throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]));
+      throw new ExpressionError(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]), expression.right.range);
     }
     return left + right;
   }
@@ -4683,10 +4067,10 @@ function evaluateBinaryExpression(expression, left, right, locale, isCustomData)
     return right(left);
   }
   if (typeof left !== "number") {
-    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]));
+    throw new ExpressionError(replaceLocaleParameters(locale.expect, "Number", expression.left.range[0]), expression.left.range);
   }
   if (typeof right !== "number") {
-    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]));
+    throw new ExpressionError(replaceLocaleParameters(locale.expect, "Number", expression.right.range[0]), expression.right.range);
   }
   if (expression.operator === "-") {
     return left - right;
@@ -4713,7 +4097,7 @@ function evaluateBinaryExpression(expression, left, right, locale, isCustomData)
     return left <= right;
   }
   if (expression.operator === "**") {
-    return Math.pow(left, right);
+    return left ** right;
   }
   if (expression.operator === ">>") {
     return left >> right;
@@ -4733,7 +4117,7 @@ function evaluateBinaryExpression(expression, left, right, locale, isCustomData)
   if (expression.operator === "|") {
     return left | right;
   }
-  throw new Error(locale.unexpectToken);
+  throw new ExpressionError(locale.unexpectToken, expression.range);
 }
 function evaluateUnaryExpression(expression, value, locale) {
   if (expression.operator === "!") {
@@ -4743,7 +4127,7 @@ function evaluateUnaryExpression(expression, value, locale) {
     return +value;
   }
   if (typeof value !== "number" || isNaN(value)) {
-    throw new Error(replaceLocaleParameters(locale.expect, "Number", expression.argument.range[0]));
+    throw new ExpressionError(replaceLocaleParameters(locale.expect, "Number", expression.argument.range[0]), expression.argument.range);
   }
   if (expression.operator === "-") {
     return -value;
@@ -4757,7 +4141,7 @@ function evaluateUnaryExpression(expression, value, locale) {
   if (expression.operator === "await") {
     return value;
   }
-  throw new Error(locale.unexpectToken);
+  throw new ExpressionError(locale.unexpectToken, expression.range);
 }
 function isAsync(expression) {
   if (expression.type === "NumericLiteral") {
@@ -4785,14 +4169,10 @@ function isAsync(expression) {
     return isAsync(expression.left) || isAsync(expression.right);
   }
   if (expression.type === "ArrayExpression") {
-    return expression.elements.some(function(e) {
-      return isAsync(e);
-    });
+    return expression.elements.some((e) => isAsync(e));
   }
   if (expression.type === "ArrowFunctionExpression") {
-    return expression.params.some(function(e) {
-      return isAsync(e);
-    }) || isAsync(expression.body);
+    return expression.params.some((e) => isAsync(e)) || isAsync(expression.body);
   }
   if (expression.type === "UnaryExpression") {
     if (expression.operator === "await") {
@@ -4807,9 +4187,7 @@ function isAsync(expression) {
     return isAsync(expression.object) || isAsync(expression.property);
   }
   if (expression.type === "CallExpression") {
-    return expression.arguments.some(function(e) {
-      return isAsync(e);
-    }) || isAsync(expression.callee);
+    return expression.arguments.some((e) => isAsync(e)) || isAsync(expression.callee);
   }
   if (expression.type === "ConditionalExpression") {
     return isAsync(expression.test) || isAsync(expression.consequent) || isAsync(expression.alternate);
@@ -4818,16 +4196,20 @@ function isAsync(expression) {
     return isAsync(expression.key) || isAsync(expression.value);
   }
   if (expression.type === "ObjectExpression") {
-    return expression.properties.some(function(e) {
-      return isAsync(e);
-    });
+    return expression.properties.some((e) => isAsync(e));
   }
-  return expression.params.some(function(e) {
-    return isAsync(e);
-  });
+  return expression.params.some((e) => isAsync(e));
 }
 
-// dev/math.ts
+// node_modules/expression-engine/browser/error.js
+var ExpressionError = class extends Error {
+  constructor(message, range) {
+    super(message);
+    this.range = range;
+  }
+};
+
+// dev/expression/math.ts
 var math = [
   {
     "name": "Math",
@@ -5262,6 +4644,18 @@ var math = [
   }
 ];
 
+// dev/expression/validator.ts
+function validateExpression(text) {
+  try {
+    parseExpression(tokenizeExpression(text));
+  } catch (error) {
+    if (error instanceof ExpressionError) {
+      return error.range;
+    }
+  }
+  return;
+}
+
 // dev/cad-editor/plugins/equation.plugin.tsx
 function getModel(ctx) {
   const EquationContent = ctx.and(ctx.BaseContent("equation"), ctx.StrokeFields, ctx.SegmentCountFields, {
@@ -5343,7 +4737,7 @@ function getModel(ctx) {
             c.dependentVariable = v;
           }
         }) }),
-        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: math, value: content.expression, setValue: (v) => update((c) => {
+        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: math, validate: validateExpression, value: content.expression, setValue: (v) => update((c) => {
           if (isEquationContent(c)) {
             c.expression = v;
           }
