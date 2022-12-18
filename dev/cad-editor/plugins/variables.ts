@@ -3651,12 +3651,12 @@ var punctuators = __spreadArray(__spreadArray([
   "]",
   "{",
   "}"
-], __read(numberPunctuators)), [
+], __read(numberPunctuators), false), [
   "?",
   ":",
   ",",
   "~"
-]);
+], false);
 
 // node_modules/expression-engine/browser/parser.js
 function parseExpression(tokens, locale) {
@@ -3666,7 +3666,7 @@ var Parser = function() {
   function Parser2(locale) {
     this.locale = getLocale(locale);
   }
-  Parser2.prototype.parseExpression = function(tokens, range) {
+  Parser2.prototype.parseExpression = function(tokens, range, parenthesesRange) {
     var e_1, _a;
     if (tokens.length === 0) {
       throw new Error(this.locale.emptyExpression);
@@ -3675,7 +3675,7 @@ var Parser = function() {
       return this.parseLiteral(tokens[0]);
     }
     if (tokens.length === 2) {
-      return this.parseUnaryExpression(tokens, range);
+      return this.parseUnaryExpression(tokens, parenthesesRange !== null && parenthesesRange !== void 0 ? parenthesesRange : range);
     }
     var firstToken = tokens[0];
     var lastToken = tokens[tokens.length - 1];
@@ -3701,7 +3701,7 @@ var Parser = function() {
             return c === operator_1.value;
           });
         })) {
-          return this.parseBinaryExpression(left, operator_1, right, range);
+          return this.parseBinaryExpression(left, operator_1, right, range, parenthesesRange);
         }
       } else if (right.type === "PunctuatorToken" && postfixUnaryOperators.includes(right.value)) {
         var expression = this.parseExpression([operator_1, right], [operator_1.range[0], range[1]]);
@@ -3800,9 +3800,9 @@ var Parser = function() {
         token2[_i] = arguments[_i];
       }
       if (keyPart) {
-        keyTokens.push.apply(keyTokens, __spreadArray([], __read(token2)));
+        keyTokens.push.apply(keyTokens, __spreadArray([], __read(token2), false));
       } else {
-        valueTokens.push.apply(valueTokens, __spreadArray([], __read(token2)));
+        valueTokens.push.apply(valueTokens, __spreadArray([], __read(token2), false));
       }
     };
     for (var j = 1; j < tokens.length - 1; j++) {
@@ -3810,7 +3810,7 @@ var Parser = function() {
       if (token.type === "PunctuatorToken") {
         if (groupStarts.includes(token.value)) {
           var groupEnd = this.findGroupEnd(tokens, j, token.value);
-          saveTokens.apply(void 0, __spreadArray([], __read(tokens.slice(j, groupEnd + 1))));
+          saveTokens.apply(void 0, __spreadArray([], __read(tokens.slice(j, groupEnd + 1)), false));
           j = groupEnd;
         } else if (token.value === ",") {
           propertyExpressions.push(this.parseProperty(keyTokens, valueTokens));
@@ -3893,11 +3893,12 @@ var Parser = function() {
         }
         var newToken = tokens.slice(i + 1, index);
         i = index;
+        var parenthesesRange = [token.range[0], tokens[index].range[1]];
         if (getFunctionArrowIndex(index, tokens) !== -1) {
-          newTokens.push(this.parseFunctionParameters(newToken, [token.range[0], tokens[index].range[1]]));
+          newTokens.push(this.parseFunctionParameters(newToken, parenthesesRange));
           continue;
         }
-        newTokens.push(this.parseExpression(newToken, getTokensRange(newToken)));
+        newTokens.push(this.parseExpression(newToken, getTokensRange(newToken), parenthesesRange));
       } else {
         newTokens.push(token);
       }
@@ -3983,23 +3984,30 @@ var Parser = function() {
     }
     return newTokens;
   };
-  Parser2.prototype.parseBinaryExpression = function(left, operator, right, range) {
+  Parser2.prototype.parseBinaryExpression = function(left, operator, right, range, parenthesesRange) {
+    var result;
     if (operator.value === "&&" || operator.value === "||" || operator.value === "??") {
-      return {
+      result = {
         type: "LogicalExpression",
         left: this.parseTokenOrExpression(left),
         operator: operator.value,
         right: this.parseTokenOrExpression(right),
         range
       };
+      return result;
+    } else {
+      result = {
+        type: "BinaryExpression",
+        left: this.parseTokenOrExpression(left),
+        operator: operator.value,
+        right: this.parseTokenOrExpression(right),
+        range
+      };
     }
-    return {
-      type: "BinaryExpression",
-      left: this.parseTokenOrExpression(left),
-      operator: operator.value,
-      right: this.parseTokenOrExpression(right),
-      range
-    };
+    if (parenthesesRange) {
+      result.parenthesesRange = parenthesesRange;
+    }
+    return result;
   };
   Parser2.prototype.parseLiteral = function(token) {
     if (token.type === "KeywordToken") {
@@ -4144,6 +4152,13 @@ var Parser = function() {
       }
     }
     if (operator.type === "PunctuatorToken" && prefixUnaryOperators.includes(operator.value) && !isToken(token)) {
+      if (token.parenthesesRange) {
+        range = [
+          Math.min(range[0], token.parenthesesRange[0]),
+          Math.max(range[1], token.parenthesesRange[1])
+        ];
+        delete token.parenthesesRange;
+      }
       return {
         type: "UnaryExpression",
         operator: operator.value,
@@ -4183,7 +4198,7 @@ var Parser = function() {
       if (item.type === "PunctuatorToken") {
         if (groupStarts.includes(item.value)) {
           var groupEnd = this.findGroupEnd(tokens, j, item.value);
-          itemTokens.push.apply(itemTokens, __spreadArray([], __read(tokens.slice(j, groupEnd + 1))));
+          itemTokens.push.apply(itemTokens, __spreadArray([], __read(tokens.slice(j, groupEnd + 1)), false));
           j = groupEnd;
         } else if (item.value === ",") {
           itemExpressions.push(this.parseMayBeSpreadExpression(itemTokens, getTokensRange(itemTokens)));
@@ -4312,7 +4327,7 @@ function replaceLocaleParameters(locale) {
     parameters[_i - 1] = arguments[_i];
   }
   for (var i = 0; i < parameters.length; i++) {
-    locale = locale.replace("{" + i + "}", parameters[i].toString());
+    locale = locale.replace("{".concat(i, "}"), parameters[i].toString());
   }
   return locale;
 }
@@ -4425,7 +4440,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
       return void 0;
     }
     if (!["length", "name", "toString", "valueOf", "toLocaleString"].includes(property) && (property in Object.prototype || property in Function.prototype)) {
-      throw new Error('No access to property "' + property + '"');
+      throw new Error('No access to property "'.concat(property, '"'));
     }
     var value = object[property];
     return typeof value === "function" ? value.bind(object) : value;
@@ -4444,7 +4459,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
       for (var _d = __values(expression.arguments), _e = _d.next(); !_e.done; _e = _d.next()) {
         var a = _e.value;
         if (a.type === "SpreadElement") {
-          args.push.apply(args, __spreadArray([], __read(protocol.evalutate(a.argument, context, true))));
+          args.push.apply(args, __spreadArray([], __read(protocol.evalutate(a.argument, context, true)), false));
         } else {
           args.push(protocol.evalutate(a, context, true));
         }
@@ -4460,7 +4475,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
           throw e_1.error;
       }
     }
-    return callee.apply(void 0, __spreadArray([], __read(args)));
+    return callee.apply(void 0, __spreadArray([], __read(args), false));
   }
   if (expression.type === "LogicalExpression") {
     return protocol.evaluateLogicalExpression(expression, context);
@@ -4493,7 +4508,7 @@ function evalutate(expression, context, isFirstIdentifier, protocol) {
       for (var _f = __values(expression.elements), _g = _f.next(); !_g.done; _g = _f.next()) {
         var e = _g.value;
         if (e.type === "SpreadElement") {
-          items.push.apply(items, __spreadArray([], __read(protocol.evalutate(e.argument, context, true))));
+          items.push.apply(items, __spreadArray([], __read(protocol.evalutate(e.argument, context, true)), false));
         } else {
           items.push(protocol.evalutate(e, context, true));
         }
