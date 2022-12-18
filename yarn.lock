@@ -1963,10 +1963,10 @@ express@^4.17.3:
     utils-merge "1.0.1"
     vary "~1.1.2"
 
-expression-engine@1.9.1:
-  version "1.9.1"
-  resolved "https://registry.npmjs.org/expression-engine/-/expression-engine-1.9.1.tgz#588e7d3a8a18e9df44cc8450ac88e471aa2f2dd6"
-  integrity sha512-irxcYIFkb1UK/J3j+htXctBBHiy41Pv4S5aIbrVgrY0Xd1uQ9skL4sTgrSOgfi9IJd53mDqaGskoYCe1Uxhkqg==
+expression-engine@1.10.0:
+  version "1.10.0"
+  resolved "https://registry.npmjs.org/expression-engine/-/expression-engine-1.10.0.tgz#b4e26dfa04133690f38b605b7e3f0a79deb1d5f0"
+  integrity sha512-1oLXDXR6sCv+dCk2OWfcTjhZuY7/lU9uUupSVzB4XKvLhsTPN0cRDh95Uj1Bts666ohteI1BvlyX9ZAn9vSGfQ==
   dependencies:
     tslib "1 || 2"
 

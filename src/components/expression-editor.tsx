@@ -15,6 +15,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   target?: ReactRenderTarget<unknown>
   autoHeight?: boolean
   suggestionSources?: ExpressionSuggesionSource[]
+  validate?: (text: string) => [number, number] | undefined
 }) {
   const height = props.height ?? 100
   const target = props.target ?? reactCanvasRenderTarget
@@ -29,6 +30,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const [suggestionIndex, setSuggestionIndex] = React.useState(0)
   const [suggestionText, setSuggestionText] = React.useState('')
   const [suggestion, setSuggestion] = React.useState<ExpressionSuggesionSource>()
+  const [errorRange, setErrorRange] = React.useState<[number, number]>()
   const { renderEditor, layoutResult, location, cursor, setLocation, inputText } = useFlowLayoutTextEditor({
     state,
     setState,
@@ -160,6 +162,10 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     initialState.current = props.value.split('')
   }, [props.value])
 
+  React.useEffect(() => {
+    setErrorRange(props.validate?.(state.join('')))
+  }, [state, props.validate])
+
   const ref = React.useRef<HTMLDivElement | null>(null)
   React.useEffect(() => {
     if (!ref.current) {
@@ -199,7 +205,9 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     let color: number | undefined
     let backgroundColor: number | undefined
     const content = layoutResult[i].content
-    if (isNumber(content)) {
+    if (errorRange && i >= errorRange[0] && i < errorRange[1]) {
+      color = 0xff0000
+    } else if (isNumber(content)) {
       let headIsLetter = false
       for (let j = i - 1; j >= 0; j--) {
         const c = layoutResult[j].content

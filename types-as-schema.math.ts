@@ -24,7 +24,7 @@ const config: Configuration = {
         }
       }
       return [{
-        path: './dev/math.ts',
+        path: './dev/expression/math.ts',
         content: `export const math = ` + JSON.stringify([{ name: 'Math', members: result }], null, 2) + '',
       }]
     },

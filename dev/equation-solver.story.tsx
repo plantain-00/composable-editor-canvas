@@ -1,20 +1,21 @@
 import { parseExpression, tokenizeExpression } from "expression-engine"
 import React from "react"
 import { ExpressionEditor, reactSvgRenderTarget } from "../src"
-import { Equation, equationRenderStyles, optimizeEquation } from "./equation/model"
+import { Equation, equationRenderStyles } from "./equation/model"
 import { renderEquation } from "./equation/renderer"
+import { solveEquation } from "./equation/solver"
 import { validateExpression } from "./expression/validator"
 
 export default () => {
-  const [left, setLeft] = React.useState('B')
-  const [right, setRight] = React.useState('((U * R3 + U2 * R4) * (R2 + R1 + R5) - (-U * R1 - U2 * R2) * R5) / (R5 * -R5 - (R2 + R1 + R5) * -(R5 + R3 + R4))')
+  const [left, setLeft] = React.useState('a * x - x * 2 + x')
+  const [right, setRight] = React.useState('2')
   const [equation, setEquation] = React.useState<Equation>()
   React.useEffect(() => {
     try {
-      setEquation(optimizeEquation({
+      setEquation(solveEquation({
         left: parseExpression(tokenizeExpression(left)),
         right: parseExpression(tokenizeExpression(right)),
-      }))
+      }, 'x'))
     } catch (error) {
       console.info(error)
     }
