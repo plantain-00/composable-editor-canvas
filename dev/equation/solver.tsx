@@ -1,5 +1,5 @@
-import { BinaryOperator, Expression } from "expression-engine";
-import { Equation, iterateExpression, optimizeEquation } from "./model";
+import { Expression } from "expression-engine";
+import { Equation, getReverseOperator, iterateExpression, optimizeEquation } from "./model";
 
 export function solveEquation(equation: Equation, variable: string): Equation {
   const hasVariable = (e: Expression) => {
@@ -8,7 +8,7 @@ export function solveEquation(equation: Equation, variable: string): Equation {
     }
     return false
   }
-  const solveEquationInternally = (equation: Equation): Equation => {
+  const solve = (equation: Equation): Equation => {
     optimizeEquation(equation, hasVariable)
     if (hasVariable(equation.right) && !hasVariable(equation.left)) {
       equation = {
@@ -19,7 +19,7 @@ export function solveEquation(equation: Equation, variable: string): Equation {
     if (hasVariable(equation.left) && !hasVariable(equation.right)) {
       if (equation.left.type === 'BinaryExpression') {
         if (hasVariable(equation.left.left) && !hasVariable(equation.left.right)) {
-          return solveEquationInternally({
+          return solve({
             left: equation.left.left,
             right: {
               type: 'BinaryExpression',
@@ -30,7 +30,7 @@ export function solveEquation(equation: Equation, variable: string): Equation {
             }
           })
         } else if (hasVariable(equation.left.right) && !hasVariable(equation.left.left)) {
-          return solveEquationInternally({
+          return solve({
             left: equation.left.right,
             right: {
               type: 'BinaryExpression',
@@ -42,7 +42,7 @@ export function solveEquation(equation: Equation, variable: string): Equation {
           })
         }
       } else if (equation.left.type === 'UnaryExpression') {
-        return solveEquationInternally({
+        return solve({
           left: equation.left.argument,
           right: {
             type: 'UnaryExpression',
@@ -56,21 +56,5 @@ export function solveEquation(equation: Equation, variable: string): Equation {
     return equation
   }
 
-  return solveEquationInternally(equation)
-}
-
-function getReverseOperator(operator: BinaryOperator): BinaryOperator {
-  if (operator === '+') {
-    return '-'
-  }
-  if (operator === '-') {
-    return '+'
-  }
-  if (operator === '*') {
-    return '/'
-  }
-  if (operator === '/') {
-    return '*'
-  }
-  return operator
+  return solve(equation)
 }

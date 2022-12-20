@@ -10,6 +10,7 @@ export default () => {
   const [left, setLeft] = React.useState('a * x - x * 2 + x')
   const [right, setRight] = React.useState('2')
   const [equation, setEquation] = React.useState<Equation>()
+  const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)
   React.useEffect(() => {
     try {
       setEquation(solveEquation({
@@ -24,7 +25,11 @@ export default () => {
     <div>
       <ExpressionEditor value={left} setValue={setLeft} validate={validateExpression} />
       <ExpressionEditor value={right} setValue={setRight} validate={validateExpression} />
-      {equation && renderEquation(reactSvgRenderTarget, equation, ...equationRenderStyles)}
+      <label>
+        <input type='checkbox' checked={keepBinaryExpressionOrder} onChange={() => setKeepBinaryExpressionOrder(!keepBinaryExpressionOrder)} />
+        keep binary expression order
+      </label>
+      {equation && renderEquation(reactSvgRenderTarget, equation, ...equationRenderStyles, { keepBinaryExpressionOrder })}
     </div>
   )
 }
