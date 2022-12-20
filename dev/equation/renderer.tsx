@@ -11,8 +11,9 @@ export function renderEquation(
   paddingX: number,
   paddingY: number,
   paddingOperator: number,
+  options?: Partial<ExpressionRendererOptions>,
 ) {
-  const { children, render, font } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator)
+  const { children, render, font } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator, options)
   const left = render(equation.left)
   const right = render(equation.right)
   let result: JSX.Element | undefined
@@ -32,7 +33,13 @@ export function renderEquation(
       children.push(target.renderText(startX + size.width / 2, y, equal, color, fontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
       startX += size.width
       right.render(startX + right.size.width / 2, y)
-      result = target.renderResult(children, canvasWidth, canvasHeight)
+      result = target.renderResult(children, canvasWidth, canvasHeight, {
+        attributes: {
+          style: {
+            width: '100%',
+          }
+        }
+      })
     }
   }
   return result
@@ -47,8 +54,9 @@ export function renderExpression(
   paddingX: number,
   paddingY: number,
   paddingOperator: number,
+  options?: Partial<ExpressionRendererOptions>,
 ) {
-  const { children, render } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator)
+  const { children, render } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator, options)
   const r = render(expression)
   let result: JSX.Element | undefined
   if (r) {
@@ -60,12 +68,17 @@ export function renderExpression(
   return result
 }
 
+interface ExpressionRendererOptions {
+  keepBinaryExpressionOrder: boolean
+}
+
 function createExpressionRenderer(
   target: ReactRenderTarget<unknown>,
   color: number,
   fontSize: number,
   fontFamily: string,
   paddingOperator: number,
+  options?: Partial<ExpressionRendererOptions>,
 ) {
   const children: unknown[] = []
   const font = `${fontSize}px ${fontFamily}`
@@ -75,7 +88,7 @@ function createExpressionRenderer(
     if (e.type === 'BinaryExpression') {
       const index = e.operator === '/' ? Number.MAX_SAFE_INTEGER : priorizedBinaryOperators.findIndex(p => p.includes(e.operator))
       const left = render(e.left, index, scale)
-      const right = render(e.right, index, e.operator === '**' ? scale * 0.75 : scale)
+      const right = render(e.right, e.operator === '+' || e.operator === '*' ? index : index - 0.1, e.operator === '**' ? scale * 0.75 : scale)
       if (left && right) {
         if (e.operator === '**') {
           const width = left.size.width + right.size.width
@@ -113,7 +126,7 @@ function createExpressionRenderer(
           const height = Math.max(left.size.height, size.height, right.size.height)
           let groupSize: Size | undefined
           const groupFontSize = Math.max(height, scaledFontSize)
-          if (index > priority) {
+          if (index > priority || (index === priority && options?.keepBinaryExpressionOrder)) {
             groupSize = getTextSizeFromCache(`${groupFontSize}px ${fontFamily}`, '(')
           }
           if (groupSize) {
