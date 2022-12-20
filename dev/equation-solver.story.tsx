@@ -7,7 +7,7 @@ import { solveEquation } from "./equation/solver"
 import { validateExpression } from "./expression/validator"
 
 export default () => {
-  const [left, setLeft] = React.useState('a * x - x * 2 + x')
+  const [left, setLeft] = React.useState('a * x - x * 2 + b * x + x')
   const [right, setRight] = React.useState('2')
   const [equation, setEquation] = React.useState<Equation>()
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)

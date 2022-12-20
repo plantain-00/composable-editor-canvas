@@ -117,6 +117,24 @@ function optimizeExpression(
           })
         }
       }
+      if (expression.operator === '+') {
+        // a + (b + c) -> (a + b) + c
+        if (expression.right.type === 'BinaryExpression' && (expression.right.operator === '+' || expression.right.operator === '-')) {
+          return optimize({
+            type: 'BinaryExpression',
+            operator: expression.right.operator,
+            left: optimize({
+              type: 'BinaryExpression',
+              operator: '+',
+              left: expression.left,
+              right: optimize(expression.right.left),
+              range: [0, 0],
+            }),
+            right: optimize(expression.right.right),
+            range: expression.range,
+          })
+        }
+      }
       if (expression.operator === '*') {
         // a * a -> a ** 2
         if (isSameExpression(expression.left, expression.right)) {
@@ -177,6 +195,48 @@ function optimizeExpression(
               range: [0, 0],
             })
           }
+        }
+      }
+      if (expression.operator === '+' || expression.operator === '-') {
+
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          (expression.left.operator === '+' || expression.left.operator === '-') &&
+          expression.left.right.type === 'NumericLiteral'
+        ) {
+          // (a + 1) + 2 -> a + 3
+          if (expression.right.type === 'NumericLiteral') {
+            const v = expression.left.right.value * (expression.left.operator === '-' ? -1 : 1) +
+              expression.right.value * (expression.operator === '-' ? -1 : 1)
+            if (v === 0) {
+              return optimize(expression.left.left)
+            }
+            return optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: v > 0 ? '+' : '-',
+              right: {
+                type: 'NumericLiteral',
+                value: v > 0 ? v : -v,
+                range: [0, 0],
+              },
+              range: [0, 0],
+            })
+          }
+          // (a + 1) + b -> (a + b) + 1
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: expression.operator,
+              right: expression.right,
+              range: [0, 0],
+            }),
+            operator: expression.left.operator,
+            right: optimize(expression.left.right),
+            range: [0, 0],
+          })
         }
       }
       if (hasVariable) {
