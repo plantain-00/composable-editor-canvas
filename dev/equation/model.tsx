@@ -41,17 +41,18 @@ function isSameExpression(e1: Expression, e2: Expression): boolean {
 }
 
 function shouldBeAfterExpression(e1: Expression, e2: Expression): boolean {
-  if (e1.type !== e2.type) return false
+  if (e1.type === 'UnaryExpression') {
+    return shouldBeAfterExpression(e1.argument, e2)
+  }
+  if (e2.type === 'UnaryExpression') {
+    return shouldBeAfterExpression(e1, e2.argument)
+  }
   if (e1.type === 'BinaryExpression' && e2.type === 'BinaryExpression') {
-    if (e1.operator !== e2.operator) return false
     if (shouldBeAfterExpression(e1.left, e2.left)) return true
     if (isSameExpression(e1, e2)) {
       return shouldBeAfterExpression(e1.right, e2.right)
     }
     return false
-  }
-  if (e1.type === 'UnaryExpression' && e2.type === 'UnaryExpression') {
-    return e1.operator === e2.operator && shouldBeAfterExpression(e1.argument, e2.argument)
   }
   if (e1.type === 'Identifier' && e2.type === 'Identifier') {
     return e1.name > e2.name
@@ -121,6 +122,14 @@ function optimizeExpression(
             range: expression.range,
           })
         }
+        // (a + b) - b -> a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          isSameExpression(expression.left.right, expression.right)
+        ) {
+          return optimize(expression.left.left)
+        }
         // a - (b + c) -> (a - b) - c
         // a - (b - c) -> (a - b) + c
         if (expression.right.type === 'BinaryExpression' && (expression.right.operator === '+' || expression.right.operator === '-')) {
@@ -140,6 +149,40 @@ function optimizeExpression(
         }
       }
       if (expression.operator === '+') {
+        // a + a -> 2 * a
+        if (isSameExpression(expression.left, expression.right)) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: {
+              type: 'NumericLiteral',
+              value: 2,
+              range: [0, 0],
+            },
+            operator: '*',
+            right: expression.left,
+            range: [0, 0],
+          })
+        }
+        // (a + (-b)) + b -> a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          expression.left.right.type === 'UnaryExpression' &&
+          expression.left.right.operator === '-' &&
+          isSameExpression(expression.left.right.argument, expression.right)
+        ) {
+          return optimize(expression.left.left)
+        }
+        // (a + b) + (-b) -> a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          expression.right.type === 'UnaryExpression' &&
+          expression.right.operator === '-' &&
+          isSameExpression(expression.left.right, expression.right.argument)
+        ) {
+          return optimize(expression.left.left)
+        }
         // a + (b + c) -> (a + b) + c
         // a + (b - c) -> (a + b) - c
         if (expression.right.type === 'BinaryExpression' && (expression.right.operator === '+' || expression.right.operator === '-')) {
@@ -154,6 +197,36 @@ function optimizeExpression(
               range: [0, 0],
             }),
             right: optimize(expression.right.right),
+            range: expression.range,
+          })
+        }
+      }
+      if (expression.operator === '+' || expression.operator === '*') {
+        // (a + c) + b -> (a + b) + c
+        // (a * c) * b -> (a * b) * c
+        if (expression.left.type === 'BinaryExpression' && expression.left.operator === expression.operator && shouldBeAfterExpression(expression.left.right, expression.right)) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: {
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: expression.operator,
+              right: expression.right,
+              range: [0, 0],
+            },
+            operator: expression.operator,
+            right: optimize(expression.left.right),
+            range: [0, 0],
+          })
+        }
+        // b + a -> a + b
+        // b * a -> a * b
+        if (shouldBeAfterExpression(expression.left, expression.right)) {
+          return optimize({
+            type: 'BinaryExpression',
+            operator: expression.operator,
+            left: expression.right,
+            right: expression.left,
             range: expression.range,
           })
         }
@@ -187,32 +260,6 @@ function optimizeExpression(
               range: [0, 0],
             }),
             right: optimize(expression.right.right),
-            range: expression.range,
-          })
-        }
-        // (a * c) * b -> (a * b) * c
-        if (expression.left.type === 'BinaryExpression' && expression.left.operator === '*' && shouldBeAfterExpression(expression.left.right, expression.right)) {
-          return optimize({
-            type: 'BinaryExpression',
-            left: {
-              type: 'BinaryExpression',
-              left: optimize(expression.left.left),
-              operator: '*',
-              right: expression.right,
-              range: [0, 0],
-            },
-            operator: '*',
-            right: optimize(expression.left.right),
-            range: [0, 0],
-          })
-        }
-        // b * a -> a * b
-        if (shouldBeAfterExpression(expression.left, expression.right)) {
-          return optimize({
-            type: 'BinaryExpression',
-            operator: expression.operator,
-            left: expression.right,
-            right: expression.left,
             range: expression.range,
           })
         }
