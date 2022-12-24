@@ -11,6 +11,7 @@ import { metaKeyIfMacElseCtrlKey } from "../utils/key"
  */
 export function ExpressionEditor(props: JsonEditorProps<string> & {
   height?: number
+  width?: number
   fontSize?: number
   target?: ReactRenderTarget<unknown>
   autoHeight?: boolean
@@ -24,7 +25,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const lineHeight = fontSize * 1.2
 
   const initialState = React.useRef(props.value.split(''))
-  const [width, setWidth] = React.useState(250)
+  const [width, setWidth] = React.useState(props.width ?? 250)
   const { state, setState, undo, redo } = useUndoRedo(initialState.current)
   const [suggestions, setSuggestions] = React.useState<ExpressionSuggesionSource[]>([])
   const [suggestionIndex, setSuggestionIndex] = React.useState(0)

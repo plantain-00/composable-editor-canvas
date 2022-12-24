@@ -7,50 +7,87 @@ export function solveEquation(equation: Equation): Equation {
   const solve = (equation: Equation): Equation => {
     optimizeEquation(equation, hasVariable)
     if (hasVariable(equation.right) && !hasVariable(equation.left)) {
+      // a = x -> x = a
       equation = {
         left: equation.right,
         right: equation.left,
         variable: equation.variable,
       }
     }
-    if (hasVariable(equation.left) && !hasVariable(equation.right)) {
-      if (equation.left.type === 'BinaryExpression') {
-        if (hasVariable(equation.left.left) && !hasVariable(equation.left.right)) {
+    if (hasVariable(equation.left)) {
+      if (hasVariable(equation.right)) {
+        if (equation.right.type === 'BinaryExpression') {
+          if (hasVariable(equation.right.left) && !hasVariable(equation.right.right)) {
+            // x = y / a -> x * a = y
+            if (equation.right.operator === '/') {
+              return solve({
+                left: optimize({
+                  type: 'BinaryExpression',
+                  left: equation.left,
+                  right: optimize(equation.right.right),
+                  operator: '*',
+                  range: [0, 0],
+                }),
+                right: optimize(equation.right.left),
+                variable: equation.variable,
+              })
+            }
+            // 2 * x = x - 1 -> x - 2 * x = 1
+            return solve({
+              left: optimize({
+                type: 'BinaryExpression',
+                left: optimize(equation.right.left),
+                right: equation.left,
+                operator: equation.right.operator,
+                range: [0, 0],
+              }),
+              right: optimize(equation.right.right),
+              variable: equation.variable,
+            })
+          }
+        }
+      } else {
+        if (equation.left.type === 'BinaryExpression') {
+          if (hasVariable(equation.left.left) && !hasVariable(equation.left.right)) {
+            // x + a = b -> x = b - a
+            return solve({
+              left: optimize(equation.left.left),
+              right: optimize({
+                type: 'BinaryExpression',
+                left: equation.right,
+                right: optimize(equation.left.right),
+                operator: getReverseOperator(equation.left.operator),
+                range: [0, 0],
+              }),
+              variable: equation.variable,
+            })
+          } else if (hasVariable(equation.left.right) && !hasVariable(equation.left.left)) {
+            // a + x = b -> x = b - a
+            return solve({
+              left: optimize(equation.left.right),
+              right: optimize({
+                type: 'BinaryExpression',
+                left: equation.right,
+                right: optimize(equation.left.left),
+                operator: getReverseOperator(equation.left.operator),
+                range: [0, 0],
+              }),
+              variable: equation.variable,
+            })
+          }
+        } else if (equation.left.type === 'UnaryExpression') {
+          // -x = a -> x = -a
           return solve({
-            left: optimize(equation.left.left),
+            left: optimize(equation.left.argument),
             right: optimize({
-              type: 'BinaryExpression',
-              left: equation.right,
-              right: optimize(equation.left.right),
-              operator: getReverseOperator(equation.left.operator),
-              range: [0, 0],
-            }),
-            variable: equation.variable,
-          })
-        } else if (hasVariable(equation.left.right) && !hasVariable(equation.left.left)) {
-          return solve({
-            left: optimize(equation.left.right),
-            right: optimize({
-              type: 'BinaryExpression',
-              left: equation.right,
-              right: optimize(equation.left.left),
-              operator: getReverseOperator(equation.left.operator),
+              type: 'UnaryExpression',
+              argument: equation.right,
+              operator: equation.left.operator,
               range: [0, 0],
             }),
             variable: equation.variable,
           })
         }
-      } else if (equation.left.type === 'UnaryExpression') {
-        return solve({
-          left: optimize(equation.left.argument),
-          right: optimize({
-            type: 'UnaryExpression',
-            argument: equation.right,
-            operator: equation.left.operator,
-            range: [0, 0],
-          }),
-          variable: equation.variable,
-        })
       }
     }
     return equation
