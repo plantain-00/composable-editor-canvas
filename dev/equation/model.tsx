@@ -3,6 +3,7 @@ import { BinaryOperator, evaluateExpression, Expression } from "expression-engin
 export interface Equation {
   left: Expression
   right: Expression
+  variable: string
 }
 
 export const equationRenderStyles = [0x000000, 20, 'monospace', 10, 10, 5] as const
@@ -17,7 +18,7 @@ export function* iterateExpression(e: Expression): Generator<Expression, void, u
   }
 }
 
-export function optimizeEquation(equation: Equation, hasVariable?: (e: Expression) => boolean) {
+export function optimizeEquation(equation: Omit<Equation, 'va'>, hasVariable?: (e: Expression) => boolean) {
   equation.left = optimizeExpression(equation.left, hasVariable)
   equation.right = optimizeExpression(equation.right, hasVariable)
   return equation
@@ -60,7 +61,7 @@ function shouldBeAfterExpression(e1: Expression, e2: Expression): boolean {
   return false
 }
 
-function optimizeExpression(
+export function optimizeExpression(
   e: Expression,
   hasVariable?: (e: Expression) => boolean,
 ): Expression {
@@ -221,14 +222,19 @@ function optimizeExpression(
         }
         // b + a -> a + b
         // b * a -> a * b
-        if (shouldBeAfterExpression(expression.left, expression.right)) {
-          return optimize({
-            type: 'BinaryExpression',
-            operator: expression.operator,
-            left: expression.right,
-            right: expression.left,
-            range: expression.range,
-          })
+        if (
+          !hasVariable ||
+          (hasVariable(expression.left) && hasVariable(expression.right)) ||
+          (!hasVariable(expression.left) && !hasVariable(expression.right))) {
+          if (shouldBeAfterExpression(expression.left, expression.right)) {
+            return optimize({
+              type: 'BinaryExpression',
+              operator: expression.operator,
+              left: expression.right,
+              right: expression.left,
+              range: expression.range,
+            })
+          }
         }
       }
       if (expression.operator === '*') {
@@ -313,6 +319,19 @@ function optimizeExpression(
         }
       }
       if (expression.operator === '+' || expression.operator === '-') {
+        // 0 + a -> a
+        // 0 - a -> -a
+        if (expression.left.type === 'NumericLiteral' && expression.left.value === 0) {
+          if (expression.operator === '+') {
+            return optimize(expression.right)
+          }
+          return optimize({
+            type: 'UnaryExpression',
+            operator: '-',
+            argument: optimize(expression.right),
+            range: [0, 0],
+          })
+        }
         if (
           expression.left.type === 'BinaryExpression' &&
           (expression.left.operator === '+' || expression.left.operator === '-') &&
