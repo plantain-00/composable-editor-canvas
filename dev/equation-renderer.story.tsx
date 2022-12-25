@@ -1,7 +1,7 @@
-import { parseExpression, printExpression, tokenizeExpression } from "expression-engine"
+import { parseExpression, tokenizeExpression } from "expression-engine"
 import React from "react"
 import { ExpressionEditor, reactSvgRenderTarget } from "../src"
-import { Equation, equationRenderStyles, optimizeEquation } from "./equation/model"
+import { Equation, equationRenderStyles, optimizeEquation, printEquation } from "./equation/model"
 import { renderEquation } from "./equation/renderer"
 import { validateExpression } from "./expression/validator"
 
@@ -30,7 +30,7 @@ export default () => {
         keep binary expression order
       </label>
       {equation && renderEquation(reactSvgRenderTarget, equation, ...equationRenderStyles, { keepBinaryExpressionOrder })}
-      {equation && <code>{printExpression(equation.left, { keepBinaryExpressionOrder })} = {printExpression(equation.right, { keepBinaryExpressionOrder })}</code>}
+      {equation && <code>{printEquation(equation, { keepBinaryExpressionOrder })}</code>}
     </div>
   )
 }
