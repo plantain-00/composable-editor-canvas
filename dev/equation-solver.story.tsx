@@ -1,7 +1,7 @@
 import { parseExpression, tokenizeExpression } from "expression-engine"
 import React from "react"
 import { ExpressionEditor, ObjectArrayEditor, reactSvgRenderTarget, StringEditor, useJsonEditorData } from "../src"
-import { Equation, equationRenderStyles } from "./equation/model"
+import { Equation, equationRenderStyles, printEquation } from "./equation/model"
 import { renderEquation } from "./equation/renderer"
 import { solveEquations } from "./equation/solver"
 
@@ -42,6 +42,7 @@ export default () => {
       {equations.map((e, i) => (
         <React.Fragment key={i}>
           {renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
+          <code>{printEquation(e, { keepBinaryExpressionOrder })}</code>
         </React.Fragment>
       ))}
     </div>

@@ -105,7 +105,7 @@ function expressionHasVariable(e: Expression, variable: string) {
 
 export function solveEquations(equations: Equation[]) {
   const result: Equation[] = []
-  const context: Record<string, Expression> = {}
+  let context: Record<string, Expression> = {}
   for (let e of equations) {
     e.left = composeExpression(e.left, context)
     e.right = composeExpression(e.right, context)
@@ -114,6 +114,16 @@ export function solveEquations(equations: Equation[]) {
     if (e.left.type === 'Identifier') {
       context[e.left.name] = e.right
     }
+  }
+  context = {}
+  for (let i = result.length - 1; i >= 0; i--) {
+    const e = result[i]
+    if (e.left.type === 'Identifier') {
+      context[e.left.name] = e.right
+    }
+    e.left = composeExpression(e.left, context)
+    e.right = composeExpression(e.right, context)
+    result[i] = solveEquation(e)
   }
   return result
 }

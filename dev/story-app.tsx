@@ -10,12 +10,14 @@ import { useDragMove } from '../src'
 import { WhiteBoard } from './whiteboard'
 import { Combination2 } from './combination-2'
 import { Combination3 } from './combination-3'
+import { Combination4 } from './combination-4'
 
 const combinations = [
   { path: 'whiteboard', name: 'whiteboard', component: WhiteBoard },
   { path: 'index', name: 'combination 1', component: App },
   { path: 'combination2', name: 'combination 2', component: Combination2 },
   { path: 'combination3', name: 'combination 3', component: Combination3 },
+  { path: 'combination4', name: 'combination 4', component: Combination4 },
 ]
 
 function StoryApp() {
