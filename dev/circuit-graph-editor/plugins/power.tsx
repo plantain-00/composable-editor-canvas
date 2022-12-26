@@ -13,8 +13,16 @@ export const powerModel: Model<PowerDevice> = {
   type: 'power',
   render(content, { target, transformStrokeWidth, contents }) {
     const strokeWidth = transformStrokeWidth(1)
-    const { renderingLines } = getPowerGeometriesFromCache(content, contents)
-    return target.renderGroup(renderingLines.map(line => target.renderPolyline(line, { strokeWidth })))
+    const { lines } = getPowerGeometriesFromCache(content, contents)
+    return target.renderGroup(lines.map(line => target.renderPolyline(line, { strokeWidth })))
+  },
+  createPreview(p) {
+    return {
+      type: 'power',
+      start: p.start,
+      end: p.end,
+      value: 1,
+    }
   },
 }
 
@@ -34,12 +42,10 @@ function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, content
         [getPointByLengthAndAngle(p2, 8, angle), getPointByLengthAndAngle(p2, -8, angle)],
       ]
       return {
-        points: [],
         lines,
         bounding: getPointsBounding([start.position, end.position]),
-        renderingLines: lines,
       }
     })
   }
-  return { lines: [], points: [], renderingLines: [] }
+  return { lines: [] }
 }

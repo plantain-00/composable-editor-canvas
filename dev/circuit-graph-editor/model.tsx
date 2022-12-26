@@ -1,5 +1,4 @@
-import { Nullable, Position, ReactRenderTarget, WeakmapCache3 } from "../../src";
-import { Geometries } from "../cad-editor/model";
+import { Nullable, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache3 } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -21,10 +20,15 @@ export interface RenderContext<V> {
 export type Model<T> = {
   type: string
   render?<V>(content: T, ctx: RenderContext<V>): V
+  createPreview?(p: DevicePositionFields): T
 }
 
 export type JunctionContent = BaseContent<'junction'> & {
   position: Position
+}
+
+export type CircleContent = BaseContent<'circle'> & Position & {
+  radius: number
 }
 
 export function isJunctionContent(content: BaseContent): content is JunctionContent {
@@ -37,6 +41,18 @@ export const junctionModel: Model<JunctionContent> = {
     const radius = transformStrokeWidth(3)
     return target.renderCircle(content.position.x, content.position.y, radius, { fillColor: 0x000000 })
   },
+}
+
+export const circleModel: Model<CircleContent> = {
+  type: 'circle',
+  render(content, { target }) {
+    return target.renderCircle(content.x, content.y, content.radius)
+  },
+}
+
+export interface Geometries {
+  lines: [Position, Position][]
+  bounding?: TwoPointsFormRegion
 }
 
 export const deviceGeometryCache = new WeakmapCache3<Omit<BaseDevice, 'type'>, JunctionContent, JunctionContent, Geometries>()
@@ -59,7 +75,7 @@ export function getReference<T extends BaseContent>(
   return
 }
 
-const modelCenter: Record<string, Model<BaseContent>> = {}
+export const modelCenter: Record<string, Model<BaseContent>> = {}
 
 export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
@@ -70,3 +86,4 @@ export function getContentModel(content: BaseContent): Model<BaseContent> | unde
 }
 
 registerModel(junctionModel)
+registerModel(circleModel)
