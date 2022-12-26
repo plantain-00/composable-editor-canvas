@@ -9,10 +9,20 @@ export function Renderer(props: {
   scale: number
   width: number
   height: number
+  assistentContents: readonly BaseContent[]
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target: ReactRenderTarget<unknown> = reactSvgRenderTarget
   const children: unknown[] = []
   for (const content of props.contents) {
+    if (!content) {
+      continue
+    }
+    const ContentRender = getContentModel(content)?.render
+    if (ContentRender) {
+      children.push(ContentRender(content, { target, transformStrokeWidth: w => w, contents: props.contents }))
+    }
+  }
+  for (const content of props.assistentContents) {
     if (!content) {
       continue
     }
