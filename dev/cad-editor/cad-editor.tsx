@@ -15,8 +15,6 @@ import type { CircleContent } from './plugins/circle-arc.plugin'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
 
-const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
-
 enablePatches()
 
 registerRenderer(reactWebglRenderTarget)
@@ -25,6 +23,7 @@ registerRenderer(reactCanvasRenderTarget)
 
 export const CADEditor = React.forwardRef((props: {
   id: string
+  operator: string
   initialState: readonly Nullable<BaseContent>[]
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
   onSendSelection?: (selectedContents: readonly number[]) => void
@@ -64,7 +63,7 @@ export const CADEditor = React.forwardRef((props: {
     },
   )
   const { snapTypes, renderTarget, readOnly, inputFixed } = props
-  const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, me, {
+  const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf(patches, reversePatches) {
       reversePatches.forEach(p => {
         // type-coverage:ignore-next-line

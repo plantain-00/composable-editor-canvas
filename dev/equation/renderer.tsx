@@ -92,7 +92,7 @@ function createExpressionRenderer(
       if (left && right) {
         if (e.operator === '**') {
           const width = left.size.width + right.size.width
-          const height = left.size.height + right.size.height
+          const height = left.size.height + right.size.height / 2
           return {
             size: {
               width,
@@ -119,10 +119,10 @@ function createExpressionRenderer(
             },
           }
         }
-        const operator = e.operator === '*' ? '×' : e.operator
+        const operator = e.operator === '*' ? '' : e.operator
         const size = getTextSizeFromCache(scaledFont, operator)
         if (size) {
-          let width = left.size.width + size.width + right.size.width + paddingOperator * 2
+          let width = left.size.width + size.width + right.size.width + paddingOperator * (size.width ? 2 : 0)
           const height = Math.max(left.size.height, size.height, right.size.height)
           let groupSize: Size | undefined
           const groupFontSize = Math.max(height, scaledFontSize)
@@ -144,9 +144,12 @@ function createExpressionRenderer(
                 startX += groupSize.width
               }
               left.render(startX + left.size.width / 2, y)
-              startX += left.size.width + paddingOperator
-              children.push(target.renderText(startX + size.width / 2, y, operator, color, scaledFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
-              startX += size.width + paddingOperator
+              startX += left.size.width
+              if (size.width) {
+                startX += paddingOperator
+                children.push(target.renderText(startX + size.width / 2, y, operator, color, scaledFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+                startX += size.width + paddingOperator
+              }
               right.render(startX + right.size.width / 2, y)
               if (groupSize) {
                 startX += right.size.width
@@ -178,6 +181,24 @@ function createExpressionRenderer(
     }
     let text: string | undefined
     if (e.type === 'Identifier') {
+      if (e.name.length > 1) {
+        const left = render({ type: 'Identifier', name: e.name[0], range: [0, 0] }, undefined, scale)
+        const right = render({ type: 'Identifier', name: e.name.substring(1), range: [0, 0] }, undefined, scale * 0.75)
+        if (left && right) {
+          const width = left.size.width + right.size.width
+          const height = left.size.height + right.size.height / 2
+          return {
+            size: {
+              width,
+              height,
+            },
+            render(x, y) {
+              left.render(x - width / 2 + left.size.width / 2, y - height / 2 + left.size.height / 2)
+              right.render(x - width / 2 + left.size.width + right.size.width / 2, y + height / 2 - right.size.height / 2)
+            },
+          }
+        }
+      }
       text = e.name
     } else if (e.type === 'NumericLiteral') {
       text = e.value.toString()

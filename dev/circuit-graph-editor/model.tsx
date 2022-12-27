@@ -1,4 +1,4 @@
-import { Nullable, Position, ReactRenderTarget, TwoPointsFormRegion, WeakmapCache3 } from "../../src";
+import { Nullable, Position, ReactRenderTarget, WeakmapCache3 } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -21,6 +21,22 @@ export type Model<T> = {
   type: string
   render?<V>(content: T, ctx: RenderContext<V>): V
   createPreview?(p: DevicePositionFields): T
+  getGeometries?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Geometries
+  icon?: JSX.Element
+  getRefIds?(content: T): number[] | undefined
+}
+
+export const deviceModel = {
+  getRefIds(content: BaseDevice): number[] | undefined {
+    const ids: number[] = []
+    if (typeof content.start === 'number') {
+      ids.push(content.start)
+    }
+    if (typeof content.end === 'number') {
+      ids.push(content.end)
+    }
+    return ids
+  },
 }
 
 export type JunctionContent = BaseContent<'junction'> & {
@@ -29,6 +45,11 @@ export type JunctionContent = BaseContent<'junction'> & {
 
 export type CircleContent = BaseContent<'circle'> & Position & {
   radius: number
+}
+
+export type LineContent = BaseContent<'line'> & {
+  p1: Position
+  p2: Position
 }
 
 export function isJunctionContent(content: BaseContent): content is JunctionContent {
@@ -50,9 +71,15 @@ export const circleModel: Model<CircleContent> = {
   },
 }
 
+export const lineModel: Model<LineContent> = {
+  type: 'line',
+  render(content, { target }) {
+    return target.renderPolyline([content.p1, content.p2], { dashArray: [4] })
+  },
+}
+
 export interface Geometries {
   lines: [Position, Position][]
-  bounding?: TwoPointsFormRegion
 }
 
 export const deviceGeometryCache = new WeakmapCache3<Omit<BaseDevice, 'type'>, JunctionContent, JunctionContent, Geometries>()
@@ -87,3 +114,13 @@ export function getContentModel(content: BaseContent): Model<BaseContent> | unde
 
 registerModel(junctionModel)
 registerModel(circleModel)
+registerModel(lineModel)
+
+export function contentIsReferenced(id: number, contents: readonly Nullable<BaseContent>[]): boolean {
+  for (const content of contents) {
+    if (content && getContentModel(content)?.getRefIds?.(content)?.includes(id)) {
+      return true
+    }
+  }
+  return false
+}

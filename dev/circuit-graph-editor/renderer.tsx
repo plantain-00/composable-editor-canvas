@@ -10,16 +10,22 @@ export function Renderer(props: {
   width: number
   height: number
   assistentContents: readonly BaseContent[]
+  hovering?: number
+  selected?: number
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target: ReactRenderTarget<unknown> = reactSvgRenderTarget
   const children: unknown[] = []
-  for (const content of props.contents) {
-    if (!content) {
-      continue
-    }
-    const ContentRender = getContentModel(content)?.render
-    if (ContentRender) {
-      children.push(ContentRender(content, { target, transformStrokeWidth: w => w, contents: props.contents }))
+  for (let i = 0; i < props.contents.length; i++) {
+    const content = props.contents[i]
+    if (content) {
+      const ContentRender = getContentModel(content)?.render
+      if (ContentRender) {
+        children.push(ContentRender(content, {
+          target,
+          transformStrokeWidth: w => props.hovering === i || props.selected === i ? w + 1 : w,
+          contents: props.contents,
+        }))
+      }
     }
   }
   for (const content of props.assistentContents) {
