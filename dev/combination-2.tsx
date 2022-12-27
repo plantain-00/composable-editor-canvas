@@ -153,6 +153,7 @@ export function Combination2() {
         <CADEditor
           ref={editorRef}
           id='combination2'
+          operator={me}
           initialState={initialState}
           onApplyPatchesFromSelf={onApplyPatchesFromSelf}
           onSendSelection={onSendSelection}
@@ -172,7 +173,7 @@ export function Combination2() {
       <div style={{ position: 'fixed', width: '100%' }}>
         {!readOnly && pluginCommandTypes.map((p) => {
           if (p.icon) {
-            return React.cloneElement(p.icon, {
+            const svg = React.cloneElement<React.HTMLAttributes<unknown>>(p.icon, {
               onClick: () => editorRef.current?.startOperation({ type: 'command', name: p.name }),
               key: p.name,
               style: {
@@ -183,6 +184,11 @@ export function Combination2() {
                 color: operation === p.name ? 'red' : undefined,
               },
             })
+            return (
+              <span title={p.name} key={p.name}>
+                {svg}
+              </span>
+            )
           }
           return null
         })}

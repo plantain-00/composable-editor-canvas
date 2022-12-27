@@ -3,6 +3,8 @@ import { SnapPointType, allSnapTypes, Nullable, useLocalStorageState } from '../
 import { BaseContent } from './cad-editor/model'
 import { CADEditor, CADEditorRef, useInitialStateValidated, usePlugins } from './cad-editor/cad-editor'
 
+const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
+
 export function WhiteBoard() {
   const [, onChange, initialState] = useLocalStorageState<readonly Nullable<BaseContent>[]>('composable-editor-canvas-whiteboard', [])
   const editorRef = React.useRef<CADEditorRef | null>(null)
@@ -19,6 +21,7 @@ export function WhiteBoard() {
       <CADEditor
         ref={editorRef}
         id='whiteboard'
+        operator={me}
         initialState={initialState}
         snapTypes={snapTypes}
         renderTarget='svg'

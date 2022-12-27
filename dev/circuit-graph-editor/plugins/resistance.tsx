@@ -1,5 +1,6 @@
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointCenter, Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, getReference, isJunctionContent, Model } from "../model"
+import React from "react"
+import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, iteratePolygonLines, Nullable, Position } from "../../../src"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, getReference, isJunctionContent, Model } from "../model"
 
 export type ResistanceDevice = BaseDevice<'resistance'> & {
   value: number
@@ -8,8 +9,10 @@ export type ResistanceDevice = BaseDevice<'resistance'> & {
 export function isResistanceDevice(content: BaseContent): content is ResistanceDevice {
   return content.type === 'resistance'
 }
+
 export const resistanceModel: Model<ResistanceDevice> = {
   type: 'resistance',
+  ...deviceModel,
   render(content, { target, transformStrokeWidth, contents }) {
     const strokeWidth = transformStrokeWidth(1)
     const { lines } = getResistanceGeometriesFromCache(content, contents)
@@ -23,6 +26,14 @@ export const resistanceModel: Model<ResistanceDevice> = {
       value: 1,
     }
   },
+  getGeometries: getResistanceGeometriesFromCache,
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect x="15" y="35" width="71" height="24" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></rect>
+      <polyline points="85,45 99,45" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="13,44 0,44" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  )
 }
 
 function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type">, contents: readonly Nullable<BaseContent>[]) {
@@ -34,21 +45,18 @@ function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type"
       const p1 = getPointByLengthAndDirection(center, 8, start.position)
       const p2 = getPointByLengthAndDirection(center, 8, end.position)
       const angle = Math.atan2(start.position.x - end.position.x, end.position.y - start.position.y)
-      const p3 = getPointByLengthAndAngle(p1, 4, angle)
-      const p4 = getPointByLengthAndAngle(p1, -4, angle)
-      const p5 = getPointByLengthAndAngle(p2, 4, angle)
-      const p6 = getPointByLengthAndAngle(p2, -4, angle)
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],
-        [p3, p4],
-        [p3, p5],
-        [p5, p6],
-        [p4, p6],
+        ...iteratePolygonLines([
+          getPointByLengthAndAngle(p1, 4, angle),
+          getPointByLengthAndAngle(p1, -4, angle),
+          getPointByLengthAndAngle(p2, -4, angle),
+          getPointByLengthAndAngle(p2, 4, angle),
+        ])
       ]
       return {
         lines,
-        bounding: getPointsBounding([start.position, end.position]),
       }
     })
   }

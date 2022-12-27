@@ -1,5 +1,6 @@
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoPointCenter, Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, getReference, isJunctionContent, Model } from "../model"
+import React from "react"
+import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, Nullable, Position } from "../../../src"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, getReference, isJunctionContent, Model } from "../model"
 
 export type PowerDevice = BaseDevice<'power'> & {
   value: number
@@ -11,6 +12,7 @@ export function isPowerDevice(content: BaseContent): content is PowerDevice {
 
 export const powerModel: Model<PowerDevice> = {
   type: 'power',
+  ...deviceModel,
   render(content, { target, transformStrokeWidth, contents }) {
     const strokeWidth = transformStrokeWidth(1)
     const { lines } = getPowerGeometriesFromCache(content, contents)
@@ -24,6 +26,15 @@ export const powerModel: Model<PowerDevice> = {
       value: 1,
     }
   },
+  getGeometries: getPowerGeometriesFromCache,
+  icon: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <polyline points="9,48 37,48" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="36,66 36,32" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="96,48 64,48" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="64,75 64,22" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+    </svg>
+  ),
 }
 
 function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, contents: readonly Nullable<BaseContent>[]) {
@@ -43,7 +54,6 @@ function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, content
       ]
       return {
         lines,
-        bounding: getPointsBounding([start.position, end.position]),
       }
     })
   }

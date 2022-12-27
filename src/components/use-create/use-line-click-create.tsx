@@ -25,7 +25,7 @@ export function useLineClickCreate(
   const inputMode = tabSwitchList[tabSwitchIndex]
   const nextTabSwitchIndex = (tabSwitchIndex + 1) % tabSwitchList.length
   const getAngleSnap = fixedAngle !== undefined ? () => fixedAngle : options?.getAngleSnap
-  const getLengthSnap = fixedLength !== undefined ? () => fixedLength : options?.getAngleSnap
+  const getLengthSnap = fixedLength !== undefined ? () => fixedLength : options?.getLengthSnap
   let message = ''
   if (line) {
     if (line.length === 1) {
