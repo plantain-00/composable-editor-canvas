@@ -1,6 +1,6 @@
 import React from "react"
 import { Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, getReference, isJunctionContent, Model } from "../model"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getReference, isJunctionContent, Model } from "../model"
 
 export type WireDevice = BaseDevice<'wire'>
 
@@ -31,7 +31,7 @@ export const wireModel: Model<WireDevice> = {
   )
 }
 
-function getWireGeometriesFromCache(content: Omit<WireDevice, "type">, contents: readonly Nullable<BaseContent>[]) {
+function getWireGeometriesFromCache(content: Omit<WireDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {
   const start = getReference(content.start, contents, isJunctionContent)
   const end = getReference(content.end, contents, isJunctionContent)
   if (start && end) {

@@ -4,6 +4,6 @@ export type SwitchDevice = BaseDevice<'switch'> & {
   open: boolean
 }
 
-export function isPowerDevice(content: BaseContent): content is SwitchDevice {
+export function isSwitchDevice(content: BaseContent): content is SwitchDevice {
   return content.type === 'switch'
 }

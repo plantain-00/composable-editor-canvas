@@ -1,4 +1,5 @@
 import React from "react"
+import { Patch, applyPatches } from 'immer'
 import { Nullable, ReactRenderTarget, reactSvgRenderTarget } from "../../src"
 import { BaseContent, getContentModel } from "./model"
 
@@ -12,18 +13,20 @@ export function Renderer(props: {
   assistentContents: readonly BaseContent[]
   hovering?: number
   selected?: number
+  previewPatches: Patch[]
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target: ReactRenderTarget<unknown> = reactSvgRenderTarget
   const children: unknown[] = []
-  for (let i = 0; i < props.contents.length; i++) {
-    const content = props.contents[i]
+  const contents = props.previewPatches.length > 0 ? applyPatches(props.contents, props.previewPatches) : props.contents
+  for (let i = 0; i < contents.length; i++) {
+    const content = contents[i]
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
         children.push(ContentRender(content, {
           target,
           transformStrokeWidth: w => props.hovering === i || props.selected === i ? w + 1 : w,
-          contents: props.contents,
+          contents,
         }))
       }
     }
@@ -34,7 +37,7 @@ export function Renderer(props: {
     }
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
-      children.push(ContentRender(content, { target, transformStrokeWidth: w => w, contents: props.contents }))
+      children.push(ContentRender(content, { target, transformStrokeWidth: w => w, contents }))
     }
   }
 
