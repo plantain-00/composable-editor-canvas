@@ -1,6 +1,6 @@
 import React from "react"
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, iteratePolygonLines, Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, getReference, isJunctionContent, Model } from "../model"
+import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, iteratePolygonLines, Nullable, NumberEditor, Position } from "../../../src"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type ResistanceDevice = BaseDevice<'resistance'> & {
   value: number
@@ -15,8 +15,12 @@ export const resistanceModel: Model<ResistanceDevice> = {
   ...deviceModel,
   render(content, { target, transformStrokeWidth, contents }) {
     const strokeWidth = transformStrokeWidth(1)
-    const { lines } = getResistanceGeometriesFromCache(content, contents)
-    return target.renderGroup(lines.map(line => target.renderPolyline(line, { strokeWidth })))
+    const { lines, data } = getResistanceGeometriesFromCache(content, contents)
+    const children = lines.map(line => target.renderPolyline(line, { strokeWidth }))
+    if (data) {
+      children.push(getDeviceText(data, target, content.value + 'Ω'))
+    }
+    return target.renderGroup(children)
   },
   createPreview(p) {
     return {
@@ -33,10 +37,15 @@ export const resistanceModel: Model<ResistanceDevice> = {
       <polyline points="85,45 99,45" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
       <polyline points="13,44 0,44" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
-  )
+  ),
+  propertyPanel(content, update) {
+    return {
+      value: <NumberEditor value={content.value} setValue={(v) => update(c => { if (isResistanceDevice(c)) { c.value = v } })} />
+    }
+  },
 }
 
-function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type">, contents: readonly Nullable<BaseContent>[]) {
+function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {
   const start = getReference(content.start, contents, isJunctionContent)
   const end = getReference(content.end, contents, isJunctionContent)
   if (start && end) {
@@ -56,6 +65,11 @@ function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type"
         ])
       ]
       return {
+        data: {
+          center,
+          left: start.position,
+          right: end.position,
+        },
         lines,
       }
     })

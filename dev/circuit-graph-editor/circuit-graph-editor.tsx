@@ -1,8 +1,7 @@
-import { enablePatches } from 'immer'
 import React from 'react';
-import { Patch } from 'immer'
-import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
-import { BaseContent, CircleContent, contentIsReferenced, getContentModel, isJunctionContent, JunctionContent, LineContent, modelCenter, registerModel } from "./model";
+import { Patch, enablePatches, produceWithPatches } from 'immer'
+import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, getContentModel, isJunctionContent, JunctionContent, LineContent, modelCenter, registerModel, updateReferencedContents } from "./model";
 import { powerModel } from "./plugins/power";
 import { resistanceModel } from './plugins/resistance';
 import { wireModel } from './plugins/wire';
@@ -20,7 +19,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   onApplyPatchesFromSelf?: (patches: Patch[], reversePatches: Patch[]) => void
 }, ref: React.ForwardedRef<CircuitGraphEditorRef>) => {
   const { width, height } = useWindowSize()
-  const { state, setState, undo, redo, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
+  const { state, setState, undo, redo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
@@ -38,10 +37,15 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   const [snapPoint, setSnapPoint] = React.useState<{ type: 'point', id: number, point: Position } | { type: 'line', point: Position, start: Position }>()
   const model = operation ? modelCenter[operation] : undefined
   const assistentContents: BaseContent[] = []
+  const previewPatches: Patch[] = []
+  const previewReversePatches: Patch[] = []
+  const selectedContents: { content: BaseContent, path: number[] }[] = []
+  const [lastOperation, setLastOperation] = React.useState<string>()
+  let panel: JSX.Element | undefined
 
   const startJunctionId = React.useRef<number>()
   const endJunctionId = React.useRef<number>()
-  const { line, onClick: startOperation, onMove, lastPosition } = useLineClickCreate(
+  const { line, onClick: startCreate, reset: resetCreate, onMove, lastPosition: createLastPosition } = useLineClickCreate(
     operation !== undefined,
     (c) => {
       setState(draft => {
@@ -133,8 +137,88 @@ export const CircuitGraphEditor = React.forwardRef((props: {
         draft[selected] = undefined
       })
       setSelected(undefined)
+    } else if (hovering !== undefined && !contentIsReferenced(hovering, state)) {
+      setState(draft => {
+        draft[hovering] = undefined
+      })
+      setHovering(hovering)
     }
   })
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, editLastPosition, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
+    () => {
+      const newPatches: Patch[] = []
+      const newReversePatches: Patch[] = []
+      let index = state.length
+      for (const p of previewPatches) {
+        // type-coverage:ignore-next-line
+        if (p.op === 'replace' && p.path.length === 2 && p.value && isJunctionContent(p.value)) {
+          const field = p.path[1]
+          if (field === 'start' || field === 'end') {
+            newPatches.push({
+              op: 'add',
+              path: [index],
+              value: p.value,
+            })
+            // type-coverage:ignore-next-line
+            p.value = index
+            newReversePatches.push({
+              op: 'replace',
+              path: ['length'],
+              value: index,
+            })
+            index++
+          }
+        }
+      }
+      applyPatchFromSelf([...previewPatches, ...newPatches], [...previewReversePatches, ...newReversePatches])
+    },
+    (s) => getContentModel(s)?.getEditPoints?.(s, state),
+    {
+      scale: transform.scale,
+      readOnly: !!operation,
+    }
+  )
+  const result = updateEditPreview()
+  previewPatches.push(...result?.patches ?? [])
+  previewReversePatches.push(...result?.reversePatches ?? [])
+  assistentContents.push(...result?.assistentContents ?? [])
+  if (result) {
+    assistentContents.push(...updateReferencedContents(result.content, result.result, state))
+  }
+  if (selected !== undefined) {
+    const content = state[selected]
+    if (content) {
+      selectedContents.push({ content, path: [selected] })
+      let c = content
+      if (editPoint && isSamePath(editPoint.path, [selected])) {
+        c = result?.result ?? content
+      } else {
+        c = result?.relatedEditPointResults.get(content) ?? content
+      }
+      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'circle', x: rect.x, y: rect.y, radius: 7 } as CircleContent)))
+
+      const contentsUpdater = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
+        const [, ...patches] = produceWithPatches(state, (draft) => {
+          const content = draft[selected]
+          if (content) {
+            update(content, draft)
+          }
+        })
+        applyPatchFromSelf(...patches)
+      }
+      const propertyPanel = getContentModel(content)?.propertyPanel?.(content, contentsUpdater, state)
+      panel = (
+        <div style={{ position: 'absolute', right: '0px', top: '0px', bottom: '0px', width: '300px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
+          {content.type}
+          <div>{selected}</div>
+          {propertyPanel && <ObjectEditor
+            properties={propertyPanel}
+          />}
+        </div>
+      )
+    }
+  }
+  const lastPosition = editLastPosition ?? createLastPosition
 
   const getSnapPoint = (p: Position): { id?: number, point: Position } => {
     for (let i = 0; i < state.length; i++) {
@@ -207,6 +291,11 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       p2: snapPoint.point,
     } as LineContent)
   }
+  const startOperation = (p: string) => {
+    setLastOperation(p)
+    resetCreate()
+    setOperation(p)
+  }
   const getContentByPosition = (p: Position) => {
     for (let i = 0; i < state.length; i++) {
       const content = state[i]
@@ -233,14 +322,16 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
+    const s = getSnapPoint(p)
     if (operation) {
-      const s = getSnapPoint(p)
       if (line === undefined) {
         startJunctionId.current = s.id
       } else {
         endJunctionId.current = s.id
       }
-      startOperation(s.point)
+      startCreate(s.point)
+    } else if (editPoint) {
+      onEditClick(s.point)
     } else if (hovering !== undefined) {
       setSelected(hovering)
       setHovering(undefined)
@@ -249,11 +340,18 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
+    const s = getSnapPoint(p)
     if (operation) {
-      const s = getSnapPoint(p)
       onMove(s.point, viewportPosition)
     } else {
+      onEditMove(s.point, selectedContents)
       setHovering(getContentByPosition(p))
+    }
+  })
+  const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (lastOperation) {
+      startOperation(lastOperation)
+      e.preventDefault()
     }
   })
 
@@ -270,7 +368,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   return (
     <>
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-        <div style={{ position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+        <div style={{ cursor: editPoint?.cursor, position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
           <Renderer
             contents={state}
             x={transform.x}
@@ -281,7 +379,9 @@ export const CircuitGraphEditor = React.forwardRef((props: {
             assistentContents={assistentContents}
             hovering={hovering}
             selected={selected}
+            previewPatches={previewPatches}
             onClick={onClick}
+            onContextMenu={onContextMenu}
           />
         </div>
       </div>
@@ -289,8 +389,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
         {Object.values(modelCenter).filter(p => p.createPreview).map((p) => {
           if (p.icon) {
             const svg = React.cloneElement<React.HTMLAttributes<unknown>>(p.icon, {
-              onClick: () => setOperation(p.type),
-              key: p.type,
+              onClick: () => startOperation(p.type),
               style: {
                 width: '20px',
                 height: '20px',
@@ -307,7 +406,48 @@ export const CircuitGraphEditor = React.forwardRef((props: {
           }
           return null
         })}
+        <span title='compress'>
+          <svg
+            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"
+            style={{
+              width: '20px',
+              height: '20px',
+              margin: '5px',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              setState(draft => {
+                const newIndexes: (number | undefined)[] = []
+                let validContentCount = 0
+                const invalidContentsIndex: number[] = []
+                draft.forEach((d, i) => {
+                  if (d) {
+                    newIndexes.push(validContentCount)
+                    validContentCount++
+                  } else {
+                    newIndexes.push(undefined)
+                    invalidContentsIndex.unshift(i)
+                  }
+                })
+                invalidContentsIndex.forEach(i => {
+                  draft.splice(i, 1)
+                })
+                for (const content of draft) {
+                  if (content) {
+                    getContentModel(content)?.updateRefId?.(content, refId => typeof refId === 'number' ? newIndexes[refId] : undefined)
+                  }
+                }
+                contentIndexCache.clear()
+              })
+            }}
+          >
+            <rect x="10" y="44" width="81" height="20" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></rect>
+            <rect x="9" y="69" width="81" height="20" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></rect>
+            <polygon points="42,6 57,6 57,31 73,31 51,44 27,32 42,32" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
+          </svg>
+        </span>
       </div>
+      {panel}
     </>
   )
 })

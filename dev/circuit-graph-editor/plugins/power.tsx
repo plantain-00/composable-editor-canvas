@@ -1,6 +1,6 @@
 import React from "react"
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, getReference, isJunctionContent, Model } from "../model"
+import { Button, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, Nullable, NumberEditor, Position } from "../../../src"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type PowerDevice = BaseDevice<'power'> & {
   value: number
@@ -15,8 +15,12 @@ export const powerModel: Model<PowerDevice> = {
   ...deviceModel,
   render(content, { target, transformStrokeWidth, contents }) {
     const strokeWidth = transformStrokeWidth(1)
-    const { lines } = getPowerGeometriesFromCache(content, contents)
-    return target.renderGroup(lines.map(line => target.renderPolyline(line, { strokeWidth })))
+    const { lines, data } = getPowerGeometriesFromCache(content, contents)
+    const children = lines.map(line => target.renderPolyline(line, { strokeWidth }))
+    if (data) {
+      children.push(getDeviceText(data, target, content.value + 'V'))
+    }
+    return target.renderGroup(children)
   },
   createPreview(p) {
     return {
@@ -35,9 +39,21 @@ export const powerModel: Model<PowerDevice> = {
       <polyline points="64,75 64,22" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
   ),
+  propertyPanel(content, update) {
+    return {
+      value: <NumberEditor value={content.value} setValue={(v) => update(c => { if (isPowerDevice(c)) { c.value = v } })} />,
+      direction: <Button onClick={() => update(c => {
+        if (isPowerDevice(c)) {
+          const a = c.end
+          c.end = c.start
+          c.start = a
+        }
+      })}>switch</Button>,
+    }
+  },
 }
 
-function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, contents: readonly Nullable<BaseContent>[]) {
+function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {
   const start = getReference(content.start, contents, isJunctionContent)
   const end = getReference(content.end, contents, isJunctionContent)
   if (start && end) {
@@ -53,6 +69,11 @@ function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, content
         [getPointByLengthAndAngle(p2, 8, angle), getPointByLengthAndAngle(p2, -8, angle)],
       ]
       return {
+        data: {
+          center,
+          left: start.position,
+          right: end.position,
+        },
         lines,
       }
     })
