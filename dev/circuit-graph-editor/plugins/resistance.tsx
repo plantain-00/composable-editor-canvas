@@ -13,12 +13,12 @@ export function isResistanceDevice(content: BaseContent): content is ResistanceD
 export const resistanceModel: Model<ResistanceDevice> = {
   type: 'resistance',
   ...deviceModel,
-  render(content, { target, transformStrokeWidth, contents }) {
+  render(content, { target, transformStrokeWidth, contents, value }) {
     const strokeWidth = transformStrokeWidth(1)
     const { lines, data } = getResistanceGeometriesFromCache(content, contents)
     const children = lines.map(line => target.renderPolyline(line, { strokeWidth }))
     if (data) {
-      children.push(getDeviceText(data, target, content.value + 'Ω'))
+      children.push(...getDeviceText(data, target, content.value + 'Ω', value))
     }
     return target.renderGroup(children)
   },

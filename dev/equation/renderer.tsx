@@ -82,7 +82,7 @@ function createExpressionRenderer(
 ) {
   const children: unknown[] = []
   const font = `${fontSize}px ${fontFamily}`
-  const render = (e: Expression, priority = Number.MAX_SAFE_INTEGER, scale = 1): { size: Size, render: (x: number, y: number) => void } | void => {
+  const render = (e: Expression, priority = Number.MAX_SAFE_INTEGER, scale = 1, isPartial = false): { size: Size, render: (x: number, y: number) => void } | void => {
     const scaledFontSize = fontSize * scale
     const scaledFont = scale === 1 ? font : `${scaledFontSize}px ${fontFamily}`
     if (e.type === 'BinaryExpression') {
@@ -181,9 +181,9 @@ function createExpressionRenderer(
     }
     let text: string | undefined
     if (e.type === 'Identifier') {
-      if (e.name.length > 1) {
+      if (!isPartial && e.name.length > 1) {
         const left = render({ type: 'Identifier', name: e.name[0], range: [0, 0] }, undefined, scale)
-        const right = render({ type: 'Identifier', name: e.name.substring(1), range: [0, 0] }, undefined, scale * 0.75)
+        const right = render({ type: 'Identifier', name: e.name.substring(1), range: [0, 0] }, undefined, scale * 0.75, true)
         if (left && right) {
           const width = left.size.width + right.size.width
           const height = left.size.height + right.size.height / 2
