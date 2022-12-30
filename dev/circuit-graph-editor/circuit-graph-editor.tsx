@@ -145,7 +145,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       setState(draft => {
         draft[hovering] = undefined
       })
-      setHovering(hovering)
+      setHovering(undefined)
     }
   })
   const { editPoint, updateEditPreview, onEditMove, onEditClick, editLastPosition, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
@@ -211,10 +211,18 @@ export const CircuitGraphEditor = React.forwardRef((props: {
         applyPatchFromSelf(...patches)
       }
       const propertyPanel = getContentModel(content)?.propertyPanel?.(content, contentsUpdater, state)
+      let voltage: JSX.Element | undefined
+      if (isJunctionContent(content)) {
+        const voltageValue = equationResult[selected]
+        if (voltageValue !== undefined) {
+          voltage = <div>{voltageValue}V</div>
+        }
+      }
       panel = (
         <div style={{ position: 'absolute', right: '0px', top: '0px', bottom: '0px', width: '300px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
           {content.type}
           <div>{selected}</div>
+          {voltage}
           {propertyPanel && <ObjectEditor
             properties={propertyPanel}
           />}
@@ -303,19 +311,19 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   const getContentByPosition = (p: Position) => {
     for (let i = 0; i < state.length; i++) {
       const content = state[i]
-      if (content) {
-        if (isJunctionContent(content)) {
-          if (getTwoPointsDistance(content.position, p) < 4) {
-            return i
-          }
-        } else {
-          const geometries = getContentModel(content)?.getGeometries?.(content, state)
-          if (geometries) {
-            for (const line of geometries.lines) {
-              const minDistance = getPointAndLineSegmentMinimumDistance(p, ...line)
-              if (minDistance <= 3) {
-                return i
-              }
+      if (content && isJunctionContent(content) && getTwoPointsDistance(content.position, p) < 4) {
+        return i
+      }
+    }
+    for (let i = 0; i < state.length; i++) {
+      const content = state[i]
+      if (content && !isJunctionContent(content)) {
+        const geometries = getContentModel(content)?.getGeometries?.(content, state)
+        if (geometries) {
+          for (const line of geometries.lines) {
+            const minDistance = getPointAndLineSegmentMinimumDistance(p, ...line)
+            if (minDistance <= 3) {
+              return i
             }
           }
         }

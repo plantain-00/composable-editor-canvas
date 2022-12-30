@@ -1,5 +1,5 @@
 import { Expression } from "expression-engine";
-import { Equation, getReverseOperator, iterateExpression, optimizeEquation, optimizeExpression } from "./model";
+import { Equation, expressionHasVariable, getReverseOperator, iterateExpression, optimizeEquation, optimizeExpression } from "./model";
 
 export function solveEquation(equation: Equation): Equation {
   const hasVariable = (e: Expression) => expressionHasVariable(e, equation.variable)
@@ -16,6 +16,25 @@ export function solveEquation(equation: Equation): Equation {
     }
     if (hasVariable(equation.left)) {
       if (hasVariable(equation.right)) {
+        if (equation.left.type === 'BinaryExpression' && equation.right.type === 'BinaryExpression') {
+          if (
+            (equation.left.operator === '+' || equation.left.operator === '-') &&
+            equation.right.operator === '*'
+          ) {
+            // 1 - x = 2 * x -> 2 * x + x = 1
+            return solve({
+              left: optimize({
+                type: 'BinaryExpression',
+                left: equation.right,
+                right: equation.left.right,
+                operator: getReverseOperator(equation.left.operator),
+                range: [0, 0],
+              }),
+              right: optimize(equation.left.left),
+              variable: equation.variable,
+            })
+          }
+        }
         if (equation.right.type === 'BinaryExpression') {
           if (hasVariable(equation.right.left) && !hasVariable(equation.right.right)) {
             // x = y / a -> x * a = y
@@ -140,11 +159,8 @@ export function solveEquation(equation: Equation): Equation {
   return solve(equation)
 }
 
-function expressionHasVariable(e: Expression, variable: string) {
-  for (const v of iterateExpression(e)) {
-    if (v.type === 'Identifier' && v.name === variable) return true
-  }
-  return false
+export function equationHasVariable(e: Equation, variable: string) {
+  return expressionHasVariable(e.left, variable) || expressionHasVariable(e.right, variable)
 }
 
 export function solveEquations(equations: Equation[]) {
