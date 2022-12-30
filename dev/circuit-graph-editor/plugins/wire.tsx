@@ -1,6 +1,6 @@
 import React from "react"
-import { Nullable, Position } from "../../../src"
-import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getReference, isJunctionContent, Model } from "../model"
+import { getTwoPointCenter, Nullable, Position } from "../../../src"
+import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type WireDevice = BaseDevice<'wire'>
 
@@ -11,10 +11,14 @@ export function isWireDevice(content: BaseContent): content is WireDevice {
 export const wireModel: Model<WireDevice> = {
   type: 'wire',
   ...deviceModel,
-  render(content, { target, transformStrokeWidth, contents }) {
+  render(content, { target, transformStrokeWidth, contents, value }) {
     const strokeWidth = transformStrokeWidth(1)
-    const { lines } = getWireGeometriesFromCache(content, contents)
-    return target.renderGroup(lines.map(line => target.renderPolyline(line, { strokeWidth })))
+    const { lines, data } = getWireGeometriesFromCache(content, contents)
+    const children = lines.map(line => target.renderPolyline(line, { strokeWidth }))
+    if (data) {
+      children.push(...getDeviceText(data, target, undefined, value))
+    }
+    return target.renderGroup(children)
   },
   createPreview(p) {
     return {
@@ -36,11 +40,17 @@ function getWireGeometriesFromCache(content: Omit<WireDevice, "type">, contents:
   const end = getReference(content.end, contents, isJunctionContent)
   if (start && end) {
     return deviceGeometryCache.get(content, start, end, () => {
+      const center = getTwoPointCenter(start.position, end.position)
       const lines: [Position, Position][] = [
         [start.position, end.position],
       ]
       return {
         lines,
+        data: {
+          center,
+          left: start.position,
+          right: end.position,
+        },
       }
     })
   }

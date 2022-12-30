@@ -14,6 +14,7 @@ export function Renderer(props: {
   hovering?: number
   selected?: number
   previewPatches: Patch[]
+  equationResult: number[]
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target: ReactRenderTarget<unknown> = reactSvgRenderTarget
   const children: unknown[] = []
@@ -27,6 +28,7 @@ export function Renderer(props: {
           target,
           transformStrokeWidth: w => props.hovering === i || props.selected === i ? w + 1 : w,
           contents,
+          value: props.equationResult[i],
         }))
       }
     }

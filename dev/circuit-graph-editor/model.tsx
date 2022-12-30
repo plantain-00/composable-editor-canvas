@@ -17,6 +17,7 @@ export interface RenderContext<V> {
   target: ReactRenderTarget<V>
   transformStrokeWidth: (strokeWidth: number) => number,
   contents: readonly Nullable<BaseContent>[]
+  value?: number
 }
 
 export type Model<T> = {
@@ -264,18 +265,33 @@ export function contentIsReferenced(id: number, contents: readonly Nullable<Base
 export function getDeviceText<V>(
   data: NonNullable<Geometries['data']>,
   target: ReactRenderTarget<V>,
-  text: string,
+  text?: string,
+  currentValue?: number
 ) {
   const angle = Math.abs(Math.atan2(data.right.y - data.left.y, data.right.x - data.left.x)) / Math.PI
   let x = data.center.x
   let y = data.center.y
+  let x2 = data.center.x
+  let y2 = data.center.y
   let textAlign: 'left' | 'center'
+  let textAlign2: 'right' | 'center'
   if (angle > 1 / 4 && angle < 3 / 4) {
     x += 10
+    x2 -= 10
     textAlign = 'left'
+    textAlign2 = 'right'
   } else {
     y -= 15
+    y2 += 15
     textAlign = 'center'
+    textAlign2 = 'center'
   }
-  return target.renderText(x, y, text, 0x000000, 16, 'monospace', { textAlign, textBaseline: 'middle' })
+  const result: V[] = []
+  if (text) {
+    result.push(target.renderText(x, y, text, 0x000000, 16, 'monospace', { textAlign, textBaseline: 'middle' }))
+  }
+  if (currentValue !== undefined) {
+    result.push(target.renderText(x2, y2, currentValue.toPrecision(3) + 'A', 0x000000, 16, 'monospace', { textAlign: textAlign2, textBaseline: 'middle' }))
+  }
+  return result
 }

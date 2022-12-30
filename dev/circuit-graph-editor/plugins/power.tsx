@@ -13,12 +13,12 @@ export function isPowerDevice(content: BaseContent): content is PowerDevice {
 export const powerModel: Model<PowerDevice> = {
   type: 'power',
   ...deviceModel,
-  render(content, { target, transformStrokeWidth, contents }) {
+  render(content, { target, transformStrokeWidth, contents, value }) {
     const strokeWidth = transformStrokeWidth(1)
     const { lines, data } = getPowerGeometriesFromCache(content, contents)
     const children = lines.map(line => target.renderPolyline(line, { strokeWidth }))
     if (data) {
-      children.push(getDeviceText(data, target, content.value + 'V'))
+      children.push(...getDeviceText(data, target, content.value + 'V', value))
     }
     return target.renderGroup(children)
   },

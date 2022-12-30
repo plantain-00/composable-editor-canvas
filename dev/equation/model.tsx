@@ -65,6 +65,10 @@ function shouldBeAfterExpression(e1: Expression, e2: Expression): boolean {
   return false
 }
 
+function isNumericExpression(expression: Expression) {
+  return (expression.type === 'UnaryExpression' && expression.argument.type === 'NumericLiteral') || expression.type === 'NumericLiteral'
+}
+
 export function optimizeExpression(
   e: Expression,
   hasVariable?: (e: Expression) => boolean,
@@ -126,7 +130,90 @@ export function optimizeExpression(
           return expression.left
         }
       }
+      if (expression.operator === '/') {
+        // a / 2 -> a * 0.5
+        if (expression.right.type === 'NumericLiteral') {
+          return {
+            type: 'BinaryExpression',
+            left: expression.left,
+            operator: '*',
+            right: {
+              type: 'NumericLiteral',
+              value: 1 / expression.right.value,
+              range: [0, 0],
+            },
+            range: [0, 0],
+          }
+        }
+        // (a + b) / -2 -> a / -2 + b / -2
+        // (a - b) / -2 -> a / -2 - b / -2
+        // (a + b) / 2 -> a / 2 + b / 2
+        // (a - b) / 2 -> a / 2 - b / 2
+        if (
+          isNumericExpression(expression.right) &&
+          expression.left.type === 'BinaryExpression' &&
+          (expression.left.operator === '+' || expression.left.operator === '-')
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: expression.operator,
+              right: expression.right,
+              range: [0, 0],
+            }),
+            operator: expression.left.operator,
+            right: optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.right),
+              operator: expression.operator,
+              right: expression.right,
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
+        }
+      }
       if (expression.operator === '-') {
+        // a - 2 -> a + -2
+        if (expression.right.type === 'NumericLiteral') {
+          return optimize({
+            type: 'BinaryExpression',
+            left: expression.left,
+            operator: '+',
+            right: {
+              type: 'NumericLiteral',
+              value: -expression.right.value,
+              range: [0, 0],
+            },
+            range: [0, 0],
+          })
+        }
+        // a - 2 * b -> a + -2 * b
+        if (
+          expression.right.type === 'BinaryExpression' &&
+          expression.right.operator === '*' &&
+          expression.right.left.type === 'NumericLiteral'
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: expression.left,
+            operator: '+',
+            right: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: -expression.right.left.value,
+                range: [0, 0],
+              },
+              operator: expression.right.operator,
+              right: optimize(expression.right.right),
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
+        }
         // a - -b -> a + b
         if (expression.right.type === 'UnaryExpression' && expression.right.operator === '-') {
           return optimize({
@@ -144,6 +231,47 @@ export function optimizeExpression(
           isSameExpression(expression.left.right, expression.right)
         ) {
           return optimize(expression.left.left)
+        }
+        // (a - b) - a -> -b
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '-' &&
+          isSameExpression(expression.left.left, expression.right)
+        ) {
+          return optimize({
+            type: 'UnaryExpression',
+            operator: '-',
+            argument: optimize(expression.left.right),
+            range: [0, 0],
+          })
+        }
+        // (1 + 3 * a) - a -> 1 + 2 * a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          expression.left.left.type === 'NumericLiteral' &&
+          expression.left.right.type === 'BinaryExpression' &&
+          expression.left.right.operator === '*' &&
+          expression.left.right.left.type === 'NumericLiteral' &&
+          isSameExpression(expression.left.right.right, expression.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            operator: '+',
+            left: expression.left.left,
+            right: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: expression.left.right.left.value - 1,
+                range: [0, 0],
+              },
+              operator: '*',
+              right: expression.right,
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
         }
         // a - (b + c) -> (a - b) - c
         // a - (b - c) -> (a - b) + c
@@ -164,6 +292,10 @@ export function optimizeExpression(
         }
       }
       if (expression.operator === '+') {
+        // a + 0 -> a
+        if (expression.right.type === 'NumericLiteral' && expression.right.value === 0) {
+          return expression.left
+        }
         // a + a -> 2 * a
         if (isSameExpression(expression.left, expression.right)) {
           return optimize({
@@ -223,8 +355,114 @@ export function optimizeExpression(
             range: expression.range,
           })
         }
+        // (1 + 2 * a) + a -> 1 + 3 * a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          expression.left.left.type === 'NumericLiteral' &&
+          expression.left.right.type === 'BinaryExpression' &&
+          expression.left.right.operator === '*' &&
+          expression.left.right.left.type === 'NumericLiteral' &&
+          isSameExpression(expression.left.right.right, expression.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: expression.left.left,
+            operator: '+',
+            right: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: expression.left.right.left.value + 1,
+                range: [0, 0],
+              },
+              operator: '*',
+              right: optimize(expression.left.right.right),
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
+        }
+        // (1 + 2 * a) + 3 * a -> 1 + 5 * a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '+' &&
+          expression.left.left.type === 'NumericLiteral' &&
+          expression.left.right.type === 'BinaryExpression' &&
+          expression.left.right.operator === '*' &&
+          expression.left.right.left.type === 'NumericLiteral' &&
+          expression.right.type === 'BinaryExpression' &&
+          expression.right.operator === '*' &&
+          expression.right.left.type === 'NumericLiteral' &&
+          isSameExpression(expression.left.right.right, expression.right.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: expression.left.left,
+            operator: '+',
+            right: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: expression.left.right.left.value + expression.right.left.value,
+                range: [0, 0],
+              },
+              operator: '*',
+              right: optimize(expression.left.right.right),
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
+        }
+        // (1 - a) + 5 * a -> 1 + 4 * a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '-' &&
+          expression.left.left.type === 'NumericLiteral' &&
+          expression.right.type === 'BinaryExpression' &&
+          expression.right.operator === '*' &&
+          expression.right.left.type === 'NumericLiteral' &&
+          isSameExpression(expression.left.right, expression.right.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: expression.left.left,
+            operator: '+',
+            right: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: -1 + expression.right.left.value,
+                range: [0, 0],
+              },
+              operator: '*',
+              right: optimize(expression.right.right),
+              range: [0, 0],
+            }),
+            range: [0, 0],
+          })
+        }
       }
       if (expression.operator === '+' || expression.operator === '*') {
+        // (2 * a) * 3 -> (2 * 3) * a
+        if (
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '*' &&
+          expression.left.left.type === 'NumericLiteral' &&
+          expression.right.type === 'NumericLiteral'
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            operator: '*',
+            left: {
+              type: 'NumericLiteral',
+              value: expression.operator === '*' ? expression.left.left.value * expression.right.value : expression.left.left.value + expression.right.value,
+              range: [0, 0],
+            },
+            right: optimize(expression.left.right),
+            range: [0, 0],
+          })
+        }
         // (a + c) + b -> (a + b) + c
         // (a * c) * b -> (a * b) * c
         // (a - c) + b -> (a + b) - c
@@ -365,12 +603,12 @@ export function optimizeExpression(
         // 0 - a -> -a
         if (expression.left.type === 'NumericLiteral' && expression.left.value === 0) {
           if (expression.operator === '+') {
-            return optimize(expression.right)
+            return expression.right
           }
           return optimize({
             type: 'UnaryExpression',
             operator: '-',
-            argument: optimize(expression.right),
+            argument: expression.right,
             range: [0, 0],
           })
         }
@@ -415,13 +653,13 @@ export function optimizeExpression(
               range: [0, 0],
             }),
             operator: expression.left.operator,
-            right: optimize(expression.left.right),
+            right: expression.left.right,
             range: [0, 0],
           })
         }
         // a + b / c -> (a * c + b) / c
         // a - b / c -> (a * c - b) / c
-        if (expression.right.type === 'BinaryExpression' && expression.right.operator === '/') {
+        if (expression.right.type === 'BinaryExpression' && expression.right.operator === '/' && !isNumericExpression(expression.right.right)) {
           return optimize({
             type: 'BinaryExpression',
             left: optimize({
@@ -444,7 +682,7 @@ export function optimizeExpression(
         }
         // a / b + c -> (a + b * c) / b
         // a / b - c -> (a - b * c) / b
-        if (expression.left.type === 'BinaryExpression' && expression.left.operator === '/') {
+        if (expression.left.type === 'BinaryExpression' && expression.left.operator === '/' && !isNumericExpression(expression.left.right)) {
           return optimize({
             type: 'BinaryExpression',
             left: optimize({
@@ -612,6 +850,14 @@ export function optimizeExpression(
             right: optimize(expression.argument.right),
             range: [0, 0],
           })
+        }
+        // - 1 -> -1
+        if (expression.argument.type === 'NumericLiteral') {
+          return {
+            type: 'NumericLiteral',
+            value: -expression.argument.value,
+            range: [0, 0],
+          }
         }
       }
     }
