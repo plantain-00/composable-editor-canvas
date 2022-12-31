@@ -63,3 +63,4 @@ A composable editor canvas library.
 + combination 2: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-2>
 + whiteboard: <https://plantain-00.github.io/composable-editor-canvas/?p=whiteboard>
 + combination 3: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-3>
++ combination 4: <https://plantain-00.github.io/composable-editor-canvas/?p=combination-4>

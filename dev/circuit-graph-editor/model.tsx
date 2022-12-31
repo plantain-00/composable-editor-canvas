@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react';
-import { BooleanEditor, EditPoint, getPointByLengthAndDirection, isSamePoint, Nullable, Position, ReactRenderTarget, rotatePositionByCenter, WeakmapCache, WeakmapCache3 } from "../../src";
+import { BooleanEditor, EditPoint, getPointByLengthAndDirection, isSamePoint, isZero, Nullable, Position, ReactRenderTarget, rotatePositionByCenter, WeakmapCache, WeakmapCache3 } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -291,9 +291,9 @@ export function getDeviceText<V>(
     result.push(target.renderText(x, y, text, 0x000000, 16, 'monospace', { textAlign, textBaseline: 'middle' }))
   }
   if (currentValue !== undefined) {
-    const v = Number.isInteger(currentValue) ? Math.abs(currentValue) : Math.abs(currentValue).toPrecision(3)
+    const v = Number.isInteger(currentValue) ? Math.abs(currentValue) : isZero(currentValue) ? 0 : Math.abs(currentValue).toPrecision(3)
     result.push(target.renderText(x2, y2, v + 'A', 0x000000, 16, 'monospace', { textAlign: textAlign2, textBaseline: 'middle' }))
-    if (currentValue !== 0) {
+    if (!isZero(currentValue)) {
       const to = currentValue > 0 ? data.right : data.left
       const p1 = getPointByLengthAndDirection(data.center, 12, to)
       const p2 = getPointByLengthAndDirection(data.center, 20, to)
