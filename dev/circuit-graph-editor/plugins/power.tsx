@@ -51,6 +51,13 @@ export const powerModel: Model<PowerDevice> = {
       })}>switch</Button>,
     }
   },
+  getEquationData(content) {
+    return {
+      left: `U${content.start} + ${content.value}`,
+      right: `U${content.end}`,
+      variables: new Set([`U${content.start}`, `U${content.end}`]),
+    }
+  },
 }
 
 function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {

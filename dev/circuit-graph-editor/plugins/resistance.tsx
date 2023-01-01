@@ -43,6 +43,13 @@ export const resistanceModel: Model<ResistanceDevice> = {
       value: <NumberEditor value={content.value} setValue={(v) => update(c => { if (isResistanceDevice(c)) { c.value = v } })} />
     }
   },
+  getEquationData(content, i) {
+    return {
+      left: `U${content.start} - ${content.value} * I${i}`,
+      right: `U${content.end}`,
+      variables: new Set([`U${content.start}`, `U${content.end}`, `I${i}`]),
+    }
+  },
 }
 
 function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {
