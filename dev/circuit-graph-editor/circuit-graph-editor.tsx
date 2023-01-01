@@ -1,20 +1,22 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
 import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
-import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, getContentModel, isDeviceContent, isJunctionContent, JunctionContent, LineContent, modelCenter, registerModel, updateReferencedContents } from "./model";
-import { isPowerDevice, powerModel } from "./plugins/power";
-import { isResistanceDevice, resistanceModel } from './plugins/resistance';
-import { isWireDevice, wireModel } from './plugins/wire';
+import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, EquationData, getContentModel, isDeviceContent, isJunctionContent, JunctionContent, LineContent, ContentUpdater, modelCenter, registerModel, updateReferencedContents } from "./model";
+import { powerModel } from "./plugins/power";
+import { resistanceModel } from './plugins/resistance';
+import { wireModel } from './plugins/wire';
 import { Renderer } from './renderer';
 import { Equation } from '../equation/model';
 import { parseExpression, tokenizeExpression } from 'expression-engine';
 import { solveEquations } from '../equation/solver';
+import { switchModel } from './plugins/switch';
 
 enablePatches()
 
 registerModel(powerModel)
 registerModel(resistanceModel)
 registerModel(wireModel)
+registerModel(switchModel)
 
 export const CircuitGraphEditor = React.forwardRef((props: {
   operator: string
@@ -46,6 +48,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   const [lastOperation, setLastOperation] = React.useState<string>()
   let panel: JSX.Element | undefined
   const [equationResult, setEquationResult] = React.useState<number[]>([])
+  const [action, setAction] = React.useState<{ act: (update: ContentUpdater) => void, index: number }>()
 
   const startJunctionId = React.useRef<number>()
   const endJunctionId = React.useRef<number>()
@@ -133,19 +136,20 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     setSnapPoint(undefined)
     setHovering(undefined)
     setSelected(undefined)
+    setAction(undefined)
   }
   useKey((e) => e.key === 'Escape', reset, [setOperation, setSnapPoint])
   useKey((k) => k.code === 'Backspace' && !k.shiftKey && !metaKeyIfMacElseCtrlKey(k), () => {
-    if (selected !== undefined && !contentIsReferenced(selected, state)) {
-      setState(draft => {
-        draft[selected] = undefined
-      })
-      setSelected(undefined)
-    } else if (hovering !== undefined && !contentIsReferenced(hovering, state)) {
+    if (hovering !== undefined && !contentIsReferenced(hovering, state)) {
       setState(draft => {
         draft[hovering] = undefined
       })
       setHovering(undefined)
+    } else if (selected !== undefined && !contentIsReferenced(selected, state)) {
+      setState(draft => {
+        draft[selected] = undefined
+      })
+      setSelected(undefined)
     }
   })
   const { editPoint, updateEditPreview, onEditMove, onEditClick, editLastPosition, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
@@ -331,6 +335,21 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     }
     return undefined
   }
+  const getActionByPosition = (p: Position) => {
+    for (let i = 0; i < state.length; i++) {
+      const content = state[i]
+      if (content) {
+        const action = getContentModel(content)?.getAction?.(p, content, state)
+        if (action) {
+          return {
+            act: action,
+            index: i,
+          }
+        }
+      }
+    }
+    return undefined
+  }
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
@@ -344,6 +363,16 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       startCreate(s.point)
     } else if (editPoint) {
       onEditClick(s.point)
+    } else if (action) {
+      action.act(update => {
+        const [, ...patches] = produceWithPatches(state, (draft) => {
+          const content = draft[action.index]
+          if (content) {
+            update(content, draft)
+          }
+        })
+        applyPatchFromSelf(...patches)
+      })
     } else if (hovering !== undefined) {
       setSelected(hovering)
       setHovering(undefined)
@@ -358,6 +387,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     } else {
       onEditMove(s.point, selectedContents)
       setHovering(getContentByPosition(p))
+      setAction(getActionByPosition(p))
     }
   })
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
@@ -378,13 +408,13 @@ export const CircuitGraphEditor = React.forwardRef((props: {
   }), [applyPatchFromOtherOperators])
 
   React.useEffect(() => {
-    const equationData: { left: string, right: string, variables: Set<string> }[] = []
-    const groundVariables = new Set<string>()
+    const equationData: EquationData[] = []
+    const zeroVariables = new Set<string>()
     state.forEach((content, i) => {
       if (content) {
-        const start: string[] = []
-        const end: string[] = []
         if (isJunctionContent(content)) {
+          const start: string[] = []
+          const end: string[] = []
           state.forEach((s, j) => {
             if (s && isDeviceContent(s)) {
               if (s.start === i) {
@@ -394,39 +424,30 @@ export const CircuitGraphEditor = React.forwardRef((props: {
               }
             }
           })
-          equationData.push({
-            left: start.join(' + ') || '0',
-            right: end.join(' + ') || '0',
-            variables: new Set([...start, ...end]),
-          })
+          if (start.length + end.length > 0) {
+            equationData.push({
+              left: start.join(' + ') || '0',
+              right: end.join(' + ') || '0',
+              variables: new Set([...start, ...end]),
+            })
+          }
           if (content.ground) {
-            groundVariables.add(`U${i}`)
+            zeroVariables.add(`U${i}`)
           }
         } else if (isDeviceContent(content) && typeof content.start === 'number' && typeof content.end === 'number') {
-          if (isPowerDevice(content)) {
-            equationData.push({
-              left: `U${content.start} + ${content.value}`,
-              right: `U${content.end}`,
-              variables: new Set([`U${content.start}`, `U${content.end}`]),
-            })
-          } else if (isResistanceDevice(content)) {
-            equationData.push({
-              left: `U${content.start} - ${content.value} * I${i}`,
-              right: `U${content.end}`,
-              variables: new Set([`U${content.start}`, `U${content.end}`, `I${i}`]),
-            })
-          } else if (isWireDevice(content)) {
-            equationData.push({
-              left: `U${content.start}`,
-              right: `U${content.end}`,
-              variables: new Set([`U${content.start}`, `U${content.end}`]),
-            })
+          const data = getContentModel(content)?.getEquationData?.(content, i)
+          if (data) {
+            if (data.zero) {
+              zeroVariables.add(`I${i}`)
+            } else {
+              equationData.push(data)
+            }
           }
         }
       }
     })
     const equations: Equation[] = []
-    groundVariables.forEach(g => {
+    zeroVariables.forEach(g => {
       equationData.forEach(f => {
         f.variables.delete(g)
       })
@@ -454,7 +475,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       }
     }
     const result: number[] = []
-    groundVariables.forEach(e => {
+    zeroVariables.forEach(e => {
       result[+e.slice(1)] = 0
     })
     solveEquations(equations).forEach(e => {
@@ -465,10 +486,19 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     setEquationResult(result)
   }, [state])
 
+  let cursor: string | undefined
+  if (editPoint) {
+    cursor = editPoint.cursor
+  } else if (hovering !== undefined && hovering !== selected) {
+    cursor = 'pointer'
+  } else if (action) {
+    cursor = 'pointer'
+  }
+
   return (
     <>
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-        <div style={{ cursor: editPoint?.cursor, position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+        <div style={{ cursor, position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
           <Renderer
             contents={state}
             x={transform.x}

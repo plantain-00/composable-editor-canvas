@@ -32,7 +32,14 @@ export const wireModel: Model<WireDevice> = {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <polyline points="1,46 100,46" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
-  )
+  ),
+  getEquationData(content) {
+    return {
+      left: `U${content.start}`,
+      right: `U${content.end}`,
+      variables: new Set([`U${content.start}`, `U${content.end}`]),
+    }
+  },
 }
 
 function getWireGeometriesFromCache(content: Omit<WireDevice, "type">, contents: readonly Nullable<BaseContent>[]): Geometries {

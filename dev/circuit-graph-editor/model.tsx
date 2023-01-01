@@ -32,9 +32,24 @@ export type Model<T> = {
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): { editPoints: EditPoint<BaseContent>[] } | undefined
   propertyPanel?(
     content: Omit<T, 'type'>,
-    update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
+    update: ContentUpdater,
     contents: readonly Nullable<BaseContent>[],
   ): Record<string, JSX.Element>
+  getEquationData?(content: Omit<T, 'type'>, index: number): EquationData
+  getAction?(
+    p: Position,
+    content: Omit<T, 'type'>,
+    contents: readonly Nullable<BaseContent>[],
+  ): ((update: ContentUpdater) => void) | void
+}
+
+export type ContentUpdater = (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void
+
+export interface EquationData {
+  left: string
+  right: string
+  variables: Set<string>
+  zero?: boolean
 }
 
 export const deviceModel: Partial<Model<BaseDevice>> = {
@@ -291,7 +306,7 @@ export function getDeviceText<V>(
     result.push(target.renderText(x, y, text, 0x000000, 16, 'monospace', { textAlign, textBaseline: 'middle' }))
   }
   if (currentValue !== undefined) {
-    const v = Number.isInteger(currentValue) ? Math.abs(currentValue) : isZero(currentValue) ? 0 : Math.abs(currentValue).toPrecision(3)
+    const v = isZero(currentValue) ? 0 : +Math.abs(currentValue).toPrecision(3)
     result.push(target.renderText(x2, y2, v + 'A', 0x000000, 16, 'monospace', { textAlign: textAlign2, textBaseline: 'middle' }))
     if (!isZero(currentValue)) {
       const to = currentValue > 0 ? data.right : data.left
