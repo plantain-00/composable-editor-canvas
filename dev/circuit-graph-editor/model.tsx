@@ -18,6 +18,7 @@ export interface RenderContext<V> {
   transformStrokeWidth: (strokeWidth: number) => number,
   contents: readonly Nullable<BaseContent>[]
   value?: number
+  equationResult?: number[]
 }
 
 export type Model<T> = {
@@ -281,7 +282,8 @@ export function getDeviceText<V>(
   data: NonNullable<Geometries['data']>,
   target: ReactRenderTarget<V>,
   text?: string,
-  currentValue?: number
+  currentValue?: number,
+  unit = 'A',
 ) {
   const angle = Math.abs(Math.atan2(data.right.y - data.left.y, data.right.x - data.left.x)) / Math.PI
   let x = data.center.x
@@ -307,8 +309,8 @@ export function getDeviceText<V>(
   }
   if (currentValue !== undefined) {
     const v = isZero(currentValue) ? 0 : +Math.abs(currentValue).toPrecision(3)
-    result.push(target.renderText(x2, y2, v + 'A', 0x000000, 16, 'monospace', { textAlign: textAlign2, textBaseline: 'middle' }))
-    if (!isZero(currentValue)) {
+    result.push(target.renderText(x2, y2, v + unit, 0x000000, 16, 'monospace', { textAlign: textAlign2, textBaseline: 'middle' }))
+    if (!isZero(currentValue) && unit === 'A') {
       const to = currentValue > 0 ? data.right : data.left
       const p1 = getPointByLengthAndDirection(data.center, 12, to)
       const p2 = getPointByLengthAndDirection(data.center, 20, to)
