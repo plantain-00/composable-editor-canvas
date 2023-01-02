@@ -29,6 +29,7 @@ export function Renderer(props: {
           transformStrokeWidth: w => props.hovering === i || props.selected === i ? w + 1 : w,
           contents,
           value: props.equationResult[i],
+          equationResult: props.equationResult,
         }))
       }
     }

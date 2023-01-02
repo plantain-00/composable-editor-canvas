@@ -10,6 +10,7 @@ import { Equation } from '../equation/model';
 import { parseExpression, tokenizeExpression } from 'expression-engine';
 import { solveEquations } from '../equation/solver';
 import { switchModel } from './plugins/switch';
+import { capacitorModel } from './plugins/capacitor';
 
 enablePatches()
 
@@ -17,6 +18,7 @@ registerModel(powerModel)
 registerModel(resistanceModel)
 registerModel(wireModel)
 registerModel(switchModel)
+registerModel(capacitorModel)
 
 export const CircuitGraphEditor = React.forwardRef((props: {
   operator: string
