@@ -1,4 +1,4 @@
-import { Expression } from "expression-engine";
+import { Expression2 as Expression } from 'expression-engine'
 import { Equation, expressionHasVariable, getReverseOperator, iterateExpression, optimizeEquation, optimizeExpression } from "./model";
 
 export function solveEquation(equation: Equation): Equation {
@@ -29,7 +29,6 @@ export function solveEquation(equation: Equation): Equation {
             type: 'UnaryExpression',
             argument: equation.right,
             operator: equation.left.operator,
-            range: [0, 0],
           }),
           variable: equation.variable,
         })
@@ -47,7 +46,6 @@ export function solveEquation(equation: Equation): Equation {
               left: equation.right,
               right: optimize(equation.left.right),
               operator: getReverseOperator(equation.left.operator),
-              range: [0, 0],
             }),
             variable: equation.variable,
           })
@@ -63,7 +61,6 @@ export function solveEquation(equation: Equation): Equation {
                 left: optimize(equation.left.left),
                 right: equation.right,
                 operator: equation.left.operator,
-                range: [0, 0],
               }),
               variable: equation.variable,
             })
@@ -77,7 +74,6 @@ export function solveEquation(equation: Equation): Equation {
               left: equation.right,
               right: optimize(equation.left.left),
               operator: getReverseOperator(equation.left.operator),
-              range: [0, 0],
             }),
             variable: equation.variable,
           })
@@ -104,7 +100,6 @@ export function solveEquation(equation: Equation): Equation {
             left: equation.left,
             right: optimize(equation.right.right),
             operator: '*',
-            range: [0, 0],
           }),
           right: optimize(equation.right.left),
           variable: equation.variable,
@@ -117,12 +112,10 @@ export function solveEquation(equation: Equation): Equation {
           left: equation.left,
           operator: '-',
           right: equation.right,
-          range: [0, 0],
         },
         right: {
           type: 'NumericLiteral',
           value: 0,
-          range: [0, 0],
         },
         variable: equation.variable,
       })
@@ -136,12 +129,10 @@ export function solveEquation(equation: Equation): Equation {
           left: equation.left,
           operator: '-',
           right: equation.right,
-          range: [0, 0],
         },
         right: {
           type: 'NumericLiteral',
           value: 0,
-          range: [0, 0],
         },
         variable: equation.variable,
       })
@@ -155,12 +146,10 @@ export function solveEquation(equation: Equation): Equation {
           left: equation.left,
           operator: '+',
           right: optimize(equation.right.argument),
-          range: [0, 0],
         },
         right: {
           type: 'NumericLiteral',
           value: 0,
-          range: [0, 0],
         },
         variable: equation.variable,
       })
