@@ -99,7 +99,7 @@ function createExpressionRenderer(
               height,
             },
             render(x, y) {
-              left.render(x - width / 2 + left.size.width / 2, y + height / 2 - left.size.height / 2)
+              left.render(x - width / 2 + left.size.width / 2, y + height / 2 - left.size.height / 2 - right.size.height / 4)
               right.render(x - width / 2 + left.size.width + right.size.width / 2, y - height / 2 + right.size.height / 2)
             },
           }
@@ -193,7 +193,7 @@ function createExpressionRenderer(
               height,
             },
             render(x, y) {
-              left.render(x - width / 2 + left.size.width / 2, y - height / 2 + left.size.height / 2)
+              left.render(x - width / 2 + left.size.width / 2, y - height / 2 + left.size.height / 2 + right.size.height / 4)
               right.render(x - width / 2 + left.size.width + right.size.width / 2, y + height / 2 - right.size.height / 2)
             },
           }
