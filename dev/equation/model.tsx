@@ -1,4 +1,4 @@
-import { BinaryOperator, evaluateExpression, Expression, printExpression } from "expression-engine"
+import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
 
 export interface Equation {
   left: Expression
@@ -88,11 +88,23 @@ export function optimizeExpression(
       // 1 + 1
       if (expression.left.type === 'NumericLiteral' && expression.right.type === 'NumericLiteral') {
         // 1 + 2 -> 3
+        let result: number
+        if (expression.operator === '+') {
+          result = expression.left.value + expression.right.value
+        } else if (expression.operator === '-') {
+          result = expression.left.value - expression.right.value
+        } else if (expression.operator === '*') {
+          result = expression.left.value * expression.right.value
+        } else if (expression.operator === '/') {
+          result = expression.left.value / expression.right.value
+        } else if (expression.operator === '**') {
+          result = expression.left.value ** expression.right.value
+        } else {
+          throw new Error(`Unsupported operator: ${expression.operator}`)
+        }
         return {
           type: 'NumericLiteral',
-          // type-coverage:ignore-next-line
-          value: evaluateExpression(expression, {}) as number,
-          range: expression.range,
+          value: result,
         }
       }
 
@@ -108,7 +120,6 @@ export function optimizeExpression(
             type: 'UnaryExpression',
             operator: '-',
             argument: expression.right,
-            range: [0, 0],
           })
         }
         // 0 * a -> 0
@@ -155,7 +166,6 @@ export function optimizeExpression(
             type: 'UnaryExpression',
             argument: expression.left,
             operator: '-',
-            range: [0, 0],
           }
         }
       }
@@ -167,7 +177,6 @@ export function optimizeExpression(
             type: 'UnaryExpression',
             argument: expression.right,
             operator: '-',
-            range: [0, 0],
           }
         }
       }
@@ -181,11 +190,9 @@ export function optimizeExpression(
             left: {
               type: 'NumericLiteral',
               value: 2,
-              range: [0, 0],
             },
             operator: '*',
             right: expression.left,
-            range: [0, 0],
           })
         }
         // a - a -> 0
@@ -193,7 +200,6 @@ export function optimizeExpression(
           return {
             type: 'NumericLiteral',
             value: 0,
-            range: [0, 0],
           }
         }
         if (expression.operator === '*') {
@@ -205,9 +211,7 @@ export function optimizeExpression(
             right: {
               type: 'NumericLiteral',
               value: 2,
-              range: [0, 0],
             },
-            range: [0, 0],
           })
         }
         // a / a -> 1
@@ -215,7 +219,6 @@ export function optimizeExpression(
           return {
             type: 'NumericLiteral',
             value: 1,
-            range: [0, 0],
           }
         }
       }
@@ -229,9 +232,7 @@ export function optimizeExpression(
           right: {
             type: 'NumericLiteral',
             value: -expression.right.value,
-            range: [0, 0],
           },
-          range: [0, 0],
         })
       }
       // a / 2 -> a * 0.5
@@ -243,9 +244,7 @@ export function optimizeExpression(
           right: {
             type: 'NumericLiteral',
             value: 1 / expression.right.value,
-            range: [0, 0],
           },
-          range: [0, 0],
         }
       }
       // a - -b -> a + b
@@ -255,7 +254,6 @@ export function optimizeExpression(
           operator: '+',
           left: expression.left,
           right: optimize(expression.right.argument),
-          range: expression.range,
         })
       }
       // a - 2 * b -> a + -2 * b
@@ -274,13 +272,10 @@ export function optimizeExpression(
             left: {
               type: 'NumericLiteral',
               value: -expression.right.left.value,
-              range: [0, 0],
             },
             operator: expression.right.operator,
             right: optimize(expression.right.right),
-            range: [0, 0],
           }),
-          range: [0, 0],
         })
       }
 
@@ -304,7 +299,6 @@ export function optimizeExpression(
             type: 'UnaryExpression',
             operator: '-',
             argument: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
         // (a + (-b)) + b -> a
@@ -357,9 +351,7 @@ export function optimizeExpression(
             right: {
               type: 'NumericLiteral',
               value: v > 0 ? v : -v,
-              range: [0, 0],
             },
-            range: [0, 0],
           })
         }
         // (2 * a) * 3 -> (2 * 3) * a
@@ -376,10 +368,8 @@ export function optimizeExpression(
             left: {
               type: 'NumericLiteral',
               value: expression.operator === '*' ? expression.left.left.value * expression.right.value : expression.left.left.value + expression.right.value,
-              range: [0, 0],
             },
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
 
@@ -402,13 +392,10 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: expression.left.right.left.value + 1,
-                range: [0, 0],
               },
               operator: '*',
               right: optimize(expression.left.right.right),
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
         // (1 + a) + a -> 1 + 2 * a
@@ -427,13 +414,10 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: 2,
-                range: [0, 0],
               },
               operator: '*',
               right: optimize(expression.left.right),
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
 
@@ -456,13 +440,10 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: expression.left.right.left.value - 1,
-                range: [0, 0],
               },
               operator: '*',
               right: expression.right,
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
         // (1 + 2 * a) + 3 * a -> 1 + 5 * a
@@ -487,13 +468,10 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: expression.left.right.left.value + expression.right.left.value,
-                range: [0, 0],
               },
               operator: '*',
               right: optimize(expression.left.right.right),
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
         // (1 - a) + 5 * a -> 1 + 4 * a
@@ -515,13 +493,10 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: -1 + expression.right.left.value,
-                range: [0, 0],
               },
               operator: '*',
               right: optimize(expression.right.right),
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
 
@@ -541,11 +516,9 @@ export function optimizeExpression(
               left: optimize(expression.left.left),
               operator: expression.operator,
               right: expression.right,
-              range: [0, 0],
             }),
             operator: expression.left.operator,
             right: expression.left.right,
-            range: [0, 0],
           })
         }
 
@@ -569,10 +542,8 @@ export function optimizeExpression(
               operator: expression.operator,
               left: optimize(expression.left.left),
               right: expression.right,
-              range: [0, 0],
             }),
             right: optimize(expression.left.right),
-            range: expression.range,
           })
         }
 
@@ -595,9 +566,7 @@ export function optimizeExpression(
               left: optimize(expression.left.right),
               operator: getReverseOperator(expression.operator),
               right: expression.right,
-              range: [0, 0],
             }),
-            range: expression.range,
           })
         }
 
@@ -619,11 +588,9 @@ export function optimizeExpression(
               left: optimize(expression.left.left),
               operator: expression.operator,
               right: expression.right,
-              range: [0, 0],
             },
             operator: expression.left.operator,
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
         // (a + c) + b -> (a + b) + c
@@ -644,11 +611,9 @@ export function optimizeExpression(
               left: optimize(expression.left.left),
               operator: expression.operator,
               right: expression.right,
-              range: [0, 0],
             },
             operator: expression.left.operator,
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
       }
@@ -666,10 +631,8 @@ export function optimizeExpression(
               operator: '+',
               left: expression.left,
               right: optimize(expression.right.left),
-              range: [0, 0],
             }),
             right: optimize(expression.right.right),
-            range: expression.range,
           })
         }
         // a - (b + c) -> (a - b) - c
@@ -683,10 +646,8 @@ export function optimizeExpression(
               operator: '-',
               left: expression.left,
               right: optimize(expression.right.left),
-              range: [0, 0],
             }),
             right: optimize(expression.right.right),
-            range: expression.range,
           })
         }
         // a * (b * c) -> (a * b) * c
@@ -700,10 +661,8 @@ export function optimizeExpression(
               operator: '*',
               left: expression.left,
               right: optimize(expression.right.left),
-              range: [0, 0],
             }),
             right: optimize(expression.right.right),
-            range: expression.range,
           })
         }
       }
@@ -722,7 +681,6 @@ export function optimizeExpression(
           operator: expression.operator,
           left: expression.right,
           right: expression.left,
-          range: expression.range,
         })
       }
       // x * a -> a * x
@@ -732,7 +690,6 @@ export function optimizeExpression(
           left: expression.right,
           operator: expression.operator,
           right: expression.left,
-          range: expression.range,
         })
       }
       // a + x -> x + a
@@ -742,7 +699,6 @@ export function optimizeExpression(
           left: expression.right,
           operator: expression.operator,
           right: expression.left,
-          range: expression.range,
         })
       }
 
@@ -757,9 +713,7 @@ export function optimizeExpression(
             left: expression.left,
             right: optimize(expression.right.argument),
             operator: expression.operator,
-            range: [0, 0],
           }),
-          range: expression.range,
         })
       }
       // (-a) * b -> -(a * b)
@@ -773,9 +727,7 @@ export function optimizeExpression(
             left: optimize(expression.left.argument),
             right: expression.right,
             operator: expression.operator,
-            range: [0, 0],
           }),
-          range: expression.range,
         })
       }
 
@@ -793,15 +745,12 @@ export function optimizeExpression(
                 left: expression.left,
                 operator: '*',
                 right: optimize(expression.right.right),
-                range: [0, 0],
               }),
               operator: expression.operator,
               right: optimize(expression.right.left),
-              range: [0, 0],
             }),
             operator: '/',
             right: optimize(expression.right.right),
-            range: [0, 0],
           })
         }
         // a / b + c -> (a + b * c) / b
@@ -818,13 +767,10 @@ export function optimizeExpression(
                 left: optimize(expression.left.right),
                 operator: '*',
                 right: expression.right,
-                range: [0, 0],
               }),
-              range: [0, 0],
             }),
             operator: '/',
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
       }
@@ -845,7 +791,6 @@ export function optimizeExpression(
               left: optimize(expression.left.left),
               operator: '*',
               right: expression.right,
-              range: [0, 0],
             }),
             operator: expression.left.operator,
             right: optimize({
@@ -853,9 +798,7 @@ export function optimizeExpression(
               left: optimize(expression.left.right),
               operator: '*',
               right: expression.right,
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
 
@@ -873,7 +816,6 @@ export function optimizeExpression(
               left: expression.left,
               operator: '*',
               right: optimize(expression.right.left),
-              range: [0, 0],
             }),
             operator: expression.right.operator,
             right: optimize({
@@ -881,9 +823,7 @@ export function optimizeExpression(
               left: expression.left,
               operator: '*',
               right: optimize(expression.right.right),
-              range: [0, 0],
             }),
-            range: [0, 0],
           })
         }
       }
@@ -909,11 +849,9 @@ export function optimizeExpression(
               left: optimize(expression.left.left),
               right: optimize(expression.right.left),
               operator: expression.operator,
-              range: [0, 0],
             }),
             operator: '*',
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
         // a * x + x -> (a + 1) * x
@@ -933,14 +871,11 @@ export function optimizeExpression(
               right: {
                 type: 'NumericLiteral',
                 value: 1,
-                range: [0, 0],
               },
               operator: expression.operator,
-              range: [0, 0],
             }),
             operator: '*',
             right: optimize(expression.left.right),
-            range: [0, 0],
           })
         }
         // x + a * x -> (1 + a) * x
@@ -959,15 +894,12 @@ export function optimizeExpression(
               left: {
                 type: 'NumericLiteral',
                 value: 1,
-                range: [0, 0],
               },
               right: optimize(expression.right.left),
               operator: expression.operator,
-              range: [0, 0],
             }),
             operator: '*',
             right: expression.left,
-            range: [0, 0],
           })
         }
       }
@@ -979,7 +911,6 @@ export function optimizeExpression(
           return {
             type: 'NumericLiteral',
             value: -expression.argument.value,
-            range: [0, 0],
           }
         }
 
@@ -997,11 +928,9 @@ export function optimizeExpression(
               type: 'UnaryExpression',
               operator: '-',
               argument: optimize(expression.argument.left),
-              range: [0, 0],
             }),
             operator: getReverseOperator(expression.argument.operator),
             right: optimize(expression.argument.right),
-            range: [0, 0],
           })
         }
 
@@ -1016,11 +945,9 @@ export function optimizeExpression(
               left: optimize({
                 type: 'NumericLiteral',
                 value: -expression.argument.left.value,
-                range: [0, 0],
               }),
               operator: expression.argument.operator,
               right: optimize(expression.argument.right),
-              range: [0, 0],
             })
           }
           if (expression.argument.right.type === 'NumericLiteral') {
@@ -1031,9 +958,7 @@ export function optimizeExpression(
               right: optimize({
                 type: 'NumericLiteral',
                 value: -expression.argument.right.value,
-                range: [0, 0],
               }),
-              range: [0, 0],
             })
           }
         }

@@ -41,7 +41,7 @@
     "eslint": "8.30.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-plantain": "2.0.0",
-    "expression-engine": "1.10.2",
+    "expression-engine": "1.11.0",
     "html-webpack-plugin": "5.5.0",
     "markdownlint-cli": "0.32.2",
     "protocol-based-web-framework": "4.7.1",

@@ -12,6 +12,7 @@ export default () => {
   ])
   const [equations, setEquations] = React.useState<Equation[]>([])
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)
+  const [showText, setShowText] = React.useState(false)
   React.useEffect(() => {
     try {
       setEquations(solveEquations(value.map(e => {
@@ -39,10 +40,14 @@ export default () => {
         <input type='checkbox' checked={keepBinaryExpressionOrder} onChange={() => setKeepBinaryExpressionOrder(!keepBinaryExpressionOrder)} />
         keep binary expression order
       </label>
+      <label>
+        <input type='checkbox' checked={showText} onChange={() => setShowText(!showText)} />
+        show text
+      </label>
       {equations.map((e, i) => (
         <React.Fragment key={i}>
-          {renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
-          <code>{printEquation(e, { keepBinaryExpressionOrder })}</code>
+          {!showText && renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
+          {showText && <div><code>{printEquation(e, { keepBinaryExpressionOrder })}</code></div>}
         </React.Fragment>
       ))}
     </div>
