@@ -1,5 +1,5 @@
 import test, { ExecutionContext } from 'ava'
-import { Expression, parseExpression, printExpression, tokenizeExpression } from 'expression-engine'
+import { Expression2 as Expression, parseExpression, printExpression, tokenizeExpression } from 'expression-engine'
 import { expressionHasVariable, optimizeExpression } from '../dev/equation/model'
 
 function optimize(t: ExecutionContext<unknown>, e1: string, e2: string, variable?: string) {
@@ -190,4 +190,12 @@ test('-(2 * a)', (t) => {
   optimize(t, '-(2 / a)', '-2 / a')
   optimize(t, '-(a * 2)', 'a * -2')
   optimize(t, '-(a / 2)', 'a * -0.5')
+})
+
+test('(a * b + a * c) / (b + c)', (t) => {
+  optimize(t, '(a * b + a * c) / (b + c)', 'a')
+})
+
+test('((a * b + a * c) / b) / (b + c)', (t) => {
+  optimize(t, '((a * b + a * c) / b) / (b + c)', 'a / b')
 })
