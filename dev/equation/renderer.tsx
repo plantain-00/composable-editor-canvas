@@ -1,4 +1,4 @@
-import { Expression2 as Expression, postfixUnaryOperators, priorizedBinaryOperators } from "expression-engine"
+import { Expression2 as Expression, priorizedBinaryOperators } from "expression-engine"
 import { getTextSizeFromCache, ReactRenderTarget, Size } from "../../src"
 import { Equation } from "./model"
 
@@ -219,44 +219,4 @@ function createExpressionRenderer(
     children,
     render,
   }
-}
-
-export function printExpression(expression: Expression, options?: Partial<{
-  keepBinaryExpressionOrder: boolean
-}>): string {
-  const print = (expression: Expression, priority = Number.MAX_SAFE_INTEGER): string => {
-    if (expression.type === 'NumericLiteral') {
-      return expression.value.toString()
-    }
-    if (expression.type === 'StringLiteral') {
-      return `'${expression.value}'`
-    }
-    if (expression.type === 'Identifier') {
-      return expression.name
-    }
-    if (expression.type === 'UnaryExpression') {
-      const argument = print(expression.argument, -1)
-      if (postfixUnaryOperators.includes(expression.operator)) {
-        return argument + expression.operator
-      }
-      if (expression.operator === 'await') {
-        return expression.operator + ' ' + argument
-      }
-      return expression.operator + argument
-    }
-    if (expression.type === 'BinaryExpression' || expression.type === 'LogicalExpression') {
-      const index = priorizedBinaryOperators.findIndex(p => p.includes(expression.operator))
-      const rightIndex = expression.operator === '+' || expression.operator === '*' ? index : index - 0.1
-      const result = print(expression.left, index) + ' ' + expression.operator + ' ' + print(expression.right, rightIndex)
-      if (index > priority || (index === priority && options?.keepBinaryExpressionOrder)) {
-        return `(${result})`
-      }
-      return result
-    }
-    if (expression.type === 'ConditionalExpression') {
-      return print(expression.test) + ' ? ' + print(expression.consequent) + ' : ' + print(expression.alternate)
-    }
-    return ''
-  }
-  return print(expression)
 }

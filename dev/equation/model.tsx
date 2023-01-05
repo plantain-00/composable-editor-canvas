@@ -1,4 +1,5 @@
 import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
+import { divide } from "./factorization"
 
 export interface Equation {
   left: Expression
@@ -900,6 +901,27 @@ export function optimizeExpression(
             }),
             operator: '*',
             right: expression.left,
+          })
+        }
+      }
+
+      // (a * b + a * c) / (b + c) -> a
+      if (expression.operator === '/') {
+        const result = divide(expression.left, expression.right)
+        if (result) {
+          return optimize(result)
+        }
+      }
+
+      // ((a * b + a * c) / b) / (b + c) -> a / b
+      if (expression.operator === '/' && expression.left.type === 'BinaryExpression' && expression.left.operator === '/') {
+        const result = divide(expression.left.left, expression.right)
+        if (result) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize(result),
+            operator: '/',
+            right: optimize(expression.left.right),
           })
         }
       }
