@@ -48,6 +48,7 @@ test('x + a = b', (t) => {
   solve(t, 'x - a = b', 'x = a + b', 'x')
   solve(t, 'x * a = b', 'x = b / a', 'x')
   solve(t, 'x / a = b', 'x = a * b', 'x')
+  solve(t, 'x ** a = b', 'x = b ** (1 / a)', 'x')
 
   solve(t, 'a - x = b', 'x = a - b', 'x')
   solve(t, 'a / x = b', 'x = a / b', 'x')

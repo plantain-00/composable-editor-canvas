@@ -194,6 +194,8 @@ test('-(2 * a)', (t) => {
 
 test('(a * b + a * c) / (b + c)', (t) => {
   optimize(t, '(a * b + a * c) / (b + c)', 'a')
+  optimize(t, '(x ** 2 + 3 * x + 2) / (x + 1)', 'x + 2')
+  optimize(t, '(x ** 2 - 1) / (x - 1)', 'x + 1')
 })
 
 test('((a * b + a * c) / b) / (b + c)', (t) => {

@@ -38,13 +38,23 @@ export function solveEquation(equation: Equation): Equation {
           // x + a = b -> x = b - a
           // x - a = b -> x = b + a
           // x * a = b -> x = b / a
-          // x + / = b -> x = b * a
+          // x / a = b -> x = b * a
+          // x ** a = b -> x = b ** (1 / a)
+          const right: Expression = equation.left.operator === '**' ? {
+            type: 'BinaryExpression',
+            left: {
+              type: 'NumericLiteral',
+              value: 1,
+            },
+            operator: '/',
+            right: equation.left.right,
+          } : equation.left.right
           return solve({
             left: optimize(equation.left.left),
             right: optimize({
               type: 'BinaryExpression',
               left: equation.right,
-              right: optimize(equation.left.right),
+              right: optimize(right),
               operator: getReverseOperator(equation.left.operator),
             }),
             variable: equation.variable,

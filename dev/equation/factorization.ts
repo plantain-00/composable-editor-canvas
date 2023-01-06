@@ -40,12 +40,12 @@ function substractFactors(f1: Factor[], f2: Factor[]): Factor[] {
       const r = result[i]
       const e = divideFactor(r, f)
       if (e && e.variables.length === 0) {
-        const constant = (e.constant ?? 1) - (r.constant ?? 1)
+        const constant = (r.constant ?? 1) - (f.constant ?? 1)
         if (constant === 0) {
           result.splice(i, 1)
         } else {
           result[i] = {
-            constant,
+            constant: constant === 1 ? undefined : constant,
             variables: [...f.variables],
           }
         }
