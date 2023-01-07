@@ -476,6 +476,14 @@ export const CircuitGraphEditor = React.forwardRef((props: {
         })
       }
     }
+    equationData.forEach(e => {
+      const variable = Array.from(e.variables.values())[0]
+      equations.push({
+        left: parseExpression(tokenizeExpression(e.left)),
+        right: parseExpression(tokenizeExpression(e.right)),
+        variable,
+      })
+    })
     const result: number[] = []
     zeroVariables.forEach(e => {
       result[+e.slice(1)] = 0

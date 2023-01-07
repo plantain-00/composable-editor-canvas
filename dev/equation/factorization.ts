@@ -32,21 +32,34 @@ function divideFactors(f1: Factor[], f2: Factor[]): Factor[] | void {
   }
 }
 
+function substractFactor(f1: Factor, f2: Factor): number | void {
+  const e = divideFactor(f1, f2)
+  if (e && e.variables.length === 0) {
+    return (f1.constant ?? 1) - (f2.constant ?? 1)
+  }
+}
+
+function addFactor(f1: Factor, f2: Factor): number | void {
+  const e = divideFactor(f1, f2)
+  if (e && e.variables.length === 0) {
+    return (f1.constant ?? 1) + (f2.constant ?? 1)
+  }
+}
+
 function substractFactors(f1: Factor[], f2: Factor[]): Factor[] {
   const result = [...f1]
   for (const f of f2) {
     let handled = false
     for (let i = 0; i < result.length; i++) {
       const r = result[i]
-      const e = divideFactor(r, f)
-      if (e && e.variables.length === 0) {
-        const constant = (r.constant ?? 1) - (f.constant ?? 1)
-        if (constant === 0) {
+      const e = substractFactor(r, f)
+      if (e !== undefined) {
+        if (e === 0) {
           result.splice(i, 1)
         } else {
           result[i] = {
-            constant: constant === 1 ? undefined : constant,
-            variables: [...f.variables],
+            constant: e === 1 ? undefined : e,
+            variables: [...r.variables],
           }
         }
         handled = true
@@ -78,12 +91,15 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
   }
 }
 
-function expressionToFactors(e: Expression2): Factor[] | void {
-  if (e.type === 'BinaryExpression' && e.operator === '+') {
+export function expressionToFactors(e: Expression2): Factor[] | void {
+  if (e.type === 'BinaryExpression' && (e.operator === '+' || e.operator === '-')) {
     const left = expressionToFactors(e.left)
     if (!left) return
-    const right = expressionToFactors(e.right)
+    let right = expressionToFactors(e.right)
     if (!right) return
+    if (e.operator === '-') {
+      right = right.map(r => reverseFactor(r))
+    }
     return [...left, ...right]
   }
   const factor = expressionToFactor(e)
@@ -103,6 +119,11 @@ function expressionToFactor(e: Expression2): Factor | void {
     return {
       variables: [e.name],
     }
+  }
+  if (e.type === 'UnaryExpression' && e.operator === '-') {
+    const argument = expressionToFactor(e.argument)
+    if (!argument) return
+    return reverseFactor(argument)
   }
   if (e.type === 'BinaryExpression') {
     if (e.operator === '*') {
@@ -134,7 +155,7 @@ function expressionToFactor(e: Expression2): Factor | void {
   }
 }
 
-function factorsToExpression(f: Factor[]): Expression2 {
+export function factorsToExpression(f: Factor[]): Expression2 {
   if (f.length === 0) {
     return {
       type: 'NumericLiteral',
@@ -205,4 +226,32 @@ function multiplyFactor(...factors: Factor[]): Factor {
     variables,
     constant: constant === 1 ? undefined : constant,
   }
+}
+
+function reverseFactor(factor: Factor) {
+  return multiplyFactor(factor, { constant: -1, variables: [] })
+}
+
+export function optimizeFactors(factors: Factor[]) {
+  const result: Factor[] = []
+  for (const factor of factors) {
+    if (factor.constant === 0) continue
+    let handled = false
+    for (let i = 0; i < result.length; i++) {
+      const c = addFactor(result[i], factor)
+      if (c !== undefined) {
+        if (c === 0) {
+          result.splice(i, 1)
+        } else {
+          result[i].constant = c
+        }
+        handled = true
+        break
+      }
+    }
+    if (!handled) {
+      result.push(factor)
+    }
+  }
+  return result
 }

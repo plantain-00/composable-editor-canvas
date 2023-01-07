@@ -58,6 +58,12 @@ test('a + a', (t) => {
   optimize(t, 'a / a', '1')
 })
 
+test('-a + a', (t) => {
+  optimize(t, '-a + a', '0')
+  optimize(t, '-a - a', '-2 * a')
+  optimize(t, '-a / a', '-1')
+})
+
 test('a - 2', (t) => {
   optimize(t, 'a - 2', 'a + -2')
 })
@@ -82,6 +88,8 @@ test('(a + b) - b', (t) => {
   optimize(t, '(a + b) + -b', 'a')
   optimize(t, '(2 * a) * 3', '6 * a')
   optimize(t, '(2 + a) + 3', '5 + a')
+  optimize(t, '(a * 2) * 3', '6 * a')
+  optimize(t, '(a + 2) + 3', 'a + 5')
   optimize(t, '(1 + 2 * a) + a', '1 + 3 * a')
   optimize(t, '(1 + a) + a', '1 + 2 * a')
   optimize(t, '(1 - a) - a', '1 + -2 * a')
@@ -108,7 +116,7 @@ test('(a + b) - b', (t) => {
 
   optimize(t, '(a * c) * b', '(a * b) * c')
   optimize(t, '(a / c) * b', '(a * b) / c')
-  optimize(t, '(a * c) / b', '(a / b) * c')
+  optimize(t, '(a / b) * c', '(a * c) / b')
   optimize(t, '(a / c) / b', '(a / b) / c')
 
   optimize(t, '(a + c) + b', '(a + b) + c')
@@ -170,6 +178,8 @@ test('a * x + b * x', (t) => {
   optimize(t, 'a * x - x', '(a + -1) * x', 'x')
   optimize(t, 'x + a * x', '(1 + a) * x', 'x')
   optimize(t, 'x - a * x', '(1 - a) * x', 'x')
+  optimize(t, '-x + a * x', '(-1 + a) * x', 'x')
+  optimize(t, '-x - a * x', '(-1 - a) * x', 'x')
 })
 
 test('-(1)', (t) => {
@@ -200,4 +210,10 @@ test('(a * b + a * c) / (b + c)', (t) => {
 
 test('((a * b + a * c) / b) / (b + c)', (t) => {
   optimize(t, '((a * b + a * c) / b) / (b + c)', 'a / b')
+})
+
+test('((a + 2 * b) + 2 * a) + 3 * b', (t) => {
+  optimize(t, '((a + 2 * b) + 2 * a) + 3 * b', '3 * a + 5 * b')
+  optimize(t, '((a + 2 * b) + 2 * a) - b', '3 * a + b')
+  optimize(t, '((a + 2 * b) + 2 * a) + -b', '3 * a + b')
 })
