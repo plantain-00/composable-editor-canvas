@@ -1,5 +1,6 @@
 import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
-import { divide } from "./factorization"
+import { isZero } from "../../src"
+import { divide, expressionToFactors, factorsToExpression, optimizeFactors } from "./factorization"
 
 export interface Equation {
   left: Expression
@@ -110,7 +111,7 @@ export function optimizeExpression(
       }
 
       // 0 + a
-      if (expression.left.type === 'NumericLiteral' && expression.left.value === 0) {
+      if (expression.left.type === 'NumericLiteral' && isZero(expression.left.value)) {
         // 0 + a -> a
         if (expression.operator === '+') {
           return expression.right
@@ -130,7 +131,7 @@ export function optimizeExpression(
         }
       }
       // a + 0
-      if (expression.right.type === 'NumericLiteral' && expression.right.value === 0) {
+      if (expression.right.type === 'NumericLiteral' && isZero(expression.right.value)) {
         // a + 0 -> a
         // a - 0 -> a
         if (expression.operator === '+' || expression.operator === '-') {
@@ -220,6 +221,40 @@ export function optimizeExpression(
           return {
             type: 'NumericLiteral',
             value: 1,
+          }
+        }
+      }
+
+      // -a + a
+      if (
+        expression.left.type === 'UnaryExpression' &&
+        expression.left.operator === '-' &&
+        isSameExpression(expression.left.argument, expression.right)
+      ) {
+        // -a + a -> 0
+        if (expression.operator === '+') {
+          return {
+            type: 'NumericLiteral',
+            value: 0,
+          }
+        }
+        // -a - a -> -2 * a
+        if (expression.operator === '-') {
+          return optimize({
+            type: 'BinaryExpression',
+            left: {
+              type: 'NumericLiteral',
+              value: -2,
+            },
+            operator: '*',
+            right: optimize(expression.left.argument),
+          })
+        }
+        // -a / a -> -1
+        if (expression.operator === '/') {
+          return {
+            type: 'NumericLiteral',
+            value: -1,
           }
         }
       }
@@ -371,6 +406,24 @@ export function optimizeExpression(
               value: expression.operator === '*' ? expression.left.left.value * expression.right.value : expression.left.left.value + expression.right.value,
             },
             right: optimize(expression.left.right),
+          })
+        }
+        // (a * 2) * 3 -> (2 * 3) * a
+        // (a + 2) + 3 -> (2 + 3) + a
+        if (
+          (expression.operator === '+' || expression.operator === '*') &&
+          expression.left.operator === expression.operator &&
+          expression.left.right.type === 'NumericLiteral' &&
+          expression.right.type === 'NumericLiteral'
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            operator: expression.operator,
+            left: {
+              type: 'NumericLiteral',
+              value: expression.operator === '*' ? expression.left.right.value * expression.right.value : expression.left.right.value + expression.right.value,
+            },
+            right: optimize(expression.left.left),
           })
         }
 
@@ -572,15 +625,32 @@ export function optimizeExpression(
         }
 
         // (a * c) * b -> (a * b) * c
-        // (a / c) * b -> (a * b) / c
-        // (a * c) / b -> (a / b) * c
         // (a / c) / b -> (a / b) / c
         if (
           (expression.operator === '*' || expression.operator === '/') &&
           expression.left.type === 'BinaryExpression' &&
-          (expression.left.operator === '*' || expression.left.operator === '/') &&
+          expression.left.operator === expression.operator &&
           (!hasVariable || !hasVariable(expression.left.right)) &&
           shouldBeAfterExpression(expression.left.right, expression.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: {
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: expression.operator,
+              right: expression.right,
+            },
+            operator: expression.left.operator,
+            right: optimize(expression.left.right),
+          })
+        }
+        // (a / c) * b -> (a * b) / c
+        if (
+          expression.operator === '*' &&
+          expression.left.type === 'BinaryExpression' &&
+          expression.left.operator === '/' &&
+          (!hasVariable || !hasVariable(expression.left.right))
         ) {
           return optimize({
             type: 'BinaryExpression',
@@ -903,6 +973,32 @@ export function optimizeExpression(
             right: expression.left,
           })
         }
+        // -x + a * x -> (-1 + a) * x
+        // -x - a * x -> (-1 - a) * x
+        if (
+          expression.right.type === 'BinaryExpression' &&
+          expression.right.operator === '*' &&
+          expression.left.type === 'UnaryExpression' &&
+          expression.left.operator === '-' &&
+          !hasVariable(expression.right.left) &&
+          hasVariable(expression.right.right) &&
+          isSameExpression(expression.left.argument, expression.right.right)
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize({
+              type: 'BinaryExpression',
+              left: {
+                type: 'NumericLiteral',
+                value: -1,
+              },
+              right: optimize(expression.right.left),
+              operator: expression.operator,
+            }),
+            operator: '*',
+            right: optimize(expression.left.argument),
+          })
+        }
       }
 
       // (a * b + a * c) / (b + c) -> a
@@ -923,6 +1019,17 @@ export function optimizeExpression(
             operator: '/',
             right: optimize(expression.left.right),
           })
+        }
+      }
+
+      // ((a + 2 * b) + 2 * a) + 3 * b -> 3 * a + 5 * b
+      if (expression.operator === '+' || expression.operator === '-') {
+        const factors = expressionToFactors(expression)
+        if (factors) {
+          const newFactors = optimizeFactors(factors)
+          if (newFactors.length < factors.length) {
+            return optimize(factorsToExpression(newFactors))
+          }
         }
       }
     } else if (expression.type === 'UnaryExpression') {

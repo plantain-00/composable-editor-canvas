@@ -5,6 +5,23 @@ export function solveEquation(equation: Equation): Equation {
   const hasVariable = (e: Expression) => expressionHasVariable(e, equation.variable)
   const optimize = (e: Expression) => optimizeExpression(e, hasVariable)
   const solve = (equation: Equation): Equation => {
+    if (!equation.variable || !equationHasVariable(equation, equation.variable)) {
+      for (const a of iterateExpression(equation.left)) {
+        if (a.type === 'Identifier') {
+          equation.variable = a.name
+          break
+        }
+      }
+    }
+    if (!equation.variable || !equationHasVariable(equation, equation.variable)) {
+      for (const a of iterateExpression(equation.right)) {
+        if (a.type === 'Identifier') {
+          equation.variable = a.name
+          break
+        }
+      }
+    }
+
     optimizeEquation(equation, hasVariable)
     if (!hasVariable(equation.left)) {
       if (!hasVariable(equation.right)) {
@@ -180,24 +197,8 @@ export function solveEquations(equations: Equation[]) {
   for (let e of equations) {
     e.left = composeExpression(e.left, context)
     e.right = composeExpression(e.right, context)
-    if (!e.variable) {
-      for (const a of iterateExpression(e.left)) {
-        if (a.type === 'Identifier') {
-          e.variable = a.name
-          break
-        }
-      }
-    }
-    if (!e.variable) {
-      for (const a of iterateExpression(e.right)) {
-        if (a.type === 'Identifier') {
-          e.variable = a.name
-          break
-        }
-      }
-    }
     e = solveEquation(e)
-    result.push(solveEquation(e))
+    result.push(e)
     if (e.left.type === 'Identifier' && !expressionHasVariable(e.right, e.variable)) {
       context[e.left.name] = e.right
     }
@@ -215,7 +216,7 @@ export function solveEquations(equations: Equation[]) {
     result[i] = solveEquation(e)
   }
 
-  let lastResultCount = result.filter(r => r.right.type === 'NumericLiteral').length
+  let lastResultCount = result.length
   for (; ;) {
     context = {}
     result.forEach(e => {
@@ -265,9 +266,28 @@ function replaceIdentifier<T extends string>(
   if (expression.type === 'Identifier') {
     const v = context[expression.name]
     if (v) {
-      parent[field] = v
+      parent[field] = cloneExpression(v)
     }
   } else {
     composeExpression(expression, context)
+  }
+}
+
+function cloneExpression(expression: Expression): Expression {
+  if (expression.type === 'BinaryExpression') {
+    return {
+      ...expression,
+      left: cloneExpression(expression.left),
+      right: cloneExpression(expression.right),
+    }
+  }
+  if (expression.type === 'UnaryExpression') {
+    return {
+      ...expression,
+      argument: cloneExpression(expression.argument),
+    }
+  }
+  return {
+    ...expression,
   }
 }
