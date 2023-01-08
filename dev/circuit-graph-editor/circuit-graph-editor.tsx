@@ -6,7 +6,6 @@ import { powerModel } from "./plugins/power";
 import { resistanceModel } from './plugins/resistance';
 import { wireModel } from './plugins/wire';
 import { Renderer } from './renderer';
-import { Equation } from '../equation/model';
 import { parseExpression, tokenizeExpression } from 'expression-engine';
 import { solveEquations } from '../equation/solver';
 import { switchModel } from './plugins/switch';
@@ -411,7 +410,6 @@ export const CircuitGraphEditor = React.forwardRef((props: {
 
   React.useEffect(() => {
     const equationData: EquationData[] = []
-    const zeroVariables = new Set<string>()
     state.forEach((content, i) => {
       if (content) {
         if (isJunctionContent(content)) {
@@ -430,69 +428,32 @@ export const CircuitGraphEditor = React.forwardRef((props: {
             equationData.push({
               left: start.join(' + ') || '0',
               right: end.join(' + ') || '0',
-              variables: new Set([...start, ...end]),
             })
           }
           if (content.ground) {
-            zeroVariables.add(`U${i}`)
+            equationData.push({
+              left: `U${i}`,
+              right: '0',
+            })
           }
         } else if (isDeviceContent(content) && typeof content.start === 'number' && typeof content.end === 'number') {
           const data = getContentModel(content)?.getEquationData?.(content, i)
           if (data) {
-            if (data.zero) {
-              zeroVariables.add(`I${i}`)
-            } else {
-              equationData.push(data)
-            }
+            equationData.push(data)
           }
         }
       }
     })
-    const equations: Equation[] = []
-    zeroVariables.forEach(g => {
-      equationData.forEach(f => {
-        f.variables.delete(g)
-      })
-      equations.push({
-        left: parseExpression(tokenizeExpression(g)),
-        right: parseExpression(tokenizeExpression('0')),
-        variable: g,
-      })
-    })
-    const variables = new Set(equationData.map(e => [...e.variables]).flat())
-    while (variables.size > 0 && equationData.length > 0) {
-      equationData.sort((a, b) => a.variables.size - b.variables.size)
-      const e = equationData.shift()
-      if (e) {
-        const variable = Array.from(e.variables.values())[0]
-        equations.push({
-          left: parseExpression(tokenizeExpression(e.left)),
-          right: parseExpression(tokenizeExpression(e.right)),
-          variable,
-        })
-        variables.delete(variable)
-        equationData.forEach(f => {
-          f.variables.delete(variable)
-        })
+    const equations = equationData.map(e => ({
+      left: parseExpression(tokenizeExpression(e.left)),
+      right: parseExpression(tokenizeExpression(e.right)),
+    }))
+    const result: number[] = []
+    for (const [key, e] of Object.entries(solveEquations(equations))) {
+      if (e.type === 'NumericLiteral') {
+        result[+key.slice(1)] = e.value
       }
     }
-    equationData.forEach(e => {
-      const variable = Array.from(e.variables.values())[0]
-      equations.push({
-        left: parseExpression(tokenizeExpression(e.left)),
-        right: parseExpression(tokenizeExpression(e.right)),
-        variable,
-      })
-    })
-    const result: number[] = []
-    zeroVariables.forEach(e => {
-      result[+e.slice(1)] = 0
-    })
-    solveEquations(equations).forEach(e => {
-      if (e.left.type === 'Identifier' && e.right.type === 'NumericLiteral') {
-        result[+e.left.name.slice(1)] = e.right.value
-      }
-    })
     setEquationResult(result)
   }, [state])
 

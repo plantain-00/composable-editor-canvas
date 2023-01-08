@@ -55,8 +55,6 @@ export const capacitorModel: Model<CapacitorDevice> = {
     return {
       left: `I${i}`,
       right: `0`,
-      variables: new Set(`I${i}`),
-      zero: true,
     }
   },
 }

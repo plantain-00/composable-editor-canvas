@@ -9,8 +9,7 @@ function solve(t: ExecutionContext<unknown>, e1: string, e2: string, variable: s
     printEquation(solveEquation({
       left: parseExpression(tokenizeExpression(e[0])),
       right: parseExpression(tokenizeExpression(e[1])),
-      variable,
-    }), { keepBinaryExpressionOrder: true }),
+    }, variable), { keepBinaryExpressionOrder: true }),
     e2,
   )
 }

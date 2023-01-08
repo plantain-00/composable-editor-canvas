@@ -15,13 +15,18 @@ export default () => {
   const [showText, setShowText] = React.useState(false)
   React.useEffect(() => {
     try {
-      setEquations(solveEquations(value.map(e => {
+      setEquations(Object.entries(solveEquations(value.map(e => {
         const equation = e.equation.split('=')
         return {
           left: parseExpression(tokenizeExpression(equation[0])),
           right: parseExpression(tokenizeExpression(equation[1])),
-          variable: e.variable,
         }
+      }), new Set(value.map(e => e.variable)))).map(([key, e]) => ({
+        left: {
+          type: 'Identifier',
+          name: key,
+        },
+        right: e,
       })))
     } catch (error) {
       console.info(error)

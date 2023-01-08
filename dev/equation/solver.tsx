@@ -1,27 +1,10 @@
 import { Expression2 as Expression } from 'expression-engine'
-import { Equation, expressionHasVariable, getReverseOperator, iterateExpression, optimizeEquation, optimizeExpression } from "./model";
+import { Equation, expressionHasVariable, getReverseOperator, iterateEquation, optimizeEquation, optimizeExpression } from "./model";
 
-export function solveEquation(equation: Equation): Equation {
-  const hasVariable = (e: Expression) => expressionHasVariable(e, equation.variable)
+export function solveEquation(equation: Equation, variable: string): Equation {
+  const hasVariable = (e: Expression) => expressionHasVariable(e, variable)
   const optimize = (e: Expression) => optimizeExpression(e, hasVariable)
   const solve = (equation: Equation): Equation => {
-    if (!equation.variable || !equationHasVariable(equation, equation.variable)) {
-      for (const a of iterateExpression(equation.left)) {
-        if (a.type === 'Identifier') {
-          equation.variable = a.name
-          break
-        }
-      }
-    }
-    if (!equation.variable || !equationHasVariable(equation, equation.variable)) {
-      for (const a of iterateExpression(equation.right)) {
-        if (a.type === 'Identifier') {
-          equation.variable = a.name
-          break
-        }
-      }
-    }
-
     optimizeEquation(equation, hasVariable)
     if (!hasVariable(equation.left)) {
       if (!hasVariable(equation.right)) {
@@ -32,7 +15,6 @@ export function solveEquation(equation: Equation): Equation {
       equation = {
         left: equation.right,
         right: equation.left,
-        variable: equation.variable,
       }
     }
 
@@ -47,7 +29,6 @@ export function solveEquation(equation: Equation): Equation {
             argument: equation.right,
             operator: equation.left.operator,
           }),
-          variable: equation.variable,
         })
       }
       if (equation.left.type === 'BinaryExpression') {
@@ -74,7 +55,6 @@ export function solveEquation(equation: Equation): Equation {
               right: optimize(right),
               operator: getReverseOperator(equation.left.operator),
             }),
-            variable: equation.variable,
           })
         }
         if (hasVariable(equation.left.right) && !hasVariable(equation.left.left)) {
@@ -89,7 +69,6 @@ export function solveEquation(equation: Equation): Equation {
                 right: equation.right,
                 operator: equation.left.operator,
               }),
-              variable: equation.variable,
             })
           }
           // a + x = b -> x = b - a
@@ -102,7 +81,6 @@ export function solveEquation(equation: Equation): Equation {
               right: optimize(equation.left.left),
               operator: getReverseOperator(equation.left.operator),
             }),
-            variable: equation.variable,
           })
         }
         // (x + 1) / x = 0
@@ -110,7 +88,6 @@ export function solveEquation(equation: Equation): Equation {
           return solve({
             left: optimize(equation.left.left),
             right: equation.right,
-            variable: equation.variable,
           })
         }
       }
@@ -129,7 +106,6 @@ export function solveEquation(equation: Equation): Equation {
             operator: '*',
           }),
           right: optimize(equation.right.left),
-          variable: equation.variable,
         })
       }
       // x + 1 = 2 * x -> x + 1 - 2 * x = 0
@@ -144,7 +120,6 @@ export function solveEquation(equation: Equation): Equation {
           type: 'NumericLiteral',
           value: 0,
         },
-        variable: equation.variable,
       })
     }
     // 1 - x = x
@@ -161,7 +136,6 @@ export function solveEquation(equation: Equation): Equation {
           type: 'NumericLiteral',
           value: 0,
         },
-        variable: equation.variable,
       })
     }
     // 1 + x = -x
@@ -178,7 +152,6 @@ export function solveEquation(equation: Equation): Equation {
           type: 'NumericLiteral',
           value: 0,
         },
-        variable: equation.variable,
       })
     }
     return equation
@@ -191,53 +164,101 @@ export function equationHasVariable(e: Equation, variable: string) {
   return expressionHasVariable(e.left, variable) || expressionHasVariable(e.right, variable)
 }
 
-export function solveEquations(equations: Equation[]) {
-  const result: Equation[] = []
-  let context: Record<string, Expression> = {}
-  for (let e of equations) {
-    e.left = composeExpression(e.left, context)
-    e.right = composeExpression(e.right, context)
-    e = solveEquation(e)
-    result.push(e)
-    if (e.left.type === 'Identifier' && !expressionHasVariable(e.right, e.variable)) {
-      context[e.left.name] = e.right
+function getEquationVariables(equation: Equation) {
+  const variables = new Set<string>()
+  for (const expression of iterateEquation(equation)) {
+    if (expression.type === 'Identifier') {
+      variables.add(expression.name)
     }
   }
-
-  context = {}
-  for (let i = result.length - 1; i >= 0; i--) {
-    const e = result[i]
-    if (e.left.type === 'Identifier' && !expressionHasVariable(e.right, e.variable)) {
-      context[e.left.name] = e.right
-    } else {
-      e.left = composeExpression(e.left, context)
-    }
-    e.right = composeExpression(e.right, context)
-    result[i] = solveEquation(e)
-  }
-
-  let lastResultCount = result.length
-  for (; ;) {
-    context = {}
-    result.forEach(e => {
-      if (e.left.type === 'Identifier' && e.right.type === 'NumericLiteral') {
-        context[e.left.name] = e.right
-      }
-    })
-    result.forEach((e, i) => {
-      e.right = composeExpression(e.right, context)
-      result[i] = solveEquation(e)
-    })
-    const resultCount = result.filter(r => r.right.type === 'NumericLiteral').length
-    if (resultCount === lastResultCount) {
-      break
-    }
-    lastResultCount = resultCount
-  }
-
-  return result
+  return Array.from(variables)
 }
 
+export function solveEquations(equations: Equation[], presetVariables?: Set<string>) {
+  if (!presetVariables) {
+    presetVariables = new Set<string>()
+    for (const equation of equations) {
+      for (const v of getEquationVariables(equation)) {
+        presetVariables.add(v)
+      }
+    }
+  }
+  const variables = presetVariables
+  const resultContext: Record<string, Expression> = {}
+
+  const collectResult = () => {
+    let lastCount = equations.length
+    for (; ;) {
+      const remains: Equation[] = []
+      for (let equation of equations) {
+        const v = getEquationVariables(equation).filter(e => variables.has(e))
+        if (v.length > 0) {
+          if (v.length === 1) {
+            optimizeEquation(equation, e => expressionHasVariable(e, v[0]))
+            equation = solveEquation(equation, v[0])
+          }
+          if (equation.left.type === 'Identifier' && equation.right.type === 'NumericLiteral') {
+            for (const v in resultContext) {
+              resultContext[v] = optimizeExpression(
+                composeExpression(resultContext[v], { [equation.left.name]: equation.right }),
+                e => expressionHasVariable(e, v),
+              )
+            }
+            resultContext[equation.left.name] = equation.right
+            variables.delete(equation.left.name)
+          } else {
+            remains.push(equation)
+          }
+        }
+      }
+      equations = composeEquations(remains, resultContext, variables)
+      if (equations.length === lastCount) {
+        break
+      }
+      lastCount = equations.length
+    }
+  }
+  collectResult()
+
+  for (; ;) {
+    const equation = equations.shift()
+    if (!equation) {
+      break
+    }
+    const variable = getEquationVariables(equation).filter(e => variables.has(e))[0]
+    const newEquation = solveEquation(equation, variable)
+    for (const v in resultContext) {
+      resultContext[v] = optimizeExpression(
+        composeExpression(resultContext[v], { [variable]: newEquation.right }),
+        e => expressionHasVariable(e, v),
+      )
+    }
+    resultContext[variable] = newEquation.right
+    variables.delete(variable)
+    equations = composeEquations(equations, { [variable]: newEquation.right }, variables)
+    collectResult()
+  }
+
+  return resultContext
+}
+
+function composeEquations(equations: Equation[], context: Record<string, Expression>, variables: Set<string>) {
+  const remains: Equation[] = []
+  for (let equation of equations) {
+    equation.left = composeExpression(equation.left, context)
+    equation.right = composeExpression(equation.right, context)
+    const v = getEquationVariables(equation).filter(e => variables.has(e))
+    if (v.length > 0) {
+      if (v.length === 1) {
+        equation = optimizeEquation(equation, e => expressionHasVariable(e, v[0]))
+        remains.push(solveEquation(equation, v[0]))
+      } else {
+        remains.push(equation)
+      }
+    }
+  }
+  return remains
+}
 
 function composeExpression(
   expression: Expression,

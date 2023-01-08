@@ -49,14 +49,11 @@ export const switchModel: Model<SwitchDevice> = {
       return {
         left: `U${content.start}`,
         right: `U${content.end}`,
-        variables: new Set([`U${content.start}`, `U${content.end}`]),
       }
     }
     return {
       left: `I${i}`,
       right: `0`,
-      variables: new Set(`I${i}`),
-      zero: true,
     }
   },
   getAction(p, content, contents) {

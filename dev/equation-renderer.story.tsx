@@ -15,7 +15,6 @@ export default () => {
       setEquation(optimizeEquation({
         left: parseExpression(tokenizeExpression(left)),
         right: parseExpression(tokenizeExpression(right)),
-        variable: 'B',
       }))
     } catch (error) {
       console.info(error)

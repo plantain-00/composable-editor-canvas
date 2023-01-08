@@ -55,7 +55,6 @@ export const powerModel: Model<PowerDevice> = {
     return {
       left: `U${content.start} + ${content.value}`,
       right: `U${content.end}`,
-      variables: new Set([`U${content.start}`, `U${content.end}`]),
     }
   },
 }
