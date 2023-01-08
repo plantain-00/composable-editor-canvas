@@ -5,7 +5,6 @@ import { divide, expressionToFactors, factorsToExpression, optimizeFactors } fro
 export interface Equation {
   left: Expression
   right: Expression
-  variable: string
 }
 
 export const equationRenderStyles = [0x000000, 20, 'monospace', 10, 10, 5] as const
@@ -18,6 +17,11 @@ export function* iterateExpression(e: Expression): Generator<Expression, void, u
   } else if (e.type === 'UnaryExpression') {
     yield* iterateExpression(e.argument)
   }
+}
+
+export function* iterateEquation(e: Equation): Generator<Expression, void, unknown> {
+  yield* iterateExpression(e.left)
+  yield* iterateExpression(e.right)
 }
 
 export function expressionHasVariable(e: Expression, variable: string) {

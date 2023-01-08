@@ -49,8 +49,6 @@ export type ContentUpdater = (recipe: (content: BaseContent, contents: readonly 
 export interface EquationData {
   left: string
   right: string
-  variables: Set<string>
-  zero?: boolean
 }
 
 export const deviceModel: Partial<Model<BaseDevice>> = {

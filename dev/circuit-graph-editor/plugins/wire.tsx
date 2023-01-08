@@ -37,7 +37,6 @@ export const wireModel: Model<WireDevice> = {
     return {
       left: `U${content.start}`,
       right: `U${content.end}`,
-      variables: new Set([`U${content.start}`, `U${content.end}`]),
     }
   },
 }

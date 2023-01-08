@@ -47,7 +47,6 @@ export const resistanceModel: Model<ResistanceDevice> = {
     return {
       left: `U${content.start} - ${content.value} * I${i}`,
       right: `U${content.end}`,
-      variables: new Set([`U${content.start}`, `U${content.end}`, `I${i}`]),
     }
   },
 }
