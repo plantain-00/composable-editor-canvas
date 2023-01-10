@@ -2,15 +2,16 @@ import test, { ExecutionContext } from 'ava'
 import { parseExpression, tokenizeExpression } from 'expression-engine'
 import { printEquation } from '../dev/equation/model'
 import { solveEquation } from '../dev/equation/solver'
+import { iterateItemOrArray } from '../src'
 
-function solve(t: ExecutionContext<unknown>, e1: string, e2: string, variable: string) {
+function solve(t: ExecutionContext<unknown>, e1: string, e2: string | string[], variable: string) {
   const e = e1.split('=')
   t.deepEqual(
-    printEquation(solveEquation({
+    solveEquation({
       left: parseExpression(tokenizeExpression(e[0])),
       right: parseExpression(tokenizeExpression(e[1])),
-    }, variable), { keepBinaryExpressionOrder: true }),
-    e2,
+    }, variable).map(m => printEquation(m, { keepBinaryExpressionOrder: true })),
+    Array.from(iterateItemOrArray(e2)),
   )
 }
 
@@ -69,4 +70,8 @@ test('1 + x = -x', (t) => {
 
 test('(x + 1) / x = 0', (t) => {
   solve(t, '(x + 1) / x = 0', 'x = -1', 'x')
+})
+
+test('(x + 1) * x = 0', (t) => {
+  solve(t, '(x + 1) * x = 0', ['x = -1', 'x = 0'], 'x')
 })

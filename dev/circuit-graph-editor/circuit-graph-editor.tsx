@@ -449,7 +449,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       right: parseExpression(tokenizeExpression(e.right)),
     }))
     const result: number[] = []
-    for (const [key, e] of Object.entries(solveEquations(equations))) {
+    for (const [key, e] of Object.entries(solveEquations(equations)[0])) {
       if (e.type === 'NumericLiteral') {
         result[+key.slice(1)] = e.value
       }
