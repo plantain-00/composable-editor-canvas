@@ -10,24 +10,25 @@ export default () => {
     { equation: '(U - A) * R1 + (B - A) * R5 = (A - U2) * R2', variable: 'A' },
     { equation: '(U - B) * R3 = (B - A) * R5 + (B - U2) * R4', variable: 'B' },
   ])
-  const [equations, setEquations] = React.useState<Equation[]>([])
+  const [equations, setEquations] = React.useState<Equation[][]>([])
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)
   const [showText, setShowText] = React.useState(false)
   React.useEffect(() => {
     try {
-      setEquations(Object.entries(solveEquations(value.map(e => {
+      const result = solveEquations(value.map(e => {
         const equation = e.equation.split('=')
         return {
           left: parseExpression(tokenizeExpression(equation[0])),
           right: parseExpression(tokenizeExpression(equation[1])),
         }
-      }), new Set(value.map(e => e.variable)))).map(([key, e]) => ({
+      }), new Set(value.map(e => e.variable)))
+      setEquations(result.map(e => Object.entries(e).map(([key, e]) => ({
         left: {
-          type: 'Identifier',
+          type: 'Identifier' as const,
           name: key,
         },
         right: e,
-      })))
+      }))))
     } catch (error) {
       console.info(error)
     }
@@ -49,11 +50,15 @@ export default () => {
         <input type='checkbox' checked={showText} onChange={() => setShowText(!showText)} />
         show text
       </label>
-      {equations.map((e, i) => (
-        <React.Fragment key={i}>
-          {!showText && renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
-          {showText && <div><code>{printEquation(e, { keepBinaryExpressionOrder })}</code></div>}
-        </React.Fragment>
+      {equations.map((a, j) => (
+        <div key={j} style={{ borderBottom: '1px solid black', display: 'flex', flexDirection: 'column' }}>
+          {a.map((e, i) => (
+            <React.Fragment key={i}>
+              {!showText && renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
+              {showText && <div><code>{printEquation(e, { keepBinaryExpressionOrder })}</code></div>}
+            </React.Fragment>
+          ))}
+        </div>
       ))}
     </div>
   )

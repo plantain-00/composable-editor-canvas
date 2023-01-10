@@ -1,10 +1,11 @@
 import { Expression2 as Expression } from 'expression-engine'
+import { iterateItemOrArray } from '../../src';
 import { Equation, expressionHasVariable, getReverseOperator, iterateEquation, optimizeEquation, optimizeExpression } from "./model";
 
-export function solveEquation(equation: Equation, variable: string): Equation {
+export function solveEquation(equation: Equation, variable: string): Equation[] {
   const hasVariable = (e: Expression) => expressionHasVariable(e, variable)
   const optimize = (e: Expression) => optimizeExpression(e, hasVariable)
-  const solve = (equation: Equation): Equation => {
+  const solve = (equation: Equation): Equation | Equation[] => {
     optimizeEquation(equation, hasVariable)
     if (!hasVariable(equation.left)) {
       if (!hasVariable(equation.right)) {
@@ -90,6 +91,19 @@ export function solveEquation(equation: Equation, variable: string): Equation {
             right: equation.right,
           })
         }
+        // (x + 1) * x = 0
+        if (equation.right.type === 'NumericLiteral' && equation.right.value === 0 && equation.left.operator === '*') {
+          return [
+            ...iterateItemOrArray(solve({
+              left: optimize(equation.left.left),
+              right: equation.right,
+            })),
+            ...iterateItemOrArray(solve({
+              left: optimize(equation.left.right),
+              right: equation.right,
+            })),
+          ]
+        }
       }
       return equation
     }
@@ -157,7 +171,7 @@ export function solveEquation(equation: Equation, variable: string): Equation {
     return equation
   }
 
-  return solve(equation)
+  return Array.from(iterateItemOrArray(solve(equation)))
 }
 
 export function equationHasVariable(e: Equation, variable: string) {
@@ -174,7 +188,11 @@ function getEquationVariables(equation: Equation) {
   return Array.from(variables)
 }
 
-export function solveEquations(equations: Equation[], presetVariables?: Set<string>) {
+export function solveEquations(
+  equations: Equation[],
+  presetVariables?: Set<string>,
+  resultContext: Record<string, Expression> = {}
+): Record<string, Expression>[] {
   if (!presetVariables) {
     presetVariables = new Set<string>()
     for (const equation of equations) {
@@ -183,19 +201,26 @@ export function solveEquations(equations: Equation[], presetVariables?: Set<stri
       }
     }
   }
+  const result: Record<string, Expression>[] = []
   const variables = presetVariables
-  const resultContext: Record<string, Expression> = {}
 
   const collectResult = () => {
     let lastCount = equations.length
     for (; ;) {
       const remains: Equation[] = []
-      for (let equation of equations) {
+      for (let j = 0; j < equations.length; j++) {
+        let equation = equations[j]
         const v = getEquationVariables(equation).filter(e => variables.has(e))
         if (v.length > 0) {
           if (v.length === 1) {
             optimizeEquation(equation, e => expressionHasVariable(e, v[0]))
-            equation = solveEquation(equation, v[0])
+            const [newEquation, ...rest] = solveEquation(equation, v[0])
+            result.push(...rest.map(r => solveEquations([
+              ...remains.map(e => cloneEquation(e)),
+              r,
+              ...equations.slice(j + 1).map(e => cloneEquation(e)),
+            ], new Set(variables), cloneResultContext(resultContext))).flat())
+            equation = newEquation
           }
           if (equation.left.type === 'Identifier' && equation.right.type === 'NumericLiteral') {
             for (const v in resultContext) {
@@ -211,7 +236,9 @@ export function solveEquations(equations: Equation[], presetVariables?: Set<stri
           }
         }
       }
-      equations = composeEquations(remains, resultContext, variables)
+      const newResult = composeEquations(remains, resultContext, variables)
+      equations = newResult.equations
+      result.push(...newResult.result)
       if (equations.length === lastCount) {
         break
       }
@@ -226,7 +253,11 @@ export function solveEquations(equations: Equation[], presetVariables?: Set<stri
       break
     }
     const variable = getEquationVariables(equation).filter(e => variables.has(e))[0]
-    const newEquation = solveEquation(equation, variable)
+    const [newEquation, ...rest] = solveEquation(equation, variable)
+    result.push(...rest.map(r => solveEquations([
+      r,
+      ...equations.map(e => cloneEquation(e)),
+    ], new Set(variables), cloneResultContext(resultContext))).flat())
     for (const v in resultContext) {
       resultContext[v] = optimizeExpression(
         composeExpression(resultContext[v], { [variable]: newEquation.right }),
@@ -235,29 +266,50 @@ export function solveEquations(equations: Equation[], presetVariables?: Set<stri
     }
     resultContext[variable] = newEquation.right
     variables.delete(variable)
-    equations = composeEquations(equations, { [variable]: newEquation.right }, variables)
+    const newResult = composeEquations(equations, { [variable]: newEquation.right }, variables)
+    equations = newResult.equations
+    result.push(...newResult.result)
     collectResult()
   }
 
-  return resultContext
+  return [resultContext, ...result]
+}
+
+function cloneResultContext(resultContext: Record<string, Expression>) {
+  const ctx: Record<string, Expression> = {}
+  for (const [key, e] of Object.entries(resultContext)) {
+    ctx[key] = cloneExpression(e)
+  }
+  return ctx
 }
 
 function composeEquations(equations: Equation[], context: Record<string, Expression>, variables: Set<string>) {
   const remains: Equation[] = []
-  for (let equation of equations) {
+  const result: Record<string, Expression>[] = []
+  for (let j = 0; j < equations.length; j++) {
+    let equation = equations[j]
     equation.left = composeExpression(equation.left, context)
     equation.right = composeExpression(equation.right, context)
     const v = getEquationVariables(equation).filter(e => variables.has(e))
     if (v.length > 0) {
       if (v.length === 1) {
         equation = optimizeEquation(equation, e => expressionHasVariable(e, v[0]))
-        remains.push(solveEquation(equation, v[0]))
+        const [newEquation, ...rest] = solveEquation(equation, v[0])
+        result.push(...rest.map(r => solveEquations([
+          ...remains.map(e => cloneEquation(e)),
+          r,
+          ...equations.slice(j + 1).map(e => cloneEquation(e)),
+        ], new Set(variables), cloneResultContext(context))).flat())
+        remains.push(newEquation)
       } else {
         remains.push(equation)
       }
     }
   }
-  return remains
+  return {
+    equations: remains,
+    result,
+  }
 }
 
 function composeExpression(
@@ -291,6 +343,13 @@ function replaceIdentifier<T extends string>(
     }
   } else {
     composeExpression(expression, context)
+  }
+}
+
+function cloneEquation(equation: Equation): Equation {
+  return {
+    left: cloneExpression(equation.left),
+    right: cloneExpression(equation.right),
   }
 }
 
