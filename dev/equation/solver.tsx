@@ -1,6 +1,7 @@
 import { Expression2 as Expression } from 'expression-engine'
 import { iterateItemOrArray } from '../../src';
 import { Equation, expressionHasVariable, getReverseOperator, iterateEquation, optimizeEquation, optimizeExpression } from "./model";
+import { solveQuadraticEquation } from './quadratic';
 
 export function solveEquation(equation: Equation, variable: string): Equation[] {
   const hasVariable = (e: Expression) => expressionHasVariable(e, variable)
@@ -39,6 +40,7 @@ export function solveEquation(equation: Equation, variable: string): Equation[] 
           // x * a = b -> x = b / a
           // x / a = b -> x = b * a
           // x ** a = b -> x = b ** (1 / a)
+          // x ** 2 = 9 -> x = 3,-3
           const right: Expression = equation.left.operator === '**' ? {
             type: 'BinaryExpression',
             left: {
@@ -48,6 +50,32 @@ export function solveEquation(equation: Equation, variable: string): Equation[] 
             operator: '/',
             right: equation.left.right,
           } : equation.left.right
+          if (equation.left.right.type === 'NumericLiteral' && equation.left.right.value % 2 === 0) {
+            return [
+              ...iterateItemOrArray(solve({
+                left: optimize(equation.left.left),
+                right: optimize({
+                  type: 'BinaryExpression',
+                  left: equation.right,
+                  right: optimize(right),
+                  operator: getReverseOperator(equation.left.operator),
+                }),
+              })),
+              ...iterateItemOrArray(solve({
+                left: optimize(equation.left.left),
+                right: optimize({
+                  type: 'UnaryExpression',
+                  operator: '-',
+                  argument: {
+                    type: 'BinaryExpression',
+                    left: equation.right,
+                    right: optimize(right),
+                    operator: getReverseOperator(equation.left.operator),
+                  },
+                }),
+              })),
+            ]
+          }
           return solve({
             left: optimize(equation.left.left),
             right: optimize({
@@ -103,6 +131,19 @@ export function solveEquation(equation: Equation, variable: string): Equation[] 
               right: equation.right,
             })),
           ]
+        }
+        // x * x + x = 6
+        if (equation.left.operator === '+' || equation.left.operator === '-' || equation.left.operator === '*') {
+          const result = solveQuadraticEquation(equation, variable)
+          if (result) {
+            return result.map(r => Array.from(iterateItemOrArray(solve({
+              left: {
+                type: 'Identifier',
+                name: variable,
+              },
+              right: optimize(r),
+            }))).flat()).flat()
+          }
         }
       }
       return equation
