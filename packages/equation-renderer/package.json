@@ -1,6 +1,6 @@
 {
   "name": "equation-renderer",
-  "version": "1.8.6",
+  "version": "1.8.10",
   "description": "A equation renderer.",
   "main": "index.js",
   "repository": {
