@@ -1,9 +1,6 @@
 import { parseExpression, tokenizeExpression } from "expression-engine"
 import React from "react"
-import { ExpressionEditor, ObjectArrayEditor, reactSvgRenderTarget, StringEditor, useJsonEditorData } from "../src"
-import { Equation, equationRenderStyles, printEquation } from "./equation/model"
-import { renderEquation } from "./equation/renderer"
-import { solveEquations } from "./equation/solver"
+import { renderEquation, ExpressionEditor, ObjectArrayEditor, reactSvgRenderTarget, StringEditor, useJsonEditorData, Equation, printEquation, solveEquations } from "../src"
 
 export default () => {
   const { value, update, getArrayProps } = useJsonEditorData([
@@ -22,13 +19,9 @@ export default () => {
           right: parseExpression(tokenizeExpression(equation[1])),
         }
       }), new Set(value.map(e => e.variable)))
-      setEquations(result.map(e => Object.entries(e).map(([key, e]) => ({
-        left: {
-          type: 'Identifier' as const,
-          name: key,
-        },
-        right: e,
-      }))))
+      setEquations(result.map(e => Object.entries(e).map(([key, e]) => {
+        return !Array.isArray(e) ? { left: { type: 'Identifier', name: key }, right: e } : { left: e[0], right: e[1] }
+      })))
     } catch (error) {
       console.info(error)
     }
@@ -54,7 +47,7 @@ export default () => {
         <div key={j} style={{ borderBottom: '1px solid black', display: 'flex', flexDirection: 'column' }}>
           {a.map((e, i) => (
             <React.Fragment key={i}>
-              {!showText && renderEquation(reactSvgRenderTarget, e, ...equationRenderStyles, { keepBinaryExpressionOrder })}
+              {!showText && renderEquation(reactSvgRenderTarget, e, { keepBinaryExpressionOrder })}
               {showText && <div><code>{printEquation(e, { keepBinaryExpressionOrder })}</code></div>}
             </React.Fragment>
           ))}

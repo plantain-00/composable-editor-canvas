@@ -1,0 +1,25 @@
+{
+  "name": "equation-renderer",
+  "version": "1.8.10",
+  "description": "A equation renderer.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plantain-00/composable-editor-canvas.git"
+  },
+  "author": "York Yao",
+  "license": "MIT",
+  "dependencies": {
+    "expression-engine": "1"
+  },
+  "peerDependencies": {
+    "react": "18"
+  },
+  "bugs": {
+    "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
+  },
+  "homepage": "https://github.com/plantain-00/composable-editor-canvas#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}

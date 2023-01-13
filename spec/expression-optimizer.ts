@@ -1,6 +1,6 @@
 import test, { ExecutionContext } from 'ava'
 import { Expression2 as Expression, parseExpression, printExpression, tokenizeExpression } from 'expression-engine'
-import { expressionHasVariable, optimizeExpression } from '../dev/equation/model'
+import { expressionHasVariable, optimizeExpression } from '../src'
 
 function optimize(t: ExecutionContext<unknown>, e1: string, e2: string, variable?: string) {
   t.deepEqual(

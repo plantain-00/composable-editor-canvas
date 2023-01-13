@@ -2,6 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
 import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, updateReferencedContents, zoomContentsToFit } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
@@ -728,7 +729,7 @@ export function usePlugins() {
 
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup }
+  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup, parseExpression, tokenizeExpression, evaluateExpression }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {

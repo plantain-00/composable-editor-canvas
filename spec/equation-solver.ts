@@ -1,8 +1,6 @@
 import test, { ExecutionContext } from 'ava'
 import { parseExpression, tokenizeExpression } from 'expression-engine'
-import { printEquation } from '../dev/equation/model'
-import { solveEquation } from '../dev/equation/solver'
-import { iterateItemOrArray } from '../src'
+import { iterateItemOrArray, printEquation, solveEquation } from '../src'
 
 function solve(t: ExecutionContext<unknown>, e1: string, e2: string | string[], variable: string) {
   const e = e1.split('=')
@@ -50,6 +48,7 @@ test('x + a = b', (t) => {
   solve(t, 'x / a = b', 'x = a * b', 'x')
   solve(t, 'x ** a = b', 'x = b ** (1 / a)', 'x')
   solve(t, 'x ** 2 = 9', ['x = 3', 'x = -3'], 'x')
+  solve(t, '8 * I9 + 72 = 0', 'I9 = -9', 'I9')
 
   solve(t, 'a - x = b', 'x = a - b', 'x')
   solve(t, 'a / x = b', 'x = a / b', 'x')
