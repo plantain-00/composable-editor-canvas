@@ -1,13 +1,12 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, solveEquations, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, EquationData, getContentModel, isDeviceContent, isJunctionContent, JunctionContent, LineContent, ContentUpdater, modelCenter, registerModel, updateReferencedContents } from "./model";
 import { powerModel } from "./plugins/power";
 import { resistanceModel } from './plugins/resistance';
 import { wireModel } from './plugins/wire';
 import { Renderer } from './renderer';
 import { parseExpression, tokenizeExpression } from 'expression-engine';
-import { solveEquations } from '../equation/solver';
 import { switchModel } from './plugins/switch';
 import { capacitorModel } from './plugins/capacitor';
 
@@ -450,7 +449,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     }))
     const result: number[] = []
     for (const [key, e] of Object.entries(solveEquations(equations)[0])) {
-      if (e.type === 'NumericLiteral') {
+      if (!Array.isArray(e) && e.type === 'NumericLiteral') {
         result[+key.slice(1)] = e.value
       }
     }

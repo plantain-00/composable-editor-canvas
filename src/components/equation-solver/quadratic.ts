@@ -1,5 +1,5 @@
 import { Expression2 } from "expression-engine";
-import { Equation } from "./model";
+import { Equation } from "../equation-renderer";
 
 export function solveQuadraticEquation(equation: Equation, variable: string): Expression2[] | void {
   const factors = expressionToQuadraticFactors(equation.left, variable)

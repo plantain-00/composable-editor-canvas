@@ -1,9 +1,6 @@
 import { parseExpression, tokenizeExpression } from "expression-engine"
 import React from "react"
-import { ExpressionEditor, reactSvgRenderTarget } from "../src"
-import { Equation, equationRenderStyles, optimizeEquation, printEquation } from "./equation/model"
-import { renderEquation } from "./equation/renderer"
-import { validateExpression } from "./expression/validator"
+import { ExpressionEditor, reactSvgRenderTarget, Equation, printEquation, renderEquation, validateExpression } from "../src"
 
 export default () => {
   const [left, setLeft] = React.useState('B')
@@ -12,10 +9,10 @@ export default () => {
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)
   React.useEffect(() => {
     try {
-      setEquation(optimizeEquation({
+      setEquation({
         left: parseExpression(tokenizeExpression(left)),
         right: parseExpression(tokenizeExpression(right)),
-      }))
+      })
     } catch (error) {
       console.info(error)
     }
@@ -28,7 +25,7 @@ export default () => {
         <input type='checkbox' checked={keepBinaryExpressionOrder} onChange={() => setKeepBinaryExpressionOrder(!keepBinaryExpressionOrder)} />
         keep binary expression order
       </label>
-      {equation && renderEquation(reactSvgRenderTarget, equation, ...equationRenderStyles, { keepBinaryExpressionOrder })}
+      {equation && renderEquation(reactSvgRenderTarget, equation, { keepBinaryExpressionOrder })}
       {equation && <code>{printEquation(equation, { keepBinaryExpressionOrder })}</code>}
     </div>
   )

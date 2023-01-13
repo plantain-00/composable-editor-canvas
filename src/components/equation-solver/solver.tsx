@@ -1,6 +1,7 @@
 import { Expression2 as Expression } from 'expression-engine'
-import { iterateItemOrArray } from '../../src';
-import { Equation, expressionHasVariable, getReverseOperator, iterateEquation, optimizeEquation, optimizeExpression } from "./model";
+import { iterateItemOrArray } from '../../utils/iterator';
+import { Equation } from '../equation-renderer';
+import { expressionHasVariable, getReverseOperator, iterateEquation, optimizeEquation, optimizeExpression } from "./model";
 import { solveQuadraticEquation } from './quadratic';
 
 export function solveEquation(equation: Equation, variable: string): Equation[] {
@@ -50,7 +51,7 @@ export function solveEquation(equation: Equation, variable: string): Equation[] 
             operator: '/',
             right: equation.left.right,
           } : equation.left.right
-          if (equation.left.right.type === 'NumericLiteral' && equation.left.right.value % 2 === 0) {
+          if (equation.left.operator === '**' && equation.left.right.type === 'NumericLiteral' && equation.left.right.value % 2 === 0) {
             return [
               ...iterateItemOrArray(solve({
                 left: optimize(equation.left.left),
@@ -232,8 +233,8 @@ function getEquationVariables(equation: Equation) {
 export function solveEquations(
   equations: Equation[],
   presetVariables?: Set<string>,
-  resultContext: Record<string, Expression> = {}
-): Record<string, Expression>[] {
+  resultContext: ResultContext = {}
+): ResultContext[] {
   if (!presetVariables) {
     presetVariables = new Set<string>()
     for (const equation of equations) {
@@ -242,7 +243,7 @@ export function solveEquations(
       }
     }
   }
-  const result: Record<string, Expression>[] = []
+  const result: ResultContext[] = []
   const variables = presetVariables
 
   const collectResult = () => {
@@ -265,10 +266,24 @@ export function solveEquations(
           }
           if (equation.left.type === 'Identifier' && equation.right.type === 'NumericLiteral') {
             for (const v in resultContext) {
-              resultContext[v] = optimizeExpression(
-                composeExpression(resultContext[v], { [equation.left.name]: equation.right }),
-                e => expressionHasVariable(e, v),
-              )
+              const ctx = resultContext[v]
+              if (Array.isArray(ctx)) {
+                resultContext[v] = [
+                  optimizeExpression(
+                    composeExpression(ctx[0], { [equation.left.name]: equation.right }),
+                    e => expressionHasVariable(e, v),
+                  ),
+                  optimizeExpression(
+                    composeExpression(ctx[1], { [equation.left.name]: equation.right }),
+                    e => expressionHasVariable(e, v),
+                  ),
+                ]
+              } else {
+                resultContext[v] = optimizeExpression(
+                  composeExpression(ctx, { [equation.left.name]: equation.right }),
+                  e => expressionHasVariable(e, v),
+                )
+              }
             }
             resultContext[equation.left.name] = equation.right
             variables.delete(equation.left.name)
@@ -293,40 +308,73 @@ export function solveEquations(
     if (!equation) {
       break
     }
-    const variable = getEquationVariables(equation).filter(e => variables.has(e))[0]
-    const [newEquation, ...rest] = solveEquation(equation, variable)
+    let variable = getEquationVariables(equation).filter(e => variables.has(e))[0]
+    let [newEquation, ...rest] = solveEquation(equation, variable)
+    while (!getEquationVariables(newEquation).includes(variable)) {
+      const newVariable = getEquationVariables(newEquation).filter(e => variables.has(e))[0]
+      if (newVariable === variable) {
+        break
+      }
+      variable = newVariable;
+      [newEquation, ...rest] = solveEquation(newEquation, variable)
+    }
     result.push(...rest.map(r => solveEquations([
       r,
       ...equations.map(e => cloneEquation(e)),
     ], new Set(variables), cloneResultContext(resultContext))).flat())
-    for (const v in resultContext) {
-      resultContext[v] = optimizeExpression(
-        composeExpression(resultContext[v], { [variable]: newEquation.right }),
-        e => expressionHasVariable(e, v),
-      )
+    if (newEquation.left.type === 'Identifier') {
+      for (const v in resultContext) {
+        const ctx = resultContext[v]
+        if (Array.isArray(ctx)) {
+          resultContext[v] = [
+            optimizeExpression(
+              composeExpression(ctx[0], { [variable]: newEquation.right }),
+              e => expressionHasVariable(e, v),
+            ),
+            optimizeExpression(
+              composeExpression(ctx[1], { [variable]: newEquation.right }),
+              e => expressionHasVariable(e, v),
+            ),
+          ]
+        } else {
+          resultContext[v] = optimizeExpression(
+            composeExpression(ctx, { [variable]: newEquation.right }),
+            e => expressionHasVariable(e, v),
+          )
+        }
+      }
+      resultContext[variable] = newEquation.right
+      variables.delete(variable)
+      const newResult = composeEquations(equations, { [variable]: newEquation.right }, variables)
+      equations = newResult.equations
+      result.push(...newResult.result)
+      collectResult()
+    } else {
+      resultContext[variable] = [newEquation.left, newEquation.right]
+      variables.delete(variable)
     }
-    resultContext[variable] = newEquation.right
-    variables.delete(variable)
-    const newResult = composeEquations(equations, { [variable]: newEquation.right }, variables)
-    equations = newResult.equations
-    result.push(...newResult.result)
-    collectResult()
   }
 
   return [resultContext, ...result]
 }
 
-function cloneResultContext(resultContext: Record<string, Expression>) {
-  const ctx: Record<string, Expression> = {}
+type ResultContext = Record<string, Expression | [Expression, Expression]>
+
+function cloneResultContext(resultContext: ResultContext) {
+  const ctx: ResultContext = {}
   for (const [key, e] of Object.entries(resultContext)) {
-    ctx[key] = cloneExpression(e)
+    if (Array.isArray(e)) {
+      ctx[key] = [cloneExpression(e[0]), cloneExpression(e[1])]
+    } else {
+      ctx[key] = cloneExpression(e)
+    }
   }
   return ctx
 }
 
-function composeEquations(equations: Equation[], context: Record<string, Expression>, variables: Set<string>) {
+function composeEquations(equations: Equation[], context: ResultContext, variables: Set<string>) {
   const remains: Equation[] = []
-  const result: Record<string, Expression>[] = []
+  const result: ResultContext[] = []
   for (let j = 0; j < equations.length; j++) {
     let equation = equations[j]
     equation.left = composeExpression(equation.left, context)
@@ -355,7 +403,7 @@ function composeEquations(equations: Equation[], context: Record<string, Express
 
 function composeExpression(
   expression: Expression,
-  context: Record<string, Expression>,
+  context: ResultContext,
 ): Expression {
   if (expression.type === 'BinaryExpression') {
     replaceIdentifier(expression, 'left', context)
@@ -364,7 +412,7 @@ function composeExpression(
     replaceIdentifier(expression, 'argument', context)
   } else if (expression.type === 'Identifier') {
     const v = context[expression.name]
-    if (v) {
+    if (v && !Array.isArray(v)) {
       return v
     }
   }
@@ -374,12 +422,12 @@ function composeExpression(
 function replaceIdentifier<T extends string>(
   parent: Record<T, Expression>,
   field: T,
-  context: Record<string, Expression>,
+  context: ResultContext,
 ): void {
   const expression = parent[field]
   if (expression.type === 'Identifier') {
     const v = context[expression.name]
-    if (v) {
+    if (v && !Array.isArray(v)) {
       parent[field] = cloneExpression(v)
     }
   } else {

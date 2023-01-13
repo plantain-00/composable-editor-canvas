@@ -1,19 +1,15 @@
 import { Expression2 as Expression, priorizedBinaryOperators } from "expression-engine"
-import { getTextSizeFromCache, ReactRenderTarget, Size } from "../../src"
-import { Equation } from "./model"
+import { Size } from "../utils/geometry"
+import { getTextSizeFromCache } from "../utils/text"
+import { ReactRenderTarget } from "./react-render-target/react-render-target"
 
 export function renderEquation(
   target: ReactRenderTarget<unknown>,
   equation: Equation,
-  color: number,
-  fontSize: number,
-  fontFamily: string,
-  paddingX: number,
-  paddingY: number,
-  paddingOperator: number,
-  options?: Partial<ExpressionRendererOptions>,
+  renderOptions: Partial<ExpressionRendererOptions> = {},
 ) {
-  const { children, render, font } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator, options)
+  const options = { ...defaultExpressionRenderOptions, ...renderOptions }
+  const { children, render, font } = createExpressionRenderer(target, options.color, options.fontSize, options.fontFamily, options.paddingOperator, options.keepBinaryExpressionOrder)
   const left = render(equation.left)
   const right = render(equation.right)
   let result: JSX.Element | undefined
@@ -23,14 +19,14 @@ export function renderEquation(
     if (size) {
       const width = left.size.width + size.width + right.size.width
       const height = Math.max(left.size.height, size.height, right.size.height)
-      const canvasWidth = width + paddingX * 2
-      const canvasHeight = height + paddingY * 2
+      const canvasWidth = width + options.paddingX * 2
+      const canvasHeight = height + options.paddingY * 2
       const x = canvasWidth / 2
       const y = canvasHeight / 2
       let startX = x - width / 2
       left.render(startX + left.size.width / 2, y)
       startX += left.size.width
-      children.push(target.renderText(startX + size.width / 2, y, equal, color, fontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+      children.push(target.renderText(startX + size.width / 2, y, equal, options.color, options.fontSize, options.fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
       startX += size.width
       right.render(startX + right.size.width / 2, y)
       result = target.renderResult(children, canvasWidth, canvasHeight, {
@@ -48,20 +44,15 @@ export function renderEquation(
 export function renderExpression(
   target: ReactRenderTarget<unknown>,
   expression: Expression,
-  color: number,
-  fontSize: number,
-  fontFamily: string,
-  paddingX: number,
-  paddingY: number,
-  paddingOperator: number,
-  options?: Partial<ExpressionRendererOptions>,
+  renderOptions: Partial<ExpressionRendererOptions> = {},
 ) {
-  const { children, render } = createExpressionRenderer(target, color, fontSize, fontFamily, paddingOperator, options)
+  const options = { ...defaultExpressionRenderOptions, ...renderOptions }
+  const { children, render } = createExpressionRenderer(target, options.color, options.fontSize, options.fontFamily, options.paddingOperator, options.keepBinaryExpressionOrder)
   const r = render(expression)
   let result: JSX.Element | undefined
   if (r) {
-    const width = r.size.width + paddingX * 2
-    const height = r.size.height + paddingY * 2
+    const width = r.size.width + options.paddingX * 2
+    const height = r.size.height + options.paddingY * 2
     r.render(width / 2, height / 2)
     result = target.renderResult(children, width, height)
   }
@@ -70,6 +61,22 @@ export function renderExpression(
 
 interface ExpressionRendererOptions {
   keepBinaryExpressionOrder: boolean
+  color: number,
+  fontSize: number,
+  fontFamily: string,
+  paddingX: number,
+  paddingY: number,
+  paddingOperator: number,
+}
+
+const defaultExpressionRenderOptions: ExpressionRendererOptions = {
+  color: 0x000000,
+  fontSize: 20,
+  fontFamily: 'monospace',
+  paddingX: 10,
+  paddingY: 10,
+  paddingOperator: 5,
+  keepBinaryExpressionOrder: false,
 }
 
 function createExpressionRenderer(
@@ -78,7 +85,7 @@ function createExpressionRenderer(
   fontSize: number,
   fontFamily: string,
   paddingOperator: number,
-  options?: Partial<ExpressionRendererOptions>,
+  keepBinaryExpressionOrder: boolean,
 ) {
   const children: unknown[] = []
   const font = `${fontSize}px ${fontFamily}`
@@ -91,6 +98,25 @@ function createExpressionRenderer(
       const right = render(e.right, e.operator === '+' || e.operator === '*' ? index : index - 0.1, e.operator === '**' ? scale * 0.75 : scale)
       if (left && right) {
         if (e.operator === '**') {
+          if (e.right.type === 'NumericLiteral' && e.right.value === 0.5) {
+            const width = left.size.width + paddingOperator * 2
+            const height = left.size.height + paddingOperator
+            return {
+              size: {
+                width,
+                height,
+              },
+              render(x, y) {
+                left.render(x + paddingOperator, y + paddingOperator / 2)
+                children.push(target.renderPolyline([
+                  { x: x + width / 2, y: y - height / 2 },
+                  { x: x - width / 2 + paddingOperator * 2, y: y - height / 2 },
+                  { x: x - width / 2 + paddingOperator, y: y + height / 2 },
+                  { x: x - width / 2, y: y + height / 2 - paddingOperator },
+                ], { strokeColor: color, strokeWidth: 1 }))
+              },
+            }
+          }
           const width = left.size.width + right.size.width
           const height = left.size.height + right.size.height / 2
           return {
@@ -126,7 +152,7 @@ function createExpressionRenderer(
           const height = Math.max(left.size.height, size.height, right.size.height)
           let groupSize: Size | undefined
           const groupFontSize = Math.max(height, scaledFontSize)
-          if (index > priority || (index === priority && options?.keepBinaryExpressionOrder)) {
+          if (index > priority || (index === priority && keepBinaryExpressionOrder)) {
             groupSize = getTextSizeFromCache(`${groupFontSize}px ${fontFamily}`, '(')
           }
           if (groupSize) {
@@ -219,4 +245,9 @@ function createExpressionRenderer(
     children,
     render,
   }
+}
+
+export interface Equation {
+  left: Expression
+  right: Expression
 }

@@ -3,9 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import { CoordinateAxisContent, isCoordinateAxisContent } from './coordinate-axis.plugin'
-import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
 import { math } from '../../expression/math'
-import { validateExpression } from '../../expression/validator'
 
 export type EquationContent = model.BaseContent<'equation'> & model.StrokeFields & model.SegmentCountFields & {
   axisId: number | model.BaseContent
@@ -26,13 +24,13 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
       return equationCache.get(content, axis, () => {
         if (content.expression) {
           try {
-            const expression = parseExpression(tokenizeExpression(content.expression))
+            const expression = ctx.parseExpression(ctx.tokenizeExpression(content.expression))
             const points: core.Position[] = []
             const segmentCount = content.segmentCount ?? ctx.defaultSegmentCount
             if (content.dependentVariable === 'y') {
               const step = (axis.xMax - axis.xMin) / segmentCount
               for (let x = axis.xMin; x <= axis.xMax; x += step) {
-                const y = evaluateExpression(expression, {
+                const y = ctx.evaluateExpression(expression, {
                   Math,
                   x,
                 })
@@ -43,7 +41,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
             } else {
               const step = (axis.yMax - axis.yMin) / segmentCount
               for (let y = axis.yMin; y <= axis.yMax; y += step) {
-                const x = evaluateExpression(expression, {
+                const x = ctx.evaluateExpression(expression, {
                   Math,
                   y,
                 })
@@ -87,7 +85,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
     propertyPanel(content, update, contents) {
       return {
         dependentVariable: <ctx.EnumEditor value={content.dependentVariable} enums={['x', 'y']} setValue={(v) => update(c => { if (isEquationContent(c)) { c.dependentVariable = v } })} />,
-        expression: <ctx.ExpressionEditor suggestionSources={math} validate={validateExpression} value={content.expression} setValue={(v) => update(c => { if (isEquationContent(c)) { c.expression = v } })} />,
+        expression: <ctx.ExpressionEditor suggestionSources={math} validate={ctx.validateExpression} value={content.expression} setValue={(v) => update(c => { if (isEquationContent(c)) { c.expression = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getSegmentCountContentPropertyPanel(content, update),
       }

@@ -1,13 +1,7 @@
 import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
-import { isZero } from "../../src"
+import { isZero } from "../../utils/geometry"
+import { Equation } from "../equation-renderer"
 import { divide, expressionToFactors, factorsToExpression, optimizeFactors } from "./factorization"
-
-export interface Equation {
-  left: Expression
-  right: Expression
-}
-
-export const equationRenderStyles = [0x000000, 20, 'monospace', 10, 10, 5] as const
 
 export function* iterateExpression(e: Expression): Generator<Expression, void, unknown> {
   yield e

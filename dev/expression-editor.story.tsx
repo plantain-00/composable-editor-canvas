@@ -1,7 +1,6 @@
 import React from "react"
-import { ExpressionEditor } from '../src'
+import { ExpressionEditor, validateExpression } from '../src'
 import { math } from "./expression/math"
-import { validateExpression } from "./expression/validator"
 
 export default () => {
   const [value, setValue] = React.useState('1 + 2 - 3')
