@@ -4,8 +4,8 @@ import { renderEquation, ExpressionEditor, ObjectArrayEditor, reactSvgRenderTarg
 
 export default () => {
   const { value, update, getArrayProps } = useJsonEditorData([
-    { equation: '(U - A) * R1 + (B - A) * R5 = (A - U2) * R2', variable: 'A' },
-    { equation: '(U - B) * R3 = (B - A) * R5 + (B - U2) * R4', variable: 'B' },
+    { equation: 'a * x + b * y = c', variable: 'x' },
+    { equation: 'x ** 2 + y ** 2 = r', variable: 'y' },
   ])
   const [equations, setEquations] = React.useState<Equation[][]>([])
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)

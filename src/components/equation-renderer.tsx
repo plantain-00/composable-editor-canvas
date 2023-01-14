@@ -93,7 +93,10 @@ function createExpressionRenderer(
     const scaledFontSize = fontSize * scale
     const scaledFont = scale === 1 ? font : `${scaledFontSize}px ${fontFamily}`
     if (e.type === 'BinaryExpression') {
-      const index = e.operator === '/' ? Number.MAX_SAFE_INTEGER : priorizedBinaryOperators.findIndex(p => p.includes(e.operator))
+      const index = e.operator === '/' ||
+        (e.operator === '**' && e.right.type === 'NumericLiteral' && e.right.value === 0.5)
+        ? Number.MAX_SAFE_INTEGER
+        : priorizedBinaryOperators.findIndex(p => p.includes(e.operator))
       const left = render(e.left, index, scale)
       const right = render(e.right, e.operator === '+' || e.operator === '*' ? index : index - 0.1, e.operator === '**' ? scale * 0.75 : scale)
       if (left && right) {
@@ -131,17 +134,33 @@ function createExpressionRenderer(
           }
         }
         if (e.operator === '/') {
-          const width = Math.max(left.size.width, right.size.width) + paddingOperator * 2
+          let width = Math.max(left.size.width, right.size.width) + paddingOperator * 2
           const height = left.size.height + paddingOperator * 2 + right.size.height
+          let groupSize: Size | undefined
+          const groupFontSize = Math.max(height, scaledFontSize)
+          if (index > priority) {
+            groupSize = getTextSizeFromCache(`${groupFontSize}px ${fontFamily}`, '(')
+          }
+          if (groupSize) {
+            width += groupSize.width * 2
+          }
           return {
             size: {
               width,
               height,
             },
             render(x, y) {
+              y = y - height / 2 + left.size.height + paddingOperator
+              if (groupSize) {
+                children.push(target.renderText(x - width / 2 + groupSize.width / 2, y, '(', color, groupFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+              }
               left.render(x, y - paddingOperator - left.size.height / 2)
-              children.push(target.renderPolyline([{ x: x - width / 2, y }, { x: x + width / 2, y }], { strokeColor: color, strokeWidth: 1 }))
+              const offsetX = groupSize?.width ?? 0
+              children.push(target.renderPolyline([{ x: x - width / 2 + offsetX, y }, { x: x + width / 2 - offsetX, y }], { strokeColor: color, strokeWidth: 1 }))
               right.render(x, y + paddingOperator + right.size.height / 2)
+              if (groupSize) {
+                children.push(target.renderText(x + width / 2 - groupSize.width / 2, y, ')', color, groupFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+              }
             },
           }
         }
@@ -191,15 +210,31 @@ function createExpressionRenderer(
       const size = getTextSizeFromCache(font, e.operator)
       const argument = render(e.argument, -1, scale)
       if (size && argument) {
-        const width = size.width + argument.size.width
+        let width = size.width + argument.size.width
+        const height = Math.max(size.height, argument.size.height)
+        let groupSize: Size | undefined
+        const groupFontSize = Math.max(height, scaledFontSize)
+        if (priority <= 1) {
+          groupSize = getTextSizeFromCache(`${groupFontSize}px ${fontFamily}`, '(')
+        }
+        if (groupSize) {
+          width += groupSize.width * 2
+        }
         return {
           size: {
             width,
-            height: Math.max(size.height, argument.size.height),
+            height,
           },
           render(x, y) {
-            children.push(target.renderText(x - width / 2 + size.width / 2, y, e.operator, color, scaledFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
-            argument.render(x - width / 2 + size.width + argument.size.width / 2, y)
+            if (groupSize) {
+              children.push(target.renderText(x - width / 2 + groupSize.width / 2, y, '(', color, groupFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+            }
+            const offsetX = groupSize?.width ?? 0
+            children.push(target.renderText(x - width / 2 + size.width / 2 + offsetX, y, e.operator, color, scaledFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+            argument.render(x - width / 2 + size.width + argument.size.width / 2 + offsetX, y)
+            if (groupSize) {
+              children.push(target.renderText(x + width / 2 - groupSize.width / 2, y, ')', color, groupFontSize, fontFamily, { textBaseline: 'middle', textAlign: 'center' }))
+            }
           },
         }
       }

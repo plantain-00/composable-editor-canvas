@@ -111,8 +111,8 @@ test('(a + b) - b', (t) => {
   optimize(t, '(3 * x - a) + x', '4 * x - a', 'x')
   optimize(t, '(3 * x - a) - x', '2 * x - a', 'x')
 
-  optimize(t, '(a - b * x) - c * x', 'a - (b + c) * x', 'x')
-  optimize(t, '(a - b * x) + c * x', 'a - (b - c) * x', 'x')
+  optimize(t, '(a - b * x) - c * x', '(-(b * x) - c * x) + a', 'x')
+  optimize(t, '(a - b * x) + c * x', '(-(b * x) + c * x) + a', 'x')
 
   optimize(t, '(a * c) * b', '(a * b) * c')
   optimize(t, '(a / c) * b', '(a * b) / c')
@@ -216,4 +216,15 @@ test('((a + 2 * b) + 2 * a) + 3 * b', (t) => {
   optimize(t, '((a + 2 * b) + 2 * a) + 3 * b', '3 * a + 5 * b')
   optimize(t, '((a + 2 * b) + 2 * a) - b', '3 * a + b')
   optimize(t, '((a + 2 * b) + 2 * a) + -b', '3 * a + b')
+})
+
+test('(x / a) ** b', (t) => {
+  optimize(t, '(x / a) ** b', 'x ** b / a ** b', 'x')
+  optimize(t, '(x * a) ** b', 'a ** b * x ** b', 'x')
+  optimize(t, '(a * x) ** b', 'a ** b * x ** b', 'x')
+})
+
+test('(a + b) ** 2', (t) => {
+  optimize(t, '(a + b) ** 2', '(a ** 2 + (2 * a) * b) + b ** 2')
+  optimize(t, '(a - b) ** 2', '(a ** 2 - (2 * a) * b) + b ** 2')
 })

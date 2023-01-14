@@ -29,7 +29,21 @@ function expressionToQuadraticFactors(e: Expression2, variable: string): Quadrat
     if (e.operator === '-') {
       right = right.map(r => reverseQuadraticFactor(r))
     }
-    return [...left, ...right]
+    const result = [...left]
+    for (const r of right) {
+      const v = result.find(f => f.degree === r.degree)
+      if (v) {
+        v.constant = {
+          type: 'BinaryExpression',
+          left: v.constant,
+          operator: '+',
+          right: r.constant,
+        }
+      } else {
+        result.push(r)
+      }
+    }
+    return result
   }
   const factor = expressionToQuadraticFactor(e, variable)
   if (factor) {

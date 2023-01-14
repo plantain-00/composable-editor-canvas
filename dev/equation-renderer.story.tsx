@@ -3,8 +3,8 @@ import React from "react"
 import { ExpressionEditor, reactSvgRenderTarget, Equation, printEquation, renderEquation, validateExpression } from "../src"
 
 export default () => {
-  const [left, setLeft] = React.useState('B')
-  const [right, setRight] = React.useState('((-U * R1 - U2 * R2) * -(R5 + R3 + R4) - -R5 * (U * R3 + U2 * R4)) / (R5 * -R5 - (R2 + R1 + R5) * -(R5 + R3 + R4))')
+  const [left, setLeft] = React.useState('X1 ** 2 + X2 * X3')
+  const [right, setRight] = React.useState('(-X6) ** 0.5 / (X4 - X5 ** 3)')
   const [equation, setEquation] = React.useState<Equation>()
   const [keepBinaryExpressionOrder, setKeepBinaryExpressionOrder] = React.useState(false)
   React.useEffect(() => {
