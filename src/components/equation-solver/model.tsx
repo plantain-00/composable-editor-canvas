@@ -599,8 +599,8 @@ export function optimizeExpression(
           })
         }
 
-        // (a - b * x) - c * x -> a - (b * x + c * x)
-        // (a - b * x) + c * x -> a - (b * x - c * x)
+        // (a - b * x) - c * x -> (-b * x - c * x) + a
+        // (a - b * x) + c * x -> (-b * x + c * x) + a
         if (
           (expression.operator === '+' || expression.operator === '-') &&
           hasVariable &&
@@ -611,14 +611,18 @@ export function optimizeExpression(
         ) {
           return optimize({
             type: 'BinaryExpression',
-            left: optimize(expression.left.left),
-            operator: '-',
-            right: optimize({
+            left: optimize({
               type: 'BinaryExpression',
-              left: optimize(expression.left.right),
-              operator: getReverseOperator(expression.operator),
+              left: optimize({
+                type: 'UnaryExpression',
+                operator: '-',
+                argument: optimize(expression.left.right),
+              }),
+              operator: expression.operator,
               right: expression.right,
             }),
+            operator: '+',
+            right: optimize(expression.left.left),
           })
         }
 
@@ -995,6 +999,76 @@ export function optimizeExpression(
             }),
             operator: '*',
             right: optimize(expression.left.argument),
+          })
+        }
+      }
+
+      // (x / a) ** b
+      if (hasVariable && expression.operator === '**' && !hasVariable(expression.right) && expression.left.type === 'BinaryExpression' && (expression.left.operator === '*' || expression.left.operator === '/')) {
+        // (x / a) ** b -> x ** b / a ** b
+        // (x * a) ** b -> x ** b * a ** b
+        // (a * x) ** b -> a ** b * x ** b
+        // (a / x) ** b -> a ** b / x ** b
+        if (
+          (hasVariable(expression.left.left) && !hasVariable(expression.left.right)) ||
+          (!hasVariable(expression.left.left) && hasVariable(expression.left.right))
+        ) {
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.left),
+              operator: '**',
+              right: expression.right,
+            }),
+            operator: expression.left.operator,
+            right: optimize({
+              type: 'BinaryExpression',
+              left: optimize(expression.left.right),
+              operator: '**',
+              right: expression.right,
+            }),
+          })
+        }
+      }
+
+      // (a + b) ** 2
+      if (expression.operator === '**' && expression.right.type === 'NumericLiteral' && expression.right.value === 2) {
+        // (a + b) ** 2 -> a ** 2 + 2 * a * b + b ** 2
+        // (a - b) ** 2 -> a ** 2 - 2 * a * b + b ** 2
+        if (expression.left.type === 'BinaryExpression' && (expression.left.operator === '+' || expression.left.operator === '-')) {
+          const left = optimize(expression.left.left)
+          const right = optimize(expression.left.right)
+          return optimize({
+            type: 'BinaryExpression',
+            left: optimize({
+              type: 'BinaryExpression',
+              left: optimize({
+                type: 'BinaryExpression',
+                left,
+                operator: '**',
+                right: expression.right,
+              }),
+              operator: expression.left.operator,
+              right: optimize({
+                type: 'BinaryExpression',
+                left: optimize({
+                  type: 'BinaryExpression',
+                  left: expression.right,
+                  operator: '*',
+                  right: left,
+                }),
+                operator: '*',
+                right,
+              })
+            }),
+            operator: '+',
+            right: optimize({
+              type: 'BinaryExpression',
+              left: right,
+              operator: '**',
+              right: expression.right,
+            })
           })
         }
       }
