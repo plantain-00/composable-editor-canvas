@@ -210,6 +210,7 @@ export interface Geometries {
 const geometriesCache = new WeakmapCache<object, Geometries>()
 const snapPointsCache = new WeakmapCache<object, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<object, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
+export const allContentsCache = new WeakmapCache<object, Nullable<BaseContent>[]>()
 
 export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
@@ -711,9 +712,17 @@ export function* iterateAllContents(contents: readonly Nullable<BaseContent>[]):
 }
 
 export function getContainerSnapPoints(content: ContainerFields, contents: readonly BaseContent[]) {
+  return getContentsSnapPoints(content, contents)
+}
+
+export function getContentsSnapPoints<T extends ContainerFields>(
+  content: T,
+  contents: readonly Nullable<BaseContent>[],
+  getAllContents = (c: T) => c.contents,
+) {
   return getSnapPointsFromCache(content, () => {
     const result: SnapPoint[] = []
-    content.contents.forEach((c) => {
+    getAllContents(content).forEach((c) => {
       if (!c) {
         return
       }
@@ -760,13 +769,20 @@ export function renderContainerIfSelected<V>(container: ContainerFields, ctx: Re
 }
 
 export function getContainerGeometries(content: ContainerFields) {
+  return getContentsGeometries(content)
+}
+
+export function getContentsGeometries<T extends ContainerFields>(
+  content: T,
+  getAllContents = (c: T) => c.contents,
+) {
   return getGeometriesFromCache(content, () => {
     const lines: [Position, Position][] = []
     const points: Position[] = []
     const renderingLines: Position[][] = []
     const boundings: Position[] = []
     const regions: NonNullable<Geometries['regions']> = []
-    content.contents.forEach((c) => {
+    getAllContents(content).forEach((c) => {
       if (!c) {
         return
       }
@@ -793,6 +809,19 @@ export function getContainerGeometries(content: ContainerFields) {
       regions: regions.length > 0 ? regions : undefined,
     }
   })
+}
+
+export function getContentsBounding(contents: Nullable<BaseContent>[]) {
+  const points: Position[] = []
+  contents.forEach(content => {
+    if (content) {
+      const bounding = getContentModel(content)?.getGeometries?.(content).bounding
+      if (bounding) {
+        points.push(bounding.start, bounding.end)
+      }
+    }
+  })
+  return getPointsBounding(points)
 }
 
 export function getContainerMove(content: ContainerFields, offset: Position) {

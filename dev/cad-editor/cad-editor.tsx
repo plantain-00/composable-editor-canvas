@@ -66,15 +66,23 @@ export const CADEditor = React.forwardRef((props: {
   const { snapTypes, renderTarget, readOnly, inputFixed } = props
   const { state, setState, undo, redo, canRedo, canUndo, applyPatchFromSelf, applyPatchFromOtherOperators } = usePatchBasedUndoRedo(props.initialState, props.operator, {
     onApplyPatchesFromSelf(patches, reversePatches) {
+      const newReversePatches: Patch[] = []
       reversePatches.forEach(p => {
         // type-coverage:ignore-next-line
         if (p.op === 'replace' && p.path.length === 1 && p.path[0] === 'length' && typeof p.value === 'number') {
-          p.path = [p.value]
-          // type-coverage:ignore-next-line
-          p.value = undefined
+          for (let i = p.value; i < state.length; i++) {
+            if (state[i]) {
+              newReversePatches.push({
+                op: 'replace',
+                path: [i],
+              })
+            }
+          }
+        } else {
+          newReversePatches.push(p)
         }
       })
-      props.onApplyPatchesFromSelf?.(patches, reversePatches)
+      props.onApplyPatchesFromSelf?.(patches, newReversePatches)
     },
     onChange({ patches, oldState, newState }) {
       const newContents = new Set<BaseContent>()
