@@ -5796,6 +5796,236 @@ export {
   isRadialDimensionReferenceContent
 };
 `,
+`// dev/cad-editor/plugins/rect-array.plugin.tsx
+function getModel(ctx) {
+  const RectArrayContent = ctx.and(ctx.BaseContent("rect array"), ctx.ContainerFields, {
+    rowCount: ctx.number,
+    rowSpacing: ctx.number,
+    columnCount: ctx.number,
+    columnSpacing: ctx.number
+  });
+  const getAllContentsFromCache = (content) => {
+    return ctx.allContentsCache.get(content, () => {
+      const result = [];
+      for (let i = 0; i < content.columnCount; i++) {
+        const x = i * content.columnSpacing;
+        for (let j = 0; j < content.rowCount; j++) {
+          const y = j * content.rowSpacing;
+          if (x === 0 && y === 0) {
+            result.push(...content.contents);
+          } else {
+            result.push(...content.contents.map((c) => {
+              var _a;
+              if (!c)
+                return;
+              const move = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.move;
+              if (!move)
+                return;
+              return ctx.produce(c, (draft) => {
+                move(draft, { x, y });
+              });
+            }));
+          }
+        }
+      }
+      return result;
+    });
+  };
+  const getGeometries = (content) => ctx.getContentsGeometries(content, getAllContentsFromCache);
+  const React = ctx.React;
+  return {
+    type: "rect array",
+    ...ctx.containerModel,
+    move: ctx.getContainerMove,
+    explode(content) {
+      return getAllContentsFromCache(content).filter((c) => !!c);
+    },
+    render(content, renderCtx) {
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content) }, renderCtx));
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const bounding = ctx.getContentsBounding(content.contents);
+        if (!bounding) {
+          return { editPoints: [] };
+        }
+        const base = {
+          x: ctx.getTwoNumberCenter(bounding.start.x, bounding.end.x),
+          y: ctx.getTwoNumberCenter(bounding.start.y, bounding.end.y)
+        };
+        return {
+          editPoints: [
+            {
+              ...base,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                ctx.getContainerMove(c, {
+                  x: cursor.x - start.x,
+                  y: cursor.y - start.y
+                });
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: base.x + content.columnSpacing,
+              y: base.y,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                c.columnSpacing = cursor.x - base.x;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: base.x,
+              y: base.y + content.rowSpacing,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                c.rowSpacing = cursor.y - base.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: base.x + content.columnSpacing * (content.columnCount - 1),
+              y: base.y,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                let columnCount = Math.round((cursor.x - base.x) / content.columnSpacing);
+                if (columnCount < 0) {
+                  columnCount = -columnCount;
+                  c.columnSpacing = -content.columnSpacing;
+                }
+                c.columnCount = columnCount + 1;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: base.x,
+              y: base.y + content.rowSpacing * (content.rowCount - 1),
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                let rowCount = Math.round((cursor.y - base.y) / content.rowSpacing);
+                if (rowCount < 0) {
+                  rowCount = -rowCount;
+                  c.rowSpacing = -content.rowSpacing;
+                }
+                c.rowCount = rowCount + 1;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: base.x + content.columnSpacing * (content.columnCount - 1),
+              y: base.y + content.rowSpacing * (content.rowCount - 1),
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isRectArrayContent(c)) {
+                  return;
+                }
+                let rowCount = Math.round((cursor.y - base.y) / content.rowSpacing);
+                if (rowCount < 0) {
+                  rowCount = -rowCount;
+                  c.rowSpacing = -content.rowSpacing;
+                }
+                let columnCount = Math.round((cursor.x - base.x) / content.columnSpacing);
+                if (columnCount < 0) {
+                  columnCount = -columnCount;
+                  c.columnSpacing = -content.columnSpacing;
+                }
+                c.rowCount = rowCount + 1;
+                c.columnCount = columnCount + 1;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            }
+          ]
+        };
+      });
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getContentsSnapPoints(content, contents, getAllContentsFromCache);
+    },
+    getGeometries,
+    propertyPanel(content, update) {
+      return {
+        rowCount: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rowCount, setValue: (v) => update((c) => {
+          if (isRectArrayContent(c)) {
+            c.rowCount = v;
+          }
+        }) }),
+        columnCount: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.columnCount, setValue: (v) => update((c) => {
+          if (isRectArrayContent(c)) {
+            c.columnCount = v;
+          }
+        }) }),
+        rowSpacing: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rowSpacing, setValue: (v) => update((c) => {
+          if (isRectArrayContent(c)) {
+            c.rowSpacing = v;
+          }
+        }) }),
+        columnSpacing: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.columnSpacing, setValue: (v) => update((c) => {
+          if (isRectArrayContent(c)) {
+            c.columnSpacing = v;
+          }
+        }) })
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, RectArrayContent, p)
+  };
+}
+function isRectArrayContent(content) {
+  return content.type === "rect array";
+}
+function getCommand(ctx) {
+  function contentSelectable(content, contents) {
+    return !ctx.contentIsReferenced(content, contents);
+  }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "70", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "70", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "3", y: "35", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "35", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "3", y: "0", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "1", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create rect array",
+    execute({ contents, selected }) {
+      const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents));
+      const bounding = ctx.getContentsBounding(target);
+      if (!bounding)
+        return;
+      const newContent = {
+        type: "rect array",
+        contents: target,
+        rowCount: 3,
+        rowSpacing: -(bounding.end.y - bounding.start.y) * 1.5,
+        columnCount: 4,
+        columnSpacing: (bounding.end.x - bounding.start.x) * 1.5
+      };
+      for (let i = contents.length; i >= 0; i--) {
+        if (ctx.isSelected([i], selected)) {
+          contents[i] = void 0;
+        }
+      }
+      contents.push(newContent);
+    },
+    contentSelectable,
+    icon
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isRectArrayContent
+};
+`,
 `// dev/cad-editor/plugins/rect.plugin.tsx
 function getModel(ctx) {
   const RectContent = ctx.and(ctx.BaseContent("rect"), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
