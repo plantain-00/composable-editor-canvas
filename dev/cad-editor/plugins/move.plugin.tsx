@@ -23,7 +23,7 @@ export function getCommand(ctx: PluginContext): Command {
       const { input, setInputPosition } = ctx.useCursorInput(message)
 
       return {
-        onStart,
+        onStart: s => onStart(s),
         mask,
         input,
         onMove(_, p) {

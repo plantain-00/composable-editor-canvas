@@ -1,5 +1,5 @@
 import * as React from "react"
-import { groupStyle } from "./common"
+import { getChildProps, groupStyle } from "./common"
 
 /**
  * @public
@@ -11,8 +11,8 @@ export function ObjectEditor(props: {
 }) {
   const children = Object.entries(props.properties).map(([title, child]) => {
     const newChild = Array.isArray(child)
-      ? child.map((c, i) => c ? React.cloneElement(c, { key: i, readOnly: props.readOnly }) : null)
-      : React.cloneElement(child, { readOnly: props.readOnly })
+      ? child.map((c, i) => c ? React.cloneElement(c, { key: i, ...getChildProps(props) }) : null)
+      : React.cloneElement(child, getChildProps(props))
     return [title, newChild] as const
   })
   if (props.inline) {

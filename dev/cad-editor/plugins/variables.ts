@@ -1315,7 +1315,7 @@ function getCommand(ctx) {
       }
       const { input, setInputPosition } = ctx.useCursorInput(message);
       return {
-        onStart,
+        onStart: (s) => onStart(s),
         mask,
         reset,
         input,
@@ -4363,21 +4363,57 @@ export {
 `,
 `// dev/cad-editor/plugins/linear-dimension.plugin.tsx
 function getModel(ctx) {
-  const LinearDimensionContent = ctx.and(ctx.BaseContent("linear dimension"), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension);
-  function getLinearDimensionGeometriesFromCache(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const LinearDimensionContent = ctx.and(ctx.BaseContent("linear dimension"), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension, {
+    ref1: ctx.optional({
+      id: ctx.or(ctx.number, ctx.Content),
+      snapIndex: ctx.number
+    }),
+    ref2: ctx.optional({
+      id: ctx.or(ctx.number, ctx.Content),
+      snapIndex: ctx.number
+    })
+  });
+  const linearDimensionCache = new ctx.WeakmapCache3();
+  const getLinearDimensionPositions = (content, contents) => {
+    var _a, _b, _c, _d, _e, _f;
+    let p1 = content.p1;
+    if (content.ref1 !== void 0) {
+      const ref = ctx.getReference(content.ref1.id, contents);
+      if (ref) {
+        const p = (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getSnapPoints) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c[content.ref1.snapIndex];
+        if (p) {
+          p1 = p;
+        }
+      }
+    }
+    let p2 = content.p2;
+    if (content.ref2 !== void 0) {
+      const ref = ctx.getReference(content.ref2.id, contents);
+      if (ref) {
+        const p = (_f = (_e = (_d = ctx.getContentModel(ref)) == null ? void 0 : _d.getSnapPoints) == null ? void 0 : _e.call(_d, ref, contents)) == null ? void 0 : _f[content.ref2.snapIndex];
+        if (p) {
+          p2 = p;
+        }
+      }
+    }
+    return { p1, p2 };
+  };
+  function getLinearDimensionGeometriesFromCache(content, contents) {
+    const { p1, p2 } = getLinearDimensionPositions(content, contents);
+    return linearDimensionCache.get(content, p1, p2, () => {
       var _a, _b;
-      return ctx.getLinearDimensionGeometries(content, {
+      return ctx.getLinearDimensionGeometries({ ...content, p1, p2 }, {
         arrowAngle: (_a = content.arrowAngle) != null ? _a : ctx.dimensionStyle.arrowAngle,
         arrowSize: (_b = content.arrowSize) != null ? _b : ctx.dimensionStyle.arrowSize,
         margin: ctx.dimensionStyle.margin
-      }, getTextPosition);
+      }, (c) => getTextPosition(c, contents));
     });
   }
-  const textPositionMap = new ctx.WeakmapCache();
-  function getTextPosition(content) {
-    return textPositionMap.get(content, () => {
-      return ctx.getLinearDimensionTextPosition(content, ctx.dimensionStyle.margin, ctx.getTextSizeFromCache);
+  const textPositionMap = new ctx.WeakmapCache3();
+  function getTextPosition(content, contents) {
+    const { p1, p2 } = getLinearDimensionPositions(content, contents);
+    return textPositionMap.get(content, p1, p2, () => {
+      return ctx.getLinearDimensionTextPosition({ ...content, p1, p2 }, ctx.dimensionStyle.margin, ctx.getTextSizeFromCache);
     });
   }
   const React = ctx.React;
@@ -4398,7 +4434,7 @@ function getModel(ctx) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
       const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
-      const { regions, lines } = getLinearDimensionGeometriesFromCache(content);
+      const { regions, lines } = getLinearDimensionGeometriesFromCache(content, contents);
       const children = [];
       for (const line of lines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: strokeStyleContent.dashArray }));
@@ -4408,7 +4444,7 @@ function getModel(ctx) {
           children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }));
         }
       }
-      const { textPosition, text, textRotation } = getTextPosition(content);
+      const { textPosition, text, textRotation } = getTextPosition(content, contents);
       children.push(target.renderGroup(
         [
           target.renderText(textPosition.x, textPosition.y, text, strokeColor, content.fontSize, content.fontFamily, { cacheKey: content })
@@ -4480,6 +4516,40 @@ function getModel(ctx) {
             }
           }
         ),
+        ref1: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref1 !== void 0, readOnly: content.ref1 === void 0, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && !v) {
+              c.ref1 = void 0;
+            }
+          }) }),
+          content.ref1 !== void 0 && typeof content.ref1.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.id, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && c.ref1) {
+              c.ref1.id = v;
+            }
+          }) }) : void 0,
+          content.ref1 !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.snapIndex, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && c.ref1) {
+              c.ref1.snapIndex = v;
+            }
+          }) }) : void 0
+        ],
+        ref2: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref2 !== void 0, readOnly: content.ref2 === void 0, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && !v) {
+              c.ref2 = void 0;
+            }
+          }) }),
+          content.ref2 !== void 0 && typeof content.ref2.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.id, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && c.ref2) {
+              c.ref2.id = v;
+            }
+          }) }) : void 0,
+          content.ref2 !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.snapIndex, setValue: (v) => update((c) => {
+            if (isLinearDimensionContent(c) && c.ref2) {
+              c.ref2.snapIndex = v;
+            }
+          }) }) : void 0
+        ],
         position: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
@@ -4530,8 +4600,26 @@ function getModel(ctx) {
       };
     },
     isValid: (c, p) => ctx.validate(c, LinearDimensionContent, p),
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds
+    getRefIds: (content) => [
+      ...ctx.getStrokeRefIds(content),
+      ...content.ref1 && typeof content.ref1.id === "number" ? [content.ref1.id] : [],
+      ...content.ref2 && typeof content.ref2.id === "number" ? [content.ref2.id] : []
+    ],
+    updateRefId(content, update) {
+      if (content.ref1) {
+        const newRefId = update(content.ref1.id);
+        if (newRefId !== void 0) {
+          content.ref1.id = newRefId;
+        }
+      }
+      if (content.ref2) {
+        const newRefId = update(content.ref2.id);
+        if (newRefId !== void 0) {
+          content.ref2.id = newRefId;
+        }
+      }
+      ctx.updateStrokeRefIds(content, update);
+    }
   };
 }
 function isLinearDimensionContent(content) {
@@ -4546,6 +4634,8 @@ function getCommand(ctx) {
     useCommand({ onEnd, type, scale, strokeStyleId }) {
       const [p1, setP1] = React.useState();
       const [p2, setP2] = React.useState();
+      const [p1Target, setP1Target] = React.useState();
+      const [p2Target, setP2Target] = React.useState();
       const [direct, setDirect] = React.useState(false);
       const [result, setResult] = React.useState();
       const [text, setText] = React.useState();
@@ -4565,6 +4655,8 @@ function getCommand(ctx) {
       const reset = () => {
         setP1(void 0);
         setP2(void 0);
+        setP1Target(void 0);
+        setP2Target(void 0);
         setResult(void 0);
         resetInput();
         setText(void 0);
@@ -4579,11 +4671,13 @@ function getCommand(ctx) {
       return {
         input,
         reset,
-        onStart(p) {
+        onStart(p, target) {
           if (!p1) {
             setP1(p);
+            setP1Target(target);
           } else if (!p2) {
             setP2(p);
+            setP2Target(target);
           } else if (result) {
             onEnd({
               updateContents: (contents) => {
@@ -4603,6 +4697,8 @@ function getCommand(ctx) {
               position: p,
               p1,
               p2,
+              ref1: p1Target,
+              ref2: p2Target,
               strokeStyleId,
               direct,
               fontSize: 16,
@@ -4686,7 +4782,7 @@ function getCommand(ctx) {
         );
       }
       return {
-        onStart,
+        onStart: (s) => onStart(s),
         mask,
         input,
         reset,
@@ -4730,7 +4826,7 @@ function getCommand(ctx) {
         }
       } : void 0);
       return {
-        onStart,
+        onStart: (s) => onStart(s),
         mask: type ? mask : void 0,
         input,
         reset,
@@ -4813,7 +4909,7 @@ function getCommand(ctx) {
       }
       const { input, setInputPosition } = ctx.useCursorInput(message);
       return {
-        onStart,
+        onStart: (s) => onStart(s),
         mask,
         input,
         onMove(_, p) {

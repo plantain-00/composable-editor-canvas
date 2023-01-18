@@ -31,7 +31,7 @@ export function getCommand(ctx: PluginContext): Command {
         }
       } : undefined)
       return {
-        onStart,
+        onStart: s => onStart(s),
         mask: type ? mask : undefined,
         input,
         reset,
