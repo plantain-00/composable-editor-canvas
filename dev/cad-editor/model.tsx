@@ -651,7 +651,7 @@ export function getSortedContents(contents: readonly Nullable<BaseContent>[]) {
 export function getReference<T extends BaseContent>(
   id: number | BaseContent,
   contents: readonly Nullable<BaseContent>[],
-  filter: (content: BaseContent) => content is T,
+  filter: (content: BaseContent) => content is T = (c): c is T => true,
 ) {
   if (typeof id !== 'number') {
     if (filter(id)) {
@@ -942,4 +942,9 @@ export function getAssistentText(text: string, fontSize: number, x: number, y: n
     })
   }
   return texts
+}
+
+export interface SnapTarget {
+  snapIndex: number
+  id: number
 }

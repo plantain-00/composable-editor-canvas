@@ -1,7 +1,7 @@
 import { Patch } from "immer"
 import React from "react"
 import { Nullable, Position, prependPatchPath, SelectPath } from "../../src"
-import { BaseContent, fixedInputStyle } from "./model"
+import { BaseContent, fixedInputStyle, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
   type?: CommandType[]
@@ -18,8 +18,8 @@ export interface Command extends CommandType {
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
   }): {
-    onStart(p: Position): void
-    onMove?: (p: Position, viewportPosition?: Position) => void
+    onStart(p: Position, target?: SnapTarget): void
+    onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
@@ -75,14 +75,14 @@ export function useCommands(
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
-  const onMoves: ((p: Position, viewportPosition?: Position) => void)[] = []
+  const onMoves: ((p: Position, viewportPosition?: Position, target?: SnapTarget) => void)[] = []
   const updateSelectedContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
     patches?: [Patch[], Patch[]]
   })[] = []
   const commandAssistentContents: BaseContent[] = []
-  const onStartMap: Record<string, ((p: Position) => void)> = {}
+  const onStartMap: Record<string, ((p: Position, target?: SnapTarget) => void)> = {}
   const hotkeys: { key: string, command: string }[] = []
   const lastPositions: Position[] = []
   const resets: (() => void)[] = []
@@ -201,14 +201,14 @@ export function useCommands(
       }
     },
     commandAssistentContents,
-    startCommand(name: string | undefined, p: Position) {
+    startCommand(name: string | undefined, p: Position, target?: SnapTarget) {
       if (name && onStartMap[name]) {
-        onStartMap[name](p)
+        onStartMap[name](p, target)
       }
     },
-    onCommandMove(p: Position, viewportPosition?: Position) {
+    onCommandMove(p: Position, viewportPosition?: Position, target?: SnapTarget) {
       for (const onMove of onMoves) {
-        onMove(p, viewportPosition)
+        onMove(p, viewportPosition, target)
       }
     },
     getCommandByHotkey(key: string) {

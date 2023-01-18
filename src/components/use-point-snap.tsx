@@ -37,11 +37,13 @@ export function usePointSnap<T>(
   const getOffsetSnapPoint = (p: Position) => {
     if (offset) {
       return {
-        x: p.x + offset.x,
-        y: p.y + offset.y,
+        position: {
+          x: p.x + offset.x,
+          y: p.y + offset.y,
+        },
       }
     }
-    return p
+    return { position: p }
   }
 
   return {
@@ -124,7 +126,7 @@ export function usePointSnap<T>(
       contents: readonly Nullable<T>[],
       getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
       lastPosition?: Position,
-    ) {
+    ): SnapResult<T> {
       if (!enabled) {
         setSnapPoint(undefined)
         return getOffsetSnapPoint(p)
@@ -139,14 +141,21 @@ export function usePointSnap<T>(
         }
         const snapPoints = getModel(content)?.getSnapPoints?.(content, contents)
         if (snapPoints) {
-          for (const point of snapPoints) {
+          for (let i = 0; i < snapPoints.length; i++) {
+            const point = snapPoints[i]
             if (
               types.includes(point.type) &&
               getTwoNumbersDistance(p.x, point.x) <= delta &&
               getTwoNumbersDistance(p.y, point.y) <= delta
             ) {
               setSnapPoint(point)
-              return getOffsetSnapPoint(point)
+              return {
+                ...getOffsetSnapPoint(point),
+                target: {
+                  snapIndex: i,
+                  content,
+                },
+              }
             }
           }
         }
@@ -315,6 +324,17 @@ export function usePointSnap<T>(
       setSnapPoint(undefined)
       return getOffsetSnapPoint(p)
     }
+  }
+}
+
+/**
+ * @public
+ */
+export interface SnapResult<T> {
+  position: Position
+  target?: {
+    snapIndex: number
+    content: T
   }
 }
 

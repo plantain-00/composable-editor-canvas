@@ -46,7 +46,7 @@ export default () => {
         xmlns="http://www.w3.org/2000/svg"
         fill='none'
         style={{ position: 'absolute', left: 0, top: 0 }}
-        onMouseMove={(e) => setPosition(getSnapPoint({ x: e.clientX, y: e.clientY }, contents))}
+        onMouseMove={(e) => setPosition(getSnapPoint({ x: e.clientX, y: e.clientY }, contents).position)}
       >
         {contents.map((c, i) => <circle key={i} cx={c.x} cy={c.y} r={c.r} stroke='#00ff00' />)}
         {assistentContents.map((c, i) => {

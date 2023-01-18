@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Button } from "./button"
-import { groupStyle } from "./common"
+import { getChildProps, groupStyle } from "./common"
 
 export interface ArrayProps {
   add: () => void
@@ -27,7 +27,7 @@ export function ArrayEditor(props: ArrayProps & {
             return (
               <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '3px' }}>
                 <div style={{ paddingRight: '5px', width: '14px' }}>{i + 1}</div>
-                <div style={{ flex: 1, display: 'flex' }}>{React.cloneElement(p, { readOnly: props.readOnly })}</div>
+                <div style={{ flex: 1, display: 'flex' }}>{React.cloneElement(p, getChildProps(props))}</div>
                 {!props.readOnly && <div>
                   <Button onClick={() => props.remove(i)}>{removeIcon}</Button>
                   <Button onClick={() => props.copy(i)}>{copyIcon}</Button>
@@ -54,7 +54,7 @@ export function ArrayEditor(props: ArrayProps & {
               {!props.readOnly && i > 0 && <Button onClick={() => props.moveUp(i)}>{topIcon}</Button>}
               {!props.readOnly && i < props.items.length - 1 && <Button onClick={() => props.moveDown(i)}>{bottomIcon}</Button>}
             </div>
-            <div style={{ display: 'flex' }}>{React.cloneElement(p, { readOnly: props.readOnly })}</div>
+            <div style={{ display: 'flex' }}>{React.cloneElement(p, getChildProps(props))}</div>
           </React.Fragment>
         )
       })}
@@ -88,7 +88,7 @@ export function ObjectArrayEditor(props: ArrayProps & {
             return (
               <tr key={i}>
                 <td style={{ paddingRight: '5px' }}>{i + 1}</td>
-                {Object.values(p).map((v, j) => <td key={j}>{React.cloneElement(v, { readOnly: props.readOnly })}</td>)}
+                {Object.values(p).map((v, j) => <td key={j}>{React.cloneElement(v, getChildProps(props))}</td>)}
                 {!props.readOnly && <td>
                   <Button onClick={() => props.remove(i)}>{removeIcon}</Button>
                   <Button onClick={() => props.copy(i)}>{copyIcon}</Button>

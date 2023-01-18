@@ -4,28 +4,72 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & model.ArrowFields & core.LinearDimension
+export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & model.ArrowFields & core.LinearDimension & {
+  ref1?: {
+    id: number | model.BaseContent
+    snapIndex: number
+  }
+  ref2?: {
+    id: number | model.BaseContent
+    snapIndex: number
+  }
+}
 
 export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent> {
-  const LinearDimensionContent = ctx.and(ctx.BaseContent('linear dimension'), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension)
-  function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
-      return ctx.getLinearDimensionGeometries(content, {
+  const LinearDimensionContent = ctx.and(ctx.BaseContent('linear dimension'), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension, {
+    ref1: ctx.optional({
+      id: ctx.or(ctx.number, ctx.Content),
+      snapIndex: ctx.number,
+    }),
+    ref2: ctx.optional({
+      id: ctx.or(ctx.number, ctx.Content),
+      snapIndex: ctx.number,
+    }),
+  })
+  const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries>()
+  const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
+    let p1 = content.p1
+    if (content.ref1 !== undefined) {
+      const ref = ctx.getReference(content.ref1.id, contents)
+      if (ref) {
+        const p = ctx.getContentModel(ref)?.getSnapPoints?.(ref, contents)?.[content.ref1.snapIndex]
+        if (p) {
+          p1 = p
+        }
+      }
+    }
+    let p2 = content.p2
+    if (content.ref2 !== undefined) {
+      const ref = ctx.getReference(content.ref2.id, contents)
+      if (ref) {
+        const p = ctx.getContentModel(ref)?.getSnapPoints?.(ref, contents)?.[content.ref2.snapIndex]
+        if (p) {
+          p2 = p
+        }
+      }
+    }
+    return { p1, p2 }
+  }
+  function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const { p1, p2 } = getLinearDimensionPositions(content, contents)
+    return linearDimensionCache.get(content, p1, p2, () => {
+      return ctx.getLinearDimensionGeometries({ ...content, p1, p2 }, {
         arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
         arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
         margin: ctx.dimensionStyle.margin,
-      }, getTextPosition)
+      }, c => getTextPosition(c, contents))
     })
   }
-  const textPositionMap = new ctx.WeakmapCache<Omit<LinearDimensionContent, 'type'>, {
+  const textPositionMap = new ctx.WeakmapCache3<Omit<LinearDimensionContent, 'type'>, core.Position, core.Position, {
     textPosition: core.Position
     size?: core.Size
     text: string
     textRotation: number
   }>()
-  function getTextPosition(content: Omit<LinearDimensionContent, 'type'>) {
-    return textPositionMap.get(content, () => {
-      return ctx.getLinearDimensionTextPosition(content, ctx.dimensionStyle.margin, ctx.getTextSizeFromCache)
+  function getTextPosition(content: Omit<LinearDimensionContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const { p1, p2 } = getLinearDimensionPositions(content, contents)
+    return textPositionMap.get(content, p1, p2, () => {
+      return ctx.getLinearDimensionTextPosition({ ...content, p1, p2 }, ctx.dimensionStyle.margin, ctx.getTextSizeFromCache)
     })
   }
   const React = ctx.React
@@ -45,7 +89,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const strokeColor = getStrokeColor(strokeStyleContent)
       const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
-      const { regions, lines } = getLinearDimensionGeometriesFromCache(content)
+      const { regions, lines } = getLinearDimensionGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: strokeStyleContent.dashArray }))
@@ -55,7 +99,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
           children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }))
         }
       }
-      const { textPosition, text, textRotation } = getTextPosition(content)
+      const { textPosition, text, textRotation } = getTextPosition(content, contents)
       children.push(target.renderGroup(
         [
           target.renderText(textPosition.x, textPosition.y, text, strokeColor, content.fontSize, content.fontFamily, { cacheKey: content }),
@@ -105,6 +149,16 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.y = v } })} />,
           }}
         />,
+        ref1: [
+          <ctx.BooleanEditor value={content.ref1 !== undefined} readOnly={content.ref1 === undefined} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && !v) { c.ref1 = undefined } })} />,
+          content.ref1 !== undefined && typeof content.ref1.id === 'number' ? <ctx.NumberEditor value={content.ref1.id} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref1) { c.ref1.id = v } })} /> : undefined,
+          content.ref1 !== undefined ? <ctx.NumberEditor value={content.ref1.snapIndex} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref1) { c.ref1.snapIndex = v } })} /> : undefined,
+        ],
+        ref2: [
+          <ctx.BooleanEditor value={content.ref2 !== undefined} readOnly={content.ref2 === undefined} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && !v) { c.ref2 = undefined } })} />,
+          content.ref2 !== undefined && typeof content.ref2.id === 'number' ? <ctx.NumberEditor value={content.ref2.id} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref2) { c.ref2.id = v } })} /> : undefined,
+          content.ref2 !== undefined ? <ctx.NumberEditor value={content.ref2.snapIndex} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref2) { c.ref2.snapIndex = v } })} /> : undefined,
+        ],
         position: <ctx.ObjectEditor
           inline
           properties={{
@@ -124,8 +178,26 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       }
     },
     isValid: (c, p) => ctx.validate(c, LinearDimensionContent, p),
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: (content) => [
+      ...ctx.getStrokeRefIds(content),
+      ...(content.ref1 && typeof content.ref1.id === 'number' ? [content.ref1.id] : []),
+      ...(content.ref2 && typeof content.ref2.id === 'number' ? [content.ref2.id] : []),
+    ],
+    updateRefId(content, update) {
+      if (content.ref1) {
+        const newRefId = update(content.ref1.id)
+        if (newRefId !== undefined) {
+          content.ref1.id = newRefId
+        }
+      }
+      if (content.ref2) {
+        const newRefId = update(content.ref2.id)
+        if (newRefId !== undefined) {
+          content.ref2.id = newRefId
+        }
+      }
+      ctx.updateStrokeRefIds(content, update)
+    },
   }
 }
 
@@ -152,6 +224,8 @@ export function getCommand(ctx: PluginContext): Command {
     useCommand({ onEnd, type, scale, strokeStyleId }) {
       const [p1, setP1] = React.useState<core.Position>()
       const [p2, setP2] = React.useState<core.Position>()
+      const [p1Target, setP1Target] = React.useState<model.SnapTarget>()
+      const [p2Target, setP2Target] = React.useState<model.SnapTarget>()
       const [direct, setDirect] = React.useState(false)
       const [result, setResult] = React.useState<LinearDimensionContent>()
       const [text, setText] = React.useState<string>()
@@ -171,6 +245,8 @@ export function getCommand(ctx: PluginContext): Command {
       const reset = () => {
         setP1(undefined)
         setP2(undefined)
+        setP1Target(undefined)
+        setP2Target(undefined)
         setResult(undefined)
         resetInput()
         setText(undefined)
@@ -185,11 +261,13 @@ export function getCommand(ctx: PluginContext): Command {
       return {
         input,
         reset,
-        onStart(p) {
+        onStart(p, target) {
           if (!p1) {
             setP1(p)
+            setP1Target(target)
           } else if (!p2) {
             setP2(p)
+            setP2Target(target)
           } else if (result) {
             onEnd({
               updateContents: (contents) => {
@@ -209,6 +287,8 @@ export function getCommand(ctx: PluginContext): Command {
               position: p,
               p1,
               p2,
+              ref1: p1Target,
+              ref2: p2Target,
               strokeStyleId,
               direct,
               fontSize: 16,

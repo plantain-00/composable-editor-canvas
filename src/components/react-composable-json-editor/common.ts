@@ -49,3 +49,10 @@ export const groupStyle: React.CSSProperties = {
   marginBottom: '3px',
 }
 
+export function getChildProps(props: { readOnly?: boolean }) {
+  const childProps: { readOnly?: boolean } = {}
+  if (props.readOnly !== undefined) {
+    childProps.readOnly = props.readOnly
+  }
+  return childProps
+}

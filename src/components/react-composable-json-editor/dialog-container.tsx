@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Button } from "./button"
+import { getChildProps } from "./common"
 
 /**
  * @public
@@ -17,7 +18,7 @@ export function DialogContainer(props: {
         onClick={() => setVisible(false)}
       >
         <div style={{ width: '600px', display: 'flex', background: 'white' }} onClick={(e) => e.stopPropagation()}>
-          {React.cloneElement(props.children, { readOnly: props.readOnly })}
+          {React.cloneElement(props.children, getChildProps(props))}
         </div>
       </div>}
     </>

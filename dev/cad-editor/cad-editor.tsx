@@ -3,7 +3,7 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, updateReferencedContents, zoomContentsToFit } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, updateReferencedContents, zoomContentsToFit } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -265,7 +265,7 @@ export const CADEditor = React.forwardRef((props: {
         startOperation({ type: 'command', name: nextCommand }, [])
       }
     },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange, lastPosition),
+    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange, lastPosition).position,
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
@@ -431,11 +431,11 @@ export const CADEditor = React.forwardRef((props: {
     const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange, lastPosition)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      startCommand(operations.operate.name, p)
+      startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex } : undefined)
     }
     if (operations.type !== 'operate') {
       if (editPoint) {
-        onEditClick(p)
+        onEditClick(p.position)
       } else if (hovering.length > 0) {
         // if hovering content, add it to selection
         addSelection(...hovering)
@@ -464,10 +464,11 @@ export const CADEditor = React.forwardRef((props: {
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      onCommandMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), viewportPosition)
+      const s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
+      onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex } : undefined)
     }
     if (operations.type !== 'operate') {
-      onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition), selectedContents)
+      onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition).position, selectedContents)
       // hover by position
       const indexes = getSortedContents(editingContent).indexes
       setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
@@ -503,7 +504,8 @@ export const CADEditor = React.forwardRef((props: {
     }
     operate(p)
     if (position) {
-      onCommandMove(getSnapPoint(position, editingContent, getContentsInRange), inputPosition)
+      const s = getSnapPoint(position, editingContent, getContentsInRange)
+      onCommandMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex } : undefined)
     }
   }
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
