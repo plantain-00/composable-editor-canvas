@@ -7,17 +7,19 @@ import type { LineContent } from './line-polyline.plugin'
 export type TextContent = model.BaseContent<'text'> & core.Text & {
   width?: number
   lineHeight?: number
+  textVariableName?: string
 }
 
 export function getModel(ctx: PluginContext): model.Model<TextContent> {
   const TextContent = ctx.and(ctx.BaseContent('text'), ctx.Text, {
     width: ctx.optional(ctx.number),
     lineHeight: ctx.optional(ctx.number),
+    textVariableName: ctx.optional(ctx.string),
   })
   const textLayoutResultCache = new ctx.WeakmapCache<object, ReturnType<typeof ctx.flowLayout<string>>>()
-  function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">) {
+  function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, variableContext?: Record<string, unknown>) {
     return textLayoutResultCache.get(content, () => {
-      const state = content.text.split('')
+      const state = getText(content, variableContext).split('')
       const getTextWidth = (text: string) => ctx.getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)?.width ?? 0
       return ctx.flowLayout({
         state,
@@ -34,6 +36,15 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
   }
   function hasWidth(content: Omit<TextContent, 'type'>): content is Omit<core.RequiredField<TextContent, "width">, "type"> {
     return content.width !== undefined
+  }
+  function getText(content: Omit<TextContent, 'type'>, variableContext?: Record<string, unknown>) {
+    if (content.textVariableName && variableContext) {
+      const text = variableContext[content.textVariableName]
+      if (typeof text === 'string') {
+        return text
+      }
+    }
+    return content.text
   }
   function getTextGeometries(content: Omit<TextContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
@@ -101,17 +112,18 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render(content, { target, transformColor, isAssistence }) {
+    render(content, { target, transformColor, isAssistence, variableContext }) {
       const color = transformColor(content.color)
+      const text = getText(content, variableContext)
       let cacheKey: object | undefined
       if (isAssistence) {
-        cacheKey = ctx.assistentTextCache.get(content.text, content.fontSize, content.color)
+        cacheKey = ctx.assistentTextCache.get(text, content.fontSize, content.color)
       }
       if (!cacheKey) {
         cacheKey = content
       }
       if (hasWidth(content)) {
-        const { layoutResult } = getTextLayoutResult(content)
+        const { layoutResult } = getTextLayoutResult(content, variableContext)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const { x, y, content: text } of layoutResult) {
           const textWidth = ctx.getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)?.width ?? 0
@@ -119,7 +131,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
         return target.renderGroup(children)
       }
-      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey })
+      return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey })
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {
@@ -138,9 +150,14 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           content.width !== undefined ? <ctx.BooleanEditor value={content.lineHeight !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v ? content.fontSize * 1.2 : undefined } })} /> : undefined,
           content.width !== undefined && content.lineHeight !== undefined ? <ctx.NumberEditor value={content.lineHeight} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v } })} /> : undefined,
         ],
+        textVariableName: [
+          <ctx.BooleanEditor value={content.textVariableName !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.textVariableName = v ? '' : undefined } })} />,
+          content.textVariableName !== undefined ? <ctx.StringEditor value={content.textVariableName} setValue={(v) => update(c => { if (isTextContent(c)) { c.textVariableName = v } })} /> : undefined,
+        ],
       }
     },
     isValid: (c, p) => ctx.validate(c, TextContent, p),
+    getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : [],
   }
 }
 

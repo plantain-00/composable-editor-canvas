@@ -52,7 +52,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
       return getAllContentsFromCache(content).filter((c): c is model.BaseContent => !!c)
     },
     render(content, renderCtx) {
-      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content) }, renderCtx))
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content), variableValues: content.variableValues }, renderCtx))
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -175,6 +175,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
         columnCount: <ctx.NumberEditor value={content.columnCount} setValue={(v) => update(c => { if (isRectArrayContent(c)) { c.columnCount = v } })} />,
         rowSpacing: <ctx.NumberEditor value={content.rowSpacing} setValue={(v) => update(c => { if (isRectArrayContent(c)) { c.rowSpacing = v } })} />,
         columnSpacing: <ctx.NumberEditor value={content.columnSpacing} setValue={(v) => update(c => { if (isRectArrayContent(c)) { c.columnSpacing = v } })} />,
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
       }
     },
     isValid: (c, p) => ctx.validate(c, RectArrayContent, p),

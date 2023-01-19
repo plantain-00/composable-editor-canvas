@@ -73,7 +73,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       return getAllContentsFromCache(content, contents).filter((c): c is model.BaseContent => !!c)
     },
     render(content, renderCtx) {
-      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents) }, renderCtx))
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx))
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -202,6 +202,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
         itemCount: <ctx.NumberEditor value={content.itemCount} setValue={(v) => update(c => { if (isPolarArrayContent(c)) { c.itemCount = v } })} />,
         rowSpacing: <ctx.NumberEditor value={content.rowSpacing} setValue={(v) => update(c => { if (isPolarArrayContent(c)) { c.rowSpacing = v } })} />,
         itemAngle: <ctx.NumberEditor value={content.itemAngle} setValue={(v) => update(c => { if (isPolarArrayContent(c)) { c.itemAngle = v } })} />,
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
       }
     },
     isValid: (c, p) => ctx.validate(c, PolarArrayContent, p),

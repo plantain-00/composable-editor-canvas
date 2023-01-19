@@ -1,6 +1,6 @@
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -63,11 +63,20 @@ export const FillFields = {
   fillStyleId: optional(or(number, Content)),
 }
 
-export interface ContainerFields {
+export interface VariableValuesFields {
+  variableValues?: Record<string, string>
+}
+
+export const VariableValuesFields = {
+  variableValues: optional(record(string, string)),
+}
+
+export interface ContainerFields extends VariableValuesFields {
   contents: Nullable<BaseContent>[]
 }
 
 export const ContainerFields: { [key: string]: Validator } = {
+  ...VariableValuesFields,
   contents: [Nullable(Content)],
 }
 
@@ -105,7 +114,12 @@ export const fillModel = {
   isFill: true,
 }
 
+export const variableValuesModel = {
+  isVariableValues: true,
+}
+
 export const containerModel = {
+  ...variableValuesModel,
   isContainer: true,
 }
 
@@ -126,7 +140,8 @@ type FeatureModels = typeof strokeModel &
   typeof containerModel &
   typeof arrowModel &
   typeof segmentCountModel &
-  typeof angleDeltaModel
+  typeof angleDeltaModel &
+  typeof variableValuesModel
 
 export type Model<T> = Partial<FeatureModels> & {
   type: string
@@ -154,6 +169,7 @@ export type Model<T> = Partial<FeatureModels> & {
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
   isValid?(content: Omit<T, 'type'>, path?: Path): ValidationResult
+  getVariableNames?(content: Omit<T, 'type'>): string[]
 }
 
 export interface RenderContext<V> {
@@ -165,6 +181,7 @@ export interface RenderContext<V> {
   getFillColor(content: FillFields): number | undefined
   getFillPattern: (content: FillFields) => Pattern<V> | undefined
   isAssistence?: boolean
+  variableContext?: Record<string, unknown>
 }
 interface RenderIfSelectedContext<V> {
   color: number
@@ -494,6 +511,25 @@ export function getAngleDeltaContentPropertyPanel(
   }
 }
 
+export function getVariableValuesContentPropertyPanel(
+  content: VariableValuesFields,
+  variableNames: string[],
+  update: (recipe: (content: BaseContent) => void) => void,
+) {
+  return {
+    variableValues: variableNames.length > 0
+      ? <ObjectEditor properties={Object.assign({}, ...variableNames.map(f => ({
+        [f]: <StringEditor value={content.variableValues?.[f] ?? ''} setValue={(v) => update(c => {
+          if (isVariableValuesContent(c)) {
+            if (!c.variableValues) c.variableValues = {}
+            c.variableValues[f] = v
+          }
+        })} />
+      })))} />
+      : [],
+  }
+}
+
 export function isStrokeContent(content: BaseContent): content is (BaseContent & StrokeFields) {
   return !!getContentModel(content)?.isStroke
 }
@@ -514,6 +550,9 @@ export function isSegmentCountContent(content: BaseContent): content is (BaseCon
 }
 export function isAngleDeltaContent(content: BaseContent): content is (BaseContent & AngleDeltaFields) {
   return !!getContentModel(content)?.isAngleDelta
+}
+export function isVariableValuesContent(content: BaseContent): content is (BaseContent & VariableValuesFields) {
+  return !!getContentModel(content)?.isVariableValues
 }
 
 export function hasFill(content: FillFields) {
@@ -739,6 +778,13 @@ export function renderContainerChildren<V>(
   container: ContainerFields,
   ctx: RenderContext<V>,
 ) {
+  ctx = {
+    ...ctx,
+    variableContext: {
+      ...ctx.variableContext,
+      ...container.variableValues,
+    },
+  }
   const children: (ReturnType<typeof ctx.target.renderGroup>)[] = []
   const sortedContents = getSortedContents(container.contents).contents
   sortedContents.forEach((content) => {
@@ -752,6 +798,19 @@ export function renderContainerChildren<V>(
     }
   })
   return children
+}
+
+export function getContainerVariableNames(container: ContainerFields) {
+  const result = new Set<string>
+  for (const content of container.contents) {
+    if (content) {
+      const variableNames = getContentModel(content)?.getVariableNames?.(content)
+      if (variableNames) {
+        variableNames.forEach(v => result.add(v))
+      }
+    }
+  }
+  return Array.from(result)
 }
 
 export function renderContainerIfSelected<V>(container: ContainerFields, ctx: RenderIfSelectedContext<V>) {

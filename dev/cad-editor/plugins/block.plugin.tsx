@@ -7,7 +7,7 @@ import type { LineContent } from './line-polyline.plugin'
 export type BlockContent = model.BaseContent<'block'> & model.ContainerFields & {
   base: core.Position
 }
-export type BlockReferenceContent = model.BaseContent<'block reference'> & core.Position & {
+export type BlockReferenceContent = model.BaseContent<'block reference'> & core.Position & model.VariableValuesFields & {
   refId: number | model.BaseContent
   angle: number
 }
@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
   const BlockContent = ctx.and(ctx.BaseContent('block'), ctx.ContainerFields, {
     base: ctx.Position,
   })
-  const BlockReferenceContent = ctx.and(ctx.BaseContent('block reference'), ctx.Position, {
+  const BlockReferenceContent = ctx.and(ctx.BaseContent('block reference'), ctx.Position, ctx.VariableValuesFields, {
     refId: ctx.or(ctx.number, ctx.Content),
     angle: ctx.number,
   })
@@ -62,6 +62,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
             y: <ctx.NumberEditor value={content.base.y} setValue={(v) => update(c => { if (isBlockContent(c)) { c.base.y = v } })} />,
           }}
         />,
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
       }
     },
     isValid: (c, p) => ctx.validate(c, BlockContent, p),
@@ -90,6 +91,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         const lines: [core.Position, core.Position][] = []
         const points: core.Position[] = []
         const renderingLines: core.Position[][] = []
+        const regions: NonNullable<model.Geometries['regions']> = []
         block.contents.forEach((c) => {
           if (!c) {
             return
@@ -103,6 +105,9 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
               if (r.renderingLines) {
                 renderingLines.push(...r.renderingLines)
               }
+              if (r.regions) [
+                regions.push(...r.regions)
+              ]
             }
           }
         })
@@ -111,6 +116,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
           points,
           bounding: ctx.getPointsBounding(points),
           renderingLines,
+          regions,
         }
       })
     }
@@ -118,6 +124,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
   }
   const blockReferenceModel: model.Model<BlockReferenceContent> = {
     type: 'block reference',
+    ...ctx.variableValuesModel,
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
@@ -160,7 +167,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     render(content, renderCtx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
-        const children = ctx.renderContainerChildren(block, renderCtx)
+        const children = ctx.renderContainerChildren({ ...block, variableValues: content.variableValues }, renderCtx)
         return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
       }
       return renderCtx.target.renderEmpty()
@@ -230,12 +237,18 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       return []
     },
     getGeometries: getBlockReferenceGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
+      let variableNames: string[] = []
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
+      if (block) {
+        variableNames = ctx.getContainerVariableNames(block)
+      }
       return {
         refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.refId = v } })} /> : [],
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,
+        ...ctx.getVariableValuesContentPropertyPanel(content, variableNames, update),
       }
     },
     isValid: (c, p) => ctx.validate(c, BlockReferenceContent, p),
