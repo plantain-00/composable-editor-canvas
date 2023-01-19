@@ -18,6 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
     renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
+    propertyPanel: (content, update) => ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
     isValid: (c, p) => ctx.validate(c, GroupContent, p),
   }
 }

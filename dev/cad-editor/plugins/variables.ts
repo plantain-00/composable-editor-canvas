@@ -197,7 +197,7 @@ function getModel(ctx) {
   const BlockContent = ctx.and(ctx.BaseContent("block"), ctx.ContainerFields, {
     base: ctx.Position
   });
-  const BlockReferenceContent = ctx.and(ctx.BaseContent("block reference"), ctx.Position, {
+  const BlockReferenceContent = ctx.and(ctx.BaseContent("block reference"), ctx.Position, ctx.VariableValuesFields, {
     refId: ctx.or(ctx.number, ctx.Content),
     angle: ctx.number
   });
@@ -252,7 +252,8 @@ function getModel(ctx) {
               }) })
             }
           }
-        )
+        ),
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update)
       };
     },
     isValid: (c, p) => ctx.validate(c, BlockContent, p)
@@ -277,6 +278,7 @@ function getModel(ctx) {
         const lines = [];
         const points = [];
         const renderingLines = [];
+        const regions = [];
         block.contents.forEach((c) => {
           var _a, _b;
           if (!c) {
@@ -291,6 +293,10 @@ function getModel(ctx) {
               if (r.renderingLines) {
                 renderingLines.push(...r.renderingLines);
               }
+              if (r.regions)
+                [
+                  regions.push(...r.regions)
+                ];
             }
           }
         });
@@ -298,7 +304,8 @@ function getModel(ctx) {
           lines,
           points,
           bounding: ctx.getPointsBounding(points),
-          renderingLines
+          renderingLines,
+          regions
         };
       });
     }
@@ -306,6 +313,7 @@ function getModel(ctx) {
   }
   const blockReferenceModel = {
     type: "block reference",
+    ...ctx.variableValuesModel,
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
@@ -348,7 +356,7 @@ function getModel(ctx) {
     render(content, renderCtx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
-        const children = ctx.renderContainerChildren(block, renderCtx);
+        const children = ctx.renderContainerChildren({ ...block, variableValues: content.variableValues }, renderCtx);
         return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
       }
       return renderCtx.target.renderEmpty();
@@ -419,7 +427,12 @@ function getModel(ctx) {
       return [];
     },
     getGeometries: getBlockReferenceGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents) {
+      let variableNames = [];
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
+      if (block) {
+        variableNames = ctx.getContainerVariableNames(block);
+      }
       return {
         refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
           if (isBlockReferenceContent(c)) {
@@ -440,7 +453,8 @@ function getModel(ctx) {
           if (isBlockReferenceContent(c)) {
             c.angle = v;
           }
-        }) })
+        }) }),
+        ...ctx.getVariableValuesContentPropertyPanel(content, variableNames, update)
       };
     },
     isValid: (c, p) => ctx.validate(c, BlockReferenceContent, p),
@@ -3855,6 +3869,7 @@ function getModel(ctx) {
     renderIfSelected: ctx.getContainerRenderIfSelected,
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
+    propertyPanel: (content, update) => ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
     isValid: (c, p) => ctx.validate(c, GroupContent, p)
   };
 }
@@ -5533,7 +5548,7 @@ function getModel(ctx) {
       return getAllContentsFromCache(content, contents).filter((c) => !!c);
     },
     render(content, renderCtx) {
-      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents) }, renderCtx));
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx));
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -5688,7 +5703,8 @@ function getModel(ctx) {
           if (isPolarArrayContent(c)) {
             c.itemAngle = v;
           }
-        }) })
+        }) }),
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update)
       };
     },
     isValid: (c, p) => ctx.validate(c, PolarArrayContent, p)
@@ -6263,7 +6279,7 @@ function getModel(ctx) {
       return getAllContentsFromCache(content).filter((c) => !!c);
     },
     render(content, renderCtx) {
-      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content) }, renderCtx));
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content), variableValues: content.variableValues }, renderCtx));
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -6401,7 +6417,8 @@ function getModel(ctx) {
           if (isRectArrayContent(c)) {
             c.columnSpacing = v;
           }
-        }) })
+        }) }),
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update)
       };
     },
     isValid: (c, p) => ctx.validate(c, RectArrayContent, p)
@@ -8176,13 +8193,14 @@ export {
 function getModel(ctx) {
   const TextContent = ctx.and(ctx.BaseContent("text"), ctx.Text, {
     width: ctx.optional(ctx.number),
-    lineHeight: ctx.optional(ctx.number)
+    lineHeight: ctx.optional(ctx.number),
+    textVariableName: ctx.optional(ctx.string)
   });
   const textLayoutResultCache = new ctx.WeakmapCache();
-  function getTextLayoutResult(content) {
+  function getTextLayoutResult(content, variableContext) {
     return textLayoutResultCache.get(content, () => {
       var _a;
-      const state = content.text.split("");
+      const state = getText(content, variableContext).split("");
       const getTextWidth = (text) => {
         var _a2, _b;
         return (_b = (_a2 = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text)) == null ? void 0 : _a2.width) != null ? _b : 0;
@@ -8202,6 +8220,15 @@ function getModel(ctx) {
   }
   function hasWidth(content) {
     return content.width !== void 0;
+  }
+  function getText(content, variableContext) {
+    if (content.textVariableName && variableContext) {
+      const text = variableContext[content.textVariableName];
+      if (typeof text === "string") {
+        return text;
+      }
+    }
+    return content.text;
   }
   function getTextGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
@@ -8269,26 +8296,27 @@ function getModel(ctx) {
         };
       });
     },
-    render(content, { target, transformColor, isAssistence }) {
+    render(content, { target, transformColor, isAssistence, variableContext }) {
       var _a, _b;
       const color = transformColor(content.color);
+      const text = getText(content, variableContext);
       let cacheKey;
       if (isAssistence) {
-        cacheKey = ctx.assistentTextCache.get(content.text, content.fontSize, content.color);
+        cacheKey = ctx.assistentTextCache.get(text, content.fontSize, content.color);
       }
       if (!cacheKey) {
         cacheKey = content;
       }
       if (hasWidth(content)) {
-        const { layoutResult } = getTextLayoutResult(content);
+        const { layoutResult } = getTextLayoutResult(content, variableContext);
         const children = [];
-        for (const { x, y, content: text } of layoutResult) {
-          const textWidth = (_b = (_a = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text)) == null ? void 0 : _a.width) != null ? _b : 0;
-          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + content.fontSize, text, content.color, content.fontSize, content.fontFamily, { textAlign: "center", cacheKey }));
+        for (const { x, y, content: text2 } of layoutResult) {
+          const textWidth = (_b = (_a = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text2)) == null ? void 0 : _a.width) != null ? _b : 0;
+          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + content.fontSize, text2, content.color, content.fontSize, content.fontFamily, { textAlign: "center", cacheKey }));
         }
         return target.renderGroup(children);
       }
-      return target.renderText(content.x, content.y, content.text, color, content.fontSize, content.fontFamily, { cacheKey });
+      return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey });
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update) {
@@ -8346,10 +8374,23 @@ function getModel(ctx) {
               c.lineHeight = v;
             }
           }) }) : void 0
+        ],
+        textVariableName: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.textVariableName !== void 0, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.textVariableName = v ? "" : void 0;
+            }
+          }) }),
+          content.textVariableName !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.textVariableName, setValue: (v) => update((c) => {
+            if (isTextContent(c)) {
+              c.textVariableName = v;
+            }
+          }) }) : void 0
         ]
       };
     },
-    isValid: (c, p) => ctx.validate(c, TextContent, p)
+    isValid: (c, p) => ctx.validate(c, TextContent, p),
+    getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : []
   };
 }
 function isTextContent(content) {
