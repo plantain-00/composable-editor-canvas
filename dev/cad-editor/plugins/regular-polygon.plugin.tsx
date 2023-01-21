@@ -47,7 +47,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -56,6 +56,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
+        clip,
       }
       const { points } = getRegularPolygonGeometriesFromCache(content)
       return target.renderPolygon(points, options)

@@ -74,7 +74,7 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const fillStyleContent = ctx.getFillStyleContent(content, contents)
         const options = {
@@ -85,9 +85,9 @@ export function getModel(ctx: PluginContext) {
         }
         if (strokeStyleContent.dashArray) {
           const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray })
+          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip })
         }
-        return target.renderCircle(content.x, content.y, content.r, { ...options })
+        return target.renderCircle(content.x, content.y, content.r, { ...options, clip })
       },
       getOperatorRenderPosition(content) {
         return content

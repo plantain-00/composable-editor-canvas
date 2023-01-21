@@ -827,7 +827,7 @@ function getModel(ctx) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1]
         }));
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
         var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -839,9 +839,9 @@ function getModel(ctx) {
         };
         if (strokeStyleContent.dashArray) {
           const { points } = getCircleGeometries(content);
-          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray });
+          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip });
         }
-        return target.renderCircle(content.x, content.y, content.r, { ...options });
+        return target.renderCircle(content.x, content.y, content.r, { ...options, clip });
       },
       getOperatorRenderPosition(content) {
         return content;
@@ -5856,7 +5856,7 @@ function getModel(ctx) {
       const { lines } = getPolygonGeometries(content);
       return ctx.breakPolyline(lines, intersectionPoints);
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -5865,7 +5865,8 @@ function getModel(ctx) {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
-        dashArray: strokeStyleContent.dashArray
+        dashArray: strokeStyleContent.dashArray,
+        clip
       };
       return target.renderPolygon(content.points, options);
     },
@@ -6522,7 +6523,7 @@ function getModel(ctx) {
       content.y = p.y;
       content.angle = 2 * angle - content.angle;
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -6534,9 +6535,9 @@ function getModel(ctx) {
       };
       if (strokeStyleContent.dashArray) {
         const { points } = getRectGeometries(content);
-        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray });
+        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray, clip });
       }
-      return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle });
+      return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle, clip });
     },
     getOperatorRenderPosition(content) {
       const { points } = getRectGeometries(content);
@@ -6730,7 +6731,7 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -6739,7 +6740,8 @@ function getModel(ctx) {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
-        dashArray: strokeStyleContent.dashArray
+        dashArray: strokeStyleContent.dashArray,
+        clip
       };
       const { points } = getRegularPolygonGeometriesFromCache(content);
       return target.renderPolygon(points, options);
@@ -8438,6 +8440,206 @@ export {
   getCommand,
   getModel,
   isTextContent
+};
+`,
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isCircleContent(content) {
+  return content.type === "circle";
+}
+
+// dev/cad-editor/plugins/rect.plugin.tsx
+function isRectContent(content) {
+  return content.type === "rect";
+}
+
+// dev/cad-editor/plugins/polygon.plugin.tsx
+function isPolygonContent(content) {
+  return content.type === "polygon";
+}
+
+// dev/cad-editor/plugins/regular-polygon.plugin.tsx
+function isRegularPolygonContent(content) {
+  return content.type === "regular polygon";
+}
+
+// dev/cad-editor/plugins/viewport.plugin.tsx
+function getModel(ctx) {
+  const ViewportContent = ctx.and(ctx.BaseContent("viewport"), ctx.Position, ctx.StrokeFields, {
+    border: ctx.Content,
+    scale: ctx.number
+  });
+  function getViewportGeometriesFromCache(content, contents) {
+    var _a, _b, _c;
+    return (_c = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content.border, contents)) != null ? _c : { lines: [], points: [], renderingLines: [] };
+  }
+  const React = ctx.React;
+  return {
+    type: "viewport",
+    ...ctx.strokeModel,
+    ...ctx.arrowModel,
+    move(content, offset) {
+      var _a, _b;
+      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.border, offset);
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    rotate(content, center, angle, contents) {
+      var _a, _b;
+      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.border, center, angle, contents);
+    },
+    mirror(content, line, angle, contents) {
+      var _a, _b;
+      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, content.border, line, angle, contents);
+    },
+    render(content, renderCtx) {
+      var _a;
+      const render = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.render;
+      if (render) {
+        return render(content.border, {
+          ...renderCtx,
+          clip: () => {
+            const children = [];
+            const sortedContents = ctx.getSortedContents(renderCtx.contents).contents;
+            sortedContents.forEach((content2) => {
+              var _a2;
+              if (!content2 || content2.visible === false || isViewportContent(content2)) {
+                return;
+              }
+              const ContentRender = (_a2 = ctx.getContentModel(content2)) == null ? void 0 : _a2.render;
+              if (ContentRender) {
+                children.push(ContentRender(content2, renderCtx));
+              }
+            });
+            return renderCtx.target.renderGroup(children, { matrix: ctx.m3.multiply(ctx.m3.translation(content.x, content.y), ctx.m3.scaling(content.scale, content.scale)) });
+          }
+        });
+      }
+      return renderCtx.target.renderEmpty();
+    },
+    getEditPoints(content, contents) {
+      var _a, _b;
+      const editPoints = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getEditPoints) == null ? void 0 : _b.call(_a, content.border, contents);
+      if (!editPoints)
+        return;
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          ...editPoints,
+          editPoints: editPoints.editPoints.map((e, i) => ({
+            ...e,
+            update(c, props) {
+              if (!isViewportContent(c)) {
+                return;
+              }
+              if (i === 0) {
+                c.x += props.cursor.x - props.start.x;
+                c.y += props.cursor.y - props.start.y;
+              }
+              return e.update(c.border, props);
+            }
+          }))
+        };
+      });
+    },
+    getGeometries: getViewportGeometriesFromCache,
+    propertyPanel(content, update, contents) {
+      var _a, _b;
+      const border = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.propertyPanel) == null ? void 0 : _b.call(_a, content.border, (recipe) => {
+        update((c) => {
+          if (isViewportContent(c)) {
+            recipe(c.border, contents);
+          }
+        });
+      }, contents);
+      const result = {
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isViewportContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isViewportContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.scale, setValue: (v) => update((c) => {
+          if (isViewportContent(c)) {
+            c.scale = v;
+          }
+        }) })
+      };
+      if (border) {
+        result.border = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { properties: border });
+      }
+      return {
+        ...result,
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, ViewportContent, p),
+    getRefIds: (content) => ctx.getStrokeRefIds(content),
+    updateRefId(content, update) {
+      ctx.updateStrokeRefIds(content, update);
+    }
+  };
+}
+function isViewportContent(content) {
+  return content.type === "viewport";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "14", y: "18", width: "71", height: "71", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "47,55 78,24", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "85,18 70,43 59,32", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })), /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "47,55 20,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "14,89 29,62 40,73", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })), /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "47,54 78,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "85,89 58,75 69,63", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })), /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "47,55 20,25", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "14,18 39,34 27,44", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })));
+  return {
+    name: "create viewport",
+    selectCount: 1,
+    icon,
+    contentSelectable(content) {
+      return isRectContent(content) || isCircleContent(content) || isPolygonContent(content) || isRegularPolygonContent(content);
+    },
+    execute({ contents, selected }) {
+      contents.forEach((content, index) => {
+        var _a, _b, _c, _d;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
+          const borderBounding = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, content).bounding;
+          if (!borderBounding)
+            return;
+          const viewportWidth = borderBounding.end.x - borderBounding.start.x;
+          const viewportHeight = borderBounding.end.y - borderBounding.start.y;
+          const contentsBounding = ctx.getPointsBounding(ctx.getContentsPoints(contents, contents));
+          if (!contentsBounding)
+            return;
+          const contentWidth = contentsBounding.end.x - contentsBounding.start.x;
+          const contentHeight = contentsBounding.end.y - contentsBounding.start.y;
+          const xRatio = viewportWidth / contentWidth;
+          const yRatio = viewportHeight / contentHeight;
+          let xOffset = 0;
+          let yOffset = 0;
+          let ratio;
+          if (xRatio < yRatio) {
+            ratio = xRatio;
+            yOffset = (viewportHeight - ratio * contentHeight) / 2;
+          } else {
+            ratio = yRatio;
+            xOffset = (viewportWidth - ratio * contentWidth) / 2;
+          }
+          const result = {
+            type: "viewport",
+            border: content,
+            x: borderBounding.start.x - contentsBounding.start.x * ratio + xOffset,
+            y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
+            scale: ratio
+          };
+          if (result) {
+            contents[index] = result;
+          }
+        }
+      });
+    }
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isViewportContent
 };
 `,
 ]
