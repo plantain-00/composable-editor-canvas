@@ -64,7 +64,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.y = p.y
       content.angle = 2 * angle - content.angle
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -75,9 +75,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       }
       if (strokeStyleContent.dashArray) {
         const { points } = getRectGeometries(content)
-        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray })
+        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray, clip })
       }
-      return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle })
+      return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle, clip })
     },
     getOperatorRenderPosition(content) {
       const { points } = getRectGeometries(content)

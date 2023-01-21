@@ -182,6 +182,7 @@ export interface RenderContext<V> {
   getFillPattern: (content: FillFields) => Pattern<V> | undefined
   isAssistence?: boolean
   variableContext?: Record<string, unknown>
+  clip?: () => V
 }
 interface RenderIfSelectedContext<V> {
   color: number
@@ -263,12 +264,9 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
   return undefined
 }
 
-export function zoomContentsToFit(
-  width: number,
-  height: number,
+export function getContentsPoints(
   editingContent: readonly Nullable<BaseContent>[],
   state: readonly Nullable<BaseContent>[],
-  paddingScale = 0.8,
 ) {
   const points: Position[] = []
   editingContent.forEach((c) => {
@@ -286,7 +284,17 @@ export function zoomContentsToFit(
       }
     }
   })
-  const bounding = getPointsBounding(points)
+  return points
+}
+
+export function zoomContentsToFit(
+  width: number,
+  height: number,
+  editingContent: readonly Nullable<BaseContent>[],
+  state: readonly Nullable<BaseContent>[],
+  paddingScale = 0.8,
+) {
+  const bounding = getPointsBounding(getContentsPoints(editingContent, state))
   if (!bounding) {
     return
   }
