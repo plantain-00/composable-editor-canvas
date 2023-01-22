@@ -23,7 +23,7 @@ export function getContentByClickPosition<T>(
   indexes = contents.map((_,i) => i),
   delta = 3,
 ): number[] | undefined {
-  for (let j = indexes.length - 1; j > 0; j--) {
+  for (let j = indexes.length - 1; j >= 0; j--) {
     const i = indexes[j]
     const content = contents[i]
     if (!content) {

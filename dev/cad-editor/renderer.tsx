@@ -11,6 +11,7 @@ export function Renderer(props: {
   selected?: readonly number[][]
   othersSelectedContents?: readonly { selection: number[], operator: string }[]
   hovering?: readonly number[][]
+  active?: number
   x: number
   y: number
   scale: number
@@ -187,7 +188,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
+        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
       }
     }
   }
@@ -199,11 +200,21 @@ export function Renderer(props: {
       const model = getContentModel(content)
       const ContentRender = model?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
+        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
       }
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {
         assistentContentsChildren.push(RenderIfSelected(content, { color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
+      }
+    }
+  }
+
+  if (props.active !== undefined) {
+    const content = props.contents[props.active]
+    if (content) {
+      const ContentRender = getContentModel(content)?.render
+      if (ContentRender) {
+        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
       }
     }
   }

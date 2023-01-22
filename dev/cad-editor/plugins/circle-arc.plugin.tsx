@@ -109,6 +109,7 @@ export function getModel(ctx: PluginContext) {
                 x,
                 y,
                 cursor: 'move',
+                type: 'move',
                 update(c, { cursor, start, scale }) {
                   if (!isCircleContent(c)) {
                     return
@@ -179,6 +180,7 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
+      isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
     } as model.Model<CircleContent>,
     {
       type: 'arc',
@@ -277,6 +279,7 @@ export function getModel(ctx: PluginContext) {
                 x,
                 y,
                 cursor: 'move',
+                type: 'move',
                 update(c, { cursor, start, scale }) {
                   if (!isArcContent(c)) {
                     return

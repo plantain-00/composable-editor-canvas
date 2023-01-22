@@ -3,7 +3,7 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getIntersectionPoints, getSortedContents, registerModel, updateReferencedContents, zoomContentsToFit } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByRegion, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -158,6 +158,7 @@ export const CADEditor = React.forwardRef((props: {
   const previewReversePatches: Patch[] = []
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
   const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
+  const [active, setActive] = React.useState<number>()
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -176,33 +177,93 @@ export const CADEditor = React.forwardRef((props: {
   useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
   useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+    if (active !== undefined) {
+      applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
+      return
+    }
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
   })
 
   const transform: Transform = {
-    x: x + offset.x,
-    y: y + offset.y,
+    x,
+    y,
     scale,
     center: {
       x: width / 2,
       y: height / 2,
     },
   }
+  if (active !== undefined) {
+    const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
+      const content = draft[active]
+      if (content && isViewportContent(content)) {
+        content.x += offset.x / scale
+        content.y += offset.y / scale
+      }
+    })
+    previewPatches.push(...patches)
+    previewReversePatches.push(...reversePatches)
+  } else {
+    transform.x += offset.x
+    transform.y += offset.y
+  }
+  const activeContent = active !== undefined ? editingContent[active] : undefined
+  const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
   useKey((k) => k.key === 'ArrowLeft' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setX((v) => v + width / 10)
+    if (active !== undefined && activeContentBounding) {
+      setState((draft) => {
+        draft = getContentByPath(draft)
+        const content = draft[active]
+        if (content && isViewportContent(content)) {
+          content.x += (activeContentBounding.end.x - activeContentBounding.start.x) / 10
+        }
+      })
+    } else {
+      setX((v) => v + width / 10)
+    }
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowRight' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setX((v) => v - width / 10)
+    if (active !== undefined && activeContentBounding) {
+      setState((draft) => {
+        draft = getContentByPath(draft)
+        const content = draft[active]
+        if (content && isViewportContent(content)) {
+          content.x -= (activeContentBounding.end.x - activeContentBounding.start.x) / 10
+        }
+      })
+    } else {
+      setX((v) => v - width / 10)
+    }
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowUp' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setY((v) => v + height / 10)
+    if (active !== undefined && activeContentBounding) {
+      setState((draft) => {
+        draft = getContentByPath(draft)
+        const content = draft[active]
+        if (content && isViewportContent(content)) {
+          content.y += (activeContentBounding.end.y - activeContentBounding.start.y) / 10
+        }
+      })
+    } else {
+      setY((v) => v + height / 10)
+    }
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowDown' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setY((v) => v - height / 10)
+    if (active !== undefined && activeContentBounding) {
+      setState((draft) => {
+        draft = getContentByPath(draft)
+        const content = draft[active]
+        if (content && isViewportContent(content)) {
+          content.y -= (activeContentBounding.end.y - activeContentBounding.start.y) / 10
+        }
+      })
+    } else {
+      setY((v) => v - height / 10)
+    }
     e.preventDefault()
   })
 
@@ -281,6 +342,22 @@ export const CADEditor = React.forwardRef((props: {
       start = reverseTransformPosition(start, transform)
       end = reverseTransformPosition(end, transform)
       if (e.shiftKey || (operations.type === 'operate' && operations.operate.name === 'zoom window')) {
+        if (active !== undefined && activeContent) {
+          const viewport = getViewportByRegion(activeContent, { start, end })
+          if (viewport) {
+            setState((draft) => {
+              draft = getContentByPath(draft)
+              const content = draft[active]
+              if (content && isViewportContent(content)) {
+                content.x = viewport.x
+                content.y = viewport.y
+                content.scale = viewport.scale
+              }
+            })
+          }
+          resetOperation()
+          return
+        }
         const result = zoomToFit({ start, end }, { width, height }, { x: width / 2, y: height / 2 }, 1)
         if (result) {
           setScale(result.scale)
@@ -300,6 +377,30 @@ export const CADEditor = React.forwardRef((props: {
       ))
     } else {
       // double click
+      const point = reverseTransformPosition(start, transform)
+      const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point))
+      if (activeIndex >= 0) {
+        if (active === activeIndex && activeContent) {
+          const viewport = getDefaultViewport(activeContent, state)
+          if (viewport) {
+            setState((draft) => {
+              draft = getContentByPath(draft)
+              const content = draft[active]
+              if (content && isViewportContent(content)) {
+                content.x = viewport.x
+                content.y = viewport.y
+                content.scale = viewport.scale
+              }
+            })
+          }
+        }
+        setActive(activeIndex)
+        return
+      }
+      if (active) {
+        setActive(undefined)
+        return
+      }
       const result = zoomContentsToFit(width, height, editingContent, state)
       if (result) {
         setScale(result.scale)
@@ -682,6 +783,7 @@ export const CADEditor = React.forwardRef((props: {
           selected={selected}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
+          active={active}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}

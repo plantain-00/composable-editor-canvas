@@ -114,6 +114,7 @@ export function getModel(ctx: PluginContext) {
               x: content.cx,
               y: content.cy,
               cursor: 'move',
+              type: 'move',
               update(c, { cursor, start, scale }) {
                 if (!isEllipseContent(c)) {
                   return
@@ -204,6 +205,7 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
   }
   return [
     ellipseModel,

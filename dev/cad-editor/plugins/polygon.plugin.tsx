@@ -108,6 +108,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points),
   }
 }
 

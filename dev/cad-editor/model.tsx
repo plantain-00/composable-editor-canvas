@@ -154,7 +154,7 @@ export type Model<T> = Partial<FeatureModels> & {
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
-    editPoints: EditPoint<BaseContent>[]
+    editPoints: (EditPoint<BaseContent> & { type?: 'move' })[]
     angleSnapStartPoint?: Position
   } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): SnapPoint[]
@@ -170,6 +170,7 @@ export type Model<T> = Partial<FeatureModels> & {
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
   isValid?(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
+  isPointIn?(content: T, point: Position): boolean
 }
 
 export interface RenderContext<V> {
@@ -183,6 +184,7 @@ export interface RenderContext<V> {
   isAssistence?: boolean
   variableContext?: Record<string, unknown>
   clip?: () => V
+  isHoveringOrSelected?: boolean
 }
 interface RenderIfSelectedContext<V> {
   color: number
@@ -227,7 +229,7 @@ export interface Geometries {
 
 const geometriesCache = new WeakmapCache<object, Geometries>()
 const snapPointsCache = new WeakmapCache<object, SnapPoint[]>()
-const editPointsCache = new WeakmapCache<object, { editPoints: EditPoint<BaseContent>[], angleSnapStartPoint?: Position } | undefined>()
+const editPointsCache = new WeakmapCache<object, { editPoints: (EditPoint<BaseContent> & { type?: 'move' })[], angleSnapStartPoint?: Position } | undefined>()
 export const allContentsCache = new WeakmapCache<object, Nullable<BaseContent>[]>()
 
 export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
@@ -267,12 +269,14 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
 export function getContentsPoints(
   editingContent: readonly Nullable<BaseContent>[],
   state: readonly Nullable<BaseContent>[],
+  filter: (c: BaseContent) => boolean = () => true,
 ) {
   const points: Position[] = []
   editingContent.forEach((c) => {
     if (!c) {
       return
     }
+    if (!filter(c)) return
     const model = getContentModel(c)
     if (model?.getCircle) {
       const { bounding } = model.getCircle(c)
@@ -413,6 +417,20 @@ export const FillStyleContent = and(BaseContent('fill style'), FillFields, Regio
 
 export function isFillStyleContent(content: BaseContent): content is FillStyleContent {
   return content.type === 'fill style'
+}
+
+export type ViewportContent = BaseContent<'viewport'> & Position & StrokeFields & {
+  border: BaseContent
+  scale: number
+}
+
+export const ViewportContent = and(BaseContent('viewport'), Position, StrokeFields, {
+  border: Content,
+  scale: number,
+})
+
+export function isViewportContent(content: BaseContent): content is ViewportContent {
+  return content.type === 'viewport'
 }
 
 export function getFillContentPropertyPanel(
@@ -1014,4 +1032,36 @@ export function getAssistentText(text: string, fontSize: number, x: number, y: n
 export interface SnapTarget {
   snapIndex: number
   id: number
+}
+
+export function getDefaultViewport(content: BaseContent, contents: readonly Nullable<BaseContent<string>>[]) {
+  const contentsBounding = getPointsBounding(getContentsPoints(contents, contents, c => !isViewportContent(c)))
+  if (!contentsBounding) return
+  return getViewportByRegion(content, contentsBounding)
+}
+
+export function getViewportByRegion(content: BaseContent, contentsBounding: TwoPointsFormRegion) {
+  const borderBounding = getContentModel(content)?.getGeometries?.(content).bounding
+  if (!borderBounding) return
+  const viewportWidth = borderBounding.end.x - borderBounding.start.x
+  const viewportHeight = borderBounding.end.y - borderBounding.start.y
+  const contentWidth = contentsBounding.end.x - contentsBounding.start.x
+  const contentHeight = contentsBounding.end.y - contentsBounding.start.y
+  const xRatio = viewportWidth / contentWidth
+  const yRatio = viewportHeight / contentHeight
+  let xOffset = 0
+  let yOffset = 0
+  let ratio: number
+  if (xRatio < yRatio) {
+    ratio = xRatio
+    yOffset = (viewportHeight - ratio * contentHeight) / 2
+  } else {
+    ratio = yRatio
+    xOffset = (viewportWidth - ratio * contentWidth) / 2
+  }
+  return {
+    x: borderBounding.start.x - contentsBounding.start.x * ratio + xOffset,
+    y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
+    scale: ratio,
+  }
 }

@@ -122,6 +122,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
   }
 }
 

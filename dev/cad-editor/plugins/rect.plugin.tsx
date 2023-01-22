@@ -97,9 +97,10 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
             { ...ctx.getTwoPointCenter(...lines[1]), direction: 'right' as const },
             { ...ctx.getTwoPointCenter(...lines[2]), direction: 'bottom' as const },
             { ...ctx.getTwoPointCenter(...lines[3]), direction: 'left' as const },
-          ].map((p) => ({
+          ].map((p, i) => ({
             x: p.x,
             y: p.y,
+            type: i === 0 ? 'move' : undefined,
             cursor: ctx.getResizeCursor(content.angle, p.direction),
             update(c, { cursor, start, scale }) {
               if (!isRectContent(c)) {
@@ -149,6 +150,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
   }
 }
 
