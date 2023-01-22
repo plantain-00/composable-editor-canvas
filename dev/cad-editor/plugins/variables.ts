@@ -863,6 +863,7 @@ function getModel(ctx) {
                 x,
                 y,
                 cursor: "move",
+                type: "move",
                 update(c, { cursor, start, scale }) {
                   if (!isCircleContent(c)) {
                     return;
@@ -944,7 +945,8 @@ function getModel(ctx) {
       },
       isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
-      updateRefId: ctx.updateStrokeAndFillRefIds
+      updateRefId: ctx.updateStrokeAndFillRefIds,
+      isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r
     },
     {
       type: "arc",
@@ -1044,6 +1046,7 @@ function getModel(ctx) {
                 x,
                 y,
                 cursor: "move",
+                type: "move",
                 update(c, { cursor, start, scale }) {
                   if (!isArcContent(c)) {
                     return;
@@ -2211,7 +2214,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
   };
 }
 function isDiamondContent(content) {
@@ -2430,6 +2434,7 @@ function getModel(ctx) {
               x: content.cx,
               y: content.cy,
               cursor: "move",
+              type: "move",
               update(c, { cursor, start, scale }) {
                 if (!isEllipseContent(c)) {
                   return;
@@ -2543,7 +2548,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points)
   };
   return [
     ellipseModel,
@@ -5928,7 +5934,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points)
   };
 }
 function isPolygonContent(content) {
@@ -6557,9 +6564,10 @@ function getModel(ctx) {
             { ...ctx.getTwoPointCenter(...lines[1]), direction: "right" },
             { ...ctx.getTwoPointCenter(...lines[2]), direction: "bottom" },
             { ...ctx.getTwoPointCenter(...lines[3]), direction: "left" }
-          ].map((p) => ({
+          ].map((p, i) => ({
             x: p.x,
             y: p.y,
+            type: i === 0 ? "move" : void 0,
             cursor: ctx.getResizeCursor(content.angle, p.direction),
             update(c, { cursor, start, scale }) {
               if (!isRectContent(c)) {
@@ -6628,7 +6636,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points)
   };
 }
 function isRectContent(content) {
@@ -6754,6 +6763,7 @@ function getModel(ctx) {
             {
               ...content,
               cursor: "move",
+              type: "move",
               update(c, { cursor, start, scale }) {
                 if (!isRegularPolygonContent(c)) {
                   return;
@@ -6814,7 +6824,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points)
   };
 }
 function isRegularPolygonContent(content) {
@@ -7168,7 +7179,7 @@ function getModel(ctx) {
   function getGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a, _b, _c, _d;
-      const reactPoints = [
+      const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y + content.height / 2 },
@@ -7207,8 +7218,8 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines,
-        points: reactPoints,
-        bounding: ctx.getPointsBounding(reactPoints),
+        points: rectPoints,
+        bounding: ctx.getPointsBounding(rectPoints),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -8442,35 +8453,21 @@ export {
   isTextContent
 };
 `,
-`// dev/cad-editor/plugins/circle-arc.plugin.tsx
-function isCircleContent(content) {
-  return content.type === "circle";
-}
-
-// dev/cad-editor/plugins/rect.plugin.tsx
-function isRectContent(content) {
-  return content.type === "rect";
-}
-
-// dev/cad-editor/plugins/polygon.plugin.tsx
-function isPolygonContent(content) {
-  return content.type === "polygon";
-}
-
-// dev/cad-editor/plugins/regular-polygon.plugin.tsx
-function isRegularPolygonContent(content) {
-  return content.type === "regular polygon";
-}
-
-// dev/cad-editor/plugins/viewport.plugin.tsx
+`// dev/cad-editor/plugins/viewport.plugin.tsx
 function getModel(ctx) {
-  const ViewportContent = ctx.and(ctx.BaseContent("viewport"), ctx.Position, ctx.StrokeFields, {
-    border: ctx.Content,
-    scale: ctx.number
-  });
   function getViewportGeometriesFromCache(content, contents) {
-    var _a, _b, _c;
-    return (_c = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content.border, contents)) != null ? _c : { lines: [], points: [], renderingLines: [] };
+    var _a, _b;
+    const geometries = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content.border, contents);
+    if (geometries) {
+      return {
+        ...geometries,
+        regions: [{
+          points: [],
+          lines: []
+        }]
+      };
+    }
+    return { lines: [], points: [], renderingLines: [] };
   }
   const React = ctx.React;
   return {
@@ -8497,12 +8494,12 @@ function getModel(ctx) {
       if (render) {
         return render(content.border, {
           ...renderCtx,
-          clip: () => {
+          clip: renderCtx.isHoveringOrSelected ? void 0 : () => {
             const children = [];
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents;
             sortedContents.forEach((content2) => {
               var _a2;
-              if (!content2 || content2.visible === false || isViewportContent(content2)) {
+              if (!content2 || content2.visible === false || ctx.isViewportContent(content2)) {
                 return;
               }
               const ContentRender = (_a2 = ctx.getContentModel(content2)) == null ? void 0 : _a2.render;
@@ -8524,13 +8521,13 @@ function getModel(ctx) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           ...editPoints,
-          editPoints: editPoints.editPoints.map((e, i) => ({
+          editPoints: editPoints.editPoints.map((e) => ({
             ...e,
             update(c, props) {
-              if (!isViewportContent(c)) {
+              if (!ctx.isViewportContent(c)) {
                 return;
               }
-              if (i === 0) {
+              if (e.type === "move") {
                 c.x += props.cursor.x - props.start.x;
                 c.y += props.cursor.y - props.start.y;
               }
@@ -8545,24 +8542,24 @@ function getModel(ctx) {
       var _a, _b;
       const border = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.propertyPanel) == null ? void 0 : _b.call(_a, content.border, (recipe) => {
         update((c) => {
-          if (isViewportContent(c)) {
+          if (ctx.isViewportContent(c)) {
             recipe(c.border, contents);
           }
         });
       }, contents);
       const result = {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
-          if (isViewportContent(c)) {
+          if (ctx.isViewportContent(c)) {
             c.x = v;
           }
         }) }),
         y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
-          if (isViewportContent(c)) {
+          if (ctx.isViewportContent(c)) {
             c.y = v;
           }
         }) }),
         scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.scale, setValue: (v) => update((c) => {
-          if (isViewportContent(c)) {
+          if (ctx.isViewportContent(c)) {
             c.scale = v;
           }
         }) })
@@ -8575,15 +8572,12 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    isValid: (c, p) => ctx.validate(c, ViewportContent, p),
+    isValid: (c, p) => ctx.validate(c, ctx.ViewportContent, p),
     getRefIds: (content) => ctx.getStrokeRefIds(content),
     updateRefId(content, update) {
       ctx.updateStrokeRefIds(content, update);
     }
   };
-}
-function isViewportContent(content) {
-  return content.type === "viewport";
 }
 function getCommand(ctx) {
   const React = ctx.React;
@@ -8593,40 +8587,20 @@ function getCommand(ctx) {
     selectCount: 1,
     icon,
     contentSelectable(content) {
-      return isRectContent(content) || isCircleContent(content) || isPolygonContent(content) || isRegularPolygonContent(content);
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.isPointIn) !== void 0;
     },
     execute({ contents, selected }) {
       contents.forEach((content, index) => {
-        var _a, _b, _c, _d;
+        var _a, _b;
         if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
-          const borderBounding = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, content).bounding;
-          if (!borderBounding)
+          const viewport = ctx.getDefaultViewport(content, contents);
+          if (!viewport)
             return;
-          const viewportWidth = borderBounding.end.x - borderBounding.start.x;
-          const viewportHeight = borderBounding.end.y - borderBounding.start.y;
-          const contentsBounding = ctx.getPointsBounding(ctx.getContentsPoints(contents, contents));
-          if (!contentsBounding)
-            return;
-          const contentWidth = contentsBounding.end.x - contentsBounding.start.x;
-          const contentHeight = contentsBounding.end.y - contentsBounding.start.y;
-          const xRatio = viewportWidth / contentWidth;
-          const yRatio = viewportHeight / contentHeight;
-          let xOffset = 0;
-          let yOffset = 0;
-          let ratio;
-          if (xRatio < yRatio) {
-            ratio = xRatio;
-            yOffset = (viewportHeight - ratio * contentHeight) / 2;
-          } else {
-            ratio = yRatio;
-            xOffset = (viewportWidth - ratio * contentWidth) / 2;
-          }
           const result = {
             type: "viewport",
             border: content,
-            x: borderBounding.start.x - contentsBounding.start.x * ratio + xOffset,
-            y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
-            scale: ratio
+            ...viewport
           };
           if (result) {
             contents[index] = result;
@@ -8638,8 +8612,7 @@ function getCommand(ctx) {
 }
 export {
   getCommand,
-  getModel,
-  isViewportContent
+  getModel
 };
 `,
 ]

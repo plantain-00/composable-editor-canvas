@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
   })
   function getGeometries(content: Omit<RoundedRectContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const reactPoints = [
+      const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y + content.height / 2 },
@@ -53,8 +53,8 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines,
-        points: reactPoints,
-        bounding: ctx.getPointsBounding(reactPoints),
+        points: rectPoints,
+        bounding: ctx.getPointsBounding(rectPoints),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
           {

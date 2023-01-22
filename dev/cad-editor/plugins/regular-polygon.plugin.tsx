@@ -69,6 +69,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
             {
               ...content,
               cursor: 'move',
+              type: 'move',
               update(c, { cursor, start, scale }) {
                 if (!isRegularPolygonContent(c)) {
                   return
@@ -110,6 +111,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
   }
 }
 

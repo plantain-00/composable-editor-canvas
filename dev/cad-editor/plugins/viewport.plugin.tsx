@@ -2,23 +2,20 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
-import { ArcContent, CircleContent, isCircleContent } from './circle-arc.plugin'
-import { isRectContent } from './rect.plugin'
-import { isPolygonContent } from './polygon.plugin'
-import { isRegularPolygonContent } from './regular-polygon.plugin'
 
-export type ViewportContent = model.BaseContent<'viewport'> & core.Position & model.StrokeFields & {
-  border: model.BaseContent
-  scale: number
-}
-
-export function getModel(ctx: PluginContext): model.Model<ViewportContent> {
-  const ViewportContent = ctx.and(ctx.BaseContent('viewport'), ctx.Position, ctx.StrokeFields, {
-    border: ctx.Content,
-    scale: ctx.number,
-  })
-  function getViewportGeometriesFromCache(content: Omit<ViewportContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    return ctx.getContentModel(content.border)?.getGeometries?.(content.border, contents) ?? { lines: [], points: [], renderingLines: [] }
+export function getModel(ctx: PluginContext): model.Model<model.ViewportContent> {
+  function getViewportGeometriesFromCache(content: Omit<model.ViewportContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]): model.Geometries {
+    const geometries = ctx.getContentModel(content.border)?.getGeometries?.(content.border, contents)
+    if (geometries) {
+      return {
+        ...geometries,
+        regions: [{
+          points: [],
+          lines: [],
+        }],
+      }
+    }
+    return { lines: [], points: [], renderingLines: [] }
   }
   const React = ctx.React
   return {
@@ -41,11 +38,11 @@ export function getModel(ctx: PluginContext): model.Model<ViewportContent> {
       if (render) {
         return render(content.border, {
           ...renderCtx,
-          clip: () => {
+          clip: renderCtx.isHoveringOrSelected ? undefined : () => {
             const children: ReturnType<typeof renderCtx.target.renderGroup>[] = []
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents
             sortedContents.forEach((content) => {
-              if (!content || content.visible === false || isViewportContent(content)) {
+              if (!content || content.visible === false || ctx.isViewportContent(content)) {
                 return
               }
               const ContentRender = ctx.getContentModel(content)?.render
@@ -65,13 +62,13 @@ export function getModel(ctx: PluginContext): model.Model<ViewportContent> {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           ...editPoints,
-          editPoints: editPoints.editPoints.map((e, i) => ({
+          editPoints: editPoints.editPoints.map(e => ({
             ...e,
             update(c, props) {
-              if (!isViewportContent(c)) {
+              if (!ctx.isViewportContent(c)) {
                 return
               }
-              if (i === 0) {
+              if (e.type === 'move') {
                 c.x += props.cursor.x - props.start.x
                 c.y += props.cursor.y - props.start.y
               }
@@ -85,15 +82,15 @@ export function getModel(ctx: PluginContext): model.Model<ViewportContent> {
     propertyPanel(content, update, contents) {
       const border = ctx.getContentModel(content.border)?.propertyPanel?.(content.border, recipe => {
         update(c => {
-          if (isViewportContent(c)) {
+          if (ctx.isViewportContent(c)) {
             recipe(c.border, contents)
           }
         })
       }, contents)
       const result: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {
-        x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isViewportContent(c)) { c.x = v } })} />,
-        y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isViewportContent(c)) { c.y = v } })} />,
-        scale: <ctx.NumberEditor value={content.scale} setValue={(v) => update(c => { if (isViewportContent(c)) { c.scale = v } })} />,
+        x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.x = v } })} />,
+        y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.y = v } })} />,
+        scale: <ctx.NumberEditor value={content.scale} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.scale = v } })} />,
       }
       if (border) {
         result.border = <ctx.ObjectEditor properties={border} />
@@ -103,16 +100,12 @@ export function getModel(ctx: PluginContext): model.Model<ViewportContent> {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
-    isValid: (c, p) => ctx.validate(c, ViewportContent, p),
+    isValid: (c, p) => ctx.validate(c, ctx.ViewportContent, p),
     getRefIds: (content) => ctx.getStrokeRefIds(content),
     updateRefId(content, update) {
       ctx.updateStrokeRefIds(content, update)
     },
   }
-}
-
-export function isViewportContent(content: model.BaseContent): content is ViewportContent {
-  return content.type === 'viewport'
 }
 
 export function getCommand(ctx: PluginContext): Command {
@@ -130,38 +123,18 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create viewport',
     selectCount: 1,
     icon,
-    contentSelectable(content: model.BaseContent): content is CircleContent | ArcContent {
-      return isRectContent(content) || isCircleContent(content) || isPolygonContent(content) || isRegularPolygonContent(content)
+    contentSelectable(content: model.BaseContent) {
+      return ctx.getContentModel(content)?.isPointIn !== undefined
     },
     execute({ contents, selected }) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          const borderBounding = ctx.getContentModel(content)?.getGeometries?.(content).bounding
-          if (!borderBounding) return
-          const viewportWidth = borderBounding.end.x - borderBounding.start.x
-          const viewportHeight = borderBounding.end.y - borderBounding.start.y
-          const contentsBounding = ctx.getPointsBounding(ctx.getContentsPoints(contents, contents))
-          if (!contentsBounding) return
-          const contentWidth = contentsBounding.end.x - contentsBounding.start.x
-          const contentHeight = contentsBounding.end.y - contentsBounding.start.y
-          const xRatio = viewportWidth / contentWidth
-          const yRatio = viewportHeight / contentHeight
-          let xOffset = 0
-          let yOffset = 0
-          let ratio: number
-          if (xRatio < yRatio) {
-            ratio = xRatio
-            yOffset = (viewportHeight - ratio * contentHeight) / 2
-          } else {
-            ratio = yRatio
-            xOffset = (viewportWidth - ratio * contentWidth) / 2
-          }
-          const result: ViewportContent = {
+          const viewport = ctx.getDefaultViewport(content, contents)
+          if (!viewport) return
+          const result: model.ViewportContent = {
             type: 'viewport',
             border: content,
-            x: borderBounding.start.x - contentsBounding.start.x * ratio + xOffset,
-            y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
-            scale: ratio,
+            ...viewport,
           }
           if (result) {
             contents[index] = result
