@@ -20,6 +20,7 @@ export function Renderer(props: {
   backgroundColor: number
   debug?: boolean
   printMode?: boolean
+  performanceMode?: boolean
   operatorVisible?: boolean
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const debug = new Debug(props.debug)
@@ -86,7 +87,9 @@ export function Renderer(props: {
       isSamePath(a.dashArray, b.dashArray),
     a => a.line,
   )
-  const sortedContents = getSortedContents(props.contents).contents
+  const previewPatches = props.previewPatches ?? []
+  const previewContents = previewPatches.length > 0 && !props.performanceMode ? applyPatches(props.contents, previewPatches) : props.contents
+  const sortedContents = getSortedContents(previewContents).contents
   children = renderCache.current.get(sortedContents, () => {
     sortedContents.forEach((content) => {
       if (!content || content.visible === false) {
@@ -131,33 +134,34 @@ export function Renderer(props: {
   debug.mark('before assistent contents')
   const assistentContentsChildren: unknown[] = []
 
-  const previewPatches = props.previewPatches ?? []
-  // type-coverage:ignore-next-line
-  const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
-  const newContents: BaseContent[] = []
-  for (const index of previewContentIndexes) {
-    const patches = previewPatches.filter(p => p.path[0] === index)
-    if (patches.length > 0) {
-      const content = props.contents[index]
-      if (content) {
-        newContents.push(applyPatches(content, patches.map(p => ({ ...p, path: p.path.slice(1) }))))
-      } else {
-        patches.forEach(p => {
-          // type-coverage:ignore-next-line
-          if (p.op === 'add' && p.value) {
+  if (props.performanceMode) {
+    // type-coverage:ignore-next-line
+    const previewContentIndexes = new Set(previewPatches.map((p) => p.path[0] as number))
+    const newContents: BaseContent[] = []
+    for (const index of previewContentIndexes) {
+      const patches = previewPatches.filter(p => p.path[0] === index)
+      if (patches.length > 0) {
+        const content = props.contents[index]
+        if (content) {
+          newContents.push(applyPatches(content, patches.map(p => ({ ...p, path: p.path.slice(1) }))))
+        } else {
+          patches.forEach(p => {
             // type-coverage:ignore-next-line
-            newContents.push(p.value)
-          }
-        })
+            if (p.op === 'add' && p.value) {
+              // type-coverage:ignore-next-line
+              newContents.push(p.value)
+            }
+          })
+        }
       }
     }
+    newContents.forEach(content => {
+      const ContentRender = getContentModel(content)?.render
+      if (ContentRender) {
+        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
+      }
+    })
   }
-  newContents.forEach(content => {
-    const ContentRender = getContentModel(content)?.render
-    if (ContentRender) {
-      assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
-    }
-  })
 
   if (props.operatorVisible !== false) {
     const selected = props.selected || []
@@ -184,7 +188,7 @@ export function Renderer(props: {
   }
 
   for (const index of (props.hovering || [])) {
-    const content = getContentByIndex(props.contents, index)
+    const content = getContentByIndex(previewContents, index)
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
@@ -194,7 +198,7 @@ export function Renderer(props: {
   }
 
   for (const index of (props.selected || [])) {
-    const content = getContentByIndex(props.contents, index)
+    const content = getContentByIndex(previewContents, index)
     if (content) {
       const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
       const model = getContentModel(content)
@@ -210,7 +214,7 @@ export function Renderer(props: {
   }
 
   if (props.active !== undefined) {
-    const content = props.contents[props.active]
+    const content = previewContents[props.active]
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {

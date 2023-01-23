@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -40,6 +40,7 @@ export const CADEditor = React.forwardRef((props: {
   debug?: boolean
   panelVisible?: boolean
   printMode?: boolean
+  performanceMode?: boolean
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
   const { width, height } = useWindowSize()
@@ -159,14 +160,28 @@ export const CADEditor = React.forwardRef((props: {
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
   const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
   const [active, setActive] = React.useState<number>()
+  const activeContent = active !== undefined ? editingContent[active] : undefined
+  const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
+  const transformViewport = activeContent && isViewportContent(activeContent) ? (p: Position) => ({
+    x: (p.x - activeContent.x) / activeContent.scale,
+    y: (p.y - activeContent.y) / activeContent.scale,
+  }) : undefined
+  const [xOffset, setXOffset] = React.useState(0)
+  const [yOffset, setYOffset] = React.useState(0)
+  const [scaleOffset, setScaleOffset] = React.useState(1)
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
     localStorageYKey: props.id + '-y',
+    setXOffset: activeContent ? (offset) => setXOffset(x => x + offset) : undefined,
+    setYOffset: activeContent ? (offset) => setYOffset(y => y + offset) : undefined,
   })
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
     localStorageKey: props.id + '-scale',
+    setScaleOffset: activeContent && transformViewport ? (offset) => {
+      setScaleOffset(x => x * offset)
+    } : undefined,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
       setX(result.setX)
@@ -198,8 +213,9 @@ export const CADEditor = React.forwardRef((props: {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
       const content = draft[active]
       if (content && isViewportContent(content)) {
-        content.x += offset.x / scale
-        content.y += offset.y / scale
+        content.x += (offset.x + xOffset) / scale
+        content.y += (offset.y + yOffset) / scale
+        content.scale *= scaleOffset
       }
     })
     previewPatches.push(...patches)
@@ -208,8 +224,7 @@ export const CADEditor = React.forwardRef((props: {
     transform.x += offset.x
     transform.y += offset.y
   }
-  const activeContent = active !== undefined ? editingContent[active] : undefined
-  const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
+
   useKey((k) => k.key === 'ArrowLeft' && metaKeyIfMacElseCtrlKey(k), (e) => {
     if (active !== undefined && activeContentBounding) {
       setState((draft) => {
@@ -265,6 +280,12 @@ export const CADEditor = React.forwardRef((props: {
       setY((v) => v - height / 10)
     }
     e.preventDefault()
+  })
+  useDelayedAction(xOffset !== 0 || yOffset !== 0 || scaleOffset !== 1, 500, () => {
+    applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
+    setXOffset(0)
+    setYOffset(0)
+    setScaleOffset(1)
   })
 
   const selectedContents: { content: BaseContent, path: number[] }[] = []
@@ -342,7 +363,9 @@ export const CADEditor = React.forwardRef((props: {
       start = reverseTransformPosition(start, transform)
       end = reverseTransformPosition(end, transform)
       if (e.shiftKey || (operations.type === 'operate' && operations.operate.name === 'zoom window')) {
-        if (active !== undefined && activeContent) {
+        if (active !== undefined && activeContent && transformViewport) {
+          start = transformViewport(start)
+          end = transformViewport(end)
           const viewport = getViewportByRegion(activeContent, { start, end })
           if (viewport) {
             setState((draft) => {
@@ -697,6 +720,7 @@ export const CADEditor = React.forwardRef((props: {
           backgroundColor={props.backgroundColor}
           debug={props.debug}
           printMode={props.printMode}
+          performanceMode
           operatorVisible={operatorVisible}
         />
         <div style={{
@@ -794,6 +818,7 @@ export const CADEditor = React.forwardRef((props: {
           height={height}
           backgroundColor={props.backgroundColor}
           printMode={props.printMode}
+          performanceMode={props.performanceMode}
           operatorVisible={operatorVisible}
           debug={props.debug}
         />}
