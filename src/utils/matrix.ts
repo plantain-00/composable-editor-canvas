@@ -73,6 +73,16 @@ export const m3 = {
   getTransform(m: Matrix) {
     return [m[0], m[1], m[3], m[4], m[6], m[7]] as const
   },
+  getTransformInit(m: Matrix) {
+    return {
+      a: m[0],
+      b: m[1],
+      c: m[3],
+      d: m[4],
+      e: m[6],
+      f: m[7],
+    }
+  },
 };
 
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number]

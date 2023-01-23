@@ -11,6 +11,7 @@ export function useWheelZoom<T extends HTMLElement>(
     onChange(oldScale: number, newScale: number, cursor: Position): void
     initialValue: number
     localStorageKey: string
+    setScaleOffset: (x: number, cursor: Position) => void
   }>
 ) {
   const [scale, setScale] = useLocalStorageState(options?.localStorageKey, options?.initialValue ?? 1)
@@ -24,6 +25,10 @@ export function useWheelZoom<T extends HTMLElement>(
     const wheelHandler = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault()
+        if (options?.setScaleOffset) {
+          options.setScaleOffset(Math.exp(-e.deltaY / 100), { x: e.clientX, y: e.clientY })
+          return
+        }
         setScale((s) => {
           const newScale = Math.min(Math.max(min, s * Math.exp(-e.deltaY / 100)), max)
           if (s !== newScale) {
@@ -37,7 +42,7 @@ export function useWheelZoom<T extends HTMLElement>(
     return () => {
       ref.current?.removeEventListener('wheel', wheelHandler)
     }
-  }, [ref.current])
+  }, [ref.current, options?.setScaleOffset])
 
   return {
     ref,

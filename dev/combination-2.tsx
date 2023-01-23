@@ -21,6 +21,7 @@ export function Combination2() {
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
   const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-combination2:panel', true)
   const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-combination2:print-mode', false)
+  const [performanceMode, setPerformanceMode] = useLocalStorageState('composable-editor-canvas-combination2:performance-mode', false)
   const valid = useInitialStateValidated(initialState, pluginLoaded)
 
   React.useEffect(() => {
@@ -168,6 +169,7 @@ export function Combination2() {
           debug={debug}
           panelVisible={panelVisible}
           printMode={printMode}
+          performanceMode={performanceMode}
         />
       )}
       <div style={{ position: 'fixed', width: '100%' }}>
@@ -203,6 +205,10 @@ export function Combination2() {
         <label>
           <input type='checkbox' checked={printMode} onChange={() => setPrintMode(!printMode)} />
           print mode
+        </label>
+        <label>
+          <input type='checkbox' checked={performanceMode} onChange={() => setPerformanceMode(!performanceMode)} />
+          performance mode
         </label>
         <label>
           <input type='checkbox' checked={debug} onChange={() => setDebug(!debug)} />

@@ -51,7 +51,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
         ctx.translate(-options.base.x, - options.base.y)
       }
       if (options?.matrix) {
-        ctx.setTransform(...m3.getTransform(options.matrix))
+        ctx.setTransform(ctx.getTransform().multiply(m3.getTransformInit(options.matrix)))
       }
       children.forEach((c) => {
         c(ctx, strokeWidthScale, rerender)

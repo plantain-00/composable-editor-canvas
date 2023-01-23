@@ -17,6 +17,8 @@ export function useWheelScroll<T extends HTMLElement>(
     minY: number
     maxY: number
     disabled: boolean
+    setXOffset: (x: number) => void
+    setYOffset: (x: number) => void
   }>
 ) {
   const maxOffsetX = options?.maxOffsetX ?? -1
@@ -61,8 +63,16 @@ export function useWheelScroll<T extends HTMLElement>(
     const wheelHandler = (e: WheelEvent) => {
       if (!e.ctrlKey) {
         e.preventDefault()
-        setX(x => filterX(x - e.deltaX))
-        setY(y => filterY(y - e.deltaY))
+        if (options?.setXOffset) {
+          options.setXOffset(-e.deltaX)
+        } else {
+          setX(x => filterX(x - e.deltaX))
+        }
+        if (options?.setYOffset) {
+          options.setYOffset(-e.deltaY)
+        } else {
+          setY(y => filterY(y - e.deltaY))
+        }
       }
     }
     ref.current.addEventListener('wheel', wheelHandler, { passive: false })
