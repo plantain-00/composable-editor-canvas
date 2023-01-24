@@ -162,9 +162,10 @@ export const CADEditor = React.forwardRef((props: {
   const [active, setActive] = React.useState<number>()
   const activeContent = active !== undefined ? editingContent[active] : undefined
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
-  const transformViewport = activeContent && isViewportContent(activeContent) ? (p: Position) => ({
-    x: (p.x - activeContent.x) / activeContent.scale,
-    y: (p.y - activeContent.y) / activeContent.scale,
+  const activeViewport = activeContent && isViewportContent(activeContent) ? activeContent : undefined
+  const transformViewport = activeViewport ? (p: Position) => ({
+    x: (p.x - activeViewport.x) / activeViewport.scale,
+    y: (p.y - activeViewport.y) / activeViewport.scale,
   }) : undefined
   const [xOffset, setXOffset] = React.useState(0)
   const [yOffset, setYOffset] = React.useState(0)
@@ -200,6 +201,7 @@ export const CADEditor = React.forwardRef((props: {
     setY((v) => v + offset.y)
   })
 
+  const scaleWithViewport = scale * (activeViewport?.scale ?? 1)
   const transform: Transform = {
     x,
     y,
@@ -311,7 +313,7 @@ export const CADEditor = React.forwardRef((props: {
     () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
-      scale: transform.scale,
+      scale: scaleWithViewport,
       readOnly: readOnly || operations.type === 'operate',
     }
   )
@@ -323,7 +325,7 @@ export const CADEditor = React.forwardRef((props: {
     getIntersectionPoints,
     snapTypes,
     getContentModel,
-    scale,
+    scaleWithViewport,
     snapOffset,
   )
 
@@ -351,7 +353,7 @@ export const CADEditor = React.forwardRef((props: {
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
-    scale,
+    scaleWithViewport,
     strokeStyleId,
     fillStyleId,
   )
@@ -362,6 +364,10 @@ export const CADEditor = React.forwardRef((props: {
     if (end) {
       start = reverseTransformPosition(start, transform)
       end = reverseTransformPosition(end, transform)
+      if (transformViewport) {
+        start = transformViewport(start)
+        end = transformViewport(end)
+      }
       if (e.shiftKey || (operations.type === 'operate' && operations.operate.name === 'zoom window')) {
         if (active !== undefined && activeContent && transformViewport) {
           start = transformViewport(start)
@@ -551,8 +557,12 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    const viewportPosition = { x: e.clientX, y: e.clientY }
-    const p = getSnapPoint(reverseTransformPosition(viewportPosition, transform), editingContent, getContentsInRange, lastPosition)
+    let viewportPosition = { x: e.clientX, y: e.clientY }
+    viewportPosition = reverseTransformPosition(viewportPosition, transform)
+    if (transformViewport) {
+      viewportPosition = transformViewport(viewportPosition)
+    }
+    const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex } : undefined)
@@ -584,7 +594,10 @@ export const CADEditor = React.forwardRef((props: {
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
-    const p = reverseTransformPosition(viewportPosition, transform)
+    let p = reverseTransformPosition(viewportPosition, transform)
+    if (transformViewport) {
+      p = transformViewport(p)
+    }
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {

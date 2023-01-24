@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath } from "../../src"
-import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, StrokeFields } from "./model"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, m3 } from "../../src"
+import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
   type?: string
@@ -116,14 +116,14 @@ export function Renderer(props: {
           const ContentRender = model.render
           if (ContentRender) {
             merger.flushLast()
-            children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
+            children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: previewContents, getStrokeColor, getFillColor, getFillPattern }))
           }
         }
       } else {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern }))
+          children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: previewContents, getStrokeColor, getFillColor, getFillPattern }))
         }
       }
     })
@@ -133,6 +133,7 @@ export function Renderer(props: {
 
   debug.mark('before assistent contents')
   const assistentContentsChildren: unknown[] = []
+  const assistentContentsChildren2: unknown[] = []
 
   if (props.performanceMode) {
     // type-coverage:ignore-next-line
@@ -181,7 +182,7 @@ export function Renderer(props: {
         }
         if (model.getOperatorRenderPosition && operators.length > 0) {
           const renderPosition = model.getOperatorRenderPosition(content, props.contents)
-          assistentContentsChildren.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
+          assistentContentsChildren2.push(target.renderText(renderPosition.x, renderPosition.y, operators.join(','), 0xff0000, 16, 'monospace'))
         }
       })
     }
@@ -192,7 +193,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
       }
     }
   }
@@ -204,11 +205,11 @@ export function Renderer(props: {
       const model = getContentModel(content)
       const ContentRender = model?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
       }
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {
-        assistentContentsChildren.push(RenderIfSelected(content, { color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
+        assistentContentsChildren2.push(RenderIfSelected(content, { color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
       }
     }
   }
@@ -226,9 +227,19 @@ export function Renderer(props: {
   props.assistentContents?.forEach((content) => {
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
-      assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
+      assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
     }
   })
+  if (assistentContentsChildren2.length > 0) {
+    const activeContent = props.active !== undefined ? previewContents[props.active] : undefined
+    if (activeContent && isViewportContent(activeContent)) {
+      assistentContentsChildren.push(target.renderGroup(assistentContentsChildren2, {
+        matrix: m3.multiply(m3.translation(activeContent.x, activeContent.y), m3.scaling(activeContent.scale, activeContent.scale)),
+      }))
+    } else {
+      assistentContentsChildren.push(...assistentContentsChildren2)
+    }
+  }
 
   const result = assistentContentsChildren.length === 0 ? children : [...children, ...assistentContentsChildren]
   if (props.debug) {
