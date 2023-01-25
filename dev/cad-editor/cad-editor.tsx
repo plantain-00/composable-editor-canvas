@@ -180,8 +180,11 @@ export const CADEditor = React.forwardRef((props: {
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
     localStorageKey: props.id + '-scale',
-    setScaleOffset: activeContent && transformViewport ? (offset) => {
-      setScaleOffset(x => x * offset)
+    setScaleOffset: activeViewport ? (scaleOffset, cursor) => {
+      setScaleOffset(f => f * scaleOffset)
+      cursor = reverseTransformPosition(cursor, transform)
+      setXOffset(f => (cursor.x - activeViewport.x) * scale * (1 - scaleOffset) + f * scaleOffset)
+      setYOffset(f => (cursor.y - activeViewport.y) * scale * (1 - scaleOffset) + f * scaleOffset)
     } : undefined,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
