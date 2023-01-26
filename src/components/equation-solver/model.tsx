@@ -1,7 +1,7 @@
 import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
 import { isZero } from "../../utils/geometry"
 import { Equation } from "../equation-renderer"
-import { divide, expressionToFactors, factorsToExpression, optimizeFactors } from "./factorization"
+import { divide, expressionToFactors, extractFactors, factorsToExpression, factorToExpression, optimizeFactors } from "./factorization"
 
 export function* iterateExpression(e: Expression): Generator<Expression, void, unknown> {
   yield e
@@ -1101,6 +1101,30 @@ export function optimizeExpression(
           const newFactors = optimizeFactors(factors)
           if (newFactors.length < factors.length) {
             return optimize(factorsToExpression(newFactors))
+          }
+        }
+      }
+
+      // (b * a ** 2 + 3 * a ** 2) ** 0.5 -> a * (b + 3) ** 0.5
+      if (expression.operator === '**' && expression.right.type === 'NumericLiteral' && expression.right.value > 0 && expression.right.value < 1) {
+        const power = 1 / expression.right.value
+        if (Number.isInteger(power)) {
+          const factors = expressionToFactors(expression.left)
+          if (factors) {
+            const newFactors = extractFactors(factors, power)
+            if (newFactors) {
+              return optimize({
+                type: 'BinaryExpression',
+                left: factorToExpression(newFactors.base),
+                operator: '*',
+                right: optimize({
+                  type: 'BinaryExpression',
+                  left: factorsToExpression(newFactors.factors),
+                  operator: '**',
+                  right: expression.right,
+                }),
+              })
+            }
           }
         }
       }
