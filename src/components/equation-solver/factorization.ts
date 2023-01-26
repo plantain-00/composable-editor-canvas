@@ -2,7 +2,12 @@ import { Expression2 } from "expression-engine"
 
 interface Factor {
   constant?: number
-  variables: string[]
+  variables: (string | FactorVariable)[]
+}
+
+interface FactorVariable {
+  power: number
+  value: Factor[]
 }
 
 export function divide(e1: Expression2, e2: Expression2): Expression2 | void {
@@ -13,6 +18,71 @@ export function divide(e1: Expression2, e2: Expression2): Expression2 | void {
   const result = divideFactors(f1, f2)
   if (result) {
     return factorsToExpression(result)
+  }
+}
+
+export function extractFactors(factors: Factor[], power: number): { base: Factor, factors: Factor[] } | void {
+  let last: ExtractFactor | undefined
+  for (const factor of factors) {
+    const r = extractFactor(factor, power)
+    if (!r) return
+    if (!last) {
+      last = r
+    } else {
+      const newFactor: ExtractFactor = {
+        variables: {},
+      }
+      for (const [v, count] of Object.entries(r.variables)) {
+        const lastCount = last.variables[v]
+        if (lastCount) {
+          newFactor.variables[v] = Math.min(lastCount, count)
+        }
+      }
+      last = newFactor
+    }
+  }
+  if (last && Object.keys(last.variables).length > 0) {
+    const base: Factor = {
+      variables: []
+    }
+    const full: Factor = {
+      variables: []
+    }
+    for (const [key, count] of Object.entries(last.variables)) {
+      base.variables.push(...new Array<string>(count).fill(key))
+      full.variables.push(...new Array<string>(count * power).fill(key))
+    }
+    const remain = divideFactors(factors, [full])
+    if (!remain) return
+    return {
+      base,
+      factors: remain,
+    }
+  }
+}
+
+interface ExtractFactor {
+  variables: Record<string, number>
+}
+
+function extractFactor(factor: Factor, power: number): ExtractFactor | void {
+  const map = new Map<string, number>()
+  for (const variable of factor.variables) {
+    if (typeof variable !== 'string') {
+      return
+    }
+    map.set(variable, (map.get(variable) ?? 0) + 1)
+  }
+  const result: ExtractFactor = {
+    variables: {},
+  }
+  for (const [variable, count] of map) {
+    if (count >= power) {
+      result.variables[variable] = Math.floor(count / power)
+    }
+  }
+  if (Object.keys(result.variables).length > 0) {
+    return result
   }
 }
 
@@ -80,9 +150,29 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
   if (f1.variables.length < f2.variables.length) return
   const variables = [...f1.variables]
   for (const v of f2.variables) {
-    const index = variables.indexOf(v)
-    if (index < 0) return
-    variables.splice(index, 1)
+    let index = variables.indexOf(v)
+    if (index >= 0) {
+      variables.splice(index, 1)
+    } else {
+      for (let i = 0; i < variables.length; i++) {
+        const f = variables[i]
+        if (typeof f === 'string' || typeof v !== 'string') {
+          continue
+        }
+        const r = divideFactors(f.value, [{ variables: new Array<string>(1 / f.power).fill(v) }])
+        if (r) {
+          index = i
+          variables[i] = {
+            power: f.power,
+            value: r,
+          }
+          break
+        }
+      }
+      if (index < 0) {
+        return
+      }
+    }
   }
   const constant = (f1.constant ?? 1) / (f2.constant ?? 1)
   return {
@@ -134,23 +224,22 @@ function expressionToFactor(e: Expression2): Factor | void {
       return multiplyFactor(left, right)
     }
     if (e.operator === '**') {
+      if (e.right.type === 'NumericLiteral' && e.right.value < 1) {
+        const left = expressionToFactors(e.left)
+        if (!left) return
+        return {
+          variables: [{
+            value: left,
+            power: e.right.value,
+          }]
+        }
+      }
       const left = expressionToFactor(e.left)
       if (!left) return
       if (e.right.type !== 'NumericLiteral') return
       if (!Number.isInteger(e.right.value)) return
       if (e.right.value < 1) return
-      let constant = 1
-      const variables: string[] = []
-      for (let i = 0; i < e.right.value; i++) {
-        if (left.constant !== undefined) {
-          constant *= left.constant
-        }
-        variables.push(...left.variables)
-      }
-      return {
-        variables,
-        constant,
-      }
+      return powerFactor(left, e.right.value)
     }
   }
 }
@@ -174,7 +263,7 @@ export function factorsToExpression(f: Factor[]): Expression2 {
   }
 }
 
-function factorToExpression(f: Factor): Expression2 {
+export function factorToExpression(f: Factor): Expression2 {
   if (f.variables.length === 0) {
     return {
       type: 'NumericLiteral',
@@ -195,9 +284,21 @@ function factorToExpression(f: Factor): Expression2 {
     }
   }
   if (f.variables.length === 1) {
+    const v = f.variables[0]
+    if (typeof v !== 'string') {
+      return {
+        type: 'BinaryExpression',
+        left: factorsToExpression(v.value),
+        operator: '**',
+        right: {
+          type: 'NumericLiteral',
+          value: v.power,
+        },
+      }
+    }
     return {
       type: 'Identifier',
-      name: f.variables[0],
+      name: v,
     }
   }
   const [v, ...remains] = [...f.variables]
@@ -213,9 +314,24 @@ function factorToExpression(f: Factor): Expression2 {
   }
 }
 
+function powerFactor(factor: Factor, power: number): Factor {
+  let constant = 1
+  const variables: (string | FactorVariable)[] = []
+  for (let i = 0; i < power; i++) {
+    if (factor.constant !== undefined) {
+      constant *= factor.constant
+    }
+    variables.push(...factor.variables)
+  }
+  return {
+    variables,
+    constant,
+  }
+}
+
 function multiplyFactor(...factors: Factor[]): Factor {
   let constant = 1
-  const variables: string[] = []
+  const variables: (string | FactorVariable)[] = []
   for (const f of factors) {
     if (f.constant !== undefined) {
       constant *= f.constant
