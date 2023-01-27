@@ -31,6 +31,7 @@ export function extractFactors(factors: Factor[], power: number): { base: Factor
     } else {
       const newFactor: ExtractFactor = {
         variables: {},
+        constant: getCommonDivisor(last.constant, r.constant),
       }
       for (const [v, count] of Object.entries(r.variables)) {
         const lastCount = last.variables[v]
@@ -41,11 +42,13 @@ export function extractFactors(factors: Factor[], power: number): { base: Factor
       last = newFactor
     }
   }
-  if (last && Object.keys(last.variables).length > 0) {
+  if (last && (Object.keys(last.variables).length > 0 || last.constant > 1)) {
     const base: Factor = {
+      constant: last.constant ** (1 / power),
       variables: []
     }
     const full: Factor = {
+      constant: last.constant,
       variables: []
     }
     for (const [key, count] of Object.entries(last.variables)) {
@@ -63,6 +66,7 @@ export function extractFactors(factors: Factor[], power: number): { base: Factor
 
 interface ExtractFactor {
   variables: Record<string, number>
+  constant: number
 }
 
 function extractFactor(factor: Factor, power: number): ExtractFactor | void {
@@ -73,8 +77,10 @@ function extractFactor(factor: Factor, power: number): ExtractFactor | void {
     }
     map.set(variable, (map.get(variable) ?? 0) + 1)
   }
+  const constant = factor.constant ?? 1
   const result: ExtractFactor = {
     variables: {},
+    constant: Number.isInteger(constant) && constant ? Math.abs(constant) : 1,
   }
   for (const [variable, count] of map) {
     if (count >= power) {
@@ -370,4 +376,13 @@ export function optimizeFactors(factors: Factor[]) {
     }
   }
   return result
+}
+
+function getCommonDivisor(a: number, b: number): number {
+  if (a <= 1 || b <= 1) return 1
+  if (a === b) return a
+  if (a > b) {
+    return getCommonDivisor(a % b, b)
+  }
+  return getCommonDivisor(a, b % a)
 }
