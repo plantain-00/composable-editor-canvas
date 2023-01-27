@@ -271,6 +271,15 @@ export function optimizeExpression(
       }
       // a / 2 -> a * 0.5
       if (expression.operator === '/' && expression.right.type === 'NumericLiteral') {
+        // 6 * a / 2 => 2 * a
+        const factors = expressionToFactors(expression.left)
+        if (factors) {
+          const value = expression.right.value
+          factors.forEach(f => {
+            f.constant = (f.constant ?? 1) / value
+          })
+          return optimize(factorsToExpression(factors))
+        }
         return {
           type: 'BinaryExpression',
           left: expression.left,
@@ -1125,6 +1134,27 @@ export function optimizeExpression(
                 }),
               })
             }
+          }
+        }
+      }
+
+      // 1 / (2 * a + 2 * b) => 1 / (2 * (a + b))
+      if (expression.operator === '/' && expression.right.type === 'BinaryExpression' && (expression.right.operator === '+' || expression.right.operator === '-')) {
+        const factors = expressionToFactors(expression.right)
+        if (factors) {
+          const newFactors = extractFactors(factors, 1)
+          if (newFactors) {
+            return optimize({
+              type: 'BinaryExpression',
+              left: optimize({
+                type: 'BinaryExpression',
+                left: expression.left,
+                operator: '/',
+                right: factorToExpression(newFactors.base),
+              }),
+              operator: '/',
+              right: factorsToExpression(newFactors.factors),
+            })
           }
         }
       }
