@@ -144,7 +144,7 @@ function isArrowContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 512 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M334.5 414c8.8 3.8 19 2 26-4.6l144-136c4.8-4.5 7.5-10.8 7.5-17.4s-2.7-12.9-7.5-17.4l-144-136c-7-6.6-17.2-8.4-26-4.6s-14.5 12.5-14.5 22l0 88L32 208c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l288 0 0 88c0 9.6 5.7 18.2 14.5 22z" }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "12,86 81,20", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "88,14 72,39 62,28", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })));
   return {
     name: "create arrow",
     hotkey: "AR",
@@ -8451,6 +8451,153 @@ export {
   getCommand,
   getModel,
   isTextContent
+};
+`,
+`// dev/cad-editor/plugins/time-axis.plugin.tsx
+function getModel(ctx) {
+  const TimeAxisContent = ctx.and(ctx.BaseContent("time axis"), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
+    max: ctx.number
+  });
+  function getGeometriesFromCache(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max, y: content.y }, content);
+      const points = [content, endPoint];
+      return {
+        points: [],
+        lines: Array.from(ctx.iteratePolylineLines(points)),
+        bounding: ctx.getPointsBounding(points),
+        regions: [
+          {
+            points: arrowPoints,
+            lines: Array.from(ctx.iteratePolygonLines(arrowPoints))
+          }
+        ],
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "time axis",
+    ...ctx.strokeModel,
+    ...ctx.arrowModel,
+    move(content, offset) {
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+      var _a;
+      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
+      const strokeColor = getStrokeColor(strokeStyleContent);
+      const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
+      const { regions, renderingLines } = getGeometriesFromCache(content);
+      const children = [];
+      for (const line of renderingLines) {
+        children.push(target.renderPolyline(line, { strokeColor, strokeWidth }));
+      }
+      if (regions) {
+        for (let i = 0; i < regions.length; i++) {
+          children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }));
+        }
+      }
+      return target.renderGroup(children);
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: [
+            {
+              ...content,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isTimeAxisContent(c)) {
+                  return;
+                }
+                c.x += cursor.x - start.x;
+                c.y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            }
+          ]
+        };
+      });
+    },
+    getGeometries: getGeometriesFromCache,
+    propertyPanel(content, update, contents) {
+      return {
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isTimeAxisContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isTimeAxisContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        max: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.max, setValue: (v) => update((c) => {
+          if (isTimeAxisContent(c) && v > 0) {
+            c.max = v;
+          }
+        }) }),
+        ...ctx.getArrowContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, TimeAxisContent, p),
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds
+  };
+}
+function isTimeAxisContent(content) {
+  return content.type === "time axis";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("g", { transform: "" }, /* @__PURE__ */ React.createElement("polyline", { points: "3,52 90,53", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "99,53 70,60 70,45", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" })));
+  return {
+    name: "create time axis",
+    selectCount: 0,
+    icon,
+    useCommand({ onEnd, type }) {
+      const [result, setResult] = React.useState();
+      const reset = () => {
+        setResult(void 0);
+      };
+      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
+      return {
+        onStart() {
+          if (result) {
+            onEnd({
+              updateContents: (contents) => {
+                if (result) {
+                  contents.push(result);
+                }
+              }
+            });
+            reset();
+          }
+        },
+        onMove(p) {
+          if (type) {
+            setResult({
+              type: "time axis",
+              x: p.x,
+              y: p.y,
+              max: 100
+            });
+          }
+        },
+        assistentContents: result ? [result] : void 0,
+        reset
+      };
+    }
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isTimeAxisContent
 };
 `,
 `// dev/cad-editor/plugins/viewport.plugin.tsx
