@@ -10,7 +10,7 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
   executeOperation: (operation: TOperate, selected: readonly TPath[]) => boolean,
   options?: Partial<UseSelectedOptions<TPath>>,
 ) {
-  const { selected, isSelected, addSelection, filterSelection, setSelected } = useSelected<TPath>(options)
+  const { selected, isSelected, addSelection, removeSelection, filterSelection, setSelected } = useSelected<TPath>(options)
   const [operations, setOperations] = React.useState<{
     type: 'select'
     select: TSelect
@@ -67,6 +67,9 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
         startNextOperation,
         isSelectable
       )
+    },
+    removeSelection(...value: readonly TPath[]) {
+      removeSelection(value)
     },
     setSelected,
     filterSelection,

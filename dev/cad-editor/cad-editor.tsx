@@ -44,7 +44,7 @@ export const CADEditor = React.forwardRef((props: {
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
   const { width, height } = useWindowSize()
-  const { filterSelection, selected, isSelected, addSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
+  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
     {},
     (p, s) => {
       if (p?.type === 'command') {
@@ -170,6 +170,7 @@ export const CADEditor = React.forwardRef((props: {
   const [xOffset, setXOffset] = React.useState(0)
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
+  const [time, setTime] = React.useState(0)
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -371,7 +372,7 @@ export const CADEditor = React.forwardRef((props: {
         start = transformViewport(start)
         end = transformViewport(end)
       }
-      if (e.shiftKey || (operations.type === 'operate' && operations.operate.name === 'zoom window')) {
+      if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
         if (active !== undefined && activeContent && transformViewport) {
           start = transformViewport(start)
           end = transformViewport(end)
@@ -399,14 +400,19 @@ export const CADEditor = React.forwardRef((props: {
         resetOperation()
         return
       }
-      addSelection(...getContentsByClickTwoPositions(
+      const target = getContentsByClickTwoPositions(
         editingContent,
         start,
         end,
         getContentModel,
-        isSelectable,
+        e.shiftKey ? undefined : isSelectable,
         contentVisible,
-      ))
+      )
+      if (e.shiftKey) {
+        removeSelection(...target)
+      } else {
+        addSelection(...target)
+      }
     } else {
       // double click
       const point = reverseTransformPosition(start, transform)
@@ -575,7 +581,11 @@ export const CADEditor = React.forwardRef((props: {
         onEditClick(p.position)
       } else if (hovering.length > 0) {
         // if hovering content, add it to selection
-        addSelection(...hovering)
+        if (e.shiftKey) {
+          removeSelection(...hovering)
+        } else {
+          addSelection(...hovering)
+        }
         setHovering()
       } else {
         // start selection by region
@@ -611,7 +621,7 @@ export const CADEditor = React.forwardRef((props: {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition).position, selectedContents)
       // hover by position
       const indexes = getSortedContents(editingContent).indexes
-      setHovering(getContentByClickPosition(editingContent, p, isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
+      setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
@@ -738,6 +748,7 @@ export const CADEditor = React.forwardRef((props: {
           printMode={props.printMode}
           performanceMode
           operatorVisible={operatorVisible}
+          time={time}
         />
         <div style={{
           position: 'absolute',
@@ -772,7 +783,7 @@ export const CADEditor = React.forwardRef((props: {
       types.add(target.content.type)
       const id = target.path[0]
       ids.push(id)
-      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state)
+      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, setTime)
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]
@@ -837,6 +848,7 @@ export const CADEditor = React.forwardRef((props: {
           performanceMode={props.performanceMode}
           operatorVisible={operatorVisible}
           debug={props.debug}
+          time={time}
         />}
         {minimap}
         {position && <span style={{ position: 'absolute', right: 0 }}>{position.x},{position.y}</span>}

@@ -103,7 +103,7 @@ export function getContentsByClickTwoPositions<T>(
     if (contentVisible && !contentVisible(content)) {
       return
     }
-    if (contentSelectable?.([i])) {
+    if (!contentSelectable || contentSelectable([i])) {
       const model = getModel(content)
       if (model?.getCircle) {
         const { circle, bounding } = model.getCircle(content)

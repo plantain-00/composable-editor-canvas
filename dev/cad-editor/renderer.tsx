@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, m3 } from "../../src"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, m3, WeakmapMapCache } from "../../src"
 import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
@@ -22,12 +22,13 @@ export function Renderer(props: {
   printMode?: boolean
   performanceMode?: boolean
   operatorVisible?: boolean
+  time: number
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const debug = new Debug(props.debug)
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
   const strokeWidthScale = props.printMode ? 1 : 1 / props.scale
-  const renderCache = React.useRef(new WeakmapCache<readonly Nullable<BaseContent>[], unknown[]>())
+  const renderCache = React.useRef(new WeakmapMapCache<readonly Nullable<BaseContent>[], number, unknown[]>())
   useValueChanged(props.type, () => renderCache.current.clear())
   useValueChanged(props.backgroundColor, () => renderCache.current.clear())
 
@@ -68,6 +69,14 @@ export function Renderer(props: {
       })
     }))
   }
+  const commonProps = {
+    transformColor,
+    target,
+    getStrokeColor,
+    getFillColor,
+    getFillPattern,
+    time: props.time,
+  }
 
   debug.mark('before contents')
   let children: unknown[] = []
@@ -90,7 +99,7 @@ export function Renderer(props: {
   const previewPatches = props.previewPatches ?? []
   const previewContents = previewPatches.length > 0 && !props.performanceMode ? applyPatches(props.contents, previewPatches) : props.contents
   const sortedContents = getSortedContents(previewContents).contents
-  children = renderCache.current.get(sortedContents, () => {
+  children = renderCache.current.get(sortedContents, props.time, () => {
     sortedContents.forEach((content) => {
       if (!content || content.visible === false) {
         return
@@ -116,14 +125,14 @@ export function Renderer(props: {
           const ContentRender = model.render
           if (ContentRender) {
             merger.flushLast()
-            children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: previewContents, getStrokeColor, getFillColor, getFillPattern }))
+            children.push(ContentRender(content, { transformStrokeWidth: w => w, contents: previewContents, ...commonProps }))
           }
         }
       } else {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: previewContents, getStrokeColor, getFillColor, getFillPattern }))
+          children.push(ContentRender(content, { transformStrokeWidth: w => w, contents: previewContents, ...commonProps }))
         }
       }
     })
@@ -159,7 +168,7 @@ export function Renderer(props: {
     newContents.forEach(content => {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, contents: props.contents, ...commonProps, isAssistence: true }))
       }
     })
   }
@@ -193,7 +202,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   }
@@ -205,7 +214,7 @@ export function Renderer(props: {
       const model = getContentModel(content)
       const ContentRender = model?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
       }
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {
@@ -219,7 +228,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w + 1, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isHoveringOrSelected: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   }
@@ -227,7 +236,7 @@ export function Renderer(props: {
   props.assistentContents?.forEach((content) => {
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
-      assistentContentsChildren2.push(ContentRender(content, { transformColor, target, transformStrokeWidth: w => w, contents: props.contents, getStrokeColor, getFillColor, getFillPattern, isAssistence: true }))
+      assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w, contents: props.contents, ...commonProps, isAssistence: true }))
     }
   })
   if (assistentContentsChildren2.length > 0) {

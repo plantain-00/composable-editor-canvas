@@ -79,14 +79,14 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
       })
     },
     getGeometries: getViewportGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, setTime) {
       const border = ctx.getContentModel(content.border)?.propertyPanel?.(content.border, recipe => {
         update(c => {
           if (ctx.isViewportContent(c)) {
             recipe(c.border, contents)
           }
         })
-      }, contents)
+      }, contents, setTime)
       const result: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.y = v } })} />,
