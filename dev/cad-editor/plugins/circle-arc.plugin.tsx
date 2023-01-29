@@ -6,13 +6,29 @@ import { LineContent } from './line-polyline.plugin'
 import type { PolygonContent } from './polygon.plugin'
 import type { TextContent } from './text.plugin'
 
-export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & model.FillFields & core.Circle
+export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & model.FillFields & core.Circle & {
+  xExpression?: string
+  yExpression?: string
+  rExpression?: string
+}
 export type ArcContent = model.BaseContent<'arc'> & model.StrokeFields & model.FillFields & model.AngleDeltaFields & core.Arc
 
 export function getModel(ctx: PluginContext) {
-  const CircleContent = ctx.and(ctx.BaseContent('circle'), ctx.StrokeFields, ctx.FillFields, ctx.Circle)
+  const CircleContent = ctx.and(ctx.BaseContent('circle'), ctx.StrokeFields, ctx.FillFields, ctx.Circle, {
+    xExpression: ctx.optional(ctx.string),
+    yExpression: ctx.optional(ctx.string),
+    rExpression: ctx.optional(ctx.string),
+  })
   const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
-  function getCircleGeometries(content: Omit<CircleContent, "type">) {
+  function getCircleGeometries(content: Omit<CircleContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
+    if (time && (content.xExpression || content.yExpression || content.rExpression)) {
+      return ctx.timeGeometriesCache.get(content, time, () => {
+        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x)
+        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y)
+        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r)
+        return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 })
+      })
+    }
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
     })
@@ -74,7 +90,7 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip, time }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const fillStyleContent = ctx.getFillStyleContent(content, contents)
         const options = {
@@ -84,10 +100,13 @@ export function getModel(ctx: PluginContext) {
           fillPattern: getFillPattern(fillStyleContent),
         }
         if (strokeStyleContent.dashArray) {
-          const { points } = getCircleGeometries(content)
+          const { points } = getCircleGeometries(content, contents, time)
           return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip })
         }
-        return target.renderCircle(content.x, content.y, content.r, { ...options, clip })
+        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x)
+        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y)
+        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r)
+        return target.renderCircle(x, y, r, { ...options, clip })
       },
       getOperatorRenderPosition(content) {
         return content
@@ -173,6 +192,18 @@ export function getModel(ctx: PluginContext) {
           x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isCircleContent(c)) { c.x = v } })} />,
           y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isCircleContent(c)) { c.y = v } })} />,
           r: <ctx.NumberEditor value={content.r} setValue={(v) => update(c => { if (isCircleContent(c)) { c.r = v } })} />,
+          xExpression: [
+            <ctx.BooleanEditor value={content.xExpression !== undefined} setValue={(v) => update(c => { if (isCircleContent(c)) { c.xExpression = v ? '' : undefined } })} />,
+            content.xExpression !== undefined ? <ctx.StringEditor value={content.xExpression} setValue={(v) => update(c => { if (isCircleContent(c)) { c.xExpression = v } })} /> : undefined
+          ],
+          yExpression: [
+            <ctx.BooleanEditor value={content.yExpression !== undefined} setValue={(v) => update(c => { if (isCircleContent(c)) { c.yExpression = v ? '' : undefined } })} />,
+            content.yExpression !== undefined ? <ctx.StringEditor value={content.yExpression} setValue={(v) => update(c => { if (isCircleContent(c)) { c.yExpression = v } })} /> : undefined
+          ],
+          rExpression: [
+            <ctx.BooleanEditor value={content.rExpression !== undefined} setValue={(v) => update(c => { if (isCircleContent(c)) { c.rExpression = v ? '' : undefined } })} />,
+            content.rExpression !== undefined ? <ctx.StringEditor value={content.rExpression} setValue={(v) => update(c => { if (isCircleContent(c)) { c.rExpression = v } })} /> : undefined
+          ],
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents),
         }

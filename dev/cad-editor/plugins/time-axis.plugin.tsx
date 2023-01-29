@@ -6,11 +6,13 @@ import type { LineContent } from './line-polyline.plugin'
 
 export type TimeAxisContent = model.BaseContent<'time axis'> & model.StrokeFields & model.ArrowFields & core.Position & {
   max: number
+  interval?: number
 }
 
 export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
   const TimeAxisContent = ctx.and(ctx.BaseContent('time axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
     max: ctx.number,
+    interval: ctx.optional(ctx.number),
   })
   function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
@@ -30,6 +32,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       }
     })
   }
+  let timer: NodeJS.Timer | undefined
   const React = ctx.React
   return {
     type: 'time axis',
@@ -76,11 +79,30 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       })
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, setTime) {
+      const start = () => {
+        if (timer) {
+          clearInterval(timer)
+        }
+        timer = setInterval(() => {
+          setTime(t => {
+            if (timer && t >= content.max) {
+              clearInterval(timer)
+              return 0
+            }
+            return t + 1
+          })
+        }, content.interval ?? 20)
+      }
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.y = v } })} />,
         max: <ctx.NumberEditor value={content.max} setValue={(v) => update(c => { if (isTimeAxisContent(c) && v > 0) { c.max = v } })} />,
+        interval: [
+          <ctx.BooleanEditor value={content.interval !== undefined} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v ? 20 : undefined } })} />,
+          content.interval !== undefined ? <ctx.NumberEditor value={content.interval} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v } })} /> : undefined,
+        ],
+        action: <ctx.Button onClick={start}>start</ctx.Button>,
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }

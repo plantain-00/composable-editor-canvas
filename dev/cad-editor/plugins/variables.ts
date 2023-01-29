@@ -762,9 +762,21 @@ export {
 `,
 `// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function getModel(ctx) {
-  const CircleContent = ctx.and(ctx.BaseContent("circle"), ctx.StrokeFields, ctx.FillFields, ctx.Circle);
+  const CircleContent = ctx.and(ctx.BaseContent("circle"), ctx.StrokeFields, ctx.FillFields, ctx.Circle, {
+    xExpression: ctx.optional(ctx.string),
+    yExpression: ctx.optional(ctx.string),
+    rExpression: ctx.optional(ctx.string)
+  });
   const ArcContent = ctx.and(ctx.BaseContent("arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc);
-  function getCircleGeometries(content) {
+  function getCircleGeometries(content, _, time) {
+    if (time && (content.xExpression || content.yExpression || content.rExpression)) {
+      return ctx.timeGeometriesCache.get(content, time, () => {
+        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x);
+        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y);
+        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r);
+        return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 });
+      });
+    }
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
     });
@@ -827,7 +839,7 @@ function getModel(ctx) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1]
         }));
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
+      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip, time }) {
         var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
         const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -838,10 +850,13 @@ function getModel(ctx) {
           fillPattern: getFillPattern(fillStyleContent)
         };
         if (strokeStyleContent.dashArray) {
-          const { points } = getCircleGeometries(content);
+          const { points } = getCircleGeometries(content, contents, time);
           return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip });
         }
-        return target.renderCircle(content.x, content.y, content.r, { ...options, clip });
+        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x);
+        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y);
+        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r);
+        return target.renderCircle(x, y, r, { ...options, clip });
       },
       getOperatorRenderPosition(content) {
         return content;
@@ -939,6 +954,42 @@ function getModel(ctx) {
               c.r = v;
             }
           }) }),
+          xExpression: [
+            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.xExpression !== void 0, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.xExpression = v ? "" : void 0;
+              }
+            }) }),
+            content.xExpression !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.xExpression, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.xExpression = v;
+              }
+            }) }) : void 0
+          ],
+          yExpression: [
+            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.yExpression !== void 0, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.yExpression = v ? "" : void 0;
+              }
+            }) }),
+            content.yExpression !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.yExpression, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.yExpression = v;
+              }
+            }) }) : void 0
+          ],
+          rExpression: [
+            /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.rExpression !== void 0, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.rExpression = v ? "" : void 0;
+              }
+            }) }),
+            content.rExpression !== void 0 ? /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.rExpression, setValue: (v) => update((c) => {
+              if (isCircleContent(c)) {
+                c.rExpression = v;
+              }
+            }) }) : void 0
+          ],
           ...ctx.getStrokeContentPropertyPanel(content, update, contents),
           ...ctx.getFillContentPropertyPanel(content, update, contents)
         };
@@ -8456,7 +8507,8 @@ export {
 `// dev/cad-editor/plugins/time-axis.plugin.tsx
 function getModel(ctx) {
   const TimeAxisContent = ctx.and(ctx.BaseContent("time axis"), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
-    max: ctx.number
+    max: ctx.number,
+    interval: ctx.optional(ctx.number)
   });
   function getGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
@@ -8476,6 +8528,7 @@ function getModel(ctx) {
       };
     });
   }
+  let timer;
   const React = ctx.React;
   return {
     type: "time axis",
@@ -8523,7 +8576,22 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, setTime) {
+      const start = () => {
+        var _a;
+        if (timer) {
+          clearInterval(timer);
+        }
+        timer = setInterval(() => {
+          setTime((t) => {
+            if (timer && t >= content.max) {
+              clearInterval(timer);
+              return 0;
+            }
+            return t + 1;
+          });
+        }, (_a = content.interval) != null ? _a : 20);
+      };
       return {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isTimeAxisContent(c)) {
@@ -8540,6 +8608,19 @@ function getModel(ctx) {
             c.max = v;
           }
         }) }),
+        interval: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.interval !== void 0, setValue: (v) => update((c) => {
+            if (isTimeAxisContent(c)) {
+              c.interval = v ? 20 : void 0;
+            }
+          }) }),
+          content.interval !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.interval, setValue: (v) => update((c) => {
+            if (isTimeAxisContent(c)) {
+              c.interval = v;
+            }
+          }) }) : void 0
+        ],
+        action: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: start }, "start"),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -8685,7 +8766,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getViewportGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, setTime) {
       var _a, _b;
       const border = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.propertyPanel) == null ? void 0 : _b.call(_a, content.border, (recipe) => {
         update((c) => {
@@ -8693,7 +8774,7 @@ function getModel(ctx) {
             recipe(c.border, contents);
           }
         });
-      }, contents);
+      }, contents, setTime);
       const result = {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (ctx.isViewportContent(c)) {

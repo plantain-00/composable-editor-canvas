@@ -19,7 +19,7 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     reachMaxCount?: (selected: T[]) => void,
     selectable?: (value: T) => boolean,
   ) => {
-    value = value.filter((s) => !isSelected(s, selected) && (selectable?.(s) ?? true))
+    value = value.filter((s) => !isSelected(s, selected) && (selectable?.(s) ?? true) && selected.every(v => !isSamePath(v, s)))
     if (value.length > 0) {
       let result = [...selected, ...value]
       if (maxCount !== undefined) {
@@ -30,6 +30,10 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
         reachMaxCount?.(result)
       }
     }
+  }
+  const removeSelection = (value: readonly T[]) => {
+    console.info(selected, value)
+    setSelected(selected.filter(s => value.every(v => !isSamePath(v, s))))
   }
   const filterSelection = (selectable?: (value: T) => boolean, maxCount = options?.maxCount, s = selected) => {
     let result = selectable ? s.filter(selectable) : s
@@ -49,6 +53,7 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
       return isSelected(value, s)
     },
     addSelection,
+    removeSelection,
     setSelected(...value: readonly Nullable<T>[]) {
       const s = value.filter((v): v is T => v !== undefined)
       if (s.length !== 0 || selected.length !== 0) {
