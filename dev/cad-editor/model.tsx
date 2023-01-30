@@ -1,7 +1,7 @@
-import { evaluateExpression, parseExpression, tokenizeExpression } from 'expression-engine'
+import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, WeakmapMapCache, MapCache2 } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -166,7 +166,7 @@ export type Model<T> = Partial<FeatureModels> & {
     content: Omit<T, 'type'>,
     update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
     contents: readonly Nullable<BaseContent>[],
-    setTime: React.Dispatch<React.SetStateAction<number>>,
+    startTime: (max: number, interval: number) => void,
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
@@ -239,21 +239,29 @@ export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)
 export const getEditPointsFromCache = editPointsCache.get.bind(editPointsCache)
 
-export const timeGeometriesCache = new WeakmapMapCache<object, number, Geometries>()
-const timeExpresionValueCache = new MapCache2<string, number, number>()
-export function getTimeExpressionValueFromCache(expression: string | undefined, time: number | undefined, fallback: number) {
+const timeExpresionCache = new MapCache<string, Expression | null>()
+export function getTimeExpressionValue(expression: string | undefined, time: number | undefined, fallback: number) {
   if (!expression || !time) return fallback
-  return timeExpresionValueCache.get(expression, time, () => {
+  const e = timeExpresionCache.get(expression, () => {
     try {
-      const value = evaluateExpression(parseExpression(tokenizeExpression(expression)), { t: time })
+      return parseExpression(tokenizeExpression(expression))
+    } catch (error) {
+      console.info(error)
+      return null
+    }
+  })
+  if (e) {
+    try {
+      const value = evaluateExpression(e, { t: time })
       if (typeof value === 'number' && !isNaN(value)) {
         return value
       }
     } catch (error) {
       console.info(error)
     }
-    return fallback
-  })
+  }
+  
+  return fallback
 }
 
 const intersectionPointsCache = new WeakmapCache2<BaseContent, BaseContent, Position[]>()
