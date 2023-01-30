@@ -14,11 +14,11 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
     max: ctx.number,
     interval: ctx.optional(ctx.number),
   })
-  function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max, y: content.y }, content)
+  function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
+    const getGeometries = (): model.Geometries => {
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content)
       const points = [content, endPoint]
-      return {
+      const result = {
         points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
@@ -30,9 +30,20 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
         ],
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
-    })
+      if (time) {
+        const timePoints = ctx.arcToPolyline({ x: content.x + time / 10, y: content.y, r: 5, startAngle: 0, endAngle: 360 }, ctx.defaultAngleDelta)
+        result.regions.push({
+          points: timePoints,
+          lines: Array.from(ctx.iteratePolygonLines(timePoints)),
+        })
+      }
+      return result
+    }
+    if (time) {
+      return getGeometries()
+    }
+    return ctx.getGeometriesFromCache(content, getGeometries)
   }
-  let timer: NodeJS.Timer | undefined
   const React = ctx.React
   return {
     type: 'time axis',
@@ -42,11 +53,11 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents, time }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const strokeColor = getStrokeColor(strokeStyleContent)
       const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
-      const { regions, renderingLines } = getGeometriesFromCache(content)
+      const { regions, renderingLines } = getGeometriesFromCache(content, contents, time)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth }))
@@ -79,21 +90,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       })
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents, setTime) {
-      const start = () => {
-        if (timer) {
-          clearInterval(timer)
-        }
-        timer = setInterval(() => {
-          setTime(t => {
-            if (timer && t >= content.max) {
-              clearInterval(timer)
-              return 0
-            }
-            return t + 1
-          })
-        }, content.interval ?? 20)
-      }
+    propertyPanel(content, update, contents, startTime) {
       return {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.y = v } })} />,
@@ -102,7 +99,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
           <ctx.BooleanEditor value={content.interval !== undefined} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v ? 20 : undefined } })} />,
           content.interval !== undefined ? <ctx.NumberEditor value={content.interval} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v } })} /> : undefined,
         ],
-        action: <ctx.Button onClick={start}>start</ctx.Button>,
+        action: <ctx.Button onClick={() => startTime(content.max, content.interval ?? 20)}>start</ctx.Button>,
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
@@ -153,7 +150,7 @@ export function getCommand(ctx: PluginContext): Command {
               type: 'time axis',
               x: p.x,
               y: p.y,
-              max: 100,
+              max: 5000,
             })
           }
         },

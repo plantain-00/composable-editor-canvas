@@ -770,12 +770,10 @@ function getModel(ctx) {
   const ArcContent = ctx.and(ctx.BaseContent("arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc);
   function getCircleGeometries(content, _, time) {
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
-      return ctx.timeGeometriesCache.get(content, time, () => {
-        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x);
-        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y);
-        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r);
-        return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 });
-      });
+      const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x);
+      const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y);
+      const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r);
+      return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 });
     }
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
@@ -853,9 +851,9 @@ function getModel(ctx) {
           const { points } = getCircleGeometries(content, contents, time);
           return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip });
         }
-        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x);
-        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y);
-        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r);
+        const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x);
+        const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y);
+        const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r);
         return target.renderCircle(x, y, r, { ...options, clip });
       },
       getOperatorRenderPosition(content) {
@@ -8510,11 +8508,11 @@ function getModel(ctx) {
     max: ctx.number,
     interval: ctx.optional(ctx.number)
   });
-  function getGeometriesFromCache(content) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max, y: content.y }, content);
+  function getGeometriesFromCache(content, _, time) {
+    const getGeometries = () => {
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content);
       const points = [content, endPoint];
-      return {
+      const result = {
         points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
@@ -8526,9 +8524,20 @@ function getModel(ctx) {
         ],
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
-    });
+      if (time) {
+        const timePoints = ctx.arcToPolyline({ x: content.x + time / 10, y: content.y, r: 5, startAngle: 0, endAngle: 360 }, ctx.defaultAngleDelta);
+        result.regions.push({
+          points: timePoints,
+          lines: Array.from(ctx.iteratePolygonLines(timePoints))
+        });
+      }
+      return result;
+    };
+    if (time) {
+      return getGeometries();
+    }
+    return ctx.getGeometriesFromCache(content, getGeometries);
   }
-  let timer;
   const React = ctx.React;
   return {
     type: "time axis",
@@ -8538,12 +8547,12 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+    render(content, { target, getStrokeColor, transformStrokeWidth, contents, time }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
       const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
-      const { regions, renderingLines } = getGeometriesFromCache(content);
+      const { regions, renderingLines } = getGeometriesFromCache(content, contents, time);
       const children = [];
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth }));
@@ -8576,22 +8585,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents, setTime) {
-      const start = () => {
-        var _a;
-        if (timer) {
-          clearInterval(timer);
-        }
-        timer = setInterval(() => {
-          setTime((t) => {
-            if (timer && t >= content.max) {
-              clearInterval(timer);
-              return 0;
-            }
-            return t + 1;
-          });
-        }, (_a = content.interval) != null ? _a : 20);
-      };
+    propertyPanel(content, update, contents, startTime) {
       return {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isTimeAxisContent(c)) {
@@ -8620,7 +8614,10 @@ function getModel(ctx) {
             }
           }) }) : void 0
         ],
-        action: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: start }, "start"),
+        action: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => {
+          var _a;
+          return startTime(content.max, (_a = content.interval) != null ? _a : 20);
+        } }, "start"),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
@@ -8665,7 +8662,7 @@ function getCommand(ctx) {
               type: "time axis",
               x: p.x,
               y: p.y,
-              max: 100
+              max: 5e3
             });
           }
         },
@@ -8766,7 +8763,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getViewportGeometriesFromCache,
-    propertyPanel(content, update, contents, setTime) {
+    propertyPanel(content, update, contents, startTime) {
       var _a, _b;
       const border = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.propertyPanel) == null ? void 0 : _b.call(_a, content.border, (recipe) => {
         update((c) => {
@@ -8774,7 +8771,7 @@ function getModel(ctx) {
             recipe(c.border, contents);
           }
         });
-      }, contents, setTime);
+      }, contents, startTime);
       const result = {
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (ctx.isViewportContent(c)) {

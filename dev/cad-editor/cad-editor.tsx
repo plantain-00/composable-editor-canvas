@@ -779,11 +779,26 @@ export const CADEditor = React.forwardRef((props: {
     }
     const zPanel: JSX.Element[] = []
     const visiblePanel: JSX.Element[] = []
+    let timer: NodeJS.Timer | undefined
     selectedContents.forEach(target => {
       types.add(target.content.type)
       const id = target.path[0]
       ids.push(id)
-      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, setTime)
+      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, (max, interval) => {
+        if (timer) {
+          clearInterval(timer)
+        }
+        const now = Date.now()
+        timer = setInterval(() => {
+          const t = Date.now() - now
+          if (timer && t >= max) {
+            clearInterval(timer)
+            setTime(0)
+          } else {
+            setTime(t)
+          }
+        }, interval)
+      })
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {
           const element = propertyPanels[field]

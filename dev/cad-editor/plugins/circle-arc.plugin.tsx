@@ -22,12 +22,10 @@ export function getModel(ctx: PluginContext) {
   const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
   function getCircleGeometries(content: Omit<CircleContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
-      return ctx.timeGeometriesCache.get(content, time, () => {
-        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x)
-        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y)
-        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r)
-        return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 })
-      })
+      const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
+      const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
+      const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
+      return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 })
     }
     return ctx.getGeometriesFromCache(content, () => {
       return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
@@ -103,9 +101,9 @@ export function getModel(ctx: PluginContext) {
           const { points } = getCircleGeometries(content, contents, time)
           return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip })
         }
-        const x = ctx.getTimeExpressionValueFromCache(content.xExpression, time, content.x)
-        const y = ctx.getTimeExpressionValueFromCache(content.yExpression, time, content.y)
-        const r = ctx.getTimeExpressionValueFromCache(content.rExpression, time, content.r)
+        const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
+        const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
+        const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
         return target.renderCircle(x, y, r, { ...options, clip })
       },
       getOperatorRenderPosition(content) {
