@@ -1,14 +1,21 @@
 import React from "react"
-import { useAudioRecorder } from "../src"
+import { useAudioPlayer, useAudioRecorder } from "../src"
 
 export default () => {
-  const { start, stop, duration, volume, audioUrl } = useAudioRecorder()
+  const { start, stop, duration, volume, audioUrl, recording } = useAudioRecorder()
+  const { play, pause, playing, currentTime, audio, duration: audioDuration } = useAudioPlayer(audioUrl)
   return (
     <div>
-      {!duration ? <button onClick={start}>start</button> : null}
-      {duration ? <button onClick={stop}>stop {duration}</button> : null}
-      {duration && volume !== undefined ? <meter high={0.25} max="1" value={volume}></meter> : null}
-      {audioUrl && <audio controls src={audioUrl}></audio>}
+      {!recording ? <button onClick={start}>start</button> : null}
+      {recording ? <button onClick={stop}>stop {duration}</button> : null}
+      {recording && volume !== undefined ? <meter max="1" value={volume}></meter> : null}
+      {audioUrl && (
+        <>
+          <button onClick={playing ? pause : play}>{playing ? 'pause' : 'play'}</button>
+          {currentTime}/{audioDuration}
+          {audio}
+        </>
+      )}
     </div>
   )
 }

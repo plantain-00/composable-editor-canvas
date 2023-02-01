@@ -6,8 +6,9 @@ export function useAudioRecorder() {
   const analyser = React.useRef<AnalyserNode>()
 
   const [audioUrl, setAudioUrl] = React.useState<string>()
-  const [duration, setDuration] = React.useState<number>()
+  const [duration, setDuration] = React.useState(0)
   const [volume, setVolume] = React.useState<number>()
+  const [recording, setRecording] = React.useState(false)
   const chunks = React.useRef<Blob[]>([])
 
   React.useEffect(() => {
@@ -33,14 +34,18 @@ export function useAudioRecorder() {
       if (analyser.current) {
         const pcmData = new Float32Array(analyser.current.fftSize)
         analyser.current.getFloatTimeDomainData(pcmData)
-        let sumSquares = 0.0
-        for (const amplitude of pcmData) { sumSquares += amplitude * amplitude; }
-        setVolume(Math.sqrt(sumSquares / pcmData.length))
+        let max = 0
+        for (const amplitude of pcmData) {
+          max = Math.max(max, Math.abs(amplitude))
+        }
+        setVolume(Math.min(max * 2, 1))
       }
     }, 20)
 
     setAudioUrl(undefined)
+    setDuration(0)
     chunks.current = []
+    setRecording(true)
 
     mediaRecorder.current.start(100)
   }
@@ -52,8 +57,8 @@ export function useAudioRecorder() {
       clearInterval(timer.current)
       timer.current = undefined
     }
-    setDuration(undefined)
     setVolume(undefined)
+    setRecording(false)
 
     setAudioUrl(window.URL.createObjectURL(new Blob(chunks.current, { type: "audio/ogg; codecs=opus" })))
   }
@@ -64,6 +69,7 @@ export function useAudioRecorder() {
     volume,
     start,
     stop,
+    recording,
     chunks: chunks.current
   }
 }
