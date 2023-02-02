@@ -6,13 +6,11 @@ import type { LineContent } from './line-polyline.plugin'
 
 export type TimeAxisContent = model.BaseContent<'time axis'> & model.StrokeFields & model.ArrowFields & core.Position & {
   max: number
-  interval?: number
 }
 
 export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
   const TimeAxisContent = ctx.and(ctx.BaseContent('time axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
     max: ctx.number,
-    interval: ctx.optional(ctx.number),
   })
   function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
     const getGeometries = (): model.Geometries => {
@@ -95,11 +93,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.y = v } })} />,
         max: <ctx.NumberEditor value={content.max} setValue={(v) => update(c => { if (isTimeAxisContent(c) && v > 0) { c.max = v } })} />,
-        interval: [
-          <ctx.BooleanEditor value={content.interval !== undefined} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v ? 20 : undefined } })} />,
-          content.interval !== undefined ? <ctx.NumberEditor value={content.interval} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.interval = v } })} /> : undefined,
-        ],
-        action: <ctx.Button onClick={() => startTime(content.max, content.interval ?? 20)}>start</ctx.Button>,
+        action: <ctx.Button onClick={() => startTime(content.max)}>start</ctx.Button>,
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
