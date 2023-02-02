@@ -8505,8 +8505,7 @@ export {
 `// dev/cad-editor/plugins/time-axis.plugin.tsx
 function getModel(ctx) {
   const TimeAxisContent = ctx.and(ctx.BaseContent("time axis"), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
-    max: ctx.number,
-    interval: ctx.optional(ctx.number)
+    max: ctx.number
   });
   function getGeometriesFromCache(content, _, time) {
     const getGeometries = () => {
@@ -8602,22 +8601,7 @@ function getModel(ctx) {
             c.max = v;
           }
         }) }),
-        interval: [
-          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.interval !== void 0, setValue: (v) => update((c) => {
-            if (isTimeAxisContent(c)) {
-              c.interval = v ? 20 : void 0;
-            }
-          }) }),
-          content.interval !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.interval, setValue: (v) => update((c) => {
-            if (isTimeAxisContent(c)) {
-              c.interval = v;
-            }
-          }) }) : void 0
-        ],
-        action: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => {
-          var _a;
-          return startTime(content.max, (_a = content.interval) != null ? _a : 20);
-        } }, "start"),
+        action: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => startTime(content.max) }, "start"),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
