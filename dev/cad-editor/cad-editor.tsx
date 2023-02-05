@@ -467,13 +467,8 @@ export const CADEditor = React.forwardRef((props: {
   }
   for (const { content, path } of selectedContents) {
     if (path.length === 1) {
-      let c = content
-      if (editPoint && isSamePath(editPoint.path, path)) {
-        c = result?.result ?? content
-      } else {
-        c = result?.relatedEditPointResults.get(content) ?? content
-      }
-      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
+      const c = editPoint && isSamePath(editPoint.path, path) ? result?.result : result?.relatedEditPointResults.get(content)
+      assistentContents.push(...getEditAssistentContents(c ?? content, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
     }
   }
 

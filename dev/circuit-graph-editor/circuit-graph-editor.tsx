@@ -197,13 +197,8 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     const content = state[selected]
     if (content) {
       selectedContents.push({ content, path: [selected] })
-      let c = content
-      if (editPoint && isSamePath(editPoint.path, [selected])) {
-        c = result?.result ?? content
-      } else {
-        c = result?.relatedEditPointResults.get(content) ?? content
-      }
-      assistentContents.push(...getEditAssistentContents(c, (rect) => ({ type: 'circle', x: rect.x, y: rect.y, radius: 7 } as CircleContent)))
+      const c = editPoint && isSamePath(editPoint.path, [selected]) ? result?.result : result?.relatedEditPointResults.get(content)
+      assistentContents.push(...getEditAssistentContents(c ?? content, (rect) => ({ type: 'circle', x: rect.x, y: rect.y, radius: 7 } as CircleContent)))
 
       const contentsUpdater = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
         const [, ...patches] = produceWithPatches(state, (draft) => {
