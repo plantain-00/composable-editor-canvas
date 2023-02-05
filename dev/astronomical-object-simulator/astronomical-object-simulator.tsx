@@ -1,6 +1,6 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, SphereContent } from './model';
@@ -30,6 +30,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const [creating, setCreating] = React.useState(false)
   const assistentContents: BaseContent[] = []
   const previewPatches: Patch[] = []
+  const previewReversePatches: Patch[] = []
+  const selectedContents: { content: BaseContent, path: number[] }[] = []
   let panel: JSX.Element | undefined
 
   const { line, onClick: startCreate, reset: resetCreate, onMove } = useLineClickCreate(
@@ -102,6 +104,33 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       setSelected(undefined)
     }
   })
+  const { editPoint, updateEditPreview, onEditMove, onEditClick } = useEdit<BaseContent, readonly number[]>(
+    () => applyPatchFromSelf(previewPatches, previewReversePatches),
+    (s) => {
+      if (isSphereContent(s)) {
+        return {
+          editPoints: [{
+            x: s.x,
+            y: s.y,
+            cursor: 'move',
+            update(c, { cursor }) {
+              if (!isSphereContent(c)) return
+              c.x = cursor.x
+              c.y = cursor.y
+            },
+          }]
+        }
+      }
+      return
+    },
+    {
+      scale: transform.scale,
+      readOnly: creating,
+    }
+  )
+  const result = updateEditPreview()
+  previewPatches.push(...result?.patches ?? [])
+  previewReversePatches.push(...result?.reversePatches ?? [])
   const startCreation = () => {
     resetCreate()
     setCreating(true)
@@ -119,6 +148,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   if (selected !== undefined) {
     const content = state[selected]
     if (content && isSphereContent(content)) {
+      selectedContents.push({ content, path: [selected] })
       const update = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
         const [, ...patches] = produceWithPatches(state, (draft) => {
           const content = draft[selected]
@@ -169,6 +199,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
       startCreate(p)
+    } else if (editPoint) {
+      onEditClick(p)
     } else if (hovering !== undefined) {
       setSelected(hovering)
       setHovering(undefined)
@@ -180,14 +212,24 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     if (creating) {
       onMove(p, viewportPosition)
     } else {
+      onEditMove(p, selectedContents)
       setHovering(getContentByPosition(p))
     }
   })
 
+  let cursor: string | undefined
+  if (editPoint) {
+    cursor = editPoint.cursor
+  } else if (hovering !== undefined && hovering !== selected) {
+    cursor = 'pointer'
+  } else if (creating) {
+    cursor = 'crosshair'
+  }
+
   return (
     <>
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-        <div style={{ position: 'absolute', inset: '0px', cursor: 'crosshair' }} onMouseMove={onMouseMove}>
+        <div style={{ position: 'absolute', inset: '0px', cursor }} onMouseMove={onMouseMove}>
           <Renderer
             contents={state}
             x={transform.x}
