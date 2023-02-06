@@ -1,4 +1,4 @@
-import { Position, ReactRenderTarget } from "../../src";
+import { getArrow, getPointByLengthAndAngle, getTwoPointsDistance, Position, ReactRenderTarget } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -33,7 +33,17 @@ export const sphereModel: Model<SphereContent> = {
   type: 'sphere',
   render(content, { target, transformRadius }) {
     const radius = transformRadius(content.radius)
-    return target.renderCircle(content.x, content.y, radius, { fillColor: content.color, strokeWidth: 0 })
+    const circle = target.renderCircle(content.x, content.y, radius, { fillColor: content.color, strokeWidth: 0 })
+    const children = [circle]
+    if (content.speed.x || content.speed.y) {
+      const p = getPointByLengthAndAngle(content, content.radius + getTwoPointsDistance(content.speed), Math.atan2(content.speed.y, content.speed.x))
+      const { arrowPoints, endPoint } = getArrow(content, p, 10, 15)
+      children.push(
+        target.renderPolyline([content, endPoint], { strokeColor: content.color }),
+        target.renderPolygon(arrowPoints, { fillColor: content.color, strokeWidth: 0 })
+      )
+    }
+    return target.renderGroup(children)
   },
 }
 

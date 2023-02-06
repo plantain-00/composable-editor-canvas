@@ -164,7 +164,7 @@ export function getPointSideOfLine(point: Position, line: GeneralFormLine): numb
 /**
  * @public
  */
-export function getTwoPointsDistance(point1: Position, point2: Position) {
+export function getTwoPointsDistance(point1: Position, point2: Position = { x: 0, y: 0 }) {
   return Math.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2)
 }
 
