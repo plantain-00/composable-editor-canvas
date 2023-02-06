@@ -1,6 +1,6 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, SphereContent } from './model';
@@ -108,17 +108,37 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     () => applyPatchFromSelf(previewPatches, previewReversePatches),
     (s) => {
       if (isSphereContent(s)) {
-        return {
-          editPoints: [{
-            x: s.x,
-            y: s.y,
+        const editPoints: EditPoint<BaseContent>[] = [{
+          x: s.x,
+          y: s.y,
+          cursor: 'move',
+          update(c, { cursor }) {
+            if (!isSphereContent(c)) return
+            c.x = cursor.x
+            c.y = cursor.y
+          },
+        }]
+        if (s.speed.x || s.speed.y) {
+          const p = getPointByLengthAndAngle(s, s.radius + getTwoPointsDistance(s.speed), Math.atan2(s.speed.y, s.speed.x))
+          editPoints.push({
+            x: p.x,
+            y: p.y,
             cursor: 'move',
             update(c, { cursor }) {
               if (!isSphereContent(c)) return
-              c.x = cursor.x
-              c.y = cursor.y
+              const d = getTwoPointsDistance(cursor, s)
+              if (d <= s.radius) return
+              const x = cursor.x - s.x
+              const y = cursor.y - s.y
+              const r = getTwoPointsDistance({ x, y })
+              const scale = (r - s.radius) / r
+              c.speed.x = x * scale
+              c.speed.y = y * scale
             },
-          }]
+          })
+        }
+        return {
+          editPoints,
         }
       }
       return

@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointByLengthAndDirection, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, rotatePositionByCenter, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -260,7 +260,7 @@ export function getTimeExpressionValue(expression: string | undefined, time: num
       console.info(error)
     }
   }
-  
+
   return fallback
 }
 
@@ -1021,17 +1021,7 @@ export function breakPolyline(
 export function getArrowPoints(from: Position, to: Position, content: ArrowFields & StrokeFields) {
   const arrowSize = content.arrowSize ?? dimensionStyle.arrowSize
   const arrowAngle = content.arrowAngle ?? dimensionStyle.arrowAngle
-  const arrow = getPointByLengthAndDirection(to, arrowSize, from)
-  const distance = (content.strokeWidth ?? 1) / 2 / Math.tan(arrowAngle * Math.PI / 180)
-  return {
-    arrowPoints: [
-      to,
-      rotatePositionByCenter(arrow, to, arrowAngle),
-      rotatePositionByCenter(arrow, to, -arrowAngle),
-    ],
-    distance,
-    endPoint: getPointByLengthAndDirection(to, distance, from),
-  }
+  return getArrow(from, to, arrowSize, arrowAngle, content.strokeWidth)
 }
 
 export const assistentTextCache = new MapCache3<string, number, number, object>()
