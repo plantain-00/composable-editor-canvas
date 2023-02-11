@@ -1,9 +1,10 @@
 import React from 'react';
-import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { produce, Patch, enablePatches, produceWithPatches } from 'immer'
+import { v3 } from 'twgl.js'
+import { bindMultipleRefs, Button, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
-import { isSphereContent, SphereContent } from './model';
+import { isSphereContent, Position3D, SphereContent } from './model';
 
 enablePatches()
 
@@ -214,6 +215,58 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
+  const [running, setRunning, runningRef] = useRefState(false)
+  const [runningState, setRunningState, runningStateRef] = useRefState2<readonly Nullable<BaseContent>[]>()
+  const current = runningState ?? state
+  const run = () => {
+    if (runningRef.current) {
+      setRunning(false)
+      setRunningState(undefined)
+      return
+    }
+    setRunning(true)
+    let lastTime: number | undefined
+    const step = (time: number) => {
+      if (!runningRef.current) return
+      if (lastTime !== undefined) {
+        const t = (time - lastTime) * 0.001
+        const newContents: BaseContent[] = []
+        const current = runningStateRef.current ?? state
+        for (const content of current) {
+          if (content && isSphereContent(content)) {
+            const acceleration: Position3D = {
+              x: 0,
+              y: 0,
+              z: 0,
+            }
+            for (const target of current) {
+              if (target && target !== content && isSphereContent(target)) {
+                const v = v3.create(target.x - content.x, target.y - content.y, target.z - content.z)
+                const a = v3.mulScalar(v3.normalize(v), target.mass / v3.lengthSq(v))
+                acceleration.x += a[0]
+                acceleration.y += a[1]
+                acceleration.z += a[2]
+              }
+            }
+            newContents.push(produce(content, draft => {
+              draft.x += content.speed.x * t
+              draft.y += content.speed.y * t
+              draft.z += content.speed.z * t
+              draft.speed.x += acceleration.x * t
+              draft.speed.y += acceleration.y * t
+              draft.speed.z += acceleration.z * t
+              draft.acceleration = acceleration
+            }))
+          }
+        }
+        setRunningState(newContents)
+      }
+      lastTime = time
+      requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }
+
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
@@ -251,7 +304,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
         <div style={{ position: 'absolute', inset: '0px', cursor }} onMouseMove={onMouseMove}>
           <Renderer
-            contents={state}
+            contents={current}
             x={transform.x}
             y={transform.y}
             scale={transform.scale}
@@ -265,14 +318,17 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
           />
         </div>
         <div style={{ position: 'relative' }}>
-          <span style={{
-            width: '20px',
-            height: '20px',
-            margin: '5px',
-            cursor: 'pointer',
-            display: 'inline-block',
-            color: creating ? 'red' : undefined,
-          }} onClick={startCreation}>create</span>
+          <Button style={{ color: creating ? 'red' : undefined }} onClick={startCreation}>create</Button>
+          <Button onClick={() => {
+            setState(draft => {
+              for (let i = state.length - 1; i >= 0; i--) {
+                if (!state[i]) {
+                  draft.splice(i, 1)
+                }
+              }
+            })
+          }}>compress</Button>
+          <Button onClick={run}>{running ? 'stop' : 'run'}</Button>
         </div>
       </div>
       {panel}

@@ -23,6 +23,7 @@ export type SphereContent = BaseContent<'sphere'> & Position3D & {
   mass: number
   speed: Position3D
   color: number
+  acceleration?: Position3D
 }
 
 export function isSphereContent(content: BaseContent): content is SphereContent {
@@ -42,6 +43,16 @@ export const sphereModel: Model<SphereContent> = {
         target.renderPolyline([content, endPoint], { strokeColor: content.color }),
         target.renderPolygon(arrowPoints, { fillColor: content.color, strokeWidth: 0 })
       )
+    }
+    if (content.acceleration) {
+      if (content.acceleration.x || content.acceleration.y) {
+        const p = getPointByLengthAndAngle(content, content.radius + getTwoPointsDistance(content.acceleration), Math.atan2(content.acceleration.y, content.acceleration.x))
+        const { arrowPoints, endPoint } = getArrow(content, p, 10, 15)
+        children.push(
+          target.renderPolyline([content, endPoint], { strokeColor: content.color, dashArray: [5] }),
+          target.renderPolygon(arrowPoints, { fillColor: content.color, strokeWidth: 0 })
+        )
+      }
     }
     return target.renderGroup(children)
   },
