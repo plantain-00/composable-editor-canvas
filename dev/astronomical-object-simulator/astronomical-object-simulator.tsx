@@ -5,6 +5,7 @@ import { bindMultipleRefs, Button, EditPoint, getPointByLengthAndAngle, getTwoPo
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
+import { Renderer3d } from './renderer-3d';
 
 enablePatches()
 
@@ -33,6 +34,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
   const selectedContents: { content: BaseContent, path: number[] }[] = []
+  const [yz, setYz] = React.useState(false)
+  const [is3D, setIs3D] = React.useState(false)
   let panel: JSX.Element | undefined
 
   const { line, onClick: startCreate, reset: resetCreate, onMove } = useLineClickCreate(
@@ -41,9 +44,9 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       setState(draft => {
         const sphere: SphereContent = {
           type: 'sphere',
-          x: c[0].x,
+          x: yz ? 0 : c[0].x,
           y: c[0].y,
-          z: 0,
+          z: yz ? c[0].x : 0,
           radius: getTwoPointsDistance(c[0], c[1]),
           speed: { x: 0, y: 0, z: 0 },
           mass: 1,
@@ -60,9 +63,9 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   if (line) {
     const sphere: SphereContent = {
       type: 'sphere',
-      x: line[0].x,
+      x: yz ? 0 : line[0].x,
       y: line[0].y,
-      z: 0,
+      z: yz ? line[0].x : 0,
       radius: getTwoPointsDistance(line[0], line[1]),
       speed: { x: 0, y: 0, z: 0 },
       mass: 1,
@@ -93,6 +96,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   }
   useKey((e) => e.key === 'Escape', reset, [setCreating])
   useKey((k) => k.code === 'Backspace' && !k.shiftKey && !metaKeyIfMacElseCtrlKey(k), () => {
+    if (is3D) return
     if (hovering !== undefined) {
       setState(draft => {
         draft[hovering] = undefined
@@ -109,18 +113,26 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     () => applyPatchFromSelf(previewPatches, previewReversePatches),
     (s) => {
       if (isSphereContent(s)) {
+        const contentX = yz ? s.z : s.x
         const editPoints: EditPoint<BaseContent>[] = [{
-          x: s.x,
+          x: contentX,
           y: s.y,
           cursor: 'move',
           update(c, { cursor }) {
             if (!isSphereContent(c)) return
-            c.x = cursor.x
+            if (yz) {
+              c.z = cursor.x
+            } else {
+              c.x = cursor.x
+            }
             c.y = cursor.y
           },
         }]
-        if (s.speed.x || s.speed.y) {
-          const p = getPointByLengthAndAngle(s, s.radius + getTwoPointsDistance(s.speed), Math.atan2(s.speed.y, s.speed.x))
+        const speedX = yz ? s.speed.z : s.speed.x
+        if (speedX || s.speed.y) {
+          const pos = { x: contentX, y: s.y }
+          const speedPos = { x: speedX, y: s.speed.y }
+          const p = getPointByLengthAndAngle(pos, s.radius + getTwoPointsDistance(speedPos), Math.atan2(s.speed.y, speedX))
           editPoints.push({
             x: p.x,
             y: p.y,
@@ -129,11 +141,15 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
               if (!isSphereContent(c)) return
               const d = getTwoPointsDistance(cursor, s)
               if (d <= s.radius) return
-              const x = cursor.x - s.x
+              const x = cursor.x - contentX
               const y = cursor.y - s.y
               const r = getTwoPointsDistance({ x, y })
               const scale = (r - s.radius) / r
-              c.speed.x = x * scale
+              if (yz) {
+                c.speed.z = x * scale
+              } else {
+                c.speed.x = x * scale
+              }
               c.speed.y = y * scale
             },
           })
@@ -159,7 +175,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const getContentByPosition = (p: Position) => {
     for (let i = 0; i < state.length; i++) {
       const content = state[i]
-      if (content && isSphereContent(content) && getTwoPointsDistance(content, p) <= content.radius) {
+      if (content && isSphereContent(content) && getTwoPointsDistance({ x: yz ? content.z : content.x, y: content.y }, p) <= content.radius) {
         return i
       }
     }
@@ -268,6 +284,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (is3D) return
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
@@ -280,6 +297,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     }
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (is3D) return
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
@@ -303,7 +321,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     <>
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
         <div style={{ position: 'absolute', inset: '0px', cursor }} onMouseMove={onMouseMove}>
-          <Renderer
+          {!is3D && <Renderer
             contents={current}
             x={transform.x}
             y={transform.y}
@@ -315,10 +333,13 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             selected={selected}
             previewPatches={previewPatches}
             onClick={onClick}
-          />
+            yz={yz}
+          />}
+          {is3D && <Renderer3d contents={current} />}
         </div>
         <div style={{ position: 'relative' }}>
-          <Button style={{ color: creating ? 'red' : undefined }} onClick={startCreation}>create</Button>
+          <Button onClick={() => setIs3D(!is3D)}>{is3D ? '3D' : '2D'}</Button>
+          {!is3D && <Button style={{ color: creating ? 'red' : undefined }} onClick={startCreation}>create</Button>}
           <Button onClick={() => {
             setState(draft => {
               for (let i = state.length - 1; i >= 0; i--) {
@@ -329,6 +350,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             })
           }}>compress</Button>
           <Button onClick={run}>{running ? 'stop' : 'run'}</Button>
+          {!is3D && <Button onClick={() => setYz(!yz)}>{yz ? 'y-z' : 'x-y'}</Button>}
         </div>
       </div>
       {panel}

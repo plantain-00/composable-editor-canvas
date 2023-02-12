@@ -3,6 +3,12 @@ Available via the MIT license.
 see: http://github.com/greggman/twgl.js for details */
 
 /**
+ * @license
+ * Copyright 2010-2023 Three.js Authors
+ * SPDX-License-Identifier: MIT
+ */
+
+/**
  * @license React
  * react-dom-server-legacy.browser.production.min.js
  *
