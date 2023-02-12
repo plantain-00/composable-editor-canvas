@@ -6,7 +6,8 @@ export interface BaseContent<T extends string = string> {
 
 export interface RenderContext<V> {
   target: ReactRenderTarget<V>
-  transformRadius: (radius: number) => number,
+  transformRadius: (radius: number) => number
+  yz: boolean
 }
 
 export type Model<T> = {
@@ -32,24 +33,30 @@ export function isSphereContent(content: BaseContent): content is SphereContent 
 
 export const sphereModel: Model<SphereContent> = {
   type: 'sphere',
-  render(content, { target, transformRadius }) {
+  render(content, { target, transformRadius, yz }) {
     const radius = transformRadius(content.radius)
-    const circle = target.renderCircle(content.x, content.y, radius, { fillColor: content.color, strokeWidth: 0 })
+    const contentX = yz ? content.z : content.x
+    const pos = { x: contentX, y: content.y }
+    const circle = target.renderCircle(contentX, content.y, radius, { fillColor: content.color, strokeWidth: 0 })
     const children = [circle]
-    if (content.speed.x || content.speed.y) {
-      const p = getPointByLengthAndAngle(content, content.radius + getTwoPointsDistance(content.speed), Math.atan2(content.speed.y, content.speed.x))
-      const { arrowPoints, endPoint } = getArrow(content, p, 10, 15)
+    const speedX = yz ? content.speed.z : content.speed.x
+    if (speedX || content.speed.y) {
+      const speedPos = { x: speedX, y: content.speed.y }
+      const p = getPointByLengthAndAngle(pos, content.radius + getTwoPointsDistance(speedPos), Math.atan2(content.speed.y, speedX))
+      const { arrowPoints, endPoint } = getArrow(pos, p, 10, 15)
       children.push(
-        target.renderPolyline([content, endPoint], { strokeColor: content.color }),
+        target.renderPolyline([pos, endPoint], { strokeColor: content.color }),
         target.renderPolygon(arrowPoints, { fillColor: content.color, strokeWidth: 0 })
       )
     }
     if (content.acceleration) {
-      if (content.acceleration.x || content.acceleration.y) {
-        const p = getPointByLengthAndAngle(content, content.radius + getTwoPointsDistance(content.acceleration), Math.atan2(content.acceleration.y, content.acceleration.x))
-        const { arrowPoints, endPoint } = getArrow(content, p, 10, 15)
+      const accelerationX = yz ? content.acceleration.z : content.acceleration.x
+      if (accelerationX || content.acceleration.y) {
+        const accelerationPos = { x: accelerationX, y: content.acceleration.y }
+        const p = getPointByLengthAndAngle(pos, content.radius + getTwoPointsDistance(accelerationPos), Math.atan2(content.acceleration.y, accelerationX))
+        const { arrowPoints, endPoint } = getArrow(pos, p, 10, 15)
         children.push(
-          target.renderPolyline([content, endPoint], { strokeColor: content.color, dashArray: [5] }),
+          target.renderPolyline([pos, endPoint], { strokeColor: content.color, dashArray: [5] }),
           target.renderPolygon(arrowPoints, { fillColor: content.color, strokeWidth: 0 })
         )
       }

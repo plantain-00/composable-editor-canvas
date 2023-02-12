@@ -14,6 +14,7 @@ export function Renderer(props: {
   hovering?: number
   selected?: number
   previewPatches: Patch[]
+  yz: boolean
 } & React.HTMLAttributes<HTMLOrSVGElement>) {
   const target: ReactRenderTarget<unknown> = reactSvgRenderTarget
   const children: unknown[] = []
@@ -26,6 +27,7 @@ export function Renderer(props: {
         children.push(ContentRender(content, {
           target,
           transformRadius: w => props.hovering === i || props.selected === i ? w + 1 : w,
+          yz: props.yz,
         }))
       }
     }
@@ -36,7 +38,7 @@ export function Renderer(props: {
     }
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
-      children.push(ContentRender(content, { target, transformRadius: w => w }))
+      children.push(ContentRender(content, { target, transformRadius: w => w, yz: props.yz }))
     }
   }
 
