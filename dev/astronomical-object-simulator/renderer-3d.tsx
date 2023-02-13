@@ -1,29 +1,35 @@
 import React from 'react';
 import * as THREE from 'three';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
-import { Nullable } from '../../src';
+import { Nullable, Position } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
-export function Renderer3d(props: {
+export const Renderer3d = React.forwardRef((props: {
   contents: readonly Nullable<BaseContent>[]
-}) {
-  const ref = React.useRef<HTMLCanvasElement | null>(null)
+} & React.HTMLAttributes<HTMLOrSVGElement>, ref: React.ForwardedRef<Renderer3dRef>) => {
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
+  const raycasterRef = React.useRef<THREE.Raycaster | null>(null)
+  const cameraRef = React.useRef<THREE.PerspectiveCamera | null>(null)
   const spheres = React.useRef<(THREE.Mesh | null)[]>([])
   const speeds = React.useRef<(THREE.Line | null)[]>([])
   const accelerations = React.useRef<(THREE.Line | null)[]>([])
   const lastContents = React.useRef<readonly Nullable<BaseContent>[]>(props.contents)
 
   React.useEffect(() => {
-    if (!ref.current) return
+    if (!canvasRef.current) return
 
-    const perspectiveCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
-    perspectiveCamera.position.z = 1000;
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
+    camera.position.z = 1000;
+    cameraRef.current = camera
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
 
     const axesHelper = new THREE.AxesHelper(100);
     scene.add(axesHelper);
+
+    const raycaster = new THREE.Raycaster();
+    raycasterRef.current = raycaster
 
     spheres.current = []
     speeds.current = []
@@ -62,19 +68,19 @@ export function Renderer3d(props: {
     const light2 = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(light2);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: ref.current });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     const resize = () => {
-      perspectiveCamera.aspect = window.innerWidth / window.innerHeight;
-      perspectiveCamera.updateProjectionMatrix();
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       controls.handleResize();
     }
     window.addEventListener('resize', resize);
 
-    const controls = new TrackballControls(perspectiveCamera, renderer.domElement);
+    const controls = new TrackballControls(camera, renderer.domElement);
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
     controls.panSpeed = 0.8;
@@ -84,7 +90,7 @@ export function Renderer3d(props: {
     function animate() {
       handle = requestAnimationFrame(animate);
       controls.update();
-      renderer.render(scene, perspectiveCamera);
+      renderer.render(scene, camera);
     }
     animate();
 
@@ -94,7 +100,7 @@ export function Renderer3d(props: {
         cancelAnimationFrame(handle)
       }
     }
-  }, [ref.current])
+  }, [canvasRef.current])
 
   React.useEffect(() => {
     for (let i = 0; i < props.contents.length; i++) {
@@ -137,10 +143,23 @@ export function Renderer3d(props: {
     lastContents.current = props.contents
   }, [props.contents])
 
+  React.useImperativeHandle<Renderer3dRef, Renderer3dRef>(ref, () => ({
+    getContentByPosition(position: Position) {
+      if (raycasterRef.current && cameraRef.current) {
+        raycasterRef.current.setFromCamera(position, cameraRef.current)
+        const intersect = raycasterRef.current.intersectObjects(spheres.current.filter((c): c is THREE.Mesh => !!c))[0]
+        if (intersect) {
+          return spheres.current.findIndex(c => c === intersect.object)
+        }
+      }
+      return
+    },
+  }), [])
+
   return (
-    <canvas ref={ref} />
+    <canvas ref={canvasRef} onClick={props.onClick} />
   )
-}
+})
 
 function getSpeedGeometry(content: SphereContent) {
   const start = new THREE.Vector3(content.x, content.y, content.z)
@@ -154,4 +173,8 @@ function getAccelerationGeometry(content: SphereContent) {
   const acceleration = new THREE.Vector3(content.acceleration?.x ?? 0, content.acceleration?.y ?? 0, content.acceleration?.z ?? 0)
   const end = start.clone().addScaledVector(acceleration.clone().normalize(), acceleration.length() + content.radius)
   return new THREE.BufferGeometry().setFromPoints([start, end])
+}
+
+export interface Renderer3dRef {
+  getContentByPosition(position: Position): number | undefined
 }

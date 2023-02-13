@@ -58,6 +58,7 @@ export function Combination4() {
     <div>
       <CircuitGraphEditor
         operator={me}
+        ref={editorRef}
         initialState={initialState}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
       />
