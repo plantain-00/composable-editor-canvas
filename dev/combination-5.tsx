@@ -58,6 +58,7 @@ export function Combination5() {
     <div>
       <AstronomicalObjectSimulator
         operator={me}
+        ref={editorRef}
         initialState={initialState}
         onApplyPatchesFromSelf={onApplyPatchesFromSelf}
       />

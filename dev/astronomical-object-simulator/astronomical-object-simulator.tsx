@@ -5,7 +5,7 @@ import { bindMultipleRefs, Button, EditPoint, getPointByLengthAndAngle, getTwoPo
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
-import { Renderer3d } from './renderer-3d';
+import { Renderer3d, Renderer3dRef } from './renderer-3d';
 
 enablePatches()
 
@@ -37,6 +37,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const [yz, setYz] = React.useState(false)
   const [is3D, setIs3D] = React.useState(false)
   let panel: JSX.Element | undefined
+  const renderer3dRef = React.useRef<Renderer3dRef | null>(null)
 
   const { line, onClick: startCreate, reset: resetCreate, onMove } = useLineClickCreate(
     creating,
@@ -284,7 +285,6 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    if (is3D) return
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
@@ -297,7 +297,14 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     }
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    if (is3D) return
+    if (is3D) {
+      const index = renderer3dRef.current?.getContentByPosition({
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: - (e.clientY / window.innerHeight) * 2 + 1
+      })
+      setHovering(index)
+      return
+    }
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
@@ -335,7 +342,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             onClick={onClick}
             yz={yz}
           />}
-          {is3D && <Renderer3d contents={current} />}
+          {is3D && <Renderer3d contents={current} ref={renderer3dRef} onClick={onClick} />}
         </div>
         <div style={{ position: 'relative' }}>
           <Button onClick={() => setIs3D(!is3D)}>{is3D ? '3D' : '2D'}</Button>

@@ -11,22 +11,17 @@ export function useAudioRecorder() {
   const [recording, setRecording] = React.useState(false)
   const chunks = React.useRef<Blob[]>([])
 
-  React.useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      mediaRecorder.current = new MediaRecorder(stream)
-      mediaRecorder.current.ondataavailable = (e) => {
-        chunks.current.push(e.data)
-      }
+  const start = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder.current = new MediaRecorder(stream)
+    mediaRecorder.current.ondataavailable = (e) => {
+      chunks.current.push(e.data)
+    }
 
-      const audioCtx = new AudioContext()
-      const source = audioCtx.createMediaStreamSource(stream)
-      analyser.current = audioCtx.createAnalyser()
-      source.connect(analyser.current)
-    })
-  }, [])
-
-  const start = () => {
-    if (!mediaRecorder.current) return
+    const audioCtx = new AudioContext()
+    const source = audioCtx.createMediaStreamSource(stream)
+    analyser.current = audioCtx.createAnalyser()
+    source.connect(analyser.current)
 
     const now = Date.now()
     timer.current = setInterval(() => {
@@ -52,6 +47,9 @@ export function useAudioRecorder() {
   const stop = () => {
     if (!mediaRecorder.current) return
     mediaRecorder.current.stop()
+    mediaRecorder.current.stream.getAudioTracks().forEach(track => {
+      track.stop()
+    })
 
     if (timer.current) {
       clearInterval(timer.current)
