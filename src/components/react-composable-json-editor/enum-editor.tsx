@@ -19,7 +19,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
             style={{ marginRight: '5px' }}
             disabled={props.readOnly}
             onChange={() => {
-              if (props.readOnly) {
+              if (props.readOnly || !props.setValue) {
                 return
               }
               const index = props.value.indexOf(e)
@@ -54,7 +54,7 @@ export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> 
         disabled={props.readOnly}
         value={props.value}
         onChange={(e) => {
-          if (props.readOnly) {
+          if (props.readOnly || !props.setValue) {
             return
           }
           let v: number | string = e.target.value
@@ -79,7 +79,7 @@ export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> 
             checked={props.value === e}
             style={{ marginRight: '5px' }}
             onChange={() => {
-              if (props.readOnly) {
+              if (props.readOnly || !props.setValue) {
                 return
               }
               props.setValue(e)

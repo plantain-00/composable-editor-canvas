@@ -38,6 +38,9 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const [is3D, setIs3D] = React.useState(false)
   let panel: JSX.Element | undefined
   const renderer3dRef = React.useRef<Renderer3dRef | null>(null)
+  const [running, setRunning, runningRef] = useRefState(false)
+  const [runningState, setRunningState, runningStateRef] = useRefState2<readonly Nullable<BaseContent>[]>()
+  const currentContents = runningState ?? state
 
   const { line, onClick: startCreate, reset: resetCreate, onMove } = useLineClickCreate(
     creating,
@@ -174,8 +177,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     setCreating(true)
   }
   const getContentByPosition = (p: Position) => {
-    for (let i = 0; i < state.length; i++) {
-      const content = state[i]
+    for (let i = 0; i < currentContents.length; i++) {
+      const content = currentContents[i]
       if (content && isSphereContent(content) && getTwoPointsDistance({ x: yz ? content.z : content.x, y: content.y }, p) <= content.radius) {
         return i
       }
@@ -183,12 +186,12 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     return undefined
   }
 
-  if (selected !== undefined) {
-    const content = state[selected]
+  if (selected !== undefined && !running) {
+    const content = currentContents[selected]
     if (content && isSphereContent(content)) {
       selectedContents.push({ content, path: [selected] })
       const update = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
-        const [, ...patches] = produceWithPatches(state, (draft) => {
+        const [, ...patches] = produceWithPatches(currentContents, (draft) => {
           const content = draft[selected]
           if (content) {
             update(content, draft)
@@ -196,26 +199,38 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
         })
         applyPatchFromSelf(...patches)
       }
+      const properties: Record<string, JSX.Element> = {
+        x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isSphereContent(c)) { c.x = v } })} />,
+        y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isSphereContent(c)) { c.y = v } })} />,
+        z: <NumberEditor value={content.z} setValue={(v) => update(c => { if (isSphereContent(c)) { c.z = v } })} />,
+        radius: <NumberEditor value={content.radius} setValue={(v) => update(c => { if (isSphereContent(c)) { c.radius = v } })} />,
+        mass: <NumberEditor value={content.mass} setValue={(v) => update(c => { if (isSphereContent(c)) { c.mass = v } })} />,
+        color: <NumberEditor type='color' value={content.color} setValue={(v) => update(c => { if (isSphereContent(c)) { c.color = v } })} />,
+        speed: <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={content.speed.x} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.x = v } })} />,
+            y: <NumberEditor value={content.speed.y} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.y = v } })} />,
+            z: <NumberEditor value={content.speed.z} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.z = v } })} />,
+          }}
+        />,
+      }
+      if (content.acceleration) {
+        properties.acceleration = <ObjectEditor
+          inline
+          properties={{
+            x: <NumberEditor value={content.acceleration.x} />,
+            y: <NumberEditor value={content.acceleration.y} />,
+            z: <NumberEditor value={content.acceleration.z} />,
+          }}
+        />
+      }
       panel = (
         <div style={{ position: 'absolute', right: '0px', top: '0px', bottom: '0px', width: '300px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
           <div>{selected}</div>
           <ObjectEditor
-            properties={{
-              x: <NumberEditor value={content.x} setValue={(v) => update(c => { if (isSphereContent(c)) { c.x = v } })} />,
-              y: <NumberEditor value={content.y} setValue={(v) => update(c => { if (isSphereContent(c)) { c.y = v } })} />,
-              z: <NumberEditor value={content.z} setValue={(v) => update(c => { if (isSphereContent(c)) { c.z = v } })} />,
-              radius: <NumberEditor value={content.radius} setValue={(v) => update(c => { if (isSphereContent(c)) { c.radius = v } })} />,
-              mass: <NumberEditor value={content.mass} setValue={(v) => update(c => { if (isSphereContent(c)) { c.mass = v } })} />,
-              color: <NumberEditor type='color' value={content.color} setValue={(v) => update(c => { if (isSphereContent(c)) { c.color = v } })} />,
-              speed: <ObjectEditor
-                inline
-                properties={{
-                  x: <NumberEditor value={content.speed.x} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.x = v } })} />,
-                  y: <NumberEditor value={content.speed.y} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.y = v } })} />,
-                  z: <NumberEditor value={content.speed.z} setValue={(v) => update(c => { if (isSphereContent(c)) { c.speed.z = v } })} />,
-                }}
-              />,
-            }}
+            readOnly={runningState !== undefined}
+            properties={properties}
           />
         </div>
       )
@@ -232,13 +247,13 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     },
   }), [applyPatchFromOtherOperators])
 
-  const [running, setRunning, runningRef] = useRefState(false)
-  const [runningState, setRunningState, runningStateRef] = useRefState2<readonly Nullable<BaseContent>[]>()
-  const current = runningState ?? state
+  const stop = () => {
+    setRunning(false)
+    setRunningState(undefined)
+  }
   const run = () => {
     if (runningRef.current) {
       setRunning(false)
-      setRunningState(undefined)
       return
     }
     setRunning(true)
@@ -329,7 +344,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
         <div style={{ position: 'absolute', inset: '0px', cursor }} onMouseMove={onMouseMove}>
           {!is3D && <Renderer
-            contents={current}
+            contents={currentContents}
             x={transform.x}
             y={transform.y}
             scale={transform.scale}
@@ -342,7 +357,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             onClick={onClick}
             yz={yz}
           />}
-          {is3D && <Renderer3d contents={current} ref={renderer3dRef} onClick={onClick} />}
+          {is3D && <Renderer3d contents={currentContents} ref={renderer3dRef} onClick={onClick} />}
         </div>
         <div style={{ position: 'relative' }}>
           <Button onClick={() => setIs3D(!is3D)}>{is3D ? '3D' : '2D'}</Button>
@@ -356,7 +371,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
               }
             })
           }}>compress</Button>
-          <Button onClick={run}>{running ? 'stop' : 'run'}</Button>
+          <Button onClick={run}>{running ? 'pause' : 'run'}</Button>
+          {runningState !== undefined && <Button onClick={stop}>stop</Button>}
           {!is3D && <Button onClick={() => setYz(!yz)}>{yz ? 'y-z' : 'x-y'}</Button>}
         </div>
       </div>

@@ -182,7 +182,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   }, [ref.current])
 
   const onComplete = () => {
-    if (!props.readOnly) {
+    if (!props.readOnly && props.setValue) {
       const value = state.join('')
       if (value !== props.value) {
         props.setValue(value)

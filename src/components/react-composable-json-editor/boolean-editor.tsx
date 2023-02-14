@@ -12,7 +12,7 @@ export function BooleanEditor(props: JsonEditorProps<boolean>): JSX.Element {
         disabled={props.readOnly}
         checked={props.value}
         onChange={(e) => {
-          if (!props.readOnly) {
+          if (!props.readOnly && props.setValue) {
             props.setValue(e.target.checked)
           }
         }}
