@@ -2,7 +2,7 @@ import * as React from "react"
 
 export interface JsonEditorProps<T> {
   value: T
-  setValue: (value: T) => void
+  setValue?: (value: T) => void
   style?: React.CSSProperties
   readOnly?: boolean
 }

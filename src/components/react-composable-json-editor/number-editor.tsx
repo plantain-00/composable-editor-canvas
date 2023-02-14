@@ -13,7 +13,7 @@ export function NumberEditor(props: JsonEditorProps<number> & {
     setText(props.type === 'color' ? getColorString(props.value) : props.value.toString())
   }, [props.value])
   const onComplete = () => {
-    if (props.readOnly) {
+    if (props.readOnly || !props.setValue) {
       return
     }
     let value: number

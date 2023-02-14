@@ -13,7 +13,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
     setText(props.value)
   }, [props.value])
   const onComplete = () => {
-    if (!props.readOnly && text !== props.value) {
+    if (!props.readOnly && props.setValue && text !== props.value) {
       props.setValue(text)
     }
   }
@@ -64,7 +64,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
         disabled={props.readOnly}
         type={props.type ?? 'text'}
         onChange={(e) => {
-          if (props.readOnly) {
+          if (props.readOnly || !props.setValue) {
             return
           }
           setText(e.target.value)
