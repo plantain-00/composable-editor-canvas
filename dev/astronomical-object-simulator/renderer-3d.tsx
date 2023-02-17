@@ -1,10 +1,12 @@
 import React from 'react';
 import * as THREE from 'three';
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
 import { Nullable, Position } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
+  x: number
+  y: number
+  scale: number
   contents: readonly Nullable<BaseContent>[]
 } & React.HTMLAttributes<HTMLOrSVGElement>, ref: React.ForwardedRef<Renderer3dRef>) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
@@ -19,7 +21,7 @@ export const Renderer3d = React.forwardRef((props: {
     if (!canvasRef.current) return
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
-    camera.position.z = 1000;
+    updateCameraPosition(camera, props.x, props.y, props.scale)
     cameraRef.current = camera
 
     const scene = new THREE.Scene();
@@ -76,20 +78,12 @@ export const Renderer3d = React.forwardRef((props: {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      controls.handleResize();
     }
     window.addEventListener('resize', resize);
-
-    const controls = new TrackballControls(camera, renderer.domElement);
-    controls.rotateSpeed = 1.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.keys = ['KeyA', 'KeyS', 'KeyD'];
 
     let handle: number
     function animate() {
       handle = requestAnimationFrame(animate);
-      controls.update();
       renderer.render(scene, camera);
     }
     animate();
@@ -143,6 +137,12 @@ export const Renderer3d = React.forwardRef((props: {
     lastContents.current = props.contents
   }, [props.contents])
 
+  React.useEffect(() => {
+    if (cameraRef.current) {
+      updateCameraPosition(cameraRef.current, props.x, props.y, props.scale)
+    }
+  }, [props.x, props.y, props.scale])
+
   React.useImperativeHandle<Renderer3dRef, Renderer3dRef>(ref, () => ({
     getContentByPosition(position: Position) {
       if (raycasterRef.current && cameraRef.current) {
@@ -160,6 +160,12 @@ export const Renderer3d = React.forwardRef((props: {
     <canvas ref={canvasRef} onClick={props.onClick} />
   )
 })
+
+function updateCameraPosition(camera: THREE.Camera, x: number, y: number, scale: number) {
+  camera.position.x = -x
+  camera.position.y = y
+  camera.position.z = 1000 / scale
+}
 
 function getSpeedGeometry(content: SphereContent) {
   const start = new THREE.Vector3(content.x, content.y, content.z)

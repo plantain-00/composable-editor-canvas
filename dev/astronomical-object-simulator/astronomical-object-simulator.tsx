@@ -357,7 +357,14 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             onClick={onClick}
             yz={yz}
           />}
-          {is3D && <Renderer3d contents={currentContents} ref={renderer3dRef} onClick={onClick} />}
+          {is3D && <Renderer3d
+            ref={renderer3dRef}
+            x={transform.x}
+            y={transform.y}
+            scale={transform.scale}
+            contents={currentContents}
+            onClick={onClick}
+          />}
         </div>
         <div style={{ position: 'relative' }}>
           <Button onClick={() => setIs3D(!is3D)}>{is3D ? '3D' : '2D'}</Button>
