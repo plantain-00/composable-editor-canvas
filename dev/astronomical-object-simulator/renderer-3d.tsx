@@ -1,12 +1,14 @@
 import React from 'react';
 import * as THREE from 'three';
-import { Nullable, Position } from '../../src';
+import { Nullable, Position, rotatePositionByCenter } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
   x: number
   y: number
   scale: number
+  rotateX: number
+  rotateY: number
   contents: readonly Nullable<BaseContent>[]
 } & React.HTMLAttributes<HTMLOrSVGElement>, ref: React.ForwardedRef<Renderer3dRef>) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
@@ -21,7 +23,7 @@ export const Renderer3d = React.forwardRef((props: {
     if (!canvasRef.current) return
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
-    updateCameraPosition(camera, props.x, props.y, props.scale)
+    updateCameraPosition(camera, props.x, props.y, props.scale, props.rotateX, props.rotateY)
     cameraRef.current = camera
 
     const scene = new THREE.Scene();
@@ -69,6 +71,9 @@ export const Renderer3d = React.forwardRef((props: {
     scene.add(light1);
     const light2 = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(light2);
+    const light3 = new THREE.DirectionalLight(0xffffff, 0.5);
+    light3.position.set(0, 0, -1);
+    scene.add(light3);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -139,9 +144,9 @@ export const Renderer3d = React.forwardRef((props: {
 
   React.useEffect(() => {
     if (cameraRef.current) {
-      updateCameraPosition(cameraRef.current, props.x, props.y, props.scale)
+      updateCameraPosition(cameraRef.current, props.x, props.y, props.scale, props.rotateX, props.rotateY)
     }
-  }, [props.x, props.y, props.scale])
+  }, [props.x, props.y, props.scale, props.rotateX, props.rotateY])
 
   React.useImperativeHandle<Renderer3dRef, Renderer3dRef>(ref, () => ({
     getContentByPosition(position: Position) {
@@ -157,14 +162,30 @@ export const Renderer3d = React.forwardRef((props: {
   }), [])
 
   return (
-    <canvas ref={canvasRef} onClick={props.onClick} />
+    <canvas ref={canvasRef} onClick={props.onClick} onMouseDown={props.onMouseDown} />
   )
 })
 
-function updateCameraPosition(camera: THREE.Camera, x: number, y: number, scale: number) {
-  camera.position.x = -x
+function updateCameraPosition(camera: THREE.Camera, x: number, y: number, scale: number, rotateX: number, rotateY: number) {
+  x = -x
+  let z = 1000 / scale
+  const a = rotatePositionByCenter({ x, y: z }, { x: 0, y: 0 }, -rotateX * 0.3)
+  x = a.x
+  z = a.y
+  rotateY *= -0.3
+  if (rotateY > 89) {
+    rotateY = 89
+  } else if (rotateY < -89) {
+    rotateY = -89
+  }
+  const b = rotatePositionByCenter({ x: z, y }, { x: 0, y: 0 }, rotateY)
+  z = b.x
+  y = b.y
+  camera.position.x = x
   camera.position.y = y
-  camera.position.z = 1000 / scale
+  camera.position.z = z
+  console.info(Math.round(x), Math.round(y), Math.round(z), Math.round(rotateX), Math.round(rotateY))
+  camera.lookAt(new THREE.Vector3(0, 0, 0))
 }
 
 function getSpeedGeometry(content: SphereContent) {

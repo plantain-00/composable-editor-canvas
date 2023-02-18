@@ -1,7 +1,7 @@
 import React from 'react';
 import { produce, Patch, enablePatches, produceWithPatches } from 'immer'
 import { v3 } from 'twgl.js'
-import { bindMultipleRefs, Button, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, Button, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
@@ -25,6 +25,15 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
       setX(result.setX)
       setY(result.setY)
+    }
+  })
+  const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+    if (is3D) {
+      setRotate((v) => ({ x: v.x + offset.x, y: v.y + offset.y }))
+    } else {
+      setX((v) => v + offset.x)
+      setY((v) => v + offset.y)
     }
   })
   const [hovering, setHovering] = React.useState<number>()
@@ -79,8 +88,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   }
 
   const transform: Transform = {
-    x,
-    y,
+    x: is3D ? x : x + offset.x,
+    y: is3D ? y : y + offset.y,
     scale,
     center: {
       x: width / 2,
@@ -299,6 +308,14 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     requestAnimationFrame(step)
   }
 
+  const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    const viewportPosition = { x: e.clientX, y: e.clientY }
+    if (e.buttons === 4) {
+      onStartMoveCanvas(viewportPosition)
+    } else if (!creating && !editPoint && hovering === undefined) {
+      onStartMoveCanvas(viewportPosition)
+    }
+  })
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
@@ -337,6 +354,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     cursor = 'pointer'
   } else if (creating) {
     cursor = 'crosshair'
+  } else {
+    cursor = 'grab'
   }
 
   return (
@@ -355,6 +374,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             selected={selected}
             previewPatches={previewPatches}
             onClick={onClick}
+            onMouseDown={onMouseDown}
             yz={yz}
           />}
           {is3D && <Renderer3d
@@ -362,8 +382,11 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             x={transform.x}
             y={transform.y}
             scale={transform.scale}
+            rotateX={offset.x + rotate.x}
+            rotateY={offset.y + rotate.y}
             contents={currentContents}
             onClick={onClick}
+            onMouseDown={onMouseDown}
           />}
         </div>
         <div style={{ position: 'relative' }}>
@@ -384,6 +407,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
         </div>
       </div>
       {panel}
+      {moveCanvasMask}
     </>
   )
 })
