@@ -54,6 +54,41 @@ export function isSamePoint(p1: Position, p2: Position) {
   return equals(p1.x, p2.x) && equals(p1.y, p2.y)
 }
 
+export function deepEquals<T>(a: T, b: T): boolean {
+  if (a === b) return true
+
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b)) return false
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEquals(a[i], b[i])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  if (isRecord(a)) {
+    if (!isRecord(b)) return false
+    const keys = Object.keys(a)
+    if (keys.length !== Object.keys(b).length) return false
+    for (const key of keys) {
+      if (!deepEquals(a[key], b[key])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  if (typeof a === 'number') {
+    if (typeof b !== 'number') return false
+    if (isNaN(a) && isNaN(b)) return true
+    return equals(a, b)
+  }
+
+  return false
+}
+
 /**
  * @public
  */
@@ -1278,13 +1313,15 @@ export function polygonToPolyline(points: Position[]) {
  * @public
  */
 export function arcToPolyline(content: Arc, angleDelta: number) {
-  return getAngleRange(content, angleDelta).map(i => {
-    const angle = i * Math.PI / 180
-    return {
-      x: content.x + content.r * Math.cos(angle),
-      y: content.y + content.r * Math.sin(angle),
-    }
-  })
+  return getAngleRange(content, angleDelta).map(i => getArcPointAtAngle(content, i))
+}
+
+export function getArcPointAtAngle(content: Arc, angle: number) {
+  angle = angle * Math.PI / 180
+  return {
+    x: content.x + content.r * Math.cos(angle),
+    y: content.y + content.r * Math.sin(angle),
+  }
 }
 
 function getAngleRange(range: AngleRange, angleDelta: number) {
@@ -1339,17 +1376,18 @@ export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
  * @public
  */
 export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
-  const center = { x: content.cx, y: content.cy }
-  return getAngleRange(content, angleDelta).map(i => {
-    const angle = i * Math.PI / 180
-    const x = content.cx + content.rx * Math.cos(angle)
-    const y = content.cy + content.ry * Math.sin(angle)
-    if (content.angle) {
-      return rotatePosition({ x, y }, center, content.angle * Math.PI / 180)
-    } else {
-      return { x, y }
-    }
-  })
+  return getAngleRange(content, angleDelta).map(i => getEllipseArcPointAtAngle(content, i))
+}
+
+export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {
+  angle = angle * Math.PI / 180
+  const x = content.cx + content.rx * Math.cos(angle)
+  const y = content.cy + content.ry * Math.sin(angle)
+  if (content.angle) {
+    return rotatePosition({ x, y }, { x: content.cx, y: content.cy }, content.angle * Math.PI / 180)
+  } else {
+    return { x, y }
+  }
 }
 
 /**

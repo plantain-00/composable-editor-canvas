@@ -360,6 +360,8 @@ export const CADEditor = React.forwardRef((props: {
     scaleWithViewport,
     strokeStyleId,
     fillStyleId,
+    editingContent,
+    props.backgroundColor,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
 
@@ -480,10 +482,12 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    if (operations.type !== 'select') return
     undo(e)
     setSelected()
   })
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    if (operations.type !== 'select') return
     redo(e)
     setSelected()
   })

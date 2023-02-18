@@ -1203,7 +1203,9 @@ function getModel(ctx) {
       },
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
-      updateRefId: ctx.updateStrokeAndFillRefIds
+      updateRefId: ctx.updateStrokeAndFillRefIds,
+      getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
+      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle)
     }
   ];
 }
@@ -2793,7 +2795,9 @@ function getModel(ctx) {
       },
       isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
-      updateRefId: ctx.updateStrokeAndFillRefIds
+      updateRefId: ctx.updateStrokeAndFillRefIds,
+      getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
+      getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle)
     }
   ];
 }
@@ -4206,7 +4210,9 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, LineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => content.points[0],
+    getEndPoint: (content) => content.points[content.points.length - 1]
   };
   return [
     lineModel,
@@ -8660,6 +8666,148 @@ export {
   getCommand,
   getModel,
   isTimeAxisContent
+};
+`,
+`// dev/cad-editor/plugins/trim.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { viewBox: "64 64 896 896", width: "1em", height: "1em", fill: "currentColor" }, /* @__PURE__ */ React.createElement("path", { d: "M567.1 512l318.5-319.3c5-5 1.5-13.7-5.6-13.7h-90.5c-2.1 0-4.2.8-5.6 2.3l-273.3 274-90.2-90.5c12.5-22.1 19.7-47.6 19.7-74.8 0-83.9-68.1-152-152-152s-152 68.1-152 152 68.1 152 152 152c27.7 0 53.6-7.4 75.9-20.3l90 90.3-90.1 90.3A151.04 151.04 0 00288 582c-83.9 0-152 68.1-152 152s68.1 152 152 152 152-68.1 152-152c0-27.2-7.2-52.7-19.7-74.8l90.2-90.5 273.3 274c1.5 1.5 3.5 2.3 5.6 2.3H880c7.1 0 10.7-8.6 5.6-13.7L567.1 512zM288 370c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80zm0 444c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z" }));
+  return {
+    name: "trim",
+    useCommand({ onEnd, type, selected, backgroundColor, contents }) {
+      var _a, _b;
+      const [candidates, setCandidates] = React.useState([]);
+      const [current, setCurrent] = React.useState();
+      const { state, setState, resetHistory, undo, redo } = ctx.useUndoRedo([]);
+      React.useEffect(() => {
+        var _a2, _b2;
+        if (type) {
+          const allContents = [];
+          for (let i = 0; i < selected.length; i++) {
+            const content = selected[i].content;
+            let intersectionPoints = [];
+            for (let j = 0; j < selected.length; j++) {
+              const c = selected[j].content;
+              if (c && i !== j) {
+                const p = i < j ? [c, content] : [content, c];
+                intersectionPoints.push(...ctx.getIntersectionPoints(...p, contents));
+              }
+            }
+            intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
+            if (intersectionPoints.length > 0) {
+              const result = (_b2 = (_a2 = ctx.getContentModel(content)) == null ? void 0 : _a2.break) == null ? void 0 : _b2.call(_a2, content, intersectionPoints);
+              if (result) {
+                allContents.push({ content, children: result });
+              }
+            }
+          }
+          setCandidates(allContents);
+        }
+      }, [type]);
+      const assistentContents = [];
+      if (current && ctx.isStrokeContent(current.content)) {
+        assistentContents.push({
+          ...current.content,
+          strokeWidth: ((_a = current.content.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(current.content)) + 2,
+          strokeColor: backgroundColor,
+          trueStrokeColor: true
+        });
+      }
+      for (const { children } of state) {
+        for (const child of children) {
+          if (ctx.isStrokeContent(child)) {
+            assistentContents.push({
+              ...child,
+              strokeWidth: ((_b = child.strokeWidth) != null ? _b : ctx.getDefaultStrokeWidth(child)) + 2,
+              strokeColor: backgroundColor,
+              trueStrokeColor: true
+            });
+          }
+        }
+      }
+      const reset = () => {
+        setCandidates([]);
+        setCurrent(void 0);
+        resetHistory();
+      };
+      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates, setCurrent, resetHistory]);
+      ctx.useKey((k) => k.code === "KeyZ" && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo);
+      ctx.useKey((k) => k.code === "KeyZ" && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo);
+      ctx.useKey((e) => e.key === "Enter", () => {
+        const removedIndexes = [];
+        const newContents = [];
+        for (const { content, children } of state) {
+          const parentModel = ctx.getContentModel(content);
+          if (parentModel == null ? void 0 : parentModel.break) {
+            let points = [];
+            for (const child of children) {
+              const model = ctx.getContentModel(child);
+              if ((model == null ? void 0 : model.getStartPoint) && model.getEndPoint) {
+                points.push(model.getStartPoint(child), model.getEndPoint(child));
+              }
+            }
+            points = ctx.deduplicatePosition(points);
+            const r = parentModel.break(content, points);
+            if (r) {
+              removedIndexes.push(ctx.getContentIndex(content, contents));
+              newContents.push(...r.filter((c) => children.every((f) => !ctx.deepEquals(f, c))));
+            }
+          }
+        }
+        onEnd({
+          updateContents: (contents2) => {
+            for (const index of removedIndexes) {
+              contents2[index] = void 0;
+            }
+            contents2.push(...newContents);
+          }
+        });
+        reset();
+      }, [reset]);
+      return {
+        onStart() {
+          if (current) {
+            const index = state.findIndex((s) => s.content === current.parent);
+            setState((draft) => {
+              if (index >= 0) {
+                draft[index].children.push(current.content);
+              } else {
+                draft.push({ content: current.parent, children: [current.content] });
+              }
+            });
+          }
+        },
+        onMove(p) {
+          var _a2, _b2;
+          for (const candidate of candidates) {
+            for (const child of candidate.children) {
+              const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+              if (geometries) {
+                for (const line of geometries.lines) {
+                  if (ctx.getPointAndLineSegmentMinimumDistance(p, line[0], line[1]) < 5) {
+                    setCurrent({ content: child, parent: candidate.content });
+                    return;
+                  }
+                }
+              }
+            }
+          }
+          setCurrent(void 0);
+        },
+        assistentContents,
+        reset
+      };
+    },
+    contentSelectable(content, contents) {
+      const model = ctx.getContentModel(content);
+      return (model == null ? void 0 : model.break) !== void 0 && !ctx.contentIsReferenced(content, contents);
+    },
+    hotkey: "TR",
+    icon
+  };
+}
+export {
+  getCommand
 };
 `,
 `// dev/cad-editor/plugins/viewport.plugin.tsx

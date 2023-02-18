@@ -51,7 +51,10 @@ export function Renderer(props: {
     return color === 0xffffff ? 0 : color
   }
   const getStrokeColor = (content: StrokeFields & FillFields): number | undefined => {
-    return content.strokeColor !== undefined ? transformColor(content.strokeColor) : (hasFill(content) ? undefined : defaultStrokeColor)
+    if (content.strokeColor !== undefined) {
+      return content.trueStrokeColor ? content.strokeColor : transformColor(content.strokeColor)
+    }
+    return hasFill(content) ? undefined : defaultStrokeColor
   }
   const getFillColor = (content: FillFields) => {
     return content.fillColor !== undefined ? transformColor(content.fillColor) : undefined

@@ -99,6 +99,8 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, LineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => content.points[0],
+    getEndPoint: (content) => content.points[content.points.length - 1],
   }
   return [
     lineModel,

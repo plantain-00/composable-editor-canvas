@@ -37,13 +37,15 @@ export interface StrokeFields {
   strokeColor?: number
   strokeWidth?: number
   strokeStyleId?: number | BaseContent
+  trueStrokeColor?: boolean
 }
 
 export const StrokeFields = {
   dashArray: optional([minimum(0, number)]),
   strokeColor: optional(minimum(0, number)),
   strokeWidth: optional(minimum(0, number)),
-  strokeStyleId: optional(or(number, Content))
+  strokeStyleId: optional(or(number, Content)),
+  trueStrokeColor: optional(boolean),
 }
 
 export interface FillFields {
@@ -173,6 +175,8 @@ export type Model<T> = Partial<FeatureModels> & {
   isValid?(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position): boolean
+  getStartPoint?(content: T): Position
+  getEndPoint?(content: T): Position
 }
 
 export interface RenderContext<V> {
@@ -382,6 +386,7 @@ export function getStrokeContentPropertyPanel(
       <BooleanEditor value={content.strokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v ? 0 : undefined } })} />,
       content.strokeColor !== undefined ? <NumberEditor type='color' value={content.strokeColor} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeColor = v } })} /> : undefined,
     ],
+    trueStrokeColor: <BooleanEditor value={content.trueStrokeColor !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.trueStrokeColor = v ? true : undefined } })} />,
     strokeWidth: [
       <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} />,
       content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,

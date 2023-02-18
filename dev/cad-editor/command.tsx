@@ -17,6 +17,8 @@ export interface Command extends CommandType {
     scale: number,
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
+    contents: readonly Nullable<BaseContent>[],
+    backgroundColor: number,
   }): {
     onStart(p: Position, target?: SnapTarget): void
     onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
@@ -72,6 +74,8 @@ export function useCommands(
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
+  contents: readonly Nullable<BaseContent>[],
+  backgroundColor: number,
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
@@ -106,6 +110,8 @@ export function useCommands(
         scale,
         strokeStyleId,
         fillStyleId,
+        contents,
+        backgroundColor,
       })
       if (!type) return
       if (mask) {
