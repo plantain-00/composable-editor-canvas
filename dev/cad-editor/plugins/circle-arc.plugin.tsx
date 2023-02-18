@@ -393,6 +393,8 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
+      getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
+      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
     } as model.Model<ArcContent>,
   ]
 }
