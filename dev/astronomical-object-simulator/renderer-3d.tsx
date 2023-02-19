@@ -1,6 +1,6 @@
 import React from 'react';
 import * as THREE from 'three';
-import { Nullable, Position, rotatePositionByCenter } from '../../src';
+import { Nullable, Position, updateCamera } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
@@ -9,11 +9,15 @@ export const Renderer3d = React.forwardRef((props: {
   scale: number
   rotateX: number
   rotateY: number
+  width: number
+  height: number
   contents: readonly Nullable<BaseContent>[]
 } & React.HTMLAttributes<HTMLOrSVGElement>, ref: React.ForwardedRef<Renderer3dRef>) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
-  const raycasterRef = React.useRef<THREE.Raycaster | null>(null)
-  const cameraRef = React.useRef<THREE.PerspectiveCamera | null>(null)
+  const raycasterRef = React.useRef<THREE.Raycaster>()
+  const cameraRef = React.useRef<THREE.PerspectiveCamera>()
+  const rendererRef = React.useRef<THREE.WebGLRenderer>()
+  const render = React.useRef<() => void>()
   const spheres = React.useRef<(THREE.Mesh | null)[]>([])
   const speeds = React.useRef<(THREE.Line | null)[]>([])
   const accelerations = React.useRef<(THREE.Line | null)[]>([])
@@ -22,7 +26,7 @@ export const Renderer3d = React.forwardRef((props: {
   React.useEffect(() => {
     if (!canvasRef.current) return
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 20000);
+    const camera = new THREE.PerspectiveCamera(60, props.width / props.height, 0.1, 20000);
     updateCameraPosition(camera, props.x, props.y, props.scale, props.rotateX, props.rotateY)
     cameraRef.current = camera
 
@@ -77,29 +81,42 @@ export const Renderer3d = React.forwardRef((props: {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(props.width, props.height);
+    rendererRef.current = renderer
 
-    const resize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    window.addEventListener('resize', resize);
-
-    let handle: number
-    function animate() {
-      handle = requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
+    render.current = () => renderer.render(scene, camera)
 
     return () => {
-      window.removeEventListener('resize', resize);
-      if (handle) {
-        cancelAnimationFrame(handle)
+      renderer.dispose()
+      axesHelper.dispose()
+      for (const light of [light1, light2, light3]) {
+        light.dispose()
+      }
+      for (const mesh of [...spheres.current, ...speeds.current, ...accelerations.current]) {
+        if (mesh) {
+          mesh.geometry.dispose()
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach(m => {
+              m.dispose()
+            })
+          } else {
+            mesh.material.dispose()
+          }
+        }
       }
     }
   }, [canvasRef.current])
+
+  React.useEffect(() => {
+    if (cameraRef.current) {
+      cameraRef.current.aspect = props.width / props.height
+      cameraRef.current.updateProjectionMatrix()
+    }
+    if (rendererRef.current) {
+      rendererRef.current.setSize(props.width, props.height)
+    }
+    render.current?.()
+  }, [props.width, props.height])
 
   React.useEffect(() => {
     for (let i = 0; i < props.contents.length; i++) {
@@ -140,11 +157,13 @@ export const Renderer3d = React.forwardRef((props: {
       }
     }
     lastContents.current = props.contents
+    render.current?.()
   }, [props.contents])
 
   React.useEffect(() => {
     if (cameraRef.current) {
       updateCameraPosition(cameraRef.current, props.x, props.y, props.scale, props.rotateX, props.rotateY)
+      render.current?.()
     }
   }, [props.x, props.y, props.scale, props.rotateX, props.rotateY])
 
@@ -167,24 +186,9 @@ export const Renderer3d = React.forwardRef((props: {
 })
 
 function updateCameraPosition(camera: THREE.Camera, x: number, y: number, scale: number, rotateX: number, rotateY: number) {
-  x = -x
-  let z = 1000 / scale
-  const a = rotatePositionByCenter({ x, y: z }, { x: 0, y: 0 }, -rotateX * 0.3)
-  x = a.x
-  z = a.y
-  rotateY *= -0.3
-  if (rotateY > 89) {
-    rotateY = 89
-  } else if (rotateY < -89) {
-    rotateY = -89
-  }
-  const b = rotatePositionByCenter({ x: z, y }, { x: 0, y: 0 }, rotateY)
-  z = b.x
-  y = b.y
-  camera.position.x = x
-  camera.position.y = y
-  camera.position.z = z
-  console.info(Math.round(x), Math.round(y), Math.round(z), Math.round(rotateX), Math.round(rotateY))
+  const { position, up } = updateCamera(-x, y, 1000 / scale, -0.3 * rotateX, -0.3 * rotateY)
+  camera.position.set(position.x, position.y, position.z)
+  camera.up.set(up.x, up.y, up.z)
   camera.lookAt(new THREE.Vector3(0, 0, 0))
 }
 
