@@ -19,7 +19,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     onApplyPatchesFromSelf: props.onApplyPatchesFromSelf,
   })
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>()
-  const { scale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
+  const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
@@ -101,6 +101,13 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   })
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
     redo(e)
+  })
+  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    setScale(1)
+    setX(0)
+    setY(0)
+    setRotate({ x: 0, y: 0 })
+    e.preventDefault()
   })
   const reset = () => {
     setCreating(false)
@@ -382,6 +389,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             x={transform.x}
             y={transform.y}
             scale={transform.scale}
+            width={width}
+            height={height}
             rotateX={offset.x + rotate.x}
             rotateY={offset.y + rotate.y}
             contents={currentContents}
