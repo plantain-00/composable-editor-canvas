@@ -29,8 +29,8 @@ export function getPointByLengthAndDirection(
 /**
  * @public
  */
-export function isZero(value: number) {
-  return Math.abs(value) < 0.00000001
+export function isZero(value: number, delta = 0.00000001) {
+  return Math.abs(value) < delta
 }
 
 /**

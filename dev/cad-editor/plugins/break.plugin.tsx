@@ -26,7 +26,7 @@ export function getCommand(ctx: PluginContext): Command {
           }
           intersectionPoints = ctx.deduplicatePosition(intersectionPoints)
           if (intersectionPoints.length > 0) {
-            const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints)
+            const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints, contents)
             if (result) {
               newContents.push(...result)
               contents[index] = undefined

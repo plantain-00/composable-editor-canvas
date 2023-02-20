@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -151,7 +151,7 @@ export type Model<T> = Partial<FeatureModels> & {
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
-  break?(content: Omit<T, 'type'>, intersectionPoints: Position[]): BaseContent[] | undefined
+  break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   render?<V>(content: T, ctx: RenderContext<V>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
@@ -959,7 +959,7 @@ export function getContainerRotate(content: ContainerFields, center: Position, a
   })
 }
 export function getContainerExplode(content: ContainerFields) {
-  return content.contents.filter((c): c is BaseContent => !!c)
+  return getContentsExplode(content.contents)
 }
 export function getContainerMirror(content: ContainerFields, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]) {
   content.contents.forEach((c) => {
@@ -975,6 +975,28 @@ export function getContainerRender<V>(content: ContainerFields, ctx: RenderConte
 }
 export function getContainerRenderIfSelected<V>(content: ContainerFields, ctx: RenderIfSelectedContext<V>) {
   return renderContainerIfSelected(content, ctx)
+}
+export function getContentsExplode(array: Nullable<BaseContent>[]) {
+  return array.filter((c): c is BaseContent => !!c)
+}
+export function getContentsBreak(array: Nullable<BaseContent>[], points: Position[], contents: readonly Nullable<BaseContent>[]) {
+  const result: BaseContent[] = []
+  for (const c of array) {
+    if (c) {
+      const model = getContentModel(c)
+      if (model?.break && model.getGeometries) {
+        const geometries = model.getGeometries(c, contents)
+        const s = points.filter(p => geometries.lines.some(line => isZero(getPointAndLineSegmentMinimumDistance(p, ...line), 0.1)))
+        const r = model.break(c, s, contents)
+        if (r) {
+          result.push(...r)
+        } else {
+          result.push(c)
+        }
+      }
+    }
+  }
+  return result
 }
 
 export function getStrokeRefIds(content: StrokeFields) {

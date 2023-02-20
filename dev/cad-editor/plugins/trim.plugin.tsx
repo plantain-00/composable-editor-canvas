@@ -32,7 +32,7 @@ export function getCommand(ctx: PluginContext): Command {
             }
             intersectionPoints = ctx.deduplicatePosition(intersectionPoints)
             if (intersectionPoints.length > 0) {
-              const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints)
+              const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints, contents)
               if (result) {
                 allContents.push({ content, children: result })
               }
@@ -85,7 +85,7 @@ export function getCommand(ctx: PluginContext): Command {
               }
             }
             points = ctx.deduplicatePosition(points)
-            const r = parentModel.break(content, points)
+            const r = parentModel.break(content, points, contents)
             if (r) {
               removedIndexes.push(ctx.getContentIndex(content, contents))
               newContents.push(...r.filter(c => children.every(f => !ctx.deepEquals(f, c))))
