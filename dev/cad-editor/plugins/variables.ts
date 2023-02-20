@@ -620,7 +620,7 @@ function getCommand(ctx) {
           }
           intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
           if (intersectionPoints.length > 0) {
-            const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.break) == null ? void 0 : _d.call(_c, content, intersectionPoints);
+            const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.break) == null ? void 0 : _d.call(_c, content, intersectionPoints, contents);
             if (result) {
               newContents.push(...result);
               contents[index] = void 0;
@@ -5606,7 +5606,10 @@ function getModel(ctx) {
       content.center.y += offset.y;
     },
     explode(content, contents) {
-      return getAllContentsFromCache(content, contents).filter((c) => !!c);
+      return ctx.getContentsExplode(getAllContentsFromCache(content, contents));
+    },
+    break(content, points, contents) {
+      return ctx.getContentsBreak(getAllContentsFromCache(content, contents), points, contents);
     },
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx));
@@ -6339,7 +6342,10 @@ function getModel(ctx) {
     ...ctx.containerModel,
     move: ctx.getContainerMove,
     explode(content) {
-      return getAllContentsFromCache(content).filter((c) => !!c);
+      return ctx.getContentsExplode(getAllContentsFromCache(content));
+    },
+    break(content, points, contents) {
+      return ctx.getContentsBreak(getAllContentsFromCache(content), points, contents);
     },
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content), variableValues: content.variableValues }, renderCtx));
@@ -8695,7 +8701,7 @@ function getCommand(ctx) {
             }
             intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
             if (intersectionPoints.length > 0) {
-              const result = (_b2 = (_a2 = ctx.getContentModel(content)) == null ? void 0 : _a2.break) == null ? void 0 : _b2.call(_a2, content, intersectionPoints);
+              const result = (_b2 = (_a2 = ctx.getContentModel(content)) == null ? void 0 : _a2.break) == null ? void 0 : _b2.call(_a2, content, intersectionPoints, contents);
               if (result) {
                 allContents.push({ content, children: result });
               }
@@ -8747,7 +8753,7 @@ function getCommand(ctx) {
               }
             }
             points = ctx.deduplicatePosition(points);
-            const r = parentModel.break(content, points);
+            const r = parentModel.break(content, points, contents);
             if (r) {
               removedIndexes.push(ctx.getContentIndex(content, contents));
               newContents.push(...r.filter((c) => children.every((f) => !ctx.deepEquals(f, c))));

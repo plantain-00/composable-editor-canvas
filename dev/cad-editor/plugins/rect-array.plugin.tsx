@@ -49,7 +49,10 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
     ...ctx.containerModel,
     move: ctx.getContainerMove,
     explode(content) {
-      return getAllContentsFromCache(content).filter((c): c is model.BaseContent => !!c)
+      return ctx.getContentsExplode(getAllContentsFromCache(content))
+    },
+    break(content, points, contents) {
+      return ctx.getContentsBreak(getAllContentsFromCache(content), points, contents)
     },
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content), variableValues: content.variableValues }, renderCtx))

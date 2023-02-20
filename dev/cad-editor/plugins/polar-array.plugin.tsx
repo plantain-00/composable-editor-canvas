@@ -70,7 +70,10 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       content.center.y += offset.y
     },
     explode(content, contents) {
-      return getAllContentsFromCache(content, contents).filter((c): c is model.BaseContent => !!c)
+      return ctx.getContentsExplode(getAllContentsFromCache(content, contents))
+    },
+    break(content, points, contents) {
+      return ctx.getContentsBreak(getAllContentsFromCache(content, contents), points, contents)
     },
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx))
