@@ -1,6 +1,7 @@
 import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
-import { WeakmapCache } from '../utils'
+import { colorNumberToRec, recToColorNumber } from '../utils/color'
+import { WeakmapCache } from '../utils/weakmap-cache'
 
 export interface Camera {
   eye: [number, number, number]
@@ -124,6 +125,36 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     gl_FragColor = outColor;
   }`,
   ])
+  const pickingProgramInfo = twgl.createProgramInfo(gl, [`
+  uniform mat4 u_worldViewProjection;
+
+  attribute vec4 position;
+  attribute vec2 texcoord;
+
+  varying vec2 v_texCoord;
+
+  void main() {
+    v_texCoord = texcoord;
+    gl_Position = u_worldViewProjection * position;
+  }
+  `, `
+  precision mediump float;
+
+  varying vec2 v_texCoord;
+
+  uniform float u_threshhold;
+  uniform vec4 u_pickColor;
+  uniform vec4 u_diffuseMult;
+  uniform sampler2D u_diffuse;
+
+  void main() {
+    vec4 diffuseColor = texture2D(u_diffuse, v_texCoord) * u_diffuseMult;
+    if (diffuseColor.a <= u_threshhold) {
+      discard;
+    }
+    gl_FragColor = u_pickColor;
+  }
+  `])
 
   const tex = twgl.createTexture(gl, {
     min: gl.NEAREST,
@@ -136,9 +167,12 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     ],
   });
   const bufferInfoCache = new WeakmapCache<Graphic3d, twgl.BufferInfo>()
+  const pickingFBI = twgl.createFramebufferInfo(gl)
+  let pickingDrawObjectsInfo: { graphic: Graphic3d, index: number, drawObject: twgl.DrawObject }[] = []
 
-  return (graphics: Graphic3d[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: [number, number, number, number]) => {
+  const render = (graphics: Graphic3d[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: [number, number, number, number]) => {
     twgl.resizeCanvasToDisplaySize(canvas);
+    twgl.bindFramebufferInfo(gl, null)
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
@@ -156,15 +190,17 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       u_specularFactor: light.specularFactor,
       u_diffuse: tex,
       u_viewInverse: camera,
+      u_threshhold: 0.1,
     }
 
     const drawObjects: twgl.DrawObject[] = []
-    for (const graphic of graphics) {
+    pickingDrawObjectsInfo = []
+    graphics.forEach((graphic, i) => {
       let world = m4.identity()
       if (graphic.position) {
         world = m4.translate(world, graphic.position)
       }
-      drawObjects.push({
+      const drawObject: twgl.DrawObject = {
         programInfo,
         bufferInfo: bufferInfoCache.get(graphic, () => {
           if (graphic.type === 'lines') {
@@ -193,11 +229,51 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           u_world: world,
           u_worldInverseTranspose: m4.transpose(m4.inverse(world)),
           u_worldViewProjection: m4.multiply(viewProjection, world),
+          u_pickColor: colorNumberToRec(i),
+        },
+      }
+      drawObjects.push(drawObject)
+      pickingDrawObjectsInfo.push({
+        graphic,
+        index: i,
+        drawObject: {
+          ...drawObject,
+          programInfo: pickingProgramInfo,
         },
       })
-    }
+    })
 
     twgl.drawObjectList(gl, drawObjects)
+  }
+
+  const pick = (
+    inputX: number,
+    inputY: number,
+    filter: (graphic: Graphic3d, index: number) => boolean = () => true,
+  ) => {
+    const rect = canvas.getBoundingClientRect();
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const x = (inputX - rect.left) * gl.canvas.width / w | 0;
+    const y = gl.canvas.height - ((inputY - rect.top) * gl.canvas.height / h | 0) - 1;
+
+    twgl.resizeFramebufferInfo(gl, pickingFBI)
+    twgl.bindFramebufferInfo(gl, pickingFBI)
+
+    gl.clearColor(1, 1, 1, 1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+    twgl.drawObjectList(gl, pickingDrawObjectsInfo.filter(p => filter(p.graphic, p.index)).map(p => p.drawObject))
+
+    const pickColor = new Uint8Array(4);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pickColor);
+    const index = recToColorNumber(pickColor)
+    return index === 0xffffff ? undefined : index
+  }
+
+  return {
+    render,
+    pick,
   }
 }
 

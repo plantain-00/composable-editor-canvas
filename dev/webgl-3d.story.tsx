@@ -1,9 +1,9 @@
 import * as React from "react"
-import { bindMultipleRefs, Camera, createWebgl3DRenderer, getDashedLine, Graphic3d, Light, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
+import { bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
-  const render = React.useRef<(graphics: Graphic3d[], camera: Camera, light: Light, backgroundColor: [number, number, number, number]) => void>()
+  const renderer = React.useRef<ReturnType<typeof createWebgl3DRenderer>>()
   const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
@@ -22,6 +22,7 @@ export default () => {
   const height = size.height
   const rotateX = offset.x + rotate.x
   const rotateY = offset.y + rotate.y
+  const [hovering, setHovering] = React.useState<number>()
   const graphics = React.useRef<Graphic3d[]>([
     {
       type: 'lines',
@@ -76,7 +77,7 @@ export default () => {
     if (!ref.current) {
       return
     }
-    render.current = createWebgl3DRenderer(ref.current)
+    renderer.current = createWebgl3DRenderer(ref.current)
   }, [ref.current])
 
   React.useEffect(() => {
@@ -88,7 +89,10 @@ export default () => {
 
   React.useEffect(() => {
     const { position, up } = updateCamera(-x, y, 1000 / scale, -0.3 * rotateX, -0.3 * rotateY)
-    render.current?.(
+    graphics.current.forEach((g, i) => {
+      g.color[3] = i === hovering ? 0.5 : 1
+    })
+    renderer.current?.render?.(
       graphics.current,
       {
         eye: [position.x, position.y, position.z],
@@ -107,7 +111,7 @@ export default () => {
       },
       [1, 1, 1, 1],
     )
-  }, [x, y, scale, rotateX, rotateY])
+  }, [x, y, scale, rotateX, rotateY, hovering])
 
   return (
     <div
@@ -122,6 +126,7 @@ export default () => {
         width={width}
         height={height}
         onMouseDown={e => onStartMoveCanvas({ x: e.clientX, y: e.clientY })}
+        onMouseMove={e => setHovering(renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.type !== 'lines'))}
       />
       {moveCanvasMask}
     </div>

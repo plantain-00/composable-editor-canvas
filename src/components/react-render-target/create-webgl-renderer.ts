@@ -3,7 +3,7 @@ import earcut from 'earcut'
 import type * as React from "react"
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
-import { getColorString } from '../../utils/color'
+import { colorNumberToRec, getColorString, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
 import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
@@ -961,25 +961,6 @@ export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Parti
       ctx.lineDashOffset = options.dashOffset
     }
   }
-}
-
-export function colorNumberToRec(n: number, alpha = 1) {
-  const color: [number, number, number, number] = [0, 0, 0, alpha]
-  color[2] = n % 256 / 255
-  n = Math.floor(n / 256)
-  color[1] = n % 256 / 255
-  color[0] = Math.floor(n / 256) / 255
-  return color
-}
-
-function mergeOpacityToColor(color?: [number, number, number, number], opacity?: number) {
-  if (opacity === undefined) {
-    return color
-  }
-  if (color === undefined) {
-    return undefined
-  }
-  return [color[0], color[1], color[2], color[3] * opacity]
 }
 
 function getLinearGradientGraphic(linearGradient: LinearGradient, points: Position[]): Graphic {
