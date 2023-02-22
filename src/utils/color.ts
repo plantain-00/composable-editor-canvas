@@ -17,3 +17,26 @@ export function getColorString(color: number, alpha?: number): string {
   }
   return `#${'0'.repeat(6 - s.length)}${s}${a}`
 }
+
+export function colorNumberToRec(n: number, alpha = 1) {
+  const color: [number, number, number, number] = [0, 0, 0, alpha]
+  color[2] = n % 256 / 255
+  n = Math.floor(n / 256)
+  color[1] = n % 256 / 255
+  color[0] = Math.floor(n / 256) / 255
+  return color
+}
+
+export function recToColorNumber(color: [number, number, number, number] | Uint8Array) {
+  return (color[0] * 256 + color[1]) * 256 + color[2]
+}
+
+export function mergeOpacityToColor(color?: [number, number, number, number], opacity?: number) {
+  if (opacity === undefined) {
+    return color
+  }
+  if (color === undefined) {
+    return undefined
+  }
+  return [color[0], color[1], color[2], color[3] * opacity]
+}
