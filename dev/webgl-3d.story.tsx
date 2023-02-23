@@ -1,5 +1,5 @@
 import * as React from "react"
-import { bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
+import { axesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -24,50 +24,46 @@ export default () => {
   const rotateY = offset.y + rotate.y
   const [hovering, setHovering] = React.useState<number>()
   const graphics = React.useRef<Graphic3d[]>([
+    ...axesGraphics,
     {
-      type: 'lines',
-      points: [0, 0, 0, 100, 0, 0],
-      color: [1, 0, 0, 1],
-    },
-    {
-      type: 'lines',
-      points: [0, 0, 0, 0, 100, 0],
-      color: [0, 1, 0, 1],
-    },
-    {
-      type: 'lines',
-      points: [0, 0, 0, 0, 0, 100],
-      color: [0, 0, 1, 1],
-    },
-    {
-      type: 'lines',
-      points: getDashedLine([0, 0, 0], [100, 100, 100], 6).flat(),
+      geometry: {
+        type: 'lines',
+        points: getDashedLine([0, 0, 0], [100, 100, 100], 6).flat(),
+      },
       color: [0, 0, 0, 1],
     },
     {
-      type: 'sphere',
-      radius: 100,
+      geometry: {
+        type: 'sphere',
+        radius: 100,
+      },
       color: [1, 0, 0, 1],
       position: [0, 250, 0],
     },
     {
-      type: 'cube',
-      size: 150,
+      geometry: {
+        type: 'cube',
+        size: 150,
+      },
       color: [0, 1, 0, 1],
       position: [250, 0, 0],
     },
     {
-      type: 'cylinder',
-      radius: 100,
-      height: 200,
+      geometry: {
+        type: 'cylinder',
+        radius: 100,
+        height: 200,
+      },
       color: [0, 0, 1, 1],
       position: [-250, 0, 0],
     },
     {
-      type: 'cune',
-      topRadius: 0,
-      bottomRadius: 100,
-      height: 200,
+      geometry: {
+        type: 'cune',
+        topRadius: 0,
+        bottomRadius: 100,
+        height: 200,
+      },
       color: [1, 0, 1, 1],
       position: [0, -250, 0],
     },
@@ -126,7 +122,7 @@ export default () => {
         width={width}
         height={height}
         onMouseDown={e => onStartMoveCanvas({ x: e.clientX, y: e.clientY })}
-        onMouseMove={e => setHovering(renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.type !== 'lines'))}
+        onMouseMove={e => setHovering(renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.geometry.type !== 'lines'))}
       />
       {moveCanvasMask}
     </div>

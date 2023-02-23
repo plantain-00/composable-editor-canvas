@@ -1,6 +1,6 @@
 import React from 'react';
-import * as THREE from 'three';
-import { Nullable, Position, updateCamera } from '../../src';
+import { v3 } from 'twgl.js'
+import { axesGraphics, colorNumberToRec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
@@ -11,172 +11,97 @@ export const Renderer3d = React.forwardRef((props: {
   rotateY: number
   width: number
   height: number
+  hovering?: number
+  selected?: number
   contents: readonly Nullable<BaseContent>[]
 } & React.HTMLAttributes<HTMLOrSVGElement>, ref: React.ForwardedRef<Renderer3dRef>) => {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
-  const raycasterRef = React.useRef<THREE.Raycaster>()
-  const cameraRef = React.useRef<THREE.PerspectiveCamera>()
-  const rendererRef = React.useRef<THREE.WebGLRenderer>()
-  const render = React.useRef<() => void>()
-  const spheres = React.useRef<(THREE.Mesh | null)[]>([])
-  const speeds = React.useRef<(THREE.Line | null)[]>([])
-  const accelerations = React.useRef<(THREE.Line | null)[]>([])
-  const lastContents = React.useRef<readonly Nullable<BaseContent>[]>(props.contents)
+  const renderer = React.useRef<ReturnType<typeof createWebgl3DRenderer>>()
+  const sphereGeometryCache = React.useRef(new MapCache<number, Graphic3d['geometry']>())
+  const speedGeometryCache = React.useRef(new WeakmapCache<SphereContent, Graphic3d['geometry']>())
+  const accelerationGeometryCache = React.useRef(new WeakmapCache<SphereContent, Graphic3d['geometry']>())
 
   React.useEffect(() => {
     if (!canvasRef.current) return
-
-    const camera = new THREE.PerspectiveCamera(60, props.width / props.height, 0.1, 20000);
-    updateCameraPosition(camera, props.x, props.y, props.scale, props.rotateX, props.rotateY)
-    cameraRef.current = camera
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-
-    const axesHelper = new THREE.AxesHelper(100);
-    scene.add(axesHelper);
-
-    const raycaster = new THREE.Raycaster();
-    raycasterRef.current = raycaster
-
-    spheres.current = []
-    speeds.current = []
-    accelerations.current = []
-    for (const content of props.contents) {
-      if (content && isSphereContent(content)) {
-        const geometry = new THREE.SphereGeometry(content.radius, 72, 36);
-        const material = new THREE.MeshLambertMaterial({ color: content.color, flatShading: true });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.x = content.x
-        mesh.position.y = content.y
-        mesh.position.z = content.z
-        mesh.updateMatrix();
-        mesh.matrixAutoUpdate = false;
-        scene.add(mesh);
-        spheres.current.push(mesh)
-
-        const speed = new THREE.Line(getSpeedGeometry(content), new THREE.LineBasicMaterial({ color: content.color }));
-        scene.add(speed);
-        speeds.current.push(speed);
-
-        const acceleration = new THREE.Line(getAccelerationGeometry(content), new THREE.LineDashedMaterial({ color: content.color, dashSize: 4, gapSize: 4 }));
-        acceleration.computeLineDistances();
-        scene.add(acceleration);
-        accelerations.current.push(acceleration);
-      } else {
-        spheres.current.push(null)
-        speeds.current.push(null)
-        accelerations.current.push(null)
-      }
-    }
-
-    const light1 = new THREE.DirectionalLight(0xffffff, 0.5);
-    light1.position.set(0, 0, 1);
-    scene.add(light1);
-    const light2 = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(light2);
-    const light3 = new THREE.DirectionalLight(0xffffff, 0.5);
-    light3.position.set(0, 0, -1);
-    scene.add(light3);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvasRef.current });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(props.width, props.height);
-    rendererRef.current = renderer
-
-    render.current = () => renderer.render(scene, camera)
-
-    return () => {
-      renderer.dispose()
-      axesHelper.dispose()
-      for (const light of [light1, light2, light3]) {
-        light.dispose()
-      }
-      for (const mesh of [...spheres.current, ...speeds.current, ...accelerations.current]) {
-        if (mesh) {
-          mesh.geometry.dispose()
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach(m => {
-              m.dispose()
-            })
-          } else {
-            mesh.material.dispose()
-          }
-        }
-      }
-    }
+    renderer.current = createWebgl3DRenderer(canvasRef.current)
   }, [canvasRef.current])
 
   React.useEffect(() => {
-    if (cameraRef.current) {
-      cameraRef.current.aspect = props.width / props.height
-      cameraRef.current.updateProjectionMatrix()
+    if (canvasRef.current) {
+      canvasRef.current.width = props.width
+      canvasRef.current.height = props.height
     }
-    if (rendererRef.current) {
-      rendererRef.current.setSize(props.width, props.height)
-    }
-    render.current?.()
   }, [props.width, props.height])
 
   React.useEffect(() => {
-    for (let i = 0; i < props.contents.length; i++) {
-      const content = props.contents[i]
-      const lastContent = lastContents.current[i]
-      if (lastContent === content) continue
+    if (!renderer.current) return
+    const graphics: Nullable<Graphic3d>[] = []
+    const assistentGraphics: Nullable<Graphic3d>[] = [...axesGraphics]
+    const { position, up } = updateCamera(-props.x, props.y, 1000 / props.scale, -0.3 * props.rotateX, -0.3 * props.rotateY)
+    props.contents.forEach((content, i) => {
       if (content && isSphereContent(content)) {
-        const mesh = spheres.current[i]
-        if (mesh) {
-          mesh.position.x = content.x
-          mesh.position.y = content.y
-          mesh.position.z = content.z
-          mesh.updateMatrix()
-
-          if (lastContent && isSphereContent(lastContent)) {
-            if (lastContent.color !== content.color && mesh.material instanceof THREE.MeshLambertMaterial) {
-              mesh.material.color.set(content.color)
-            }
-            if (lastContent.radius !== content.radius) {
-              mesh.geometry.dispose()
-              mesh.geometry = new THREE.SphereGeometry(content.radius, 72, 36)
-            }
-          }
+        const color = colorNumberToRec(content.color)
+        if (props.hovering === i || props.selected === i) {
+          color[3] = 0.5
         }
-
-        const speed = speeds.current[i]
-        if (speed) {
-          speed.geometry.dispose()
-          speed.geometry = getSpeedGeometry(content)
+        graphics.push({
+          geometry: sphereGeometryCache.current.get(content.radius, () => ({
+            type: 'sphere',
+            radius: content.radius,
+          })),
+          color,
+          position: [content.x, content.y, content.z],
+        })
+        const start = v3.create(content.x, content.y, content.z)
+        const speed = v3.create(content.speed.x, content.speed.y, content.speed.z)
+        const speedEnd = v3.add(start, v3.mulScalar(v3.normalize(speed), v3.length(speed) + content.radius))
+        assistentGraphics.push({
+          geometry: speedGeometryCache.current.get(content, () => ({
+            type: 'lines',
+            points: [...start, ...speedEnd],
+          })),
+          color,
+        })
+        if (content.acceleration) {
+          const acceleration = v3.create(content.acceleration.x, content.acceleration.y, content.acceleration.z)
+          const accelerationEnd = v3.add(start, v3.mulScalar(v3.normalize(acceleration), v3.length(acceleration) + content.radius))
+          assistentGraphics.push({
+            geometry: accelerationGeometryCache.current.get(content, () => ({
+              type: 'lines',
+              points: getDashedLine([start[0], start[1], start[2]], [accelerationEnd[0], accelerationEnd[1], accelerationEnd[2]], 6).flat(),
+            })),
+            color,
+          })
         }
-
-        const acceleration = accelerations.current[i]
-        if (acceleration) {
-          acceleration.geometry.dispose()
-          acceleration.geometry = getAccelerationGeometry(content)
-          acceleration.computeLineDistances()
-        }
+      } else {
+        graphics.push(undefined)
       }
-    }
-    lastContents.current = props.contents
-    render.current?.()
-  }, [props.contents])
-
-  React.useEffect(() => {
-    if (cameraRef.current) {
-      updateCameraPosition(cameraRef.current, props.x, props.y, props.scale, props.rotateX, props.rotateY)
-      render.current?.()
-    }
-  }, [props.x, props.y, props.scale, props.rotateX, props.rotateY])
+    })
+    graphics.push(...assistentGraphics)
+    renderer.current.render(
+      graphics,
+      {
+        eye: [position.x, position.y, position.z],
+        up: [up.x, up.y, up.z],
+        target: [0, 0, 0],
+        fov: 60 * Math.PI / 180,
+        near: 0.1,
+        far: 20000,
+      },
+      {
+        position: [1000, 1000, 1000],
+        color: [1, 1, 1, 1],
+        specular: [1, 1, 1, 1],
+        shininess: 50,
+        specularFactor: 1,
+      },
+      [1, 1, 1, 1],
+    )
+  }, [props.x, props.y, props.scale, props.rotateX, props.rotateY, props.contents, props.hovering, props.selected])
 
   React.useImperativeHandle<Renderer3dRef, Renderer3dRef>(ref, () => ({
     getContentByPosition(position: Position) {
-      if (raycasterRef.current && cameraRef.current) {
-        raycasterRef.current.setFromCamera(position, cameraRef.current)
-        const intersect = raycasterRef.current.intersectObjects(spheres.current.filter((c): c is THREE.Mesh => !!c))[0]
-        if (intersect) {
-          return spheres.current.findIndex(c => c === intersect.object)
-        }
-      }
-      return
+      return renderer.current?.pick?.(position.x, position.y, (g) => g.geometry.type === 'sphere')
     },
   }), [])
 
@@ -184,27 +109,6 @@ export const Renderer3d = React.forwardRef((props: {
     <canvas ref={canvasRef} onClick={props.onClick} onMouseDown={props.onMouseDown} />
   )
 })
-
-function updateCameraPosition(camera: THREE.Camera, x: number, y: number, scale: number, rotateX: number, rotateY: number) {
-  const { position, up } = updateCamera(-x, y, 1000 / scale, -0.3 * rotateX, -0.3 * rotateY)
-  camera.position.set(position.x, position.y, position.z)
-  camera.up.set(up.x, up.y, up.z)
-  camera.lookAt(new THREE.Vector3(0, 0, 0))
-}
-
-function getSpeedGeometry(content: SphereContent) {
-  const start = new THREE.Vector3(content.x, content.y, content.z)
-  const speed = new THREE.Vector3(content.speed.x, content.speed.y, content.speed.z)
-  const end = start.clone().addScaledVector(speed.clone().normalize(), speed.length() + content.radius)
-  return new THREE.BufferGeometry().setFromPoints([start, end])
-}
-
-function getAccelerationGeometry(content: SphereContent) {
-  const start = new THREE.Vector3(content.x, content.y, content.z)
-  const acceleration = new THREE.Vector3(content.acceleration?.x ?? 0, content.acceleration?.y ?? 0, content.acceleration?.z ?? 0)
-  const end = start.clone().addScaledVector(acceleration.clone().normalize(), acceleration.length() + content.radius)
-  return new THREE.BufferGeometry().setFromPoints([start, end])
-}
 
 export interface Renderer3dRef {
   getContentByPosition(position: Position): number | undefined

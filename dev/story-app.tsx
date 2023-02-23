@@ -3,7 +3,7 @@ import React from "react"
 import './vender/prism'
 import './vender/prism.css'
 
-import { navigateTo, useLocation } from '@protocol-based-web-framework/router'
+import { navigateTo, useLocation } from '@protocol-based-web-framework/router/dist/use-location'
 import { stories } from './import-stories'
 import { App } from './content-editor'
 import { useDragMove } from '../src'

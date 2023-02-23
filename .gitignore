@@ -114,6 +114,7 @@ dist
 !**/*-*.css
 service-worker.js
 !*.index.bundle.js
+!webpack.bundle.js
 #**/*-*.png
 #index.html
 *.data
