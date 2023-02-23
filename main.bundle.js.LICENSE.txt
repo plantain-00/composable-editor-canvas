@@ -3,12 +3,6 @@ Available via the MIT license.
 see: http://github.com/greggman/twgl.js for details */
 
 /**
- * @license
- * Copyright 2010-2023 Three.js Authors
- * SPDX-License-Identifier: MIT
- */
-
-/**
  * @license React
  * react-dom-server-legacy.browser.production.min.js
  *
@@ -57,5 +51,3 @@ see: http://github.com/greggman/twgl.js for details */
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-
-/** @license URI.js v4.4.1 (c) 2011 Gary Court. License: http://github.com/garycourt/uri-js */

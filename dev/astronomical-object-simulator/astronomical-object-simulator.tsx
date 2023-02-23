@@ -336,15 +336,11 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     }
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    const viewportPosition = { x: e.clientX, y: e.clientY }
     if (is3D) {
-      const index = renderer3dRef.current?.getContentByPosition({
-        x: (e.clientX / window.innerWidth) * 2 - 1,
-        y: - (e.clientY / window.innerHeight) * 2 + 1
-      })
-      setHovering(index)
+      setHovering(renderer3dRef.current?.getContentByPosition(viewportPosition))
       return
     }
-    const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
       onMove(p, viewportPosition)
@@ -394,6 +390,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
             rotateX={offset.x + rotate.x}
             rotateY={offset.y + rotate.y}
             contents={currentContents}
+            hovering={hovering}
+            selected={selected}
             onClick={onClick}
             onMouseDown={onMouseDown}
           />}

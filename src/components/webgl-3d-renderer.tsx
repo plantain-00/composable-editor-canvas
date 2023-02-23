@@ -2,6 +2,7 @@ import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import { colorNumberToRec, recToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
+import { Nullable } from '../utils/types'
 
 export interface Camera {
   eye: [number, number, number]
@@ -20,40 +21,42 @@ export interface Light {
   specularFactor: number
 }
 
-export interface BaseGraphic {
+export interface Material {
   color: [number, number, number, number]
   position?: [number, number, number]
 }
 
-export interface LinesGraphic extends BaseGraphic {
+export interface LinesGeometry {
   type: 'lines'
   points: number[]
 }
 
-export interface SphereGraphic extends BaseGraphic {
+export interface SphereGeometry {
   type: 'sphere'
   radius: number
 }
 
-export interface CubeGraphic extends BaseGraphic {
+export interface CubeGeometry {
   type: 'cube'
   size: number
 }
 
-export interface CylinderGraphic extends BaseGraphic {
+export interface CylinderGeometry {
   type: 'cylinder'
   radius: number
   height: number
 }
 
-export interface CuneGraphic extends BaseGraphic {
+export interface CuneGeometry {
   type: 'cune'
   bottomRadius: number
   topRadius: number
   height: number
 }
 
-export type Graphic3d = SphereGraphic | CubeGraphic | CylinderGraphic | CuneGraphic | LinesGraphic
+export interface Graphic3d extends Material {
+  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | CuneGeometry | LinesGeometry
+}
 
 export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
   const gl = canvas.getContext("webgl", { antialias: true, stencil: true, premultipliedAlpha: false });
@@ -166,11 +169,11 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       255, 255, 255, 255,
     ],
   });
-  const bufferInfoCache = new WeakmapCache<Graphic3d, twgl.BufferInfo>()
+  const bufferInfoCache = new WeakmapCache<Graphic3d['geometry'], twgl.BufferInfo>()
   const pickingFBI = twgl.createFramebufferInfo(gl)
-  let pickingDrawObjectsInfo: { graphic: Graphic3d, index: number, drawObject: twgl.DrawObject }[] = []
+  let pickingDrawObjectsInfo: Nullable<PickingObjectInfo>[] = []
 
-  const render = (graphics: Graphic3d[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: [number, number, number, number]) => {
+  const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: [number, number, number, number]) => {
     twgl.resizeCanvasToDisplaySize(canvas);
     twgl.bindFramebufferInfo(gl, null)
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -195,37 +198,41 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
 
     const drawObjects: twgl.DrawObject[] = []
     pickingDrawObjectsInfo = []
-    graphics.forEach((graphic, i) => {
+    graphics.forEach((g, i) => {
+      if (!g) {
+        pickingDrawObjectsInfo.push(undefined)
+        return
+      }
       let world = m4.identity()
-      if (graphic.position) {
-        world = m4.translate(world, graphic.position)
+      if (g.position) {
+        world = m4.translate(world, g.position)
       }
       const drawObject: twgl.DrawObject = {
         programInfo,
-        bufferInfo: bufferInfoCache.get(graphic, () => {
-          if (graphic.type === 'lines') {
+        bufferInfo: bufferInfoCache.get(g.geometry, () => {
+          if (g.geometry.type === 'lines') {
             return twgl.createBufferInfoFromArrays(gl, {
               position: {
                 numComponents: 3,
-                data: graphic.points,
+                data: g.geometry.points,
               }
             })
           }
-          if (graphic.type === 'cube') {
-            return twgl.primitives.createCubeBufferInfo(gl, graphic.size)
+          if (g.geometry.type === 'cube') {
+            return twgl.primitives.createCubeBufferInfo(gl, g.geometry.size)
           }
-          if (graphic.type === 'cylinder') {
-            return twgl.primitives.createCylinderBufferInfo(gl, graphic.radius, graphic.height, 36, 4)
+          if (g.geometry.type === 'cylinder') {
+            return twgl.primitives.createCylinderBufferInfo(gl, g.geometry.radius, g.geometry.height, 36, 4)
           }
-          if (graphic.type === 'cune') {
-            return twgl.primitives.createTruncatedConeBufferInfo(gl, graphic.bottomRadius, graphic.topRadius, graphic.height, 36, 4)
+          if (g.geometry.type === 'cune') {
+            return twgl.primitives.createTruncatedConeBufferInfo(gl, g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4)
           }
-          return twgl.primitives.createSphereBufferInfo(gl, graphic.radius, 72, 36)
+          return twgl.primitives.createSphereBufferInfo(gl, g.geometry.radius, 72, 36)
         }),
-        type: graphic.type === 'lines' ? gl.LINES : gl.TRIANGLES,
+        type: g.geometry.type === 'lines' ? gl.LINES : gl.TRIANGLES,
         uniforms: {
           ...uniforms,
-          u_diffuseMult: graphic.color,
+          u_diffuseMult: g.color,
           u_world: world,
           u_worldInverseTranspose: m4.transpose(m4.inverse(world)),
           u_worldViewProjection: m4.multiply(viewProjection, world),
@@ -234,7 +241,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       }
       drawObjects.push(drawObject)
       pickingDrawObjectsInfo.push({
-        graphic,
+        graphic: g,
         index: i,
         drawObject: {
           ...drawObject,
@@ -263,7 +270,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     gl.clearColor(1, 1, 1, 1);
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-    twgl.drawObjectList(gl, pickingDrawObjectsInfo.filter(p => filter(p.graphic, p.index)).map(p => p.drawObject))
+    twgl.drawObjectList(gl, pickingDrawObjectsInfo.filter((p): p is PickingObjectInfo => !!p && filter(p.graphic, p.index)).map(p => p.drawObject))
 
     const pickColor = new Uint8Array(4);
     gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pickColor);
@@ -275,6 +282,12 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     render,
     pick,
   }
+}
+
+interface PickingObjectInfo {
+  graphic: Graphic3d
+  index: number
+  drawObject: twgl.DrawObject
 }
 
 export function getDashedLine(p1: [number, number, number], p2: [number, number, number], dash: number) {
@@ -301,3 +314,27 @@ export function getDashedLine(p1: [number, number, number], p2: [number, number,
   }
   return result
 }
+
+export const axesGraphics: Graphic3d[] = [
+  {
+    geometry: {
+      type: 'lines',
+      points: [0, 0, 0, 100, 0, 0],
+    },
+    color: [1, 0, 0, 1],
+  },
+  {
+    geometry: {
+      type: 'lines',
+      points: [0, 0, 0, 0, 100, 0],
+    },
+    color: [0, 1, 0, 1],
+  },
+  {
+    geometry: {
+      type: 'lines',
+      points: [0, 0, 0, 0, 0, 100],
+    },
+    color: [0, 0, 1, 1],
+  },
+]
