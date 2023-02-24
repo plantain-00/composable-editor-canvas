@@ -212,6 +212,13 @@ export function validate(value: unknown, by: Validator, path: Path = []): Valida
 /**
  * @public
  */
+export function is<T>(value: unknown, by: Validator): value is T {
+  return validate(value, by) === true
+}
+
+/**
+ * @public
+ */
 export type Path = (number | string)[]
 
 /**

@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -171,6 +171,7 @@ export const CADEditor = React.forwardRef((props: {
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
   const [time, setTime] = React.useState(0)
+  const commandResultHandler = React.useRef<(r: unknown) => void>()
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -335,13 +336,15 @@ export const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
-    ({ updateContents, nextCommand, repeatedly } = {}) => {
+    ({ updateContents, nextCommand, repeatedly, result } = {}) => {
+      commandResultHandler.current?.(result)
+      commandResultHandler.current = undefined
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
         })
         applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
-      } else {
+      } else if (previewPatches.length > 0) {
         applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       }
       if (repeatedly) {
@@ -782,7 +785,7 @@ export const CADEditor = React.forwardRef((props: {
       types.add(target.content.type)
       const id = target.path[0]
       ids.push(id)
-      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, (max) => {
+      const startTime = (max: number) => {
         const now = performance.now()
         const step = (time: number) => {
           const t = time - now
@@ -794,6 +797,17 @@ export const CADEditor = React.forwardRef((props: {
           }
         }
         requestAnimationFrame(step)
+      }
+      const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, {
+        startTime,
+        acquirePoint: handle => {
+          commandResultHandler.current = p => {
+            if (is<Position>(p, Position)) {
+              handle(p)
+            }
+          }
+          startOperation({ type: 'command', name: 'acquire point' })
+        },
       })
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {

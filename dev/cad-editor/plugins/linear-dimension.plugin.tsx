@@ -133,11 +133,12 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       })
     },
     getGeometries: getLinearDimensionGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         p1: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = p.x, c.p1.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = v } })} />,
             y: <ctx.NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.y = v } })} />,
           }}
@@ -145,6 +146,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         p2: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = p.x, c.p2.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = v } })} />,
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.y = v } })} />,
           }}
@@ -162,6 +164,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         position: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.position.x = p.x, c.position.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.position.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.x = v } })} />,
             y: <ctx.NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.y = v } })} />,
           }}

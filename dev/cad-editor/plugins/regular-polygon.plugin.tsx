@@ -97,8 +97,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       })
     },
     getGeometries: getRegularPolygonGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isRegularPolygonContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.y = v } })} />,
         radius: <ctx.NumberEditor value={content.radius} setValue={(v) => update(c => { if (isRegularPolygonContent(c)) { c.radius = v } })} />,

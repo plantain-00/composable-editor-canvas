@@ -1,4 +1,24 @@
 export const pluginScripts = [
+`// dev/cad-editor/plugins/acquire-point.plugin.tsx
+function getCommand() {
+  return {
+    name: "acquire point",
+    useCommand({ onEnd }) {
+      return {
+        onStart(p) {
+          onEnd({
+            result: p
+          });
+        }
+      };
+    },
+    selectCount: 0
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/arrow.plugin.tsx
 function getModel(ctx) {
   const ArrowContent = ctx.and(ctx.BaseContent("arrow"), ctx.StrokeFields, ctx.ArrowFields, {
@@ -92,13 +112,18 @@ function getModel(ctx) {
       });
     },
     getGeometries: getArrowGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         p1: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isArrowContent(c)) {
+                  c.p1.x = p.x, c.p1.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p1.x = v;
@@ -117,6 +142,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isArrowContent(c)) {
+                  c.p2.x = p.x, c.p2.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {
                 if (isArrowContent(c)) {
                   c.p2.x = v;
@@ -233,13 +263,18 @@ function getModel(ctx) {
     },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
         base: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isBlockContent(c)) {
+                  c.base.x = p.x, c.base.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.base.x, setValue: (v) => update((c) => {
                 if (isBlockContent(c)) {
                   c.base.x = v;
@@ -427,7 +462,7 @@ function getModel(ctx) {
       return [];
     },
     getGeometries: getBlockReferenceGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       let variableNames = [];
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
@@ -439,6 +474,11 @@ function getModel(ctx) {
             c.refId = v;
           }
         }) }) : [],
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isBlockReferenceContent(c)) {
             c.x = v;
@@ -935,8 +975,13 @@ function getModel(ctx) {
         };
       },
       getGeometries: getCircleGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
+          from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+            if (isCircleContent(c)) {
+              c.x = p.x, c.y = p.y;
+            }
+          })) }, "canvas"),
           x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
             if (isCircleContent(c)) {
               c.x = v;
@@ -1164,8 +1209,13 @@ function getModel(ctx) {
         });
       },
       getGeometries: getArcGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
+          from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+            if (isCircleContent(c)) {
+              c.x = p.x, c.y = p.y;
+            }
+          })) }, "canvas"),
           x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
             if (isArcContent(c)) {
               c.x = v;
@@ -1731,8 +1781,13 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isCoordinateAxisContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isCoordinateAxisContent(c)) {
             c.x = v;
@@ -2237,8 +2292,13 @@ function getModel(ctx) {
     },
     getGeometries,
     canSelectPart: true,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isDiamondContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isDiamondContent(c)) {
             c.x = v;
@@ -2558,8 +2618,13 @@ function getModel(ctx) {
       ]);
     },
     getGeometries: getEllipseGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isEllipseContent(c)) {
+            c.cx = p.x, c.cy = p.y;
+          }
+        })) }, "canvas"),
         cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cx, setValue: (v) => update((c) => {
           if (isEllipseContent(c)) {
             c.cx = v;
@@ -2739,8 +2804,13 @@ function getModel(ctx) {
         });
       },
       getGeometries: getEllipseArcGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
+          from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+            if (isEllipseArcContent(c)) {
+              c.cx = p.x, c.cy = p.y;
+            }
+          })) }, "canvas"),
           cx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.cx, setValue: (v) => update((c) => {
             if (isEllipseArcContent(c)) {
               c.cx = v;
@@ -3696,7 +3766,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.isCurrent === true, setValue: (v) => update((c, draft) => {
           if (ctx.isFillStyleContent(c)) {
@@ -3710,6 +3780,11 @@ function getModel(ctx) {
             c.isCurrent = v ? true : void 0;
           }
         }) }),
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (ctx.isFillStyleContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (ctx.isFillStyleContent(c)) {
             c.x = v;
@@ -4026,8 +4101,13 @@ function getModel(ctx) {
       return content;
     },
     getGeometries: getImageGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isImageContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isImageContent(c)) {
             c.x = v;
@@ -4174,7 +4254,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getPolylineGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         points: /* @__PURE__ */ React.createElement(
           ctx.ArrayEditor,
@@ -4190,6 +4270,11 @@ function getModel(ctx) {
               {
                 inline: true,
                 properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isLineContent(c)) {
+                      c.points[i].x = p.x, c.points[i].y = p.y;
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
                     if (isLineContent(c)) {
                       c.points[i].x = v;
@@ -4240,7 +4325,7 @@ function getModel(ctx) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }));
       },
       canSelectPart: true,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
           points: /* @__PURE__ */ React.createElement(
             ctx.ArrayEditor,
@@ -4256,6 +4341,11 @@ function getModel(ctx) {
                 {
                   inline: true,
                   properties: {
+                    from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                      if (isPolyLineContent(c)) {
+                        c.points[i].x = p.x, c.points[i].y = p.y;
+                      }
+                    })) }, "canvas"),
                     x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
                       if (isPolyLineContent(c)) {
                         c.points[i].x = v;
@@ -4554,13 +4644,18 @@ function getModel(ctx) {
       });
     },
     getGeometries: getLinearDimensionGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         p1: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isLinearDimensionContent(c)) {
+                  c.p1.x = p.x, c.p1.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p1.x = v;
@@ -4579,6 +4674,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isLinearDimensionContent(c)) {
+                  c.p2.x = p.x, c.p2.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.p2.x = v;
@@ -4631,6 +4731,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isLinearDimensionContent(c)) {
+                  c.position.x = p.x, c.position.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.x, setValue: (v) => update((c) => {
                 if (isLinearDimensionContent(c)) {
                   c.position.x = v;
@@ -5233,7 +5338,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getPathGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         commands: /* @__PURE__ */ React.createElement(
           ctx.ArrayEditor,
@@ -5283,6 +5388,15 @@ function getModel(ctx) {
               };
               if (f.type === "arc") {
                 properties.from = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "arc") {
+                        m.from.x = p.x;
+                        m.from.y = p.y;
+                      }
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.from.x, setValue: (v) => update((c) => {
                     if (isPathContent(c)) {
                       const m = c.commands[i];
@@ -5302,6 +5416,15 @@ function getModel(ctx) {
                 } });
               } else if (f.type === "bezierCurve") {
                 properties.cp1 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp1.x = p.x;
+                        m.cp1.y = p.y;
+                      }
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp1.x, setValue: (v) => update((c) => {
                     if (isPathContent(c)) {
                       const m = c.commands[i];
@@ -5320,6 +5443,15 @@ function getModel(ctx) {
                   }) })
                 } });
                 properties.cp2 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "bezierCurve") {
+                        m.cp2.x = p.x;
+                        m.cp2.y = p.y;
+                      }
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp2.x, setValue: (v) => update((c) => {
                     if (isPathContent(c)) {
                       const m = c.commands[i];
@@ -5339,6 +5471,15 @@ function getModel(ctx) {
                 } });
               } else if (f.type === "quadraticCurve") {
                 properties.cp = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type === "quadraticCurve") {
+                        m.cp.x = p.x;
+                        m.cp.y = p.y;
+                      }
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.cp.x, setValue: (v) => update((c) => {
                     if (isPathContent(c)) {
                       const m = c.commands[i];
@@ -5359,6 +5500,15 @@ function getModel(ctx) {
               }
               if (f.type !== "close") {
                 properties.to = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPathContent(c)) {
+                      const m = c.commands[i];
+                      if (m.type !== "close") {
+                        m.to.x = p.x;
+                        m.to.y = p.y;
+                      }
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.to.x, setValue: (v) => update((c) => {
                     if (isPathContent(c)) {
                       const m = c.commands[i];
@@ -5728,13 +5878,18 @@ function getModel(ctx) {
       return ctx.getContentsSnapPoints(content, contents, (c) => getAllContentsFromCache(c, contents));
     },
     getGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
         center: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isPolarArrayContent(c)) {
+                  c.center.x = p.x, c.center.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.center.x, setValue: (v) => update((c) => {
                 if (isPolarArrayContent(c)) {
                   c.center.x = v;
@@ -5955,7 +6110,7 @@ function getModel(ctx) {
     },
     getGeometries: getPolygonGeometries,
     canSelectPart: true,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         points: /* @__PURE__ */ React.createElement(
           ctx.ArrayEditor,
@@ -5971,6 +6126,11 @@ function getModel(ctx) {
               {
                 inline: true,
                 properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPolygonContent(c)) {
+                      c.points[i].x = p.x, c.points[i].y = p.y;
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
                     if (isPolygonContent(c)) {
                       c.points[i].x = v;
@@ -6143,7 +6303,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
           if (isRadialDimensionReferenceContent(c)) {
@@ -6155,6 +6315,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                if (isRadialDimensionReferenceContent(c)) {
+                  c.position.x = p.x, c.position.y = p.y;
+                }
+              })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.position.x, setValue: (v) => update((c) => {
                 if (isRadialDimensionReferenceContent(c)) {
                   c.position.x = v;
@@ -6664,8 +6829,13 @@ function getModel(ctx) {
     },
     getGeometries: getRectGeometries,
     canSelectPart: true,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isRectContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isRectContent(c)) {
             c.x = v;
@@ -6852,8 +7022,13 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRegularPolygonGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isRegularPolygonContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isRegularPolygonContent(c)) {
             c.x = v;
@@ -7035,8 +7210,13 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRingGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isRingContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isRingContent(c)) {
             c.x = v;
@@ -7362,8 +7542,13 @@ function getModel(ctx) {
     },
     getGeometries,
     canSelectPart: true,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isRoundedRectContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isRoundedRectContent(c)) {
             c.x = v;
@@ -7692,7 +7877,7 @@ function getModel(ctx) {
       return ctx.getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: "endpoint" })));
     },
     getGeometries: getSplineGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         points: /* @__PURE__ */ React.createElement(
           ctx.ArrayEditor,
@@ -7708,6 +7893,11 @@ function getModel(ctx) {
               {
                 inline: true,
                 properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isSplineContent(c)) {
+                      c.points[i].x = p.x, c.points[i].y = p.y;
+                    }
+                  })) }, "canvas"),
                   x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
                     if (isSplineContent(c)) {
                       c.points[i].x = v;
@@ -7771,7 +7961,7 @@ function getModel(ctx) {
       },
       getSnapPoints: splineModel.getSnapPoints,
       getGeometries: getSplineArrowGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
           points: /* @__PURE__ */ React.createElement(
             ctx.ArrayEditor,
@@ -7787,6 +7977,11 @@ function getModel(ctx) {
                 {
                   inline: true,
                   properties: {
+                    from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                      if (isSplineArrowContent(c)) {
+                        c.points[i].x = p.x, c.points[i].y = p.y;
+                      }
+                    })) }, "canvas"),
                     x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.x, setValue: (v) => update((c) => {
                       if (isSplineArrowContent(c)) {
                         c.points[i].x = v;
@@ -7997,9 +8192,14 @@ function getModel(ctx) {
       });
     },
     getGeometries: getStarGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       var _a;
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isStarContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isStarContent(c)) {
             c.x = v;
@@ -8175,7 +8375,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.isCurrent === true, setValue: (v) => update((c, draft) => {
           if (ctx.isStrokeStyleContent(c)) {
@@ -8189,6 +8389,11 @@ function getModel(ctx) {
             c.isCurrent = v ? true : void 0;
           }
         }) }),
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (ctx.isStrokeStyleContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (ctx.isStrokeStyleContent(c)) {
             c.x = v;
@@ -8393,8 +8598,13 @@ function getModel(ctx) {
       return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey });
     },
     getGeometries: getTextGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isTextContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isTextContent(c)) {
             c.x = v;
@@ -8596,8 +8806,13 @@ function getModel(ctx) {
       });
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents, startTime) {
+    propertyPanel(content, update, contents, { startTime, acquirePoint }) {
       return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isTimeAxisContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isTimeAxisContent(c)) {
             c.x = v;
@@ -8901,7 +9116,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getViewportGeometriesFromCache,
-    propertyPanel(content, update, contents, startTime) {
+    propertyPanel(content, update, contents, options) {
       var _a, _b;
       const border = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.propertyPanel) == null ? void 0 : _b.call(_a, content.border, (recipe) => {
         update((c) => {
@@ -8909,8 +9124,13 @@ function getModel(ctx) {
             recipe(c.border, contents);
           }
         });
-      }, contents, startTime);
+      }, contents, options);
       const result = {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => options.acquirePoint((p) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (ctx.isViewportContent(c)) {
             c.x = v;

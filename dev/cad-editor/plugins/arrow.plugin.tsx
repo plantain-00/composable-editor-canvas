@@ -100,11 +100,12 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       })
     },
     getGeometries: getArrowGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         p1: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isArrowContent(c)) { c.p1.x = p.x, c.p1.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.x = v } })} />,
             y: <ctx.NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.y = v } })} />,
           }}
@@ -112,6 +113,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
         p2: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isArrowContent(c)) { c.p2.x = p.x, c.p2.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.x = v } })} />,
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.y = v } })} />,
           }}

@@ -168,7 +168,10 @@ export type Model<T> = Partial<FeatureModels> & {
     content: Omit<T, 'type'>,
     update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
     contents: readonly Nullable<BaseContent>[],
-    startTime: (max: number) => void,
+    options: {
+      startTime: (max: number) => void,
+      acquirePoint: (handle: (point: Position) => void) => void,
+    },
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void

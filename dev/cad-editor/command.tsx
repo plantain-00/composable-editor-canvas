@@ -10,6 +10,7 @@ export interface Command extends CommandType {
       updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
+      result?: unknown
     }>) => void,
     transform: (p: Position) => Position,
     type: string | undefined,
@@ -65,6 +66,7 @@ export function useCommands(
       updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
+      result?: unknown
     }>
   ) => void,
   transform: (p: Position) => Position,
