@@ -53,11 +53,12 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
         base: <ctx.ObjectEditor
           inline
           properties={{
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isBlockContent(c)) { c.base.x = p.x, c.base.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.base.x} setValue={(v) => update(c => { if (isBlockContent(c)) { c.base.x = v } })} />,
             y: <ctx.NumberEditor value={content.base.y} setValue={(v) => update(c => { if (isBlockContent(c)) { c.base.y = v } })} />,
           }}
@@ -237,7 +238,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       return []
     },
     getGeometries: getBlockReferenceGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       let variableNames: string[] = []
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
@@ -245,6 +246,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       }
       return {
         refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.refId = v } })} /> : [],
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isBlockReferenceContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,

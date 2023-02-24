@@ -88,8 +88,9 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       })
     },
     getGeometries: getGeometriesFromCache,
-    propertyPanel(content, update, contents, startTime) {
+    propertyPanel(content, update, contents, { startTime, acquirePoint }) {
       return {
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTimeAxisContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTimeAxisContent(c)) { c.y = v } })} />,
         max: <ctx.NumberEditor value={content.max} setValue={(v) => update(c => { if (isTimeAxisContent(c) && v > 0) { c.max = v } })} />,

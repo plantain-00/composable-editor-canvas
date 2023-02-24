@@ -145,7 +145,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       return ctx.getSnapPointsFromCache(content, () => content.points.map((p) => ({ ...p, type: 'endpoint' as const })))
     },
     getGeometries: getSplineGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         points: <ctx.ArrayEditor
           inline
@@ -153,6 +153,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
           items={content.points.map((f, i) => <ctx.ObjectEditor
             inline
             properties={{
+              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isSplineContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
               x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isSplineContent(c)) { c.points[i].x = v } })} />,
               y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isSplineContent(c)) { c.points[i].y = v } })} />,
             }}
@@ -201,7 +202,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       },
       getSnapPoints: splineModel.getSnapPoints,
       getGeometries: getSplineArrowGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
           points: <ctx.ArrayEditor
             inline
@@ -209,6 +210,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
             items={content.points.map((f, i) => <ctx.ObjectEditor
               inline
               properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isSplineArrowContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isSplineArrowContent(c)) { c.points[i].x = v } })} />,
                 y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isSplineArrowContent(c)) { c.points[i].y = v } })} />,
               }}

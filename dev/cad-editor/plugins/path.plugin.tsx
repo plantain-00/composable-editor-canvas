@@ -212,7 +212,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       })
     },
     getGeometries: getPathGeometriesFromCache,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         commands: <ctx.ArrayEditor
           inline
@@ -256,26 +256,31 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
             }
             if (f.type === 'arc') {
               properties.from = <ctx.ObjectEditor inline properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.from.x = p.x; m.from.y = p.y } } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.from.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.from.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.from.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.from.y = v } } })} />,
               }} />
             } else if (f.type === 'bezierCurve') {
               properties.cp1 = <ctx.ObjectEditor inline properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp1.x = p.x; m.cp1.y = p.y } } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.cp1.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp1.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.cp1.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp1.y = v } } })} />,
               }} />
               properties.cp2 = <ctx.ObjectEditor inline properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp2.x = p.x; m.cp2.y = p.y } } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.cp2.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp2.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.cp2.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp2.y = v } } })} />,
               }} />
             } else if (f.type === 'quadraticCurve') {
               properties.cp = <ctx.ObjectEditor inline properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'quadraticCurve') { m.cp.x = p.x; m.cp.y = p.y } } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.cp.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'quadraticCurve') { m.cp.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.cp.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'quadraticCurve') { m.cp.y = v } } })} />,
               }} />
             }
             if (f.type !== 'close') {
               properties.to = <ctx.ObjectEditor inline properties={{
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type !== 'close') { m.to.x = p.x; m.to.y = p.y } } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.to.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type !== 'close') { m.to.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.to.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type !== 'close') { m.to.y = v } } })} />,
               }} />

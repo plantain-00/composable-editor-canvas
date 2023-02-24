@@ -185,8 +185,9 @@ export function getModel(ctx: PluginContext) {
         }
       },
       getGeometries: getCircleGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
+          from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isCircleContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
           x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isCircleContent(c)) { c.x = v } })} />,
           y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isCircleContent(c)) { c.y = v } })} />,
           r: <ctx.NumberEditor value={content.r} setValue={(v) => update(c => { if (isCircleContent(c)) { c.r = v } })} />,
@@ -377,8 +378,9 @@ export function getModel(ctx: PluginContext) {
         })
       },
       getGeometries: getArcGeometries,
-      propertyPanel(content, update, contents) {
+      propertyPanel(content, update, contents, { acquirePoint }) {
         return {
+          from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isCircleContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
           x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isArcContent(c)) { c.x = v } })} />,
           y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isArcContent(c)) { c.y = v } })} />,
           r: <ctx.NumberEditor value={content.r} setValue={(v) => update(c => { if (isArcContent(c)) { c.r = v } })} />,

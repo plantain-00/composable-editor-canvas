@@ -134,8 +134,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey })
     },
     getGeometries: getTextGeometries,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, _, { acquirePoint }) {
       return {
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTextContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTextContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTextContent(c)) { c.y = v } })} />,
         fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontSize = v } })} />,
