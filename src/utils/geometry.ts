@@ -1002,7 +1002,7 @@ export function getPolylineTriangles(
       if (i === 0) {
         let p = points[0]
         if (lineCapWithClosed === 'round') {
-          const angle = Math.atan2(p.y - points[1].y, p.x - points[1].x) * 180 / Math.PI
+          const angle = getTwoPointsAngle(p, points[1]) * 180 / Math.PI
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle - 90, endAngle: angle + 90 }, 5)
           for (const s of ps) {
             result.push(s.x, s.y, p.x, p.y)
@@ -1033,7 +1033,7 @@ export function getPolylineTriangles(
           }
         }
         if (lineCapWithClosed === 'round') {
-          const angle = Math.atan2(p.y - points[i - 1].y, p.x - points[i - 1].x) * 180 / Math.PI
+          const angle = getTwoPointsAngle(p, points[i - 1]) * 180 / Math.PI
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle + 90, endAngle: angle - 90, counterclockwise: true }, 5)
           for (const s of ps) {
             result.push(p.x, p.y, s.x, s.y)
@@ -1049,7 +1049,7 @@ export function getPolylineTriangles(
     const a = points[previousIndex]
     const b = points[i]
     const c = points[nextIndex + 1]
-    let angle = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(b.y - a.y, b.x - a.x)
+    let angle = getTwoPointsAngle(c, b) - getTwoPointsAngle(b, a)
     if (angle < -Math.PI) {
       angle += Math.PI * 2
     } else if (angle > Math.PI) {
@@ -1078,8 +1078,8 @@ export function getPolylineTriangles(
             if (lineJoin === 'bevel') {
               ps = [p1, p2]
             } else {
-              const startAngle = Math.atan2(p1.y - b.y, p1.x - b.x) * 180 / Math.PI
-              const endAngle = Math.atan2(p2.y - b.y, p2.x - b.x) * 180 / Math.PI
+              const startAngle = getTwoPointsAngle(p1, b) * 180 / Math.PI
+              const endAngle = getTwoPointsAngle(p2, b) * 180 / Math.PI
               ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle }, 5)
             }
             for (const s of ps) {
@@ -1095,8 +1095,8 @@ export function getPolylineTriangles(
             if (lineJoin === 'bevel') {
               ps = [p1, p2]
             } else {
-              const startAngle = Math.atan2(p1.y - b.y, p1.x - b.x) * 180 / Math.PI
-              const endAngle = Math.atan2(p2.y - b.y, p2.x - b.x) * 180 / Math.PI
+              const startAngle = getTwoPointsAngle(p1, b) * 180 / Math.PI
+              const endAngle = getTwoPointsAngle(p2, b) * 180 / Math.PI
               ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle, counterclockwise: true }, 5)
             }
             for (const s of ps) {
@@ -1251,6 +1251,14 @@ export function getEllipseAngle(p: Position, ellipse: Ellipse) {
   return Math.atan2((newPosition.y - ellipse.cy) / ellipse.ry, (newPosition.x - ellipse.cx) / ellipse.rx) * 180 / Math.PI
 }
 
+export function getCircleAngle(p: Position, circle: Circle) {
+  return getTwoPointsAngle(p, circle)
+}
+
+export function getTwoPointsAngle(to: Position, from: Position) {
+  return Math.atan2(to.y - from.y, to.x - from.x)
+}
+
 /**
  * @public
  */
@@ -1318,9 +1326,25 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
 
 export function getArcPointAtAngle(content: Arc, angle: number) {
   angle = angle * Math.PI / 180
+  return getCirclePointAtAngle(content, angle)
+}
+
+export function getCirclePointAtAngle(content: Circle, angle: number) {
   return {
     x: content.x + content.r * Math.cos(angle),
     y: content.y + content.r * Math.sin(angle),
+  }
+}
+
+export function getEllipsePointAtAngle(content: Ellipse, angle: number) {
+  const p = {
+    x: content.cx + content.rx * Math.cos(angle),
+    y: content.cy + content.ry * Math.sin(angle),
+  }
+  if (content.angle) {
+    return rotatePosition(p, { x: content.cx, y: content.cy }, content.angle * Math.PI / 180)
+  } else {
+    return p
   }
 }
 
@@ -1357,17 +1381,10 @@ function getAngleRange(range: AngleRange, angleDelta: number) {
  */
 export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
   const lineSegmentCount = 360 / angleDelta
-  const center = { x: content.cx, y: content.cy }
   const points: Position[] = []
   for (let i = 0; i < lineSegmentCount; i++) {
     const angle = angleDelta * i * Math.PI / 180
-    const x = content.cx + content.rx * Math.cos(angle)
-    const y = content.cy + content.ry * Math.sin(angle)
-    if (content.angle) {
-      points.push(rotatePosition({ x, y }, center, content.angle * Math.PI / 180))
-    } else {
-      points.push({ x, y })
-    }
+    points.push(getEllipsePointAtAngle(content, angle))
   }
   return points
 }
@@ -1381,13 +1398,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
 
 export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {
   angle = angle * Math.PI / 180
-  const x = content.cx + content.rx * Math.cos(angle)
-  const y = content.cy + content.ry * Math.sin(angle)
-  if (content.angle) {
-    return rotatePosition({ x, y }, { x: content.cx, y: content.cy }, content.angle * Math.PI / 180)
-  } else {
-    return { x, y }
-  }
+  return getEllipsePointAtAngle(content, angle)
 }
 
 /**

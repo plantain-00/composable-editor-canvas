@@ -121,6 +121,8 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getStarGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getStarGeometriesFromCache(content).lines),
   }
 }
 
@@ -151,7 +153,7 @@ export function getCommand(ctx: PluginContext): Command {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
               strokeStyleId,
               fillStyleId,
             } as StarContent)
@@ -172,7 +174,7 @@ export function getCommand(ctx: PluginContext): Command {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
           strokeStyleId,
           fillStyleId,
         })

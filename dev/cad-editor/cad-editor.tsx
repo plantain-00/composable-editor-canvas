@@ -576,7 +576,7 @@ export const CADEditor = React.forwardRef((props: {
     const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex } : undefined)
+      startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex, param: p.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
       if (editPoint) {
@@ -617,7 +617,7 @@ export const CADEditor = React.forwardRef((props: {
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       const s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
-      onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex } : undefined)
+      onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
       onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition).position, selectedContents)
@@ -657,7 +657,7 @@ export const CADEditor = React.forwardRef((props: {
     operate(p)
     if (position) {
       const s = getSnapPoint(position, editingContent, getContentsInRange)
-      onCommandMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex } : undefined)
+      onCommandMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
   }
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {

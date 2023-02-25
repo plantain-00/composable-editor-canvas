@@ -8,10 +8,12 @@ export type LinearDimensionContent = model.BaseContent<'linear dimension'> & mod
   ref1?: {
     id: number | model.BaseContent
     snapIndex: number
+    param?: number
   }
   ref2?: {
     id: number | model.BaseContent
     snapIndex: number
+    param?: number
   }
 }
 
@@ -20,10 +22,12 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     ref1: ctx.optional({
       id: ctx.or(ctx.number, ctx.Content),
       snapIndex: ctx.number,
+      param: ctx.optional(ctx.number),
     }),
     ref2: ctx.optional({
       id: ctx.or(ctx.number, ctx.Content),
       snapIndex: ctx.number,
+      param: ctx.optional(ctx.number),
     }),
   })
   const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries>()
@@ -32,7 +36,11 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     if (content.ref1 !== undefined) {
       const ref = ctx.getReference(content.ref1.id, contents)
       if (ref) {
-        const p = ctx.getContentModel(ref)?.getSnapPoints?.(ref, contents)?.[content.ref1.snapIndex]
+        const model = ctx.getContentModel(ref)
+        let p: core.Position | undefined = model?.getSnapPoints?.(ref, contents)?.[content.ref1.snapIndex]
+        if (!p && content.ref1.param !== undefined) {
+          p = model?.getPoint?.(ref, content.ref1.param)
+        }
         if (p) {
           p1 = p
         }
@@ -42,7 +50,11 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     if (content.ref2 !== undefined) {
       const ref = ctx.getReference(content.ref2.id, contents)
       if (ref) {
-        const p = ctx.getContentModel(ref)?.getSnapPoints?.(ref, contents)?.[content.ref2.snapIndex]
+        const model = ctx.getContentModel(ref)
+        let p: core.Position | undefined = model?.getSnapPoints?.(ref, contents)?.[content.ref2.snapIndex]
+        if (!p && content.ref2.param !== undefined) {
+          p = model?.getPoint?.(ref, content.ref2.param)
+        }
         if (p) {
           p2 = p
         }
@@ -155,11 +167,13 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
           <ctx.BooleanEditor value={content.ref1 !== undefined} readOnly={content.ref1 === undefined} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && !v) { c.ref1 = undefined } })} />,
           content.ref1 !== undefined && typeof content.ref1.id === 'number' ? <ctx.NumberEditor value={content.ref1.id} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref1) { c.ref1.id = v } })} /> : undefined,
           content.ref1 !== undefined ? <ctx.NumberEditor value={content.ref1.snapIndex} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref1) { c.ref1.snapIndex = v } })} /> : undefined,
+          content.ref1?.param !== undefined ? <ctx.NumberEditor readOnly value={content.ref1.param} /> : undefined,
         ],
         ref2: [
           <ctx.BooleanEditor value={content.ref2 !== undefined} readOnly={content.ref2 === undefined} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && !v) { c.ref2 = undefined } })} />,
           content.ref2 !== undefined && typeof content.ref2.id === 'number' ? <ctx.NumberEditor value={content.ref2.id} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref2) { c.ref2.id = v } })} /> : undefined,
           content.ref2 !== undefined ? <ctx.NumberEditor value={content.ref2.snapIndex} setValue={(v) => update(c => { if (isLinearDimensionContent(c) && c.ref2) { c.ref2.snapIndex = v } })} /> : undefined,
+          content.ref2?.param !== undefined ? <ctx.NumberEditor readOnly value={content.ref2.param} /> : undefined,
         ],
         position: <ctx.ObjectEditor
           inline

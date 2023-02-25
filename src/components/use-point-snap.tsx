@@ -13,6 +13,7 @@ export function usePointSnap<T>(
     getSnapPoints?: (content: T, contents: readonly Nullable<T>[]) => SnapPoint[]
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
     getCircle?: (content: T) => { circle: Circle, bounding?: TwoPointsFormRegion }
+    getParam?(content: T, point: Position): number
   } | undefined,
   scale = 1,
   offset?: Position,
@@ -44,6 +45,20 @@ export function usePointSnap<T>(
       }
     }
     return { position: p }
+  }
+
+  const getSnapTarget = (model: ReturnType<typeof getModel>, content: T, point: Position) => {
+    const param = model?.getParam?.(content, point)
+    if (param !== undefined) {
+      return {
+        target: {
+          snapIndex: -1,
+          content,
+          param,
+        },
+      }
+    }
+    return
   }
 
   return {
@@ -214,7 +229,10 @@ export function usePointSnap<T>(
                 for (const point of points) {
                   if (getTwoPointsDistance(p, point) <= delta) {
                     setSnapPoint({ ...point, type: 'perpendicular' })
-                    return getOffsetSnapPoint(point)
+                    return {
+                      ...getOffsetSnapPoint(point),
+                      ...getSnapTarget(model, content, point),
+                    }
                   }
                 }
               }
@@ -242,7 +260,10 @@ export function usePointSnap<T>(
                     const distance = getTwoPointsDistance(p, perpendicularPoint)
                     if (distance <= delta) {
                       setSnapPoint({ ...perpendicularPoint, type: 'perpendicular' })
-                      return getOffsetSnapPoint(perpendicularPoint)
+                      return {
+                        ...getOffsetSnapPoint(perpendicularPoint),
+                        ...getSnapTarget(model, content, perpendicularPoint),
+                      }
                     }
                   }
                 }
@@ -281,7 +302,10 @@ export function usePointSnap<T>(
                 for (const point of points) {
                   if (getTwoPointsDistance(p, point) <= delta) {
                     setSnapPoint({ ...point, type: 'nearest' })
-                    return getOffsetSnapPoint(point)
+                    return {
+                      ...getOffsetSnapPoint(point),
+                      ...getSnapTarget(model, content, point),
+                    }
                   }
                 }
               }
@@ -307,7 +331,10 @@ export function usePointSnap<T>(
                   const { point, distance } = getPointAndLineSegmentNearestPointAndDistance(p, ...line)
                   if (distance <= delta) {
                     setSnapPoint({ ...point, type: 'nearest' })
-                    return getOffsetSnapPoint(point)
+                    return {
+                      ...getOffsetSnapPoint(point),
+                      ...getSnapTarget(model, content, point),
+                    }
                   }
                 }
               }
@@ -334,6 +361,7 @@ export interface SnapResult<T> {
   position: Position
   target?: {
     snapIndex: number
+    param?: number
     content: T
   }
 }

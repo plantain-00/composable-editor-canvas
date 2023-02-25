@@ -1,5 +1,5 @@
 import * as React from "react"
-import { EllipseArc, Position, rotatePositionByCenter } from "../../utils"
+import { EllipseArc, getEllipseAngle, Position, rotatePositionByCenter } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { EditOptions, useDragEdit } from "./use-edit"
 
@@ -23,11 +23,11 @@ export function useEllipseArcEdit<T = void>(
         setOffset({ cx, cy, rx: 0, ry: 0, startAngle: 0, endAngle: 0, data: start.data.data })
       } else if (start.data.type === 'start angle') {
         const p = rotatePositionByCenter(end, { x: start.data.cx, y: start.data.cy }, start.data.angle ?? 0)
-        const angle = Math.atan2((p.y - start.data.cy) / start.data.ry, (p.x - start.data.cx) / start.data.rx) * 180 / Math.PI - start.data.startAngle
+        const angle = getEllipseAngle(p, start.data) - start.data.startAngle
         setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: angle, endAngle: 0, data: start.data.data })
       } else if (start.data.type === 'end angle') {
         const p = rotatePositionByCenter(end, { x: start.data.cx, y: start.data.cy }, start.data.angle ?? 0)
-        const angle = Math.atan2((p.y - start.data.cy) / start.data.ry, (p.x - start.data.cx) / start.data.rx) * 180 / Math.PI - start.data.endAngle
+        const angle = getEllipseAngle(p, start.data) - start.data.endAngle
         setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: angle, data: start.data.data })
       }
     },

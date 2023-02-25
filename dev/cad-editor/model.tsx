@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -180,6 +180,8 @@ export type Model<T> = Partial<FeatureModels> & {
   isPointIn?(content: T, point: Position): boolean
   getStartPoint?(content: T): Position
   getEndPoint?(content: T): Position
+  getParam?(content: T, point: Position): number
+  getPoint?(content: T, param: number): Position
 }
 
 export interface RenderContext<V> {
@@ -1079,6 +1081,7 @@ export function getAssistentText(text: string, fontSize: number, x: number, y: n
 
 export interface SnapTarget {
   snapIndex: number
+  param?: number
   id: number
 }
 
@@ -1112,4 +1115,21 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
     y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
     scale: ratio,
   }
+}
+
+export function getLinesParamAtPoint(point: Position, lines: [Position, Position][]) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (isZero(getPointAndLineSegmentMinimumDistance(point, ...line))) {
+      return i + getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
+    }
+  }
+  return 0
+}
+
+export function getLinesPointAtParam(param: number, lines: [Position, Position][]) {
+  const index = Math.floor(param)
+  const line = lines[index]
+  const distance = (param - index) * getTwoPointsDistance(...line)
+  return getPointByLengthAndDirection(line[0], distance, line[1])
 }
