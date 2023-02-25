@@ -31,7 +31,7 @@ export function getCommand(ctx: PluginContext): Command {
         const start = startPosition
         const end = cursorPosition
         const r = ctx.getTwoPointsDistance(start, end)
-        const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
+        const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI
         assistentContents.push(
           {
             type: 'arc',

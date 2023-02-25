@@ -207,6 +207,8 @@ export function getModel(ctx: PluginContext) {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
+    getParam: (content, point) => ctx.getEllipseAngle(point, content),
+    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180),
   }
   return [
     ellipseModel,
@@ -297,27 +299,25 @@ export function getModel(ctx: PluginContext) {
                 },
               },
               {
-                ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, center, rotate),
+                ...ctx.getEllipsePointAtAngle(content, startAngle),
                 cursor: ctx.getResizeCursor(content.startAngle - rotate, 'top'),
                 update(c, { cursor, scale }) {
                   if (!isEllipseArcContent(c)) {
                     return
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, content.angle ?? 0)
-                  c.startAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
+                  c.startAngle = ctx.getEllipseAngle(cursor, content)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
                 },
               },
               {
-                ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, center, rotate),
+                ...ctx.getEllipsePointAtAngle(content, endAngle),
                 cursor: ctx.getResizeCursor(content.endAngle - rotate, 'top'),
                 update(c, { cursor, scale }) {
                   if (!isEllipseArcContent(c)) {
                     return
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, content.angle ?? 0)
-                  c.endAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI
+                  c.endAngle = ctx.getEllipseAngle(cursor, content)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [center, cursor] } as LineContent] }
                 },
@@ -334,9 +334,9 @@ export function getModel(ctx: PluginContext) {
           const middleAngle = (startAngle + endAngle) / 2
           return [
             { x: content.cx, y: content.cy, type: 'center' },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, content), type: 'endpoint' },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, content), type: 'endpoint' },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(middleAngle), y: content.cy + content.ry * Math.sin(middleAngle) }, content), type: 'midpoint' },
+            { ...ctx.getEllipsePointAtAngle(content, startAngle), type: 'endpoint' },
+            { ...ctx.getEllipsePointAtAngle(content, endAngle), type: 'endpoint' },
+            { ...ctx.getEllipsePointAtAngle(content, middleAngle), type: 'midpoint' },
           ]
         })
       },
@@ -365,6 +365,8 @@ export function getModel(ctx: PluginContext) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
+      getParam: (content, point) => ctx.getEllipseAngle(point, content),
+      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180),
     } as model.Model<EllipseArcContent>,
   ]
 }
@@ -466,10 +468,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             assistentContents.push(
               {
                 type: 'line', points: [
-                  ctx.rotatePositionByEllipseCenter({
-                    x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.startAngle / 180 * Math.PI),
-                    y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.startAngle / 180 * Math.PI)
-                  }, ellipseArc),
+                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.startAngle / 180 * Math.PI),
                   {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
@@ -483,10 +482,7 @@ export function getCommand(ctx: PluginContext): Command[] {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
                   },
-                  ctx.rotatePositionByEllipseCenter({
-                    x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.endAngle / 180 * Math.PI),
-                    y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
-                  }, ellipseArc),
+                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.endAngle / 180 * Math.PI),
                 ],
                 dashArray: [4 / scale]
               },

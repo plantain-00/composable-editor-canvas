@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { useCursorInput, useKey } from ".."
-import { Ellipse, getPointByLengthAndDirection, getTwoPointsDistance, Position } from "../../utils"
+import { Ellipse, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance, Position } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 
 export function useEllipseClickCreate(
@@ -168,6 +168,6 @@ function getEllipse(
     cy: center.y,
     rx: getTwoPointsDistance(center, middlePosition),
     ry: typeof endPosition === 'number' ? endPosition : getTwoPointsDistance(center, endPosition),
-    angle: Math.atan2(middlePosition.y - center.y, middlePosition.x - center.x) * 180 / Math.PI,
+    angle: getTwoPointsAngle(middlePosition, center) * 180 / Math.PI,
   }
 }

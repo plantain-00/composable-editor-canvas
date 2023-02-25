@@ -1,5 +1,5 @@
 import React from "react"
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, iteratePolygonLines, Nullable, NumberEditor, Position } from "../../../src"
+import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsAngle, iteratePolygonLines, Nullable, NumberEditor, Position } from "../../../src"
 import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type ResistanceDevice = BaseDevice<'resistance'> & {
@@ -59,7 +59,7 @@ function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type"
       const center = getTwoPointCenter(start.position, end.position)
       const p1 = getPointByLengthAndDirection(center, 8, start.position)
       const p2 = getPointByLengthAndDirection(center, 8, end.position)
-      const angle = Math.atan2(start.position.x - end.position.x, end.position.y - start.position.y)
+      const angle = getTwoPointsAngle(start.position, end.position)
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],

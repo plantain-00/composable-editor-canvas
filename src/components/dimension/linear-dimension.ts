@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsAngle } from "../../utils"
 
 /**
  * @public
@@ -25,14 +25,14 @@ export function getLinearDimensionGeometries(
   let arrow2Points: Position[]
   let textPoints: Position[] = []
   const { textPosition, size, textRotation } = getTextPosition(content)
-  const centerRotation = Math.atan2(content.position.y - center.y, content.position.x - center.x)
+  const centerRotation = getTwoPointsAngle(content.position, center)
   const rotation = Math.abs(centerRotation)
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
     const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
-    const r = Math.atan2(right.y - left.y, right.x - left.x)
+    const r = getTwoPointsAngle(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {
       rotationDelta += Math.PI * 2
@@ -175,15 +175,15 @@ export function getLinearDimensionTextPosition(
   let text: string
   let size: Size | undefined
   let textRotation = 0
-  const centerRotation = Math.atan2(content.position.y - center.y, content.position.x - center.x)
+  const centerRotation = getTwoPointsAngle(content.position, center)
   const rotation = Math.abs(centerRotation)
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
     const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
-    textRotation = Math.atan2(right.y - left.y, right.x - left.x)
-    const r = Math.atan2(right.y - left.y, right.x - left.x)
+    textRotation = getTwoPointsAngle(right, left)
+    const r = getTwoPointsAngle(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {
       rotationDelta += Math.PI * 2

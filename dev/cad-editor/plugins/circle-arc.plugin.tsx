@@ -79,7 +79,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length < 2) {
           return
         }
-        const angles = points.map((p) => Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI)
+        const angles = points.map((p) => ctx.getCircleAngle(p, content) * 180 / Math.PI)
         angles.sort((a, b) => a - b)
         return angles.map((a, i) => ({
           ...content,
@@ -211,6 +211,8 @@ export function getModel(ctx: PluginContext) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
+      getParam: (content, point) => ctx.getCircleAngle(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param),
     } as model.Model<CircleContent>,
     {
       type: 'arc',
@@ -241,7 +243,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length === 0) {
           return
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI, content))
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.getCircleAngle(p, content) * 180 / Math.PI, content))
         angles.sort((a, b) => a - b)
         const result: ArcContent[] = []
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -327,7 +329,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.startAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                  c.startAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -341,7 +343,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.endAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                  c.endAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -397,6 +399,8 @@ export function getModel(ctx: PluginContext) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
+      getParam: (content, point) => ctx.getCircleAngle(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param),
     } as model.Model<ArcContent>,
   ]
 }

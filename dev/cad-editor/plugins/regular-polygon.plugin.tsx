@@ -88,7 +88,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
                   return
                 }
                 c.radius = ctx.getTwoPointsDistance(cursor, c)
-                c.angle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI
+                c.angle = ctx.getTwoPointsAngle(cursor, c) * 180 / Math.PI
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
               },
             } as core.EditPoint<model.BaseContent>))
@@ -113,6 +113,8 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRegularPolygonGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRegularPolygonGeometriesFromCache(content).lines),
   }
 }
 
@@ -141,7 +143,7 @@ export function getCommand(ctx: PluginContext): Command {
               y: p0.y,
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
-              angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
               strokeStyleId,
               fillStyleId,
             } as RegularPolygonContent)
@@ -160,7 +162,7 @@ export function getCommand(ctx: PluginContext): Command {
           y: p0.y,
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
-          angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
           strokeStyleId,
           fillStyleId,
         })

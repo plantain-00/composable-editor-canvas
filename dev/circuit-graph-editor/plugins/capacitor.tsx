@@ -1,5 +1,5 @@
 import React from "react"
-import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, Nullable, NumberEditor, Position } from "../../../src"
+import { getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsAngle, Nullable, NumberEditor, Position } from "../../../src"
 import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type CapacitorDevice = BaseDevice<'capacitor'> & {
@@ -67,7 +67,7 @@ function getCapacitorGeometriesFromCache(content: Omit<CapacitorDevice, "type">,
       const center = getTwoPointCenter(start.position, end.position)
       const p1 = getPointByLengthAndDirection(center, 3, start.position)
       const p2 = getPointByLengthAndDirection(center, 3, end.position)
-      const angle = Math.atan2(start.position.x - end.position.x, end.position.y - start.position.y)
+      const angle = getTwoPointsAngle(start.position, end.position)
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],

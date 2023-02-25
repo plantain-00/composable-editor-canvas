@@ -868,7 +868,7 @@ function getModel(ctx) {
         if (points.length < 2) {
           return;
         }
-        const angles = points.map((p) => Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI);
+        const angles = points.map((p) => ctx.getCircleAngle(p, content) * 180 / Math.PI);
         angles.sort((a, b) => a - b);
         return angles.map((a, i) => ({
           ...content,
@@ -1040,7 +1040,9 @@ function getModel(ctx) {
       isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
-      isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r
+      isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
+      getParam: (content, point) => ctx.getCircleAngle(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param)
     },
     {
       type: "arc",
@@ -1071,7 +1073,7 @@ function getModel(ctx) {
         if (points.length === 0) {
           return;
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(Math.atan2(p.y - content.y, p.x - content.x) * 180 / Math.PI, content));
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.getCircleAngle(p, content) * 180 / Math.PI, content));
         angles.sort((a, b) => a - b);
         const result = [];
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -1158,7 +1160,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.startAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI;
+                  c.startAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI;
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1172,7 +1174,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.endAngle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI;
+                  c.endAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI;
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1255,7 +1257,9 @@ function getModel(ctx) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle)
+      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
+      getParam: (content, point) => ctx.getCircleAngle(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param)
     }
   ];
 }
@@ -2326,7 +2330,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getGeometries(content).lines)
   };
 }
 function isDiamondContent(content) {
@@ -2665,7 +2671,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
+    getParam: (content, point) => ctx.getEllipseAngle(point, content),
+    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180)
   };
   return [
     ellipseModel,
@@ -2758,29 +2766,25 @@ function getModel(ctx) {
                 }
               },
               {
-                ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, center, rotate),
+                ...ctx.getEllipsePointAtAngle(content, startAngle),
                 cursor: ctx.getResizeCursor(content.startAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
-                  var _a2;
                   if (!isEllipseArcContent(c)) {
                     return;
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, (_a2 = content.angle) != null ? _a2 : 0);
-                  c.startAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI;
+                  c.startAngle = ctx.getEllipseAngle(cursor, content);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [center, cursor] }] };
                 }
               },
               {
-                ...ctx.rotatePositionByCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, center, rotate),
+                ...ctx.getEllipsePointAtAngle(content, endAngle),
                 cursor: ctx.getResizeCursor(content.endAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
-                  var _a2;
                   if (!isEllipseArcContent(c)) {
                     return;
                   }
-                  const p = ctx.rotatePositionByCenter(cursor, center, (_a2 = content.angle) != null ? _a2 : 0);
-                  c.endAngle = Math.atan2((p.y - content.cy) / content.ry, (p.x - content.cx) / content.rx) * 180 / Math.PI;
+                  c.endAngle = ctx.getEllipseAngle(cursor, content);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [center, cursor] }] };
                 }
@@ -2797,9 +2801,9 @@ function getModel(ctx) {
           const middleAngle = (startAngle + endAngle) / 2;
           return [
             { x: content.cx, y: content.cy, type: "center" },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(startAngle), y: content.cy + content.ry * Math.sin(startAngle) }, content), type: "endpoint" },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(endAngle), y: content.cy + content.ry * Math.sin(endAngle) }, content), type: "endpoint" },
-            { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx * Math.cos(middleAngle), y: content.cy + content.ry * Math.sin(middleAngle) }, content), type: "midpoint" }
+            { ...ctx.getEllipsePointAtAngle(content, startAngle), type: "endpoint" },
+            { ...ctx.getEllipsePointAtAngle(content, endAngle), type: "endpoint" },
+            { ...ctx.getEllipsePointAtAngle(content, middleAngle), type: "midpoint" }
           ];
         });
       },
@@ -2867,7 +2871,9 @@ function getModel(ctx) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle)
+      getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
+      getParam: (content, point) => ctx.getEllipseAngle(point, content),
+      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180)
     }
   ];
 }
@@ -2949,10 +2955,7 @@ function getCommand(ctx) {
               {
                 type: "line",
                 points: [
-                  ctx.rotatePositionByEllipseCenter({
-                    x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.startAngle / 180 * Math.PI),
-                    y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.startAngle / 180 * Math.PI)
-                  }, ellipseArc),
+                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.startAngle / 180 * Math.PI),
                   {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
@@ -2967,10 +2970,7 @@ function getCommand(ctx) {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
                   },
-                  ctx.rotatePositionByEllipseCenter({
-                    x: ellipseArc.cx + ellipseArc.rx * Math.cos(ellipseArc.endAngle / 180 * Math.PI),
-                    y: ellipseArc.cy + ellipseArc.ry * Math.sin(ellipseArc.endAngle / 180 * Math.PI)
-                  }, ellipseArc)
+                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.endAngle / 180 * Math.PI)
                 ],
                 dashArray: [4 / scale]
               }
@@ -3907,8 +3907,8 @@ function getCommand(ctx) {
       })));
     }
     return circles.map(({ foot1, foot2, center: c }) => {
-      const angle1 = Math.atan2(foot1.y - c.y, foot1.x - c.x) * 180 / Math.PI;
-      const angle2 = Math.atan2(foot2.y - c.y, foot2.x - c.x) * 180 / Math.PI;
+      const angle1 = ctx.getTwoPointsAngle(foot1, c) * 180 / Math.PI;
+      const angle2 = ctx.getTwoPointsAngle(foot2, c) * 180 / Math.PI;
       const min = Math.min(angle1, angle2);
       const max = Math.max(angle1, angle2);
       if (max - min < 180) {
@@ -4297,7 +4297,9 @@ function getModel(ctx) {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     getStartPoint: (content) => content.points[0],
-    getEndPoint: (content) => content.points[content.points.length - 1]
+    getEndPoint: (content) => content.points[content.points.length - 1],
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolylineGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines)
   };
   return [
     lineModel,
@@ -4393,7 +4395,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
           assistentContents.push(
             {
               type: "arc",
@@ -4457,7 +4459,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
           assistentContents.push(
             {
               type: "arc",
@@ -4532,11 +4534,13 @@ function getModel(ctx) {
   const LinearDimensionContent = ctx.and(ctx.BaseContent("linear dimension"), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension, {
     ref1: ctx.optional({
       id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number
+      snapIndex: ctx.number,
+      param: ctx.optional(ctx.number)
     }),
     ref2: ctx.optional({
       id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number
+      snapIndex: ctx.number,
+      param: ctx.optional(ctx.number)
     })
   });
   const linearDimensionCache = new ctx.WeakmapCache3();
@@ -4546,7 +4550,11 @@ function getModel(ctx) {
     if (content.ref1 !== void 0) {
       const ref = ctx.getReference(content.ref1.id, contents);
       if (ref) {
-        const p = (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getSnapPoints) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c[content.ref1.snapIndex];
+        const model = ctx.getContentModel(ref);
+        let p = (_b = (_a = model == null ? void 0 : model.getSnapPoints) == null ? void 0 : _a.call(model, ref, contents)) == null ? void 0 : _b[content.ref1.snapIndex];
+        if (!p && content.ref1.param !== void 0) {
+          p = (_c = model == null ? void 0 : model.getPoint) == null ? void 0 : _c.call(model, ref, content.ref1.param);
+        }
         if (p) {
           p1 = p;
         }
@@ -4556,7 +4564,11 @@ function getModel(ctx) {
     if (content.ref2 !== void 0) {
       const ref = ctx.getReference(content.ref2.id, contents);
       if (ref) {
-        const p = (_f = (_e = (_d = ctx.getContentModel(ref)) == null ? void 0 : _d.getSnapPoints) == null ? void 0 : _e.call(_d, ref, contents)) == null ? void 0 : _f[content.ref2.snapIndex];
+        const model = ctx.getContentModel(ref);
+        let p = (_e = (_d = model == null ? void 0 : model.getSnapPoints) == null ? void 0 : _d.call(model, ref, contents)) == null ? void 0 : _e[content.ref2.snapIndex];
+        if (!p && content.ref2.param !== void 0) {
+          p = (_f = model == null ? void 0 : model.getPoint) == null ? void 0 : _f.call(model, ref, content.ref2.param);
+        }
         if (p) {
           p2 = p;
         }
@@ -4645,6 +4657,7 @@ function getModel(ctx) {
     },
     getGeometries: getLinearDimensionGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      var _a, _b;
       return {
         p1: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
@@ -4707,7 +4720,8 @@ function getModel(ctx) {
             if (isLinearDimensionContent(c) && c.ref1) {
               c.ref1.snapIndex = v;
             }
-          }) }) : void 0
+          }) }) : void 0,
+          ((_a = content.ref1) == null ? void 0 : _a.param) !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: content.ref1.param }) : void 0
         ],
         ref2: [
           /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref2 !== void 0, readOnly: content.ref2 === void 0, setValue: (v) => update((c) => {
@@ -4724,7 +4738,8 @@ function getModel(ctx) {
             if (isLinearDimensionContent(c) && c.ref2) {
               c.ref2.snapIndex = v;
             }
-          }) }) : void 0
+          }) }) : void 0,
+          ((_b = content.ref2) == null ? void 0 : _b.param) !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: content.ref2.param }) : void 0
         ],
         position: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
@@ -4928,7 +4943,7 @@ function getCommand(ctx) {
         const start = startPosition;
         const end = cursorPosition;
         const r = ctx.getTwoPointsDistance(start, end);
-        const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+        const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
         assistentContents.push(
           {
             type: "arc",
@@ -5025,7 +5040,7 @@ function getCommand(ctx) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
-            const angle = Math.atan2(end.y - startPosition.y, end.x - startPosition.x) * 180 / Math.PI;
+            const angle = ctx.getTwoPointsAngle(end, startPosition) * 180 / Math.PI;
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 var _a, _b;
@@ -5840,7 +5855,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              c.itemAngle = (Math.atan2(cursor.y - content.center.y, cursor.x - content.center.x) - Math.atan2(base.y - content.center.y, base.x - content.center.x)) * 180 / Math.PI;
+              c.itemAngle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI;
               return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
             }
           });
@@ -5854,7 +5869,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              let angle = (Math.atan2(cursor.y - content.center.y, cursor.x - content.center.x) - Math.atan2(base.y - content.center.y, base.x - content.center.x)) * 180 / Math.PI;
+              let angle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI;
               if (c.itemAngle > 0) {
                 if (angle < 0) {
                   angle += 360;
@@ -6153,7 +6168,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolygonGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolygonGeometries(content).lines)
   };
 }
 function isPolygonContent(content) {
@@ -6868,7 +6885,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRectGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRectGeometries(content).lines)
   };
 }
 function isRectContent(content) {
@@ -7013,7 +7032,7 @@ function getModel(ctx) {
                   return;
                 }
                 c.radius = ctx.getTwoPointsDistance(cursor, c);
-                c.angle = Math.atan2(cursor.y - c.y, cursor.x - c.x) * 180 / Math.PI;
+                c.angle = ctx.getTwoPointsAngle(cursor, c) * 180 / Math.PI;
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }))
@@ -7061,7 +7080,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRegularPolygonGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRegularPolygonGeometriesFromCache(content).lines)
   };
 }
 function isRegularPolygonContent(content) {
@@ -7084,7 +7105,7 @@ function getCommand(ctx) {
               y: p0.y,
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
-              angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
               strokeStyleId,
               fillStyleId
             });
@@ -7103,7 +7124,7 @@ function getCommand(ctx) {
           y: p0.y,
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
-          angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
           strokeStyleId,
           fillStyleId
         });
@@ -8236,7 +8257,9 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getStarGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getStarGeometriesFromCache(content).lines)
   };
 }
 function isStarContent(content) {
@@ -8261,7 +8284,7 @@ function getCommand(ctx) {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
               strokeStyleId,
               fillStyleId
             });
@@ -8282,7 +8305,7 @@ function getCommand(ctx) {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI,
+          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
           strokeStyleId,
           fillStyleId
         });

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, isSamePoint, isZero, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -283,8 +283,8 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
             const t1 = getPerpendicularPoint(center, line1)
             const t2 = getPerpendicularPoint(center, line2)
             points.push({ x: t1.x, y: t1.y })
-            const startAngle = Math.atan2(t1.y - center.y, t1.x - center.x) * 180 / Math.PI
-            const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x) * 180 / Math.PI
+            const startAngle = getTwoPointsAngle(t1, center) * 180 / Math.PI
+            const endAngle = getTwoPointsAngle(t2, center) * 180 / Math.PI
             points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
           }
         }
@@ -344,7 +344,7 @@ export function getPathCommandEndPoint(pathCommands: PathCommand[], index: numbe
         )
         if (center) {
           const t2 = getPerpendicularPoint(center, line2)
-          const endAngle = Math.atan2(t2.y - center.y, t2.x - center.x)
+          const endAngle = getTwoPointsAngle(t2, center)
           return {
             x: center.x + command.radius * Math.cos(endAngle),
             y: center.y + command.radius * Math.sin(endAngle),

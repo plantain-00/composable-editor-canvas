@@ -102,6 +102,8 @@ export function getModel(ctx: PluginContext) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     getStartPoint: (content) => content.points[0],
     getEndPoint: (content) => content.points[content.points.length - 1],
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolylineGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines),
   }
   return [
     lineModel,
@@ -185,7 +187,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
+          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI
           assistentContents.push(
             {
               type: 'arc',
@@ -249,7 +251,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
+          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI
           assistentContents.push(
             {
               type: 'arc',
