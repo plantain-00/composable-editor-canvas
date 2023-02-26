@@ -3,7 +3,7 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByRegion, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByRegion, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -620,7 +620,8 @@ export const CADEditor = React.forwardRef((props: {
       onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
-      onEditMove(getSnapPoint(p, editingContent, getContentsInRange, lastPosition).position, selectedContents)
+      const s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
+      onEditMove(s.position, selectedContents, s.target)
       // hover by position
       const indexes = getSortedContents(editingContent).indexes
       setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
@@ -802,8 +803,8 @@ export const CADEditor = React.forwardRef((props: {
         startTime,
         acquirePoint: handle => {
           commandResultHandler.current = p => {
-            if (is<Position>(p, Position)) {
-              handle(p)
+            if (is<SnapResult>(p, SnapResult)) {
+              handle(p.position, p.target)
             }
           }
           startOperation({ type: 'command', name: 'acquire point' })

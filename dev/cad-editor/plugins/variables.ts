@@ -5,9 +5,12 @@ function getCommand() {
     name: "acquire point",
     useCommand({ onEnd }) {
       return {
-        onStart(p) {
+        onStart(p, target) {
           onEnd({
-            result: p
+            result: {
+              position: p,
+              target
+            }
           });
         }
       };
@@ -4634,7 +4637,7 @@ function getModel(ctx) {
       ));
       return target.renderGroup(children);
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
@@ -4648,6 +4651,42 @@ function getModel(ctx) {
                 }
                 c.position.x += cursor.x - start.x;
                 c.position.y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: content.p1.x,
+              y: content.p1.y,
+              cursor: "move",
+              update(c, { cursor, start, scale, target }) {
+                if (!isLinearDimensionContent(c)) {
+                  return;
+                }
+                c.p1.x = cursor.x;
+                c.p1.y = cursor.y;
+                c.ref1 = target ? {
+                  id: ctx.getContentIndex(target.content, contents),
+                  snapIndex: target.snapIndex,
+                  param: target.param
+                } : void 0;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            },
+            {
+              x: content.p2.x,
+              y: content.p2.y,
+              cursor: "move",
+              update(c, { cursor, start, scale, target }) {
+                if (!isLinearDimensionContent(c)) {
+                  return;
+                }
+                c.p2.x = cursor.x;
+                c.p2.y = cursor.y;
+                c.ref2 = target ? {
+                  id: ctx.getContentIndex(target.content, contents),
+                  snapIndex: target.snapIndex,
+                  param: target.param
+                } : void 0;
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }
@@ -4664,9 +4703,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
-              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p, ref) => update((c) => {
                 if (isLinearDimensionContent(c)) {
-                  c.p1.x = p.x, c.p1.y = p.y;
+                  c.p1.x = p.x;
+                  c.p1.y = p.y;
+                  c.ref1 = ref;
                 }
               })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
@@ -4687,9 +4728,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
-              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p, ref) => update((c) => {
                 if (isLinearDimensionContent(c)) {
-                  c.p2.x = p.x, c.p2.y = p.y;
+                  c.p2.x = p.x;
+                  c.p2.y = p.y;
+                  c.ref2 = ref;
                 }
               })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {

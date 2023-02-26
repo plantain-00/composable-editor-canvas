@@ -170,7 +170,7 @@ export type Model<T> = Partial<FeatureModels> & {
     contents: readonly Nullable<BaseContent>[],
     options: {
       startTime: (max: number) => void,
-      acquirePoint: (handle: (point: Position) => void) => void,
+      acquirePoint: (handle: (point: Position, target?: SnapTarget) => void) => void,
     },
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
@@ -1083,6 +1083,22 @@ export interface SnapTarget {
   snapIndex: number
   param?: number
   id: number
+}
+
+export const SnapTarget = {
+  snapIndex: number,
+  param: optional(number),
+  id: number,
+}
+
+export interface SnapResult {
+  position: Position
+  target?: SnapTarget
+}
+
+export const SnapResult = {
+  position: Position,
+  target: optional(SnapTarget),
 }
 
 export function getDefaultViewport(content: BaseContent, contents: readonly Nullable<BaseContent<string>>[]) {
