@@ -5,6 +5,7 @@ import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 import { useKey } from "./use-key"
 import { prependPatchPath } from "./use-partial-edit"
+import { SnapTarget } from "./use-point-snap"
 import { SelectPath } from "./use-selected"
 
 /**
@@ -25,6 +26,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
   const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { path: TPath, content: T, angleSnapStartPoint?: Position, relatedEditPoints: (EditPoint<T> & { path: TPath, content: T })[] }>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
+  const [snapTarget, setSnapTarget] = React.useState<SnapTarget<T>>()
   const cursorWidth = 5 / (options?.scale ?? 1)
   const readOnly = options?.readOnly ?? false
 
@@ -32,6 +34,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
     setEditPoint(undefined)
     setStartPosition(undefined)
     setCursorPosition(undefined)
+    setSnapTarget(undefined)
   }
 
   React.useEffect(() => {
@@ -42,7 +45,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
 
   useKey((e) => e.key === 'Escape', () => {
     reset()
-  }, [setEditPoint, setStartPosition, setCursorPosition])
+  }, [setEditPoint, setStartPosition, setCursorPosition, setSnapTarget])
 
   return {
     editPoint,
@@ -73,7 +76,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       if (editPoint && startPosition && cursorPosition) {
         const assistentContents: T[] = []
         const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
-          const r = editPoint.update(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
+          const r = editPoint.update(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
           if (r?.assistentContents) {
             assistentContents.push(...r.assistentContents)
           }
@@ -101,7 +104,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       return
     },
-    onEditMove(p: Position, selectedContents: readonly { content: T, path: TPath }[]) {
+    onEditMove(p: Position, selectedContents: readonly { content: T, path: TPath }[], target?: SnapTarget<T>) {
       if (readOnly) {
         return
       }
@@ -112,6 +115,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       if (startPosition) {
         setCursorPosition(p)
+        setSnapTarget(target)
         return
       }
       let result: typeof editPoint | undefined
@@ -151,7 +155,12 @@ export type EditPoint<T> = Position & {
   cursor: string
   update: (
     content: Draft<T>,
-    props: { cursor: Position, start: Position, scale: number },
+    props: {
+      cursor: Position
+      start: Position
+      scale: number
+      target?: SnapTarget<T>
+    },
   ) => {
     assistentContents?: T[]
   } | void

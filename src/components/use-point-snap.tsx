@@ -359,11 +359,13 @@ export function usePointSnap<T>(
  */
 export interface SnapResult<T> {
   position: Position
-  target?: {
-    snapIndex: number
-    param?: number
-    content: T
-  }
+  target?: SnapTarget<T>
+}
+
+export interface SnapTarget<T> {
+  snapIndex: number
+  param?: number
+  content: T
 }
 
 /**

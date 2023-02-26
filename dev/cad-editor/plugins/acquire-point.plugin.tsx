@@ -5,9 +5,12 @@ export function getCommand(): Command {
     name: 'acquire point',
     useCommand({ onEnd }) {
       return {
-        onStart(p) {
+        onStart(p, target) {
           onEnd({
-            result: p,
+            result: {
+              position: p,
+              target,
+            },
           })
         },
       }

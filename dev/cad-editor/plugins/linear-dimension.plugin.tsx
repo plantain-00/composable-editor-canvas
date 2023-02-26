@@ -123,7 +123,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       ))
       return target.renderGroup(children)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
@@ -139,7 +139,43 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
                 c.position.y += cursor.y - start.y
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
-            }
+            },
+            {
+              x: content.p1.x,
+              y: content.p1.y,
+              cursor: 'move',
+              update(c, { cursor, start, scale, target }) {
+                if (!isLinearDimensionContent(c)) {
+                  return
+                }
+                c.p1.x = cursor.x
+                c.p1.y = cursor.y
+                c.ref1 = target ? {
+                  id: ctx.getContentIndex(target.content, contents),
+                  snapIndex: target.snapIndex,
+                  param: target.param,
+                } : undefined
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: content.p2.x,
+              y: content.p2.y,
+              cursor: 'move',
+              update(c, { cursor, start, scale, target }) {
+                if (!isLinearDimensionContent(c)) {
+                  return
+                }
+                c.p2.x = cursor.x
+                c.p2.y = cursor.y
+                c.ref2 = target ? {
+                  id: ctx.getContentIndex(target.content, contents),
+                  snapIndex: target.snapIndex,
+                  param: target.param,
+                } : undefined
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            },
           ]
         }
       })
@@ -150,7 +186,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         p1: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = p.x, c.p1.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint((p, ref) => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = p.x; c.p1.y = p.y; c.ref1 = ref } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.x = v } })} />,
             y: <ctx.NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p1.y = v } })} />,
           }}
@@ -158,7 +194,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         p2: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = p.x, c.p2.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint((p, ref) => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = p.x; c.p2.y = p.y; c.ref2 = ref } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.x = v } })} />,
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.p2.y = v } })} />,
           }}
