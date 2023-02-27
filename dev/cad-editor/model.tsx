@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -1148,4 +1148,39 @@ export function getLinesPointAtParam(param: number, lines: [Position, Position][
   const line = lines[index]
   const distance = (param - index) * getTwoPointsDistance(...line)
   return getPointByLengthAndDirection(line[0], distance, line[1])
+}
+
+export interface PositionRef {
+  id: number | BaseContent
+  snapIndex: number
+  param?: number
+}
+
+export const PositionRef = {
+  id: or(number, Content),
+  snapIndex: number,
+  param: optional(number),
+}
+
+export function getRefPosition(positionRef: PositionRef | undefined, contents: readonly Nullable<BaseContent>[]) {
+  if (positionRef !== undefined) {
+    const ref = getReference(positionRef.id, contents)
+    if (ref) {
+      const model = getContentModel(ref)
+      let p: Position | undefined = model?.getSnapPoints?.(ref, contents)?.[positionRef.snapIndex]
+      if (!p && positionRef.param !== undefined) {
+        p = model?.getPoint?.(ref, positionRef.param)
+      }
+      return p
+    }
+  }
+  return
+}
+
+export function getSnapTargetRef(target: CoreSnapTarget<BaseContent> | undefined, contents: readonly Nullable<BaseContent>[]) {
+  return target ? {
+    id: getContentIndex(target.content, contents),
+    snapIndex: target.snapIndex,
+    param: target.param,
+  } : undefined
 }

@@ -26,12 +26,18 @@ export {
 function getModel(ctx) {
   const ArrowContent = ctx.and(ctx.BaseContent("arrow"), ctx.StrokeFields, ctx.ArrowFields, {
     p1: ctx.Position,
-    p2: ctx.Position
+    p2: ctx.Position,
+    ref1: ctx.optional(ctx.PositionRef),
+    ref2: ctx.optional(ctx.PositionRef)
   });
-  function getArrowGeometriesFromCache(content) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const { arrowPoints, endPoint } = ctx.getArrowPoints(content.p1, content.p2, content);
-      const points = [content.p1, endPoint];
+  const arrwoCache = new ctx.WeakmapCache3();
+  function getArrowGeometriesFromCache(content, contents) {
+    var _a, _b;
+    const p1 = (_a = ctx.getRefPosition(content.ref1, contents)) != null ? _a : content.p1;
+    const p2 = (_b = ctx.getRefPosition(content.ref2, contents)) != null ? _b : content.p2;
+    return arrwoCache.get(content, p1, p2, () => {
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content);
+      const points = [p1, endPoint];
       return {
         points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
@@ -70,7 +76,7 @@ function getModel(ctx) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const strokeColor = getStrokeColor(strokeStyleContent);
       const strokeWidth = transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content));
-      const { regions, renderingLines } = getArrowGeometriesFromCache(content);
+      const { regions, renderingLines } = getArrowGeometriesFromCache(content, contents);
       const children = [];
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth }));
@@ -82,31 +88,33 @@ function getModel(ctx) {
       }
       return target.renderGroup(children);
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
             {
               ...content.p1,
               cursor: "move",
-              update(c, { cursor, start, scale }) {
+              update(c, { cursor, start, scale, target }) {
                 if (!isArrowContent(c)) {
                   return;
                 }
                 c.p1.x += cursor.x - start.x;
                 c.p1.y += cursor.y - start.y;
+                c.ref1 = ctx.getSnapTargetRef(target, contents);
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             },
             {
               ...content.p2,
               cursor: "move",
-              update(c, { cursor, start, scale }) {
+              update(c, { cursor, start, scale, target }) {
                 if (!isArrowContent(c)) {
                   return;
                 }
                 c.p2.x += cursor.x - start.x;
                 c.p2.y += cursor.y - start.y;
+                c.ref2 = ctx.getSnapTargetRef(target, contents);
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }
@@ -116,15 +124,18 @@ function getModel(ctx) {
     },
     getGeometries: getArrowGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      var _a, _b;
       return {
         p1: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
             inline: true,
             properties: {
-              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p, ref) => update((c) => {
                 if (isArrowContent(c)) {
-                  c.p1.x = p.x, c.p1.y = p.y;
+                  c.p1.x = p.x;
+                  c.p1.y = p.y;
+                  c.ref1 = ref;
                 }
               })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p1.x, setValue: (v) => update((c) => {
@@ -145,9 +156,11 @@ function getModel(ctx) {
           {
             inline: true,
             properties: {
-              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+              from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p, ref) => update((c) => {
                 if (isArrowContent(c)) {
-                  c.p2.x = p.x, c.p2.y = p.y;
+                  c.p2.x = p.x;
+                  c.p2.y = p.y;
+                  c.ref2 = ref;
                 }
               })) }, "canvas"),
               x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.p2.x, setValue: (v) => update((c) => {
@@ -163,13 +176,67 @@ function getModel(ctx) {
             }
           }
         ),
+        ref1: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref1 !== void 0, readOnly: content.ref1 === void 0, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && !v) {
+              c.ref1 = void 0;
+            }
+          }) }),
+          content.ref1 !== void 0 && typeof content.ref1.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.id, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && c.ref1) {
+              c.ref1.id = v;
+            }
+          }) }) : void 0,
+          content.ref1 !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.snapIndex, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && c.ref1) {
+              c.ref1.snapIndex = v;
+            }
+          }) }) : void 0,
+          ((_a = content.ref1) == null ? void 0 : _a.param) !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: content.ref1.param }) : void 0
+        ],
+        ref2: [
+          /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref2 !== void 0, readOnly: content.ref2 === void 0, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && !v) {
+              c.ref2 = void 0;
+            }
+          }) }),
+          content.ref2 !== void 0 && typeof content.ref2.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.id, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && c.ref2) {
+              c.ref2.id = v;
+            }
+          }) }) : void 0,
+          content.ref2 !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.snapIndex, setValue: (v) => update((c) => {
+            if (isArrowContent(c) && c.ref2) {
+              c.ref2.snapIndex = v;
+            }
+          }) }) : void 0,
+          ((_b = content.ref2) == null ? void 0 : _b.param) !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: content.ref2.param }) : void 0
+        ],
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
     isValid: (c, p) => ctx.validate(c, ArrowContent, p),
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds
+    getRefIds: (content) => [
+      ...ctx.getStrokeRefIds(content),
+      ...content.ref1 && typeof content.ref1.id === "number" ? [content.ref1.id] : [],
+      ...content.ref2 && typeof content.ref2.id === "number" ? [content.ref2.id] : []
+    ],
+    updateRefId(content, update) {
+      if (content.ref1) {
+        const newRefId = update(content.ref1.id);
+        if (newRefId !== void 0) {
+          content.ref1.id = newRefId;
+        }
+      }
+      if (content.ref2) {
+        const newRefId = update(content.ref2.id);
+        if (newRefId !== void 0) {
+          content.ref2.id = newRefId;
+        }
+      }
+      ctx.updateStrokeRefIds(content, update);
+    }
   };
 }
 function isArrowContent(content) {
@@ -183,13 +250,15 @@ function getCommand(ctx) {
     hotkey: "AR",
     icon,
     useCommand({ onEnd, type, strokeStyleId }) {
-      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+      const { line, positionTargets, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
         type === "create arrow",
-        (c) => onEnd({
+        (c, targets) => onEnd({
           updateContents: (contents) => contents.push({
             type: "arrow",
             p1: c[0],
             p2: c[1],
+            ref1: targets[0],
+            ref2: targets[1],
             strokeStyleId
           })
         }),
@@ -203,6 +272,8 @@ function getCommand(ctx) {
           type: "arrow",
           p1: line[0],
           p2: line[1],
+          ref1: positionTargets[0],
+          ref2: positionTargets[1],
           strokeStyleId
         });
       }
@@ -4535,48 +4606,14 @@ export {
 `// dev/cad-editor/plugins/linear-dimension.plugin.tsx
 function getModel(ctx) {
   const LinearDimensionContent = ctx.and(ctx.BaseContent("linear dimension"), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension, {
-    ref1: ctx.optional({
-      id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number,
-      param: ctx.optional(ctx.number)
-    }),
-    ref2: ctx.optional({
-      id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number,
-      param: ctx.optional(ctx.number)
-    })
+    ref1: ctx.optional(ctx.PositionRef),
+    ref2: ctx.optional(ctx.PositionRef)
   });
   const linearDimensionCache = new ctx.WeakmapCache3();
   const getLinearDimensionPositions = (content, contents) => {
-    var _a, _b, _c, _d, _e, _f;
-    let p1 = content.p1;
-    if (content.ref1 !== void 0) {
-      const ref = ctx.getReference(content.ref1.id, contents);
-      if (ref) {
-        const model = ctx.getContentModel(ref);
-        let p = (_b = (_a = model == null ? void 0 : model.getSnapPoints) == null ? void 0 : _a.call(model, ref, contents)) == null ? void 0 : _b[content.ref1.snapIndex];
-        if (!p && content.ref1.param !== void 0) {
-          p = (_c = model == null ? void 0 : model.getPoint) == null ? void 0 : _c.call(model, ref, content.ref1.param);
-        }
-        if (p) {
-          p1 = p;
-        }
-      }
-    }
-    let p2 = content.p2;
-    if (content.ref2 !== void 0) {
-      const ref = ctx.getReference(content.ref2.id, contents);
-      if (ref) {
-        const model = ctx.getContentModel(ref);
-        let p = (_e = (_d = model == null ? void 0 : model.getSnapPoints) == null ? void 0 : _d.call(model, ref, contents)) == null ? void 0 : _e[content.ref2.snapIndex];
-        if (!p && content.ref2.param !== void 0) {
-          p = (_f = model == null ? void 0 : model.getPoint) == null ? void 0 : _f.call(model, ref, content.ref2.param);
-        }
-        if (p) {
-          p2 = p;
-        }
-      }
-    }
+    var _a, _b;
+    const p1 = (_a = ctx.getRefPosition(content.ref1, contents)) != null ? _a : content.p1;
+    const p2 = (_b = ctx.getRefPosition(content.ref2, contents)) != null ? _b : content.p2;
     return { p1, p2 };
   };
   function getLinearDimensionGeometriesFromCache(content, contents) {
@@ -4664,11 +4701,7 @@ function getModel(ctx) {
                 }
                 c.p1.x = cursor.x;
                 c.p1.y = cursor.y;
-                c.ref1 = target ? {
-                  id: ctx.getContentIndex(target.content, contents),
-                  snapIndex: target.snapIndex,
-                  param: target.param
-                } : void 0;
+                c.ref1 = ctx.getSnapTargetRef(target, contents);
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             },
@@ -4682,11 +4715,7 @@ function getModel(ctx) {
                 }
                 c.p2.x = cursor.x;
                 c.p2.y = cursor.y;
-                c.ref2 = target ? {
-                  id: ctx.getContentIndex(target.content, contents),
-                  snapIndex: target.snapIndex,
-                  param: target.param
-                } : void 0;
+                c.ref2 = ctx.getSnapTargetRef(target, contents);
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }
@@ -9021,6 +9050,8 @@ function getCommand(ctx) {
       ctx.useKey((k) => k.code === "KeyZ" && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo);
       ctx.useKey((k) => k.code === "KeyZ" && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo);
       ctx.useKey((e) => e.key === "Enter", () => {
+        if (!type)
+          return;
         const removedIndexes = [];
         const newContents = [];
         for (const { content, children } of state) {
@@ -9050,7 +9081,7 @@ function getCommand(ctx) {
           }
         });
         reset();
-      }, [reset]);
+      }, [reset, type]);
       return {
         onStart() {
           if (current) {
