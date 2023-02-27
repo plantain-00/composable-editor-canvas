@@ -7,17 +7,24 @@ import type { LineContent } from './line-polyline.plugin'
 export type ArrowContent = model.BaseContent<'arrow'> & model.StrokeFields & model.ArrowFields & {
   p1: core.Position
   p2: core.Position
+  ref1?: model.PositionRef
+  ref2?: model.PositionRef
 }
 
 export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
   const ArrowContent = ctx.and(ctx.BaseContent('arrow'), ctx.StrokeFields, ctx.ArrowFields, {
     p1: ctx.Position,
     p2: ctx.Position,
+    ref1: ctx.optional(ctx.PositionRef),
+    ref2: ctx.optional(ctx.PositionRef),
   })
-  function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
-      const { arrowPoints, endPoint } = ctx.getArrowPoints(content.p1, content.p2, content)
-      const points = [content.p1, endPoint]
+  const arrwoCache = new ctx.WeakmapCache3<Omit<ArrowContent, "type">, core.Position, core.Position, model.Geometries>()
+  function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
+    const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
+    return arrwoCache.get(content, p1, p2, () => {
+      const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content)
+      const points = [p1, endPoint]
       return {
         points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
@@ -55,7 +62,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const strokeColor = getStrokeColor(strokeStyleContent)
       const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
-      const { regions, renderingLines } = getArrowGeometriesFromCache(content)
+      const { regions, renderingLines } = getArrowGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, { strokeColor, strokeWidth }))
@@ -67,31 +74,33 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       }
       return target.renderGroup(children)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
             {
               ...content.p1,
               cursor: 'move',
-              update(c, { cursor, start, scale }) {
+              update(c, { cursor, start, scale, target }) {
                 if (!isArrowContent(c)) {
                   return
                 }
                 c.p1.x += cursor.x - start.x
                 c.p1.y += cursor.y - start.y
+                c.ref1 = ctx.getSnapTargetRef(target, contents)
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
             },
             {
               ...content.p2,
               cursor: 'move',
-              update(c, { cursor, start, scale }) {
+              update(c, { cursor, start, scale, target }) {
                 if (!isArrowContent(c)) {
                   return
                 }
                 c.p2.x += cursor.x - start.x
                 c.p2.y += cursor.y - start.y
+                c.ref2 = ctx.getSnapTargetRef(target, contents)
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
             },
@@ -105,7 +114,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
         p1: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isArrowContent(c)) { c.p1.x = p.x, c.p1.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint((p, ref) => update(c => { if (isArrowContent(c)) { c.p1.x = p.x; c.p1.y = p.y; c.ref1 = ref } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p1.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.x = v } })} />,
             y: <ctx.NumberEditor value={content.p1.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p1.y = v } })} />,
           }}
@@ -113,18 +122,48 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
         p2: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isArrowContent(c)) { c.p2.x = p.x, c.p2.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint((p, ref) => update(c => { if (isArrowContent(c)) { c.p2.x = p.x; c.p2.y = p.y; c.ref2 = ref } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.p2.x} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.x = v } })} />,
             y: <ctx.NumberEditor value={content.p2.y} setValue={(v) => update(c => { if (isArrowContent(c)) { c.p2.y = v } })} />,
           }}
         />,
+        ref1: [
+          <ctx.BooleanEditor value={content.ref1 !== undefined} readOnly={content.ref1 === undefined} setValue={(v) => update(c => { if (isArrowContent(c) && !v) { c.ref1 = undefined } })} />,
+          content.ref1 !== undefined && typeof content.ref1.id === 'number' ? <ctx.NumberEditor value={content.ref1.id} setValue={(v) => update(c => { if (isArrowContent(c) && c.ref1) { c.ref1.id = v } })} /> : undefined,
+          content.ref1 !== undefined ? <ctx.NumberEditor value={content.ref1.snapIndex} setValue={(v) => update(c => { if (isArrowContent(c) && c.ref1) { c.ref1.snapIndex = v } })} /> : undefined,
+          content.ref1?.param !== undefined ? <ctx.NumberEditor readOnly value={content.ref1.param} /> : undefined,
+        ],
+        ref2: [
+          <ctx.BooleanEditor value={content.ref2 !== undefined} readOnly={content.ref2 === undefined} setValue={(v) => update(c => { if (isArrowContent(c) && !v) { c.ref2 = undefined } })} />,
+          content.ref2 !== undefined && typeof content.ref2.id === 'number' ? <ctx.NumberEditor value={content.ref2.id} setValue={(v) => update(c => { if (isArrowContent(c) && c.ref2) { c.ref2.id = v } })} /> : undefined,
+          content.ref2 !== undefined ? <ctx.NumberEditor value={content.ref2.snapIndex} setValue={(v) => update(c => { if (isArrowContent(c) && c.ref2) { c.ref2.snapIndex = v } })} /> : undefined,
+          content.ref2?.param !== undefined ? <ctx.NumberEditor readOnly value={content.ref2.param} /> : undefined,
+        ],
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
     isValid: (c, p) => ctx.validate(c, ArrowContent, p),
-    getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds,
+    getRefIds: (content) => [
+      ...ctx.getStrokeRefIds(content),
+      ...(content.ref1 && typeof content.ref1.id === 'number' ? [content.ref1.id] : []),
+      ...(content.ref2 && typeof content.ref2.id === 'number' ? [content.ref2.id] : []),
+    ],
+    updateRefId(content, update) {
+      if (content.ref1) {
+        const newRefId = update(content.ref1.id)
+        if (newRefId !== undefined) {
+          content.ref1.id = newRefId
+        }
+      }
+      if (content.ref2) {
+        const newRefId = update(content.ref2.id)
+        if (newRefId !== undefined) {
+          content.ref2.id = newRefId
+        }
+      }
+      ctx.updateStrokeRefIds(content, update)
+    },
   }
 }
 
@@ -144,13 +183,15 @@ export function getCommand(ctx: PluginContext): Command {
     hotkey: 'AR',
     icon,
     useCommand({ onEnd, type, strokeStyleId }) {
-      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+      const { line, positionTargets, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate<model.SnapTarget>(
         type === 'create arrow',
-        (c) => onEnd({
+        (c, targets) => onEnd({
           updateContents: (contents) => contents.push({
             type: 'arrow',
             p1: c[0],
             p2: c[1],
+            ref1: targets[0],
+            ref2: targets[1],
             strokeStyleId,
           } as ArrowContent)
         }),
@@ -164,6 +205,8 @@ export function getCommand(ctx: PluginContext): Command {
           type: 'arrow',
           p1: line[0],
           p2: line[1],
+          ref1: positionTargets[0],
+          ref2: positionTargets[1],
           strokeStyleId,
         })
       }

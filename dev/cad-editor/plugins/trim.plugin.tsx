@@ -72,6 +72,7 @@ export function getCommand(ctx: PluginContext): Command {
       ctx.useKey((k) => k.code === 'KeyZ' && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo)
       ctx.useKey((k) => k.code === 'KeyZ' && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo)
       ctx.useKey((e) => e.key === 'Enter', () => {
+        if (!type) return
         const removedIndexes: number[] = []
         const newContents: model.BaseContent[] = []
         for (const { content, children } of state) {
@@ -101,7 +102,7 @@ export function getCommand(ctx: PluginContext): Command {
           },
         })
         reset()
-      }, [reset])
+      }, [reset, type])
 
       return {
         onStart() {

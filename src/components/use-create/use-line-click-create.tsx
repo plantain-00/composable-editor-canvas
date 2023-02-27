@@ -7,9 +7,9 @@ import { getAngleSnapPosition } from "../../utils/snap"
 /**
  * @public
  */
-export function useLineClickCreate(
+export function useLineClickCreate<T = unknown>(
   enabled: boolean,
-  onEnd: (line: Position[]) => void,
+  onEnd: (line: Position[], targets: (T | undefined)[]) => void,
   options?: Partial<{
     once: boolean
     getAngleSnap: (angle: number) => number | undefined
@@ -18,6 +18,7 @@ export function useLineClickCreate(
 ) {
   const [line, setLine] = React.useState<Position[]>()
   const [positions, setPositions] = React.useState<Position[]>([])
+  const [positionTargets, setPositionTargets] = React.useState<(T | undefined)[]>([])
   const [tabSwitchIndex, setTabSwitchIndex] = React.useState(0)
   const [fixedAngle, setFixedAngle] = React.useState<number>()
   const [fixedLength, setFixedLength] = React.useState<number>()
@@ -46,6 +47,7 @@ export function useLineClickCreate(
             let newPosition = getAngleSnapPosition(start, end, () => angle)
             newPosition = getLengthSnapPosition(start, newPosition, getLengthSnap)
             setPositions([...positions, newPosition])
+            setPositionTargets([...positionTargets, undefined])
             setLine([...positions, newPosition, { x: cursorPosition.x, y: cursorPosition.y }])
             setFixedAngle(undefined)
             setFixedLength(undefined)
@@ -62,11 +64,12 @@ export function useLineClickCreate(
           const x = lastPosition.x + offsetX
           const y = lastPosition.y + offsetY
           if (options?.once && positions.length > 0) {
-            onEnd([positions[0], { x, y }])
+            onEnd([positions[0], { x, y }], positionTargets)
             reset()
             return
           }
           setPositions([...positions, { x, y }])
+          setPositionTargets([...positionTargets, undefined])
           setLine([...positions, { x, y }, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
           setFixedAngle(undefined)
@@ -79,11 +82,12 @@ export function useLineClickCreate(
         if (!isNaN(length) && length > 0) {
           const point = getPointByLengthAndDirection(positions[positions.length - 1], length, cursorPosition)
           if (options?.once && positions.length > 0) {
-            onEnd([positions[0], point])
+            onEnd([positions[0], point], positionTargets)
             reset()
             return
           }
           setPositions([...positions, point])
+          setPositionTargets([...positionTargets, undefined])
           setLine([...positions, point, { x: cursorPosition.x, y: cursorPosition.y }])
           clearText()
           setFixedAngle(undefined)
@@ -118,20 +122,22 @@ export function useLineClickCreate(
     setFixedAngle(undefined)
     setFixedLength(undefined)
     setTabSwitchIndex(0)
+    setPositionTargets([])
   }
 
   useKey((e) => e.key === 'Escape', () => {
     if (positions.length > 1) {
-      onEnd(positions)
+      onEnd(positions, positionTargets)
     }
     reset()
-  }, [positions, setPositions])
+  }, [positions, setPositions, positionTargets])
 
   return {
     line,
+    positionTargets,
     inputMode,
     lastPosition: line?.[line.length - 2],
-    onClick(p: Position) {
+    onClick(p: Position, target?: T) {
       if (!enabled) {
         return
       }
@@ -141,11 +147,12 @@ export function useLineClickCreate(
       setFixedAngle(undefined)
       setFixedLength(undefined)
       if (options?.once && positions.length > 0) {
-        onEnd([positions[0], newPosition])
+        onEnd([positions[0], newPosition], positionTargets)
         reset()
         return
       }
       setPositions([...positions, newPosition])
+      setPositionTargets([...positionTargets, target])
     },
     onMove(p: Position, viewportPosition?: Position) {
       setInputPosition(viewportPosition || p)

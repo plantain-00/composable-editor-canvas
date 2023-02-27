@@ -5,61 +5,19 @@ import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 
 export type LinearDimensionContent = model.BaseContent<'linear dimension'> & model.StrokeFields & model.ArrowFields & core.LinearDimension & {
-  ref1?: {
-    id: number | model.BaseContent
-    snapIndex: number
-    param?: number
-  }
-  ref2?: {
-    id: number | model.BaseContent
-    snapIndex: number
-    param?: number
-  }
+  ref1?: model.PositionRef
+  ref2?: model.PositionRef
 }
 
 export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent> {
   const LinearDimensionContent = ctx.and(ctx.BaseContent('linear dimension'), ctx.StrokeFields, ctx.ArrowFields, ctx.LinearDimension, {
-    ref1: ctx.optional({
-      id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number,
-      param: ctx.optional(ctx.number),
-    }),
-    ref2: ctx.optional({
-      id: ctx.or(ctx.number, ctx.Content),
-      snapIndex: ctx.number,
-      param: ctx.optional(ctx.number),
-    }),
+    ref1: ctx.optional(ctx.PositionRef),
+    ref2: ctx.optional(ctx.PositionRef),
   })
   const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries>()
   const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
-    let p1 = content.p1
-    if (content.ref1 !== undefined) {
-      const ref = ctx.getReference(content.ref1.id, contents)
-      if (ref) {
-        const model = ctx.getContentModel(ref)
-        let p: core.Position | undefined = model?.getSnapPoints?.(ref, contents)?.[content.ref1.snapIndex]
-        if (!p && content.ref1.param !== undefined) {
-          p = model?.getPoint?.(ref, content.ref1.param)
-        }
-        if (p) {
-          p1 = p
-        }
-      }
-    }
-    let p2 = content.p2
-    if (content.ref2 !== undefined) {
-      const ref = ctx.getReference(content.ref2.id, contents)
-      if (ref) {
-        const model = ctx.getContentModel(ref)
-        let p: core.Position | undefined = model?.getSnapPoints?.(ref, contents)?.[content.ref2.snapIndex]
-        if (!p && content.ref2.param !== undefined) {
-          p = model?.getPoint?.(ref, content.ref2.param)
-        }
-        if (p) {
-          p2 = p
-        }
-      }
-    }
+    const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
+    const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
     return { p1, p2 }
   }
   function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
@@ -150,11 +108,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
                 }
                 c.p1.x = cursor.x
                 c.p1.y = cursor.y
-                c.ref1 = target ? {
-                  id: ctx.getContentIndex(target.content, contents),
-                  snapIndex: target.snapIndex,
-                  param: target.param,
-                } : undefined
+                c.ref1 = ctx.getSnapTargetRef(target, contents)
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
             },
@@ -168,11 +122,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
                 }
                 c.p2.x = cursor.x
                 c.p2.y = cursor.y
-                c.ref2 = target ? {
-                  id: ctx.getContentIndex(target.content, contents),
-                  snapIndex: target.snapIndex,
-                  param: target.param,
-                } : undefined
+                c.ref2 = ctx.getSnapTargetRef(target, contents)
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
             },
