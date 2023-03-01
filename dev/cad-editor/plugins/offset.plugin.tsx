@@ -20,11 +20,11 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = 'input offset or click to end'
       }
-      const [offset, setOffset] = React.useState(10)
+      const [offset, setOffset] = React.useState(0)
       const { input, clearText, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === 'Enter') {
           const offset = +text
-          if (!isNaN(offset) && offset > 0) {
+          if (!isNaN(offset) && offset >= 0) {
             setOffset(offset)
             clearText()
           }

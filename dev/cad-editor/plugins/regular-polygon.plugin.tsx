@@ -48,6 +48,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.y += offset.y
     },
     offset(content, point, distance) {
+      if (!distance) {
+        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       const radius = distance / Math.cos(Math.PI / content.count)
       return ctx.produce(content, (d) => {

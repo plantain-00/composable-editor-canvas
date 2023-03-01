@@ -379,8 +379,6 @@ export const CADEditor = React.forwardRef((props: {
       }
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
         if (active !== undefined && activeContent && transformViewport) {
-          start = transformViewport(start)
-          end = transformViewport(end)
           const viewport = getViewportByRegion(activeContent, { start, end })
           if (viewport) {
             setState((draft) => {

@@ -65,6 +65,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.angle = 2 * angle - content.angle
     },
     offset(content, point, distance) {
+      if (!distance) {
+        distance = Math.min(...getRectGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       distance *= 2 * (this.isPointIn?.(content, point) ? -1 : 1)
       return ctx.produce(content, (d) => {
         d.width += distance

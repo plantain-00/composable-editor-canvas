@@ -70,6 +70,9 @@ export function getModel(ctx: PluginContext) {
       content.angle = 2 * angle - (content.angle ?? 0)
     },
     offset(content, point, distance) {
+      if (!distance) {
+        distance = Math.min(...getEllipseGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       return ctx.produce(content, (d) => {
         d.rx += distance
@@ -89,7 +92,7 @@ export function getModel(ctx: PluginContext) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
       }) as EllipseArcContent)
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -97,6 +100,7 @@ export function getModel(ctx: PluginContext) {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
+        clip,
       }
       if (strokeStyleContent.dashArray) {
         const { points } = getEllipseGeometries(content)
@@ -264,6 +268,9 @@ export function getModel(ctx: PluginContext) {
         return result.length > 1 ? result : undefined
       },
       offset(content, point, distance) {
+        if (!distance) {
+          distance = Math.min(...getEllipseArcGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        }
         distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1
         return ctx.produce(content, (d) => {
           d.rx += distance

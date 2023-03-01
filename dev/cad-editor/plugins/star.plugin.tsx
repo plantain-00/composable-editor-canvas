@@ -55,6 +55,9 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       content.y += offset.y
     },
     offset(content, point, distance) {
+      if (!distance) {
+        distance = Math.min(...getStarGeometriesFromCache(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       const angle = Math.PI / content.count
       const length = Math.sqrt(content.innerRadius ** 2 + content.outerRadius ** 2 - 2 * content.innerRadius * content.outerRadius * Math.cos(angle))
@@ -64,7 +67,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         d.innerRadius += distance / content.outerRadius
       })
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -73,6 +76,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
         dashArray: strokeStyleContent.dashArray,
+        clip,
       }
       const { points } = getStarGeometriesFromCache(content)
       return target.renderPolygon(points, options)
