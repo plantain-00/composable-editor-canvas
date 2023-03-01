@@ -940,6 +940,9 @@ function getModel(ctx) {
       },
       offset(content, point, distance) {
         return ctx.produce(content, (d) => {
+          if (!distance) {
+            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
+          }
           d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
         });
       },
@@ -1150,6 +1153,9 @@ function getModel(ctx) {
       },
       offset(content, point, distance) {
         return ctx.produce(content, (d) => {
+          if (!distance) {
+            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
+          }
           d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
         });
       },
@@ -2317,7 +2323,10 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
-      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
+      if (!distance) {
+        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -2 : 2;
       const scale = content.width / content.height;
       const height = distance / Math.sin(Math.atan(scale));
       const width = height * scale;
@@ -2326,7 +2335,7 @@ function getModel(ctx) {
         d.height += height;
       });
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -2334,7 +2343,8 @@ function getModel(ctx) {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent)
+        fillPattern: getFillPattern(fillStyleContent),
+        clip
       };
       const { points } = getGeometries(content);
       return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray });
@@ -2601,6 +2611,9 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
+      if (!distance) {
+        distance = Math.min(...getEllipseGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       return ctx.produce(content, (d) => {
         d.rx += distance;
@@ -2620,7 +2633,7 @@ function getModel(ctx) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1]
       }));
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -2628,7 +2641,8 @@ function getModel(ctx) {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent)
+        fillPattern: getFillPattern(fillStyleContent),
+        clip
       };
       if (strokeStyleContent.dashArray) {
         const { points } = getEllipseGeometries(content);
@@ -2825,6 +2839,9 @@ function getModel(ctx) {
         return result.length > 1 ? result : void 0;
       },
       offset(content, point, distance) {
+        if (!distance) {
+          distance = Math.min(...getEllipseArcGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        }
         distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1;
         return ctx.produce(content, (d) => {
           d.rx += distance;
@@ -4337,6 +4354,9 @@ function getModel(ctx) {
     offset(content, point, distance) {
       const [p1, p2] = content.points;
       const line = ctx.twoPointLineToGeneralFormLine(p1, p2);
+      if (!distance) {
+        distance = Math.min(...getPolylineGeometries(content).lines.map((line2) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line2)));
+      }
       const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0];
       const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine));
       const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine));
@@ -4435,6 +4455,9 @@ function getModel(ctx) {
       },
       offset(content, point, distance) {
         var _a;
+        if (!distance) {
+          distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        }
         if (content.points.length === 2) {
           return (_a = lineModel.offset) == null ? void 0 : _a.call(lineModel, content, point, distance);
         }
@@ -5330,11 +5353,11 @@ function getCommand(ctx) {
       if (type) {
         message = "input offset or click to end";
       }
-      const [offset, setOffset] = React.useState(10);
+      const [offset, setOffset] = React.useState(0);
       const { input, clearText, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === "Enter") {
           const offset2 = +text;
-          if (!isNaN(offset2) && offset2 > 0) {
+          if (!isNaN(offset2) && offset2 >= 0) {
             setOffset(offset2);
             clearText();
           }
@@ -6336,6 +6359,9 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       const { lines } = getPolygonGeometries(content);
+      if (!distance) {
+        distance = Math.min(...lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
       const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
       const inPolygon = (_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point);
@@ -7038,6 +7064,9 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
+      if (!distance) {
+        distance = Math.min(...getRectGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       distance *= 2 * (((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1);
       return ctx.produce(content, (d) => {
         d.width += distance;
@@ -7263,6 +7292,9 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
+      if (!distance) {
+        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       const radius = distance / Math.cos(Math.PI / content.count);
       return ctx.produce(content, (d) => {
@@ -7783,13 +7815,16 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
+      if (!distance) {
+        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -2 : 2;
       return ctx.produce(content, (d) => {
         d.width += distance;
         d.height += distance;
       });
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -7797,7 +7832,8 @@ function getModel(ctx) {
         fillColor: getFillColor(fillStyleContent),
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent)
+        fillPattern: getFillPattern(fillStyleContent),
+        clip
       };
       const { renderingLines } = getGeometries(content);
       return target.renderPath(renderingLines, options);
@@ -8451,6 +8487,9 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       var _a;
+      if (!distance) {
+        distance = Math.min(...getStarGeometriesFromCache(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+      }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       const angle = Math.PI / content.count;
       const length = Math.sqrt(content.innerRadius ** 2 + content.outerRadius ** 2 - 2 * content.innerRadius * content.outerRadius * Math.cos(angle));
@@ -8460,7 +8499,7 @@ function getModel(ctx) {
         d.innerRadius += distance / content.outerRadius;
       });
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
       const fillStyleContent = ctx.getFillStyleContent(content, contents);
@@ -8469,7 +8508,8 @@ function getModel(ctx) {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
-        dashArray: strokeStyleContent.dashArray
+        dashArray: strokeStyleContent.dashArray,
+        clip
       };
       const { points } = getStarGeometriesFromCache(content);
       return target.renderPolygon(points, options);

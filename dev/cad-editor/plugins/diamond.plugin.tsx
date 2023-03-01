@@ -46,7 +46,10 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
     },
     offset(content, point, distance) {
-      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      if (!distance) {
+        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
+      distance *= this.isPointIn?.(content, point) ? -2 : 2
       const scale = content.width / content.height
       const height = distance / Math.sin(Math.atan(scale))
       const width = height * scale
@@ -55,7 +58,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
         d.height += height
       })
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -63,6 +66,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
+        clip,
       }
       const { points } = getGeometries(content)
       return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray })

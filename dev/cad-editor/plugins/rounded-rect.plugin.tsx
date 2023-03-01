@@ -76,13 +76,16 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       content.y += offset.y
     },
     offset(content, point, distance) {
+      if (!distance) {
+        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       distance *= this.isPointIn?.(content, point) ? -2 : 2
       return ctx.produce(content, (d) => {
         d.width += distance
         d.height += distance
       })
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
       const options = {
@@ -90,6 +93,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
         strokeColor: getStrokeColor(strokeStyleContent),
         strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         fillPattern: getFillPattern(fillStyleContent),
+        clip,
       }
       const { renderingLines } = getGeometries(content)
       return target.renderPath(renderingLines, options)

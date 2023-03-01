@@ -54,6 +54,9 @@ export function getModel(ctx: PluginContext) {
     offset(content, point, distance) {
       const [p1, p2] = content.points
       const line = ctx.twoPointLineToGeneralFormLine(p1, p2)
+      if (!distance) {
+        distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0]
       const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine))
       const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine))
@@ -127,6 +130,9 @@ export function getModel(ctx: PluginContext) {
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
       offset(content, point, distance) {
+        if (!distance) {
+          distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        }
         if (content.points.length === 2) {
           return lineModel.offset?.(content, point, distance)
         }

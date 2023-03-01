@@ -77,6 +77,9 @@ export function getModel(ctx: PluginContext) {
       },
       offset(content, point, distance) {
         return ctx.produce(content, (d) => {
+          if (!distance) {
+            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
+          }
           d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
         })
       },
@@ -246,6 +249,9 @@ export function getModel(ctx: PluginContext) {
       },
       offset(content, point, distance) {
         return ctx.produce(content, (d) => {
+          if (!distance) {
+            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
+          }
           d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
         })
       },

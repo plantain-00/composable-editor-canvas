@@ -56,6 +56,9 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     },
     offset(content, point, distance) {
       const { lines } = getPolygonGeometries(content)
+      if (!distance) {
+        distance = Math.min(...lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+      }
       const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
       const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0
       const inPolygon = this.isPointIn?.(content, point)
