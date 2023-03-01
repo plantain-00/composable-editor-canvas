@@ -919,7 +919,7 @@ export function usePlugins() {
 }
 
 async function registerPlugins() {
-  const plugins: { getModel?: (ctx: PluginContext) => model.Model<unknown> | model.Model<unknown>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
+  const plugins: { getModel?: (ctx: PluginContext) => model.Model<BaseContent> | model.Model<BaseContent>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
   const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup, parseExpression, tokenizeExpression, evaluateExpression }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {

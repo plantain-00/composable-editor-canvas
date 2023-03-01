@@ -58,16 +58,23 @@ export function getModel(ctx: PluginContext) {
       content.cy += offset.y
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy }, center, -angle)
+      const p = ctx.rotatePositionByCenter(ctx.getEllipseCenter(content), center, -angle)
       content.cx = p.x
       content.cy = p.y
       content.angle = (content.angle ?? 0) + angle
     },
     mirror(content, line, angle) {
-      const p = ctx.getSymmetryPoint({ x: content.cx, y: content.cy }, line)
+      const p = ctx.getSymmetryPoint(ctx.getEllipseCenter(content), line)
       content.cx = p.x
       content.cy = p.y
       content.angle = 2 * angle - (content.angle ?? 0)
+    },
+    offset(content, point, distance) {
+      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      return ctx.produce(content, (d) => {
+        d.rx += distance
+        d.ry += distance
+      })
     },
     break(content, points) {
       if (points.length < 2) {
@@ -98,11 +105,11 @@ export function getModel(ctx: PluginContext) {
       return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { ...options, angle: content.angle })
     },
     getOperatorRenderPosition(content) {
-      return { x: content.cx, y: content.cy }
+      return ctx.getEllipseCenter(content)
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
-        const center = { x: content.cx, y: content.cy }
+        const center = ctx.getEllipseCenter(content)
         const rotate = -(content.angle ?? 0)
         const left = ctx.rotatePositionByCenter({ x: content.cx - content.rx, y: content.cy }, center, rotate)
         const right = ctx.rotatePositionByCenter({ x: content.cx + content.rx, y: content.cy }, center, rotate)
@@ -173,13 +180,13 @@ export function getModel(ctx: PluginContext) {
               },
             },
           ],
-          angleSnapStartPoint: { x: content.cx, y: content.cy },
+          angleSnapStartPoint: ctx.getEllipseCenter(content),
         }
       })
     },
     getSnapPoints(content) {
       return ctx.getSnapPointsFromCache(content, () => [
-        { x: content.cx, y: content.cy, type: 'center' },
+        { ...ctx.getEllipseCenter(content), type: 'center' },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx - content.rx, y: content.cy }, content), type: 'endpoint' },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content), type: 'endpoint' },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content), type: 'endpoint' },
@@ -256,6 +263,13 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
+      offset(content, point, distance) {
+        distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1
+        return ctx.produce(content, (d) => {
+          d.rx += distance
+          d.ry += distance
+        })
+      },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
         const fillStyleContent = ctx.getFillStyleContent(content, contents)
@@ -279,7 +293,7 @@ export function getModel(ctx: PluginContext) {
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
-          const center = { x: content.cx, y: content.cy }
+          const center = ctx.getEllipseCenter(content)
           const startAngle = content.startAngle / 180 * Math.PI
           const endAngle = content.endAngle / 180 * Math.PI
           const rotate = -(content.angle ?? 0)
@@ -333,7 +347,7 @@ export function getModel(ctx: PluginContext) {
           const endAngle = content.endAngle / 180 * Math.PI
           const middleAngle = (startAngle + endAngle) / 2
           return [
-            { x: content.cx, y: content.cy, type: 'center' },
+            { ...ctx.getEllipseCenter(content), type: 'center' },
             { ...ctx.getEllipsePointAtAngle(content, startAngle), type: 'endpoint' },
             { ...ctx.getEllipsePointAtAngle(content, endAngle), type: 'endpoint' },
             { ...ctx.getEllipsePointAtAngle(content, middleAngle), type: 'midpoint' },
@@ -421,7 +435,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             if (type === 'ellipse center') {
               assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
             } else if (ellipse) {
-              assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] })
+              assistentContents.push({ type: 'line', points: [ctx.getEllipseCenter(ellipse), cursorPosition], dashArray: [4 / scale] })
             }
           } else {
             assistentContents.push({ type: 'line', points: [startPosition, cursorPosition], dashArray: [4 / scale] })
@@ -489,12 +503,12 @@ export function getCommand(ctx: PluginContext): Command[] {
             )
           }
           if (cursorPosition) {
-            assistentContents.push({ type: 'line', points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4 / scale] })
+            assistentContents.push({ type: 'line', points: [ctx.getEllipseCenter(ellipseArc), cursorPosition], dashArray: [4 / scale] })
           }
         } else if (ellipse) {
           assistentContents.push({ ...ellipse, dashArray: [4 / scale], type: 'ellipse' })
           if (cursorPosition) {
-            assistentContents.push({ type: 'line', points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] })
+            assistentContents.push({ type: 'line', points: [ctx.getEllipseCenter(ellipse), cursorPosition], dashArray: [4 / scale] })
           }
         }
         if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {

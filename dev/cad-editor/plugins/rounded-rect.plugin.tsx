@@ -75,6 +75,13 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       content.x += offset.x
       content.y += offset.y
     },
+    offset(content, point, distance) {
+      distance *= this.isPointIn?.(content, point) ? -2 : 2
+      return ctx.produce(content, (d) => {
+        d.width += distance
+        d.height += distance
+      })
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
@@ -151,6 +158,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
   }
 }
 

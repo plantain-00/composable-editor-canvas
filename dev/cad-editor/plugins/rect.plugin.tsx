@@ -64,6 +64,13 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.y = p.y
       content.angle = 2 * angle - content.angle
     },
+    offset(content, point, distance) {
+      distance *= 2 * (this.isPointIn?.(content, point) ? -1 : 1)
+      return ctx.produce(content, (d) => {
+        d.width += distance
+        d.height += distance
+      })
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)

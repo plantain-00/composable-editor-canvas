@@ -54,6 +54,25 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
       const { lines } = getPolygonGeometries(content)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
+    offset(content, point, distance) {
+      const { lines } = getPolygonGeometries(content)
+      const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
+      const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0
+      const inPolygon = this.isPointIn?.(content, point)
+      const index = (counterclockwise && inPolygon) || (!counterclockwise && !inPolygon) ? 1 : 0
+      const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[index])
+      const points: core.Position[] = []
+      for (let i = 0; i < parallelLines.length; i++) {
+        const previous = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1]
+        const p = ctx.getTwoGeneralFormLinesIntersectionPoint(previous, parallelLines[i])
+        if (p) {
+          points.push(p)
+        }
+      }
+      return ctx.produce(content, (d) => {
+        d.points = points
+      })
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
