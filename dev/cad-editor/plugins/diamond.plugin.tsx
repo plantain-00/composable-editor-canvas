@@ -45,6 +45,16 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
       const { lines } = getGeometries(content)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
     },
+    offset(content, point, distance) {
+      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      const scale = content.width / content.height
+      const height = distance / Math.sin(Math.atan(scale))
+      const width = height * scale
+      return ctx.produce(content, (d) => {
+        d.width += width
+        d.height += height
+      })
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)

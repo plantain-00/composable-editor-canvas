@@ -47,6 +47,13 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.x += offset.x
       content.y += offset.y
     },
+    offset(content, point, distance) {
+      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      const radius = distance / Math.cos(Math.PI / content.count)
+      return ctx.produce(content, (d) => {
+        d.radius += radius
+      })
+    },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)

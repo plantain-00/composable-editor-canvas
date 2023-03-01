@@ -552,7 +552,7 @@ export function rotatePositionByCenter(position: Position, center: Position, ang
  * @public
  */
 export function rotatePositionByEllipseCenter(p: Position, content: Ellipse) {
-  return rotatePositionByCenter(p, { x: content.cx, y: content.cy }, -(content.angle ?? 0))
+  return rotatePositionByCenter(p, getEllipseCenter(content), -(content.angle ?? 0))
 }
 
 /**
@@ -1247,8 +1247,12 @@ export function deduplicatePosition(array: Position[]) {
  * @public
  */
 export function getEllipseAngle(p: Position, ellipse: Ellipse) {
-  const newPosition = rotatePositionByCenter(p, { x: ellipse.cx, y: ellipse.cy }, ellipse.angle ?? 0)
+  const newPosition = rotatePositionByCenter(p, getEllipseCenter(ellipse), ellipse.angle ?? 0)
   return Math.atan2((newPosition.y - ellipse.cy) / ellipse.ry, (newPosition.x - ellipse.cx) / ellipse.rx) * 180 / Math.PI
+}
+
+export function getEllipseCenter(ellipse: Ellipse) {
+  return { x: ellipse.cx, y: ellipse.cy }
 }
 
 export function getCircleAngle(p: Position, circle: Circle) {
@@ -1342,7 +1346,7 @@ export function getEllipsePointAtAngle(content: Ellipse, angle: number) {
     y: content.cy + content.ry * Math.sin(angle),
   }
   if (content.angle) {
-    return rotatePosition(p, { x: content.cx, y: content.cy }, content.angle * Math.PI / 180)
+    return rotatePosition(p, getEllipseCenter(content), content.angle * Math.PI / 180)
   } else {
     return p
   }

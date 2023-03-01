@@ -75,6 +75,11 @@ export function getModel(ctx: PluginContext) {
         content.x = p.x
         content.y = p.y
       },
+      offset(content, point, distance) {
+        return ctx.produce(content, (d) => {
+          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
+        })
+      },
       break(content, points) {
         if (points.length < 2) {
           return
@@ -238,6 +243,11 @@ export function getModel(ctx: PluginContext) {
         const endAngle = 2 * angle - content.startAngle
         content.startAngle = startAngle
         content.endAngle = endAngle
+      },
+      offset(content, point, distance) {
+        return ctx.produce(content, (d) => {
+          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
+        })
       },
       break(content, points) {
         if (points.length === 0) {

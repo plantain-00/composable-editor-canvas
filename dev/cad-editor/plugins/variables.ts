@@ -938,6 +938,11 @@ function getModel(ctx) {
         content.x = p.x;
         content.y = p.y;
       },
+      offset(content, point, distance) {
+        return ctx.produce(content, (d) => {
+          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
+        });
+      },
       break(content, points) {
         if (points.length < 2) {
           return;
@@ -1142,6 +1147,11 @@ function getModel(ctx) {
         const endAngle = 2 * angle - content.startAngle;
         content.startAngle = startAngle;
         content.endAngle = endAngle;
+      },
+      offset(content, point, distance) {
+        return ctx.produce(content, (d) => {
+          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
+        });
       },
       break(content, points) {
         if (points.length === 0) {
@@ -2305,6 +2315,17 @@ function getModel(ctx) {
       const { lines } = getGeometries(content);
       return lines.map((line) => ({ type: "line", points: line }));
     },
+    offset(content, point, distance) {
+      var _a;
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
+      const scale = content.width / content.height;
+      const height = distance / Math.sin(Math.atan(scale));
+      const width = height * scale;
+      return ctx.produce(content, (d) => {
+        d.width += width;
+        d.height += height;
+      });
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -2566,17 +2587,25 @@ function getModel(ctx) {
     },
     rotate(content, center, angle) {
       var _a;
-      const p = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy }, center, -angle);
+      const p = ctx.rotatePositionByCenter(ctx.getEllipseCenter(content), center, -angle);
       content.cx = p.x;
       content.cy = p.y;
       content.angle = ((_a = content.angle) != null ? _a : 0) + angle;
     },
     mirror(content, line, angle) {
       var _a;
-      const p = ctx.getSymmetryPoint({ x: content.cx, y: content.cy }, line);
+      const p = ctx.getSymmetryPoint(ctx.getEllipseCenter(content), line);
       content.cx = p.x;
       content.cy = p.y;
       content.angle = 2 * angle - ((_a = content.angle) != null ? _a : 0);
+    },
+    offset(content, point, distance) {
+      var _a;
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
+      return ctx.produce(content, (d) => {
+        d.rx += distance;
+        d.ry += distance;
+      });
     },
     break(content, points) {
       if (points.length < 2) {
@@ -2608,12 +2637,12 @@ function getModel(ctx) {
       return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { ...options, angle: content.angle });
     },
     getOperatorRenderPosition(content) {
-      return { x: content.cx, y: content.cy };
+      return ctx.getEllipseCenter(content);
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
         var _a;
-        const center = { x: content.cx, y: content.cy };
+        const center = ctx.getEllipseCenter(content);
         const rotate = -((_a = content.angle) != null ? _a : 0);
         const left = ctx.rotatePositionByCenter({ x: content.cx - content.rx, y: content.cy }, center, rotate);
         const right = ctx.rotatePositionByCenter({ x: content.cx + content.rx, y: content.cy }, center, rotate);
@@ -2684,13 +2713,13 @@ function getModel(ctx) {
               }
             }
           ],
-          angleSnapStartPoint: { x: content.cx, y: content.cy }
+          angleSnapStartPoint: ctx.getEllipseCenter(content)
         };
       });
     },
     getSnapPoints(content) {
       return ctx.getSnapPointsFromCache(content, () => [
-        { x: content.cx, y: content.cy, type: "center" },
+        { ...ctx.getEllipseCenter(content), type: "center" },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx - content.rx, y: content.cy }, content), type: "endpoint" },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content), type: "endpoint" },
         { ...ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content), type: "endpoint" },
@@ -2795,6 +2824,13 @@ function getModel(ctx) {
         });
         return result.length > 1 ? result : void 0;
       },
+      offset(content, point, distance) {
+        distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1;
+        return ctx.produce(content, (d) => {
+          d.rx += distance;
+          d.ry += distance;
+        });
+      },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
         var _a;
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -2820,7 +2856,7 @@ function getModel(ctx) {
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
           var _a;
-          const center = { x: content.cx, y: content.cy };
+          const center = ctx.getEllipseCenter(content);
           const startAngle = content.startAngle / 180 * Math.PI;
           const endAngle = content.endAngle / 180 * Math.PI;
           const rotate = -((_a = content.angle) != null ? _a : 0);
@@ -2874,7 +2910,7 @@ function getModel(ctx) {
           const endAngle = content.endAngle / 180 * Math.PI;
           const middleAngle = (startAngle + endAngle) / 2;
           return [
-            { x: content.cx, y: content.cy, type: "center" },
+            { ...ctx.getEllipseCenter(content), type: "center" },
             { ...ctx.getEllipsePointAtAngle(content, startAngle), type: "endpoint" },
             { ...ctx.getEllipsePointAtAngle(content, endAngle), type: "endpoint" },
             { ...ctx.getEllipsePointAtAngle(content, middleAngle), type: "midpoint" }
@@ -2983,7 +3019,7 @@ function getCommand(ctx) {
             if (type === "ellipse center") {
               assistentContents.push({ type: "line", points: [startPosition, cursorPosition], dashArray: [4 / scale] });
             } else if (ellipse) {
-              assistentContents.push({ type: "line", points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] });
+              assistentContents.push({ type: "line", points: [ctx.getEllipseCenter(ellipse), cursorPosition], dashArray: [4 / scale] });
             }
           } else {
             assistentContents.push({ type: "line", points: [startPosition, cursorPosition], dashArray: [4 / scale] });
@@ -3051,12 +3087,12 @@ function getCommand(ctx) {
             );
           }
           if (cursorPosition) {
-            assistentContents.push({ type: "line", points: [{ x: ellipseArc.cx, y: ellipseArc.cy }, cursorPosition], dashArray: [4 / scale] });
+            assistentContents.push({ type: "line", points: [ctx.getEllipseCenter(ellipseArc), cursorPosition], dashArray: [4 / scale] });
           }
         } else if (ellipse) {
           assistentContents.push({ ...ellipse, dashArray: [4 / scale], type: "ellipse" });
           if (cursorPosition) {
-            assistentContents.push({ type: "line", points: [{ x: ellipse.cx, y: ellipse.cy }, cursorPosition], dashArray: [4 / scale] });
+            assistentContents.push({ type: "line", points: [ctx.getEllipseCenter(ellipse), cursorPosition], dashArray: [4 / scale] });
           }
         }
         if (ellipseArc && ellipseArc.startAngle !== ellipseArc.endAngle) {
@@ -4298,6 +4334,18 @@ function getModel(ctx) {
       const { lines } = getPolylineGeometries(content);
       return ctx.breakPolyline(lines, intersectionPoints);
     },
+    offset(content, point, distance) {
+      const [p1, p2] = content.points;
+      const line = ctx.twoPointLineToGeneralFormLine(p1, p2);
+      const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0];
+      const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine));
+      const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine));
+      if (!r1 || !r2)
+        return;
+      return ctx.produce(content, (d) => {
+        d.points = [r1, r2];
+      });
+    },
     render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -4384,6 +4432,54 @@ function getModel(ctx) {
       explode(content) {
         const { lines } = getPolylineGeometries(content);
         return lines.map((line) => ({ type: "line", points: line }));
+      },
+      offset(content, point, distance) {
+        var _a;
+        if (content.points.length === 2) {
+          return (_a = lineModel.offset) == null ? void 0 : _a.call(lineModel, content, point, distance);
+        }
+        const first = content.points[0];
+        const last = content.points[content.points.length - 1];
+        let index;
+        if (!ctx.isSamePoint(first, last)) {
+          const line = ctx.twoPointLineToGeneralFormLine(first, last);
+          const leftSide = ctx.getPointSideOfLine(content.points[1], line) > 0;
+          for (let i = 2; i < content.points.length - 1; i++) {
+            if (ctx.getPointSideOfLine(content.points[i], line) > 0 !== leftSide) {
+              index = ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0;
+              break;
+            }
+          }
+        }
+        const { lines } = getPolylineGeometries(content);
+        const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
+        if (index === void 0) {
+          const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
+          const inPolygon = ctx.pointInPolygon(point, content.points);
+          index = counterclockwise && inPolygon || !counterclockwise && !inPolygon ? 1 : 0;
+        }
+        const sideIndex = index;
+        const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[sideIndex]);
+        const points = [];
+        for (let i = 0; i < parallelLines.length + 1; i++) {
+          let newLine;
+          let parallelLine = parallelLines[i];
+          if (i === 0) {
+            newLine = ctx.getPerpendicular(first, parallelLines[i]);
+          } else if (i === parallelLines.length) {
+            parallelLine = parallelLines[parallelLines.length - 1];
+            newLine = ctx.getPerpendicular(last, parallelLine);
+          } else {
+            newLine = parallelLines[i - 1];
+          }
+          const p = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, parallelLine);
+          if (p) {
+            points.push(p);
+          }
+        }
+        return ctx.produce(content, (d) => {
+          d.points = points;
+        });
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
         var _a;
@@ -5212,6 +5308,81 @@ function getCommand(ctx) {
       return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) !== void 0;
     },
     hotkey: "M",
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/cad-editor/plugins/offset.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "8", y: "9", width: "82", height: "82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "22", y: "23", width: "55", height: "55", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  function contentSelectable(content) {
+    var _a;
+    return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) !== void 0;
+  }
+  return {
+    name: "offset",
+    useCommand({ onEnd, type }) {
+      let message = "";
+      if (type) {
+        message = "input offset or click to end";
+      }
+      const [offset, setOffset] = React.useState(10);
+      const { input, clearText, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
+        if (e.key === "Enter") {
+          const offset2 = +text;
+          if (!isNaN(offset2) && offset2 > 0) {
+            setOffset(offset2);
+            clearText();
+          }
+        }
+      } : void 0);
+      return {
+        onStart(p) {
+          resetInput();
+          onEnd({
+            updateContents: (contents, selected) => {
+              var _a, _b;
+              const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c));
+              for (const content of target) {
+                if (content) {
+                  const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, p, offset);
+                  if (newContent) {
+                    contents.push(newContent);
+                  }
+                }
+              }
+              setCursorPosition(void 0);
+            }
+          });
+        },
+        input,
+        onMove(p, viewportPosition) {
+          setInputPosition(viewportPosition || p);
+          if (!type) {
+            return;
+          }
+          setCursorPosition(p);
+        },
+        updateSelectedContent(content) {
+          var _a, _b;
+          if (cursorPosition) {
+            const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, cursorPosition, offset);
+            if (newContent) {
+              return {
+                newContents: [newContent]
+              };
+            }
+          }
+          return {};
+        },
+        reset: resetInput
+      };
+    },
+    contentSelectable,
     icon
   };
 }
@@ -6162,6 +6333,26 @@ function getModel(ctx) {
       const { lines } = getPolygonGeometries(content);
       return ctx.breakPolyline(lines, intersectionPoints);
     },
+    offset(content, point, distance) {
+      var _a;
+      const { lines } = getPolygonGeometries(content);
+      const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
+      const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
+      const inPolygon = (_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point);
+      const index = counterclockwise && inPolygon || !counterclockwise && !inPolygon ? 1 : 0;
+      const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
+      const points = [];
+      for (let i = 0; i < parallelLines.length; i++) {
+        const previous = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1];
+        const p = ctx.getTwoGeneralFormLinesIntersectionPoint(previous, parallelLines[i]);
+        if (p) {
+          points.push(p);
+        }
+      }
+      return ctx.produce(content, (d) => {
+        d.points = points;
+      });
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -6845,6 +7036,14 @@ function getModel(ctx) {
       content.y = p.y;
       content.angle = 2 * angle - content.angle;
     },
+    offset(content, point, distance) {
+      var _a;
+      distance *= 2 * (((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1);
+      return ctx.produce(content, (d) => {
+        d.width += distance;
+        d.height += distance;
+      });
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -7061,6 +7260,14 @@ function getModel(ctx) {
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
+    },
+    offset(content, point, distance) {
+      var _a;
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
+      const radius = distance / Math.cos(Math.PI / content.count);
+      return ctx.produce(content, (d) => {
+        d.radius += radius;
+      });
     },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;
@@ -7574,6 +7781,14 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
+    offset(content, point, distance) {
+      var _a;
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -2 : 2;
+      return ctx.produce(content, (d) => {
+        d.width += distance;
+        d.height += distance;
+      });
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -7674,7 +7889,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
   };
 }
 function isRoundedRectContent(content) {
@@ -8233,6 +8449,17 @@ function getModel(ctx) {
       content.x += offset.x;
       content.y += offset.y;
     },
+    offset(content, point, distance) {
+      var _a;
+      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
+      const angle = Math.PI / content.count;
+      const length = Math.sqrt(content.innerRadius ** 2 + content.outerRadius ** 2 - 2 * content.innerRadius * content.outerRadius * Math.cos(angle));
+      distance *= length / Math.sin(angle);
+      return ctx.produce(content, (d) => {
+        d.outerRadius += distance / content.innerRadius;
+        d.innerRadius += distance / content.outerRadius;
+      });
+    },
     render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -8330,6 +8557,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content).points),
     getParam: (content, point) => ctx.getLinesParamAtPoint(point, getStarGeometriesFromCache(content).lines),
     getPoint: (content, param) => ctx.getLinesPointAtParam(param, getStarGeometriesFromCache(content).lines)
   };
