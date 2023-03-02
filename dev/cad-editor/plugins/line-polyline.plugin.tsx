@@ -138,8 +138,9 @@ export function getModel(ctx: PluginContext) {
         }
         const first = content.points[0]
         const last = content.points[content.points.length - 1]
+        const closed = ctx.isSamePoint(first, last)
         let index: number | undefined
-        if (!ctx.isSamePoint(first, last)) {
+        if (!closed) {
           const line = ctx.twoPointLineToGeneralFormLine(first, last)
           const leftSide = ctx.getPointSideOfLine(content.points[1], line) > 0
           for (let i = 2; i < content.points.length - 1; i++) {
@@ -163,10 +164,18 @@ export function getModel(ctx: PluginContext) {
           let newLine: core.GeneralFormLine
           let parallelLine = parallelLines[i]
           if (i === 0) {
-            newLine = ctx.getPerpendicular(first, parallelLines[i])
+            if (closed) {
+              newLine = parallelLines[parallelLines.length - 1]
+            } else {
+              newLine = ctx.getPerpendicular(first, parallelLines[i])
+            }
           } else if (i === parallelLines.length) {
             parallelLine = parallelLines[parallelLines.length - 1]
-            newLine = ctx.getPerpendicular(last, parallelLine)
+            if (closed) {
+              newLine = parallelLines[0]
+            } else {
+              newLine = ctx.getPerpendicular(last, parallelLine)
+            }
           } else {
             newLine = parallelLines[i - 1]
           }

@@ -172,6 +172,7 @@ export type Model<T> = Partial<FeatureModels> & {
     options: {
       startTime: (max: number) => void,
       acquirePoint: (handle: (point: Position, target?: SnapTarget) => void) => void,
+      acquireContent: (select: Select, handle: (id: readonly number[][]) => void) => void,
     },
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   getRefIds?(content: T): number[] | undefined
@@ -183,6 +184,12 @@ export type Model<T> = Partial<FeatureModels> & {
   getEndPoint?(content: T): Position
   getParam?(content: T, point: Position): number
   getPoint?(content: T, param: number): Position
+}
+
+export interface Select {
+  count?: number
+  part?: boolean
+  selectable?: (index: number[]) => boolean
 }
 
 export interface RenderContext<V> {

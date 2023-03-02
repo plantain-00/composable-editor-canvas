@@ -4463,8 +4463,9 @@ function getModel(ctx) {
         }
         const first = content.points[0];
         const last = content.points[content.points.length - 1];
+        const closed = ctx.isSamePoint(first, last);
         let index;
-        if (!ctx.isSamePoint(first, last)) {
+        if (!closed) {
           const line = ctx.twoPointLineToGeneralFormLine(first, last);
           const leftSide = ctx.getPointSideOfLine(content.points[1], line) > 0;
           for (let i = 2; i < content.points.length - 1; i++) {
@@ -4488,10 +4489,18 @@ function getModel(ctx) {
           let newLine;
           let parallelLine = parallelLines[i];
           if (i === 0) {
-            newLine = ctx.getPerpendicular(first, parallelLines[i]);
+            if (closed) {
+              newLine = parallelLines[parallelLines.length - 1];
+            } else {
+              newLine = ctx.getPerpendicular(first, parallelLines[i]);
+            }
           } else if (i === parallelLines.length) {
             parallelLine = parallelLines[parallelLines.length - 1];
-            newLine = ctx.getPerpendicular(last, parallelLine);
+            if (closed) {
+              newLine = parallelLines[0];
+            } else {
+              newLine = ctx.getPerpendicular(last, parallelLine);
+            }
           } else {
             newLine = parallelLines[i - 1];
           }
@@ -6609,13 +6618,18 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
           if (isRadialDimensionReferenceContent(c)) {
             c.refId = v;
           }
         }) }) : [],
+        refIdFrom: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, (p) => update((c) => {
+          if (isRadialDimensionReferenceContent(c)) {
+            c.refId = p[0][0];
+          }
+        })) }, "canvas") : [],
         position: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
@@ -6680,7 +6694,7 @@ function isRadialDimensionReferenceContent(content) {
   return content.type === "radial dimension reference";
 }
 function contentSelectable(content) {
-  return isArcContent(content) || isCircleContent(content);
+  return !!content && (isArcContent(content) || isCircleContent(content));
 }
 function getCommand(ctx) {
   const React = ctx.React;
