@@ -39,7 +39,9 @@ export function getCommand(ctx: PluginContext): Command {
               for (const content of target) {
                 if (content) {
                   const newContent = ctx.getContentModel(content)?.offset?.(content, p, offset)
-                  if (newContent) {
+                  if (Array.isArray(newContent)) {
+                    contents.push(...newContent)
+                  } else if (newContent) {
                     contents.push(newContent)
                   }
                 }
@@ -59,7 +61,11 @@ export function getCommand(ctx: PluginContext): Command {
         updateSelectedContent(content) {
           if (cursorPosition) {
             const newContent = ctx.getContentModel(content)?.offset?.(content, cursorPosition, offset)
-            if (newContent) {
+            if (Array.isArray(newContent)) {
+              return {
+                newContents: newContent,
+              }
+            } else if (newContent) {
               return {
                 newContents: [newContent],
               }

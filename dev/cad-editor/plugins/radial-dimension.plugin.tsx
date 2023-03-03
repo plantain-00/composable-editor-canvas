@@ -102,9 +102,10 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       })
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} /> : [],
+        refIdFrom: typeof content.refId === 'number' ? <ctx.Button onClick={() => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, p => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = p[0][0] } }))}>canvas</ctx.Button> : [],
         position: <ctx.ObjectEditor
           inline
           properties={{
@@ -139,8 +140,8 @@ export function isRadialDimensionReferenceContent(content: model.BaseContent): c
   return content.type === 'radial dimension reference'
 }
 
-function contentSelectable(content: model.BaseContent): content is CircleContent | ArcContent {
-  return isArcContent(content) || isCircleContent(content)
+function contentSelectable(content: core.Nullable<model.BaseContent>): content is CircleContent | ArcContent {
+  return !!content && (isArcContent(content) || isCircleContent(content))
 }
 
 export function getCommand(ctx: PluginContext): Command {

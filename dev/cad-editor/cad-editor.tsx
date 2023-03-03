@@ -1,9 +1,9 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByRegion, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByRegion, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -44,10 +44,16 @@ export const CADEditor = React.forwardRef((props: {
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
   const { width, height } = useWindowSize()
-  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<{ count?: number, part?: boolean, selectable?: (index: number[]) => boolean }, Operation, number[]>(
+  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<Select, Operation, number[]>(
     {},
     (p, s) => {
       if (p?.type === 'command') {
+        if (p.name === 'acquire content') {
+          commandResultHandler.current?.(s)
+          commandResultHandler.current = undefined
+          setSelected()
+          return true
+        }
         const command = getCommand(p.name)
         if (command?.execute) {
           setState((draft) => {
@@ -806,6 +812,15 @@ export const CADEditor = React.forwardRef((props: {
             }
           }
           startOperation({ type: 'command', name: 'acquire point' })
+        },
+        acquireContent: (select, handle) => {
+          commandResultHandler.current = p => {
+            if (is<readonly number[][]>(p, [[number]])) {
+              handle(p)
+            }
+          }
+          setSelected()
+          selectBeforeOperate(select, { type: 'command', name: 'acquire content' })
         },
       })
       if (propertyPanel) {

@@ -4463,35 +4463,44 @@ function getModel(ctx) {
         }
         const first = content.points[0];
         const last = content.points[content.points.length - 1];
-        let index;
-        if (!ctx.isSamePoint(first, last)) {
-          const line = ctx.twoPointLineToGeneralFormLine(first, last);
-          const leftSide = ctx.getPointSideOfLine(content.points[1], line) > 0;
-          for (let i = 2; i < content.points.length - 1; i++) {
-            if (ctx.getPointSideOfLine(content.points[i], line) > 0 !== leftSide) {
-              index = ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0;
-              break;
-            }
-          }
-        }
+        const closed = ctx.isSamePoint(first, last);
         const { lines } = getPolylineGeometries(content);
         const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
-        if (index === void 0) {
+        let index;
+        if (!closed) {
+          let min;
+          for (const line of lines) {
+            const distance2 = ctx.getPointAndLineSegmentMinimumDistance(point, ...line);
+            if (!min || distance2 < min.distance) {
+              min = { distance: distance2, line };
+            }
+          }
+          if (min) {
+            index = ctx.getPointSideOfLine(point, ctx.twoPointLineToGeneralFormLine(...min.line)) > 0 ? 1 : 0;
+          }
+        } else {
           const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
           const inPolygon = ctx.pointInPolygon(point, content.points);
           index = counterclockwise && inPolygon || !counterclockwise && !inPolygon ? 1 : 0;
         }
-        const sideIndex = index;
-        const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[sideIndex]);
+        const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
         const points = [];
         for (let i = 0; i < parallelLines.length + 1; i++) {
           let newLine;
           let parallelLine = parallelLines[i];
           if (i === 0) {
-            newLine = ctx.getPerpendicular(first, parallelLines[i]);
+            if (closed) {
+              newLine = parallelLines[parallelLines.length - 1];
+            } else {
+              newLine = ctx.getPerpendicular(first, parallelLine);
+            }
           } else if (i === parallelLines.length) {
             parallelLine = parallelLines[parallelLines.length - 1];
-            newLine = ctx.getPerpendicular(last, parallelLine);
+            if (closed) {
+              newLine = parallelLines[0];
+            } else {
+              newLine = ctx.getPerpendicular(last, parallelLine);
+            }
           } else {
             newLine = parallelLines[i - 1];
           }
@@ -4499,6 +4508,26 @@ function getModel(ctx) {
           if (p) {
             points.push(p);
           }
+        }
+        let intersectionPoints = [];
+        for (let i = 0; i < points.length - 1; i++) {
+          for (let j = i + 2; j < points.length - 1; j++) {
+            if (closed && i === 0 && j === points.length - 2)
+              continue;
+            const p = ctx.getTwoLineSegmentsIntersectionPoint(points[i], points[i + 1], points[j], points[j + 1]);
+            if (p) {
+              intersectionPoints.push(p);
+            }
+          }
+        }
+        intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
+        if (intersectionPoints.length > 0) {
+          let newLines = ctx.breakPolyline(Array.from(ctx.iteratePolylineLines(points)), intersectionPoints);
+          newLines = newLines.filter((_, i) => i % 2 === 0);
+          ctx.mergePolylines(newLines);
+          return newLines.map((line) => ctx.produce(content, (d) => {
+            d.points = line.points;
+          }));
         }
         return ctx.produce(content, (d) => {
           d.points = points;
@@ -5373,7 +5402,9 @@ function getCommand(ctx) {
               for (const content of target) {
                 if (content) {
                   const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, p, offset);
-                  if (newContent) {
+                  if (Array.isArray(newContent)) {
+                    contents.push(...newContent);
+                  } else if (newContent) {
                     contents.push(newContent);
                   }
                 }
@@ -5394,7 +5425,11 @@ function getCommand(ctx) {
           var _a, _b;
           if (cursorPosition) {
             const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, cursorPosition, offset);
-            if (newContent) {
+            if (Array.isArray(newContent)) {
+              return {
+                newContents: newContent
+              };
+            } else if (newContent) {
               return {
                 newContents: [newContent]
               };
@@ -6609,13 +6644,18 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
           if (isRadialDimensionReferenceContent(c)) {
             c.refId = v;
           }
         }) }) : [],
+        refIdFrom: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, (p) => update((c) => {
+          if (isRadialDimensionReferenceContent(c)) {
+            c.refId = p[0][0];
+          }
+        })) }, "canvas") : [],
         position: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
@@ -6680,7 +6720,7 @@ function isRadialDimensionReferenceContent(content) {
   return content.type === "radial dimension reference";
 }
 function contentSelectable(content) {
-  return isArcContent(content) || isCircleContent(content);
+  return !!content && (isArcContent(content) || isCircleContent(content));
 }
 function getCommand(ctx) {
   const React = ctx.React;
