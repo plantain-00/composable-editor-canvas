@@ -1,6 +1,6 @@
 import test from 'ava'
 import { Patch } from 'immer'
-import { applyImmutablePatches, getTwoCircleIntersectionPoints } from '../src'
+import { applyImmutablePatches, getTwoCircleIntersectionPoints, mergePolylinesToPolyline, Position } from '../src'
 
 test('getTwoCircleIntersectionPoints', (t) => {
   t.deepEqual(
@@ -58,4 +58,35 @@ test('applyImmutablePatches', (t) => {
     { biscuits: [{ name: "a" }, { name: "b" },] },
     [{ op: 'replace', path: ['biscuits', 0, 'name'], value: undefined }],
   )
+})
+
+test('mergePolylinesToPolyline', (t) => {
+  const testLines = (before: { points: Position[] }[], after: { points: Position[] }[]) => {
+    mergePolylinesToPolyline(before)
+    t.deepEqual(before, after)
+  }
+  testLines([
+    { points: [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }] },
+    { points: [{ x: 3, y: 3 }, { x: 4, y: 4 }, { x: 5, y: 5 }] },
+  ], [
+    { points: [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 4 }, { x: 5, y: 5 }] },
+  ])
+  testLines([
+    { points: [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }] },
+    { points: [{ x: 5, y: 5 }, { x: 4, y: 4 }, { x: 3, y: 3 }] },
+  ], [
+    { points: [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 4 }, { x: 5, y: 5 }] },
+  ])
+  testLines([
+    { points: [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 1, y: 1 }] },
+    { points: [{ x: 3, y: 3 }, { x: 4, y: 4 }, { x: 5, y: 5 }] },
+  ], [
+    { points: [{ x: 5, y: 5 }, { x: 4, y: 4 }, { x: 3, y: 3 }, { x: 2, y: 2 }, { x: 1, y: 1 }] },
+  ])
+  testLines([
+    { points: [{ x: 3, y: 3 }, { x: 2, y: 2 }, { x: 1, y: 1 }] },
+    { points: [{ x: 5, y: 5 }, { x: 4, y: 4 }, { x: 3, y: 3 }] },
+  ], [
+    { points: [{ x: 5, y: 5 }, { x: 4, y: 4 }, { x: 3, y: 3 }, { x: 2, y: 2 }, { x: 1, y: 1 }] },
+  ])
 })

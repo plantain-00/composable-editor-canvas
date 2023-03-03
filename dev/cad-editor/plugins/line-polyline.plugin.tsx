@@ -139,26 +139,26 @@ export function getModel(ctx: PluginContext) {
         const first = content.points[0]
         const last = content.points[content.points.length - 1]
         const closed = ctx.isSamePoint(first, last)
-        let index: number | undefined
-        if (!closed) {
-          const line = ctx.twoPointLineToGeneralFormLine(first, last)
-          const leftSide = ctx.getPointSideOfLine(content.points[1], line) > 0
-          for (let i = 2; i < content.points.length - 1; i++) {
-            if (ctx.getPointSideOfLine(content.points[i], line) > 0 !== leftSide) {
-              index = ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0
-              break
-            }
-          }
-        }
         const { lines } = getPolylineGeometries(content)
         const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
-        if (index === undefined) {
+        let index: number
+        if (!closed) {
+          let min: { distance: number, line: [core.Position, core.Position] } | undefined
+          for (const line of lines) {
+            const distance = ctx.getPointAndLineSegmentMinimumDistance(point, ...line)
+            if (!min || distance < min.distance) {
+              min = { distance, line }
+            }
+          }
+          if (min) {
+            index = ctx.getPointSideOfLine(point, ctx.twoPointLineToGeneralFormLine(...min.line)) > 0 ? 1 : 0
+          }
+        } else {
           const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0
           const inPolygon = ctx.pointInPolygon(point, content.points)
           index = (counterclockwise && inPolygon) || (!counterclockwise && !inPolygon) ? 1 : 0
         }
-        const sideIndex = index
-        const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[sideIndex])
+        const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[index])
         const points: core.Position[] = []
         for (let i = 0; i < parallelLines.length + 1; i++) {
           let newLine: core.GeneralFormLine
@@ -167,7 +167,7 @@ export function getModel(ctx: PluginContext) {
             if (closed) {
               newLine = parallelLines[parallelLines.length - 1]
             } else {
-              newLine = ctx.getPerpendicular(first, parallelLines[i])
+              newLine = ctx.getPerpendicular(first, parallelLine)
             }
           } else if (i === parallelLines.length) {
             parallelLine = parallelLines[parallelLines.length - 1]
@@ -183,6 +183,25 @@ export function getModel(ctx: PluginContext) {
           if (p) {
             points.push(p)
           }
+        }
+        let intersectionPoints: core.Position[] = []
+        for (let i = 0; i < points.length - 1; i++) {
+          for (let j = i + 2; j < points.length - 1; j++) {
+            if (closed && i === 0 && j === points.length - 2) continue
+            const p = ctx.getTwoLineSegmentsIntersectionPoint(points[i], points[i + 1], points[j], points[j + 1])
+            if (p) {
+              intersectionPoints.push(p)
+            }
+          }
+        }
+        intersectionPoints = ctx.deduplicatePosition(intersectionPoints)
+        if (intersectionPoints.length > 0) {
+          let newLines = ctx.breakPolyline(Array.from(ctx.iteratePolylineLines(points)), intersectionPoints)
+          newLines = newLines.filter((_, i) => i % 2 === 0)
+          ctx.mergePolylines(newLines)
+          return newLines.map(line => ctx.produce(content, (d) => {
+            d.points = line.points
+          }))
         }
         return ctx.produce(content, (d) => {
           d.points = points
