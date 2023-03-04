@@ -1,4 +1,4 @@
-import { getTwoPointsDistance, isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
+import { getPointAndLineSegmentMinimumDistance, getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
 
 /**
  * @public
@@ -67,4 +67,16 @@ export function mergePolylinesToPolyline<T extends { points: Position[] }>(lines
       }
     }
   }
+}
+
+export function getLinesOffsetDirection(point: Position, lines: [Position, Position][]) {
+  let min: { distance: number, line: [Position, Position] } | undefined
+  for (const line of lines) {
+    const distance = getPointAndLineSegmentMinimumDistance(point, ...line)
+    if (!min || distance < min.distance) {
+      min = { distance, line }
+    }
+  }
+  const line = min?.line ?? lines[0]
+  return getPointSideOfLine(point, twoPointLineToGeneralFormLine(...line)) > 0 ? 1 : 0
 }
