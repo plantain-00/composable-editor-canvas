@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, zoomToFit, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -1200,4 +1200,25 @@ export function getSnapTargetRef(target: CoreSnapTarget<BaseContent> | undefined
     snapIndex: target.snapIndex,
     param: target.param,
   } : undefined
+}
+
+export function trimOffsetResult(points: Position[]) {
+  let intersectionPoints: Position[] = []
+  for (let i = 0; i < points.length - 1; i++) {
+    for (let j = i + 2; j < points.length - 1; j++) {
+      if (closed && i === 0 && j === points.length - 2) continue
+      const p = getTwoLineSegmentsIntersectionPoint(points[i], points[i + 1], points[j], points[j + 1])
+      if (p) {
+        intersectionPoints.push(p)
+      }
+    }
+  }
+  intersectionPoints = deduplicatePosition(intersectionPoints)
+  if (intersectionPoints.length > 0) {
+    let newLines = breakPolyline(Array.from(iteratePolylineLines(points)), intersectionPoints)
+    newLines = newLines.filter((_, i) => i % 2 === 0)
+    mergePolylines(newLines)
+    return newLines.map(line => line.points)
+  }
+  return [points]
 }

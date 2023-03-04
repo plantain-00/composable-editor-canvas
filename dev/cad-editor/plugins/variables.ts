@@ -4466,23 +4466,7 @@ function getModel(ctx) {
         const closed = ctx.isSamePoint(first, last);
         const { lines } = getPolylineGeometries(content);
         const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
-        let index;
-        if (!closed) {
-          let min;
-          for (const line of lines) {
-            const distance2 = ctx.getPointAndLineSegmentMinimumDistance(point, ...line);
-            if (!min || distance2 < min.distance) {
-              min = { distance: distance2, line };
-            }
-          }
-          if (min) {
-            index = ctx.getPointSideOfLine(point, ctx.twoPointLineToGeneralFormLine(...min.line)) > 0 ? 1 : 0;
-          }
-        } else {
-          const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
-          const inPolygon = ctx.pointInPolygon(point, content.points);
-          index = counterclockwise && inPolygon || !counterclockwise && !inPolygon ? 1 : 0;
-        }
+        const index = ctx.getLinesOffsetDirection(point, lines);
         const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
         const points = [];
         for (let i = 0; i < parallelLines.length + 1; i++) {
@@ -4509,29 +4493,9 @@ function getModel(ctx) {
             points.push(p);
           }
         }
-        let intersectionPoints = [];
-        for (let i = 0; i < points.length - 1; i++) {
-          for (let j = i + 2; j < points.length - 1; j++) {
-            if (closed && i === 0 && j === points.length - 2)
-              continue;
-            const p = ctx.getTwoLineSegmentsIntersectionPoint(points[i], points[i + 1], points[j], points[j + 1]);
-            if (p) {
-              intersectionPoints.push(p);
-            }
-          }
-        }
-        intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
-        if (intersectionPoints.length > 0) {
-          let newLines = ctx.breakPolyline(Array.from(ctx.iteratePolylineLines(points)), intersectionPoints);
-          newLines = newLines.filter((_, i) => i % 2 === 0);
-          ctx.mergePolylines(newLines);
-          return newLines.map((line) => ctx.produce(content, (d) => {
-            d.points = line.points;
-          }));
-        }
-        return ctx.produce(content, (d) => {
-          d.points = points;
-        });
+        return ctx.trimOffsetResult(points).map((p) => ctx.produce(content, (d) => {
+          d.points = p;
+        }));
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
         var _a;
@@ -6392,15 +6356,12 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     offset(content, point, distance) {
-      var _a;
       const { lines } = getPolygonGeometries(content);
       if (!distance) {
         distance = Math.min(...lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
       }
       const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
-      const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0;
-      const inPolygon = (_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point);
-      const index = counterclockwise && inPolygon || !counterclockwise && !inPolygon ? 1 : 0;
+      const index = ctx.getLinesOffsetDirection(point, lines);
       const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
       const points = [];
       for (let i = 0; i < parallelLines.length; i++) {
@@ -6410,9 +6371,9 @@ function getModel(ctx) {
           points.push(p);
         }
       }
-      return ctx.produce(content, (d) => {
-        d.points = points;
-      });
+      return ctx.trimOffsetResult(points).map((p) => ctx.produce(content, (d) => {
+        d.points = p;
+      }));
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       var _a;

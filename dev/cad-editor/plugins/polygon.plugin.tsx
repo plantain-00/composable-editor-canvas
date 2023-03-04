@@ -60,9 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         distance = Math.min(...lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
       }
       const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
-      const counterclockwise = ctx.getPointSideOfLine(lines[1][1], generalFormLines[0]) > 0
-      const inPolygon = this.isPointIn?.(content, point)
-      const index = (counterclockwise && inPolygon) || (!counterclockwise && !inPolygon) ? 1 : 0
+      const index = ctx.getLinesOffsetDirection(point, lines)
       const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[index])
       const points: core.Position[] = []
       for (let i = 0; i < parallelLines.length; i++) {
@@ -72,9 +70,9 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
           points.push(p)
         }
       }
-      return ctx.produce(content, (d) => {
-        d.points = points
-      })
+      return ctx.trimOffsetResult(points).map(p => ctx.produce(content, (d) => {
+        d.points = p
+      }))
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
