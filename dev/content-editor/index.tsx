@@ -9,10 +9,9 @@ import { getSelectedSize, getTargetByPath, selectByPosition, getSelectedPosition
 
 const draftKey = 'composable-editor-canvas-draft'
 const draftState = localStorage.getItem(draftKey)
-const initialState = draftState ? JSON.parse(draftState) as StyleGuide : styleGuide
 
 export function App() {
-  const { state, setState, undo, redo, stateIndex } = useUndoRedo(initialState)
+  const { state, setState, undo, redo, stateIndex } = useUndoRedo(draftState ? JSON.parse(draftState) as StyleGuide : styleGuide)
 
   React.useEffect(() => {
     if (stateIndex > 0) {

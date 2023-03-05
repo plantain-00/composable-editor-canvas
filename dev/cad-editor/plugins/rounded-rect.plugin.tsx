@@ -20,36 +20,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
         { x: content.x + content.width / 2, y: content.y + content.height / 2 },
         { x: content.x - content.width / 2, y: content.y + content.height / 2 },
       ]
-      const points = [
-        ...ctx.arcToPolyline({
-          x: content.x + content.width / 2 - content.radius,
-          y: content.y - content.height / 2 + content.radius,
-          r: content.radius,
-          startAngle: -90,
-          endAngle: 0,
-        }, content.angleDelta ?? ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x + content.width / 2 - content.radius,
-          y: content.y + content.height / 2 - content.radius,
-          r: content.radius,
-          startAngle: 0,
-          endAngle: 90,
-        }, content.angleDelta ?? ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x - content.width / 2 + content.radius,
-          y: content.y + content.height / 2 - content.radius,
-          r: content.radius,
-          startAngle: 90,
-          endAngle: 180,
-        }, content.angleDelta ?? ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x - content.width / 2 + content.radius,
-          y: content.y - content.height / 2 + content.radius,
-          r: content.radius,
-          startAngle: 180,
-          endAngle: 270,
-        }, content.angleDelta ?? ctx.defaultAngleDelta),
-      ]
+      const points = ctx.getRoundedRectPoints(content, content.radius, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines,

@@ -749,6 +749,15 @@ export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p
   return points
 }
 
+export function getBezierSplinePoints(points: Position[], segmentCount: number) {
+  const result: Position[] = []
+  getBezierSplineControlPointsOfPoints(points).map((p, i) => {
+    result.push(points[i], ...getBezierCurvePoints(points[i], ...p, points[i + 1], segmentCount))
+  })
+  result.push(points[points.length - 1])
+  return result
+}
+
 /**
  * @public
  */

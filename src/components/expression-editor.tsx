@@ -24,9 +24,8 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   const fontFamily = props.style?.fontFamily ?? controlStyle.fontFamily ?? 'monospace'
   const lineHeight = fontSize * 1.2
 
-  const initialState = React.useRef(props.value.split(''))
   const [width, setWidth] = React.useState(props.width ?? 250)
-  const { state, setState, undo, redo } = useUndoRedo(initialState.current)
+  const { state, setState, undo, redo, resetHistory } = useUndoRedo(props.value.split(''))
   const [suggestions, setSuggestions] = React.useState<ExpressionSuggesionSource[]>([])
   const [suggestionIndex, setSuggestionIndex] = React.useState(0)
   const [suggestionText, setSuggestionText] = React.useState('')
@@ -160,7 +159,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   }, [state, location])
 
   React.useEffect(() => {
-    initialState.current = props.value.split('')
+    resetHistory(props.value.split(''))
   }, [props.value])
 
   React.useEffect(() => {
