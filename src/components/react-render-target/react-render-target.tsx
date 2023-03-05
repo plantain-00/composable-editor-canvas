@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, Position, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -244,6 +244,39 @@ export function renderPartStyledPolyline<T>(
     target.renderPolyline(points, { ...options, skippedLines: partsStyles.map((s) => s.index) }),
     ...partsStyles.map(({ index, color, opacity }) => target.renderPolyline([points[index], points[index + 1]], { ...options, strokeColor: color, strokeOpacity: opacity })),
   ])
+}
+
+export function getRoundedRectPoints(content: Region, radius: number, angleDelta: number): Position[] {
+  return [
+    ...arcToPolyline({
+      x: content.x + content.width / 2 - radius,
+      y: content.y - content.height / 2 + radius,
+      r: radius,
+      startAngle: -90,
+      endAngle: 0,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x + content.width / 2 - radius,
+      y: content.y + content.height / 2 - radius,
+      r: radius,
+      startAngle: 0,
+      endAngle: 90,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x - content.width / 2 + radius,
+      y: content.y + content.height / 2 - radius,
+      r: radius,
+      startAngle: 90,
+      endAngle: 180,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x - content.width / 2 + radius,
+      y: content.y - content.height / 2 + radius,
+      r: radius,
+      startAngle: 180,
+      endAngle: 270,
+    }, angleDelta),
+  ]
 }
 
 /**

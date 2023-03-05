@@ -7752,43 +7752,14 @@ function getModel(ctx) {
   });
   function getGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      var _a, _b, _c, _d;
+      var _a;
       const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y + content.height / 2 },
         { x: content.x - content.width / 2, y: content.y + content.height / 2 }
       ];
-      const points = [
-        ...ctx.arcToPolyline({
-          x: content.x + content.width / 2 - content.radius,
-          y: content.y - content.height / 2 + content.radius,
-          r: content.radius,
-          startAngle: -90,
-          endAngle: 0
-        }, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x + content.width / 2 - content.radius,
-          y: content.y + content.height / 2 - content.radius,
-          r: content.radius,
-          startAngle: 0,
-          endAngle: 90
-        }, (_b = content.angleDelta) != null ? _b : ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x - content.width / 2 + content.radius,
-          y: content.y + content.height / 2 - content.radius,
-          r: content.radius,
-          startAngle: 90,
-          endAngle: 180
-        }, (_c = content.angleDelta) != null ? _c : ctx.defaultAngleDelta),
-        ...ctx.arcToPolyline({
-          x: content.x - content.width / 2 + content.radius,
-          y: content.y - content.height / 2 + content.radius,
-          r: content.radius,
-          startAngle: 180,
-          endAngle: 270
-        }, (_d = content.angleDelta) != null ? _d : ctx.defaultAngleDelta)
-      ];
+      const points = ctx.getRoundedRectPoints(content, content.radius, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines,
@@ -8107,14 +8078,7 @@ function getModel(ctx) {
       const splineSegmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
       if (inputPoints.length > 2) {
         if (content.fitting) {
-          const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points);
-          for (let i = 0; i < controlPoints.length; i++) {
-            points.push(
-              content.points[i],
-              ...ctx.getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount)
-            );
-          }
-          points.push(content.points[content.points.length - 1]);
+          points = ctx.getBezierSplinePoints(content.points, splineSegmentCount);
         } else {
           const degree = 2;
           const knots = [];

@@ -1,10 +1,8 @@
 import React from 'react'
 import { useUndoRedo, useKey, metaKeyIfMacElseCtrlKey } from '../src'
 
-const initialState = { count: 0 }
-
 export default () => {
-  const { state, setState, undo, redo } = useUndoRedo(initialState)
+  const { state, setState, undo, redo } = useUndoRedo({ count: 0 })
   useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), undo)
   useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), redo)
   return (

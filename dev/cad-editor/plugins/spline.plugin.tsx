@@ -30,14 +30,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
       if (inputPoints.length > 2) {
         if (content.fitting) {
-          const controlPoints = ctx.getBezierSplineControlPointsOfPoints(content.points)
-          for (let i = 0; i < controlPoints.length; i++) {
-            points.push(
-              content.points[i],
-              ...ctx.getBezierCurvePoints(content.points[i], ...controlPoints[i], content.points[i + 1], splineSegmentCount),
-            )
-          }
-          points.push(content.points[content.points.length - 1])
+          points = ctx.getBezierSplinePoints(content.points, splineSegmentCount)
         } else {
           const degree = 2
           const knots: number[] = []
