@@ -343,18 +343,32 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
   if (points.length === 0) {
     return
   }
-  const x = points.map((p) => p.x)
-  const y = points.map((p) => p.y)
-  return {
+  const result = {
     start: {
-      x: Math.min(...x),
-      y: Math.min(...y),
+      x: points[0].x,
+      y: points[0].y,
     },
     end: {
-      x: Math.max(...x),
-      y: Math.max(...y),
+      x: points[0].x,
+      y: points[0].y,
     },
   }
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]
+    if (p.x < result.start.x) {
+      result.start.x = p.x
+    }
+    if (p.y < result.start.y) {
+      result.start.y = p.y
+    }
+    if (p.x > result.end.x) {
+      result.end.x = p.x
+    }
+    if (p.y > result.end.y) {
+      result.end.y = p.y
+    }
+  }
+  return result
 }
 
 /**
