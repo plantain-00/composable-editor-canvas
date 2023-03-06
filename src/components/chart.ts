@@ -1,4 +1,4 @@
-import { Position, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { getPointsBounding, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 
 export function getChartAxis<T>(
@@ -6,23 +6,8 @@ export function getChartAxis<T>(
   bounding: TwoPointsFormRegion,
   step: { x?: number, y: number },
   { width, height }: Size,
-  padding: {
-    left: number
-    right: number
-    top: number
-    bottom: number
-  },
-  options?: Partial<{
-    type?: 'line' | 'bar'
-    axisColor: number
-    textColor: number
-    textSize: number
-    fontFamily: string
-    textLineLength: number
-    getXLabel: (x: number) => string
-    getYLabel: (y: number) => string
-    ySecondary: boolean
-  }>,
+  padding: ChartAxisPadding,
+  options?: Partial<ChartAxisOptions>,
 ) {
   const axisColor = options?.axisColor ?? 0xcccccc
   const axisTextColor = options?.textColor ?? 0x000000
@@ -80,16 +65,35 @@ export function getChartAxis<T>(
   }
 }
 
-export function renderChartTooltip<T>(
+interface ChartAxisOptions {
+  type: 'line' | 'bar'
+  axisColor: number
+  textColor: number
+  textSize: number
+  fontFamily: string
+  textLineLength: number
+  getXLabel: (x: number) => string
+  getYLabel: (y: number) => string
+  ySecondary: boolean
+}
+
+interface ChartAxisPadding {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+export function renderChartTooltip<T, V extends number | number[]>(
   target: ReactRenderTarget<T>,
   { x, y }: Position,
   value: {
     x: number
-    y: number | readonly [number, number]
+    y: V
   },
   options?: Partial<{
     getXLabel: (x: number) => string
-    getYLabel: (y: number | readonly [number, number]) => string
+    getYLabel: (y: V) => string
     width: number
     height: number
     textColor: number
@@ -102,7 +106,7 @@ export function renderChartTooltip<T>(
   const width = options?.width ?? 40
   const height = options?.height ?? 30
   const getXLabel = (x: number) => options?.getXLabel?.(x) ?? x.toString()
-  const getYLabel = (y: number | readonly [number, number]) => options?.getYLabel?.(y) ?? y.toString()
+  const getYLabel = (y: V) => options?.getYLabel?.(y) ?? y.toString()
   const textColor = options?.textColor ?? 0xffffff
   const textSize = options?.textSize ?? 12
   const fontFamily = options?.fontFamily ?? 'monospace'
@@ -115,4 +119,84 @@ export function renderChartTooltip<T>(
     target.renderText(x, y, getXLabel(value.x), textColor, textSize, fontFamily, { textBaseline: 'bottom', textAlign: 'center' }),
     target.renderText(x, y, getYLabel(value.y), textColor, textSize, fontFamily, { textBaseline: 'top', textAlign: 'center' }),
   ]
+}
+
+interface BarChartOptions {
+  barPadding: number
+  barSpacing: number
+  bounding: TwoPointsFormRegion
+}
+
+export function getBarChart<T>(
+  datas: number[][][],
+  colors: number[][],
+  render: (region: Region, color: number) => T,
+  target: ReactRenderTarget<T>,
+  step: { x?: number, y: number },
+  size: Size,
+  padding: ChartAxisPadding,
+  options?: Partial<ChartAxisOptions & BarChartOptions>,
+) {
+  let bounding = {
+    start: {
+      x: 0,
+      y: 0,
+    },
+    end: {
+      x: Math.max(...datas.map(d => d.length)),
+      y: 0,
+    },
+  }
+  for (const y of datas.flat(2)) {
+    if (y < bounding.start.y) {
+      bounding.start.y = y
+    }
+    if (y > bounding.end.y) {
+      bounding.end.y = y
+    }
+  }
+  if (options?.bounding) {
+    bounding = getPointsBounding([options.bounding.start, options.bounding.end, bounding.start, bounding.end]) || bounding
+  }
+  const { axis: children, tx, ty, reverseTransform, unitWidth } = getChartAxis(target, bounding, step, size, padding, {
+    type: 'bar',
+    ...options,
+  })
+
+  const barPadding = options?.barPadding ?? 0.1
+  const barSpacing = options?.barSpacing ?? 0.05
+  const barRate = (1 - barPadding * 2 - (datas.length - 1) * barSpacing) / datas.length
+  const barWidth = barRate * unitWidth
+  const barTotal = barRate + barSpacing
+  datas.forEach((d, i) => {
+    d.forEach((c, j) => {
+      if (c.length === 1) c = [0, ...c]
+      const x = tx(j) + unitWidth * (barPadding + i * barTotal) + barWidth / 2
+      const y = c.map(b => ty(b))
+      for (let k = 1; k < y.length; k++) {
+        children.push(render({ x, y: (y[k - 1] + y[k]) / 2, width: barWidth, height: Math.abs(y[k - 1] - y[k]) }, colors[i][k - 1]))
+      }
+    })
+  })
+
+  const select = (point: Position) => {
+    const p = reverseTransform(point)
+    const j = Math.floor(p.x)
+    const offset = p.x - j
+    if (offset >= barPadding && offset <= 1 - barPadding) {
+      const i = Math.floor((offset - barPadding) / barTotal)
+      if (offset - barPadding - i * barTotal <= barRate && i >= 0 && i < datas.length && datas[i][j]) {
+        const data = datas[i][j].length === 1 ? [0, ...datas[i][j]] : datas[i][j]
+        for (let k = 1; k < data.length; k++) {
+          if (p.y >= data[k - 1] && p.y <= data[k]) {
+            const value = datas[i][j]
+            return { ...point, value: { x: j, y: value.length > 2 ? Math.abs(value[k - 1] - value[k]) : value } }
+          }
+        }
+      }
+    }
+    return
+  }
+
+  return { children, select, tx, ty }
 }
