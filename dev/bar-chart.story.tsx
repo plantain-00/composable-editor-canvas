@@ -50,13 +50,9 @@ export default () => {
       ...renderChartTooltip(target, hovering, hovering.value, { getXLabel }),
     ]
   }
-
-  const onMouseMove = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    setHovering(result.select({ x: e.clientX, y: e.clientY }))
-  }
   return (
     <div style={{ position: 'absolute', inset: '0px' }}>
-      {target.renderResult(children, width, height, { attributes: { onMouseMove } })}
+      {target.renderResult(children, width, height, { attributes: { onMouseMove: e => setHovering(result.select({ x: e.clientX, y: e.clientY })) } })}
     </div>
   )
 }
