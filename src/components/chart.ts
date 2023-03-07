@@ -1,4 +1,4 @@
-import { getPointsBounding, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { arcToPolyline, getPointsBounding, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 
 export function getChartAxis<T>(
@@ -199,4 +199,62 @@ export function getBarChart<T>(
   }
 
   return { children, select, tx, ty }
+}
+
+export function getPieChart<T>(
+  datas: number[][],
+  colors: number[],
+  target: ReactRenderTarget<T>,
+  { width, height }: Size,
+  padding: ChartAxisPadding,
+  options?: Partial<{
+    type: 'pie' | 'doughnut'
+    startAngle: number
+  }>
+) {
+  const type = options?.type ?? 'pie'
+  const startAngleInDegree = options?.startAngle ?? -90
+  const sums = datas.map(d => d.reduce((p, c) => p + c, 0))
+  const circle = {
+    x: (width + padding.left - padding.right) / 2,
+    y: (height + padding.top - padding.bottom) / 2,
+    r: Math.min((width - padding.left - padding.right) / 2, (height - padding.top - padding.bottom) / 2),
+  }
+  const holeRadius = circle.r * (type === 'doughnut' ? 0.5 : 0)
+  const ringRadius = circle.r - holeRadius
+  const children: T[] = []
+  const allAngles: number[][] = []
+  datas.forEach((data, i) => {
+    let startAngle = startAngleInDegree
+    const angles: number[] = []
+    const startRadius = holeRadius + ringRadius * i / datas.length
+    const endRadius = holeRadius + ringRadius * (i + 1) / datas.length
+    data.forEach((d, j) => {
+      angles.push(startAngle)
+      const endAngle = startAngle + d / sums[i] * 360
+      children.push(target.renderPolygon([...arcToPolyline({ ...circle, r: startRadius, startAngle, endAngle }, 5), ...arcToPolyline({ ...circle, r: endRadius, startAngle: endAngle, endAngle: startAngle, counterclockwise: true }, 5)], { fillColor: colors[j], strokeColor: 0xffffff, strokeWidth: 2 }))
+      startAngle = endAngle
+    })
+    allAngles.push(angles)
+  })
+
+  const select = (point: Position) => {
+    const distance = getTwoPointsDistance(point, circle)
+    const i = Math.floor((distance - holeRadius) / ringRadius * datas.length)
+    if (i >= 0 && i < datas.length) {
+      const angles = allAngles[i]
+      let angle = getTwoPointsAngle(point, circle) / Math.PI * 180
+      if (angle < startAngleInDegree) {
+        angle += 360
+      }
+      let j = angles.findIndex(a => a >= angle)
+      if (j === -1) {
+        j = angles.length - 1
+      }
+      return { ...point, value: { x: j, y: datas[i][j] } }
+    }
+    return undefined
+  }
+
+  return { children, select }
 }
