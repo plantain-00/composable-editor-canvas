@@ -39,6 +39,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
   const [creating, setCreating] = React.useState(false)
+  const [pasting, setPasting] = React.useState<SphereContent>()
   const assistentContents: BaseContent[] = []
   const previewPatches: Patch[] = []
   const previewReversePatches: Patch[] = []
@@ -86,6 +87,9 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     }
     assistentContents.push(sphere)
   }
+  if (pasting) {
+    assistentContents.push(pasting)
+  }
 
   const transform: Transform = {
     x: is3D ? x : x + offset.x,
@@ -109,10 +113,33 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     setRotate({ x: 0, y: 0 })
     e.preventDefault()
   })
+  useKey((k) => k.code === 'KeyC' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
+    if (selected !== undefined) {
+      const content = state[selected]
+      if (content) {
+        navigator.clipboard.writeText(JSON.stringify(content))
+      }
+    }
+    e.preventDefault()
+  })
+  useKey((k) => k.code === 'KeyV' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), async (e) => {
+    try {
+      const text = await navigator.clipboard.readText()
+      const copyData: BaseContent = JSON.parse(text)
+      if (isSphereContent(copyData)) {
+        setPasting(copyData)
+        return
+      }
+    } catch (error) {
+      console.info(error)
+    }
+    e.preventDefault()
+  })
   const reset = () => {
     setCreating(false)
     setHovering(undefined)
     setSelected(undefined)
+    setPasting(undefined)
   }
   useKey((e) => e.key === 'Escape', reset, [setCreating])
   useKey((k) => k.code === 'Backspace' && !k.shiftKey && !metaKeyIfMacElseCtrlKey(k), () => {
@@ -278,7 +305,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       if (!runningRef.current) return
       if (lastTime !== undefined) {
         const t = (time - lastTime) * 0.001
-        const newContents: BaseContent[] = []
+        const newContents: SphereContent[] = []
         const current = runningStateRef.current ?? state
         for (const content of current) {
           if (content && isSphereContent(content)) {
@@ -296,7 +323,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
                 acceleration.z += a[2]
               }
             }
-            newContents.push(produce(content, draft => {
+            const newContent = produce(content, draft => {
               draft.x += content.speed.x * t
               draft.y += content.speed.y * t
               draft.z += content.speed.z * t
@@ -304,7 +331,26 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
               draft.speed.y += acceleration.y * t
               draft.speed.z += acceleration.z * t
               draft.acceleration = acceleration
-            }))
+            })
+            const index = newContents.findIndex(c => (c.x - newContent.x) ** 2 + (c.y - newContent.y) ** 2 + (c.z - newContent.z) ** 2 <= (c.radius + newContent.radius) ** 2)
+            if (index >= 0) {
+              newContents[index] = produce(newContents[index], draft => {
+                const mass = draft.mass + newContent.mass
+                const rate1 = draft.mass / mass
+                const rate2 = newContent.mass / mass
+                draft.color = Math.round(draft.color * rate1 + newContent.color * rate2)
+                draft.x = draft.x * rate1 + newContent.x * rate2
+                draft.y = draft.y * rate1 + newContent.y * rate2
+                draft.z = draft.z * rate1 + newContent.z * rate2
+                draft.speed.x = draft.speed.x * rate1 + newContent.speed.x * rate2
+                draft.speed.y = draft.speed.y * rate1 + newContent.speed.y * rate2
+                draft.speed.z = draft.speed.z * rate1 + newContent.speed.z * rate2
+                draft.mass = mass
+                draft.radius = (draft.radius ** 3 + newContent.radius ** 3) ** (1 / 3)
+              })
+            } else {
+              newContents.push(newContent)
+            }
           }
         }
         setRunningState(newContents)
@@ -319,7 +365,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     if (e.buttons === 4) {
       onStartMoveCanvas(viewportPosition)
-    } else if (!creating && !editPoint && hovering === undefined) {
+    } else if (!creating && !editPoint && hovering === undefined && !pasting) {
       onStartMoveCanvas(viewportPosition)
     }
   })
@@ -328,6 +374,10 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
       startCreate(p)
+    } else if (pasting) {
+      setState(draft => {
+        draft.push({ ...pasting, x: p.x, y: p.y } as SphereContent)
+      })
     } else if (editPoint) {
       onEditClick(p)
     } else if (hovering !== undefined) {
@@ -344,6 +394,8 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     const p = reverseTransformPosition(viewportPosition, transform)
     if (creating) {
       onMove(p, viewportPosition)
+    } else if (pasting) {
+      setPasting({ ...pasting, x: p.x, y: p.y })
     } else {
       onEditMove(p, selectedContents)
       setHovering(getContentByPosition(p))
