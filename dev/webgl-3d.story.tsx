@@ -93,7 +93,7 @@ export default () => {
       {
         eye: [position.x, position.y, position.z],
         up: [up.x, up.y, up.z],
-        target: [0, 0, 0],
+        target: [-x, y, 0],
         fov: 60 * Math.PI / 180,
         near: 0.1,
         far: 20000,
