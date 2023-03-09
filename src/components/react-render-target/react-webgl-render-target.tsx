@@ -1,6 +1,6 @@
 import * as React from "react"
 import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, polygonToPolyline, rotatePosition } from "../../utils/geometry"
-import { getPathCommandsPoints, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { getPathCommandsPoints, pathCommandPointsToPath, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 import { Matrix } from "../../utils/matrix"
 import { colorNumberToRec } from "../../utils/color"
@@ -98,7 +98,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
   },
   renderPathCommands(pathCommands, options) {
     const result = getPathCommandsPoints(pathCommands)
-    return this.renderPath(result, options)
+    const path = pathCommandPointsToPath(result)
+    return this.renderGroup(path.map(p => this.renderPath(p, options)))
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
     return (strokeWidthScale, rerender) => {

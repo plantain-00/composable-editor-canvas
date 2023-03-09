@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 
 export interface ReactRenderTarget<T = JSX.Element> {
@@ -346,6 +346,27 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
   }
   if (points.length > 1) {
     result.push(points)
+  }
+  return result
+}
+
+export function pathCommandPointsToPath(points: Position[][]) {
+  const result: Position[][][] = []
+  let current: { polygon: Position[], holes: Position[][] } | undefined
+  for (const p of points) {
+    if (!current) {
+      current = { polygon: p, holes: [] }
+    } else if (pointInPolygon(p[0], current.polygon)) {
+      current.holes.push(p)
+    } else {
+      if (current) {
+        result.push([current.polygon, ...current.holes])
+      }
+      current = { polygon: p, holes: [] }
+    }
+  }
+  if (current) {
+    result.push([current.polygon, ...current.holes])
   }
   return result
 }

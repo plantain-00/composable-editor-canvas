@@ -168,7 +168,7 @@ export function getModel(ctx: PluginContext) {
             points.push(p)
           }
         }
-        return ctx.trimOffsetResult(points).map(p => ctx.produce(content, (d) => {
+        return ctx.trimOffsetResult(points, point).map(p => ctx.produce(content, (d) => {
           d.points = p
         }))
       },

@@ -1202,7 +1202,7 @@ export function getSnapTargetRef(target: CoreSnapTarget<BaseContent> | undefined
   } : undefined
 }
 
-export function trimOffsetResult(points: Position[]) {
+export function trimOffsetResult(points: Position[], point: Position) {
   let intersectionPoints: Position[] = []
   for (let i = 0; i < points.length - 1; i++) {
     for (let j = i + 2; j < points.length - 1; j++) {
@@ -1216,7 +1216,11 @@ export function trimOffsetResult(points: Position[]) {
   intersectionPoints = deduplicatePosition(intersectionPoints)
   if (intersectionPoints.length > 0) {
     let newLines = breakPolyline(Array.from(iteratePolylineLines(points)), intersectionPoints)
-    newLines = newLines.filter((_, i) => i % 2 === 0)
+    const newLines1 = newLines.filter((_, i) => i % 2 === 0)
+    const newLines2 = newLines.filter((_, i) => i % 2 === 1)
+    const distance1 = Math.min(...newLines1.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndLineSegmentMinimumDistance(point, ...line))).flat(2))
+    const distance2 = Math.min(...newLines2.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndLineSegmentMinimumDistance(point, ...line))).flat(2))
+    newLines = distance1 > distance2 ? newLines2 : newLines1
     mergePolylines(newLines)
     return newLines.map(line => line.points)
   }
