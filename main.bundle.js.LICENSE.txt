@@ -2,6 +2,8 @@
 Available via the MIT license.
 see: http://github.com/greggman/twgl.js for details */
 
+/*! https://mths.be/codepointat v0.2.0 by @mathias */
+
 /**
  * @license React
  * react-dom-server-legacy.browser.production.min.js
