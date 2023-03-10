@@ -182,7 +182,7 @@ function* iterateRefContents(
   }
 }
 
-interface CopyData {
+export interface CopyData {
   contents: {
     id: number
     content: model.BaseContent
