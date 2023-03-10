@@ -1,6 +1,7 @@
 import React from 'react'
 import * as opentype from 'opentype.js'
 import { bindMultipleRefs, Button, EnumEditor, metaKeyIfMacElseCtrlKey, NumberEditor, ObjectEditor, PathCommand, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget, scaleByCursorPosition, StringEditor, useKey, useWheelScroll, useWheelZoom, useWindowSize } from '../src'
+import type { CopyData } from './cad-editor/plugins/copy-paste.plugin'
 
 export default () => {
   const size = useWindowSize()
@@ -76,7 +77,7 @@ export default () => {
             'background color': <NumberEditor type='color' value={backgroundColor} setValue={v => setBackgroundColor(v)} />,
             'x scale': <NumberEditor value={xScale} setValue={v => setXScale(v)} />,
             'y scale': <NumberEditor value={yScale} setValue={v => setYScale(v)} />,
-            actions: <Button onClick={() => navigator.clipboard.writeText(JSON.stringify({ contents: commands.map((c, i) => ({ id: i, content: { type: 'path', commands: c, strokeColor: color, fillColor: color } })), center: { x: 0, y: 0 } }))}>copy as command path</Button>,
+            actions: <Button onClick={() => navigator.clipboard.writeText(JSON.stringify({ contents: commands.map((c, i) => ({ id: i, content: { type: 'path', commands: c, strokeColor: color, fillColor: color } })), center: { x: 0, y: 0 } } as CopyData))}>copy as command path</Button>,
           }}
         />
       </div>

@@ -1,4 +1,4 @@
-import { arcToPolyline, getPointsBounding, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { arcToPolyline, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 
 export function getChartAxis<T>(
@@ -257,4 +257,58 @@ export function getPieChart<T>(
   }
 
   return { children, select }
+}
+
+export function getPolarAreaChart<T>(
+  data: number[],
+  colors: number[],
+  target: ReactRenderTarget<T>,
+  { width, height }: Size,
+  step: number,
+  padding: ChartAxisPadding,
+  options?: Partial<{
+    opacity: number
+    axisColor: number
+  }>,
+) {
+  const startAngleInDegree = -90
+  const opacity = options?.opacity ?? 0.5
+  const axisColor = options?.axisColor ?? 0xcccccc
+  const max = Math.ceil(Math.max(...data) / step) * step
+  const circle = {
+    x: (width + padding.left - padding.right) / 2,
+    y: (height + padding.top - padding.bottom) / 2,
+    r: Math.min((width - padding.left - padding.right) / 2, (height - padding.top - padding.bottom) / 2),
+  }
+  const t = (v: number) => circle.r * v / max
+  const children: T[] = []
+  for (let radius = step; radius <= max; radius += step) {
+    const r = t(radius)
+    children.push(target.renderCircle(circle.x, circle.y, r, { strokeColor: axisColor }))
+    children.push(target.renderCircle(circle.x, circle.y - r, 8, { fillColor: 0xffffff, strokeWidth: 0 }))
+    children.push(target.renderText(circle.x, circle.y - r, radius.toString(), axisColor, 12, 'monospace', { textAlign: 'center', textBaseline: 'middle' }))
+  }
+  let startAngle = startAngleInDegree
+  const angles: number[] = []
+  data.forEach((d, j) => {
+    const endAngle = startAngle + 360 / data.length
+    angles.push(getTwoNumberCenter(startAngle, endAngle))
+    children.push(target.renderPolygon([circle, ...arcToPolyline({ ...circle, r: t(d), startAngle, endAngle }, 5)], { fillColor: colors[j], strokeColor: 0xffffff, strokeWidth: 2, fillOpacity: opacity }))
+    startAngle = endAngle
+  })
+
+  const select = (point: Position) => {
+    const distance = getTwoPointsDistance(point, circle)
+    let angle = getTwoPointsAngle(point, circle) / Math.PI * 180 - startAngleInDegree
+    if (angle < 0) {
+      angle += 360
+    }
+    const i = Math.floor(angle * data.length / 360)
+    if (i >= 0 && i < data.length && distance <= t(data[i])) {
+      return { ...point, value: { x: i, y: data[i] } }
+    }
+    return undefined
+  }
+
+  return { children, select, circle, angles }
 }

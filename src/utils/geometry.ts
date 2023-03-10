@@ -1351,7 +1351,7 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
   return getAngleRange(content, angleDelta).map(i => getArcPointAtAngle(content, i))
 }
 
-export function getArcPointAtAngle(content: Arc, angle: number) {
+export function getArcPointAtAngle(content: Circle, angle: number) {
   angle = angle * Math.PI / 180
   return getCirclePointAtAngle(content, angle)
 }
