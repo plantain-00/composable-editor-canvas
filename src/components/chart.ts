@@ -1,5 +1,29 @@
-import { arcToPolyline, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
+
+export function getLineChart<T>(
+  datas: (Position & { r?: number })[][],
+  target: ReactRenderTarget<T>,
+  step: { x?: number, y: number },
+  size: Size,
+  padding: ChartAxisPadding,
+  options?: Partial<ChartAxisOptions>,
+) {
+  const bounding = getPointsBounding(datas.flat())
+  if (!bounding) return
+  const { axis: children, tx, ty, minY } = getChartAxis(target, bounding, step, size, padding, options)
+  const points = datas.map(d => d.map(c => ({ x: tx(c.x), y: ty(c.y), r: c.r } as Position & { r?: number })))
+  const select = (p: Position) => {
+    for (let i = 0; i < points.length; i++) {
+      const j = points[i].findIndex(n => getTwoPointsDistance(n, p) <= (n.r ?? 5))
+      if (j >= 0) {
+        return { ...points[i][j], value: datas[i][j] }
+      }
+    }
+    return
+  }
+  return { children, points, select, minY }
+}
 
 export function getChartAxis<T>(
   target: ReactRenderTarget<T>,
@@ -306,6 +330,68 @@ export function getPolarAreaChart<T>(
     const i = Math.floor(angle * data.length / 360)
     if (i >= 0 && i < data.length && distance <= t(data[i])) {
       return { ...point, value: { x: i, y: data[i] } }
+    }
+    return undefined
+  }
+
+  return { children, select, circle, angles }
+}
+
+export function getRadarChart<T>(
+  datas: number[][],
+  colors: number[],
+  target: ReactRenderTarget<T>,
+  { width, height }: Size,
+  step: number,
+  padding: ChartAxisPadding,
+  options?: Partial<{
+    opacity: number
+    axisColor: number
+  }>,
+) {
+  const startAngleInDegree = -90
+  const opacity = options?.opacity ?? 0.5
+  const axisColor = options?.axisColor ?? 0xcccccc
+  const pointRadius = 3
+  const max = Math.ceil(Math.max(...datas.flat()) / step) * step
+  const circle = {
+    x: (width + padding.left - padding.right) / 2,
+    y: (height + padding.top - padding.bottom) / 2,
+    r: Math.min((width - padding.left - padding.right) / 2, (height - padding.top - padding.bottom) / 2),
+  }
+  const t = (v: number) => circle.r * v / max
+  const angles = datas[0].map((_, i) => startAngleInDegree + i * 360 / datas[0].length)
+  const children: T[] = []
+  const maxRadius = t(max)
+  for (const angle of angles) {
+    const p = getArcPointAtAngle({ ...circle, r: maxRadius }, angle)
+    children.push(target.renderPolyline([circle, p], { strokeColor: axisColor }))
+  }
+  for (let radius = step; radius <= max; radius += step) {
+    const r = t(radius)
+    const points: Position[] = []
+    for (const angle of angles) {
+      points.push(getArcPointAtAngle({ ...circle, r: r }, angle))
+    }
+    children.push(target.renderPolygon(points, { strokeColor: axisColor }))
+    children.push(target.renderRect(circle.x - 10, circle.y - r - 6, 20, 12, { fillColor: 0xffffff, strokeWidth: 0 }))
+    children.push(target.renderText(circle.x, circle.y - r, radius.toString(), axisColor, 12, 'monospace', { textAlign: 'center', textBaseline: 'middle' }))
+  }
+  const points = datas.map(d => d.map((e, i) => getArcPointAtAngle({ ...circle, r: t(e) }, angles[i])))
+  points.forEach((p, i) => {
+    children.push(target.renderPolygon(p, { fillColor: colors[i], strokeWidth: 0, fillOpacity: opacity }))
+    children.push(target.renderPolygon(p, { strokeColor: colors[i], strokeWidth: 2 }))
+    for (const e of p) {
+      children.push(target.renderCircle(e.x, e.y, pointRadius, { fillColor: colors[i], strokeWidth: 0 }))
+    }
+  })
+
+  const select = (point: Position) => {
+    for (let i = 0; i < points.length; i++) {
+      const j = points[i].findIndex(n => getTwoPointsDistance(n, point) <= pointRadius)
+      if (j >= 0) {
+        return { ...points[i][j], value: { x: j, y: datas[i][j] } }
+      }
     }
     return undefined
   }

@@ -16,6 +16,15 @@ export function solveQuadraticEquation(equation: Equation, variable: string): Ex
       } else if (factors.length === 1) {
         return solveQuadratic(a, { type: 'NumericLiteral', value: 0 }, equation.right)
       }
+    } else if (first.degree === 1) {
+      return [
+        {
+          type: 'BinaryExpression',
+          left: equation.right,
+          operator: '/',
+          right: first.constant,
+        },
+      ]
     }
   }
 }
