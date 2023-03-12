@@ -1,4 +1,5 @@
 import { isRecord } from "./is-record"
+import { Vec3 } from "./types"
 import { and, boolean, minimum, number, optional, Path, string, validate, ValidationResult } from "./validators"
 
 export function getPointByLengthAndDirection(
@@ -763,10 +764,50 @@ export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p
   return points
 }
 
+export function getBezierCurvePoints3D(p1: Vec3, p2: Vec3, p3: Vec3, p4: Vec3, segmentCount: number) {
+  const points: Vec3[] = []
+  for (let t = 1; t < segmentCount; t++) {
+    const i = t / segmentCount
+    const xa = getValueBetween2PointsByPercent(p1[0], p2[0], i)
+    const ya = getValueBetween2PointsByPercent(p1[1], p2[1], i)
+    const za = getValueBetween2PointsByPercent(p1[2], p2[2], i)
+    const xb = getValueBetween2PointsByPercent(p2[0], p3[0], i)
+    const yb = getValueBetween2PointsByPercent(p2[1], p3[1], i)
+    const zb = getValueBetween2PointsByPercent(p2[2], p3[2], i)
+    const xc = getValueBetween2PointsByPercent(p3[0], p4[0], i)
+    const yc = getValueBetween2PointsByPercent(p3[1], p4[1], i)
+    const zc = getValueBetween2PointsByPercent(p3[2], p4[2], i)
+
+    // The Blue Line
+    const xm = getValueBetween2PointsByPercent(xa, xb, i)
+    const ym = getValueBetween2PointsByPercent(ya, yb, i)
+    const zm = getValueBetween2PointsByPercent(za, zb, i)
+    const xn = getValueBetween2PointsByPercent(xb, xc, i)
+    const yn = getValueBetween2PointsByPercent(yb, yc, i)
+    const zn = getValueBetween2PointsByPercent(zb, zc, i)
+
+    // The Black Dot
+    const x = getValueBetween2PointsByPercent(xm, xn, i);
+    const y = getValueBetween2PointsByPercent(ym, yn, i);
+    const z = getValueBetween2PointsByPercent(zm, zn, i);
+    points.push([x, y, z])
+  }
+  return points
+}
+
 export function getBezierSplinePoints(points: Position[], segmentCount: number) {
   const result: Position[] = []
   getBezierSplineControlPointsOfPoints(points).map((p, i) => {
     result.push(points[i], ...getBezierCurvePoints(points[i], ...p, points[i + 1], segmentCount))
+  })
+  result.push(points[points.length - 1])
+  return result
+}
+
+export function getBezierSplinePoints3D(points: Vec3[], segmentCount: number) {
+  const result: Vec3[] = []
+  getBezierSplineControlPointsOfPoints3D(points).map((p, i) => {
+    result.push(points[i], ...getBezierCurvePoints3D(points[i], ...p, points[i + 1], segmentCount))
   })
   result.push(points[points.length - 1])
   return result
@@ -779,6 +820,13 @@ export function getBezierSplineControlPointsOfPoints(points: Position[]) {
   const x = getBezierSplineControlPoints(points.map((p) => p.x))
   const y = getBezierSplineControlPoints(points.map((p) => p.y))
   return x.p1.map((_, i) => [{ x: x.p1[i], y: y.p1[i] }, { x: x.p2[i], y: y.p2[i] }] as const)
+}
+
+export function getBezierSplineControlPointsOfPoints3D(points: Vec3[]) {
+  const x = getBezierSplineControlPoints(points.map((p) => p[0]))
+  const y = getBezierSplineControlPoints(points.map((p) => p[1]))
+  const z = getBezierSplineControlPoints(points.map((p) => p[2]))
+  return x.p1.map((_, i) => [[x.p1[i], y.p1[i], z.p1[i]], [x.p2[i], y.p2[i], z.p2[i]]] as [Vec3, Vec3])
 }
 
 function getBezierSplineControlPoints(k: number[]) {

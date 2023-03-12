@@ -1,3 +1,5 @@
+import { Vec4 } from "./types"
+
 /**
  * @public
  */
@@ -19,7 +21,7 @@ export function getColorString(color: number, alpha?: number): string {
 }
 
 export function colorNumberToRec(n: number, alpha = 1) {
-  const color: [number, number, number, number] = [0, 0, 0, alpha]
+  const color: Vec4 = [0, 0, 0, alpha]
   color[2] = n % 256 / 255
   n = Math.floor(n / 256)
   color[1] = n % 256 / 255
@@ -27,11 +29,11 @@ export function colorNumberToRec(n: number, alpha = 1) {
   return color
 }
 
-export function recToColorNumber(color: [number, number, number, number] | Uint8Array) {
+export function recToColorNumber(color: Vec4 | Uint8Array) {
   return (color[0] * 256 + color[1]) * 256 + color[2]
 }
 
-export function mergeOpacityToColor(color?: [number, number, number, number], opacity?: number) {
+export function mergeOpacityToColor(color?: Vec4, opacity?: number) {
   if (opacity === undefined) {
     return color
   }

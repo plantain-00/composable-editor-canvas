@@ -2,32 +2,32 @@ import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import { colorNumberToRec, recToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
-import { Nullable } from '../utils/types'
+import { Nullable, Vec3, Vec4 } from '../utils/types'
 
 export interface Camera {
-  eye: [number, number, number]
-  up: [number, number, number]
-  target: [number, number, number]
+  eye: Vec3
+  up: Vec3
+  target: Vec3
   fov: number
   near: number
   far: number
 }
 
 export interface Light {
-  position: [number, number, number]
-  color: [number, number, number, number]
-  specular: [number, number, number, number]
+  position: Vec3
+  color: Vec4
+  specular: Vec4
   shininess: number
   specularFactor: number
 }
 
 export interface Material {
-  color: [number, number, number, number]
-  position?: [number, number, number]
+  color: Vec4
+  position?: Vec3
 }
 
 export interface LinesGeometry {
-  type: 'lines'
+  type: 'lines' | 'line strip'
   points: number[]
 }
 
@@ -173,7 +173,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
   const pickingFBI = twgl.createFramebufferInfo(gl)
   let pickingDrawObjectsInfo: Nullable<PickingObjectInfo>[] = []
 
-  const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: [number, number, number, number]) => {
+  const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: Vec4) => {
     twgl.resizeCanvasToDisplaySize(canvas);
     twgl.bindFramebufferInfo(gl, null)
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -210,13 +210,8 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       const drawObject: twgl.DrawObject = {
         programInfo,
         bufferInfo: bufferInfoCache.get(g.geometry, () => {
-          if (g.geometry.type === 'lines') {
-            return twgl.createBufferInfoFromArrays(gl, {
-              position: {
-                numComponents: 3,
-                data: g.geometry.points,
-              }
-            })
+          if (g.geometry.type === 'sphere') {
+            return twgl.primitives.createSphereBufferInfo(gl, g.geometry.radius, 72, 36)
           }
           if (g.geometry.type === 'cube') {
             return twgl.primitives.createCubeBufferInfo(gl, g.geometry.size)
@@ -227,9 +222,14 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           if (g.geometry.type === 'cune') {
             return twgl.primitives.createTruncatedConeBufferInfo(gl, g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4)
           }
-          return twgl.primitives.createSphereBufferInfo(gl, g.geometry.radius, 72, 36)
+          return twgl.createBufferInfoFromArrays(gl, {
+            position: {
+              numComponents: 3,
+              data: g.geometry.points,
+            }
+          })
         }),
-        type: g.geometry.type === 'lines' ? gl.LINES : gl.TRIANGLES,
+        type: g.geometry.type === 'lines' ? gl.LINES : g.geometry.type === 'line strip' ? gl.LINE_STRIP : gl.TRIANGLES,
         uniforms: {
           ...uniforms,
           u_diffuseMult: g.color,
@@ -290,11 +290,11 @@ interface PickingObjectInfo {
   drawObject: twgl.DrawObject
 }
 
-export function getDashedLine(p1: [number, number, number], p2: [number, number, number], dash: number) {
+export function getDashedLine(p1: Vec3, p2: Vec3, dash: number) {
   const direction = v3.subtract(p2, p1)
   const totalLength = v3.length(direction)
   const normal = v3.normalize(direction)
-  const result: [number, number, number][] = []
+  const result: Vec3[] = []
   let start = p1
   let length = dash
   for (; ;) {
@@ -315,25 +315,25 @@ export function getDashedLine(p1: [number, number, number], p2: [number, number,
   return result
 }
 
-export const axesGraphics: Graphic3d[] = [
+export const getAxesGraphics = (length = 100): Graphic3d[] => [
   {
     geometry: {
       type: 'lines',
-      points: [0, 0, 0, 100, 0, 0],
+      points: [0, 0, 0, length, 0, 0],
     },
     color: [1, 0, 0, 1],
   },
   {
     geometry: {
       type: 'lines',
-      points: [0, 0, 0, 0, 100, 0],
+      points: [0, 0, 0, 0, length, 0],
     },
     color: [0, 1, 0, 1],
   },
   {
     geometry: {
       type: 'lines',
-      points: [0, 0, 0, 0, 0, 100],
+      points: [0, 0, 0, 0, 0, length],
     },
     color: [0, 0, 1, 1],
   },

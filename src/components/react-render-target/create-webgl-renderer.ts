@@ -7,6 +7,7 @@ import { colorNumberToRec, getColorString, mergeOpacityToColor } from '../../uti
 import { m3, Matrix } from '../../utils/matrix'
 import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
+import { Vec4 } from '../../utils/types'
 
 /**
  * @public
@@ -14,7 +15,7 @@ import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/wea
 export interface LineOrTriangleGraphic {
   type: 'triangles' | 'lines' | 'line strip' | 'triangle strip' | 'triangle fan'
   points: number[]
-  color?: [number, number, number, number]
+  color?: Vec4
   colors?: number[]
 }
 
@@ -23,7 +24,7 @@ export interface LineOrTriangleGraphic {
  */
 export interface TextureGraphic {
   type: 'texture'
-  color?: [number, number, number, number]
+  color?: Vec4
   x: number
   y: number
   width?: number
@@ -413,7 +414,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  return (graphics: Graphic[], backgroundColor: [number, number, number, number], x: number, y: number, scale: number) => {
+  return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number) => {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     twgl.resizeCanvasToDisplaySize(canvas);
     gl.clearColor(...backgroundColor)
@@ -708,7 +709,7 @@ export function getPathGraphics(
       )
     }
     let pattern: PatternGraphic | undefined
-    let color: [number, number, number, number] | undefined
+    let color: Vec4 | undefined
     if (options.fillPattern !== undefined) {
       color = options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0]
       pattern = options.fillPattern
