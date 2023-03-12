@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
-import { bindMultipleRefs, combineStripTriangles, getPolylineTriangles, m3, metaKeyIfMacElseCtrlKey, scaleByCursorPosition, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, useZoom } from "../src"
+import { bindMultipleRefs, combineStripTriangles, getPolylineTriangles, m3, metaKeyIfMacElseCtrlKey, scaleByCursorPosition, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, useZoom, Vec4 } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -39,7 +39,7 @@ export default () => {
     const miterLimit = 'round'
     const closed = undefined
     return {
-      backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as [number, number, number, number],
+      backgroundColor: [Math.random(), Math.random(), Math.random(), 1] as Vec4,
       lines: [
         {
           points: combineStripTriangles([

@@ -1,3 +1,4 @@
+import React from "react"
 import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 
@@ -397,4 +398,29 @@ export function getRadarChart<T>(
   }
 
   return { children, select, circle, angles }
+}
+
+export function ChartTooltip(props: Position & {
+  label: string
+  value: number
+}) {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: `${props.y - 35}px`,
+      left: `${props.x}px`,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'black',
+      color: 'white',
+      width: '40px',
+      textAlign: 'center',
+      fontSize: '12px',
+      borderRadius: '5px',
+      pointerEvents: 'none',
+    }}>
+      <span>{props.label}</span>
+      <span>{props.value}</span>
+    </div>
+  )
 }

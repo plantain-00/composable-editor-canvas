@@ -4,6 +4,7 @@ import { getPathCommandsPoints, pathCommandPointsToPath, ReactRenderTarget, rend
 import { createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 import { Matrix } from "../../utils/matrix"
 import { colorNumberToRec } from "../../utils/color"
+import { Vec4 } from "../../utils/types"
 
 /**
  * @public
@@ -191,7 +192,7 @@ function Canvas(props: {
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   const render = React.useRef<(
     graphics: ((strokeWidthScale: number, rerender: () => void) => Graphic[])[],
-    backgroundColor: [number, number, number, number],
+    backgroundColor: Vec4,
     x: number,
     y: number,
     scale: number,

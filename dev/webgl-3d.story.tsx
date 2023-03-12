@@ -1,5 +1,5 @@
 import * as React from "react"
-import { axesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
+import { getAxesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -24,7 +24,7 @@ export default () => {
   const rotateY = offset.y + rotate.y
   const [hovering, setHovering] = React.useState<number>()
   const graphics = React.useRef<Graphic3d[]>([
-    ...axesGraphics,
+    ...getAxesGraphics(),
     {
       geometry: {
         type: 'lines',

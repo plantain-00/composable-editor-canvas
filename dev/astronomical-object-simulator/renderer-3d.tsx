@@ -1,6 +1,6 @@
 import React from 'react';
 import { v3 } from 'twgl.js'
-import { axesGraphics, colorNumberToRec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache } from '../../src';
+import { getAxesGraphics, colorNumberToRec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
@@ -36,7 +36,7 @@ export const Renderer3d = React.forwardRef((props: {
   React.useEffect(() => {
     if (!renderer.current) return
     const graphics: Nullable<Graphic3d>[] = []
-    const assistentGraphics: Nullable<Graphic3d>[] = [...axesGraphics]
+    const assistentGraphics: Nullable<Graphic3d>[] = [...getAxesGraphics()]
     const { position, up } = updateCamera(-props.x, props.y, 1000 / props.scale, -0.3 * props.rotateX, -0.3 * props.rotateY)
     props.contents.forEach((content, i) => {
       if (content && isSphereContent(content)) {
