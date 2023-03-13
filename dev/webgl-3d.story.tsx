@@ -77,13 +77,6 @@ export default () => {
   }, [ref.current])
 
   React.useEffect(() => {
-    if (ref.current) {
-      ref.current.width = width
-      ref.current.height = height
-    }
-  }, [width, height])
-
-  React.useEffect(() => {
     const { position, up } = updateCamera(-x, y, 1000 / scale, -0.3 * rotateX, -0.3 * rotateY)
     graphics.current.forEach((g, i) => {
       g.color[3] = i === hovering ? 0.5 : 1
@@ -107,7 +100,7 @@ export default () => {
       },
       [1, 1, 1, 1],
     )
-  }, [x, y, scale, rotateX, rotateY, hovering])
+  }, [x, y, scale, rotateX, rotateY, hovering, width, height])
 
   return (
     <div

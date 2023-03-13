@@ -1,5 +1,5 @@
 import React from "react"
-import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, getAxesGraphics, getBezierSplinePoints3D, Position, ChartTooltip, Vec3, Vec4 } from "../src"
+import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, getBezierSplinePoints3D, Position, ChartTooltip, Vec3, Vec4, getChartAxis3D } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -16,7 +16,7 @@ export default () => {
   const [hovering, setHovering] = React.useState<Position & { value: Vec3 }>()
   const rotateX = offset.x + rotate.x
   const rotateY = offset.y + rotate.y
-  const graphics = React.useRef<(Graphic3d)[]>(getAxesGraphics())
+  const graphics = React.useRef<(Graphic3d)[]>([])
   const getXLabel = (x: number) => Intl.DateTimeFormat('zh', { month: 'long' }).format(new Date(x.toString()))
 
   React.useEffect(() => {
@@ -27,11 +27,18 @@ export default () => {
   React.useEffect(() => {
     const points1 = [65, 59, 80, 81, 56, 55, 40].map((s, i) => [(i + 1) * 20, s, 0] as Vec3)
     const points2 = [55, 49, 70, 71, 46, 45, 30].map((s, i) => [(i + 1) * 20, s, 20] as Vec3)
+    const points3 = [45, 39, 60, 61, 36, 35, 20].map((s, i) => [(i + 1) * 20, s, -20] as Vec3)
+    const points4 = [75, 69, 90, 91, 66, 65, 50].map((s, i) => [(i + 1) * 20, s, 40] as Vec3)
+    const axis = getChartAxis3D([points1, points2, points3, points4], { x: 20, y: 10, z: 20 })
     graphics.current.push(
+      ...axis,
       { geometry: { type: 'line strip', points: points1.flat() }, color: [1, 0, 0, 1] },
-      ...points1.map(p => ({ geometry: { type: 'sphere' as const, radius: 3 }, color: [1, 0, 0, 1] as Vec4, position: p })),
+      ...points1.map(p => ({ geometry: { type: 'sphere' as const, radius: 1 }, color: [1, 0, 0, 1] as Vec4, position: p })),
       { geometry: { type: 'line strip', points: getBezierSplinePoints3D(points2, 20).flat() }, color: [0, 1, 0, 1] },
-      ...points2.map(p => ({ geometry: { type: 'sphere' as const, radius: 3 }, color: [0, 1, 0, 1] as Vec4, position: p })),
+      ...points2.map(p => ({ geometry: { type: 'sphere' as const, radius: 1 }, color: [0, 1, 0, 1] as Vec4, position: p })),
+      { geometry: { type: 'polygon', points: [...points3.flat(), points3[points3.length - 1][0], 0, points3[points3.length - 1][2], points3[0][0], 0, points3[0][2]] }, color: [0, 0, 1, 1] },
+      ...points3.map(p => ({ geometry: { type: 'sphere' as const, radius: 1 }, color: [0, 0, 1, 1] as Vec4, position: p })),
+      ...points4.map((p, i) => ({ geometry: { type: 'sphere' as const, radius: i / 2 + 1 }, color: [1, 0, 0, 1] as Vec4, position: p })),
     )
   }, [])
 

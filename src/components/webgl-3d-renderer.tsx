@@ -1,6 +1,7 @@
 import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
-import { colorNumberToRec, recToColorNumber } from '../utils/color'
+import earcut from 'earcut'
+import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
 
@@ -31,6 +32,11 @@ export interface LinesGeometry {
   points: number[]
 }
 
+export interface PolygonGeometry {
+  type: 'polygon'
+  points: number[]
+}
+
 export interface SphereGeometry {
   type: 'sphere'
   radius: number
@@ -55,7 +61,7 @@ export interface CuneGeometry {
 }
 
 export interface Graphic3d extends Material {
-  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | CuneGeometry | LinesGeometry
+  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | CuneGeometry | LinesGeometry | PolygonGeometry
 }
 
 export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
@@ -164,8 +170,8 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     mag: gl.NEAREST,
     src: [
       255, 255, 255, 255,
-      192, 192, 192, 255,
-      192, 192, 192, 255,
+      255, 255, 255, 255,
+      255, 255, 255, 255,
       255, 255, 255, 255,
     ],
   });
@@ -222,6 +228,24 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           if (g.geometry.type === 'cune') {
             return twgl.primitives.createTruncatedConeBufferInfo(gl, g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4)
           }
+          if (g.geometry.type === 'polygon') {
+            const vertices = g.geometry.points
+            const index = earcut(vertices, undefined, 3)
+            const triangles: number[] = []
+            for (let i = 0; i < index.length; i += 3) {
+              triangles.push(
+                vertices[index[i] * 3], vertices[index[i] * 3 + 1], vertices[index[i] * 3 + 2],
+                vertices[index[i + 1] * 3], vertices[index[i + 1] * 3 + 1], vertices[index[i + 1] * 3 + 2],
+                vertices[index[i + 2] * 3], vertices[index[i + 2] * 3 + 1], vertices[index[i + 2] * 3 + 2]
+              )
+            }
+            return twgl.createBufferInfoFromArrays(gl, {
+              position: {
+                numComponents: 3,
+                data: triangles,
+              }
+            })
+          }
           return twgl.createBufferInfoFromArrays(gl, {
             position: {
               numComponents: 3,
@@ -274,7 +298,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
 
     const pickColor = new Uint8Array(4);
     gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pickColor);
-    const index = recToColorNumber(pickColor)
+    const index = pixelColorToColorNumber(pickColor)
     return index === 0xffffff ? undefined : index
   }
 
