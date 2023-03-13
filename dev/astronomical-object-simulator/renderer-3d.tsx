@@ -27,13 +27,6 @@ export const Renderer3d = React.forwardRef((props: {
   }, [canvasRef.current])
 
   React.useEffect(() => {
-    if (canvasRef.current) {
-      canvasRef.current.width = props.width
-      canvasRef.current.height = props.height
-    }
-  }, [props.width, props.height])
-
-  React.useEffect(() => {
     if (!renderer.current) return
     const graphics: Nullable<Graphic3d>[] = []
     const assistentGraphics: Nullable<Graphic3d>[] = [...getAxesGraphics()]
@@ -97,7 +90,7 @@ export const Renderer3d = React.forwardRef((props: {
       },
       [1, 1, 1, 1],
     )
-  }, [props.x, props.y, props.scale, props.rotateX, props.rotateY, props.contents, props.hovering, props.selected])
+  }, [props.x, props.y, props.scale, props.rotateX, props.rotateY, props.contents, props.hovering, props.selected, props.width, props.height])
 
   React.useImperativeHandle<Renderer3dRef, Renderer3dRef>(ref, () => ({
     getContentByPosition(position: Position) {
@@ -106,7 +99,7 @@ export const Renderer3d = React.forwardRef((props: {
   }), [])
 
   return (
-    <canvas ref={canvasRef} onClick={props.onClick} onMouseDown={props.onMouseDown} />
+    <canvas ref={canvasRef} width={props.width} height={props.height} onClick={props.onClick} onMouseDown={props.onMouseDown} />
   )
 })
 

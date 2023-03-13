@@ -29,7 +29,16 @@ export function colorNumberToRec(n: number, alpha = 1) {
   return color
 }
 
-export function recToColorNumber(color: Vec4 | Uint8Array) {
+export function recToColorNumber(color: Vec4) {
+  return pixelColorToColorNumber([
+    Math.round(color[0] * 255),
+    Math.round(color[1] * 255),
+    Math.round(color[2] * 255),
+    Math.round(color[3] * 255),
+  ])
+}
+
+export function pixelColorToColorNumber(color: Vec4 | Uint8Array) {
   return (color[0] * 256 + color[1]) * 256 + color[2]
 }
 

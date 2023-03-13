@@ -1,6 +1,8 @@
 import React from "react"
 import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { Vec3 } from "../utils/types"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
+import { Graphic3d } from "./webgl-3d-renderer"
 
 export function getLineChart<T>(
   datas: (Position & { r?: number })[][],
@@ -423,4 +425,71 @@ export function ChartTooltip(props: Position & {
       <span>{props.value}</span>
     </div>
   )
+}
+
+export function getChartAxis3D(
+  datas: Vec3[][],
+  step: { x: number, y: number, z: number },
+) {
+  const { minX, minY, minZ, maxX, maxY, maxZ } = getVec3Bounding(datas.flat(), { min: 0, max: 0 })
+  const startX = Math.floor(minX / step.x) * step.x
+  const endX = Math.ceil(maxX / step.x) * step.x
+  const startY = Math.floor(minY / step.y) * step.y
+  const endY = Math.ceil(maxY / step.y) * step.y
+  const startZ = Math.floor(minZ / step.z) * step.z
+  const endZ = Math.ceil(maxZ / step.z) * step.z
+  const graphics: Graphic3d[] = []
+  for (let x = minX; x <= endX; x += step.x) {
+    graphics.push({ geometry: { type: 'lines', points: [x, startY, 0, x, endY, 0] }, color: [0, 1, 0, 1] })
+    graphics.push({ geometry: { type: 'lines', points: [x, 0, startZ, x, 0, endZ] }, color: [0, 0, 1, 1] })
+  }
+  for (let y = minY; y <= endY; y += step.y) {
+    graphics.push({ geometry: { type: 'lines', points: [startX, y, 0, endX, y, 0] }, color: [1, 0, 0, 1] })
+    graphics.push({ geometry: { type: 'lines', points: [0, y, startZ, 0, y, endZ] }, color: [0, 0, 1, 1] })
+  }
+  for (let z = minZ; z <= endZ; z += step.z) {
+    graphics.push({ geometry: { type: 'lines', points: [startX, 0, z, endX, 0, z] }, color: [1, 0, 0, 1] })
+    graphics.push({ geometry: { type: 'lines', points: [0, startY, z, 0, endY, z] }, color: [0, 1, 0, 1] })
+  }
+  return graphics
+}
+
+function getVec3Bounding(vecs: Vec3[], defaultValue = { min: Infinity, max: -Infinity }) {
+  let minX = defaultValue.min
+  let minY = defaultValue.min
+  let minZ = defaultValue.min
+  let maxX = defaultValue.max
+  let maxY = defaultValue.max
+  let maxZ = defaultValue.max
+  for (const vec of vecs) {
+    const x = vec[0]
+    const y = vec[1]
+    const z = vec[2]
+    if (x < minX) {
+      minX = x
+    }
+    if (x > maxX) {
+      maxX = x
+    }
+    if (y < minY) {
+      minY = y
+    }
+    if (y > maxY) {
+      maxY = y
+    }
+    if (z < minZ) {
+      minZ = z
+    }
+    if (z > maxZ) {
+      maxZ = z
+    }
+  }
+  return {
+    maxX,
+    minX,
+    minY,
+    maxY,
+    minZ,
+    maxZ,
+  }
 }

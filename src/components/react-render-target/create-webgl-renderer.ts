@@ -346,7 +346,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
       let filterUniforms: Record<string, unknown> = {}
       let programInfo: twgl.ProgramInfo
-      if (line.filters && line.filters?.length > 0) {
+      if (line.filters && line.filters.length > 0) {
         const p = getFilterProgramInfoAndUniforms(line.filters[line.filters.length - 1])
         programInfo = p.programInfo
         filterUniforms = p.filterUniforms
