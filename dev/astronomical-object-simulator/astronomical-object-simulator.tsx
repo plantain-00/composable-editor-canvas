@@ -1,7 +1,7 @@
 import React from 'react';
 import { produce, Patch, enablePatches, produceWithPatches } from 'immer'
 import { v3 } from 'twgl.js'
-import { bindMultipleRefs, Button, colorNumberToRec, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, Position, recToColorNumber, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, Button, colorNumberToPixelColor, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, pixelColorToColorNumber, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
@@ -338,13 +338,12 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
                 const mass = draft.mass + newContent.mass
                 const rate1 = draft.mass / mass
                 const rate2 = newContent.mass / mass
-                const color1 = colorNumberToRec(draft.color)
-                const color2 = colorNumberToRec(newContent.color)
-                draft.color = recToColorNumber([
-                  Math.round((color1[0] * rate1 + color2[0] * rate2) * 256) / 256,
-                  Math.round((color1[1] * rate1 + color2[1] * rate2) * 256) / 256,
-                  Math.round((color1[2] * rate1 + color2[2] * rate2) * 256) / 256,
-                  Math.round((color1[3] * rate1 + color2[3] * rate2) * 256) / 256,
+                const color1 = colorNumberToPixelColor(draft.color)
+                const color2 = colorNumberToPixelColor(newContent.color)
+                draft.color = pixelColorToColorNumber([
+                  Math.round(color1[0] * rate1 + color2[0] * rate2),
+                  Math.round(color1[1] * rate1 + color2[1] * rate2),
+                  Math.round(color1[2] * rate1 + color2[2] * rate2),
                 ])
                 draft.x = draft.x * rate1 + newContent.x * rate2
                 draft.y = draft.y * rate1 + newContent.y * rate2

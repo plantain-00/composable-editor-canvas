@@ -72,14 +72,6 @@ export function Renderer(props: {
       })
     }))
   }
-  const commonProps = {
-    transformColor,
-    target,
-    getStrokeColor,
-    getFillColor,
-    getFillPattern,
-    time: props.time,
-  }
 
   debug.mark('before contents')
   let children: unknown[] = []
@@ -102,6 +94,15 @@ export function Renderer(props: {
   const previewPatches = props.previewPatches ?? []
   const previewContents = previewPatches.length > 0 && !props.performanceMode ? applyPatches(props.contents, previewPatches) : props.contents
   const sortedContents = getSortedContents(previewContents).contents
+  const commonProps = {
+    transformColor,
+    target,
+    getStrokeColor,
+    getFillColor,
+    getFillPattern,
+    time: props.time,
+    contents: previewContents,
+  }
   children = renderCache.current.get(sortedContents, props.time, () => {
     sortedContents.forEach((content) => {
       if (!content || content.visible === false) {
@@ -128,14 +129,14 @@ export function Renderer(props: {
           const ContentRender = model.render
           if (ContentRender) {
             merger.flushLast()
-            children.push(ContentRender(content, { transformStrokeWidth: w => w, contents: previewContents, ...commonProps }))
+            children.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps }))
           }
         }
       } else {
         const ContentRender = model.render
         if (ContentRender) {
           merger.flushLast()
-          children.push(ContentRender(content, { transformStrokeWidth: w => w, contents: previewContents, ...commonProps }))
+          children.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps }))
         }
       }
     })
@@ -171,7 +172,7 @@ export function Renderer(props: {
     newContents.forEach(content => {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, contents: props.contents, ...commonProps, isAssistence: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isAssistence: true }))
       }
     })
   }
@@ -205,7 +206,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   }
@@ -217,7 +218,7 @@ export function Renderer(props: {
       const model = getContentModel(content)
       const ContentRender = model?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
       }
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {
@@ -231,7 +232,7 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 1, contents: props.contents, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   }
@@ -239,7 +240,7 @@ export function Renderer(props: {
   props.assistentContents?.forEach((content) => {
     const ContentRender = getContentModel(content)?.render
     if (ContentRender) {
-      assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w, contents: props.contents, ...commonProps, isAssistence: true }))
+      assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isAssistence: true }))
     }
   })
   if (assistentContentsChildren2.length > 0) {

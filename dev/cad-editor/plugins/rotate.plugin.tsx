@@ -73,7 +73,7 @@ export function getCommand(ctx: PluginContext): Command {
             {changeOriginal ? 'create new(N)' : 'change original(Y)'}
           </button>
         ) : undefined,
-        updateSelectedContent(content, contents) {
+        updateSelectedContent(content, contents, selected) {
           if (startPosition && offset?.angle !== undefined) {
             const angle = offset.angle
             if (!changeOriginal) {
@@ -88,7 +88,7 @@ export function getCommand(ctx: PluginContext): Command {
             const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               ctx.getContentModel(content)?.rotate?.(draft, startPosition, angle, contents)
             })
-            const assistentContents = ctx.updateReferencedContents(content, newContent, contents)
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents, selected)
             return {
               patches,
               assistentContents,

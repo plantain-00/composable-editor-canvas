@@ -791,10 +791,12 @@ export function updateReferencedContents(
   content: BaseContent,
   newContent: BaseContent,
   contents: readonly Nullable<BaseContent>[],
+  selected?: BaseContent[],
 ) {
   const assistentContents: BaseContent[] = []
   const id = getContentIndex(content, contents)
   for (const c of iterateAllContents(contents)) {
+    if (selected?.includes(c)) continue
     const model = getContentModel(c)
     if (model?.getRefIds?.(c)?.includes(id)) {
       assistentContents.push(produce(c, (draft) => {

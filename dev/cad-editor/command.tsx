@@ -26,7 +26,7 @@ export interface Command extends CommandType {
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
-    updateSelectedContent?(content: Readonly<BaseContent>, contents: readonly Nullable<BaseContent>[]): {
+    updateSelectedContent?(content: Readonly<BaseContent>, contents: readonly Nullable<BaseContent>[], selected: BaseContent[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
       patches?: [Patch[], Patch[]]
@@ -82,7 +82,7 @@ export function useCommands(
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
   const onMoves: ((p: Position, viewportPosition?: Position, target?: SnapTarget) => void)[] = []
-  const updateSelectedContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[]) => {
+  const updateSelectedContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[], selected: BaseContent[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
     patches?: [Patch[], Patch[]]
@@ -178,9 +178,10 @@ export function useCommands(
       const assistentContents: BaseContent[] = []
       const patches: [Patch[], Patch[]][] = []
       let index = 0
+      const s = selected.map(e => e.content)
       for (const { content, path } of selected) {
         for (const updateSelectedContent of updateSelectedContents) {
-          const result = updateSelectedContent(content, contents)
+          const result = updateSelectedContent(content, contents, s)
           if (result.assistentContents) {
             assistentContents.push(...result.assistentContents)
           }
