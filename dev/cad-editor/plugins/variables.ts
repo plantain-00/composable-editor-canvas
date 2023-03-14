@@ -5220,7 +5220,7 @@ function getCommand(ctx) {
           },
           changeOriginal ? "create new(N)" : "change original(Y)"
         ) : void 0,
-        updateSelectedContent(content, contents) {
+        updateSelectedContent(content, contents, selected) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
@@ -5230,7 +5230,7 @@ function getCommand(ctx) {
                 var _a, _b;
                 (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, draft, line, angle, contents);
               });
-              const assistentContents = ctx.updateReferencedContents(content, newContent, contents);
+              const assistentContents = ctx.updateReferencedContents(content, newContent, contents, selected);
               return {
                 patches,
                 assistentContents
@@ -5296,13 +5296,13 @@ function getCommand(ctx) {
           setInputPosition(p);
         },
         reset,
-        updateSelectedContent(content, contents) {
+        updateSelectedContent(content, contents, selected) {
           if (startPosition && (offset.x !== 0 || offset.y !== 0)) {
             const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               var _a, _b;
               (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, draft, offset);
             });
-            const assistentContents = ctx.updateReferencedContents(content, newContent, contents);
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents, selected);
             return {
               patches,
               assistentContents
@@ -7706,7 +7706,7 @@ function getCommand(ctx) {
           },
           changeOriginal ? "create new(N)" : "change original(Y)"
         ) : void 0,
-        updateSelectedContent(content, contents) {
+        updateSelectedContent(content, contents, selected) {
           if (startPosition && (offset == null ? void 0 : offset.angle) !== void 0) {
             const angle = offset.angle;
             if (!changeOriginal) {
@@ -7723,7 +7723,7 @@ function getCommand(ctx) {
               var _a, _b;
               (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, draft, startPosition, angle, contents);
             });
-            const assistentContents2 = ctx.updateReferencedContents(content, newContent, contents);
+            const assistentContents2 = ctx.updateReferencedContents(content, newContent, contents, selected);
             return {
               patches,
               assistentContents: assistentContents2

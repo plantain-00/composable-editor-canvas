@@ -45,7 +45,7 @@ export function getCommand(ctx: PluginContext): Command {
             {changeOriginal ? 'create new(N)' : 'change original(Y)'}
           </button>
         ) : undefined,
-        updateSelectedContent(content, contents) {
+        updateSelectedContent(content, contents, selected) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end)
@@ -54,7 +54,7 @@ export function getCommand(ctx: PluginContext): Command {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents)
               })
-              const assistentContents = ctx.updateReferencedContents(content, newContent, contents)
+              const assistentContents = ctx.updateReferencedContents(content, newContent, contents, selected)
               return {
                 patches,
                 assistentContents,

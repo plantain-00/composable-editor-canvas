@@ -1,4 +1,4 @@
-import { Vec4 } from "./types"
+import { Vec3, Vec4 } from "./types"
 
 /**
  * @public
@@ -20,13 +20,9 @@ export function getColorString(color: number, alpha?: number): string {
   return `#${'0'.repeat(6 - s.length)}${s}${a}`
 }
 
-export function colorNumberToRec(n: number, alpha = 1) {
-  const color: Vec4 = [0, 0, 0, alpha]
-  color[2] = n % 256 / 255
-  n = Math.floor(n / 256)
-  color[1] = n % 256 / 255
-  color[0] = Math.floor(n / 256) / 255
-  return color
+export function colorNumberToRec(n: number, alpha = 1): Vec4 {
+  const [r, g, b] = colorNumberToPixelColor(n)
+  return [r / 255, g / 255, b / 255, alpha]
 }
 
 export function recToColorNumber(color: Vec4) {
@@ -34,12 +30,19 @@ export function recToColorNumber(color: Vec4) {
     Math.round(color[0] * 255),
     Math.round(color[1] * 255),
     Math.round(color[2] * 255),
-    Math.round(color[3] * 255),
   ])
 }
 
-export function pixelColorToColorNumber(color: Vec4 | Uint8Array) {
+export function pixelColorToColorNumber(color: Vec3 | Uint8Array) {
   return (color[0] * 256 + color[1]) * 256 + color[2]
+}
+
+export function colorNumberToPixelColor(n: number) {
+  const color: Vec3 = [0, 0, n % 256]
+  n = Math.floor(n / 256)
+  color[1] = n % 256
+  color[0] = Math.floor(n / 256)
+  return color
 }
 
 export function mergeOpacityToColor(color?: Vec4, opacity?: number) {
