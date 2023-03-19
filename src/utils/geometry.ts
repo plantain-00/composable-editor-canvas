@@ -98,9 +98,24 @@ export function getPointByLengthAndAngle(
   length: number,
   angle: number,
 ) {
+  const direction = multipleDirection(getDirectionByAngle(angle), length)
   return {
-    x: startPoint.x + length * Math.cos(angle),
-    y: startPoint.y + length * Math.sin(angle),
+    x: startPoint.x + direction.x,
+    y: startPoint.y + direction.y,
+  }
+}
+
+export function getDirectionByAngle(angle: number): Position {
+  return {
+    x: Math.cos(angle),
+    y: Math.sin(angle),
+  }
+}
+
+export function multipleDirection(direction: Position, scalar: number): Position {
+  return {
+    x: direction.x * scalar,
+    y: direction.y * scalar,
   }
 }
 
@@ -1330,7 +1345,7 @@ export function getCircleAngle(p: Position, circle: Circle) {
   return getTwoPointsAngle(p, circle)
 }
 
-export function getTwoPointsAngle(to: Position, from: Position) {
+export function getTwoPointsAngle(to: Position, from: Position = { x: 0, y: 0 }) {
   return Math.atan2(to.y - from.y, to.x - from.x)
 }
 
@@ -1405,16 +1420,14 @@ export function getArcPointAtAngle(content: Circle, angle: number) {
 }
 
 export function getCirclePointAtAngle(content: Circle, angle: number) {
-  return {
-    x: content.x + content.r * Math.cos(angle),
-    y: content.y + content.r * Math.sin(angle),
-  }
+  return getPointByLengthAndAngle(content, content.r, angle)
 }
 
 export function getEllipsePointAtAngle(content: Ellipse, angle: number) {
+  const direction = getDirectionByAngle(angle)
   const p = {
-    x: content.cx + content.rx * Math.cos(angle),
-    y: content.cy + content.ry * Math.sin(angle),
+    x: content.cx + content.rx * direction.x,
+    y: content.cy + content.ry * direction.y,
   }
   if (content.angle) {
     return rotatePosition(p, getEllipseCenter(content), content.angle * Math.PI / 180)

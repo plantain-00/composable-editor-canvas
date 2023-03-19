@@ -35,7 +35,7 @@ export function useLineClickCreate<T = unknown>(
       message = `specify next point by click, input position or input ${inputMode}, press tab to input ${tabSwitchList[nextTabSwitchIndex]}`
     }
   }
-  const { input, setCursorPosition, clearText, setInputPosition, resetInput } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
+  const { input, setCursorPosition, clearText, setInputPosition, resetInput, cursorPosition } = useCursorInput(message, enabled ? (e, text, cursorPosition) => {
     if (e.key === 'Enter') {
       if (inputMode === 'angle') {
         const angle = +text
@@ -137,6 +137,7 @@ export function useLineClickCreate<T = unknown>(
     positionTargets,
     inputMode,
     lastPosition: line?.[line.length - 2],
+    cursorPosition,
     onClick(p: Position, target?: T) {
       if (!enabled) {
         return
