@@ -1,5 +1,6 @@
 import { Expression2 } from "expression-engine";
 import { Equation } from "../equation-renderer";
+import { expressionHasVariable } from "./model";
 
 export function solveQuadraticEquation(equation: Equation, variable: string): Expression2[] | void {
   const factors = expressionToQuadraticFactors(equation.left, variable)
@@ -62,6 +63,12 @@ function expressionToQuadraticFactors(e: Expression2, variable: string): Quadrat
 
 function expressionToQuadraticFactor(e: Expression2, variable: string): QuadraticFactor | void {
   if (e.type === 'NumericLiteral') {
+    return {
+      constant: e,
+      degree: 0,
+    }
+  }
+  if (!expressionHasVariable(e, variable)) {
     return {
       constant: e,
       degree: 0,

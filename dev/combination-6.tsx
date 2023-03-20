@@ -1,6 +1,6 @@
 import React from "react"
 import produce from "immer"
-import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, multipleDirection, reactCanvasRenderTarget, useEvent, useKey, useLineClickCreate, useRefState, useWindowSize } from "../src";
+import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useKey, useLineClickCreate, useRefState, useWindowSize } from "../src";
 
 export function Combination6() {
   const { width, height } = useWindowSize()
@@ -8,9 +8,12 @@ export function Combination6() {
   const [state, setState, stateRef] = useRefState<(Position & { speed: Position, type: CreateType })[]>([])
   const [creating, setCreating] = React.useState<CreateType>()
   const [dropAuto, setDropAuto] = React.useState(false)
+  const [shootAuto, setShootAuto] = React.useState(false)
   const detonate = React.useRef(false)
   const [cursor, setCursor] = React.useState<Position>()
   const assistentContents: typeof state = []
+  const launchPosition = { x: width / 2, y: height - radius }
+  const aimedContents = React.useRef(new WeakSet<object>())
 
   React.useEffect(() => {
     let lastTime: number | undefined
@@ -32,6 +35,10 @@ export function Combination6() {
             newState.splice(index, 1)
           } else {
             newState.push(newContent)
+            if (aimedContents.current.has(content)) {
+              aimedContents.current.add(newContent)
+              aimedContents.current.delete(content)
+            }
           }
         }
         setState(newState)
@@ -58,6 +65,13 @@ export function Combination6() {
     }, 1000)
     return () => clearInterval(timer)
   }, [dropAuto])
+  React.useEffect(() => {
+    if (!shootAuto) return
+    const timer = setInterval(() => {
+      aimAuto()
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [shootAuto])
   const { line, cursorPosition, onClick: startCreate, reset: resetCreate, onMove } = useLineClickCreate(
     creating === 'drop',
     (c) => {
@@ -74,6 +88,24 @@ export function Combination6() {
     resetCreate()
     setCreating(type)
   }
+  const aimAuto = () => {
+    const content = stateRef.current.find(c => c.type === 'drop' && !aimedContents.current.has(c))
+    if (!content) return
+    const speed = getLaunchSpeed(content, launchPosition)
+    if (speed.length === 0) return
+    setState(produce(stateRef.current, draft => {
+      for (const s of speed) {
+        if (s.y < 0) {
+          draft.push({
+            type: 'shoot down',
+            ...launchPosition,
+            speed: s,
+          })
+        }
+      }
+    }))
+    aimedContents.current.add(content)
+  }
   const reset = () => {
     setCreating(undefined)
     setCursor(undefined)
@@ -85,7 +117,7 @@ export function Combination6() {
   } else if (cursorPosition) {
     assistentContents.push(lineToContent([cursorPosition, cursorPosition], radius, creating))
   } else if (cursor) {
-    assistentContents.push(lineToContent([{ x: width / 2, y: height - radius }, cursor], radius, creating))
+    assistentContents.push(lineToContent([launchPosition, cursor], radius, creating))
   }
   const children: CanvasDraw[] = []
   for (const s of [...state, ...assistentContents]) {
@@ -106,7 +138,7 @@ export function Combination6() {
       startCreate(p)
     } else if (creating === 'shoot down' && cursor) {
       setState(produce(state, draft => {
-        draft.push(lineToContent([{ x: width / 2, y: height - radius }, cursor], radius, creating))
+        draft.push(lineToContent([launchPosition, cursor], radius, creating))
       }))
     }
   })
@@ -135,6 +167,11 @@ export function Combination6() {
           <input type='checkbox' checked={detonate.current} onChange={(e) => detonate.current = e.target.checked} />
           detonate
         </label>
+        <Button onClick={() => aimAuto()}>aim auto</Button>
+        <label style={{ position: 'relative' }}>
+          <input type='checkbox' checked={shootAuto} onChange={(e) => setShootAuto(e.target.checked)} />
+          shoot auto
+        </label>
       </div>
     </div>
   )
@@ -143,6 +180,7 @@ export function Combination6() {
 const radius = 5
 const detonateRadius = 25
 const g = 9.8
+const launchSpeed = 200
 
 type CreateType = 'drop' | 'shoot down'
 
@@ -152,7 +190,7 @@ function lineToContent([p1, p2]: Position[], radius: number, type?: CreateType) 
     p2 = { x: p2.x, y: radius }
   } else if (type === 'shoot down') {
     const angle = getTwoPointsAngle(p2, p1)
-    const speed = multipleDirection(getDirectionByAngle(angle), 200)
+    const speed = multipleDirection(getDirectionByAngle(angle), launchSpeed)
     return {
       type: 'shoot down' as const,
       ...p1,
@@ -172,4 +210,37 @@ function lineToContent([p1, p2]: Position[], radius: number, type?: CreateType) 
     ...p1,
     speed,
   }
+}
+
+function getLaunchSpeed(target: Position & { speed: Position }, position: Position): Position[] {
+  const dx = position.x - target.x
+  const dy = position.y - target.y
+  const c = dx * target.speed.y - dy * target.speed.x
+  const r0 = launchSpeed ** 2
+  const a = dx ** 2 + dy ** 2
+  const b = 4 * r0 * dx ** 2 - 4 * c ** 2 + 4 * r0 * dy ** 2
+  if (b < 0) {
+    return []
+  }
+  const f = -c * dy
+  const g = c * dx
+  if (isZero(b)) {
+    return [{
+      x: f / a,
+      y: g / a,
+    }]
+  }
+  const e = b ** 0.5
+  const h = 0.5 * dx * e
+  const i = 0.5 * dy * e
+  return [
+    {
+      x: (f + h) / a,
+      y: (g + i) / a,
+    },
+    {
+      x: (f - h) / a,
+      y: (g - i) / a,
+    },
+  ]
 }
