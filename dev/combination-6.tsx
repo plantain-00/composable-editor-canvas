@@ -51,13 +51,14 @@ export function Combination6() {
   React.useEffect(() => {
     if (!dropAuto) return
     const timer = setInterval(() => {
+      const rate = Math.random()
       setState(produce(stateRef.current, draft => {
         draft.push({
           type: 'drop',
-          x: Math.random() * width,
+          x: rate * width,
           y: radius,
           speed: {
-            x: (Math.random() - 0.5) * width * 0.05,
+            x: (rate > 0.5 ? -1 : 1) * Math.random() * width * 0.03,
             y: 0,
           },
         })

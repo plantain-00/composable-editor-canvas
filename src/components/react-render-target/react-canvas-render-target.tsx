@@ -3,7 +3,7 @@ import { defaultMiterLimit } from "../../utils/geometry"
 import { m3 } from "../../utils/matrix"
 import { setCanvasLineDash } from "./create-webgl-renderer"
 import { getImageFromCache } from "./image-loader"
-import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, RenderTransform, renderPartStyledPolyline } from "./react-render-target"
 import { getColorString } from "../../utils/color"
 
 /**
@@ -402,11 +402,7 @@ function Canvas(props: {
     style: React.CSSProperties
   }>,
   draws: CanvasDraw[]
-  transform?: {
-    x: number
-    y: number
-    scale: number
-  }
+  transform?: RenderTransform
   backgroundColor?: number
   debug?: boolean
   strokeWidthScale?: number
@@ -434,6 +430,9 @@ function Canvas(props: {
             props.transform.x / props.transform.scale - props.width / 2,
             props.transform.y / props.transform.scale - props.height / 2,
           )
+          if (props.transform.rotate) {
+            ctx.rotate(props.transform.rotate)
+          }
         }
         const scale = props.strokeWidthScale ?? 1
         const rerender = () => setImageLoadStatus(c => c + 1)

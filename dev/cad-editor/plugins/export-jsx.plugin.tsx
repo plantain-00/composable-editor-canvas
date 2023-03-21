@@ -39,7 +39,7 @@ export function getCommand(ctx: PluginContext): Command {
                 })
               } : undefined,
               contents,
-            })(index, 1, 1))
+            })(index, 1, 1, 0))
             let jsx = ''
             for (let j = 0; j < svg.length; j++) {
               const c = svg[j]

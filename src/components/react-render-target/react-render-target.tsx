@@ -12,11 +12,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       attributes: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
         style: React.CSSProperties
       }>,
-      transform: {
-        x: number
-        y: number
-        scale: number
-      },
+      transform: RenderTransform
       backgroundColor: number,
       debug: boolean
       strokeWidthScale: number
@@ -135,6 +131,13 @@ export interface ReactRenderTarget<T = JSX.Element> {
     lines: Position[][],
     options?: Partial<PathOptions<T>>,
   ): T
+}
+
+export interface RenderTransform {
+  x: number
+  y: number
+  scale: number
+  rotate?: number
 }
 
 export type Filter =
