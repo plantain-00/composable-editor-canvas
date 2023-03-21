@@ -414,7 +414,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number) => {
+  return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number, rotate?: number) => {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     twgl.resizeCanvasToDisplaySize(canvas);
     gl.clearColor(...backgroundColor)
@@ -426,6 +426,9 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       worldMatrix = m3.multiply(worldMatrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
       worldMatrix = m3.multiply(worldMatrix, m3.scaling(scale, scale));
       worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
+    }
+    if (rotate) {
+      worldMatrix = m3.multiply(worldMatrix, m3.rotation(-rotate));
     }
 
     for (const graphic of graphics) {

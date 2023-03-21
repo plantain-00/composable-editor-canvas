@@ -1,6 +1,6 @@
 import * as React from "react"
 import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, polygonToPolyline, rotatePosition } from "../../utils/geometry"
-import { getPathCommandsPoints, pathCommandPointsToPath, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { getPathCommandsPoints, pathCommandPointsToPath, ReactRenderTarget, renderPartStyledPolyline, RenderTransform } from "./react-render-target"
 import { createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 import { Matrix } from "../../utils/matrix"
 import { colorNumberToRec } from "../../utils/color"
@@ -179,11 +179,7 @@ function Canvas(props: {
     style: React.CSSProperties
   }>,
   graphics: WebglDraw[]
-  transform?: {
-    x: number
-    y: number
-    scale: number
-  }
+  transform?: RenderTransform
   backgroundColor?: number
   debug?: boolean
   strokeWidthScale?: number
@@ -197,6 +193,7 @@ function Canvas(props: {
     y: number,
     scale: number,
     strokeWidthScale: number,
+    rotate?: number
   ) => void>()
   React.useEffect(() => {
     if (ref.current) {
@@ -214,9 +211,9 @@ function Canvas(props: {
     }
 
     const rerender = () => setImageLoadStatus(c => c + 1)
-    render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale) => {
+    render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale, rotate) => {
       const now = performance.now()
-      renderer(graphics.map(g => g(strokeWidthScale, rerender)).flat(), backgroundColor, x, y, scale)
+      renderer(graphics.map(g => g(strokeWidthScale, rerender)).flat(), backgroundColor, x, y, scale, rotate)
       if (props.debug) {
         console.info(Math.round(performance.now() - now))
       }
@@ -230,7 +227,7 @@ function Canvas(props: {
       const scale = props.transform?.scale ?? 1
       const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
       const strokeWidthScale = props.strokeWidthScale ?? 1
-      render.current(props.graphics, color, x, y, scale, strokeWidthScale)
+      render.current(props.graphics, color, x, y, scale, strokeWidthScale, props.transform?.rotate)
     }
   }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus])
   return (
