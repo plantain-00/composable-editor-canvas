@@ -21,6 +21,16 @@ export function reverseTransformPosition(position: Position, transform: Transfor
   }
 }
 
+export function transformPosition(position: Position, transform: Transform | undefined) {
+  if (!transform) {
+    return position
+  }
+  return {
+    x: (position.x - transform.center.x) * transform.scale + transform.center.x + transform.x,
+    y: (position.y - transform.center.y) * transform.scale + transform.center.y + transform.y,
+  }
+}
+
 /**
  * @public
  */

@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -709,39 +709,17 @@ export const CADEditor = React.forwardRef((props: {
   const operatorVisible = props.onApplyPatchesFromSelf !== undefined
   const minimapHeight = 100
   const minimapWidth = 100
-  const [minimapTransform, setMinimapTransform] = React.useState<{ x: number, y: number, scale: number, bounding: TwoPointsFormRegion }>()
   React.useEffect(() => {
     rebuildRTree(props.initialState)
     setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, state, state, 1))
   }, [props.initialState])
-  let minimap: JSX.Element | undefined
-  if (minimapTransform) {
-    const contentWidth = minimapTransform.bounding.end.x - minimapTransform.bounding.start.x
-    const contentHeight = minimapTransform.bounding.end.y - minimapTransform.bounding.start.y
-    const xRatio = minimapWidth / contentWidth
-    const yRatio = minimapHeight / contentHeight
-    let xOffset = 0
-    let yOffset = 0
-    let ratio: number
-    if (xRatio < yRatio) {
-      ratio = xRatio
-      yOffset = (minimapHeight - ratio * contentHeight) / 2
-    } else {
-      ratio = yRatio
-      xOffset = (minimapWidth - ratio * contentWidth) / 2
-    }
-    minimap = (
-      <div
-        style={{
-          position: 'absolute',
-          left: '1px',
-          bottom: '1px',
-          width: `${minimapWidth}px`,
-          height: `${minimapHeight}px`,
-          clipPath: 'inset(0)',
-          border: '1px solid blue',
-        }}
-      >
+  const { setMinimapTransform, minimap, getMinimapPosition } = useMinimap({
+    start,
+    end,
+    width: minimapWidth,
+    height: minimapHeight,
+    children: minimapTransform => (
+      <>
         <MemoizedRenderer
           type={renderTarget}
           contents={editingContent}
@@ -756,18 +734,18 @@ export const CADEditor = React.forwardRef((props: {
           performanceMode
           operatorVisible={operatorVisible}
           time={time}
+          onClick={e => {
+            if (getMinimapPosition) {
+              const p = getMinimapPosition(e)
+              setX((transform.center.x - p.x) * transform.scale)
+              setY((transform.center.y - p.y) * transform.scale)
+            }
+          }}
+          style={{ cursor: 'default' }}
         />
-        <div style={{
-          position: 'absolute',
-          border: '1px solid red',
-          left: `${xOffset + ratio * (start.x - minimapTransform.bounding.start.x)}px`,
-          top: `${yOffset + ratio * (start.y - minimapTransform.bounding.start.y)}px`,
-          width: `${ratio * (end.x - start.x)}px`,
-          height: `${ratio * (end.y - start.y)}px`,
-        }}></div>
-      </div>
+      </>
     )
-  }
+  })
   let panel: JSX.Element | undefined
   if (props.panelVisible && selectedContents.length > 0) {
     const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
