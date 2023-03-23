@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getResizeCursor } from "../../utils"
+import { angleToRadian, getResizeCursor } from "../../utils"
 import { EditBar } from "./edit-bar"
 
 /**
@@ -18,8 +18,8 @@ export function CircleArcEditBar(props: {
 }) {
   const x = props.x
   const y = props.y
-  const startAngle = props.startAngle / 180 * Math.PI
-  const endAngle = props.endAngle / 180 * Math.PI
+  const startAngle = angleToRadian(props.startAngle)
+  const endAngle = angleToRadian(props.endAngle)
   const middleAngle = (startAngle + endAngle) / 2
 
   const positions = [

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getAxesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize } from "../src"
+import { getAxesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -87,7 +87,7 @@ export default () => {
         eye: [position.x, position.y, position.z],
         up: [up.x, up.y, up.z],
         target: [-x, y, 0],
-        fov: 60 * Math.PI / 180,
+        fov: angleToRadian(60),
         near: 0.1,
         far: 20000,
       },

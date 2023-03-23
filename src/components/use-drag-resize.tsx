@@ -4,6 +4,7 @@ import { Position, Region } from "../utils/geometry"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
 import { useKey } from "./use-key"
+import { angleToRadian } from "../utils/radian"
 
 
 /**
@@ -23,8 +24,8 @@ export function useDragResize(
 ) {
   const [offset, setOffset] = React.useState({ x: 0, y: 0, width: 0, height: 0 })
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { direction: ResizeDirection }>()
-  const rotate = -(options?.rotate ?? 0) * Math.PI / 180
-  const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
+  const rotate = -angleToRadian(options?.rotate)
+  const parentRotate = -angleToRadian(options?.parentRotate)
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
   useKey((e) => e.key === 'Escape', () => {
     setOffset({ x: 0, y: 0, width: 0, height: 0 })

@@ -1,5 +1,5 @@
 import React from "react"
-import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, Position, ChartTooltip, Vec3, Vec4, getChartAxis3D } from "../src"
+import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, Position, ChartTooltip, Vec3, Vec4, getChartAxis3D, angleToRadian } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -47,7 +47,7 @@ export default () => {
         eye: [position.x + 40, position.y + 40, position.z],
         up: [up.x, up.y, up.z],
         target: [-x + 40, y + 40, 0],
-        fov: 60 * Math.PI / 180,
+        fov: angleToRadian(60),
         near: 0.1,
         far: 2000,
       },

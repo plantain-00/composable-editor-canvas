@@ -5,6 +5,7 @@ import { createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics
 import { Matrix } from "../../utils/matrix"
 import { colorNumberToRec } from "../../utils/color"
 import { Vec4 } from "../../utils/types"
+import { angleToRadian, radianToAngle } from "../../utils/radian"
 
 /**
  * @public
@@ -44,7 +45,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     ]
     let angle = 0
     if (options?.angle) {
-      angle = options.angle * Math.PI / 180
+      angle = angleToRadian(options.angle)
     } else if (options?.rotation) {
       angle = options.rotation
     }
@@ -78,7 +79,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     if (options?.angle) {
       angle = options.angle
     } else if (options?.rotation) {
-      angle = options.rotation * 180 / Math.PI
+      angle = radianToAngle(options.rotation)
     }
     const points = ellipseToPolygon({ cx, cy, rx, ry, angle }, 5)
     return this.renderPolygon(points, options)
@@ -92,7 +93,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     if (options?.angle) {
       angle = options.angle
     } else if (options?.rotation) {
-      angle = options.rotation * 180 / Math.PI
+      angle = radianToAngle(options.rotation)
     }
     const points = ellipseArcToPolyline({ cx, cy, rx, ry, startAngle, endAngle, angle, counterclockwise: options?.counterclockwise }, 5)
     return this.renderPolyline(points, options)

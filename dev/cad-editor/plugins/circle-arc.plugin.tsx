@@ -87,7 +87,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length < 2) {
           return
         }
-        const angles = points.map((p) => ctx.getCircleAngle(p, content) * 180 / Math.PI)
+        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleAngle(p, content)))
         angles.sort((a, b) => a - b)
         return angles.map((a, i) => ({
           ...content,
@@ -259,7 +259,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length === 0) {
           return
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.getCircleAngle(p, content) * 180 / Math.PI, content))
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleAngle(p, content)), content))
         angles.sort((a, b) => a - b)
         const result: ArcContent[] = []
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -318,8 +318,8 @@ export function getModel(ctx: PluginContext) {
         return ctx.getEditPointsFromCache(content, () => {
           const x = content.x
           const y = content.y
-          const startAngle = content.startAngle / 180 * Math.PI
-          const endAngle = content.endAngle / 180 * Math.PI
+          const startAngle = ctx.angleToRadian(content.startAngle)
+          const endAngle = ctx.angleToRadian(content.endAngle)
           const middleAngle = (startAngle + endAngle) / 2
           return {
             editPoints: [
@@ -345,7 +345,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.startAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI
+                  c.startAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c))
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -359,7 +359,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.endAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI
+                  c.endAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c))
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -384,8 +384,8 @@ export function getModel(ctx: PluginContext) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = content.startAngle / 180 * Math.PI
-          const endAngle = content.endAngle / 180 * Math.PI
+          const startAngle = ctx.angleToRadian(content.startAngle)
+          const endAngle = ctx.angleToRadian(content.endAngle)
           const middleAngle = (startAngle + endAngle) / 2
           return [
             { x: content.x, y: content.y, type: 'center' },
@@ -541,8 +541,8 @@ export function getCommand(ctx: PluginContext): Command[] {
               {
                 type: 'line', points: [
                   {
-                    x: arc.x + arc.r * Math.cos(arc.startAngle / 180 * Math.PI),
-                    y: arc.y + arc.r * Math.sin(arc.startAngle / 180 * Math.PI)
+                    x: arc.x + arc.r * Math.cos(ctx.angleToRadian(arc.startAngle)),
+                    y: arc.y + arc.r * Math.sin(ctx.angleToRadian(arc.startAngle))
                   },
                   {
                     x: arc.x,
@@ -558,8 +558,8 @@ export function getCommand(ctx: PluginContext): Command[] {
                     y: arc.y
                   },
                   {
-                    x: arc.x + arc.r * Math.cos(arc.endAngle / 180 * Math.PI),
-                    y: arc.y + arc.r * Math.sin(arc.endAngle / 180 * Math.PI)
+                    x: arc.x + arc.r * Math.cos(ctx.angleToRadian(arc.endAngle)),
+                    y: arc.y + arc.r * Math.sin(ctx.angleToRadian(arc.endAngle))
                   },
                 ],
                 dashArray: [4 / scale]

@@ -8,6 +8,7 @@ import { m3, Matrix } from '../../utils/matrix'
 import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec4 } from '../../utils/types'
+import { angleToRadian } from '../../utils/radian'
 
 /**
  * @public
@@ -787,7 +788,7 @@ export function getImageGraphic(
           ]
         })
       } else if (f.type === 'hue-rotate') {
-        const rotation = f.value * Math.PI / 180
+        const rotation = angleToRadian(f.value)
         const cos = Math.cos(rotation)
         const sin = Math.sin(rotation)
         const lumR = 0.213
@@ -906,7 +907,7 @@ export function getGroupGraphics(
     if (options.base && (options.angle || options.rotation)) {
       matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
       if (options.angle) {
-        matrix = m3.multiply(matrix, m3.rotation(-options.angle / 180 * Math.PI))
+        matrix = m3.multiply(matrix, m3.rotation(-angleToRadian(options.angle)))
       } else if (options.rotation) {
         matrix = m3.multiply(matrix, m3.rotation(-options.rotation))
       }

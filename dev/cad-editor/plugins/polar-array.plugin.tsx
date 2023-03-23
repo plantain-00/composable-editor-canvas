@@ -154,7 +154,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
               if (!isPolarArrayContent(c)) {
                 return
               }
-              c.itemAngle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI
+              c.itemAngle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center))
               return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
             },
           },)
@@ -168,7 +168,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
               if (!isPolarArrayContent(c)) {
                 return
               }
-              let angle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI
+              let angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center))
               if (c.itemAngle > 0) {
                 if (angle < 0) {
                   angle += 360

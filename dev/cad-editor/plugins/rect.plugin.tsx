@@ -116,7 +116,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
               if (!isRectContent(c)) {
                 return
               }
-              const offset = ctx.getResizeOffset(start, cursor, p.direction, -content.angle * Math.PI / 180)
+              const offset = ctx.getResizeOffset(start, cursor, p.direction, -ctx.angleToRadian(content.angle))
               if (!offset) {
                 return
               }

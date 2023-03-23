@@ -1,5 +1,5 @@
 import * as React from "react"
-import { EllipseArc, getResizeCursor, rotatePositionByCenter } from "../../utils"
+import { EllipseArc, angleToRadian, getResizeCursor, rotatePositionByCenter } from "../../utils"
 import { EditBar } from "./edit-bar"
 
 /**
@@ -12,8 +12,8 @@ export function EllipseArcEditBar(props: EllipseArc & {
   onMouseDown?: (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, type: 'center' | 'start angle' | 'end angle', cursor: React.CSSProperties['cursor']) => void
 }) {
   const center = { x: props.cx, y: props.cy }
-  const startAngle = props.startAngle / 180 * Math.PI
-  const endAngle = props.endAngle / 180 * Math.PI
+  const startAngle = angleToRadian(props.startAngle)
+  const endAngle = angleToRadian(props.endAngle)
   const rotate = -(props.angle ?? 0)
 
   const positions = [

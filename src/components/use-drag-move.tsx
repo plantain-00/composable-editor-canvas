@@ -3,6 +3,7 @@ import { Position } from "../utils/geometry"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
 import { useKey } from "./use-key"
+import { angleToRadian } from "../utils/radian"
 
 export function useDragMove<T = void>(
   onDragEnd?: () => void,
@@ -19,7 +20,7 @@ export function useDragMove<T = void>(
   const [offset, setOffset] = React.useState<Position>({ x: 0, y: 0 })
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
   const scale = options?.scale ?? 1
-  const parentRotate = -(options?.parentRotate ?? 0) * Math.PI / 180
+  const parentRotate = -angleToRadian(options?.parentRotate)
 
   const reset = () => {
     setOffset({ x: 0, y: 0 })

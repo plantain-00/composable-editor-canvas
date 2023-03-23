@@ -49,7 +49,7 @@ export function getCommand(ctx: PluginContext): Command {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y }
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end)
-            const angle = ctx.getTwoPointsAngle(end, startPosition) * 180 / Math.PI
+            const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, startPosition))
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 ctx.getContentModel(content)?.mirror?.(draft, line, angle, contents)
