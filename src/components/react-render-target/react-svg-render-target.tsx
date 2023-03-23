@@ -4,6 +4,7 @@ import { defaultMiterLimit, getParallelLinesByDistance, getPerpendicularPoint, g
 import { m3 } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { angleToRadian, radianToAngle } from "../../utils/radian"
 
 /**
  * @public
@@ -19,7 +20,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const viewportX = (width - viewportWidth) / 2 - x / scale
     const viewportY = (height - viewportHeight) / 2 - y / scale
     const strokeWidthScale = options?.strokeWidthScale ?? 1
-    const rotate = (options?.transform?.rotate ?? 0) * 180 / Math.PI
+    const rotate = options?.transform?.rotate ?? 0
     return (
       <svg
         version="1.1"
@@ -233,7 +234,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
-          rotate: `${rotate}deg`,
+          rotate: `${rotate}rad`,
         }}>
         {text}
       </text>
@@ -526,7 +527,7 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, rot
     strokeLinecap: options?.lineCap ?? 'butt',
     fillOpacity: options?.fillOpacity,
     strokeOpacity: options?.strokeOpacity,
-    style: { rotate: `${rotate}deg` },
+    style: { rotate: `${rotate}rad` },
   }
 }
 
@@ -548,7 +549,7 @@ export function polarToCartesian(cx: number, cy: number, radius: number, angleIn
  * @public
  */
 export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: number, angleInDegrees: number) {
-  const angleInRadians = angleInDegrees * Math.PI / 180
+  const angleInRadians = angleToRadian(angleInDegrees)
   return {
     x: cx + (rx * Math.cos(angleInRadians)),
     y: cy + (ry * Math.sin(angleInRadians))
@@ -570,7 +571,7 @@ export function getRotateTransform(
     return `rotate(${options.angle},${x},${y})`
   }
   if (options?.rotation) {
-    return `rotate(${options.rotation * 180 / Math.PI},${x},${y})`
+    return `rotate(${radianToAngle(options.rotation)},${x},${y})`
   }
   return undefined
 }

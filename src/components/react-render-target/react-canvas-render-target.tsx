@@ -5,6 +5,7 @@ import { setCanvasLineDash } from "./create-webgl-renderer"
 import { getImageFromCache } from "./image-loader"
 import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, RenderTransform, renderPartStyledPolyline } from "./react-render-target"
 import { getColorString } from "../../utils/color"
+import { angleToRadian } from "../../utils/radian"
 
 /**
  * @public
@@ -42,7 +43,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       }
       if (options?.angle && options?.base !== undefined) {
         ctx.translate(options.base.x, options?.base.y)
-        ctx.rotate(options.angle / 180 * Math.PI)
+        ctx.rotate(angleToRadian(options.angle))
         ctx.translate(-options.base.x, - options.base.y)
       }
       if (options?.rotation && options?.base !== undefined) {
@@ -66,7 +67,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       setCanvasLineDash(ctx, options)
       if (options?.angle) {
         ctx.translate(x + width / 2, y + height / 2)
-        ctx.rotate(options.angle / 180 * Math.PI)
+        ctx.rotate(angleToRadian(options.angle))
         ctx.translate(-(x + width / 2), -(y + height / 2))
       }
       if (options?.rotation) {
@@ -129,7 +130,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       ctx.save()
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
-      const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
+      const rotation = options?.rotation ?? (angleToRadian(options?.angle))
       ctx.ellipse(cx, cy, rx, ry, rotation, 0, 2 * Math.PI)
       renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
@@ -141,7 +142,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       ctx.save()
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
-      ctx.arc(cx, cy, r, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
+      ctx.arc(cx, cy, r, angleToRadian(startAngle), angleToRadian(endAngle), options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
@@ -152,8 +153,8 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       ctx.save()
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
-      const rotation = options?.rotation ?? ((options?.angle ?? 0) / 180 * Math.PI)
-      ctx.ellipse(cx, cy, rx, ry, rotation, startAngle / 180 * Math.PI, endAngle / 180 * Math.PI, options?.counterclockwise)
+      const rotation = options?.rotation ?? (angleToRadian(options?.angle))
+      ctx.ellipse(cx, cy, rx, ry, rotation, angleToRadian(startAngle), angleToRadian(endAngle), options?.counterclockwise)
       renderStroke(ctx, strokeWidthScale, rerender, options)
       renderFill(ctx, strokeWidthScale, rerender, options)
       ctx.restore()
@@ -309,7 +310,7 @@ function getPattern(
     const result = ctx.createPattern(canvas, null)
     if (result) {
       // if (pattern.rotate) {
-      //   const rotate = pattern.rotate * Math.PI / 180
+      //   const rotate = angleToRadian(pattern.rotate)
       //   const c = Math.cos(rotate)
       //   const s = Math.sin(rotate)
       //   result.setTransform({ a: c, b: s, c: -s, d: c, e: 0, f: 0 })

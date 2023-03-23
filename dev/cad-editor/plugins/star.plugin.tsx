@@ -168,7 +168,7 @@ export function getCommand(ctx: PluginContext): Command {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
               strokeStyleId,
               fillStyleId,
             } as StarContent)
@@ -189,7 +189,7 @@ export function getCommand(ctx: PluginContext): Command {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
           strokeStyleId,
           fillStyleId,
         })

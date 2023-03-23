@@ -950,7 +950,7 @@ function getModel(ctx) {
         if (points.length < 2) {
           return;
         }
-        const angles = points.map((p) => ctx.getCircleAngle(p, content) * 180 / Math.PI);
+        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleAngle(p, content)));
         angles.sort((a, b) => a - b);
         return angles.map((a, i) => ({
           ...content,
@@ -1163,7 +1163,7 @@ function getModel(ctx) {
         if (points.length === 0) {
           return;
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.getCircleAngle(p, content) * 180 / Math.PI, content));
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleAngle(p, content)), content));
         angles.sort((a, b) => a - b);
         const result = [];
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -1223,8 +1223,8 @@ function getModel(ctx) {
         return ctx.getEditPointsFromCache(content, () => {
           const x = content.x;
           const y = content.y;
-          const startAngle = content.startAngle / 180 * Math.PI;
-          const endAngle = content.endAngle / 180 * Math.PI;
+          const startAngle = ctx.angleToRadian(content.startAngle);
+          const endAngle = ctx.angleToRadian(content.endAngle);
           const middleAngle = (startAngle + endAngle) / 2;
           return {
             editPoints: [
@@ -1250,7 +1250,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.startAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI;
+                  c.startAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c));
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1264,7 +1264,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.endAngle = ctx.getCircleAngle(cursor, c) * 180 / Math.PI;
+                  c.endAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c));
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1289,8 +1289,8 @@ function getModel(ctx) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = content.startAngle / 180 * Math.PI;
-          const endAngle = content.endAngle / 180 * Math.PI;
+          const startAngle = ctx.angleToRadian(content.startAngle);
+          const endAngle = ctx.angleToRadian(content.endAngle);
           const middleAngle = (startAngle + endAngle) / 2;
           return [
             { x: content.x, y: content.y, type: "center" },
@@ -1445,8 +1445,8 @@ function getCommand(ctx) {
                 type: "line",
                 points: [
                   {
-                    x: arc.x + arc.r * Math.cos(arc.startAngle / 180 * Math.PI),
-                    y: arc.y + arc.r * Math.sin(arc.startAngle / 180 * Math.PI)
+                    x: arc.x + arc.r * Math.cos(ctx.angleToRadian(arc.startAngle)),
+                    y: arc.y + arc.r * Math.sin(ctx.angleToRadian(arc.startAngle))
                   },
                   {
                     x: arc.x,
@@ -1463,8 +1463,8 @@ function getCommand(ctx) {
                     y: arc.y
                   },
                   {
-                    x: arc.x + arc.r * Math.cos(arc.endAngle / 180 * Math.PI),
-                    y: arc.y + arc.r * Math.sin(arc.endAngle / 180 * Math.PI)
+                    x: arc.x + arc.r * Math.cos(ctx.angleToRadian(arc.endAngle)),
+                    y: arc.y + arc.r * Math.sin(ctx.angleToRadian(arc.endAngle))
                   }
                 ],
                 dashArray: [4 / scale]
@@ -2790,7 +2790,7 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
     getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180)
+    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param))
   };
   return [
     ellipseModel,
@@ -2874,8 +2874,8 @@ function getModel(ctx) {
         return ctx.getEditPointsFromCache(content, () => {
           var _a;
           const center = ctx.getEllipseCenter(content);
-          const startAngle = content.startAngle / 180 * Math.PI;
-          const endAngle = content.endAngle / 180 * Math.PI;
+          const startAngle = ctx.angleToRadian(content.startAngle);
+          const endAngle = ctx.angleToRadian(content.endAngle);
           const rotate = -((_a = content.angle) != null ? _a : 0);
           return {
             editPoints: [
@@ -2923,8 +2923,8 @@ function getModel(ctx) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = content.startAngle / 180 * Math.PI;
-          const endAngle = content.endAngle / 180 * Math.PI;
+          const startAngle = ctx.angleToRadian(content.startAngle);
+          const endAngle = ctx.angleToRadian(content.endAngle);
           const middleAngle = (startAngle + endAngle) / 2;
           return [
             { ...ctx.getEllipseCenter(content), type: "center" },
@@ -3000,7 +3000,7 @@ function getModel(ctx) {
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, param * Math.PI / 180)
+      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param))
     }
   ];
 }
@@ -3082,7 +3082,7 @@ function getCommand(ctx) {
               {
                 type: "line",
                 points: [
-                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.startAngle / 180 * Math.PI),
+                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.startAngle)),
                   {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
@@ -3097,7 +3097,7 @@ function getCommand(ctx) {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
                   },
-                  ctx.getEllipsePointAtAngle(ellipseArc, ellipseArc.endAngle / 180 * Math.PI)
+                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.endAngle))
                 ],
                 dashArray: [4 / scale]
               }
@@ -4034,8 +4034,8 @@ function getCommand(ctx) {
       })));
     }
     return circles.map(({ foot1, foot2, center: c }) => {
-      const angle1 = ctx.getTwoPointsAngle(foot1, c) * 180 / Math.PI;
-      const angle2 = ctx.getTwoPointsAngle(foot2, c) * 180 / Math.PI;
+      const angle1 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot1, c));
+      const angle2 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot2, c));
       const min = Math.min(angle1, angle2);
       const max = Math.max(angle1, angle2);
       if (max - min < 180) {
@@ -4581,7 +4581,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
+          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
           assistentContents.push(
             {
               type: "arc",
@@ -4645,7 +4645,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
+          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
           assistentContents.push(
             {
               type: "arc",
@@ -5127,7 +5127,7 @@ function getCommand(ctx) {
         const start = startPosition;
         const end = cursorPosition;
         const r = ctx.getTwoPointsDistance(start, end);
-        const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI;
+        const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
         assistentContents.push(
           {
             type: "arc",
@@ -5224,7 +5224,7 @@ function getCommand(ctx) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
-            const angle = ctx.getTwoPointsAngle(end, startPosition) * 180 / Math.PI;
+            const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, startPosition));
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 var _a, _b;
@@ -6120,7 +6120,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              c.itemAngle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI;
+              c.itemAngle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center));
               return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
             }
           });
@@ -6134,7 +6134,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              let angle = (ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center)) * 180 / Math.PI;
+              let angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center));
               if (c.itemAngle > 0) {
                 if (angle < 0) {
                   angle += 360;
@@ -7117,7 +7117,7 @@ function getModel(ctx) {
               if (!isRectContent(c)) {
                 return;
               }
-              const offset = ctx.getResizeOffset(start, cursor, p.direction, -content.angle * Math.PI / 180);
+              const offset = ctx.getResizeOffset(start, cursor, p.direction, -ctx.angleToRadian(content.angle));
               if (!offset) {
                 return;
               }
@@ -7344,7 +7344,7 @@ function getModel(ctx) {
                   return;
                 }
                 c.radius = ctx.getTwoPointsDistance(cursor, c);
-                c.angle = ctx.getTwoPointsAngle(cursor, c) * 180 / Math.PI;
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, c));
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }))
@@ -7417,7 +7417,7 @@ function getCommand(ctx) {
               y: p0.y,
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
-              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
               strokeStyleId,
               fillStyleId
             });
@@ -7436,7 +7436,7 @@ function getCommand(ctx) {
           y: p0.y,
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
-          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
           strokeStyleId,
           fillStyleId
         });
@@ -8589,7 +8589,7 @@ function getCommand(ctx) {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
               strokeStyleId,
               fillStyleId
             });
@@ -8610,7 +8610,7 @@ function getCommand(ctx) {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: ctx.getTwoPointsAngle(p1, p0) * 180 / Math.PI,
+          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
           strokeStyleId,
           fillStyleId
         });

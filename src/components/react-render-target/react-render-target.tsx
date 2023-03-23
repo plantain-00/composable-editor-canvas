@@ -1,6 +1,7 @@
 import * as React from "react"
 import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
+import { radianToAngle } from "../../utils/radian"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -319,8 +320,8 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
             const t1 = getPerpendicularPoint(center, line1)
             const t2 = getPerpendicularPoint(center, line2)
             points.push({ x: t1.x, y: t1.y })
-            const startAngle = getTwoPointsAngle(t1, center) * 180 / Math.PI
-            const endAngle = getTwoPointsAngle(t2, center) * 180 / Math.PI
+            const startAngle = radianToAngle(getTwoPointsAngle(t1, center))
+            const endAngle = radianToAngle(getTwoPointsAngle(t2, center))
             points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
           }
         }

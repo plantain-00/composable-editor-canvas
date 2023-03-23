@@ -3,6 +3,7 @@ import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getTwoNumberCente
 import { Vec3 } from "../utils/types"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 import { Graphic3d } from "./webgl-3d-renderer"
+import { radianToAngle } from "../utils/radian"
 
 export function getLineChart<T>(
   datas: (Position & { r?: number })[][],
@@ -270,7 +271,7 @@ export function getPieChart<T>(
     const i = Math.floor((distance - holeRadius) / ringRadius * datas.length)
     if (i >= 0 && i < datas.length) {
       const angles = allAngles[i]
-      let angle = getTwoPointsAngle(point, circle) / Math.PI * 180
+      let angle = radianToAngle(getTwoPointsAngle(point, circle))
       if (angle < startAngleInDegree) {
         angle += 360
       }
@@ -326,7 +327,7 @@ export function getPolarAreaChart<T>(
 
   const select = (point: Position) => {
     const distance = getTwoPointsDistance(point, circle)
-    let angle = getTwoPointsAngle(point, circle) / Math.PI * 180 - startAngleInDegree
+    let angle = radianToAngle(getTwoPointsAngle(point, circle)) - startAngleInDegree
     if (angle < 0) {
       angle += 360
     }

@@ -38,8 +38,8 @@ export function getCommand(ctx: PluginContext): Command {
       })))
     }
     return circles.map(({ foot1, foot2, center: c }) => {
-      const angle1 = ctx.getTwoPointsAngle(foot1, c) * 180 / Math.PI
-      const angle2 = ctx.getTwoPointsAngle(foot2, c) * 180 / Math.PI
+      const angle1 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot1, c))
+      const angle2 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot2, c))
       const min = Math.min(angle1, angle2)
       const max = Math.max(angle1, angle2)
       if (max - min < 180) {

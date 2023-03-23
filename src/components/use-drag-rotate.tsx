@@ -3,6 +3,7 @@ import { getTwoPointsAngle, Position } from "../utils/geometry"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
 import { useKey } from "./use-key"
+import { radianToAngle } from "../utils/radian"
 
 /**
  * @public
@@ -36,7 +37,7 @@ export function useDragRotate(
         const f = { x: e.clientX, y: e.clientY }
         let p = options?.transform?.(f) ?? f
         p = getAngleSnapPosition(center, p, options?.getAngleSnap)
-        const rotate = (getTwoPointsAngle(p, center) / Math.PI * 180 + 450 - parentRotate) % 360
+        const rotate = (radianToAngle(getTwoPointsAngle(p, center)) + 450 - parentRotate) % 360
         setOffset({
           ...p,
           angle: options?.transformOffset?.(rotate, e) ?? rotate,

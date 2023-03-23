@@ -244,7 +244,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI
+          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start))
           assistentContents.push(
             {
               type: 'arc',
@@ -308,7 +308,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = ctx.getTwoPointsAngle(end, start) * 180 / Math.PI
+          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start))
           assistentContents.push(
             {
               type: 'arc',
