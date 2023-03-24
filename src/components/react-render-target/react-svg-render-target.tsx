@@ -36,7 +36,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
-        {children.map((child, i) => child(i, scale, strokeWidthScale, rotate))}
+        <g style={{ rotate: `${rotate}rad` }}>{children.map((child, i) => child(i, scale, strokeWidthScale))}</g>
       </svg>
     )
   },
@@ -57,20 +57,20 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     if (options?.matrix) {
       transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
-    return (key, scale, strokeWidthScale, rotate) => (
+    return (key, scale, strokeWidthScale) => (
       <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
-        {children.map((child, i) => child(i, scale, strokeWidthScale, rotate))}
+        {children.map((child, i) => child(i, scale, strokeWidthScale))}
       </g>
     )
   },
   renderRect(x, y, width, height, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
@@ -85,19 +85,19 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+      return renderPattern((fill, stroke, scale, strokeWidthScale) => (
         <path
           d={d}
-          {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+          {...getCommonLineAttributes(scale, strokeWidthScale, options)}
           fill={fill}
           stroke={stroke}
         />
       ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
       points: pointsText,
-      ...getCommonLineAttributes(scale, strokeWidthScale, rotate, options),
+      ...getCommonLineAttributes(scale, strokeWidthScale, options),
       fill,
       stroke,
     }), options)
@@ -106,25 +106,25 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <circle
         cx={cx}
         cy={cy}
         r={r}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <ellipse
         cx={cx}
         cy={cy}
         rx={rx}
         ry={ry}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -137,10 +137,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
       />
@@ -152,10 +152,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const b = endAngle - startAngle <= 180
     const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path
         d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -206,17 +206,17 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
         d += ' Z'
       }
     }
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path
         d={d}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <text
         x={x}
         y={y}
@@ -234,7 +234,6 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
-          rotate: `${rotate}rad`,
         }}>
         {text}
       </text>
@@ -264,10 +263,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     if (options?.closed) {
       d += ' Z'
     }
-    return renderPattern((fill, stroke, scale, strokeWidthScale, rotate) => (
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path
         d={d}
-        {...getCommonLineAttributes(scale, strokeWidthScale, rotate, options)}
+        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
         fill={fill}
         stroke={stroke}
         fillRule='evenodd'
@@ -279,7 +278,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
 /**
  * @public
  */
-export type SvgDraw = (key: React.Key, scale: number, strokeWidthScale: number, rotate: number) => JSX.Element
+export type SvgDraw = (key: React.Key, scale: number, strokeWidthScale: number) => JSX.Element
 
 function renderFilters(
   children: (filter: string | undefined) => JSX.Element,
@@ -377,11 +376,11 @@ function renderFilters(
 }
 
 function renderPattern(
-  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthScale: number, rotate: number) => JSX.Element,
+  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthScale: number) => JSX.Element,
   options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
   noDefaultStrokeColor?: boolean,
 ) {
-  return (key: React.Key, scale: number, strokeWidthScale: number, rotate: number) => {
+  return (key: React.Key, scale: number, strokeWidthScale: number) => {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let stroke = options?.strokeColor !== undefined ? getColorString(options.strokeColor) : noDefaultStrokeColor ? undefined : getColorString(0)
     let fillDef: JSX.Element | undefined
@@ -396,7 +395,7 @@ function renderPattern(
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
-          {options.strokePattern.pattern()(id, scale, strokeWidthScale, rotate)}
+          {options.strokePattern.pattern()(id, scale, strokeWidthScale)}
         </pattern>
       )
       stroke = `url(#${id})`
@@ -443,7 +442,7 @@ function renderPattern(
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
-          {options.fillPattern.pattern()(id, scale, strokeWidthScale, rotate)}
+          {options.fillPattern.pattern()(id, scale, strokeWidthScale)}
         </pattern>
       )
       fill = `url(#${id})`
@@ -484,7 +483,7 @@ function renderPattern(
     let target: JSX.Element
     if (options?.clip) {
       const id = getDomId(options.clip)
-      const path = children(fill, stroke, scale, strokeWidthScale, rotate)
+      const path = children(fill, stroke, scale, strokeWidthScale)
       fillDef = (
         <>
           <clipPath id={id}>
@@ -495,11 +494,11 @@ function renderPattern(
       )
       target = (
         <g clipPath={`url(#${id})`}>
-          {options.clip()(id, scale, strokeWidthScale, rotate)}
+          {options.clip()(id, scale, strokeWidthScale)}
         </g>
       )
     } else {
-      target = children(fill, stroke, scale, strokeWidthScale, rotate)
+      target = children(fill, stroke, scale, strokeWidthScale)
     }
     return (
       <React.Fragment key={key}>
@@ -516,7 +515,7 @@ function getDomId(target: object) {
   return domIdCache.get(target, () => Math.random().toString())
 }
 
-function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, rotate: number, options?: Partial<PathOptions<T>>) {
+function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
   return {
     strokeWidth: options?.strokeWidth ?? 1,
     vectorEffect: strokeWidthScale === 1 ? undefined : 'non-scaling-stroke' as const,
@@ -527,7 +526,6 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, rot
     strokeLinecap: options?.lineCap ?? 'butt',
     fillOpacity: options?.fillOpacity,
     strokeOpacity: options?.strokeOpacity,
-    style: { rotate: `${rotate}rad` },
   }
 }
 

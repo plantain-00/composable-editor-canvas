@@ -1,5 +1,5 @@
 import React from "react"
-import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
 import { Vec3 } from "../utils/types"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 import { Graphic3d } from "./webgl-3d-renderer"
@@ -184,7 +184,7 @@ export function getBarChart<T>(
     }
   }
   if (options?.bounding) {
-    bounding = getPointsBounding([options.bounding.start, options.bounding.end, bounding.start, bounding.end]) || bounding
+    bounding = getPointsBoundingUnsafe([options.bounding.start, options.bounding.end, bounding.start, bounding.end])
   }
   const { axis: children, tx, ty, reverseTransform, unitWidth } = getChartAxis(target, bounding, step, size, padding, {
     type: 'bar',

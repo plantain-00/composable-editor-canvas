@@ -360,6 +360,10 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
   if (points.length === 0) {
     return
   }
+  return getPointsBoundingUnsafe(points)
+}
+
+export function getPointsBoundingUnsafe(points: Position[]): TwoPointsFormRegion {
   const result = {
     start: {
       x: points[0].x,

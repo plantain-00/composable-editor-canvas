@@ -3806,7 +3806,7 @@ function getCommand(ctx) {
                 }
               } : void 0,
               contents
-            })(index, 1, 1, 0));
+            })(index, 1, 1));
             let jsx = "";
             for (let j = 0; j < svg.length; j++) {
               const c = svg[j];
