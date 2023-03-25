@@ -178,7 +178,10 @@ export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
  * @public
  */
 export function getPointAndRegionMinimumDistance(position: Position, region: TwoPointsFormRegion) {
-  const polygon = getPolygonFromTwoPointsFormRegion(region)
+  return getPointAndPolygonMinimumDistance(position, getPolygonFromTwoPointsFormRegion(region))
+}
+
+export function getPointAndPolygonMinimumDistance(position: Position, polygon: Position[]) {
   const polygonLine = Array.from(getPolygonLine(polygon))
   return Math.min(...polygonLine.map((r) => getPointAndLineSegmentMinimumDistance(position, ...r)))
 }
@@ -187,7 +190,10 @@ export function getPointAndRegionMinimumDistance(position: Position, region: Two
  * @public
  */
 export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion) {
-  const polygon = getPolygonFromTwoPointsFormRegion(region)
+  return getPointAndPolygonMaximumDistance(position, getPolygonFromTwoPointsFormRegion(region))
+}
+
+export function getPointAndPolygonMaximumDistance(position: Position, polygon: Position[]) {
   return Math.max(...polygon.map((r) => getTwoPointsDistance(position, r)))
 }
 
@@ -399,7 +405,7 @@ export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position,
   return lineIntersectWithPolygon(p1, p2, getPolygonFromTwoPointsFormRegion(region))
 }
 
-function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
+export function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
   return [
     region.start,
     { x: region.start.x, y: region.end.y },
@@ -408,7 +414,7 @@ function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
   ]
 }
 
-function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Position[]) {
+export function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Position[]) {
   for (const line of getPolygonLine(polygon)) {
     if (lineIntersectWithLine(p1, p2, ...line)) {
       return true

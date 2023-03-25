@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByClickTwoPositions, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -200,6 +200,19 @@ export const CADEditor = React.forwardRef((props: {
       setY(result.setY)
     }
   })
+  const [rotate, setRotate] = useLocalStorageState(props.id + '-rotate', 0)
+  const { offset: rotateOffset, onStart: startRotate, mask: rotateMask } = useDragRotate(
+    () => setRotate(angleToRadian(rotateOffset?.angle)),
+    {
+      transformOffset: (r, e) => {
+        if (e && r !== undefined && !e.shiftKey) {
+          const snap = Math.round(r / 90) * 90
+          if (Math.abs(snap - r) < 5) return snap
+        }
+        return r
+      },
+    }
+  )
   const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
   useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
   useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
@@ -221,6 +234,7 @@ export const CADEditor = React.forwardRef((props: {
       x: width / 2,
       y: height / 2,
     },
+    rotate: rotateOffset?.angle !== undefined ? angleToRadian(rotateOffset.angle) : rotate,
   }
   if (active !== undefined) {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
@@ -362,7 +376,7 @@ export const CADEditor = React.forwardRef((props: {
         startOperation({ type: 'command', name: nextCommand }, [])
       }
     },
-    (p) => getSnapPoint(reverseTransformPosition(p, transform), editingContent, getContentsInRange, lastPosition).position,
+    (p) => getSnapPoint(reverseTransform(p), editingContent, getContentsInRange, lastPosition).position,
     inputFixed,
     operations.type === 'operate' && operations.operate.type === 'command' ? operations.operate.name : undefined,
     selectedContents,
@@ -373,19 +387,22 @@ export const CADEditor = React.forwardRef((props: {
     props.backgroundColor,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
+  const reverseTransform = (p: Position) => {
+    p = reverseTransformPosition(p, transform)
+    if (transformViewport) {
+      p = transformViewport(p)
+    }
+    return p
+  }
 
   // select by region
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end, e) => {
     if (end) {
-      start = reverseTransformPosition(start, transform)
-      end = reverseTransformPosition(end, transform)
-      if (transformViewport) {
-        start = transformViewport(start)
-        end = transformViewport(end)
-      }
+      const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
+        const region = getTwoPointsFormRegion(polygon[0], polygon[2])
         if (active !== undefined && activeContent && transformViewport) {
-          const viewport = getViewportByRegion(activeContent, { start, end })
+          const viewport = getViewportByRegion(activeContent, region)
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
@@ -400,7 +417,7 @@ export const CADEditor = React.forwardRef((props: {
           resetOperation()
           return
         }
-        const result = zoomToFit({ start, end }, { width, height }, { x: width / 2, y: height / 2 }, 1)
+        const result = zoomToFit(region, { width, height }, { x: width / 2, y: height / 2 }, 1)
         if (result) {
           setScale(result.scale)
           setX(result.x)
@@ -409,10 +426,11 @@ export const CADEditor = React.forwardRef((props: {
         resetOperation()
         return
       }
-      const target = getContentsByClickTwoPositions(
+      const target = getContentsByRegion(
         editingContent,
-        start,
-        end,
+        polygon,
+        start.x > end.x,
+        !!transform.rotate,
         getContentModel,
         e.shiftKey ? undefined : isSelectable,
         contentVisible,
@@ -572,11 +590,7 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    let viewportPosition = { x: e.clientX, y: e.clientY }
-    viewportPosition = reverseTransformPosition(viewportPosition, transform)
-    if (transformViewport) {
-      viewportPosition = transformViewport(viewportPosition)
-    }
+    const viewportPosition = reverseTransform({ x: e.clientX, y: e.clientY })
     const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
@@ -613,10 +627,7 @@ export const CADEditor = React.forwardRef((props: {
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
     setInputPosition(viewportPosition)
-    let p = reverseTransformPosition(viewportPosition, transform)
-    if (transformViewport) {
-      p = transformViewport(p)
-    }
+    const p = reverseTransform(viewportPosition)
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
     if (operations.type === 'operate' && operations.operate.type === 'command') {
@@ -679,12 +690,8 @@ export const CADEditor = React.forwardRef((props: {
     return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
   }
   debug.mark('before search')
-  const start = reverseTransformPosition({ x: 0, y: 0 }, transform)
-  const end = reverseTransformPosition({ x: width, y: height }, transform)
-  const searchResult = new Set(getContentsInRange({
-    start,
-    end,
-  }))
+  const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
+  const searchResult = new Set(getContentsInRange(bounding))
   const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
@@ -714,8 +721,7 @@ export const CADEditor = React.forwardRef((props: {
     setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, state, state, 1))
   }, [props.initialState])
   const { setMinimapTransform, minimap, getMinimapPosition } = useMinimap({
-    start,
-    end,
+    ...bounding,
     width: minimapWidth,
     height: minimapHeight,
     children: minimapTransform => (
@@ -858,6 +864,7 @@ export const CADEditor = React.forwardRef((props: {
           x={transform.x}
           y={transform.y}
           scale={transform.scale}
+          rotate={transform.rotate}
           width={width}
           height={height}
           backgroundColor={props.backgroundColor}
@@ -868,6 +875,21 @@ export const CADEditor = React.forwardRef((props: {
           time={time}
         />}
         {minimap}
+        <div
+          style={{
+            width: '100px',
+            height: '100px',
+            left: '1px',
+            top: `${height - 204}px`,
+            boxSizing: 'border-box',
+            position: 'absolute',
+            transform: `rotate(${transform.rotate}rad)`,
+            border: '1px solid black',
+            borderRadius: '50px',
+          }}
+        >
+          <RotationBar onMouseDown={() => startRotate({ x: 51, y: height - 154 })} />
+        </div>
         {position && <span style={{ position: 'absolute', right: 0 }}>{position.x},{position.y}</span>}
         {commandMasks}
         {!snapOffsetActive && selectionInput}
@@ -876,6 +898,7 @@ export const CADEditor = React.forwardRef((props: {
       </div>
       {dragSelectMask}
       {moveCanvasMask}
+      {rotateMask}
     </div>
   )
   return (
