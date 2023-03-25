@@ -15,6 +15,7 @@ export function Renderer(props: {
   x: number
   y: number
   scale: number
+  rotate?: number
   width: number
   height: number
   backgroundColor: number
@@ -274,6 +275,7 @@ export function Renderer(props: {
       x: props.x,
       y: props.y,
       scale: props.scale,
+      rotate: props.rotate,
     },
     backgroundColor: props.backgroundColor,
     debug: props.debug,

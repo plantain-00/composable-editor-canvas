@@ -1,4 +1,4 @@
-import { equals, getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from "../../utils/geometry"
+import { equals, getTwoNumberCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
 
 /**
  * @public
@@ -6,6 +6,7 @@ import { equals, getTwoNumberCenter, Position, Size, TwoPointsFormRegion } from 
 export interface Transform extends Position {
   center: Position
   scale: number
+  rotate?: number
 }
 
 /**
@@ -15,10 +16,14 @@ export function reverseTransformPosition(position: Position, transform: Transfor
   if (!transform) {
     return position
   }
-  return {
+  position =  {
     x: (position.x - transform.center.x - transform.x) / transform.scale + transform.center.x,
     y: (position.y - transform.center.y - transform.y) / transform.scale + transform.center.y,
   }
+  if (transform.rotate) {
+    position = rotatePosition(position, { x: 0, y: 0 }, -transform.rotate)
+  }
+  return position
 }
 
 export function transformPosition(position: Position, transform: Transform | undefined) {
