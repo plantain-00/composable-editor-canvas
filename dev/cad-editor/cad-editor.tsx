@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFit, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion } from '../../src'
 import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -400,9 +400,8 @@ export const CADEditor = React.forwardRef((props: {
     if (end) {
       const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
-        const region = getTwoPointsFormRegion(polygon[0], polygon[2])
         if (active !== undefined && activeContent && transformViewport) {
-          const viewport = getViewportByRegion(activeContent, region)
+          const viewport = getViewportByRegion(activeContent, getPointsBoundingUnsafe(polygon))
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
@@ -417,7 +416,7 @@ export const CADEditor = React.forwardRef((props: {
           resetOperation()
           return
         }
-        const result = zoomToFit(region, { width, height }, { x: width / 2, y: height / 2 }, 1)
+        const result = zoomToFitPoints(polygon, { width, height }, { x: width / 2, y: height / 2 }, 1, transform.rotate)
         if (result) {
           setScale(result.scale)
           setX(result.x)
@@ -466,7 +465,7 @@ export const CADEditor = React.forwardRef((props: {
         setActive(undefined)
         return
       }
-      const result = zoomContentsToFit(width, height, editingContent, state)
+      const result = zoomContentsToFit(width, height, editingContent, state, 0.8, transform.rotate)
       if (result) {
         setScale(result.scale)
         setX(result.x)

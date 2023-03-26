@@ -1,4 +1,4 @@
-import { equals, getTwoNumberCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
+import { equals, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
 
 /**
  * @public
@@ -16,7 +16,7 @@ export function reverseTransformPosition(position: Position, transform: Transfor
   if (!transform) {
     return position
   }
-  position =  {
+  position = {
     x: (position.x - transform.center.x - transform.x) / transform.scale + transform.center.x,
     y: (position.y - transform.center.y - transform.y) / transform.scale + transform.center.y,
   }
@@ -29,6 +29,9 @@ export function reverseTransformPosition(position: Position, transform: Transfor
 export function transformPosition(position: Position, transform: Transform | undefined) {
   if (!transform) {
     return position
+  }
+  if (transform.rotate) {
+    position = rotatePosition(position, { x: 0, y: 0 }, transform.rotate)
   }
   return {
     x: (position.x - transform.center.x) * transform.scale + transform.center.x + transform.x,
@@ -51,6 +54,39 @@ export function zoomToFit(
       scale,
       x: (center.x - getTwoNumberCenter(bounding.start.x, bounding.end.x)) * scale,
       y: (center.y - getTwoNumberCenter(bounding.start.y, bounding.end.y)) * scale,
+    }
+  }
+  return
+}
+
+export function zoomToFitPoints(
+  points: Position[],
+  { width, height }: Size,
+  center: Position,
+  paddingScale = 0.8,
+  rotate?: number,
+) {
+  const bounding = getPointsBoundingUnsafe(points)
+  if (bounding && !equals(bounding.start.x, bounding.end.x) && !equals(bounding.start.y, bounding.end.y)) {
+    let boundingWidth: number
+    let boundingHeight: number
+    if (rotate) {
+      const region = getPointsBoundingUnsafe(points.map(p => rotatePosition(p, { x: 0, y: 0 }, rotate)))
+      boundingWidth = Math.abs(region.end.x - region.start.x)
+      boundingHeight = Math.abs(region.end.y - region.start.y)
+    } else {
+      boundingWidth = Math.abs(bounding.end.x - bounding.start.x)
+      boundingHeight = Math.abs(bounding.end.y - bounding.start.y)
+    }
+    const scale = Math.min(width / boundingWidth, height / boundingHeight) * paddingScale
+    let boundingCenter = getTwoPointCenter(bounding.start, bounding.end)
+    if (rotate) {
+      boundingCenter = rotatePosition(boundingCenter, { x: 0, y: 0 }, rotate)
+    }
+    return {
+      scale,
+      x: (center.x - boundingCenter.x) * scale,
+      y: (center.y - boundingCenter.y) * scale,
     }
   }
   return
