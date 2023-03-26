@@ -1592,70 +1592,36 @@ function getModel(ctx) {
   const getGeometries = (content) => {
     return ctx.getGeometriesFromCache(content, () => {
       const lines = [];
-      const points = [];
-      const remains = [];
+      const result = [];
       const boundings = [];
       content.contents.forEach((c) => {
-        var _a, _b;
+        var _a, _b, _c, _d;
         if (!c) {
           return;
         }
         const r = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c);
         if (r) {
           lines.push(...r.lines);
-          points.push(...r.points);
-          remains.push(r.points);
           if (r.bounding) {
             boundings.push(r.bounding.start, r.bounding.end);
           }
         }
+        if (isLineContent(c) || isPolyLineContent(c)) {
+          result.push({ points: c.points });
+        } else if (isArcContent(c)) {
+          result.push({ points: ctx.arcToPolyline(c, (_c = c.angleDelta) != null ? _c : ctx.defaultAngleDelta) });
+        } else if (isEllipseArcContent(c)) {
+          result.push({ points: ctx.ellipseArcToPolyline(c, (_d = c.angleDelta) != null ? _d : ctx.defaultAngleDelta) });
+        }
       });
-      const result = [];
-      const combine = (points2, target) => {
-        const start = points2[0];
-        let i = target.findIndex((r) => ctx.isSamePoint(r[0], start));
-        if (i >= 0) {
-          target[i] = [...points2.slice(1, points2.length).reverse(), ...target[i]];
-          return true;
-        }
-        i = target.findIndex((r) => ctx.isSamePoint(r[r.length - 1], start));
-        if (i >= 0) {
-          target[i] = [...target[i], ...points2.slice(1, points2.length)];
-          return true;
-        }
-        const end = points2[points2.length - 1];
-        i = target.findIndex((r) => ctx.isSamePoint(r[0], end));
-        if (i >= 0) {
-          target[i] = [...points2.slice(0, points2.length - 1), ...target[i]];
-          return true;
-        }
-        i = target.findIndex((r) => ctx.isSamePoint(r[r.length - 1], end));
-        if (i >= 0) {
-          target[i] = [...target[i], ...points2.slice(1, points2.length).reverse()];
-          return true;
-        }
-        return false;
-      };
-      while (remains.length > 0) {
-        const current = remains.shift();
-        if (!current) {
-          break;
-        }
-        let success = combine(current, result);
-        if (success) {
-          continue;
-        }
-        success = combine(current, remains);
-        if (success) {
-          continue;
-        }
-        result.push(current);
-      }
+      ctx.mergePolylinesToPolyline(result);
+      const renderingLines = result.map((m) => m.points);
+      const points = renderingLines.flat();
       return {
         lines,
         points,
         bounding: ctx.getPointsBounding(boundings),
-        renderingLines: result,
+        renderingLines,
         regions: ctx.hasFill(content) ? [{
           lines,
           points

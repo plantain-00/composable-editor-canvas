@@ -13,8 +13,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
   const getGeometries = (content: CombinedPathContent) => {
     return ctx.getGeometriesFromCache(content, () => {
       const lines: [core.Position, core.Position][] = []
-      const points: core.Position[] = []
-      const remains: core.Position[][] = []
+      const result: { points: core.Position[] }[] = []
       const boundings: core.Position[] = []
       content.contents.forEach((c) => {
         if (!c) {
@@ -23,59 +22,26 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
         const r = ctx.getContentModel(c)?.getGeometries?.(c)
         if (r) {
           lines.push(...r.lines)
-          points.push(...r.points)
-          remains.push(r.points)
           if (r.bounding) {
             boundings.push(r.bounding.start, r.bounding.end)
           }
         }
+        if (isLineContent(c) || isPolyLineContent(c)) {
+          result.push({ points: c.points })
+        } else if (isArcContent(c)) {
+          result.push({ points: ctx.arcToPolyline(c, c.angleDelta ?? ctx.defaultAngleDelta) })
+        } else if (isEllipseArcContent(c)) {
+          result.push({ points: ctx.ellipseArcToPolyline(c, c.angleDelta ?? ctx.defaultAngleDelta) })
+        }
       })
-      const result: core.Position[][] = []
-      const combine = (points: core.Position[], target: core.Position[][]) => {
-        const start = points[0]
-        let i = target.findIndex(r => ctx.isSamePoint(r[0], start))
-        if (i >= 0) {
-          target[i] = [...points.slice(1, points.length).reverse(), ...target[i]]
-          return true
-        }
-        i = target.findIndex(r => ctx.isSamePoint(r[r.length - 1], start))
-        if (i >= 0) {
-          target[i] = [...target[i], ...points.slice(1, points.length)]
-          return true
-        }
-        const end = points[points.length - 1]
-        i = target.findIndex(r => ctx.isSamePoint(r[0], end))
-        if (i >= 0) {
-          target[i] = [...points.slice(0, points.length - 1), ...target[i]]
-          return true
-        }
-        i = target.findIndex(r => ctx.isSamePoint(r[r.length - 1], end))
-        if (i >= 0) {
-          target[i] = [...target[i], ...points.slice(1, points.length).reverse()]
-          return true
-        }
-        return false
-      }
-      while (remains.length > 0) {
-        const current = remains.shift()
-        if (!current) {
-          break
-        }
-        let success = combine(current, result)
-        if (success) {
-          continue
-        }
-        success = combine(current, remains)
-        if (success) {
-          continue
-        }
-        result.push(current)
-      }
+      ctx.mergePolylinesToPolyline(result)
+      const renderingLines = result.map(m => m.points)
+      const points = renderingLines.flat()
       return {
         lines,
         points,
         bounding: ctx.getPointsBounding(boundings),
-        renderingLines: result,
+        renderingLines,
         regions: ctx.hasFill(content) ? [{
           lines,
           points,
