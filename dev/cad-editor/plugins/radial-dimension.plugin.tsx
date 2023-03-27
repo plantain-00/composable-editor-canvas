@@ -26,7 +26,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     }
     return { lines: [], points: [], renderingLines: [] }
   }
-  const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, model.Geometries>()
+  const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, model.Geometries<{ points: core.Position[] }>>()
 
   const textPositionMap = new ctx.WeakmapCache2<core.RadialDimension, core.Circle, {
     textPosition: core.Position

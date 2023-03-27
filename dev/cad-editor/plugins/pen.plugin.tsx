@@ -16,7 +16,6 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {
         lines,
-        points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(content.points, content.dashArray),
       }

@@ -12,8 +12,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   const RectContent = ctx.and(ctx.BaseContent('rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
     angle: ctx.number
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], midpoints: core.Position[] }>>()
   function getRectGeometries(content: Omit<RectContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const points = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
@@ -24,6 +25,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       return {
         lines,
         points,
+        midpoints: lines.map(line => ctx.getTwoPointCenter(...line)),
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -95,7 +97,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points, lines } = getRectGeometries(content)
+        const { points, midpoints } = getRectGeometries(content)
         return {
           editPoints: [
             { x: content.x, y: content.y, direction: 'center' as const },
@@ -103,10 +105,10 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
             { ...points[1], direction: 'right-top' as const },
             { ...points[2], direction: 'right-bottom' as const },
             { ...points[3], direction: 'left-bottom' as const },
-            { ...ctx.getTwoPointCenter(...lines[0]), direction: 'top' as const },
-            { ...ctx.getTwoPointCenter(...lines[1]), direction: 'right' as const },
-            { ...ctx.getTwoPointCenter(...lines[2]), direction: 'bottom' as const },
-            { ...ctx.getTwoPointCenter(...lines[3]), direction: 'left' as const },
+            { ...midpoints[0], direction: 'top' as const },
+            { ...midpoints[1], direction: 'right' as const },
+            { ...midpoints[2], direction: 'bottom' as const },
+            { ...midpoints[3], direction: 'left' as const },
           ].map((p, i) => ({
             x: p.x,
             y: p.y,
@@ -132,15 +134,11 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     },
     getSnapPoints(content) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getRectGeometries(content)
+        const { points, midpoints } = getRectGeometries(content)
         return [
           { x: content.x, y: content.y, type: 'center' },
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
-          ...lines.map(([start, end]) => ({
-            x: (start.x + end.x) / 2,
-            y: (start.y + end.y) / 2,
-            type: 'midpoint' as const,
-          })),
+          ...midpoints.map(p => ({ ...p, type: 'midpoint' as const })),
         ]
       })
     },

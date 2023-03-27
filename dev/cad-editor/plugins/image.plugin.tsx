@@ -19,7 +19,6 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines: [],
-        points: [],
         bounding: ctx.getPointsBounding(points),
         regions: [
           {

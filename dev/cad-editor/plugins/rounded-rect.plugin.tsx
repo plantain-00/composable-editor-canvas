@@ -12,8 +12,9 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
   const RoundedRectContent = ctx.and(ctx.BaseContent('rounded rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
     radius: ctx.number
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], arcPoints: core.Position[] }>>()
   function getGeometries(content: Omit<RoundedRectContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
@@ -25,6 +26,16 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       return {
         lines,
         points: rectPoints,
+        arcPoints: [
+          { x: rectPoints[0].x + content.radius, y: rectPoints[0].y },
+          { x: rectPoints[0].x, y: rectPoints[0].y + content.radius },
+          { x: rectPoints[1].x - content.radius, y: rectPoints[1].y },
+          { x: rectPoints[1].x, y: rectPoints[1].y + content.radius },
+          { x: rectPoints[2].x - content.radius, y: rectPoints[2].y },
+          { x: rectPoints[2].x, y: rectPoints[2].y - content.radius },
+          { x: rectPoints[3].x + content.radius, y: rectPoints[3].y },
+          { x: rectPoints[3].x, y: rectPoints[3].y - content.radius },
+        ],
         bounding: ctx.getPointsBounding(rectPoints),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -68,6 +79,10 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       }
       const { renderingLines } = getGeometries(content)
       return target.renderPath(renderingLines, options)
+    },
+    renderIfSelected(content, { color, target, strokeWidth }) {
+      const { points, arcPoints } = getGeometries(content)
+      return target.renderGroup(points.map((p, i) => target.renderPolyline([arcPoints[2 * i], p, arcPoints[2 * i + 1]], { strokeColor: color, dashArray: [4], strokeWidth })))
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {

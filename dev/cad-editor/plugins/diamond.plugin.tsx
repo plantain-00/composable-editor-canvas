@@ -9,8 +9,9 @@ export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields &
 
 export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
   const DiamondContent = ctx.and(ctx.BaseContent('diamond'), ctx.StrokeFields, ctx.FillFields, ctx.Region)
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getGeometries(content: Omit<DiamondContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const points = [
         { x: content.x, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y },

@@ -15,7 +15,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
         }],
       }
     }
-    return { lines: [], points: [], renderingLines: [] }
+    return { lines: [], renderingLines: [] }
   }
   const React = ctx.React
   return {

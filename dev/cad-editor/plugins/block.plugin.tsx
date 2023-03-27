@@ -90,7 +90,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     if (block) {
       return blockLinesCache.get(block, content, () => {
         const lines: [core.Position, core.Position][] = []
-        const points: core.Position[] = []
+        const boundings: core.TwoPointsFormRegion[] = []
         const renderingLines: core.Position[][] = []
         const regions: NonNullable<model.Geometries['regions']> = []
         block.contents.forEach((c) => {
@@ -102,7 +102,9 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
             const r = ctx.getContentModel(c)?.getGeometries?.(extracted)
             if (r) {
               lines.push(...r.lines)
-              points.push(...r.points)
+              if (r.bounding) {
+                boundings.push(r.bounding)
+              }
               if (r.renderingLines) {
                 renderingLines.push(...r.renderingLines)
               }
@@ -114,14 +116,13 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         })
         return {
           lines,
-          points,
-          bounding: ctx.getPointsBounding(points),
+          bounding: ctx.mergeBoundings(boundings),
           renderingLines,
           regions,
         }
       })
     }
-    return { lines: [], points: [], renderingLines: [] }
+    return { lines: [], renderingLines: [] }
   }
   const blockReferenceModel: model.Model<BlockReferenceContent> = {
     type: 'block reference',

@@ -17,8 +17,9 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     count: ctx.number,
     angle: ctx.optional(ctx.number),
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle)
       const p1 = ctx.rotatePositionByCenter({ x: content.x + content.innerRadius, y: content.y }, content, angle + 180 / content.count)

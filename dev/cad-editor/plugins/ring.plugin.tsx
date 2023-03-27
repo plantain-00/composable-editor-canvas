@@ -22,7 +22,6 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       const lines1 = Array.from(ctx.iteratePolygonLines(points1))
       const lines2 = Array.from(ctx.iteratePolygonLines(points2))
       return {
-        points,
         lines: [...lines1, ...lines2],
         bounding: ctx.getPointsBounding(points),
         regions: ctx.hasFill(content) ? [

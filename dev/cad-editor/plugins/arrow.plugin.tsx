@@ -26,7 +26,6 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content)
       const points = [p1, endPoint]
       return {
-        points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
         regions: [

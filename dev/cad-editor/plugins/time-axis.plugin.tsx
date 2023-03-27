@@ -17,7 +17,6 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content)
       const points = [content, endPoint]
       const result = {
-        points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
         regions: [
