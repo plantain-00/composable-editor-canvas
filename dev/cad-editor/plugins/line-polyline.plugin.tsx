@@ -14,8 +14,9 @@ export function getModel(ctx: PluginContext) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or('line', 'polyline')), ctx.StrokeFields, ctx.FillFields, {
     points: ctx.minItems(2, [ctx.Position])
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getPolylineGeometries(content: Omit<LineContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {
         lines,

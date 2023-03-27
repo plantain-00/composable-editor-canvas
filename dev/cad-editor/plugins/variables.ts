@@ -39,7 +39,6 @@ function getModel(ctx) {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content);
       const points = [p1, endPoint];
       return {
-        points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
         regions: [
@@ -385,7 +384,7 @@ function getModel(ctx) {
     if (block) {
       return blockLinesCache.get(block, content, () => {
         const lines = [];
-        const points = [];
+        const boundings = [];
         const renderingLines = [];
         const regions = [];
         block.contents.forEach((c) => {
@@ -398,7 +397,9 @@ function getModel(ctx) {
             const r = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, extracted);
             if (r) {
               lines.push(...r.lines);
-              points.push(...r.points);
+              if (r.bounding) {
+                boundings.push(r.bounding);
+              }
               if (r.renderingLines) {
                 renderingLines.push(...r.renderingLines);
               }
@@ -411,14 +412,13 @@ function getModel(ctx) {
         });
         return {
           lines,
-          points,
-          bounding: ctx.getPointsBounding(points),
+          bounding: ctx.mergeBoundings(boundings),
           renderingLines,
           regions
         };
       });
     }
-    return { lines: [], points: [], renderingLines: [] };
+    return { lines: [], renderingLines: [] };
   }
   const blockReferenceModel = {
     type: "block reference",
@@ -882,29 +882,53 @@ function getModel(ctx) {
     rExpression: ctx.optional(ctx.string)
   });
   const ArcContent = ctx.and(ctx.BaseContent("arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc);
+  const geometriesCache = new ctx.WeakmapCache();
+  const arcGeometriesCache = new ctx.WeakmapCache();
   function getCircleGeometries(content, _, time) {
+    const quadrantPoints = [
+      { x: content.x - content.r, y: content.y },
+      { x: content.x, y: content.y - content.r },
+      { x: content.x + content.r, y: content.y },
+      { x: content.x, y: content.y + content.r }
+    ];
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x);
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y);
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r);
-      return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 });
+      return { quadrantPoints, ...getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 }) };
     }
-    return ctx.getGeometriesFromCache(content, () => {
-      return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 });
+    return geometriesCache.get(content, () => {
+      return { quadrantPoints, ...getArcGeometries({ ...content, startAngle: 0, endAngle: 360 }) };
     });
   }
   function getArcGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return arcGeometriesCache.get(content, () => {
       var _a;
       const points = ctx.arcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
+      const startAngle = ctx.angleToRadian(content.startAngle);
+      const endAngle = ctx.angleToRadian(content.endAngle);
+      const middleAngle = (startAngle + endAngle) / 2;
       const geometries = {
         lines: Array.from(ctx.iteratePolylineLines(points)),
         points,
+        start: {
+          x: content.x + content.r * Math.cos(startAngle),
+          y: content.y + content.r * Math.sin(startAngle)
+        },
+        end: {
+          x: content.x + content.r * Math.cos(endAngle),
+          y: content.y + content.r * Math.sin(endAngle)
+        },
+        middle: {
+          x: content.x + content.r * Math.cos(middleAngle),
+          y: content.y + content.r * Math.sin(middleAngle)
+        },
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
       if (ctx.hasFill(content)) {
         return {
+          ...geometries,
           lines: [],
           points: geometries.points,
           bounding: geometries.bounding,
@@ -985,6 +1009,7 @@ function getModel(ctx) {
         return ctx.getEditPointsFromCache(content, () => {
           const x = content.x;
           const y = content.y;
+          const { quadrantPoints } = getCircleGeometries(content);
           const updateEdges = (c, { cursor, scale }) => {
             if (!isCircleContent(c)) {
               return;
@@ -1009,26 +1034,22 @@ function getModel(ctx) {
                 }
               },
               {
-                x: x - content.r,
-                y,
+                ...quadrantPoints[0],
                 cursor: "ew-resize",
                 update: updateEdges
               },
               {
-                x,
-                y: y - content.r,
+                ...quadrantPoints[1],
                 cursor: "ns-resize",
                 update: updateEdges
               },
               {
-                x: x + content.r,
-                y,
+                ...quadrantPoints[2],
                 cursor: "ew-resize",
                 update: updateEdges
               },
               {
-                x,
-                y: y + content.r,
+                ...quadrantPoints[3],
                 cursor: "ns-resize",
                 update: updateEdges
               }
@@ -1038,12 +1059,10 @@ function getModel(ctx) {
         });
       },
       getSnapPoints(content) {
+        const { quadrantPoints } = getCircleGeometries(content);
         return ctx.getSnapPointsFromCache(content, () => [
           { x: content.x, y: content.y, type: "center" },
-          { x: content.x - content.r, y: content.y, type: "endpoint" },
-          { x: content.x + content.r, y: content.y, type: "endpoint" },
-          { x: content.x, y: content.y - content.r, type: "endpoint" },
-          { x: content.x, y: content.y + content.r, type: "endpoint" }
+          ...quadrantPoints.map((p) => ({ ...p, type: "endpoint" }))
         ]);
       },
       getCircle(content) {
@@ -1221,30 +1240,25 @@ function getModel(ctx) {
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
-          const x = content.x;
-          const y = content.y;
-          const startAngle = ctx.angleToRadian(content.startAngle);
-          const endAngle = ctx.angleToRadian(content.endAngle);
-          const middleAngle = (startAngle + endAngle) / 2;
+          const { start, end, middle } = getArcGeometries(content);
           return {
             editPoints: [
               {
-                x,
-                y,
+                x: content.x,
+                y: content.y,
                 cursor: "move",
                 type: "move",
-                update(c, { cursor, start, scale }) {
+                update(c, { cursor, start: start2, scale }) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.x += cursor.x - start.x;
-                  c.y += cursor.y - start.y;
+                  c.x += cursor.x - start2.x;
+                  c.y += cursor.y - start2.y;
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
                 }
               },
               {
-                x: x + content.r * Math.cos(startAngle),
-                y: y + content.r * Math.sin(startAngle),
+                ...start,
                 cursor: ctx.getResizeCursor(content.startAngle, "top"),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -1257,8 +1271,7 @@ function getModel(ctx) {
                 }
               },
               {
-                x: x + content.r * Math.cos(endAngle),
-                y: y + content.r * Math.sin(endAngle),
+                ...end,
                 cursor: ctx.getResizeCursor(content.endAngle, "top"),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -1271,8 +1284,7 @@ function getModel(ctx) {
                 }
               },
               {
-                x: x + content.r * Math.cos(middleAngle),
-                y: y + content.r * Math.sin(middleAngle),
+                ...middle,
                 cursor: ctx.getResizeCursor((content.startAngle + content.endAngle) / 2, "right"),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -1289,14 +1301,12 @@ function getModel(ctx) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = ctx.angleToRadian(content.startAngle);
-          const endAngle = ctx.angleToRadian(content.endAngle);
-          const middleAngle = (startAngle + endAngle) / 2;
+          const { start, end, middle } = getArcGeometries(content);
           return [
             { x: content.x, y: content.y, type: "center" },
-            { x: content.x + content.r * Math.cos(startAngle), y: content.y + content.r * Math.sin(startAngle), type: "endpoint" },
-            { x: content.x + content.r * Math.cos(endAngle), y: content.y + content.r * Math.sin(endAngle), type: "endpoint" },
-            { x: content.x + content.r * Math.cos(middleAngle), y: content.y + content.r * Math.sin(middleAngle), type: "midpoint" }
+            { ...start, type: "endpoint" },
+            { ...end, type: "endpoint" },
+            { ...middle, type: "midpoint" }
           ];
         });
       },
@@ -1619,7 +1629,6 @@ function getModel(ctx) {
       const points = renderingLines.flat();
       return {
         lines,
-        points,
         bounding: ctx.getPointsBounding(boundings),
         renderingLines,
         regions: ctx.hasFill(content) ? [{
@@ -1774,7 +1783,6 @@ function getModel(ctx) {
         renderingLines.push(...ctx.dashedPolylineToLines(lines[i], content.dashArray));
       });
       return {
-        points: [],
         lines,
         bounding: {
           start: {
@@ -2251,8 +2259,9 @@ export {
 `// dev/cad-editor/plugins/diamond.plugin.tsx
 function getModel(ctx) {
   const DiamondContent = ctx.and(ctx.BaseContent("diamond"), ctx.StrokeFields, ctx.FillFields, ctx.Region);
+  const geometriesCache = new ctx.WeakmapCache();
   function getGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const points = [
         { x: content.x, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y },
@@ -2512,15 +2521,27 @@ export {
 function getModel(ctx) {
   const EllipseContent = ctx.and(ctx.BaseContent("ellipse"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse);
   const EllipseArcContent = ctx.and(ctx.BaseContent("ellipse arc"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc);
+  const geometriesCache = new ctx.WeakmapCache();
+  const ellipseArcGeometriesCache = new ctx.WeakmapCache();
   function getEllipseGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       var _a;
       const points = ctx.ellipseToPolygon(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
       const polylinePoints = ctx.polygonToPolyline(points);
+      const center = ctx.getEllipseCenter(content);
+      const left = ctx.rotatePositionByEllipseCenter({ x: content.cx - content.rx, y: content.cy }, content);
+      const right = ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content);
+      const top = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content);
+      const bottom = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content);
       return {
         lines,
         points,
+        center,
+        left,
+        right,
+        top,
+        bottom,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -2533,13 +2554,21 @@ function getModel(ctx) {
     });
   }
   function getEllipseArcGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return ellipseArcGeometriesCache.get(content, () => {
       var _a;
       const points = ctx.ellipseArcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolylineLines(points));
+      const center = ctx.getEllipseCenter(content);
+      const startAngle = ctx.angleToRadian(content.startAngle);
+      const endAngle = ctx.angleToRadian(content.endAngle);
+      const middleAngle = (startAngle + endAngle) / 2;
       return {
         lines,
         points,
+        center,
+        start: ctx.getEllipsePointAtAngle(content, startAngle),
+        end: ctx.getEllipsePointAtAngle(content, endAngle),
+        middle: ctx.getEllipsePointAtAngle(content, middleAngle),
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -2622,12 +2651,8 @@ function getModel(ctx) {
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
         var _a;
-        const center = ctx.getEllipseCenter(content);
+        const { center, left, right, top, bottom } = getEllipseGeometries(content);
         const rotate = -((_a = content.angle) != null ? _a : 0);
-        const left = ctx.rotatePositionByCenter({ x: content.cx - content.rx, y: content.cy }, center, rotate);
-        const right = ctx.rotatePositionByCenter({ x: content.cx + content.rx, y: content.cy }, center, rotate);
-        const top = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy - content.ry }, center, rotate);
-        const bottom = ctx.rotatePositionByCenter({ x: content.cx, y: content.cy + content.ry }, center, rotate);
         return {
           editPoints: [
             {
@@ -2698,12 +2723,13 @@ function getModel(ctx) {
       });
     },
     getSnapPoints(content) {
+      const { center, left, right, top, bottom } = getEllipseGeometries(content);
       return ctx.getSnapPointsFromCache(content, () => [
-        { ...ctx.getEllipseCenter(content), type: "center" },
-        { ...ctx.rotatePositionByEllipseCenter({ x: content.cx - content.rx, y: content.cy }, content), type: "endpoint" },
-        { ...ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content), type: "endpoint" },
-        { ...ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content), type: "endpoint" },
-        { ...ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content), type: "endpoint" }
+        { ...center, type: "center" },
+        { ...left, type: "endpoint" },
+        { ...right, type: "endpoint" },
+        { ...top, type: "endpoint" },
+        { ...bottom, type: "endpoint" }
       ]);
     },
     getGeometries: getEllipseGeometries,
@@ -2839,9 +2865,7 @@ function getModel(ctx) {
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
           var _a;
-          const center = ctx.getEllipseCenter(content);
-          const startAngle = ctx.angleToRadian(content.startAngle);
-          const endAngle = ctx.angleToRadian(content.endAngle);
+          const { center, start, end } = getEllipseArcGeometries(content);
           const rotate = -((_a = content.angle) != null ? _a : 0);
           return {
             editPoints: [
@@ -2849,17 +2873,17 @@ function getModel(ctx) {
                 x: content.cx,
                 y: content.cy,
                 cursor: "move",
-                update(c, { cursor, start, scale }) {
+                update(c, { cursor, start: start2, scale }) {
                   if (!isEllipseArcContent(c)) {
                     return;
                   }
-                  c.cx += cursor.x - start.x;
-                  c.cy += cursor.y - start.y;
+                  c.cx += cursor.x - start2.x;
+                  c.cy += cursor.y - start2.y;
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [center, cursor] }] };
                 }
               },
               {
-                ...ctx.getEllipsePointAtAngle(content, startAngle),
+                ...start,
                 cursor: ctx.getResizeCursor(content.startAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
                   if (!isEllipseArcContent(c)) {
@@ -2871,7 +2895,7 @@ function getModel(ctx) {
                 }
               },
               {
-                ...ctx.getEllipsePointAtAngle(content, endAngle),
+                ...end,
                 cursor: ctx.getResizeCursor(content.endAngle - rotate, "top"),
                 update(c, { cursor, scale }) {
                   if (!isEllipseArcContent(c)) {
@@ -2889,14 +2913,12 @@ function getModel(ctx) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = ctx.angleToRadian(content.startAngle);
-          const endAngle = ctx.angleToRadian(content.endAngle);
-          const middleAngle = (startAngle + endAngle) / 2;
+          const { center, start, end, middle } = getEllipseArcGeometries(content);
           return [
-            { ...ctx.getEllipseCenter(content), type: "center" },
-            { ...ctx.getEllipsePointAtAngle(content, startAngle), type: "endpoint" },
-            { ...ctx.getEllipsePointAtAngle(content, endAngle), type: "endpoint" },
-            { ...ctx.getEllipsePointAtAngle(content, middleAngle), type: "midpoint" }
+            { ...center, type: "center" },
+            { ...start, type: "endpoint" },
+            { ...end, type: "endpoint" },
+            { ...middle, type: "midpoint" }
           ];
         });
       },
@@ -3808,7 +3830,6 @@ function getModel(ctx) {
         { x: content.x, y: content.y + content.height }
       ];
       return {
-        points: [],
         lines: [],
         bounding: ctx.getPointsBounding(points),
         regions: [
@@ -4144,7 +4165,6 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines: [],
-        points: [],
         bounding: ctx.getPointsBounding(points),
         regions: [
           {
@@ -4280,8 +4300,9 @@ function getModel(ctx) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or("line", "polyline")), ctx.StrokeFields, ctx.FillFields, {
     points: ctx.minItems(2, [ctx.Position])
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getPolylineGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
       return {
         lines,
@@ -5389,7 +5410,6 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines,
-        points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -5863,7 +5883,6 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
       return {
         lines,
-        points: content.points,
         bounding: ctx.getPointsBounding(content.points),
         renderingLines: ctx.dashedPolylineToLines(content.points, content.dashArray)
       };
@@ -6279,8 +6298,9 @@ function getModel(ctx) {
   const PolygonContent = ctx.and(ctx.BaseContent("polygon"), ctx.StrokeFields, ctx.FillFields, {
     points: [ctx.Position]
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getPolygonGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points));
       return {
         lines,
@@ -6977,8 +6997,9 @@ function getModel(ctx) {
   const RectContent = ctx.and(ctx.BaseContent("rect"), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
     angle: ctx.number
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getRectGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const points = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
@@ -6989,6 +7010,7 @@ function getModel(ctx) {
       return {
         lines,
         points,
+        midpoints: lines.map((line) => ctx.getTwoPointCenter(...line)),
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -7062,7 +7084,7 @@ function getModel(ctx) {
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points, lines } = getRectGeometries(content);
+        const { points, midpoints } = getRectGeometries(content);
         return {
           editPoints: [
             { x: content.x, y: content.y, direction: "center" },
@@ -7070,10 +7092,10 @@ function getModel(ctx) {
             { ...points[1], direction: "right-top" },
             { ...points[2], direction: "right-bottom" },
             { ...points[3], direction: "left-bottom" },
-            { ...ctx.getTwoPointCenter(...lines[0]), direction: "top" },
-            { ...ctx.getTwoPointCenter(...lines[1]), direction: "right" },
-            { ...ctx.getTwoPointCenter(...lines[2]), direction: "bottom" },
-            { ...ctx.getTwoPointCenter(...lines[3]), direction: "left" }
+            { ...midpoints[0], direction: "top" },
+            { ...midpoints[1], direction: "right" },
+            { ...midpoints[2], direction: "bottom" },
+            { ...midpoints[3], direction: "left" }
           ].map((p, i) => ({
             x: p.x,
             y: p.y,
@@ -7099,15 +7121,11 @@ function getModel(ctx) {
     },
     getSnapPoints(content) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getRectGeometries(content);
+        const { points, midpoints } = getRectGeometries(content);
         return [
           { x: content.x, y: content.y, type: "center" },
           ...points.map((p) => ({ ...p, type: "endpoint" })),
-          ...lines.map(([start, end]) => ({
-            x: (start.x + end.x) / 2,
-            y: (start.y + end.y) / 2,
-            type: "midpoint"
-          }))
+          ...midpoints.map((p) => ({ ...p, type: "midpoint" }))
         ];
       });
     },
@@ -7224,8 +7242,9 @@ function getModel(ctx) {
     count: ctx.number,
     angle: ctx.number
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getRegularPolygonGeometriesFromCache(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       var _a;
       const angle = -((_a = content.angle) != null ? _a : 0);
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle);
@@ -7441,7 +7460,6 @@ function getModel(ctx) {
       const lines1 = Array.from(ctx.iteratePolygonLines(points1));
       const lines2 = Array.from(ctx.iteratePolygonLines(points2));
       return {
-        points,
         lines: [...lines1, ...lines2],
         bounding: ctx.getPointsBounding(points),
         regions: ctx.hasFill(content) ? [
@@ -7716,8 +7734,9 @@ function getModel(ctx) {
   const RoundedRectContent = ctx.and(ctx.BaseContent("rounded rect"), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
     radius: ctx.number
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       var _a;
       const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
@@ -7730,6 +7749,16 @@ function getModel(ctx) {
       return {
         lines,
         points: rectPoints,
+        arcPoints: [
+          { x: rectPoints[0].x + content.radius, y: rectPoints[0].y },
+          { x: rectPoints[0].x, y: rectPoints[0].y + content.radius },
+          { x: rectPoints[1].x - content.radius, y: rectPoints[1].y },
+          { x: rectPoints[1].x, y: rectPoints[1].y + content.radius },
+          { x: rectPoints[2].x - content.radius, y: rectPoints[2].y },
+          { x: rectPoints[2].x, y: rectPoints[2].y - content.radius },
+          { x: rectPoints[3].x + content.radius, y: rectPoints[3].y },
+          { x: rectPoints[3].x, y: rectPoints[3].y - content.radius }
+        ],
         bounding: ctx.getPointsBounding(rectPoints),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -7775,6 +7804,10 @@ function getModel(ctx) {
       };
       const { renderingLines } = getGeometries(content);
       return target.renderPath(renderingLines, options);
+    },
+    renderIfSelected(content, { color, target, strokeWidth }) {
+      const { points, arcPoints } = getGeometries(content);
+      return target.renderGroup(points.map((p, i) => target.renderPolyline([arcPoints[2 * i], p, arcPoints[2 * i + 1]], { strokeColor: color, dashArray: [4], strokeWidth })));
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -8036,8 +8069,9 @@ function getModel(ctx) {
     points: [ctx.Position],
     fitting: ctx.optional(ctx.boolean)
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getSplineGeometries(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       var _a;
       const inputPoints = content.points.map((p) => [p.x, p.y]);
       let points = [];
@@ -8378,8 +8412,9 @@ function getModel(ctx) {
     count: ctx.number,
     angle: ctx.optional(ctx.number)
   });
+  const geometriesCache = new ctx.WeakmapCache();
   function getStarGeometriesFromCache(content) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       var _a;
       const angle = -((_a = content.angle) != null ? _a : 0);
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle);
@@ -8610,7 +8645,6 @@ function getModel(ctx) {
         { x: content.x, y: content.y + content.height }
       ];
       return {
-        points: [],
         lines: [],
         bounding: ctx.getPointsBounding(points),
         regions: [
@@ -8829,7 +8863,6 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines: [],
-        points: [],
         bounding: ctx.getPointsBounding(points),
         regions: [
           {
@@ -9028,7 +9061,6 @@ function getModel(ctx) {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content);
       const points = [content, endPoint];
       const result = {
-        points: [],
         lines: Array.from(ctx.iteratePolylineLines(points)),
         bounding: ctx.getPointsBounding(points),
         regions: [
@@ -9341,7 +9373,7 @@ function getModel(ctx) {
         }]
       };
     }
-    return { lines: [], points: [], renderingLines: [] };
+    return { lines: [], renderingLines: [] };
   }
   const React = ctx.React;
   return {

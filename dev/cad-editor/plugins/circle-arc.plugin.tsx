@@ -20,28 +20,52 @@ export function getModel(ctx: PluginContext) {
     rExpression: ctx.optional(ctx.string),
   })
   const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], quadrantPoints: core.Position[] }>>()
+  const arcGeometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
   function getCircleGeometries(content: Omit<CircleContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
+    const quadrantPoints = [
+      { x: content.x - content.r, y: content.y },
+      { x: content.x, y: content.y - content.r },
+      { x: content.x + content.r, y: content.y },
+      { x: content.x, y: content.y + content.r },
+    ]
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
-      return getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 })
+      return { quadrantPoints, ...getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 }) }
     }
-    return ctx.getGeometriesFromCache(content, () => {
-      return getArcGeometries({ ...content, startAngle: 0, endAngle: 360 })
+    return geometriesCache.get(content, () => {
+      return { quadrantPoints, ...getArcGeometries({ ...content, startAngle: 0, endAngle: 360 }) }
     })
   }
   function getArcGeometries(content: Omit<ArcContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return arcGeometriesCache.get(content, () => {
       const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
+      const startAngle = ctx.angleToRadian(content.startAngle)
+      const endAngle = ctx.angleToRadian(content.endAngle)
+      const middleAngle = (startAngle + endAngle) / 2
       const geometries = {
         lines: Array.from(ctx.iteratePolylineLines(points)),
         points,
+        start: {
+          x: content.x + content.r * Math.cos(startAngle),
+          y: content.y + content.r * Math.sin(startAngle),
+        },
+        end: {
+          x: content.x + content.r * Math.cos(endAngle),
+          y: content.y + content.r * Math.sin(endAngle),
+        },
+        middle: {
+          x: content.x + content.r * Math.cos(middleAngle),
+          y: content.y + content.r * Math.sin(middleAngle),
+        },
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
       if (ctx.hasFill(content)) {
         return {
+          ...geometries,
           lines: [],
           points: geometries.points,
           bounding: geometries.bounding,
@@ -121,6 +145,7 @@ export function getModel(ctx: PluginContext) {
         return ctx.getEditPointsFromCache(content, () => {
           const x = content.x
           const y = content.y
+          const { quadrantPoints } = getCircleGeometries(content)
           const updateEdges = (c: model.BaseContent, { cursor, scale }: { cursor: core.Position, scale: number }) => {
             if (!isCircleContent(c)) {
               return
@@ -145,26 +170,22 @@ export function getModel(ctx: PluginContext) {
                 },
               },
               {
-                x: x - content.r,
-                y,
+                ...quadrantPoints[0],
                 cursor: 'ew-resize',
                 update: updateEdges,
               },
               {
-                x,
-                y: y - content.r,
+                ...quadrantPoints[1],
                 cursor: 'ns-resize',
                 update: updateEdges,
               },
               {
-                x: x + content.r,
-                y,
+                ...quadrantPoints[2],
                 cursor: 'ew-resize',
                 update: updateEdges,
               },
               {
-                x,
-                y: y + content.r,
+                ...quadrantPoints[3],
                 cursor: 'ns-resize',
                 update: updateEdges,
               },
@@ -174,12 +195,10 @@ export function getModel(ctx: PluginContext) {
         })
       },
       getSnapPoints(content) {
+        const { quadrantPoints } = getCircleGeometries(content)
         return ctx.getSnapPointsFromCache(content, () => [
           { x: content.x, y: content.y, type: 'center' },
-          { x: content.x - content.r, y: content.y, type: 'endpoint' },
-          { x: content.x + content.r, y: content.y, type: 'endpoint' },
-          { x: content.x, y: content.y - content.r, type: 'endpoint' },
-          { x: content.x, y: content.y + content.r, type: 'endpoint' },
+          ...quadrantPoints.map(p => ({ ...p, type: 'endpoint' as const })),
         ])
       },
       getCircle(content) {
@@ -316,16 +335,12 @@ export function getModel(ctx: PluginContext) {
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => {
-          const x = content.x
-          const y = content.y
-          const startAngle = ctx.angleToRadian(content.startAngle)
-          const endAngle = ctx.angleToRadian(content.endAngle)
-          const middleAngle = (startAngle + endAngle) / 2
+          const { start, end, middle } = getArcGeometries(content)
           return {
             editPoints: [
               {
-                x,
-                y,
+                x: content.x,
+                y: content.y,
                 cursor: 'move',
                 type: 'move',
                 update(c, { cursor, start, scale }) {
@@ -338,8 +353,7 @@ export function getModel(ctx: PluginContext) {
                 },
               },
               {
-                x: x + content.r * Math.cos(startAngle),
-                y: y + content.r * Math.sin(startAngle),
+                ...start,
                 cursor: ctx.getResizeCursor(content.startAngle, 'top'),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -352,8 +366,7 @@ export function getModel(ctx: PluginContext) {
                 },
               },
               {
-                x: x + content.r * Math.cos(endAngle),
-                y: y + content.r * Math.sin(endAngle),
+                ...end,
                 cursor: ctx.getResizeCursor(content.endAngle, 'top'),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -366,8 +379,7 @@ export function getModel(ctx: PluginContext) {
                 },
               },
               {
-                x: x + content.r * Math.cos(middleAngle),
-                y: y + content.r * Math.sin(middleAngle),
+                ...middle,
                 cursor: ctx.getResizeCursor((content.startAngle + content.endAngle) / 2, 'right'),
                 update(c, { cursor, scale }) {
                   if (!isArcContent(c)) {
@@ -384,14 +396,12 @@ export function getModel(ctx: PluginContext) {
       },
       getSnapPoints(content) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const startAngle = ctx.angleToRadian(content.startAngle)
-          const endAngle = ctx.angleToRadian(content.endAngle)
-          const middleAngle = (startAngle + endAngle) / 2
+          const { start, end, middle } = getArcGeometries(content)
           return [
             { x: content.x, y: content.y, type: 'center' },
-            { x: content.x + content.r * Math.cos(startAngle), y: content.y + content.r * Math.sin(startAngle), type: 'endpoint' },
-            { x: content.x + content.r * Math.cos(endAngle), y: content.y + content.r * Math.sin(endAngle), type: 'endpoint' },
-            { x: content.x + content.r * Math.cos(middleAngle), y: content.y + content.r * Math.sin(middleAngle), type: 'midpoint' },
+            { ...start, type: 'endpoint' },
+            { ...end, type: 'endpoint' },
+            { ...middle, type: 'midpoint' },
           ]
         })
       },

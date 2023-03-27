@@ -38,7 +38,6 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
         renderingLines.push(...ctx.dashedPolylineToLines(lines[i], content.dashArray))
       })
       return {
-        points: [],
         lines,
         bounding: {
           start: {

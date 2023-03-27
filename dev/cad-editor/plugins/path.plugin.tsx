@@ -18,7 +18,6 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines,
-        points,
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [

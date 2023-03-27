@@ -13,7 +13,6 @@ export function getModel(ctx: PluginContext): model.Model<model.StrokeStyleConte
         { x: content.x, y: content.y + content.height },
       ]
       return {
-        points: [],
         lines: [],
         bounding: ctx.getPointsBounding(points),
         regions: [

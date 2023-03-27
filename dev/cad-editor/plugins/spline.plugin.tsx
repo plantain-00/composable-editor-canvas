@@ -23,8 +23,9 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     points: [ctx.Position],
     fitting: ctx.optional(ctx.boolean),
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getSplineGeometries(content: Omit<SplineContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y])
       let points: core.Position[] = []
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount

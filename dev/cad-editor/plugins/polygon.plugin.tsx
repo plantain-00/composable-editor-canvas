@@ -12,8 +12,9 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
   const PolygonContent = ctx.and(ctx.BaseContent('polygon'), ctx.StrokeFields, ctx.FillFields, {
     points: [ctx.Position]
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points))
       return {
         lines,

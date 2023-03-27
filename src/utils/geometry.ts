@@ -359,6 +359,10 @@ export function pointIsInRegion(point: Position, region: TwoPointsFormRegion) {
   return point.x >= region.start.x && point.y >= region.start.y && point.x <= region.end.x && point.y <= region.end.y
 }
 
+export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+  return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat())
+}
+
 /**
  * @public
  */

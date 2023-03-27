@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
     dependentVariable: ctx.or('x', 'y'),
     expression: ctx.string,
   })
-  const equationCache = new ctx.WeakmapCache2<Omit<EquationContent, 'type'>, Omit<CoordinateAxisContent, "type">, model.Geometries>()
+  const equationCache = new ctx.WeakmapCache2<Omit<EquationContent, 'type'>, Omit<CoordinateAxisContent, "type">, model.Geometries<{ points: core.Position[] }>>()
   function getGeometriesFromCache(content: Omit<EquationContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent)
     if (axis) {

@@ -39,7 +39,6 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
       const points = renderingLines.flat()
       return {
         lines,
-        points,
         bounding: ctx.getPointsBounding(boundings),
         renderingLines,
         regions: ctx.hasFill(content) ? [{

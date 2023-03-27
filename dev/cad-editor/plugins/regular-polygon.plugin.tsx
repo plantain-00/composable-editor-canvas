@@ -15,8 +15,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     count: ctx.number,
     angle: ctx.number,
   })
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return geometriesCache.get(content, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle)
       const points: core.Position[] = []

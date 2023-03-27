@@ -221,12 +221,11 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
   modelCenter[model.type] = model
 }
 
-export interface Geometries {
+export type Geometries<T extends object = object> = T & {
   /**
    * Used for (1)line intersection, (2)select line by click, (3)select line by box, (4)snap point
    */
   lines: [Position, Position][]
-  points: Position[]
   /**
    * Used for (1)select line by box, (2)snap point, (3)rtree
    */
@@ -913,7 +912,6 @@ export function getContentsGeometries<T extends ContainerFields>(
 ) {
   return getGeometriesFromCache(content, () => {
     const lines: [Position, Position][] = []
-    const points: Position[] = []
     const renderingLines: Position[][] = []
     const boundings: Position[] = []
     const regions: NonNullable<Geometries['regions']> = []
@@ -924,7 +922,6 @@ export function getContentsGeometries<T extends ContainerFields>(
       const r = getContentModel(c)?.getGeometries?.(c)
       if (r) {
         lines.push(...r.lines)
-        points.push(...r.points)
         if (r.bounding) {
           boundings.push(r.bounding.start, r.bounding.end)
         }
@@ -938,7 +935,6 @@ export function getContentsGeometries<T extends ContainerFields>(
     })
     return {
       lines,
-      points,
       bounding: getPointsBounding(boundings),
       renderingLines,
       regions: regions.length > 0 ? regions : undefined,
