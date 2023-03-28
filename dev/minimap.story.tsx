@@ -24,14 +24,15 @@ export default () => {
       y: height / 2,
     },
   }
-  const start = reverseTransformPosition({ x: 0, y: 0 }, transform)
-  const end = reverseTransformPosition({ x: width, y: height }, transform)
   const children = [target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, contentWidth, contentHeight)]
   const { setMinimapTransform, minimap, getMinimapPosition } = useMinimap({
     width: minimapWidth,
     height: minimapHeight,
-    start,
-    end,
+    viewport: {
+      width: width / transform.scale,
+      height: height / transform.scale,
+      center: reverseTransformPosition(transform.center, transform),
+    },
     children(minimapTransform) {
       return target.renderResult(children, minimapWidth, minimapHeight, {
         transform: minimapTransform, attributes: {
