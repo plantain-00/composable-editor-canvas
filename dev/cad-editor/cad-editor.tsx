@@ -720,7 +720,12 @@ export const CADEditor = React.forwardRef((props: {
     setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, state, state, 1))
   }, [props.initialState])
   const { setMinimapTransform, minimap, getMinimapPosition } = useMinimap({
-    ...bounding,
+    viewport: {
+      width: width / transform.scale,
+      height: height / transform.scale,
+      rotate: transform.rotate,
+      center: reverseTransform(transform.center),
+    },
     width: minimapWidth,
     height: minimapHeight,
     children: minimapTransform => (

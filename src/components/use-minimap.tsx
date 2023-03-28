@@ -1,9 +1,11 @@
 import React from "react"
-import { Position, Size, TwoPointsFormRegion } from "../utils/geometry";
+import { Position, Size, TwoPointsFormRegion, rotatePosition } from "../utils/geometry";
 
 export function useMinimap(props: Size & {
-  start: Position
-  end: Position
+  viewport: Size & {
+    center: Position
+    rotate?: number
+  }
   children: (minimapTransform: MinimapTransform) => React.ReactNode
 }) {
   const [transform, setMinimapTransform] = React.useState<MinimapTransform>()
@@ -23,10 +25,14 @@ export function useMinimap(props: Size & {
     contentWidth,
     contentHeight,
     getMinimapPosition(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) {
-      return {
-        x: transform.bounding.start.x + contentWidth * (e.nativeEvent.offsetX - xOffset) / ratio / contentWidth,
-        y: transform.bounding.start.y + contentHeight * (e.nativeEvent.offsetY - yOffset) / ratio / contentHeight,
+      let p = {
+        x: transform.bounding.start.x + (e.nativeEvent.offsetX - xOffset) / ratio,
+        y: transform.bounding.start.y + (e.nativeEvent.offsetY - yOffset) / ratio,
       }
+      if (props.viewport.rotate) {
+        p = rotatePosition(p, { x: 0, y: 0 }, props.viewport.rotate)
+      }
+      return p
     },
     minimap: (
       <div
@@ -44,11 +50,12 @@ export function useMinimap(props: Size & {
         <div style={{
           position: 'absolute',
           border: '1px solid red',
-          left: `${xOffset + ratio * (props.start.x - transform.bounding.start.x)}px`,
-          top: `${yOffset + ratio * (props.start.y - transform.bounding.start.y)}px`,
-          width: `${ratio * (props.end.x - props.start.x)}px`,
-          height: `${ratio * (props.end.y - props.start.y)}px`,
+          left: `${xOffset + ratio * (props.viewport.center.x - props.viewport.width / 2 - transform.bounding.start.x)}px`,
+          top: `${yOffset + ratio * (props.viewport.center.y - props.viewport.height / 2 - transform.bounding.start.y)}px`,
+          width: `${ratio * props.viewport.width}px`,
+          height: `${ratio * props.viewport.height}px`,
           cursor: 'default',
+          rotate: props.viewport.rotate ? `${props.viewport.rotate}rad` : undefined,
           pointerEvents: 'none',
         }}></div>
       </div>
