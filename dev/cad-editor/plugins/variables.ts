@@ -30,12 +30,12 @@ function getModel(ctx) {
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef)
   });
-  const arrwoCache = new ctx.WeakmapCache3();
+  const arrowCache = new ctx.WeakmapCache3();
   function getArrowGeometriesFromCache(content, contents) {
     var _a, _b;
     const p1 = (_a = ctx.getRefPosition(content.ref1, contents)) != null ? _a : content.p1;
     const p2 = (_b = ctx.getRefPosition(content.ref2, contents)) != null ? _b : content.p2;
-    return arrwoCache.get(content, p1, p2, () => {
+    return arrowCache.get(content, p1, p2, () => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content);
       const points = [p1, endPoint];
       return {
@@ -8999,6 +8999,38 @@ function getModel(ctx) {
           }) }) : void 0
         ]
       };
+    },
+    editPanel(content, transform, update) {
+      const p = ctx.transformPosition(content, transform);
+      const fontSize = content.fontSize * transform.scale;
+      if (content.width) {
+        return /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { fontSize, width: content.width * transform.scale, autoHeight: true, color: content.color, style: {
+          zIndex: 10,
+          position: "absolute",
+          left: \`\${p.x}px\`,
+          top: \`\${p.y}px\`,
+          fontFamily: content.fontFamily,
+          padding: "0px"
+        }, value: content.text, setValue: (v) => update((c) => {
+          if (isTextContent(c)) {
+            c.text = v;
+          }
+        }) });
+      }
+      return /* @__PURE__ */ React.createElement(ctx.StringEditor, { style: {
+        zIndex: 10,
+        position: "absolute",
+        left: \`\${p.x}px\`,
+        top: \`\${p.y - fontSize}px\`,
+        fontSize: \`\${fontSize}px\`,
+        fontFamily: content.fontFamily,
+        color: ctx.getColorString(content.color),
+        padding: "0px"
+      }, textarea: true, value: content.text, setValue: (v) => update((c) => {
+        if (isTextContent(c)) {
+          c.text = v;
+        }
+      }) });
     },
     isValid: (c, p) => ctx.validate(c, TextContent, p),
     getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : []

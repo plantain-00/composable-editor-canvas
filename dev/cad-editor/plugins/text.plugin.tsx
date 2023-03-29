@@ -156,6 +156,30 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         ],
       }
     },
+    editPanel(content, transform, update) {
+      const p = ctx.transformPosition(content, transform)
+      const fontSize = content.fontSize * transform.scale
+      if (content.width) {
+        return <ctx.ExpressionEditor fontSize={fontSize} width={content.width * transform.scale} autoHeight color={content.color} style={{
+          zIndex: 10,
+          position: 'absolute',
+          left: `${p.x}px`,
+          top: `${p.y}px`,
+          fontFamily: content.fontFamily,
+          padding: '0px',
+        }} value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />
+      }
+      return <ctx.StringEditor style={{
+        zIndex: 10,
+        position: 'absolute',
+        left: `${p.x}px`,
+        top: `${p.y - fontSize}px`,
+        fontSize: `${fontSize}px`,
+        fontFamily: content.fontFamily,
+        color: ctx.getColorString(content.color),
+        padding: '0px',
+      }} textarea value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />
+    },
     isValid: (c, p) => ctx.validate(c, TextContent, p),
     getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : [],
   }

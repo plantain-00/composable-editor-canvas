@@ -461,6 +461,12 @@ export const CADEditor = React.forwardRef((props: {
         setActive(activeIndex)
         return
       }
+      const indexes = getSortedContents(editingContent).indexes
+      const index = getContentByClickPosition(editingContent, point, () => true, getContentModel, false, contentVisible, indexes)
+      if (index !== undefined) {
+        setActive(index[0])
+        return
+      }
       if (active) {
         setActive(undefined)
         return
@@ -756,22 +762,22 @@ export const CADEditor = React.forwardRef((props: {
       </>
     )
   })
+  const contentsUpdater = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
+    const [, ...patches] = produceWithPatches(editingContent, (draft) => {
+      selectedContents.forEach(target => {
+        const content = getContentByIndex(draft, target.path)
+        if (content) {
+          update(content, draft)
+        }
+      })
+    })
+    applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
+  }
   let panel: JSX.Element | undefined
   if (props.panelVisible && selectedContents.length > 0) {
     const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
     const types = new Set<string>()
     const ids: number[] = []
-    const contentsUpdater = (update: (content: BaseContent, contents: Nullable<BaseContent>[]) => void) => {
-      const [, ...patches] = produceWithPatches(editingContent, (draft) => {
-        selectedContents.forEach(target => {
-          const content = getContentByIndex(draft, target.path)
-          if (content) {
-            update(content, draft)
-          }
-        })
-      })
-      applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
-    }
     const zPanel: JSX.Element[] = []
     const visiblePanel: JSX.Element[] = []
     selectedContents.forEach(target => {
@@ -846,6 +852,10 @@ export const CADEditor = React.forwardRef((props: {
       </div>
     )
   }
+  let editPanel: JSX.Element | undefined
+  if (activeContent) {
+    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater)
+  }
   if (props.debug) {
     console.info(debug.print())
   }
@@ -909,6 +919,7 @@ export const CADEditor = React.forwardRef((props: {
     <>
       {main}
       {panel}
+      {editPanel}
     </>
   )
 })
