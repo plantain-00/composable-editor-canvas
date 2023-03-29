@@ -15,6 +15,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   fontSize?: number
   target?: ReactRenderTarget<unknown>
   autoHeight?: boolean
+  color?: number
   suggestionSources?: ExpressionSuggesionSource[]
   validate?: (text: string) => [number, number] | undefined
 }) {
@@ -202,7 +203,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   }
 
   const getTextColors = (i: number) => {
-    let color: number | undefined
+    let color: number | undefined = props.color
     let backgroundColor: number | undefined
     const content = layoutResult[i].content
     if (errorRange && i >= errorRange[0] && i < errorRange[1]) {

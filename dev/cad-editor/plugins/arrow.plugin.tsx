@@ -18,11 +18,11 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const arrwoCache = new ctx.WeakmapCache3<Omit<ArrowContent, "type">, core.Position, core.Position, model.Geometries>()
+  const arrowCache = new ctx.WeakmapCache3<Omit<ArrowContent, "type">, core.Position, core.Position, model.Geometries>()
   function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
     const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
-    return arrwoCache.get(content, p1, p2, () => {
+    return arrowCache.get(content, p1, p2, () => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content)
       const points = [p1, endPoint]
       return {
