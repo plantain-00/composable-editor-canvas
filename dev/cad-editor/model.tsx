@@ -179,6 +179,7 @@ export type Model<T> = Partial<FeatureModels> & {
     content: Omit<T, 'type'>,
     transform: Transform,
     update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
+    cancel: () => void,
   ): JSX.Element
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void

@@ -16,6 +16,13 @@ export function useDragSelect<T = void>(
     setDragStartPosition(undefined)
     setDragEndPosition(undefined)
   }, [setDragStartPosition, setDragEndPosition])
+  const endDragSelect = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (dragStartPosition) {
+      onDragEnd(dragStartPosition, dragEndPosition, e)
+    }
+    setDragStartPosition(undefined)
+    setDragEndPosition(undefined)
+  }
   return {
     dragSelectStartPosition: dragStartPosition,
     onStartSelect(e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>, data?: T) {
@@ -25,6 +32,7 @@ export function useDragSelect<T = void>(
         data,
       })
     },
+    endDragSelect,
     dragSelectMask: dragStartPosition && <DragMask
       onDragging={(e) => {
         const isSquare = typeof square === 'boolean' ? square : square ? square(e) : undefined
@@ -43,11 +51,7 @@ export function useDragSelect<T = void>(
           y: e.clientY,
         })
       }}
-      onDragEnd={(e) => {
-        onDragEnd(dragStartPosition, dragEndPosition, e)
-        setDragStartPosition(undefined)
-        setDragEndPosition(undefined)
-      }}
+      onDragEnd={endDragSelect}
       style={{
         cursor: dragEndPosition ? 'crosshair' : 'default',
       }}

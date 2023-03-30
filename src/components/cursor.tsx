@@ -1,7 +1,7 @@
 import React from "react"
 
 export const Cursor = React.forwardRef((
-  props: React.HTMLAttributes<HTMLInputElement> & { readOnly?: boolean },
+  props: React.HTMLAttributes<HTMLInputElement> & { readOnly?: boolean, autoFocus?: boolean },
   ref: React.ForwardedRef<HTMLInputElement>,
 ) => {
   const [focused, setFocused] = React.useState(false)
@@ -24,6 +24,7 @@ export const Cursor = React.forwardRef((
           props.onBlur?.(e)
           setFocused(false)
         }}
+        autoFocus={props.autoFocus}
         onFocus={e => {
           props.onFocus?.(e)
           setFocused(true)

@@ -5,6 +5,7 @@ export interface JsonEditorProps<T> {
   setValue?: (value: T) => void
   style?: React.CSSProperties
   readOnly?: boolean
+  onCancel?: () => void
 }
 
 export const controlStyle: React.CSSProperties = {

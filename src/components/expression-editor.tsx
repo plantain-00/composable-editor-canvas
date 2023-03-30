@@ -16,13 +16,17 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
   target?: ReactRenderTarget<unknown>
   autoHeight?: boolean
   color?: number
+  numberColor?: number
+  enterKey?: string
   suggestionSources?: ExpressionSuggesionSource[]
   validate?: (text: string) => [number, number] | undefined
+  autoFocus?: boolean
 }) {
   const height = props.height ?? 100
   const target = props.target ?? reactCanvasRenderTarget
   const fontSize = props.fontSize ?? 16
   const fontFamily = props.style?.fontFamily ?? controlStyle.fontFamily ?? 'monospace'
+  const numberColor = props.numberColor ?? 0x0c840a
   const lineHeight = fontSize * 1.2
 
   const [width, setWidth] = React.useState(props.width ?? 250)
@@ -43,6 +47,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
     readOnly: props.readOnly,
     processInput(e) {
       if (e.key === 'Escape') {
+        props.onCancel?.()
         return true
       }
       if (suggestions.length > 0 && !props.readOnly) {
@@ -62,6 +67,11 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
         }
       }
       if (e.key === 'Enter') {
+        if (props.enterKey) {
+          inputText(props.enterKey)
+          e.preventDefault()
+          return true
+        }
         onComplete()
         return true
       }
@@ -80,6 +90,7 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
       return false
     },
     autoHeight: props.autoHeight,
+    autoFocus: props.autoFocus,
     onBlur: () => {
       setTimeout(() => {
         onComplete()
@@ -221,12 +232,12 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
         }
       }
       if (!headIsLetter) {
-        color = 0x0c840a
+        color = numberColor
       }
     } else if (content === '.' && i < layoutResult.length - 1) {
       const next = layoutResult[i + 1].content
       if (isNumber(next)) {
-        color = 0x0c840a
+        color = numberColor
       }
     }
     return { color, backgroundColor }
