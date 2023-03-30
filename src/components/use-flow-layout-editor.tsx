@@ -32,6 +32,7 @@ export function useFlowLayoutEditor<T>(props: {
   onCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
   keepSelectionOnBlur?: boolean
+  autoFocus?: boolean
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
@@ -329,6 +330,7 @@ export function useFlowLayoutEditor<T>(props: {
           onBlur={onBlur}
           onFocus={props.onFocus}
           readOnly={props.readOnly}
+          autoFocus={props.autoFocus}
           style={{
             left: cursorX + 'px',
             top: cursorY + scrollY + 'px',

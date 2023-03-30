@@ -270,6 +270,7 @@ export function Renderer(props: {
       onClick: props.onClick,
       onMouseDown: props.onMouseDown,
       onContextMenu: props.onContextMenu,
+      onDoubleClick: props.onDoubleClick,
     },
     transform: {
       x: props.x,

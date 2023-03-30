@@ -7,6 +7,7 @@ import { controlStyle, JsonEditorProps } from "./common"
 export function StringEditor(props: JsonEditorProps<string> & {
   type?: React.HTMLInputTypeAttribute
   textarea?: boolean
+  autoFocus?: boolean
 }): JSX.Element {
   const [text, setText] = React.useState(props.value)
   React.useEffect(() => {
@@ -40,10 +41,12 @@ export function StringEditor(props: JsonEditorProps<string> & {
         }}
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
+            props.onCancel?.()
             return
           }
           e.stopPropagation()
         }}
+        autoFocus={props.autoFocus}
         onBlur={() => {
           setTimeout(() => {
             onComplete()
@@ -74,6 +77,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
             onComplete()
           }
           if (e.key === 'Escape') {
+            props.onCancel?.()
             return
           }
           e.stopPropagation()

@@ -22,6 +22,7 @@ export function useFlowLayoutTextEditor(props: {
   readOnly?: boolean
   onBlur?: () => void
   onFocus?: () => void
+  autoFocus?: boolean
 }) {
   const font = `${props.fontSize}px ${props.fontFamily}`
   const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
@@ -66,6 +67,7 @@ export function useFlowLayoutTextEditor(props: {
     style: props.style,
     autoHeight: props.autoHeight,
     readOnly: props.readOnly,
+    autoFocus: props.autoFocus,
     onBlur: props.onBlur,
     onFocus: props.onFocus,
     isNewLineContent: content => content === '\n',

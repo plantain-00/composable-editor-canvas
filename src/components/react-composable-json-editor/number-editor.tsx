@@ -53,6 +53,7 @@ export function NumberEditor(props: JsonEditorProps<number> & {
           onComplete()
         }
         if (e.key === 'Escape') {
+          props.onCancel?.()
           return
         }
         e.stopPropagation()

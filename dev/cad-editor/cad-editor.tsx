@@ -396,7 +396,7 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   // select by region
-  const { onStartSelect, dragSelectMask } = useDragSelect((start, end, e) => {
+  const { onStartSelect, dragSelectMask, endDragSelect } = useDragSelect((start, end, e) => {
     if (end) {
       const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
@@ -647,6 +647,9 @@ export const CADEditor = React.forwardRef((props: {
       setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
     }
   })
+  const onDoubleClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    endDragSelect(e)
+  })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected) => {
     setLastOperation(p)
@@ -854,7 +857,7 @@ export const CADEditor = React.forwardRef((props: {
   }
   let editPanel: JSX.Element | undefined
   if (activeContent) {
-    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater)
+    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, () => setActive(undefined))
   }
   if (props.debug) {
     console.info(debug.print())
@@ -875,6 +878,7 @@ export const CADEditor = React.forwardRef((props: {
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
+          onDoubleClick={onDoubleClick}
           x={transform.x}
           y={transform.y}
           scale={transform.scale}

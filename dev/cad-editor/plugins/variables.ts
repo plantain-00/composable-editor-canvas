@@ -9000,22 +9000,37 @@ function getModel(ctx) {
         ]
       };
     },
-    editPanel(content, transform, update) {
+    editPanel(content, transform, update, cancel) {
       const p = ctx.transformPosition(content, transform);
       const fontSize = content.fontSize * transform.scale;
       if (content.width) {
-        return /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { fontSize, width: content.width * transform.scale, autoHeight: true, color: content.color, style: {
-          zIndex: 10,
-          position: "absolute",
-          left: \`\${p.x}px\`,
-          top: \`\${p.y}px\`,
-          fontFamily: content.fontFamily,
-          padding: "0px"
-        }, value: content.text, setValue: (v) => update((c) => {
-          if (isTextContent(c)) {
-            c.text = v;
+        return /* @__PURE__ */ React.createElement(
+          ctx.ExpressionEditor,
+          {
+            fontSize,
+            width: content.width * transform.scale,
+            autoHeight: true,
+            autoFocus: true,
+            color: content.color,
+            numberColor: content.color,
+            enterKey: "\\n",
+            onCancel: cancel,
+            style: {
+              zIndex: 10,
+              position: "absolute",
+              left: \`\${p.x}px\`,
+              top: \`\${p.y}px\`,
+              fontFamily: content.fontFamily,
+              padding: "0px"
+            },
+            value: content.text,
+            setValue: (v) => update((c) => {
+              if (isTextContent(c)) {
+                c.text = v;
+              }
+            })
           }
-        }) });
+        );
       }
       return /* @__PURE__ */ React.createElement(ctx.StringEditor, { style: {
         zIndex: 10,
@@ -9026,7 +9041,7 @@ function getModel(ctx) {
         fontFamily: content.fontFamily,
         color: ctx.getColorString(content.color),
         padding: "0px"
-      }, textarea: true, value: content.text, setValue: (v) => update((c) => {
+      }, textarea: true, autoFocus: true, onCancel: cancel, value: content.text, setValue: (v) => update((c) => {
         if (isTextContent(c)) {
           c.text = v;
         }
