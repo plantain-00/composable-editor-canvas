@@ -72,7 +72,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
                 c.x += props.cursor.x - props.start.x
                 c.y += props.cursor.y - props.start.y
               }
-              return e.update(c.border, props)
+              return e.update?.(c.border, props)
             },
           }))
         }

@@ -172,8 +172,8 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           style={{
             zIndex: 10,
             position: 'absolute',
-            left: `${p.x}px`,
-            top: `${p.y}px`,
+            left: `${p.x - 1}px`,
+            top: `${p.y - 1}px`,
             fontFamily: content.fontFamily,
             padding: '0px',
           }}
@@ -182,8 +182,8 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       return <ctx.StringEditor style={{
         zIndex: 10,
         position: 'absolute',
-        left: `${p.x}px`,
-        top: `${p.y - fontSize}px`,
+        left: `${p.x - 1}px`,
+        top: `${p.y - fontSize - 1}px`,
         fontSize: `${fontSize}px`,
         fontFamily: content.fontFamily,
         color: ctx.getColorString(content.color),
