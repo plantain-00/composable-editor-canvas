@@ -12,7 +12,7 @@ import { SelectPath } from "./use-selected"
  * @public
  */
 export function useEdit<T, TPath extends SelectPath = SelectPath>(
-  onEnd: () => void,
+  onEnd: (patches: Patch[], reversePatches: Patch[]) => void,
   getEditPoints?: (content: T) => {
     editPoints: EditPoint<T>[]
     angleSnapStartPoint?: Position
@@ -73,10 +73,10 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       assistentContents: T[];
       relatedEditPointResults: Map<T, T>;
     } | undefined {
-      if (editPoint && startPosition && cursorPosition) {
+      if (editPoint && startPosition && cursorPosition && editPoint.update) {
         const assistentContents: T[] = []
         const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
-          const r = editPoint.update(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
+          const r = editPoint.update?.(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
           if (r?.assistentContents) {
             assistentContents.push(...r.assistentContents)
           }
@@ -91,7 +91,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
         }
         for (const p of editPoint.relatedEditPoints) {
           const [result, patches, reversePatches] = produceWithPatches(p.content, (draft) => {
-            const r = p.update(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
+            const r = p.update?.(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1 })
             if (r?.assistentContents) {
               assistentContents.push(...r.assistentContents)
             }
@@ -138,10 +138,17 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       if (!editPoint) {
         return
       }
+      if (editPoint.execute) {
+        const [, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
+          editPoint.execute?.(draft)
+        })
+        onEnd(prependPatchPath(patches, editPoint.path), prependPatchPath(reversePatches, editPoint.path))
+        return
+      }
       if (!startPosition) {
         setStartPosition(p)
       } else {
-        onEnd()
+        onEnd([], [])
         reset()
       }
     },
@@ -153,7 +160,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
  */
 export type EditPoint<T> = Position & {
   cursor: string
-  update: (
+  update?: (
     content: Draft<T>,
     props: {
       cursor: Position
@@ -164,4 +171,5 @@ export type EditPoint<T> = Position & {
   ) => {
     assistentContents?: T[]
   } | void
+  execute?: (content: Draft<T>) => void
 }

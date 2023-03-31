@@ -335,7 +335,7 @@ export const CADEditor = React.forwardRef((props: {
   })
 
   const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
-    () => applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches)),
+    (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
       scale: scaleWithViewport,
