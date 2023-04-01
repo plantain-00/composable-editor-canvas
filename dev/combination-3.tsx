@@ -10,6 +10,8 @@ import { useAt } from "./rich-text-editor/plugins/at"
 import { link, useLink } from "./rich-text-editor/plugins/link"
 import { image, useImage } from "./rich-text-editor/plugins/image"
 import { code, mark, span, sub, sup } from "./rich-text-editor/plugins/inline"
+import { circle, useCircle } from "./rich-text-editor/plugins/circle"
+import { stack, useStack } from "./rich-text-editor/plugins/stack"
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 const key = 'combination-3.json'
@@ -32,8 +34,8 @@ export function Combination3() {
       color,
       'background color': backgroundColor,
     },
-    hooks: [useAt, useLink, useImage],
-    inlines: [link, image],
+    hooks: [useAt, useLink, useImage, useCircle, useStack],
+    inlines: [link, image, circle, stack],
     textInlines: { span, code, mark, sub, sup },
   })
 
