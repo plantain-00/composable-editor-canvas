@@ -13,6 +13,7 @@ export function flowLayout<T>(props: {
   isPartOfComposition?: (content: T) => boolean
   getComposition?: (index: number) => { index: number, width: number }
   endContent: T
+  align?: 'left' | 'center' | 'right'
   scrollX?: number
   scrollY: number
   row?: number
@@ -30,6 +31,19 @@ export function flowLayout<T>(props: {
   let column = 0
   let visible = isVisible(y)
   let maxLineHeight = 0
+  let newLineIndex = 0
+  const align = () => {
+    if (props.align === 'center' || props.align === 'right') {
+      const last = layoutResult[layoutResult.length - 1]
+      let offset = props.width - last.x - props.getWidth(last.content)
+      if (props.align === 'center') {
+        offset /= 2
+      }
+      for (let j = newLineIndex; j < layoutResult.length; j++) {
+        layoutResult[j].x += offset
+      }
+    }
+  }
   const toNewLine = () => {
     y += maxLineHeight
     lineHeights.push(maxLineHeight)
@@ -38,6 +52,7 @@ export function flowLayout<T>(props: {
     row++
     column = 0
     maxLineHeight = 0
+    align()
     if (lineHeights.length === 1) {
       layoutResult.forEach(r => {
         if (r.visible && !isVisible(r.y)) {
@@ -45,10 +60,14 @@ export function flowLayout<T>(props: {
         }
       })
     }
+    newLineIndex = layoutResult.length
+  }
+  const getLineHeight = (content: T) => {
+    return typeof props.lineHeight === 'number' ? props.lineHeight : props.lineHeight(content)
   }
   const addResult = (newLine: boolean) => {
     const content = props.state[i]
-    const lineHeight = typeof props.lineHeight === 'number' ? props.lineHeight : props.lineHeight(content)
+    const lineHeight = getLineHeight(content)
     if (lineHeight > maxLineHeight) {
       maxLineHeight = lineHeight
     }
@@ -103,10 +122,12 @@ export function flowLayout<T>(props: {
     addResult(false)
   }
   if (maxLineHeight === 0) {
-    maxLineHeight = typeof props.lineHeight === 'number' ? props.lineHeight : props.lineHeight(props.endContent)
+    maxLineHeight = getLineHeight(props.endContent)
   }
   lineHeights.push(maxLineHeight)
   layoutResult.push({ x, y, i, content: props.endContent, visible, row, column })
+  align()
+
   const newContentHeight = y + maxLineHeight - props.scrollY
   return {
     layoutResult,
@@ -139,6 +160,9 @@ export function getFlowLayoutLocation<T>(
   getHeight?: (content: T) => number | undefined,
 ) {
   if (y < scrollY) {
+    return 0
+  }
+  if (layoutResult.length > 0 && y < layoutResult[0].y) {
     return 0
   }
   const getLineHeight = (row: number) => {

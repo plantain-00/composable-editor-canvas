@@ -23,6 +23,8 @@ export function useFlowLayoutTextEditor(props: {
   onBlur?: () => void
   onFocus?: () => void
   autoFocus?: boolean
+  align?: 'left' | 'center' | 'right'
+  verticalAlign?: 'top' | 'middle' | 'bottom'
 }) {
   const font = `${props.fontSize}px ${props.fontFamily}`
   const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
@@ -74,6 +76,8 @@ export function useFlowLayoutTextEditor(props: {
     isPartOfComposition: content => isWordCharactor(content),
     getComposition,
     endContent: '',
+    align: props.align,
+    verticalAlign: props.verticalAlign,
     onCompositionEnd(e) {
       inputText(e.data)
       if (ref.current) {

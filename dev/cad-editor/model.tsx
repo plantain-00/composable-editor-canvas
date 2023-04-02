@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -1231,4 +1231,54 @@ export function trimOffsetResult(points: Position[], point: Position) {
     return newLines.map(line => line.points)
   }
   return [points]
+}
+
+export function TextEditor(props: JsonEditorProps<string> & Position & {
+  width: number
+  fontSize: number
+  color: number
+  fontFamily: string
+}) {
+  const { state, setState, undo, redo } = useUndoRedo(props.value.split(''))
+  const { renderEditor } = useFlowLayoutTextEditor({
+    state,
+    setState,
+    width: props.width,
+    height: 100,
+    fontSize: props.fontSize,
+    fontFamily: props.fontFamily,
+    lineHeight: props.fontSize * 1.2,
+    processInput(e) {
+      if (e.key === 'Escape') {
+        props.onCancel?.()
+        return true
+      }
+      e.stopPropagation()
+      if (metaKeyIfMacElseCtrlKey(e)) {
+        if (e.key === 'z') {
+          e.shiftKey ? redo() : undo()
+          return true
+        }
+      }
+      return false
+    },
+    autoHeight: true,
+    autoFocus: true,
+    onBlur: () => {
+      setTimeout(() => {
+        if (!props.readOnly && props.setValue) {
+          const value = state.join('')
+          if (value !== props.value) {
+            props.setValue(value)
+          }
+        }
+      }, 0)
+    },
+    style: { border: 'unset' },
+  })
+  return (
+    <div style={{ position: 'absolute', zIndex: 10, ...controlStyle, padding: '0px', left: `${props.x - 1}px`, top: `${props.y - 1}px`, }}>
+      {renderEditor({ target: reactCanvasRenderTarget, getTextColors: () => ({ color: props.color }) })}
+    </div>
+  )
 }

@@ -23,6 +23,8 @@ export function useFlowLayoutEditor<T>(props: {
   style?: React.CSSProperties
   autoHeight?: boolean
   readOnly?: boolean
+  align?: 'left' | 'center' | 'right'
+  verticalAlign?: 'top' | 'middle' | 'bottom'
   onBlur?: () => void
   onFocus?: () => void
   isNewLineContent?: (content: T) => boolean
@@ -252,7 +254,19 @@ export function useFlowLayoutEditor<T>(props: {
     getComposition: props.getComposition,
     endContent: props.endContent,
     scrollY,
+    align: props.align,
   })
+  if (!props.autoHeight && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
+    let offset = props.height - lineHeights.reduce((p, c) => p + c)
+    if (offset > 0) {
+      if (props.verticalAlign === 'middle') {
+        offset /= 2
+      }
+      layoutResult.forEach(r => {
+        r.y += offset
+      })
+    }
+  }
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
   }

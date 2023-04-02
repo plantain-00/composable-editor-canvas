@@ -9248,24 +9248,15 @@ function getModel(ctx) {
       const fontSize = content.fontSize * transform.scale;
       if (content.width) {
         return /* @__PURE__ */ React.createElement(
-          ctx.ExpressionEditor,
+          ctx.TextEditor,
           {
             fontSize,
             width: content.width * transform.scale,
-            autoHeight: true,
-            autoFocus: true,
             color: content.color,
-            numberColor: content.color,
-            enterKey: "\\n",
+            fontFamily: content.fontFamily,
             onCancel: cancel,
-            style: {
-              zIndex: 10,
-              position: "absolute",
-              left: \`\${p.x - 1}px\`,
-              top: \`\${p.y - 1}px\`,
-              fontFamily: content.fontFamily,
-              padding: "0px"
-            },
+            x: p.x,
+            y: p.y,
             value: content.text,
             setValue: (v) => update((c) => {
               if (isTextContent(c)) {
