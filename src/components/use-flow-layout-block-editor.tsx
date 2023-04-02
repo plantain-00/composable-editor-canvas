@@ -34,6 +34,8 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   keepSelectionOnBlur?: boolean
   isSameType?: (a: V, b: V | undefined) => boolean
   getHeight?: (content: T) => number | undefined
+  align?: 'left' | 'center' | 'right'
+  verticalAlign?: 'top' | 'middle' | 'bottom'
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
@@ -368,6 +370,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       scrollX: block.inlineStart,
       scrollY: scrollY + newContentHeight + blockStart,
       row,
+      align: props.align,
     })
     layoutResult.push(r.layoutResult)
     if (!block.void) {
@@ -379,6 +382,20 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     blockEnd = end
   })
   newContentHeight += blockEnd
+
+  if (props.height && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
+    let offset = props.height - newContentHeight
+    if (offset > 0) {
+      if (props.verticalAlign === 'middle') {
+        offset /= 2
+      }
+      layoutResult.forEach(r => {
+        r.forEach(f => {
+          f.y += offset
+        })
+      })
+    }
+  }
 
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)

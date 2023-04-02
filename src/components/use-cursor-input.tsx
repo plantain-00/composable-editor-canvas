@@ -49,6 +49,7 @@ export function useCursorInput(
         {onKeyDown && cursorPosition && <input
           ref={inputRef}
           value={text}
+          autoComplete='false'
           style={{ width: '50px', opacity: options?.hideIfNoInput && !text ? 0 : undefined, ...options?.inputStyle }}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => onKeyDown(e, text, cursorPosition)}

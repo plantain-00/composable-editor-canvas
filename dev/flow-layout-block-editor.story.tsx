@@ -1,26 +1,30 @@
 import produce from "immer"
 import React from "react"
-import { FlowLayoutBlock, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutBlockEditor } from "../src"
+import { EnumEditor, FlowLayoutBlock, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutBlockEditor } from "../src"
 
 export default () => {
   const [state, setState] = React.useState(() => new Array(3).fill(0).map(() => ({
-    children: new Array(30).fill(0).map(() => ({
+    children: new Array(20).fill(0).map(() => ({
       radius: 5 + Math.round(Math.random() * 20),
       color: Math.round(Math.random() * 0xffffff),
     })),
     blockStart: 5,
     blockEnd: 5
   })))
+  const [align, setAlign] = React.useState<'left' | 'center' | 'right'>('left')
+  const [verticalAlign, setVerticalAlign] = React.useState<'top' | 'middle' | 'bottom'>('top')
   const width = 400
   const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, inputInline, getCopiedContents } = useFlowLayoutBlockEditor<{ radius: number, color: number }>({
     state,
     setState: recipe => setState(produce(state, recipe)),
     width,
-    height: 200,
+    height: 400,
     lineHeight: c => c.radius * 2,
     getWidth: c => c.radius * 2,
     endContent: { radius: 0, color: 0 },
     isNewLineContent: content => content.radius === 0,
+    align,
+    verticalAlign,
     processInput(e) {
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'v') {
@@ -62,5 +66,11 @@ export default () => {
     })
   })
   const result = target.renderResult(children, width, actualHeight)
-  return renderEditor(result)
+  return (
+    <>
+      {renderEditor(result)}
+      <EnumEditor enums={['left', 'center', 'right']} value={align} setValue={setAlign} />
+      <EnumEditor enums={['top', 'middle', 'bottom']} value={verticalAlign} setValue={setVerticalAlign} />
+    </>
+  )
 }
