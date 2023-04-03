@@ -156,6 +156,7 @@ export type Model<T> = Partial<FeatureModels> & {
   offset?(content: T, point: Position, distance: number): T | T[] | void
   render?<V>(content: T, ctx: RenderContext<V>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
+  renderChild?<V>(content: T, child: number[], ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
     editPoints: (EditPoint<BaseContent> & { type?: 'move' })[]
@@ -173,6 +174,7 @@ export type Model<T> = Partial<FeatureModels> & {
       startTime: (max: number) => void,
       acquirePoint: (handle: (point: Position, target?: SnapTarget) => void) => void,
       acquireContent: (select: Select, handle: (id: readonly number[][]) => void) => void,
+      activeChild?: number[]
     },
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
   editPanel?(
@@ -190,6 +192,7 @@ export type Model<T> = Partial<FeatureModels> & {
   getEndPoint?(content: T): Position
   getParam?(content: T, point: Position): number
   getPoint?(content: T, param: number): Position
+  getChildByPoint?(content: T, point: Position): number[] | undefined
 }
 
 export interface Select {
@@ -229,7 +232,7 @@ export function registerModel<T extends BaseContent>(model: Model<T>) {
 
 export type Geometries<T extends object = object> = T & {
   /**
-   * Used for (1)line intersection, (2)select line by click, (3)select line by box, (4)snap point
+   * Used for (1)line intersection, (2)select line by click, (3)select line by box, (4)snap point, (5)select child line
    */
   lines: [Position, Position][]
   /**

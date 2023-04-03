@@ -12,6 +12,7 @@ export function Renderer(props: {
   othersSelectedContents?: readonly { selection: number[], operator: string }[]
   hovering?: readonly number[][]
   active?: number
+  activeChild?: number[]
   x: number
   y: number
   scale: number
@@ -224,6 +225,13 @@ export function Renderer(props: {
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {
         assistentContentsChildren2.push(RenderIfSelected(content, { color: transformColor(0xff0000), target, strokeWidth, contents: props.contents }))
+      }
+
+      if (props.active && props.active === index[0] && props.activeChild) {
+        const RenderChild = getContentModel(content)?.renderChild
+        if (RenderChild) {
+          assistentContentsChildren2.push(RenderChild(content, props.activeChild, { color: transformColor(0x00ff00), target, strokeWidth: strokeWidth + 2, contents: props.contents }))
+        }
       }
     }
   }

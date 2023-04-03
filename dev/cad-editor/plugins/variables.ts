@@ -8798,12 +8798,17 @@ export {
 `,
 `// dev/cad-editor/plugins/table.plugin.tsx
 function getModel(ctx) {
-  const TableRow = ctx.and({
+  const TableRow = {
     height: ctx.number
-  });
+  };
+  const MergedCell = {
+    row: ctx.tuple(ctx.number, ctx.number),
+    column: ctx.tuple(ctx.number, ctx.number)
+  };
   const TableContent = ctx.and(ctx.BaseContent("table"), ctx.Position, ctx.StrokeFields, {
     rows: [TableRow],
-    widths: [ctx.number]
+    widths: [ctx.number],
+    mergedCells: ctx.optional([MergedCell])
   });
   const geometriesCache = new ctx.WeakmapCache();
   const getGeometries = (content) => {
@@ -8817,32 +8822,75 @@ function getModel(ctx) {
       const columns = [];
       const xs = [];
       const ys = [];
+      const children = [];
       let x = content.x;
       content.widths.forEach((w) => {
         x += w;
         xs.push(x - w / 2);
-        lines.push([{ x, y: content.y }, { x, y: content.y + height }]);
       });
-      let y = content.y;
+      let yStart = content.y;
       content.rows.forEach((row, i) => {
-        y += row.height;
-        ys.push(y - row.height / 2);
-        lines.push([{ x: content.x, y }, { x: content.x + width, y }]);
-        let x2 = content.x;
+        const yMiddle = yStart + row.height / 2;
+        const yEnd = yStart + row.height;
+        ys.push(yMiddle);
+        let xStart = content.x;
         content.widths.forEach((w, j) => {
-          x2 += w;
-          rows.push({ x: x2 - w / 2, y, index: i });
-          columns.push({ x: x2, y: y - row.height / 2, index: j });
+          var _a, _b, _c;
+          const xMiddle = xStart + w / 2;
+          const xEnd = xStart + w;
+          if (!((_a = content.mergedCells) == null ? void 0 : _a.some((c) => i >= c.row[0] && i < c.row[0] + c.row[1] - 1 && j >= c.column[0] && j < c.column[0] + c.column[1]))) {
+            lines.push([{ x: xStart, y: yEnd }, { x: xEnd, y: yEnd }]);
+            rows.push({ x: xMiddle, y: yEnd, index: i });
+          }
+          if (!((_b = content.mergedCells) == null ? void 0 : _b.some((c) => i >= c.row[0] && i < c.row[0] + c.row[1] && j >= c.column[0] && j < c.column[0] + c.column[1] - 1))) {
+            lines.push([{ x: xEnd, y: yStart }, { x: xEnd, y: yEnd }]);
+            columns.push({ x: xEnd, y: yMiddle, index: j });
+          }
+          const cell = (_c = content.mergedCells) == null ? void 0 : _c.find((c) => i >= c.row[0] && i < c.row[0] + c.row[1] && j >= c.column[0] && j < c.column[0] + c.column[1]);
+          if (cell) {
+            if (i === cell.row[0] && j === cell.column[0]) {
+              const end = {
+                x: xEnd,
+                y: yEnd
+              };
+              for (let k = 1; k < cell.column[1]; k++) {
+                end.x += content.widths[i + k];
+              }
+              for (let k = 1; k < cell.row[1]; k++) {
+                end.y += content.rows[i + k].height;
+              }
+              children.push({
+                row: i,
+                column: j,
+                region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end })
+              });
+            }
+          } else {
+            children.push({
+              row: i,
+              column: j,
+              region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end: { x: xEnd, y: yEnd } })
+            });
+          }
+          xStart = xEnd;
         });
+        yStart = yEnd;
       });
+      const bounding = { start: { x: content.x, y: content.y }, end: { x: content.x + width, y: content.y + height } };
+      const polygon = ctx.getPolygonFromTwoPointsFormRegion(bounding);
       return {
         lines,
         rows,
         columns,
         xs,
         ys,
-        bounding: { start: { x: content.x, y: content.y }, end: { x: content.x + width, y: content.y + height } },
-        renderingLines: lines.map((r) => ctx.dashedPolylineToLines(r, content.dashArray)).flat()
+        bounding,
+        renderingLines: lines.map((r) => ctx.dashedPolylineToLines(r, content.dashArray)).flat(),
+        regions: [{
+          points: polygon,
+          lines: Array.from(ctx.iteratePolygonLines(polygon))
+        }],
+        children
       };
     });
   };
@@ -8867,6 +8915,14 @@ function getModel(ctx) {
       return renderCtx.target.renderGroup(geometries.renderingLines.map((line) => {
         return renderCtx.target.renderPolyline(line, options);
       }));
+    },
+    renderChild(content, [row, column], { color, target, strokeWidth }) {
+      const { children } = getGeometries(content);
+      const child = children.find((c) => c.row === row && c.column === column);
+      if (child) {
+        return target.renderPolygon(child.region, { strokeColor: color, strokeWidth });
+      }
+      return target.renderEmpty();
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -8915,10 +8971,9 @@ function getModel(ctx) {
               y: content.y,
               cursor: "not-allowed",
               execute(c) {
-                if (!isTableContent(c)) {
-                  return;
+                if (isTableContent(c)) {
+                  deleteTableColumn(c, i);
                 }
-                c.widths.splice(i, 1);
               }
             })),
             ...ys.map((p, i) => ({
@@ -8926,10 +8981,9 @@ function getModel(ctx) {
               y: p,
               cursor: "not-allowed",
               execute(c) {
-                if (!isTableContent(c)) {
-                  return;
+                if (isTableContent(c)) {
+                  deleteTableRow(c, i);
                 }
-                c.rows.splice(i, 1);
               }
             })),
             ...xs.map((p, i) => ({
@@ -8937,10 +8991,9 @@ function getModel(ctx) {
               y: content.y,
               cursor: "cell",
               execute(c) {
-                if (!isTableContent(c)) {
-                  return;
+                if (isTableContent(c)) {
+                  insertTableColumn(c, i);
                 }
-                c.widths.splice(i, 0, c.widths[i]);
               }
             })),
             ...ys.map((p, i) => ({
@@ -8948,10 +9001,9 @@ function getModel(ctx) {
               y: p + content.rows[i].height / 2,
               cursor: "cell",
               execute(c) {
-                if (!isTableContent(c)) {
-                  return;
+                if (isTableContent(c)) {
+                  insertTableRow(c, i);
                 }
-                c.rows.splice(i, 0, c.rows[i]);
               }
             }))
           ]
@@ -8959,8 +9011,27 @@ function getModel(ctx) {
       });
     },
     getGeometries,
-    propertyPanel(content, update, contents) {
+    propertyPanel(content, update, contents, options) {
+      var _a, _b, _c, _d;
+      const properties = {};
+      if (options.activeChild) {
+        const [row, column] = options.activeChild;
+        properties.row = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: row });
+        properties.column = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: column });
+        const mergedCell = (_b = (_a = content.mergedCells) == null ? void 0 : _a.find) == null ? void 0 : _b.call(_a, (c) => c.row[0] === row && c.column[0] === column);
+        properties["row span"] = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_c = mergedCell == null ? void 0 : mergedCell.row[1]) != null ? _c : 1, setValue: (v) => update((c) => {
+          if (isTableContent(c)) {
+            setTableRowSpan(c, row, column, v);
+          }
+        }) });
+        properties["column span"] = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_d = mergedCell == null ? void 0 : mergedCell.column[1]) != null ? _d : 1, setValue: (v) => update((c) => {
+          if (isTableContent(c)) {
+            setTableColumnSpan(c, row, column, v);
+          }
+        }) });
+      }
       return {
+        ...properties,
         x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
           if (isTableContent(c)) {
             c.x = v;
@@ -8974,7 +9045,15 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    isValid: (c, p) => ctx.validate(c, TableContent, p)
+    isValid: (c, p) => ctx.validate(c, TableContent, p),
+    getChildByPoint(content, point) {
+      const { children } = getGeometries(content);
+      const child = children.find((c) => ctx.pointInPolygon(point, c.region));
+      if (child) {
+        return [child.row, child.column];
+      }
+      return;
+    }
   };
 }
 function isTableContent(content) {
@@ -9032,6 +9111,94 @@ function getCommand(ctx) {
     selectCount: 0,
     icon
   };
+}
+function deleteTableColumn(c, i) {
+  c.widths.splice(i, 1);
+  if (c.mergedCells) {
+    const indexes = [];
+    c.mergedCells.forEach((cell, k) => {
+      if (i < cell.column[0]) {
+        cell.column[0]--;
+      } else if (i === cell.column[0]) {
+        indexes.unshift(k);
+      } else if (i < cell.column[0] + cell.column[1]) {
+        cell.column[1]--;
+      }
+    });
+    indexes.forEach((d) => {
+      var _a;
+      return (_a = c.mergedCells) == null ? void 0 : _a.splice(d, 1);
+    });
+  }
+}
+function deleteTableRow(c, i) {
+  c.rows.splice(i, 1);
+  if (c.mergedCells) {
+    const indexes = [];
+    c.mergedCells.forEach((cell, k) => {
+      if (i < cell.row[0]) {
+        cell.row[0]--;
+      } else if (i === cell.row[0]) {
+        indexes.unshift(k);
+      } else if (i < cell.row[0] + cell.row[1]) {
+        cell.row[1]--;
+      }
+    });
+    indexes.forEach((d) => {
+      var _a;
+      return (_a = c.mergedCells) == null ? void 0 : _a.splice(d, 1);
+    });
+  }
+}
+function setTableRowSpan(c, row, column, v) {
+  if (!c.mergedCells)
+    c.mergedCells = [];
+  const index = c.mergedCells.findIndex((m) => m.row[0] === row && m.column[0] === column);
+  if (index < 0) {
+    c.mergedCells.push({ row: [row, v], column: [column, 1] });
+  } else if (v <= 1 && c.mergedCells[index].column[1] <= 1) {
+    c.mergedCells.splice(index, 1);
+    if (c.mergedCells.length === 0)
+      c.mergedCells = void 0;
+  } else {
+    c.mergedCells[index].row[1] = v;
+  }
+}
+function setTableColumnSpan(c, row, column, v) {
+  if (!c.mergedCells)
+    c.mergedCells = [];
+  const index = c.mergedCells.findIndex((m) => m.row[0] === row && m.column[0] === column);
+  if (index < 0) {
+    c.mergedCells.push({ row: [row, 1], column: [column, v] });
+  } else if (v <= 1 && c.mergedCells[index].row[1] <= 1) {
+    c.mergedCells.splice(index, 1);
+    if (c.mergedCells.length === 0)
+      c.mergedCells = void 0;
+  } else {
+    c.mergedCells[index].column[1] = v;
+  }
+}
+function insertTableColumn(c, i) {
+  var _a;
+  c.widths.splice(i, 0, c.widths[i]);
+  (_a = c.mergedCells) == null ? void 0 : _a.forEach((cell) => {
+    if (i < cell.column[0]) {
+      cell.column[0]++;
+    } else if (i < cell.column[0] + cell.column[1] - 1) {
+      cell.column[1]++;
+    }
+  });
+}
+function insertTableRow(c, i) {
+  var _a;
+  c.rows.splice(i, 0, c.rows[i]);
+  (_a = c.mergedCells) == null ? void 0 : _a.forEach((cell) => {
+    if (i < cell.row[0]) {
+      cell.row[0]++;
+    } else if (i < cell.row[0] + cell.row[1] - 1) {
+      cell.row[1]++;
+    }
+  });
 }
 export {
   getCommand,
