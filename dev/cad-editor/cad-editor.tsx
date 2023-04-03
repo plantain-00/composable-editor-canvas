@@ -166,6 +166,7 @@ export const CADEditor = React.forwardRef((props: {
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
   const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
   const [active, setActive] = React.useState<number>()
+  const [activeChild, setActiveChild] = React.useState<number[]>()
   const activeContent = active !== undefined ? editingContent[active] : undefined
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
   const activeViewport = activeContent && isViewportContent(activeContent) ? activeContent : undefined
@@ -182,8 +183,8 @@ export const CADEditor = React.forwardRef((props: {
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
     localStorageYKey: props.id + '-y',
-    setXOffset: activeContent ? (offset) => setXOffset(x => x + offset) : undefined,
-    setYOffset: activeContent ? (offset) => setYOffset(y => y + offset) : undefined,
+    setXOffset: activeViewport ? (offset) => setXOffset(x => x + offset) : undefined,
+    setYOffset: activeViewport ? (offset) => setYOffset(y => y + offset) : undefined,
   })
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
@@ -308,6 +309,10 @@ export const CADEditor = React.forwardRef((props: {
     }
     e.preventDefault()
   })
+  useKey((e) => e.key === 'Escape', () => {
+    setActive(undefined)
+    setActiveChild(undefined)
+  }, [setActive, setActiveChild])
   useDelayedAction(xOffset !== 0 || yOffset !== 0 || scaleOffset !== 1, 500, () => {
     applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
     setXOffset(0)
@@ -464,11 +469,16 @@ export const CADEditor = React.forwardRef((props: {
       const indexes = getSortedContents(editingContent).indexes
       const index = getContentByClickPosition(editingContent, point, () => true, getContentModel, false, contentVisible, indexes)
       if (index !== undefined) {
+        const content = editingContent[index[0]]
+        if (content) {
+          setActiveChild(getContentModel(content)?.getChildByPoint?.(content, point))
+        }
         setActive(index[0])
         return
       }
       if (active) {
         setActive(undefined)
+        setActiveChild(undefined)
         return
       }
       const result = zoomContentsToFit(width, height, editingContent, state, 0.8, transform.rotate)
@@ -802,6 +812,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, {
         startTime,
+        activeChild: id === active ? activeChild : undefined,
         acquirePoint: handle => {
           commandResultHandler.current = p => {
             if (is<SnapResult>(p, SnapResult)) {
@@ -875,6 +886,7 @@ export const CADEditor = React.forwardRef((props: {
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           active={active}
+          activeChild={activeChild}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
