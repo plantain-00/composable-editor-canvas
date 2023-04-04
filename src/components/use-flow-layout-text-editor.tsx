@@ -3,6 +3,7 @@ import { getTextSizeFromCache } from "../utils/text"
 import { ReactRenderTarget } from "./react-render-target/react-render-target"
 import { useFlowLayoutEditor } from "./use-flow-layout-editor"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
+import { Align, VerticalAlign } from "../utils/flow-layout"
 
 /**
  * @public
@@ -23,8 +24,8 @@ export function useFlowLayoutTextEditor(props: {
   onBlur?: () => void
   onFocus?: () => void
   autoFocus?: boolean
-  align?: 'left' | 'center' | 'right'
-  verticalAlign?: 'top' | 'middle' | 'bottom'
+  align?: Align
+  verticalAlign?: VerticalAlign
 }) {
   const font = `${props.fontSize}px ${props.fontFamily}`
   const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0

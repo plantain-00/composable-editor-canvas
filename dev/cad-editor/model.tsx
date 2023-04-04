@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
-import produce from 'immer'
+import produce, { Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -156,7 +156,6 @@ export type Model<T> = Partial<FeatureModels> & {
   offset?(content: T, point: Position, distance: number): T | T[] | void
   render?<V>(content: T, ctx: RenderContext<V>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
-  renderChild?<V>(content: T, child: number[], ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
     editPoints: (EditPoint<BaseContent> & { type?: 'move' })[]
@@ -182,6 +181,7 @@ export type Model<T> = Partial<FeatureModels> & {
     transform: Transform,
     update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
     cancel: () => void,
+    activeChild?: number[],
   ): JSX.Element
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
@@ -192,7 +192,7 @@ export type Model<T> = Partial<FeatureModels> & {
   getEndPoint?(content: T): Position
   getParam?(content: T, point: Position): number
   getPoint?(content: T, param: number): Position
-  getChildByPoint?(content: T, point: Position): number[] | undefined
+  getChildByPoint?(content: T, point: Position): { child: number[], patches?: [Patch[], Patch[]] } | undefined
 }
 
 export interface Select {
@@ -1238,16 +1238,20 @@ export function trimOffsetResult(points: Position[], point: Position) {
 
 export function TextEditor(props: JsonEditorProps<string> & Position & {
   width: number
+  height?: number
   fontSize: number
   color: number
   fontFamily: string
+  align?: Align
+  verticalAlign?: VerticalAlign
+  borderWidth?: number
 }) {
   const { state, setState, undo, redo } = useUndoRedo(props.value.split(''))
   const { renderEditor } = useFlowLayoutTextEditor({
     state,
     setState,
     width: props.width,
-    height: 100,
+    height: props.height ?? 100,
     fontSize: props.fontSize,
     fontFamily: props.fontFamily,
     lineHeight: props.fontSize * 1.2,
@@ -1265,7 +1269,7 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
       }
       return false
     },
-    autoHeight: true,
+    autoHeight: !props.height,
     autoFocus: true,
     onBlur: () => {
       setTimeout(() => {
@@ -1277,10 +1281,13 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
         }
       }, 0)
     },
+    align: props.align,
+    verticalAlign: props.verticalAlign,
     style: { border: 'unset' },
   })
+  const borderWidth = props.borderWidth ?? 1
   return (
-    <div style={{ position: 'absolute', zIndex: 10, ...controlStyle, padding: '0px', left: `${props.x - 1}px`, top: `${props.y - 1}px`, }}>
+    <div style={{ position: 'absolute', zIndex: 10, ...controlStyle, padding: '0px', left: `${props.x - borderWidth}px`, top: `${props.y - borderWidth}px`, borderWidth: `${borderWidth}px` }}>
       {renderEditor({ target: reactCanvasRenderTarget, getTextColors: () => ({ color: props.color }) })}
     </div>
   )

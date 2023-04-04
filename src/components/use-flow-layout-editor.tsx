@@ -1,5 +1,5 @@
 import * as React from "react"
-import { flowLayout, getFlowLayoutLocation } from "../utils/flow-layout"
+import { Align, VerticalAlign, flowLayout, getFlowLayoutLocation } from "../utils/flow-layout"
 import { equals, Position } from "../utils/geometry"
 import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
@@ -23,8 +23,8 @@ export function useFlowLayoutEditor<T>(props: {
   style?: React.CSSProperties
   autoHeight?: boolean
   readOnly?: boolean
-  align?: 'left' | 'center' | 'right'
-  verticalAlign?: 'top' | 'middle' | 'bottom'
+  align?: Align
+  verticalAlign?: VerticalAlign
   onBlur?: () => void
   onFocus?: () => void
   isNewLineContent?: (content: T) => boolean
@@ -255,18 +255,8 @@ export function useFlowLayoutEditor<T>(props: {
     endContent: props.endContent,
     scrollY,
     align: props.align,
+    verticalAlign: props.verticalAlign,
   })
-  if (!props.autoHeight && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
-    let offset = props.height - lineHeights.reduce((p, c) => p + c)
-    if (offset > 0) {
-      if (props.verticalAlign === 'middle') {
-        offset /= 2
-      }
-      layoutResult.forEach(r => {
-        r.y += offset
-      })
-    }
-  }
   if (contentHeight < newContentHeight) {
     setContentHeight(newContentHeight)
   }

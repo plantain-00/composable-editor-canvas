@@ -2,7 +2,7 @@ import { castDraft } from "immer"
 import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
-import { equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position } from "../utils"
+import { Align, equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position, VerticalAlign } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
@@ -34,8 +34,8 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   keepSelectionOnBlur?: boolean
   isSameType?: (a: V, b: V | undefined) => boolean
   getHeight?: (content: T) => number | undefined
-  align?: 'left' | 'center' | 'right'
-  verticalAlign?: 'top' | 'middle' | 'bottom'
+  align?: Align
+  verticalAlign?: VerticalAlign
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location

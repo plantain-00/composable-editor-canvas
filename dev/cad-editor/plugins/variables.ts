@@ -8798,8 +8798,16 @@ export {
 `,
 `// dev/cad-editor/plugins/table.plugin.tsx
 function getModel(ctx) {
+  const TableCellText = ctx.and(ctx.TextStyle, {
+    text: ctx.string,
+    color: ctx.number,
+    column: ctx.number,
+    align: ctx.optional(ctx.Align),
+    verticalAlign: ctx.optional(ctx.VerticalAlign)
+  });
   const TableRow = {
-    height: ctx.number
+    height: ctx.number,
+    cells: ctx.optional([TableCellText])
   };
   const MergedCell = {
     row: ctx.tuple(ctx.number, ctx.number),
@@ -8811,6 +8819,7 @@ function getModel(ctx) {
     mergedCells: ctx.optional([MergedCell])
   });
   const geometriesCache = new ctx.WeakmapCache();
+  const textLayoutResultCache = new ctx.WeakmapMap2Cache();
   const getGeometries = (content) => {
     return geometriesCache.get(content, () => {
       const lines = [];
@@ -8862,6 +8871,10 @@ function getModel(ctx) {
               children.push({
                 row: i,
                 column: j,
+                x: xStart - content.x,
+                y: yStart - content.y,
+                width: end.x - xStart,
+                height: end.y - yStart,
                 region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end })
               });
             }
@@ -8869,6 +8882,10 @@ function getModel(ctx) {
             children.push({
               row: i,
               column: j,
+              x: xStart - content.x,
+              y: yStart - content.y,
+              width: w,
+              height: row.height,
               region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end: { x: xEnd, y: yEnd } })
             });
           }
@@ -8912,17 +8929,43 @@ function getModel(ctx) {
         strokeWidth: renderCtx.transformStrokeWidth((_a = strokeStyleContent.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray
       };
-      return renderCtx.target.renderGroup(geometries.renderingLines.map((line) => {
-        return renderCtx.target.renderPolyline(line, options);
-      }));
-    },
-    renderChild(content, [row, column], { color, target, strokeWidth }) {
-      const { children } = getGeometries(content);
-      const child = children.find((c) => c.row === row && c.column === column);
-      if (child) {
-        return target.renderPolygon(child.region, { strokeColor: color, strokeWidth });
-      }
-      return target.renderEmpty();
+      const children = geometries.renderingLines.map((line) => renderCtx.target.renderPolyline(line, options));
+      content.rows.forEach((row, i) => {
+        var _a2;
+        (_a2 = row.cells) == null ? void 0 : _a2.forEach((cell) => {
+          var _a3, _b;
+          const child = geometries.children.find((f) => f.row === i && f.column === cell.column);
+          if (!child)
+            return;
+          const { width, height } = child;
+          const textLayout = textLayoutResultCache.get(cell, width, height, () => {
+            var _a4, _b2;
+            const state = cell.text.split("");
+            const getTextWidth = (text) => {
+              var _a5, _b3;
+              return (_b3 = (_a5 = ctx.getTextSizeFromCache(\`\${cell.fontSize}px \${cell.fontFamily}\`, text)) == null ? void 0 : _a5.width) != null ? _b3 : 0;
+            };
+            return ctx.flowLayout({
+              state,
+              width,
+              height,
+              lineHeight: cell.fontSize * 1.2,
+              getWidth: getTextWidth,
+              align: (_a4 = cell.align) != null ? _a4 : "center",
+              verticalAlign: (_b2 = cell.verticalAlign) != null ? _b2 : "middle",
+              endContent: "",
+              isNewLineContent: (c) => c === "\\n",
+              isPartOfComposition: (c) => ctx.isWordCharactor(c),
+              getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c)
+            });
+          });
+          for (const { x, y, content: text } of textLayout.layoutResult) {
+            const textWidth = (_b = (_a3 = ctx.getTextSizeFromCache(\`\${cell.fontSize}px \${cell.fontFamily}\`, text)) == null ? void 0 : _a3.width) != null ? _b : 0;
+            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + cell.fontSize, text, cell.color, cell.fontSize, cell.fontFamily, { textAlign: "center", cacheKey: cell }));
+          }
+        });
+      });
+      return renderCtx.target.renderGroup(children);
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -9012,23 +9055,51 @@ function getModel(ctx) {
     },
     getGeometries,
     propertyPanel(content, update, contents, options) {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e, _f, _g;
       const properties = {};
       if (options.activeChild) {
         const [row, column] = options.activeChild;
         properties.row = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: row });
         properties.column = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { readOnly: true, value: column });
         const mergedCell = (_b = (_a = content.mergedCells) == null ? void 0 : _a.find) == null ? void 0 : _b.call(_a, (c) => c.row[0] === row && c.column[0] === column);
-        properties["row span"] = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_c = mergedCell == null ? void 0 : mergedCell.row[1]) != null ? _c : 1, setValue: (v) => update((c) => {
+        properties.rowSpan = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_c = mergedCell == null ? void 0 : mergedCell.row[1]) != null ? _c : 1, setValue: (v) => update((c) => {
           if (isTableContent(c)) {
             setTableRowSpan(c, row, column, v);
           }
         }) });
-        properties["column span"] = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_d = mergedCell == null ? void 0 : mergedCell.column[1]) != null ? _d : 1, setValue: (v) => update((c) => {
+        properties.columnSpan = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_d = mergedCell == null ? void 0 : mergedCell.column[1]) != null ? _d : 1, setValue: (v) => update((c) => {
           if (isTableContent(c)) {
             setTableColumnSpan(c, row, column, v);
           }
         }) });
+        const cell = (_e = content.rows[row].cells) == null ? void 0 : _e.find((c) => c.column === column);
+        if (cell) {
+          properties.fontSize = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: cell.fontSize, setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.fontSize = v);
+            }
+          }) });
+          properties.fontFamily = /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: cell.fontFamily, setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.fontFamily = v);
+            }
+          }) });
+          properties.color = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { type: "color", value: cell.color, setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.color = v);
+            }
+          }) });
+          properties.align = /* @__PURE__ */ React.createElement(ctx.EnumEditor, { enums: ctx.aligns, value: (_f = cell.align) != null ? _f : "center", setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.align = v);
+            }
+          }) });
+          properties.verticalAlign = /* @__PURE__ */ React.createElement(ctx.EnumEditor, { enums: ctx.verticalAligns, value: (_g = cell.verticalAlign) != null ? _g : "middle", setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.verticalAlign = v);
+            }
+          }) });
+        }
       }
       return {
         ...properties,
@@ -9045,12 +9116,71 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
+    editPanel(content, transform, update, cancel, activeChild) {
+      var _a, _b, _c;
+      const p = ctx.transformPosition(content, transform);
+      if (!activeChild)
+        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      const [row, column] = activeChild;
+      const cell = (_a = content.rows[row].cells) == null ? void 0 : _a.find((c) => c.column === column);
+      if (!cell)
+        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      const { children } = getGeometries(content);
+      const child = children.find((f) => f.row === row && f.column === column);
+      if (!child)
+        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      const fontSize = cell.fontSize * transform.scale;
+      return /* @__PURE__ */ React.createElement(
+        ctx.TextEditor,
+        {
+          fontSize,
+          width: child.width * transform.scale,
+          height: child.height * transform.scale,
+          color: cell.color,
+          fontFamily: cell.fontFamily,
+          align: (_b = cell.align) != null ? _b : "center",
+          verticalAlign: (_c = cell.verticalAlign) != null ? _c : "middle",
+          onCancel: cancel,
+          x: p.x + child.x * transform.scale,
+          y: p.y + child.y * transform.scale,
+          borderWidth: 0,
+          value: cell.text,
+          setValue: (v) => update((c) => {
+            if (isTableContent(c)) {
+              setTableCell(c, row, column, (t) => t.text = v);
+            }
+          })
+        }
+      );
+    },
     isValid: (c, p) => ctx.validate(c, TableContent, p),
     getChildByPoint(content, point) {
+      var _a;
       const { children } = getGeometries(content);
       const child = children.find((c) => ctx.pointInPolygon(point, c.region));
       if (child) {
-        return [child.row, child.column];
+        if (!((_a = content.rows[child.row].cells) == null ? void 0 : _a.some((c) => c.column === child.column))) {
+          const [, patches, reversePatches] = ctx.produceWithPatches(content, (draft) => {
+            const row = draft.rows[child.row];
+            if (!row.cells) {
+              row.cells = [];
+            }
+            row.cells.push({
+              text: "",
+              color: 0,
+              fontSize: 16,
+              fontFamily: "monospace",
+              column: child.column
+            });
+          });
+          return {
+            child: [child.row, child.column],
+            patches: [patches, reversePatches]
+          };
+        }
+        return {
+          child: [child.row, child.column]
+        };
       }
       return;
     }
@@ -9200,6 +9330,13 @@ function insertTableRow(c, i) {
     }
   });
 }
+function setTableCell(c, row, column, update) {
+  var _a;
+  const t = (_a = c.rows[row].cells) == null ? void 0 : _a.find((c2) => c2.column === column);
+  if (t) {
+    update(t);
+  }
+}
 export {
   getCommand,
   getModel,
@@ -9228,10 +9365,9 @@ function getModel(ctx) {
         lineHeight: (_a = content.lineHeight) != null ? _a : content.fontSize * 1.2,
         getWidth: getTextWidth,
         endContent: "",
-        isNewLineContent: (content2) => content2 === "\\n",
-        isPartOfComposition: (content2) => ctx.isWordCharactor(content2),
-        getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c),
-        scrollY: 0
+        isNewLineContent: (c) => c === "\\n",
+        isPartOfComposition: (c) => ctx.isWordCharactor(c),
+        getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c)
       });
     });
   }

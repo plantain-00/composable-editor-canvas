@@ -9,6 +9,7 @@ import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriang
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
+import type { Align, VerticalAlign } from '../../utils/flow-layout'
 
 /**
  * @public
@@ -450,8 +451,8 @@ export function getTextGraphic(
   options?: Partial<StrokeStyle & {
     fontWeight: React.CSSProperties['fontWeight']
     fontStyle: React.CSSProperties['fontStyle']
-    textAlign: 'left' | 'center' | 'right'
-    textBaseline: 'alphabetic' | 'top' | 'middle' | 'bottom'
+    textAlign: Align
+    textBaseline: 'alphabetic' | VerticalAlign
     fillOpacity: number
     fillLinearGradient: LinearGradient
     fillRadialGradient: RadialGradient

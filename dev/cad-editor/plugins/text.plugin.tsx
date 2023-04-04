@@ -27,10 +27,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         lineHeight: content.lineHeight ?? content.fontSize * 1.2,
         getWidth: getTextWidth,
         endContent: '',
-        isNewLineContent: content => content === '\n',
-        isPartOfComposition: content => ctx.isWordCharactor(content),
+        isNewLineContent: c => c === '\n',
+        isPartOfComposition: c => ctx.isWordCharactor(c),
         getComposition: (index: number) => ctx.getTextComposition(index, state, getTextWidth, c => c),
-        scrollY: 0,
       })
     })
   }

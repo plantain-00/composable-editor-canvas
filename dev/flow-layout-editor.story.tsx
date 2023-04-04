@@ -1,14 +1,14 @@
 import produce from "immer"
 import React from "react"
-import { EnumEditor, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutEditor } from "../src"
+import { Align, aligns, EnumEditor, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutEditor, VerticalAlign, verticalAligns } from "../src"
 
 export default () => {
   const [state, setState] = React.useState(() => new Array(30).fill(0).map(() => ({
     radius: 5 + Math.round(Math.random() * 20),
     color: Math.round(Math.random() * 0xffffff),
   })))
-  const [align, setAlign] = React.useState<'left' | 'center' | 'right'>('left')
-  const [verticalAlign, setVerticalAlign] = React.useState<'top' | 'middle' | 'bottom'>('top')
+  const [align, setAlign] = React.useState<Align>('left')
+  const [verticalAlign, setVerticalAlign] = React.useState<VerticalAlign>('top')
   const width = 400
   const { renderEditor, layoutResult, lineHeights, isSelected, actualHeight, inputContent, getCopiedContents } = useFlowLayoutEditor({
     state,
@@ -62,8 +62,8 @@ export default () => {
   return (
     <>
       {renderEditor(result)}
-      <EnumEditor enums={['left', 'center', 'right']} value={align} setValue={setAlign} />
-      <EnumEditor enums={['top', 'middle', 'bottom']} value={verticalAlign} setValue={setVerticalAlign} />
+      <EnumEditor enums={aligns} value={align} setValue={setAlign} />
+      <EnumEditor enums={verticalAligns} value={verticalAlign} setValue={setVerticalAlign} />
     </>
   )
 }

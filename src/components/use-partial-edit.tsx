@@ -16,7 +16,7 @@ export function usePartialEdit<T>(content: T, options?: Partial<{
       options?.onEditingContentPathChange?.(getByPath(content, path))
       setEditingContentPath(path)
     },
-    prependPatchPath: (patches: Patch[]) => prependPatchPath(patches, editingContentPath),
+    prependPatchPath: (patches: Patch[], path?: SelectPath) => prependPatchPath(prependPatchPath(patches, path), editingContentPath),
     trimPatchPath: (patches: Patch[]) => trimPatchPath(patches, editingContentPath),
     getContentByPath<V>(content: V) {
       return getByPath(content, editingContentPath)

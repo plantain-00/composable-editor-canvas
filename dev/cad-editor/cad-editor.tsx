@@ -471,7 +471,13 @@ export const CADEditor = React.forwardRef((props: {
       if (index !== undefined) {
         const content = editingContent[index[0]]
         if (content) {
-          setActiveChild(getContentModel(content)?.getChildByPoint?.(content, point))
+          const child = getContentModel(content)?.getChildByPoint?.(content, point)
+          if (child) {
+            setActiveChild(child.child)
+            if (child.patches) {
+              applyPatchFromSelf(prependPatchPath(child.patches[0], index), prependPatchPath(child.patches[1], index))
+            }
+          }
         }
         setActive(index[0])
         return
@@ -868,7 +874,7 @@ export const CADEditor = React.forwardRef((props: {
   }
   let editPanel: JSX.Element | undefined
   if (activeContent) {
-    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, () => setActive(undefined))
+    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, () => setActive(undefined), activeChild)
   }
   if (props.debug) {
     console.info(debug.print())
@@ -886,7 +892,6 @@ export const CADEditor = React.forwardRef((props: {
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           active={active}
-          activeChild={activeChild}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
