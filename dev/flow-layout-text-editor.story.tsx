@@ -1,11 +1,11 @@
 import produce from "immer"
 import React from "react"
-import { EnumEditor, reactCanvasRenderTarget, useFlowLayoutTextEditor } from "../src"
+import { Align, EnumEditor, VerticalAlign, aligns, reactCanvasRenderTarget, useFlowLayoutTextEditor, verticalAligns } from "../src"
 
 export default () => {
   const [state, setState] = React.useState(() => '1 + 2 = 3'.split(''))
-  const [align, setAlign] = React.useState<'left' | 'center' | 'right'>('left')
-  const [verticalAlign, setVerticalAlign] = React.useState<'top' | 'middle' | 'bottom'>('top')
+  const [align, setAlign] = React.useState<Align>('left')
+  const [verticalAlign, setVerticalAlign] = React.useState<VerticalAlign>('top')
   const { renderEditor, layoutResult } = useFlowLayoutTextEditor({
     state,
     setState: recipe => setState(produce(state, recipe)),
@@ -27,8 +27,8 @@ export default () => {
   return (
     <>
       {renderEditor({ target: reactCanvasRenderTarget, getTextColors })}
-      <EnumEditor enums={['left', 'center', 'right']} value={align} setValue={setAlign} />
-      <EnumEditor enums={['top', 'middle', 'bottom']} value={verticalAlign} setValue={setVerticalAlign} />
+      <EnumEditor enums={aligns} value={align} setValue={setAlign} />
+      <EnumEditor enums={verticalAligns} value={verticalAlign} setValue={setVerticalAlign} />
     </>
   )
 }

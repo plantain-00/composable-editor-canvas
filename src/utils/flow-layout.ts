@@ -1,4 +1,5 @@
 import { Position } from "./geometry"
+import { or } from "./validators"
 
 /**
  * @public
@@ -13,9 +14,10 @@ export function flowLayout<T>(props: {
   isPartOfComposition?: (content: T) => boolean
   getComposition?: (index: number) => { index: number, width: number }
   endContent: T
-  align?: 'left' | 'center' | 'right'
+  align?: Align
+  verticalAlign?: VerticalAlign
   scrollX?: number
-  scrollY: number
+  scrollY?: number
   row?: number
 }) {
   const isVisible = (y: number) => props.height === undefined
@@ -25,7 +27,8 @@ export function flowLayout<T>(props: {
   const layoutResult: FlowLayoutResult<T>[] = []
   const lineHeights: number[] = []
   let x = props.scrollX ?? 0
-  let y = props.scrollY
+  const scrollY = props.scrollY ?? 0
+  let y = scrollY
   let i = 0
   let row = props.row ?? 0
   let column = 0
@@ -128,13 +131,33 @@ export function flowLayout<T>(props: {
   layoutResult.push({ x, y, i, content: props.endContent, visible, row, column })
   align()
 
-  const newContentHeight = y + maxLineHeight - props.scrollY
+  if (props.height && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
+    let offset = props.height - lineHeights.reduce((p, c) => p + c)
+    if (offset > 0) {
+      if (props.verticalAlign === 'middle') {
+        offset /= 2
+      }
+      layoutResult.forEach(r => {
+        r.y += offset
+      })
+    }
+  }
+
+  const newContentHeight = y + maxLineHeight - scrollY
   return {
     layoutResult,
     newContentHeight,
     lineHeights,
   }
 }
+
+export const aligns = ['left', 'center', 'right'] as const
+export type Align = (typeof aligns)[number]
+export const Align = or(...aligns)
+
+export const verticalAligns = ['top', 'middle', 'bottom'] as const
+export type VerticalAlign = (typeof verticalAligns)[number]
+export const VerticalAlign = or(...verticalAligns)
 
 /**
  * @public

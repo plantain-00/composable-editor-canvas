@@ -12,6 +12,7 @@ export type TableContent = model.BaseContent<'table'> & core.Position & model.St
 
 interface TableRow {
   height: number
+  cells?: TableCellText[]
 }
 
 interface MergedCell {
@@ -19,9 +20,25 @@ interface MergedCell {
   column: [number, number]
 }
 
+interface TableCellText extends core.TextStyle {
+  text: string
+  color: number
+  column: number
+  align?: core.Align
+  verticalAlign?: core.VerticalAlign
+}
+
 export function getModel(ctx: PluginContext): model.Model<TableContent> {
+  const TableCellText = ctx.and(ctx.TextStyle, {
+    text: ctx.string,
+    color: ctx.number,
+    column: ctx.number,
+    align: ctx.optional(ctx.Align),
+    verticalAlign: ctx.optional(ctx.VerticalAlign),
+  })
   const TableRow = {
     height: ctx.number,
+    cells: ctx.optional([TableCellText]),
   }
   const MergedCell = {
     row: ctx.tuple(ctx.number, ctx.number),
@@ -37,8 +54,9 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
     columns: (core.Position & { index: number })[]
     xs: number[]
     ys: number[]
-    children: { region: core.Position[], row: number, column: number }[]
+    children: ({ region: core.Position[], row: number, column: number } & core.Region)[]
   }>>()
+  const textLayoutResultCache = new ctx.WeakmapMap2Cache<object, number, number, ReturnType<typeof ctx.flowLayout<string>>>()
   const getGeometries = (content: Omit<TableContent, 'type'>) => {
     return geometriesCache.get(content, () => {
       const lines: [core.Position, core.Position][] = []
@@ -50,7 +68,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
       const columns: (core.Position & { index: number })[] = []
       const xs: number[] = []
       const ys: number[] = []
-      const children: { region: core.Position[], row: number, column: number }[] = []
+      const children: ({ region: core.Position[], row: number, column: number } & core.Region)[] = []
       let x = content.x
       content.widths.forEach(w => {
         x += w
@@ -89,6 +107,10 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
               children.push({
                 row: i,
                 column: j,
+                x: xStart - content.x,
+                y: yStart - content.y,
+                width: end.x - xStart,
+                height: end.y - yStart,
                 region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end }),
               })
             }
@@ -96,6 +118,10 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
             children.push({
               row: i,
               column: j,
+              x: xStart - content.x,
+              y: yStart - content.y,
+              width: w,
+              height: row.height,
               region: ctx.getPolygonFromTwoPointsFormRegion({ start: { x: xStart, y: yStart }, end: { x: xEnd, y: yEnd } }),
             })
           }
@@ -138,17 +164,36 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
         strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         dashArray: strokeStyleContent.dashArray,
       }
-      return renderCtx.target.renderGroup(geometries.renderingLines.map(line => {
-        return renderCtx.target.renderPolyline(line, options)
-      }))
-    },
-    renderChild(content, [row, column], { color, target, strokeWidth }) {
-      const { children } = getGeometries(content)
-      const child = children.find(c => c.row === row && c.column === column)
-      if (child) {
-        return target.renderPolygon(child.region, { strokeColor: color, strokeWidth })
-      }
-      return target.renderEmpty()
+      const children = geometries.renderingLines.map(line => renderCtx.target.renderPolyline(line, options))
+      content.rows.forEach((row, i) => {
+        row.cells?.forEach(cell => {
+          const child = geometries.children.find(f => f.row === i && f.column === cell.column)
+          if (!child) return
+          const { width, height } = child
+          const textLayout = textLayoutResultCache.get(cell, width, height, () => {
+            const state = cell.text.split('')
+            const getTextWidth = (text: string) => ctx.getTextSizeFromCache(`${cell.fontSize}px ${cell.fontFamily}`, text)?.width ?? 0
+            return ctx.flowLayout({
+              state,
+              width,
+              height,
+              lineHeight: cell.fontSize * 1.2,
+              getWidth: getTextWidth,
+              align: cell.align ?? 'center',
+              verticalAlign: cell.verticalAlign ?? 'middle',
+              endContent: '',
+              isNewLineContent: c => c === '\n',
+              isPartOfComposition: c => ctx.isWordCharactor(c),
+              getComposition: (index: number) => ctx.getTextComposition(index, state, getTextWidth, c => c),
+            })
+          })
+          for (const { x, y, content: text } of textLayout.layoutResult) {
+            const textWidth = ctx.getTextSizeFromCache(`${cell.fontSize}px ${cell.fontFamily}`, text)?.width ?? 0
+            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + cell.fontSize, text, cell.color, cell.fontSize, cell.fontFamily, { textAlign: 'center', cacheKey: cell }))
+          }
+        })
+      })
+      return renderCtx.target.renderGroup(children)
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -244,8 +289,16 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
         properties.row = <ctx.NumberEditor readOnly value={row} />
         properties.column = <ctx.NumberEditor readOnly value={column} />
         const mergedCell = content.mergedCells?.find?.(c => c.row[0] === row && c.column[0] === column)
-        properties['row span'] = <ctx.NumberEditor value={mergedCell?.row[1] ?? 1} setValue={(v) => update(c => { if (isTableContent(c)) { setTableRowSpan(c, row, column, v) } })} />
-        properties['column span'] = <ctx.NumberEditor value={mergedCell?.column[1] ?? 1} setValue={(v) => update(c => { if (isTableContent(c)) { setTableColumnSpan(c, row, column, v) } })} />
+        properties.rowSpan = <ctx.NumberEditor value={mergedCell?.row[1] ?? 1} setValue={(v) => update(c => { if (isTableContent(c)) { setTableRowSpan(c, row, column, v) } })} />
+        properties.columnSpan = <ctx.NumberEditor value={mergedCell?.column[1] ?? 1} setValue={(v) => update(c => { if (isTableContent(c)) { setTableColumnSpan(c, row, column, v) } })} />
+        const cell = content.rows[row].cells?.find(c => c.column === column)
+        if (cell) {
+          properties.fontSize = <ctx.NumberEditor value={cell.fontSize} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.fontSize = v) } })} />
+          properties.fontFamily = <ctx.StringEditor value={cell.fontFamily} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.fontFamily = v) } })} />
+          properties.color = <ctx.NumberEditor type='color' value={cell.color} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.color = v) } })} />
+          properties.align = <ctx.EnumEditor enums={ctx.aligns} value={cell.align ?? 'center'} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.align = v) } })} />
+          properties.verticalAlign = <ctx.EnumEditor enums={ctx.verticalAligns} value={cell.verticalAlign ?? 'middle'} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.verticalAlign = v) } })} />
+        }
       }
       return {
         ...properties,
@@ -254,12 +307,59 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
+    editPanel(content, transform, update, cancel, activeChild) {
+      const p = ctx.transformPosition(content, transform)
+      if (!activeChild) return <></>
+      const [row, column] = activeChild
+      const cell = content.rows[row].cells?.find(c => c.column === column)
+      if (!cell) return <></>
+      const { children } = getGeometries(content)
+      const child = children.find(f => f.row === row && f.column === column)
+      if (!child) return <></>
+      const fontSize = cell.fontSize * transform.scale
+      return <ctx.TextEditor
+        fontSize={fontSize}
+        width={child.width * transform.scale}
+        height={child.height * transform.scale}
+        color={cell.color}
+        fontFamily={cell.fontFamily}
+        align={cell.align ?? 'center'}
+        verticalAlign={cell.verticalAlign ?? 'middle'}
+        onCancel={cancel}
+        x={p.x + child.x * transform.scale}
+        y={p.y + child.y * transform.scale}
+        borderWidth={0}
+        value={cell.text}
+        setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.text = v) } })}
+      />
+    },
     isValid: (c, p) => ctx.validate(c, TableContent, p),
     getChildByPoint(content, point) {
       const { children } = getGeometries(content)
       const child = children.find(c => ctx.pointInPolygon(point, c.region))
       if (child) {
-        return [child.row, child.column]
+        if (!content.rows[child.row].cells?.some(c => c.column === child.column)) {
+          const [, patches, reversePatches] = ctx.produceWithPatches(content, draft => {
+            const row = draft.rows[child.row]
+            if (!row.cells) {
+              row.cells = []
+            }
+            row.cells.push({
+              text: '',
+              color: 0x000000,
+              fontSize: 16,
+              fontFamily: 'monospace',
+              column: child.column,
+            })
+          })
+          return {
+            child: [child.row, child.column],
+            patches: [patches, reversePatches],
+          }
+        }
+        return {
+          child: [child.row, child.column],
+        }
       }
       return
     },
@@ -415,4 +515,11 @@ function insertTableRow(c: TableContent, i: number) {
       cell.row[1]++
     }
   })
+}
+
+function setTableCell(c: TableContent, row: number, column: number, update: (cell: TableCellText) => void) {
+  const t = c.rows[row].cells?.find(c => c.column === column)
+  if (t) {
+    update(t)
+  }
 }

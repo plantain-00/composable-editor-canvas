@@ -2,6 +2,7 @@ import * as React from "react"
 import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { radianToAngle } from "../../utils/radian"
+import type { Align, VerticalAlign } from "../../utils/flow-layout"
 
 export interface ReactRenderTarget<T = JSX.Element> {
   type: string
@@ -111,8 +112,8 @@ export interface ReactRenderTarget<T = JSX.Element> {
       fillOpacity: number
       fillLinearGradient: LinearGradient
       fillRadialGradient: RadialGradient
-      textAlign: 'left' | 'center' | 'right'
-      textBaseline: 'alphabetic' | 'top' | 'middle' | 'bottom'
+      textAlign: Align
+      textBaseline: 'alphabetic' | VerticalAlign
       cacheKey: object
     }>,
   ): T
