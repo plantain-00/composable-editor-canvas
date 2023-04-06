@@ -4,28 +4,29 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type TextContent = model.BaseContent<'text'> & core.Text & {
+export type TextContent = model.BaseContent<'text'> & core.Position & model.TextFields & {
+  text: string
   width?: number
-  lineHeight?: number
   textVariableName?: string
 }
 
 export function getModel(ctx: PluginContext): model.Model<TextContent> {
-  const TextContent = ctx.and(ctx.BaseContent('text'), ctx.Text, {
+  const TextContent = ctx.and(ctx.BaseContent('text'), ctx.Position, ctx.TextFields, {
+    text: ctx.string,
     width: ctx.optional(ctx.number),
-    lineHeight: ctx.optional(ctx.number),
     textVariableName: ctx.optional(ctx.string),
   })
-  const textLayoutResultCache = new ctx.WeakmapCache<object, ReturnType<typeof ctx.flowLayout<string>>>()
-  function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, variableContext?: Record<string, unknown>) {
-    return textLayoutResultCache.get(content, () => {
+  const textLayoutResultCache = new ctx.WeakmapCache2<object, object, ReturnType<typeof ctx.flowLayout<string>>>()
+  function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, c: model.TextFields, variableContext?: Record<string, unknown>) {
+    return textLayoutResultCache.get(content, c, () => {
       const state = getText(content, variableContext).split('')
-      const getTextWidth = (text: string) => ctx.getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)?.width ?? 0
+      const getTextWidth = (text: string) => ctx.getTextSizeFromCache(ctx.getTextStyleFont(c), text)?.width ?? 0
       return ctx.flowLayout({
         state,
         width: content.width,
-        lineHeight: content.lineHeight ?? content.fontSize * 1.2,
+        lineHeight: c.lineHeight ?? c.fontSize * 1.2,
         getWidth: getTextWidth,
+        align: c.align,
         endContent: '',
         isNewLineContent: c => c === '\n',
         isPartOfComposition: c => ctx.isWordCharactor(c),
@@ -45,11 +46,12 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     }
     return content.text
   }
-  function getTextGeometries(content: Omit<TextContent, "type">) {
+  function getTextGeometries(content: Omit<TextContent, "type">, contents: readonly core.Nullable<model.BaseContent<string>>[]) {
     return ctx.getGeometriesFromCache(content, () => {
       let points: core.Position[]
       if (hasWidth(content)) {
-        const { newContentHeight } = getTextLayoutResult(content)
+        const textStyleContent = ctx.getTextStyleContent(content, contents)
+        const { newContentHeight } = getTextLayoutResult(content, textStyleContent)
         points = [
           { x: content.x, y: content.y + newContentHeight },
           { x: content.x + content.width, y: content.y + newContentHeight },
@@ -57,7 +59,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           { x: content.x, y: content.y },
         ]
       } else {
-        const size = ctx.getTextSize(`${content.fontSize}px ${content.fontFamily}`, content.text)
+        const size = ctx.getTextSize(ctx.getTextStyleFont(content), content.text)
         if (!size) {
           throw 'not supported'
         }
@@ -85,6 +87,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
   const React = ctx.React
   return {
     type: 'text',
+    ...ctx.textModel,
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
@@ -110,44 +113,40 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render(content, { target, transformColor, isAssistence, variableContext }) {
-      const color = transformColor(content.color)
+    render(content, { target, transformColor, isAssistence, variableContext, contents }) {
+      const textStyleContent = ctx.getTextStyleContent(content, contents)
+      const color = transformColor(textStyleContent.color)
       const text = getText(content, variableContext)
       let cacheKey: object | undefined
       if (isAssistence) {
-        cacheKey = ctx.assistentTextCache.get(text, content.fontSize, content.color)
+        cacheKey = ctx.assistentTextCache.get(text, textStyleContent.fontSize, textStyleContent.color)
       }
       if (!cacheKey) {
         cacheKey = content
       }
+
       if (hasWidth(content)) {
-        const { layoutResult } = getTextLayoutResult(content, variableContext)
+        const { layoutResult } = getTextLayoutResult(content, textStyleContent, variableContext)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const { x, y, content: text } of layoutResult) {
-          const textWidth = ctx.getTextSizeFromCache(`${content.fontSize}px ${content.fontFamily}`, text)?.width ?? 0
-          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + content.fontSize, text, content.color, content.fontSize, content.fontFamily, { textAlign: 'center', cacheKey }))
+          const textWidth = ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text)?.width ?? 0
+          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey }))
         }
         return target.renderGroup(children)
       }
-      return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey })
+      return target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey })
     },
     getGeometries: getTextGeometries,
-    propertyPanel(content, update, _, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTextContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTextContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTextContent(c)) { c.y = v } })} />,
-        fontSize: <ctx.NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontSize = v } })} />,
-        fontFamily: <ctx.StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontFamily = v } })} />,
+        ...ctx.getTextContentPropertyPanel(content, update, contents),
         text: <ctx.StringEditor textarea value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />,
-        color: <ctx.NumberEditor type='color' value={content.color} setValue={(v) => update(c => { if (isTextContent(c)) { c.color = v } })} />,
         width: [
           <ctx.BooleanEditor value={content.width !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.width = v ? 600 : undefined } })} />,
           content.width !== undefined ? <ctx.NumberEditor value={content.width} setValue={(v) => update(c => { if (isTextContent(c)) { c.width = v } })} /> : undefined,
-        ],
-        lineHeight: [
-          content.width !== undefined ? <ctx.BooleanEditor value={content.lineHeight !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v ? content.fontSize * 1.2 : undefined } })} /> : undefined,
-          content.width !== undefined && content.lineHeight !== undefined ? <ctx.NumberEditor value={content.lineHeight} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v } })} /> : undefined,
         ],
         textVariableName: [
           <ctx.BooleanEditor value={content.textVariableName !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.textVariableName = v ? '' : undefined } })} />,
@@ -155,15 +154,18 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         ],
       }
     },
-    editPanel(content, transform, update, cancel) {
+    editPanel(content, transform, update, contents, cancel) {
       const p = ctx.transformPosition(content, transform)
-      const fontSize = content.fontSize * transform.scale
+      const textStyleContent = ctx.getTextStyleContent(content, contents)
+      const fontSize = textStyleContent.fontSize * transform.scale
       if (content.width) {
         return <ctx.TextEditor
           fontSize={fontSize}
           width={content.width * transform.scale}
-          color={content.color}
-          fontFamily={content.fontFamily}
+          color={textStyleContent.color}
+          fontFamily={textStyleContent.fontFamily}
+          align={textStyleContent.align}
+          lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : undefined}
           onCancel={cancel}
           x={p.x}
           y={p.y}
@@ -200,12 +202,13 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create text',
     icon,
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, textStyleId }) {
       const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
         type === 'create text',
         (c) => onEnd({
           updateContents: (contents) => contents.push({
             type: 'text',
+            textStyleId,
             ...c,
           } as TextContent)
         }),
@@ -217,6 +220,7 @@ export function getCommand(ctx: PluginContext): Command {
       if (text) {
         assistentContents.push({
           type: 'text',
+          textStyleId,
           ...text,
         })
       }

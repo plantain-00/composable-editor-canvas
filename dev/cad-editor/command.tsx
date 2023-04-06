@@ -18,6 +18,7 @@ export interface Command extends CommandType {
     scale: number,
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
+    textStyleId: number | undefined,
     contents: readonly Nullable<BaseContent>[],
     backgroundColor: number,
   }): {
@@ -42,6 +43,7 @@ export interface Command extends CommandType {
     type: string | undefined,
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
+    textStyleId: number | undefined,
   }): void
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
@@ -76,6 +78,7 @@ export function useCommands(
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
+  textStyleId: number | undefined,
   contents: readonly Nullable<BaseContent>[],
   backgroundColor: number,
 ) {
@@ -112,6 +115,7 @@ export function useCommands(
         scale,
         strokeStyleId,
         fillStyleId,
+        textStyleId,
         contents,
         backgroundColor,
       })

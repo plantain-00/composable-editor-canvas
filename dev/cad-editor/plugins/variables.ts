@@ -8798,12 +8798,10 @@ export {
 `,
 `// dev/cad-editor/plugins/table.plugin.tsx
 function getModel(ctx) {
-  const TableCellText = ctx.and(ctx.TextStyle, {
+  const TableCellText = ctx.and(ctx.TextFields, {
+    type: "table cell text",
     text: ctx.string,
-    color: ctx.number,
-    column: ctx.number,
-    align: ctx.optional(ctx.Align),
-    verticalAlign: ctx.optional(ctx.VerticalAlign)
+    column: ctx.number
   });
   const TableRow = {
     height: ctx.number,
@@ -8819,7 +8817,7 @@ function getModel(ctx) {
     mergedCells: ctx.optional([MergedCell])
   });
   const geometriesCache = new ctx.WeakmapCache();
-  const textLayoutResultCache = new ctx.WeakmapMap2Cache();
+  const textLayoutResultCache = new ctx.WeakmapMap3Cache();
   const getGeometries = (content) => {
     return geometriesCache.get(content, () => {
       const lines = [];
@@ -8862,10 +8860,10 @@ function getModel(ctx) {
                 x: xEnd,
                 y: yEnd
               };
-              for (let k = 1; k < cell.column[1]; k++) {
-                end.x += content.widths[i + k];
+              for (let k = 1; k < cell.column[1] && k < content.widths.length - j; k++) {
+                end.x += content.widths[j + k];
               }
-              for (let k = 1; k < cell.row[1]; k++) {
+              for (let k = 1; k < cell.row[1] && k < content.rows.length - i; k++) {
                 end.y += content.rows[i + k].height;
               }
               children.push({
@@ -8912,7 +8910,7 @@ function getModel(ctx) {
     });
   };
   const React = ctx.React;
-  return {
+  const tableModel = {
     type: "table",
     ...ctx.strokeModel,
     move(content, offset) {
@@ -8938,30 +8936,32 @@ function getModel(ctx) {
           if (!child)
             return;
           const { width, height } = child;
-          const textLayout = textLayoutResultCache.get(cell, width, height, () => {
-            var _a4, _b2;
+          const textStyleContent = ctx.getTextStyleContent(cell, renderCtx.contents);
+          const textLayout = textLayoutResultCache.get(cell, textStyleContent, width, height, () => {
+            var _a4, _b2, _c;
             const state = cell.text.split("");
             const getTextWidth = (text) => {
               var _a5, _b3;
-              return (_b3 = (_a5 = ctx.getTextSizeFromCache(\`\${cell.fontSize}px \${cell.fontFamily}\`, text)) == null ? void 0 : _a5.width) != null ? _b3 : 0;
+              return (_b3 = (_a5 = ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text)) == null ? void 0 : _a5.width) != null ? _b3 : 0;
             };
             return ctx.flowLayout({
               state,
               width,
               height,
-              lineHeight: cell.fontSize * 1.2,
+              lineHeight: (_a4 = textStyleContent.lineHeight) != null ? _a4 : textStyleContent.fontSize * 1.2,
               getWidth: getTextWidth,
-              align: (_a4 = cell.align) != null ? _a4 : "center",
-              verticalAlign: (_b2 = cell.verticalAlign) != null ? _b2 : "middle",
+              align: (_b2 = textStyleContent.align) != null ? _b2 : "center",
+              verticalAlign: (_c = textStyleContent.verticalAlign) != null ? _c : "middle",
               endContent: "",
               isNewLineContent: (c) => c === "\\n",
               isPartOfComposition: (c) => ctx.isWordCharactor(c),
               getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c)
             });
           });
+          const font = ctx.getTextStyleFont(textStyleContent);
           for (const { x, y, content: text } of textLayout.layoutResult) {
-            const textWidth = (_b = (_a3 = ctx.getTextSizeFromCache(\`\${cell.fontSize}px \${cell.fontFamily}\`, text)) == null ? void 0 : _a3.width) != null ? _b : 0;
-            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + cell.fontSize, text, cell.color, cell.fontSize, cell.fontFamily, { textAlign: "center", cacheKey: cell }));
+            const textWidth = (_b = (_a3 = ctx.getTextSizeFromCache(font, text)) == null ? void 0 : _a3.width) != null ? _b : 0;
+            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: "center", cacheKey: cell }));
           }
         });
       });
@@ -9055,7 +9055,7 @@ function getModel(ctx) {
     },
     getGeometries,
     propertyPanel(content, update, contents, options) {
-      var _a, _b, _c, _d, _e, _f, _g;
+      var _a, _b, _c, _d, _e;
       const properties = {};
       if (options.activeChild) {
         const [row, column] = options.activeChild;
@@ -9074,31 +9074,11 @@ function getModel(ctx) {
         }) });
         const cell = (_e = content.rows[row].cells) == null ? void 0 : _e.find((c) => c.column === column);
         if (cell) {
-          properties.fontSize = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: cell.fontSize, setValue: (v) => update((c) => {
+          Object.assign(properties, ctx.getTextContentPropertyPanel(cell, (f) => update((c) => {
             if (isTableContent(c)) {
-              setTableCell(c, row, column, (t) => t.fontSize = v);
+              setTableCell(c, row, column, f);
             }
-          }) });
-          properties.fontFamily = /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: cell.fontFamily, setValue: (v) => update((c) => {
-            if (isTableContent(c)) {
-              setTableCell(c, row, column, (t) => t.fontFamily = v);
-            }
-          }) });
-          properties.color = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { type: "color", value: cell.color, setValue: (v) => update((c) => {
-            if (isTableContent(c)) {
-              setTableCell(c, row, column, (t) => t.color = v);
-            }
-          }) });
-          properties.align = /* @__PURE__ */ React.createElement(ctx.EnumEditor, { enums: ctx.aligns, value: (_f = cell.align) != null ? _f : "center", setValue: (v) => update((c) => {
-            if (isTableContent(c)) {
-              setTableCell(c, row, column, (t) => t.align = v);
-            }
-          }) });
-          properties.verticalAlign = /* @__PURE__ */ React.createElement(ctx.EnumEditor, { enums: ctx.verticalAligns, value: (_g = cell.verticalAlign) != null ? _g : "middle", setValue: (v) => update((c) => {
-            if (isTableContent(c)) {
-              setTableCell(c, row, column, (t) => t.verticalAlign = v);
-            }
-          }) });
+          }), contents));
         }
       }
       return {
@@ -9116,7 +9096,7 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    editPanel(content, transform, update, cancel, activeChild) {
+    editPanel(content, transform, update, contents, cancel, activeChild) {
       var _a, _b, _c;
       const p = ctx.transformPosition(content, transform);
       if (!activeChild)
@@ -9129,17 +9109,19 @@ function getModel(ctx) {
       const child = children.find((f) => f.row === row && f.column === column);
       if (!child)
         return /* @__PURE__ */ React.createElement(React.Fragment, null);
-      const fontSize = cell.fontSize * transform.scale;
+      const textStyleContent = ctx.getTextStyleContent(cell, contents);
+      const fontSize = textStyleContent.fontSize * transform.scale;
       return /* @__PURE__ */ React.createElement(
         ctx.TextEditor,
         {
           fontSize,
           width: child.width * transform.scale,
           height: child.height * transform.scale,
-          color: cell.color,
-          fontFamily: cell.fontFamily,
-          align: (_b = cell.align) != null ? _b : "center",
-          verticalAlign: (_c = cell.verticalAlign) != null ? _c : "middle",
+          color: textStyleContent.color,
+          fontFamily: textStyleContent.fontFamily,
+          align: (_b = textStyleContent.align) != null ? _b : "center",
+          verticalAlign: (_c = textStyleContent.verticalAlign) != null ? _c : "middle",
+          lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : void 0,
           onCancel: cancel,
           x: p.x + child.x * transform.scale,
           y: p.y + child.y * transform.scale,
@@ -9154,7 +9136,7 @@ function getModel(ctx) {
       );
     },
     isValid: (c, p) => ctx.validate(c, TableContent, p),
-    getChildByPoint(content, point) {
+    getChildByPoint(content, point, { textStyleId }) {
       var _a;
       const { children } = getGeometries(content);
       const child = children.find((c) => ctx.pointInPolygon(point, c.region));
@@ -9166,6 +9148,8 @@ function getModel(ctx) {
               row.cells = [];
             }
             row.cells.push({
+              type: "table cell text",
+              textStyleId,
               text: "",
               color: 0,
               fontSize: 16,
@@ -9185,6 +9169,13 @@ function getModel(ctx) {
       return;
     }
   };
+  return [
+    tableModel,
+    {
+      type: "table cell text",
+      ...ctx.textModel
+    }
+  ];
 }
 function isTableContent(content) {
   return content.type === "table";
@@ -9343,31 +9334,180 @@ export {
   isTableContent
 };
 `,
+`// dev/cad-editor/plugins/text-style.plugin.tsx
+function getModel(ctx) {
+  const geometriesCache = new ctx.WeakmapCache();
+  function getGeometriesFromCache(content) {
+    return geometriesCache.get(content, () => {
+      var _a, _b;
+      const text = \`\${content.fontFamily} \${content.fontSize} \${ctx.getColorString(content.color)}\`;
+      const width = (_b = (_a = ctx.getTextSizeFromCache(ctx.getTextStyleFont(content), text)) == null ? void 0 : _a.width) != null ? _b : 0;
+      const height = content.fontSize * 1.2;
+      const points = ctx.getPolygonFromTwoPointsFormRegion({ start: content, end: { x: content.x + width, y: content.y + height } });
+      return {
+        lines: [],
+        bounding: ctx.getPointsBounding(points),
+        text,
+        width,
+        height,
+        regions: [
+          {
+            points,
+            lines: Array.from(ctx.iteratePolygonLines(points))
+          }
+        ],
+        renderingLines: []
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "text style",
+    ...ctx.textModel,
+    move(content, offset) {
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    render(content, { target, transformColor }) {
+      const { width, height, text } = getGeometriesFromCache(content);
+      return target.renderGroup([
+        target.renderRect(content.x, content.y, width, height, {
+          strokeColor: transformColor(content.isCurrent ? 16711680 : 0)
+        }),
+        target.renderText(content.x, content.y, text, content.color, content.fontSize, content.fontFamily, { textBaseline: "top" })
+      ]);
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: [
+            {
+              ...content,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!ctx.isTextStyleContent(c)) {
+                  return;
+                }
+                c.x += cursor.x - start.x;
+                c.y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            }
+          ]
+        };
+      });
+    },
+    getGeometries: getGeometriesFromCache,
+    propertyPanel(content, update, contents, { acquirePoint }) {
+      return {
+        isCurrent: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.isCurrent === true, setValue: (v) => update((c, draft) => {
+          if (ctx.isTextStyleContent(c)) {
+            const currentTextStyle = ctx.getTextStyles(contents).find((s) => s.content.isCurrent);
+            if (currentTextStyle) {
+              const c2 = draft[currentTextStyle.index];
+              if (c2 && ctx.isTextStyleContent(c2)) {
+                c2.isCurrent = void 0;
+              }
+            }
+            c.isCurrent = v ? true : void 0;
+          }
+        }) }),
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (ctx.isTextStyleContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (ctx.isTextStyleContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (ctx.isTextStyleContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        ...ctx.getTextContentPropertyPanel(content, update)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, ctx.TextStyleContent, p)
+  };
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "6,7 40,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "23,7 23,43", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "61,7 82,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "72,7 72,26", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,49 90,49", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "71,47 71,94", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "11,71 32,71", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "21,71 21,89", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create text style",
+    selectCount: 0,
+    icon,
+    useCommand({ onEnd, type }) {
+      const [result, setResult] = React.useState();
+      const reset = () => {
+        setResult(void 0);
+      };
+      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
+      return {
+        onStart() {
+          if (result) {
+            onEnd({
+              updateContents: (contents) => {
+                if (result) {
+                  contents.push(result);
+                }
+              }
+            });
+            reset();
+          }
+        },
+        onMove(p) {
+          if (type) {
+            setResult({
+              type: "text style",
+              x: p.x,
+              y: p.y,
+              fontFamily: "monospace",
+              fontSize: 20,
+              color: 0
+            });
+          }
+        },
+        assistentContents: result ? [result] : void 0,
+        reset
+      };
+    }
+  };
+}
+export {
+  getCommand,
+  getModel
+};
+`,
 `// dev/cad-editor/plugins/text.plugin.tsx
 function getModel(ctx) {
-  const TextContent = ctx.and(ctx.BaseContent("text"), ctx.Text, {
+  const TextContent = ctx.and(ctx.BaseContent("text"), ctx.Position, ctx.TextFields, {
+    text: ctx.string,
     width: ctx.optional(ctx.number),
-    lineHeight: ctx.optional(ctx.number),
     textVariableName: ctx.optional(ctx.string)
   });
-  const textLayoutResultCache = new ctx.WeakmapCache();
-  function getTextLayoutResult(content, variableContext) {
-    return textLayoutResultCache.get(content, () => {
+  const textLayoutResultCache = new ctx.WeakmapCache2();
+  function getTextLayoutResult(content, c, variableContext) {
+    return textLayoutResultCache.get(content, c, () => {
       var _a;
       const state = getText(content, variableContext).split("");
       const getTextWidth = (text) => {
         var _a2, _b;
-        return (_b = (_a2 = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text)) == null ? void 0 : _a2.width) != null ? _b : 0;
+        return (_b = (_a2 = ctx.getTextSizeFromCache(ctx.getTextStyleFont(c), text)) == null ? void 0 : _a2.width) != null ? _b : 0;
       };
       return ctx.flowLayout({
         state,
         width: content.width,
-        lineHeight: (_a = content.lineHeight) != null ? _a : content.fontSize * 1.2,
+        lineHeight: (_a = c.lineHeight) != null ? _a : c.fontSize * 1.2,
         getWidth: getTextWidth,
+        align: c.align,
         endContent: "",
-        isNewLineContent: (c) => c === "\\n",
-        isPartOfComposition: (c) => ctx.isWordCharactor(c),
-        getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c) => c)
+        isNewLineContent: (c2) => c2 === "\\n",
+        isPartOfComposition: (c2) => ctx.isWordCharactor(c2),
+        getComposition: (index) => ctx.getTextComposition(index, state, getTextWidth, (c2) => c2)
       });
     });
   }
@@ -9383,11 +9523,12 @@ function getModel(ctx) {
     }
     return content.text;
   }
-  function getTextGeometries(content) {
+  function getTextGeometries(content, contents) {
     return ctx.getGeometriesFromCache(content, () => {
       let points;
       if (hasWidth(content)) {
-        const { newContentHeight } = getTextLayoutResult(content);
+        const textStyleContent = ctx.getTextStyleContent(content, contents);
+        const { newContentHeight } = getTextLayoutResult(content, textStyleContent);
         points = [
           { x: content.x, y: content.y + newContentHeight },
           { x: content.x + content.width, y: content.y + newContentHeight },
@@ -9395,7 +9536,7 @@ function getModel(ctx) {
           { x: content.x, y: content.y }
         ];
       } else {
-        const size = ctx.getTextSize(\`\${content.fontSize}px \${content.fontFamily}\`, content.text);
+        const size = ctx.getTextSize(ctx.getTextStyleFont(content), content.text);
         if (!size) {
           throw "not supported";
         }
@@ -9423,6 +9564,7 @@ function getModel(ctx) {
   const React = ctx.React;
   return {
     type: "text",
+    ...ctx.textModel,
     move(content, offset) {
       content.x += offset.x;
       content.y += offset.y;
@@ -9448,30 +9590,31 @@ function getModel(ctx) {
         };
       });
     },
-    render(content, { target, transformColor, isAssistence, variableContext }) {
+    render(content, { target, transformColor, isAssistence, variableContext, contents }) {
       var _a, _b;
-      const color = transformColor(content.color);
+      const textStyleContent = ctx.getTextStyleContent(content, contents);
+      const color = transformColor(textStyleContent.color);
       const text = getText(content, variableContext);
       let cacheKey;
       if (isAssistence) {
-        cacheKey = ctx.assistentTextCache.get(text, content.fontSize, content.color);
+        cacheKey = ctx.assistentTextCache.get(text, textStyleContent.fontSize, textStyleContent.color);
       }
       if (!cacheKey) {
         cacheKey = content;
       }
       if (hasWidth(content)) {
-        const { layoutResult } = getTextLayoutResult(content, variableContext);
+        const { layoutResult } = getTextLayoutResult(content, textStyleContent, variableContext);
         const children = [];
         for (const { x, y, content: text2 } of layoutResult) {
-          const textWidth = (_b = (_a = ctx.getTextSizeFromCache(\`\${content.fontSize}px \${content.fontFamily}\`, text2)) == null ? void 0 : _a.width) != null ? _b : 0;
-          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + content.fontSize, text2, content.color, content.fontSize, content.fontFamily, { textAlign: "center", cacheKey }));
+          const textWidth = (_b = (_a = ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text2)) == null ? void 0 : _a.width) != null ? _b : 0;
+          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + textStyleContent.fontSize, text2, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: "center", cacheKey }));
         }
         return target.renderGroup(children);
       }
-      return target.renderText(content.x, content.y, text, color, content.fontSize, content.fontFamily, { cacheKey });
+      return target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey });
     },
     getGeometries: getTextGeometries,
-    propertyPanel(content, update, _, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
           if (isTextContent(c)) {
@@ -9488,24 +9631,10 @@ function getModel(ctx) {
             c.y = v;
           }
         }) }),
-        fontSize: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.fontSize, setValue: (v) => update((c) => {
-          if (isTextContent(c)) {
-            c.fontSize = v;
-          }
-        }) }),
-        fontFamily: /* @__PURE__ */ React.createElement(ctx.StringEditor, { value: content.fontFamily, setValue: (v) => update((c) => {
-          if (isTextContent(c)) {
-            c.fontFamily = v;
-          }
-        }) }),
+        ...ctx.getTextContentPropertyPanel(content, update, contents),
         text: /* @__PURE__ */ React.createElement(ctx.StringEditor, { textarea: true, value: content.text, setValue: (v) => update((c) => {
           if (isTextContent(c)) {
             c.text = v;
-          }
-        }) }),
-        color: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { type: "color", value: content.color, setValue: (v) => update((c) => {
-          if (isTextContent(c)) {
-            c.color = v;
           }
         }) }),
         width: [
@@ -9517,18 +9646,6 @@ function getModel(ctx) {
           content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.width, setValue: (v) => update((c) => {
             if (isTextContent(c)) {
               c.width = v;
-            }
-          }) }) : void 0
-        ],
-        lineHeight: [
-          content.width !== void 0 ? /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.lineHeight !== void 0, setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.lineHeight = v ? content.fontSize * 1.2 : void 0;
-            }
-          }) }) : void 0,
-          content.width !== void 0 && content.lineHeight !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.lineHeight, setValue: (v) => update((c) => {
-            if (isTextContent(c)) {
-              c.lineHeight = v;
             }
           }) }) : void 0
         ],
@@ -9546,17 +9663,20 @@ function getModel(ctx) {
         ]
       };
     },
-    editPanel(content, transform, update, cancel) {
+    editPanel(content, transform, update, contents, cancel) {
       const p = ctx.transformPosition(content, transform);
-      const fontSize = content.fontSize * transform.scale;
+      const textStyleContent = ctx.getTextStyleContent(content, contents);
+      const fontSize = textStyleContent.fontSize * transform.scale;
       if (content.width) {
         return /* @__PURE__ */ React.createElement(
           ctx.TextEditor,
           {
             fontSize,
             width: content.width * transform.scale,
-            color: content.color,
-            fontFamily: content.fontFamily,
+            color: textStyleContent.color,
+            fontFamily: textStyleContent.fontFamily,
+            align: textStyleContent.align,
+            lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : void 0,
             onCancel: cancel,
             x: p.x,
             y: p.y,
@@ -9597,12 +9717,13 @@ function getCommand(ctx) {
   return {
     name: "create text",
     icon,
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, textStyleId }) {
       const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
         type === "create text",
         (c) => onEnd({
           updateContents: (contents) => contents.push({
             type: "text",
+            textStyleId,
             ...c
           })
         }),
@@ -9614,6 +9735,7 @@ function getCommand(ctx) {
       if (text) {
         assistentContents.push({
           type: "text",
+          textStyleId,
           ...text
         });
       }

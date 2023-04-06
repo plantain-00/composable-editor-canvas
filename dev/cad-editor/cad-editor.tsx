@@ -58,7 +58,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId })
+            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId })
           })
           setSelected()
           return true
@@ -165,6 +165,7 @@ export const CADEditor = React.forwardRef((props: {
   const previewReversePatches: Patch[] = []
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
   const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
+  const textStyleId = model.getTextStyles(state).find(s => s.content.isCurrent)?.index
   const [active, setActive] = React.useState<number>()
   const [activeChild, setActiveChild] = React.useState<number[]>()
   const activeContent = active !== undefined ? editingContent[active] : undefined
@@ -388,6 +389,7 @@ export const CADEditor = React.forwardRef((props: {
     scaleWithViewport,
     strokeStyleId,
     fillStyleId,
+    textStyleId,
     editingContent,
     props.backgroundColor,
   )
@@ -471,7 +473,7 @@ export const CADEditor = React.forwardRef((props: {
       if (index !== undefined) {
         const content = editingContent[index[0]]
         if (content) {
-          const child = getContentModel(content)?.getChildByPoint?.(content, point)
+          const child = getContentModel(content)?.getChildByPoint?.(content, point, { textStyleId })
           if (child) {
             setActiveChild(child.child)
             if (child.patches) {
@@ -628,6 +630,10 @@ export const CADEditor = React.forwardRef((props: {
           addSelection(...hovering)
         }
         setHovering()
+      } else if (active && !activeViewport) {
+        setActive(undefined)
+        setActiveChild(undefined)
+        return
       } else {
         // start selection by region
         onStartSelect(e)
@@ -874,7 +880,7 @@ export const CADEditor = React.forwardRef((props: {
   }
   let editPanel: JSX.Element | undefined
   if (activeContent) {
-    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, () => setActive(undefined), activeChild)
+    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, state, () => setActive(undefined), activeChild)
   }
   if (props.debug) {
     console.info(debug.print())

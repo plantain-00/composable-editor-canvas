@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsAngle } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsAngle, getTextStyleFont } from "../../utils"
 
 /**
  * @public
@@ -191,7 +191,7 @@ export function getLinearDimensionTextPosition(
     const direction = rotationDelta > 0 && rotationDelta < Math.PI ? 1 : -1
     textPosition = getPointByLengthAndDirection(footPoint, distance + direction * margin, content.position)
     text = formatNumber(getTwoNumbersDistance(left.x, right.x)).toString()
-    size = getTextSize(`${content.fontSize}px ${content.fontFamily}`, text)
+    size = getTextSize(getTextStyleFont(content), text)
     if (size) {
       textPosition = getPointByLengthAndAngle(textPosition, size.width / 2, textRotation - Math.PI)
     }
@@ -201,7 +201,7 @@ export function getLinearDimensionTextPosition(
       y: content.position.y - margin,
     }
     text = formatNumber(getTwoNumbersDistance(content.p1.x, content.p2.x)).toString()
-    size = getTextSize(`${content.fontSize}px ${content.fontFamily}`, text)
+    size = getTextSize(getTextStyleFont(content), text)
     if (size) {
       textPosition.x -= size.width / 2
     }
@@ -211,7 +211,7 @@ export function getLinearDimensionTextPosition(
       y: content.position.y,
     }
     text = formatNumber(getTwoNumbersDistance(content.p1.y, content.p2.y)).toString()
-    size = getTextSize(`${content.fontSize}px ${content.fontFamily}`, text)
+    size = getTextSize(getTextStyleFont(content), text)
     if (size) {
       textPosition.y += size.width / 2
     }
