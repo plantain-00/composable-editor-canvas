@@ -1588,6 +1588,10 @@ export const TextStyle = {
   fontFamily: string,
 }
 
+export function getTextStyleFont(textStyleFont: TextStyle) {
+  return `${textStyleFont.fontSize}px ${textStyleFont.fontFamily}`
+}
+
 /**
  * @public
  */

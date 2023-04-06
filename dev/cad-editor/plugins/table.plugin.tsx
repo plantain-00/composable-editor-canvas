@@ -20,21 +20,17 @@ interface MergedCell {
   column: [number, number]
 }
 
-interface TableCellText extends core.TextStyle {
+interface TableCellText extends model.TextFields {
+  type: 'table cell text'
   text: string
-  color: number
   column: number
-  align?: core.Align
-  verticalAlign?: core.VerticalAlign
 }
 
-export function getModel(ctx: PluginContext): model.Model<TableContent> {
-  const TableCellText = ctx.and(ctx.TextStyle, {
+export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
+  const TableCellText = ctx.and(ctx.TextFields, {
+    type: 'table cell text',
     text: ctx.string,
-    color: ctx.number,
     column: ctx.number,
-    align: ctx.optional(ctx.Align),
-    verticalAlign: ctx.optional(ctx.VerticalAlign),
   })
   const TableRow = {
     height: ctx.number,
@@ -56,7 +52,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
     ys: number[]
     children: ({ region: core.Position[], row: number, column: number } & core.Region)[]
   }>>()
-  const textLayoutResultCache = new ctx.WeakmapMap2Cache<object, number, number, ReturnType<typeof ctx.flowLayout<string>>>()
+  const textLayoutResultCache = new ctx.WeakmapMap3Cache<object, object, number, number, ReturnType<typeof ctx.flowLayout<string>>>()
   const getGeometries = (content: Omit<TableContent, 'type'>) => {
     return geometriesCache.get(content, () => {
       const lines: [core.Position, core.Position][] = []
@@ -98,10 +94,10 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
                 x: xEnd,
                 y: yEnd,
               }
-              for (let k = 1; k < cell.column[1]; k++) {
-                end.x += content.widths[i + k]
+              for (let k = 1; k < cell.column[1] && k < content.widths.length - j; k++) {
+                end.x += content.widths[j + k]
               }
-              for (let k = 1; k < cell.row[1]; k++) {
+              for (let k = 1; k < cell.row[1] && k < content.rows.length - i; k++) {
                 end.y += content.rows[i + k].height
               }
               children.push({
@@ -148,7 +144,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
     })
   }
   const React = ctx.React
-  return {
+  const tableModel: model.Model<TableContent> = {
     type: 'table',
     ...ctx.strokeModel,
     move(content, offset) {
@@ -170,26 +166,28 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
           const child = geometries.children.find(f => f.row === i && f.column === cell.column)
           if (!child) return
           const { width, height } = child
-          const textLayout = textLayoutResultCache.get(cell, width, height, () => {
+          const textStyleContent = ctx.getTextStyleContent(cell, renderCtx.contents)
+          const textLayout = textLayoutResultCache.get(cell, textStyleContent, width, height, () => {
             const state = cell.text.split('')
-            const getTextWidth = (text: string) => ctx.getTextSizeFromCache(`${cell.fontSize}px ${cell.fontFamily}`, text)?.width ?? 0
+            const getTextWidth = (text: string) => ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text)?.width ?? 0
             return ctx.flowLayout({
               state,
               width,
               height,
-              lineHeight: cell.fontSize * 1.2,
+              lineHeight: textStyleContent.lineHeight ?? textStyleContent.fontSize * 1.2,
               getWidth: getTextWidth,
-              align: cell.align ?? 'center',
-              verticalAlign: cell.verticalAlign ?? 'middle',
+              align: textStyleContent.align ?? 'center',
+              verticalAlign: textStyleContent.verticalAlign ?? 'middle',
               endContent: '',
               isNewLineContent: c => c === '\n',
               isPartOfComposition: c => ctx.isWordCharactor(c),
               getComposition: (index: number) => ctx.getTextComposition(index, state, getTextWidth, c => c),
             })
           })
+          const font = ctx.getTextStyleFont(textStyleContent)
           for (const { x, y, content: text } of textLayout.layoutResult) {
-            const textWidth = ctx.getTextSizeFromCache(`${cell.fontSize}px ${cell.fontFamily}`, text)?.width ?? 0
-            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + cell.fontSize, text, cell.color, cell.fontSize, cell.fontFamily, { textAlign: 'center', cacheKey: cell }))
+            const textWidth = ctx.getTextSizeFromCache(font, text)?.width ?? 0
+            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey: cell }))
           }
         })
       })
@@ -293,11 +291,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
         properties.columnSpan = <ctx.NumberEditor value={mergedCell?.column[1] ?? 1} setValue={(v) => update(c => { if (isTableContent(c)) { setTableColumnSpan(c, row, column, v) } })} />
         const cell = content.rows[row].cells?.find(c => c.column === column)
         if (cell) {
-          properties.fontSize = <ctx.NumberEditor value={cell.fontSize} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.fontSize = v) } })} />
-          properties.fontFamily = <ctx.StringEditor value={cell.fontFamily} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.fontFamily = v) } })} />
-          properties.color = <ctx.NumberEditor type='color' value={cell.color} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.color = v) } })} />
-          properties.align = <ctx.EnumEditor enums={ctx.aligns} value={cell.align ?? 'center'} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.align = v) } })} />
-          properties.verticalAlign = <ctx.EnumEditor enums={ctx.verticalAligns} value={cell.verticalAlign ?? 'middle'} setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.verticalAlign = v) } })} />
+          Object.assign(properties, ctx.getTextContentPropertyPanel(cell, f => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, f) } }), contents))
         }
       }
       return {
@@ -307,7 +301,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
-    editPanel(content, transform, update, cancel, activeChild) {
+    editPanel(content, transform, update, contents, cancel, activeChild) {
       const p = ctx.transformPosition(content, transform)
       if (!activeChild) return <></>
       const [row, column] = activeChild
@@ -316,15 +310,17 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
       const { children } = getGeometries(content)
       const child = children.find(f => f.row === row && f.column === column)
       if (!child) return <></>
-      const fontSize = cell.fontSize * transform.scale
+      const textStyleContent = ctx.getTextStyleContent(cell, contents)
+      const fontSize = textStyleContent.fontSize * transform.scale
       return <ctx.TextEditor
         fontSize={fontSize}
         width={child.width * transform.scale}
         height={child.height * transform.scale}
-        color={cell.color}
-        fontFamily={cell.fontFamily}
-        align={cell.align ?? 'center'}
-        verticalAlign={cell.verticalAlign ?? 'middle'}
+        color={textStyleContent.color}
+        fontFamily={textStyleContent.fontFamily}
+        align={textStyleContent.align ?? 'center'}
+        verticalAlign={textStyleContent.verticalAlign ?? 'middle'}
+        lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : undefined}
         onCancel={cancel}
         x={p.x + child.x * transform.scale}
         y={p.y + child.y * transform.scale}
@@ -334,7 +330,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
       />
     },
     isValid: (c, p) => ctx.validate(c, TableContent, p),
-    getChildByPoint(content, point) {
+    getChildByPoint(content, point, { textStyleId }) {
       const { children } = getGeometries(content)
       const child = children.find(c => ctx.pointInPolygon(point, c.region))
       if (child) {
@@ -345,6 +341,8 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
               row.cells = []
             }
             row.cells.push({
+              type: 'table cell text',
+              textStyleId,
               text: '',
               color: 0x000000,
               fontSize: 16,
@@ -364,6 +362,13 @@ export function getModel(ctx: PluginContext): model.Model<TableContent> {
       return
     },
   }
+  return [
+    tableModel,
+    {
+      type: 'table cell text',
+      ...ctx.textModel,
+    }
+  ]
 }
 
 export function isTableContent(content: model.BaseContent): content is TableContent {

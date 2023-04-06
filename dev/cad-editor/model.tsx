@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import produce, { Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Transform, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 
@@ -66,6 +66,22 @@ export const FillFields = {
   fillStyleId: optional(or(number, Content)),
 }
 
+export interface TextFields extends TextStyle {
+  color: number
+  textStyleId?: number | BaseContent
+  lineHeight?: number
+  align?: Align
+  verticalAlign?: VerticalAlign
+}
+
+export const TextFields = and(TextStyle, {
+  color: number,
+  textStyleId: optional(or(number, Content)),
+  lineHeight: optional(number),
+  align: optional(Align),
+  verticalAlign: optional(VerticalAlign),
+})
+
 export interface VariableValuesFields {
   variableValues?: Record<string, string>
 }
@@ -117,6 +133,10 @@ export const fillModel = {
   isFill: true,
 }
 
+export const textModel = {
+  isText: true,
+}
+
 export const variableValuesModel = {
   isVariableValues: true,
 }
@@ -144,6 +164,7 @@ type FeatureModels = typeof strokeModel &
   typeof arrowModel &
   typeof segmentCountModel &
   typeof angleDeltaModel &
+  typeof textModel &
   typeof variableValuesModel
 
 export type Model<T> = Partial<FeatureModels> & {
@@ -180,6 +201,7 @@ export type Model<T> = Partial<FeatureModels> & {
     content: Omit<T, 'type'>,
     transform: Transform,
     update: (recipe: (content: BaseContent, contents: readonly Nullable<BaseContent>[]) => void) => void,
+    contents: readonly Nullable<BaseContent>[],
     cancel: () => void,
     activeChild?: number[],
   ): JSX.Element
@@ -192,7 +214,7 @@ export type Model<T> = Partial<FeatureModels> & {
   getEndPoint?(content: T): Position
   getParam?(content: T, point: Position): number
   getPoint?(content: T, param: number): Position
-  getChildByPoint?(content: T, point: Position): { child: number[], patches?: [Patch[], Patch[]] } | undefined
+  getChildByPoint?(content: T, point: Position, options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
 }
 
 export interface Select {
@@ -451,6 +473,19 @@ export function getFillStyles(contents: readonly Nullable<BaseContent>[]) {
   })
 }
 
+const textStylesCache = new WeakmapCache<readonly Nullable<BaseContent>[], { label: string, index: number, content: TextStyleContent }[]>()
+export function getTextStyles(contents: readonly Nullable<BaseContent>[]) {
+  return textStylesCache.get(contents, () => {
+    return contents.map((c, i) => ({ c, i }))
+      .filter((c): c is { c: TextStyleContent, i: number } => !!c.c && isTextStyleContent(c.c))
+      .map(({ c, i }) => ({
+        index: i,
+        content: c,
+        label: `${c.fontFamily} ${c.fontSize} ${getColorString(c.color)}`,
+      }))
+  })
+}
+
 export type StrokeStyleContent = BaseContent<'stroke style'> & StrokeFields & Region & {
   isCurrent?: boolean
 }
@@ -473,6 +508,18 @@ export const FillStyleContent = and(BaseContent('fill style'), FillFields, Regio
 
 export function isFillStyleContent(content: BaseContent): content is FillStyleContent {
   return content.type === 'fill style'
+}
+
+export type TextStyleContent = BaseContent<'text style'> & TextFields & Position & {
+  isCurrent?: boolean
+}
+
+export const TextStyleContent = and(BaseContent('text style'), TextFields, Position, {
+  isCurrent: optional(boolean),
+})
+
+export function isTextStyleContent(content: BaseContent): content is TextStyleContent {
+  return content.type === 'text style'
 }
 
 export type ViewportContent = BaseContent<'viewport'> & Position & StrokeFields & {
@@ -553,6 +600,48 @@ export function getFillContentPropertyPanel(
   }
 }
 
+export function getTextContentPropertyPanel(
+  content: TextFields,
+  update: (recipe: (content: BaseContent) => void) => void,
+  contents?: readonly Nullable<BaseContent>[],
+): Record<string, JSX.Element | (JSX.Element | undefined)[]> {
+  const textStyleId: (JSX.Element | undefined)[] = []
+  if (contents) {
+    const textStyles = getTextStyles(contents)
+    if (textStyles.length > 0) {
+      textStyleId.push(<BooleanEditor value={content.textStyleId !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.textStyleId = v ? textStyles[0].index : undefined } })} />)
+      if (typeof content.textStyleId === 'number') {
+        textStyleId.push(
+          <EnumEditor
+            select
+            enums={textStyles.map(s => s.index)}
+            enumTitles={textStyles.map(s => s.label)}
+            value={content.textStyleId}
+            setValue={(v) => update(c => { if (isTextContent(c)) { c.textStyleId = v } })}
+          />
+        )
+      }
+    }
+  }
+  if (textStyleId.length > 1) {
+    return {
+      textStyleId,
+    }
+  }
+  return {
+    textStyleId,
+    fontSize: <NumberEditor value={content.fontSize} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontSize = v } })} />,
+    fontFamily: <StringEditor value={content.fontFamily} setValue={(v) => update(c => { if (isTextContent(c)) { c.fontFamily = v } })} />,
+    color: <NumberEditor type='color' value={content.color} setValue={(v) => update(c => { if (isTextContent(c)) { c.color = v } })} />,
+    lineHeight: [
+      <BooleanEditor value={content.lineHeight !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v ? content.fontSize * 1.2 : undefined } })} />,
+      content.lineHeight !== undefined ? <NumberEditor value={content.lineHeight} setValue={(v) => update(c => { if (isTextContent(c)) { c.lineHeight = v } })} /> : undefined,
+    ],
+    align: <EnumEditor enums={aligns} value={content.align ?? 'center'} setValue={(v) => update(c => { if (isTextContent(c)) { c.align = v } })} />,
+    verticalAlign: <EnumEditor enums={verticalAligns} value={content.verticalAlign ?? 'middle'} setValue={(v) => update(c => { if (isTextContent(c)) { c.verticalAlign = v } })} />,
+  }
+}
+
 export function getArrowContentPropertyPanel(
   content: ArrowFields,
   update: (recipe: (content: BaseContent) => void) => void,
@@ -620,6 +709,10 @@ export function isFillContent(content: BaseContent): content is (BaseContent & F
   return !!getContentModel(content)?.isFill
 }
 
+export function isTextContent(content: BaseContent): content is (BaseContent & TextFields) {
+  return !!getContentModel(content)?.isText
+}
+
 export function isContainerContent(content: BaseContent): content is (BaseContent & ContainerFields) {
   return !!getContentModel(content)?.isContainer
 }
@@ -657,6 +750,15 @@ export function getFillStyleContent(content: FillFields, contents: readonly Null
     const fillStyleContent = typeof content.fillStyleId === 'number' ? contents[content.fillStyleId] : content.fillStyleId
     if (fillStyleContent && isFillStyleContent(fillStyleContent)) {
       return fillStyleContent
+    }
+  }
+  return content
+}
+export function getTextStyleContent(content: TextFields, contents: readonly Nullable<BaseContent>[]) {
+  if (content.textStyleId !== undefined) {
+    const textStyleContent = typeof content.textStyleId === 'number' ? contents[content.textStyleId] : content.textStyleId
+    if (textStyleContent && isTextStyleContent(textStyleContent)) {
+      return textStyleContent
     }
   }
   return content
@@ -1245,6 +1347,7 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
   align?: Align
   verticalAlign?: VerticalAlign
   borderWidth?: number
+  lineHeight?: number
 }) {
   const { state, setState, undo, redo } = useUndoRedo(props.value.split(''))
   const { renderEditor } = useFlowLayoutTextEditor({
@@ -1254,7 +1357,7 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
     height: props.height ?? 100,
     fontSize: props.fontSize,
     fontFamily: props.fontFamily,
-    lineHeight: props.fontSize * 1.2,
+    lineHeight: props.lineHeight ?? props.fontSize * 1.2,
     processInput(e) {
       if (e.key === 'Escape') {
         props.onCancel?.()
