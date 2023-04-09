@@ -1,3 +1,5 @@
+import { Vec3 } from "./types";
+
 /**
  * @public
  */
@@ -68,6 +70,13 @@ export const m3 = {
       b20 * a00 + b21 * a10 + b22 * a20,
       b20 * a01 + b21 * a11 + b22 * a21,
       b20 * a02 + b21 * a12 + b22 * a22,
+    ];
+  },
+  multiplyVec3(a: Matrix, b: Vec3): Vec3 {
+    return [
+      b[0] * a[0] + b[1] * a[3] + b[2] * a[6],
+      b[0] * a[1] + b[1] * a[4] + b[2] * a[7],
+      b[0] * a[2] + b[1] * a[5] + b[2] * a[8],
     ];
   },
   getTransform(m: Matrix) {

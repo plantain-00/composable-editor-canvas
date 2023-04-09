@@ -50,7 +50,7 @@ function StoryApp() {
       return (
         <div style={{ display: 'flex', padding: '20px', height: `calc(${window.innerHeight}px - 40px)`, overflowY: 'auto' }}>
           <div style={{ width: `calc(50% + ${x + offset.x}px)` }}>
-            <OffsetXContext.Provider value={x}>
+            <OffsetXContext.Provider value={{ offset: x, setOffset: setX }}>
               <story.Component />
             </OffsetXContext.Provider>
           </div>
@@ -66,7 +66,7 @@ function StoryApp() {
   return null
 }
 
-export const OffsetXContext = React.createContext<number>(0)
+export const OffsetXContext = React.createContext<{ offset: number, setOffset?: (offset: number) => void }>({ offset: 0 })
 
 function HighlightCode(props: { code: string }) {
   const ref = React.useRef<HTMLElement | null>(null)
