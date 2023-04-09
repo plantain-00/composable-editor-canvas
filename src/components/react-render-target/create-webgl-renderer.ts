@@ -569,7 +569,7 @@ export function getTextGraphic(
       x: x1,
       y: y1,
       src: imageData,
-      color: [0, 0, 0, 1],
+      color: defaultVec4Color,
       pattern,
     }
   }
@@ -579,7 +579,7 @@ export function getTextGraphic(
       x: x1,
       y: y1,
       src: imageData,
-      color: [0, 0, 0, 1],
+      color: defaultVec4Color,
       pattern: fill,
     }
   }
@@ -611,6 +611,8 @@ export function getTextGraphic(
     src: imageData,
   }
 }
+
+export const defaultVec4Color: Vec4 = [0, 0, 0, 1]
 
 export function getPathGraphics(
   points: Position[][],

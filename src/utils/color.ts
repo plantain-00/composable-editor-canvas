@@ -45,7 +45,7 @@ export function colorNumberToPixelColor(n: number) {
   return color
 }
 
-export function mergeOpacityToColor(color?: Vec4, opacity?: number) {
+export function mergeOpacityToColor(color?: Vec4, opacity?: number): Vec4 | undefined {
   if (opacity === undefined) {
     return color
   }

@@ -34,6 +34,7 @@
     "@types/webpack": "5.28.1",
     "@typescript-eslint/eslint-plugin": "5.57.1",
     "@typescript-eslint/parser": "5.57.1",
+    "@webgpu/types": "0.1.30",
     "ava": "4.3.3",
     "b-spline": "2.0.2",
     "clean-release": "2.18.0",

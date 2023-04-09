@@ -1,5 +1,6 @@
 import React from "react"
-import { m3, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget } from "../src"
+import { m3, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget, reactWebgpuRenderTarget } from "../src"
+import { OffsetXContext } from "./story-app"
 
 export default () => {
   const renderArcs = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
@@ -142,7 +143,12 @@ export default () => {
       target.renderCircle(180, 150, 50, { clip: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) }),
     ], 230, 200)
   }
-
+  const { setOffset } = React.useContext(OffsetXContext)
+  React.useEffect(() => {
+    if (navigator.gpu) {
+      setOffset?.(230)
+    }
+  }, [setOffset])
   return (
     <div>
       <div style={{
@@ -155,43 +161,56 @@ export default () => {
         <span>{reactSvgRenderTarget.type}</span>
         <span>{reactCanvasRenderTarget.type}</span>
         <span>{reactWebglRenderTarget.type}</span>
+        {navigator.gpu && <span>{reactWebgpuRenderTarget.type}</span>}
       </div>
       {renderArcs(reactSvgRenderTarget)}
       {renderArcs(reactCanvasRenderTarget)}
       {renderArcs(reactWebglRenderTarget)}
+      {navigator.gpu && renderArcs(reactWebgpuRenderTarget)}
       {renderCircles(reactSvgRenderTarget)}
       {renderCircles(reactCanvasRenderTarget)}
       {renderCircles(reactWebglRenderTarget)}
+      {navigator.gpu && renderCircles(reactWebgpuRenderTarget)}
       {renderTexts(reactSvgRenderTarget)}
       {renderTexts(reactCanvasRenderTarget)}
       {renderTexts(reactWebglRenderTarget)}
+      {navigator.gpu && renderTexts(reactWebgpuRenderTarget)}
       {renderEllipseArcs(reactSvgRenderTarget)}
       {renderEllipseArcs(reactCanvasRenderTarget)}
       {renderEllipseArcs(reactWebglRenderTarget)}
+      {navigator.gpu && renderEllipseArcs(reactWebgpuRenderTarget)}
       {renderEllipses(reactSvgRenderTarget)}
       {renderEllipses(reactCanvasRenderTarget)}
       {renderEllipses(reactWebglRenderTarget)}
+      {navigator.gpu && renderEllipses(reactWebgpuRenderTarget)}
       {renderRects(reactSvgRenderTarget)}
       {renderRects(reactCanvasRenderTarget)}
       {renderRects(reactWebglRenderTarget)}
+      {navigator.gpu && renderRects(reactWebgpuRenderTarget)}
       {renderPaths(reactSvgRenderTarget)}
       {renderPaths(reactCanvasRenderTarget)}
       {renderPaths(reactWebglRenderTarget)}
+      {navigator.gpu && renderPaths(reactWebgpuRenderTarget)}
       {renderImages(reactSvgRenderTarget)}
       {renderImages(reactCanvasRenderTarget)}
       {renderImages(reactWebglRenderTarget)}
+      {navigator.gpu && renderImages(reactWebgpuRenderTarget)}
       {renderPolylines(reactSvgRenderTarget)}
       {renderPolylines(reactCanvasRenderTarget)}
       {renderPolylines(reactWebglRenderTarget)}
+      {navigator.gpu && renderPolylines(reactWebgpuRenderTarget)}
       {renderPolygons(reactSvgRenderTarget)}
       {renderPolygons(reactCanvasRenderTarget)}
       {renderPolygons(reactWebglRenderTarget)}
+      {navigator.gpu && renderPolygons(reactWebgpuRenderTarget)}
       {renderPathCommands(reactSvgRenderTarget)}
       {renderPathCommands(reactCanvasRenderTarget)}
       {renderPathCommands(reactWebglRenderTarget)}
+      {navigator.gpu && renderPathCommands(reactWebgpuRenderTarget)}
       {renderGroups(reactSvgRenderTarget)}
       {renderGroups(reactCanvasRenderTarget)}
       {renderGroups(reactWebglRenderTarget)}
+      {navigator.gpu && renderGroups(reactWebgpuRenderTarget)}
     </div>
   )
 }
