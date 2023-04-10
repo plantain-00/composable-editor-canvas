@@ -32,6 +32,7 @@ export interface TextureGraphic {
   width?: number
   height?: number
   src: ImageData | ImageBitmap
+  canvas?: HTMLCanvasElement
   filters?: FilterGraphic[]
 }
 
@@ -494,13 +495,14 @@ export function getTextGraphic(
     return {
       textMetrics: t,
       imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+      canvas,
     }
   }
   const imageDataInfo = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getTextImageData) : getTextImageData()
   if (!imageDataInfo) {
     return undefined
   }
-  const { imageData, textMetrics } = imageDataInfo
+  const { imageData, textMetrics, canvas } = imageDataInfo
   let y1 = y - imageData.height + strokeWidth + textMetrics.actualBoundingBoxDescent
   if (options?.textBaseline === 'top') {
     y1 += textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent / 2
@@ -569,6 +571,7 @@ export function getTextGraphic(
       x: x1,
       y: y1,
       src: imageData,
+      canvas,
       color: defaultVec4Color,
       pattern,
     }
@@ -579,6 +582,7 @@ export function getTextGraphic(
       x: x1,
       y: y1,
       src: imageData,
+      canvas,
       color: defaultVec4Color,
       pattern: fill,
     }
@@ -593,6 +597,7 @@ export function getTextGraphic(
       y: y1,
       color: colorNumberToRec(options.strokeColor, options.strokeOpacity),
       src: imageData,
+      canvas,
     }
   }
   if (options?.strokeColor !== undefined) {
@@ -601,6 +606,7 @@ export function getTextGraphic(
       x: x1,
       y: y1,
       src: imageData,
+      canvas,
     }
   }
   return {
@@ -609,6 +615,7 @@ export function getTextGraphic(
     y: y1,
     color: colorNumberToRec(fill, options?.fillOpacity),
     src: imageData,
+    canvas,
   }
 }
 
@@ -956,7 +963,7 @@ export interface FillStyle {
   fillRadialGradient: RadialGradient
 }
 
-const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics } | undefined>()
+const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics, canvas: HTMLCanvasElement } | undefined>()
 const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
 const polylineLinesCache = new WeakmapMapCache<Position[], true | 'butt' | 'round' | 'square', number[]>()
