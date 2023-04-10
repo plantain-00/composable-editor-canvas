@@ -40,6 +40,47 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       return uniforms.color;
     }`
   })
+  const textureShaderModule = device.createShaderModule({
+    code: `struct Uniforms {
+      matrix: mat3x3f,
+      opacity: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+    
+    @vertex
+    fn vertex_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput
+    {
+      var pos = array<vec2f, 6>(
+        vec2f(0.0, 0.0),
+        vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, 1.0),
+        vec2f(1.0, 0.0),
+        vec2f(1.0, 1.0),
+      );
+      let xy = pos[vertexIndex];
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy, 0, 1);
+      vsOut.texcoord = xy;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) texcoord: vec2f) -> @location(0) vec4f
+    {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      return textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
+    }`
+  })
 
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const basicPipelineCache = new MapCache<LineOrTriangleGraphic['type'], GPURenderPipeline>()
@@ -47,7 +88,66 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder) => {
     const color = mergeOpacityToColor(graphic.color, graphic.opacity)
 
-    if (graphic.type !== 'texture' && graphic.type !== 'triangle fan') {
+    if (graphic.type === 'texture') {
+      let textureMatrix = m3.multiply(matrix, m3.translation(graphic.x, graphic.y))
+      const width = graphic.width ?? graphic.src.width
+      const height = graphic.height ?? graphic.src.height
+      textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
+
+      const tex = device.createTexture({
+        format: 'rgba8unorm',
+        size: [graphic.src.width, graphic.src.height],
+        usage: GPUTextureUsage.TEXTURE_BINDING |
+          GPUTextureUsage.COPY_DST |
+          GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      if (graphic.src instanceof ImageBitmap) {
+        device.queue.copyExternalImageToTexture(
+          { source: graphic.src },
+          { texture: tex },
+          { width: graphic.src.width, height: graphic.src.height },
+        );
+      } else if (graphic.canvas) {
+        device.queue.copyExternalImageToTexture(
+          { source: graphic.canvas },
+          { texture: tex },
+          { width: graphic.src.width, height: graphic.src.height },
+        );
+      }
+      const sampler = device.createSampler({
+        magFilter: 'nearest',
+        minFilter: 'nearest',
+      });
+      const pipeline = device.createRenderPipeline({
+        vertex: {
+          module: textureShaderModule,
+          entryPoint: 'vertex_main',
+        },
+        fragment: {
+          module: textureShaderModule,
+          entryPoint: 'fragment_main',
+          targets: [{ format }]
+        },
+        layout: 'auto',
+      })
+      passEncoder.setPipeline(pipeline);
+      passEncoder.setBindGroup(0, device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          {
+            binding: 0, resource: {
+              buffer: createUniformsBuffer(device, [
+                { type: 'mat3x3', value: textureMatrix },
+                { type: 'number', value: graphic.opacity ?? 1 },
+              ])
+            }
+          },
+          { binding: 1, resource: sampler },
+          { binding: 2, resource: tex.createView() },
+        ],
+      }));
+      passEncoder.draw(6);
+    } else if (graphic.type !== 'triangle fan') {
       const pipeline = basicPipelineCache.get(graphic.type, () => device.createRenderPipeline({
         vertex: {
           module: basicShaderModule,
