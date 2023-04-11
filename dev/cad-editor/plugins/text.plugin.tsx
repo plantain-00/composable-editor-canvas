@@ -109,6 +109,30 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
               },
             },
+            {
+              x: content.x,
+              y: content.y + content.fontSize * (content.width ? 1 : -1),
+              cursor: 'move',
+              update(c, { cursor, scale }) {
+                if (!isTextContent(c)) {
+                  return
+                }
+                c.fontSize = Math.abs(cursor.y - content.y)
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              },
+            },
+            ...(content.width ? [{
+              x: content.x + content.width,
+              y: content.y,
+              cursor: 'move',
+              update(c, { cursor, scale }) {
+                if (!isTextContent(c)) {
+                  return
+                }
+                c.width = Math.abs(cursor.x - content.x)
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              },
+            } as core.EditPoint<model.BaseContent>] : []),
           ],
         }
       })

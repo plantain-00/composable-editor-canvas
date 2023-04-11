@@ -40,6 +40,51 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       return uniforms.color;
     }`
   })
+  const coloredTextureShaderModule = device.createShaderModule({
+    code: `struct Uniforms {
+      matrix: mat3x3f,
+      color: vec4f,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+    
+    @vertex
+    fn vertex_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput
+    {
+      var pos = array<vec2f, 6>(
+        vec2f(0.0, 0.0),
+        vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, 1.0),
+        vec2f(1.0, 0.0),
+        vec2f(1.0, 1.0),
+      );
+      let xy = pos[vertexIndex];
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy, 0, 1);
+      vsOut.texcoord = xy;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) texcoord: vec2f) -> @location(0) vec4f
+    {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      var color = textureSample(myTexture, mySampler, texcoord) * uniforms.color;
+      if (color.a < 0.1) {
+        discard;
+      }
+      return color;
+    }`
+  })
   const textureShaderModule = device.createShaderModule({
     code: `struct Uniforms {
       matrix: mat3x3f,
@@ -120,11 +165,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       });
       const pipeline = device.createRenderPipeline({
         vertex: {
-          module: textureShaderModule,
+          module: graphic.color ? coloredTextureShaderModule : textureShaderModule,
           entryPoint: 'vertex_main',
         },
         fragment: {
-          module: textureShaderModule,
+          module: graphic.color ? coloredTextureShaderModule : textureShaderModule,
           entryPoint: 'fragment_main',
           targets: [{ format }]
         },
@@ -138,7 +183,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
             binding: 0, resource: {
               buffer: createUniformsBuffer(device, [
                 { type: 'mat3x3', value: textureMatrix },
-                { type: 'number', value: graphic.opacity ?? 1 },
+                graphic.color ? { type: 'vec4', value: graphic.color } : { type: 'number', value: graphic.opacity ?? 1 },
               ])
             }
           },
