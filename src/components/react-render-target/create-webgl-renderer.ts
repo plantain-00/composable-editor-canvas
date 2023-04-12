@@ -10,6 +10,7 @@ import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/wea
 import { Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
 import type { Align, VerticalAlign } from '../../utils/flow-layout'
+import { Lazy } from '../../utils/lazy'
 
 /**
  * @public
@@ -66,7 +67,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   }
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  const basicProgramInfo = twgl.createProgramInfo(gl, [`
+  const basicProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     uniform float flipY;
@@ -78,8 +79,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     uniform vec4 color;
     void main() {
       gl_FragColor = color;
-    }`]);
-  const coloredTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const coloredTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
@@ -105,8 +106,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         discard;
       }
       gl_FragColor = color;
-    }`]);
-  const textureProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const textureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
@@ -128,8 +129,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         discard;
       }
       gl_FragColor = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
-    }`]);
-  const colorMatrixTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const colorMatrixTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     uniform float flipY;
@@ -157,8 +158,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 			gl_FragColor.g = colorMatrix[5] * c.r + colorMatrix[6] * c.g + colorMatrix[7] * c.b + colorMatrix[8] * c.a + colorMatrix[9];
 			gl_FragColor.b = colorMatrix[10] * c.r + colorMatrix[11] * c.g + colorMatrix[12] * c.b + colorMatrix[13] * c.a + colorMatrix[14];
 			gl_FragColor.a = colorMatrix[15] * c.r + colorMatrix[16] * c.g + colorMatrix[17] * c.b + colorMatrix[18] * c.a + colorMatrix[19];
-    }`]);
-  const blurTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const blurTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     uniform float flipY;
@@ -197,8 +198,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 			gl_FragColor += texture2D(texture, texcoord + vec2( 5.0*px.x,  5.0*px.y))*0.0215963866053;
 			gl_FragColor += texture2D(texture, texcoord + vec2( 6.0*px.x,  6.0*px.y))*0.00895781211794;
 			gl_FragColor += texture2D(texture, texcoord + vec2( 7.0*px.x,  7.0*px.y))*0.0044299121055113265;
-    }`]);
-  const colorMaskedTextureProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const colorMaskedTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
@@ -225,8 +226,8 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         discard;
       }
       gl_FragColor = color2;
-    }`]);
-  const gradientProgramInfo = twgl.createProgramInfo(gl, [`
+    }`]));
+  const gradientProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     attribute vec4 color;
     uniform mat3 matrix;
@@ -244,7 +245,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
     void main() {
       gl_FragColor = v_color;
-    }`]);
+    }`]));
   // gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   const textureBufferInfo = twgl.primitives.createXYQuadBufferInfo(gl);
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, WebGLTexture>()
@@ -254,10 +255,10 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     const filterUniforms: Record<string, unknown> = {}
     let programInfo: twgl.ProgramInfo
     if (filter.type === 'color matrix') {
-      programInfo = colorMatrixTextureProgramInfo
+      programInfo = colorMatrixTextureProgramInfo.instance
       filterUniforms.colorMatrix = filter.value
     } else {
-      programInfo = blurTextureProgramInfo
+      programInfo = blurTextureProgramInfo.instance
       filterUniforms.px = filter.value
     }
     return {
@@ -355,11 +356,11 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         filterUniforms = p.filterUniforms
       } else {
         if (line.pattern) {
-          programInfo = colorMaskedTextureProgramInfo
+          programInfo = colorMaskedTextureProgramInfo.instance
         } else if (line.color) {
-          programInfo = coloredTextureProgramInfo
+          programInfo = coloredTextureProgramInfo.instance
         } else {
-          programInfo = textureProgramInfo
+          programInfo = textureProgramInfo.instance
         }
       }
 
@@ -382,7 +383,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
     } else {
       const drawObject: twgl.DrawObject = {
-        programInfo: line.colors ? gradientProgramInfo : basicProgramInfo,
+        programInfo: line.colors ? gradientProgramInfo.instance : basicProgramInfo.instance,
         bufferInfo: bufferInfoCache.get(line.points, () => {
           const arrays: twgl.Arrays = {
             position: {
