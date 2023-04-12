@@ -1,4 +1,5 @@
 /// <reference types="@webgpu/types" />
+import { Lazy } from "../../utils/lazy";
 import { mergeOpacityToColor } from "../../utils/color";
 import { Matrix, m3 } from "../../utils/matrix";
 import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-layout";
@@ -20,7 +21,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     alphaMode: 'opaque',
   })
 
-  const basicShaderModule = device.createShaderModule({
+  const basicShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
       color: vec4f,
       matrix: mat3x3f,
@@ -39,8 +40,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       return uniforms.color;
     }`
-  })
-  const coloredTextureShaderModule = device.createShaderModule({
+  }))
+  const coloredTextureShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
       matrix: mat3x3f,
       color: vec4f,
@@ -84,8 +85,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
       return color;
     }`
-  })
-  const textureShaderModule = device.createShaderModule({
+  }))
+  const textureShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
       matrix: mat3x3f,
       opacity: f32,
@@ -125,10 +126,17 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
       return textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
     }`
-  })
+  }))
+
+  const sampler = new Lazy(() => device.createSampler({
+    magFilter: 'nearest',
+    minFilter: 'nearest',
+  }));
 
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const basicPipelineCache = new MapCache<LineOrTriangleGraphic['type'], GPURenderPipeline>()
+  const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
+  const texturePipelineCache = new MapCache<GPUShaderModule, GPURenderPipeline>()
 
   const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder) => {
     const color = mergeOpacityToColor(graphic.color, graphic.opacity)
@@ -139,42 +147,42 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       const height = graphic.height ?? graphic.src.height
       textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
 
-      const tex = device.createTexture({
-        format: 'rgba8unorm',
-        size: [graphic.src.width, graphic.src.height],
-        usage: GPUTextureUsage.TEXTURE_BINDING |
-          GPUTextureUsage.COPY_DST |
-          GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-      if (graphic.src instanceof ImageBitmap) {
-        device.queue.copyExternalImageToTexture(
-          { source: graphic.src },
-          { texture: tex },
-          { width: graphic.src.width, height: graphic.src.height },
-        );
-      } else if (graphic.canvas) {
-        device.queue.copyExternalImageToTexture(
-          { source: graphic.canvas },
-          { texture: tex },
-          { width: graphic.src.width, height: graphic.src.height },
-        );
-      }
-      const sampler = device.createSampler({
-        magFilter: 'nearest',
-        minFilter: 'nearest',
-      });
-      const pipeline = device.createRenderPipeline({
+      const tex = canvasTextureCache.get(graphic.src, () => {
+        const texture = device.createTexture({
+          format: 'rgba8unorm',
+          size: [graphic.src.width, graphic.src.height],
+          usage: GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        if (graphic.src instanceof ImageBitmap) {
+          device.queue.copyExternalImageToTexture(
+            { source: graphic.src },
+            { texture },
+            { width: graphic.src.width, height: graphic.src.height },
+          );
+        } else if (graphic.canvas) {
+          device.queue.copyExternalImageToTexture(
+            { source: graphic.canvas },
+            { texture },
+            { width: graphic.src.width, height: graphic.src.height },
+          );
+        }
+        return texture
+      })
+      const shaderModule = graphic.color ? coloredTextureShaderModule.instance : textureShaderModule.instance
+      const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
         vertex: {
-          module: graphic.color ? coloredTextureShaderModule : textureShaderModule,
+          module: shaderModule,
           entryPoint: 'vertex_main',
         },
         fragment: {
-          module: graphic.color ? coloredTextureShaderModule : textureShaderModule,
+          module: graphic.color ? coloredTextureShaderModule.instance : textureShaderModule.instance,
           entryPoint: 'fragment_main',
           targets: [{ format }]
         },
         layout: 'auto',
-      })
+      }))
       passEncoder.setPipeline(pipeline);
       passEncoder.setBindGroup(0, device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -187,7 +195,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
               ])
             }
           },
-          { binding: 1, resource: sampler },
+          { binding: 1, resource: sampler.instance },
           { binding: 2, resource: tex.createView() },
         ],
       }));
@@ -195,7 +203,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     } else if (graphic.type !== 'triangle fan') {
       const pipeline = basicPipelineCache.get(graphic.type, () => device.createRenderPipeline({
         vertex: {
-          module: basicShaderModule,
+          module: basicShaderModule.instance,
           entryPoint: 'vertex_main',
           buffers: [{
             attributes: [{
@@ -208,7 +216,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           }]
         },
         fragment: {
-          module: basicShaderModule,
+          module: basicShaderModule.instance,
           entryPoint: 'fragment_main',
           targets: [{ format }]
         },

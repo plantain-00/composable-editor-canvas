@@ -18,8 +18,8 @@ export class Debug {
     this.result[name] = Math.round(performance.now() - this.last)
     this.last = performance.now()
   }
-  public print() {
-    this.mark('end')
+  public print(name = 'end') {
+    this.mark(name)
     return Object.values(this.result).join(' ')
   }
 }
