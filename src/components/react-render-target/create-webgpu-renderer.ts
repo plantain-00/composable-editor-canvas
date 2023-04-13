@@ -132,6 +132,13 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     magFilter: 'nearest',
     minFilter: 'nearest',
   }));
+  const sampleCount = 4
+  const sampleTexture = new Lazy(() => device.createTexture({
+    size: [canvas.width, canvas.height],
+    sampleCount,
+    format,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  }))
 
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const basicPipelineCache = new MapCache<LineOrTriangleGraphic['type'], GPURenderPipeline>()
@@ -181,6 +188,9 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           entryPoint: 'fragment_main',
           targets: [{ format }]
         },
+        multisample: {
+          count: sampleCount,
+        },
         layout: 'auto',
       }))
       passEncoder.setPipeline(pipeline);
@@ -225,6 +235,9 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
             : graphic.type === 'line strip' ? 'line-strip'
               : graphic.type === 'lines' ? 'line-list' : 'triangle-strip',
         },
+        multisample: {
+          count: sampleCount,
+        },
         layout: 'auto',
       }))
       passEncoder.setPipeline(pipeline);
@@ -255,7 +268,15 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
+  const resizeCanvasToDisplaySize = () => {
+    if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
+      sampleTexture.instance.destroy()
+      sampleTexture.reset()
+    }
+  }
+
   return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number, rotate?: number) => {
+    resizeCanvasToDisplaySize()
     let worldMatrix = m3.projection(canvas.width, canvas.height)
     worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
     if (scale !== 1) {
@@ -273,7 +294,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         clearValue: backgroundColor,
         loadOp: 'clear',
         storeOp: 'store',
-        view: context.getCurrentTexture().createView()
+        view: sampleTexture.instance.createView(),
+        resolveTarget: context.getCurrentTexture().createView()
       }]
     });
     for (const graphic of graphics) {

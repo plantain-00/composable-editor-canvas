@@ -7,4 +7,7 @@ export class Lazy<T> {
     }
     return this._instance
   }
+  reset() {
+    this._instance = undefined
+  }
 }
