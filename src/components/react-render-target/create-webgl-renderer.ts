@@ -288,21 +288,9 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     gl.stencilFunc(gl.EQUAL, 1, 0xFF);
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
 
-    const { xMin, yMin, xMax, yMax } = bounding
-    const patternWidth = pattern.width ?? Number.MAX_SAFE_INTEGER
-    const patternHeight = pattern.height ?? Number.MAX_SAFE_INTEGER
-    const columnStartIndex = Math.floor(xMin / patternWidth)
-    const columnEndIndex = Math.floor(xMax / patternWidth)
-    const rowStartIndex = Math.floor(yMin / patternHeight)
-    const rowEndIndex = Math.floor(yMax / patternHeight)
-    for (let i = columnStartIndex; i <= columnEndIndex; i++) {
-      for (let j = rowStartIndex; j <= rowEndIndex; j++) {
-        const baseMatrix = m3.multiply(matrix, m3.translation(i * patternWidth, j * patternHeight))
-        for (const p of pattern.graphics) {
-          drawGraphic(p, p.matrix ? m3.multiply(baseMatrix, p.matrix) : baseMatrix)
-        }
-      }
-    }
+    forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+      drawGraphic(g, m)
+    })
     flushDraw()
 
     gl.disable(gl.STENCIL_TEST);
@@ -311,10 +299,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const drawGraphic = (line: Graphic, matrix: Matrix) => {
     const color = mergeOpacityToColor(line.color, line.opacity)
     if (line.type === 'texture') {
-      let textureMatrix = m3.multiply(matrix, m3.translation(line.x, line.y))
-      const width = line.width ?? line.src.width
-      const height = line.height ?? line.src.height
-      textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
+      const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, line)
 
       let texture = canvasTextureCache.get(line.src, () => twgl.createTexture(gl, { src: line.src }))
       if (line.filters && line.filters.length > 1) {
@@ -410,7 +395,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
               : line.type === 'triangle strip' ? gl.TRIANGLE_STRIP : gl.TRIANGLE_FAN,
       }
       if (line.pattern) {
-        const bounding = getPointsBounding(line.points)
+        const bounding = getNumArrayPointsBounding(line.points)
         drawPattern(line.pattern, matrix, bounding, drawObject)
       } else {
         objectsToDraw.push(drawObject)
@@ -424,16 +409,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     gl.clearColor(...backgroundColor)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
-    let worldMatrix = m3.projection(gl.canvas.width, gl.canvas.height)
-    worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
-    if (scale !== 1) {
-      worldMatrix = m3.multiply(worldMatrix, m3.translation(gl.canvas.width / 2, gl.canvas.height / 2));
-      worldMatrix = m3.multiply(worldMatrix, m3.scaling(scale, scale));
-      worldMatrix = m3.multiply(worldMatrix, m3.translation(-gl.canvas.width / 2, -gl.canvas.height / 2));
-    }
-    if (rotate) {
-      worldMatrix = m3.multiply(worldMatrix, m3.rotation(-rotate));
-    }
+    const worldMatrix = getWorldMatrix(gl.canvas, x, y, scale, rotate)
 
     for (const graphic of graphics) {
       const matrix = graphic.matrix ? m3.multiply(worldMatrix, graphic.matrix) : worldMatrix
@@ -1107,7 +1083,7 @@ function numberArrayToPoints(num: number[]) {
   return result
 }
 
-function getPointsBounding(points: number[]) {
+export function getNumArrayPointsBounding(points: number[]) {
   let xMin = Infinity
   let yMin = Infinity
   let xMax = -Infinity
@@ -1134,4 +1110,47 @@ function getPointsBounding(points: number[]) {
     yMin,
     yMax,
   }
+}
+
+export function forEachPatternGraphicRepeatedGraphic(pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, callback: (graphic: Graphic, matrix: Matrix) => void) {
+  const { xMin, yMin, xMax, yMax } = bounding
+  const patternWidth = pattern.width ?? Number.MAX_SAFE_INTEGER
+  const patternHeight = pattern.height ?? Number.MAX_SAFE_INTEGER
+  const columnStartIndex = Math.floor(xMin / patternWidth)
+  const columnEndIndex = Math.floor(xMax / patternWidth)
+  const rowStartIndex = Math.floor(yMin / patternHeight)
+  const rowEndIndex = Math.floor(yMax / patternHeight)
+  for (let i = columnStartIndex; i <= columnEndIndex; i++) {
+    for (let j = rowStartIndex; j <= rowEndIndex; j++) {
+      const baseMatrix = m3.multiply(matrix, m3.translation(i * patternWidth, j * patternHeight))
+      for (const p of pattern.graphics) {
+        callback(p, p.matrix ? m3.multiply(baseMatrix, p.matrix) : baseMatrix)
+      }
+    }
+  }
+}
+
+export function getTextureGraphicMatrix(matrix: Matrix, graphic: TextureGraphic) {
+  const textureMatrix = m3.multiply(matrix, m3.translation(graphic.x, graphic.y))
+  const width = graphic.width ?? graphic.src.width
+  const height = graphic.height ?? graphic.src.height
+  return {
+    textureMatrix: m3.multiply(textureMatrix, m3.scaling(width, height)),
+    width,
+    height,
+  }
+}
+
+export function getWorldMatrix(size: Size, x: number, y: number, scale: number, rotate?: number) {
+  let worldMatrix = m3.projection(size.width, size.height)
+  worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
+  if (scale !== 1) {
+    worldMatrix = m3.multiply(worldMatrix, m3.translation(size.width / 2, size.height / 2));
+    worldMatrix = m3.multiply(worldMatrix, m3.scaling(scale, scale));
+    worldMatrix = m3.multiply(worldMatrix, m3.translation(-size.width / 2, -size.height / 2));
+  }
+  if (rotate) {
+    worldMatrix = m3.multiply(worldMatrix, m3.rotation(-rotate));
+  }
+  return worldMatrix
 }

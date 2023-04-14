@@ -4,8 +4,9 @@ import { mergeOpacityToColor } from "../../utils/color";
 import { Matrix, m3 } from "../../utils/matrix";
 import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-layout";
 import { Vec4 } from "../../utils/types";
-import { MapCache, WeakmapCache } from "../../utils/weakmap-cache";
-import { Graphic, LineOrTriangleGraphic, defaultVec4Color } from "./create-webgl-renderer";
+import { MapCache, WeakmapCache, WeakmapCache2, WeakmapMapCache } from "../../utils/weakmap-cache";
+import { Graphic, LineOrTriangleGraphic, PatternGraphic, defaultVec4Color, getNumArrayPointsBounding, getTextureGraphicMatrix, getWorldMatrix, forEachPatternGraphicRepeatedGraphic } from "./create-webgl-renderer";
+import { Bounding } from "../../utils/geometry";
 
 export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return
@@ -127,6 +128,34 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       return textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
     }`
   }))
+  const gradientShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      color: vec4f,
+      matrix: mat3x3f,
+      flipY: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) color: vec4f,
+    };
+    
+    @vertex
+    fn vertex_main(@location(0) position: vec2f, @location(1) color: vec4f) -> VertexOutput
+    {
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(position.xy, 1)).xy * vec2(1, uniforms.flipY), 0, 1);
+      vsOut.color = color;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) color: vec4f) -> @location(0) vec4f
+    {
+      return color;
+    }`
+  }))
 
   const sampler = new Lazy(() => device.createSampler({
     magFilter: 'nearest',
@@ -141,18 +170,21 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   }))
 
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
-  const basicPipelineCache = new MapCache<LineOrTriangleGraphic['type'], GPURenderPipeline>()
+  const gradientBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
+  const basicPipelineCache = new WeakmapMapCache<GPUShaderModule, LineOrTriangleGraphic['type'], GPURenderPipeline>()
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
   const texturePipelineCache = new MapCache<GPUShaderModule, GPURenderPipeline>()
 
+  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, passEncoder: GPURenderPassEncoder) => {
+    forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+      drawGraphic(g, m, passEncoder)
+    })
+  }
   const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder) => {
     const color = mergeOpacityToColor(graphic.color, graphic.opacity)
 
     if (graphic.type === 'texture') {
-      let textureMatrix = m3.multiply(matrix, m3.translation(graphic.x, graphic.y))
-      const width = graphic.width ?? graphic.src.width
-      const height = graphic.height ?? graphic.src.height
-      textureMatrix = m3.multiply(textureMatrix, m3.scaling(width, height))
+      const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)
 
       const tex = canvasTextureCache.get(graphic.src, () => {
         const texture = device.createTexture({
@@ -184,7 +216,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           entryPoint: 'vertex_main',
         },
         fragment: {
-          module: graphic.color ? coloredTextureShaderModule.instance : textureShaderModule.instance,
+          module: shaderModule,
           entryPoint: 'fragment_main',
           targets: [{ format }]
         },
@@ -210,36 +242,49 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         ],
       }));
       passEncoder.draw(6);
+
+      if (graphic.pattern) {
+        drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, passEncoder)
+      }
     } else if (graphic.type !== 'triangle fan') {
-      const pipeline = basicPipelineCache.get(graphic.type, () => device.createRenderPipeline({
-        vertex: {
-          module: basicShaderModule.instance,
-          entryPoint: 'vertex_main',
-          buffers: [{
-            attributes: [{
-              shaderLocation: 0,
-              offset: 0,
-              format: 'float32x2'
-            }],
-            arrayStride: 8,
-            stepMode: 'vertex'
-          }]
-        },
-        fragment: {
-          module: basicShaderModule.instance,
-          entryPoint: 'fragment_main',
-          targets: [{ format }]
-        },
-        primitive: {
-          topology: graphic.type === 'triangles' ? 'triangle-list'
-            : graphic.type === 'line strip' ? 'line-strip'
-              : graphic.type === 'lines' ? 'line-list' : 'triangle-strip',
-        },
-        multisample: {
-          count: sampleCount,
-        },
-        layout: 'auto',
-      }))
+      const shaderModule = graphic.colors ? gradientShaderModule.instance : basicShaderModule.instance
+      const pipeline = basicPipelineCache.get(shaderModule, graphic.type, () => {
+        const bufferLayout: GPUVertexBufferLayout = graphic.colors ? {
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: 'float32x2' },
+            { shaderLocation: 1, offset: 8, format: "float32x4" },
+          ],
+          arrayStride: 24,
+          stepMode: 'vertex'
+        } : {
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: 'float32x2' },
+          ],
+          arrayStride: 8,
+          stepMode: 'vertex'
+        }
+        return device.createRenderPipeline({
+          vertex: {
+            module: shaderModule,
+            entryPoint: 'vertex_main',
+            buffers: [bufferLayout],
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: 'fragment_main',
+            targets: [{ format }]
+          },
+          primitive: {
+            topology: graphic.type === 'triangles' ? 'triangle-list'
+              : graphic.type === 'line strip' ? 'line-strip'
+                : graphic.type === 'lines' ? 'line-list' : 'triangle-strip',
+          },
+          multisample: {
+            count: sampleCount,
+          },
+          layout: 'auto',
+        })
+      })
       passEncoder.setPipeline(pipeline);
       passEncoder.setBindGroup(0, device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
@@ -255,16 +300,35 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           },
         ],
       }));
-      passEncoder.setVertexBuffer(0, bufferCache.get(graphic.points, () => {
-        const vertices = new Float32Array(graphic.points)
-        const buffer = device.createBuffer({
-          size: vertices.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-        })
-        device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
-        return buffer
-      }));
+      if (graphic.colors) {
+        const colors = graphic.colors
+        passEncoder.setVertexBuffer(0, gradientBufferCache.get(graphic.points, colors, () => {
+          const result = mergeVertexData([{ data: graphic.points, num: 2 }, { data: colors, num: 4 }])
+          const vertices = new Float32Array(result)
+          const buffer = device.createBuffer({
+            size: vertices.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          })
+          device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
+          return buffer
+        }));
+      } else {
+        passEncoder.setVertexBuffer(0, bufferCache.get(graphic.points, () => {
+          const vertices = new Float32Array(graphic.points)
+          const buffer = device.createBuffer({
+            size: vertices.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          })
+          device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
+          return buffer
+        }));
+      }
       passEncoder.draw(graphic.points.length / 2);
+
+      if (graphic.pattern) {
+        const bounding = getNumArrayPointsBounding(graphic.points)
+        drawPattern(graphic.pattern, matrix, bounding, passEncoder)
+      }
     }
   }
 
@@ -277,16 +341,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
 
   return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number, rotate?: number) => {
     resizeCanvasToDisplaySize()
-    let worldMatrix = m3.projection(canvas.width, canvas.height)
-    worldMatrix = m3.multiply(worldMatrix, m3.translation(x, y))
-    if (scale !== 1) {
-      worldMatrix = m3.multiply(worldMatrix, m3.translation(canvas.width / 2, canvas.height / 2));
-      worldMatrix = m3.multiply(worldMatrix, m3.scaling(scale, scale));
-      worldMatrix = m3.multiply(worldMatrix, m3.translation(-canvas.width / 2, -canvas.height / 2));
-    }
-    if (rotate) {
-      worldMatrix = m3.multiply(worldMatrix, m3.rotation(-rotate));
-    }
+    const worldMatrix = getWorldMatrix(canvas, x, y, scale, rotate)
 
     const commandEncoder = device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({
@@ -315,4 +370,15 @@ function createUniformsBuffer(device: GPUDevice, inputs: MemoryLayoutInput[]) {
   });
   device.queue.writeBuffer(uniformBuffer, 0, uniformValues)
   return uniformBuffer
+}
+
+function mergeVertexData(data: { data: number[], num: number }[]) {
+  const result: number[] = []
+  const count = Math.min(...data.map(d => d.data.length / d.num))
+  for (let i = 0; i < count; i++) {
+    for (const d of data) {
+      result.push(...d.data.slice(i * d.num, i * d.num + d.num))
+    }
+  }
+  return result
 }
