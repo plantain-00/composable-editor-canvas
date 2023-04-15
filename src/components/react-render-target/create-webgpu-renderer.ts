@@ -21,6 +21,10 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     format,
     alphaMode: 'opaque',
   })
+  const blend: GPUBlendState = {
+    color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+    alpha: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+  }
 
   const basicShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
@@ -128,6 +132,52 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       return textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
     }`
   }))
+  const colorMaskedTextureShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      matrix: mat3x3f,
+      color: vec4f,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+    
+    @vertex
+    fn vertex_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput
+    {
+      var pos = array<vec2f, 6>(
+        vec2f(0.0, 0.0),
+        vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, 1.0),
+        vec2f(1.0, 0.0),
+        vec2f(1.0, 1.0),
+      );
+      let xy = pos[vertexIndex];
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy, 0, 1);
+      vsOut.texcoord = xy;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) texcoord: vec2f) -> @location(0) vec4f
+    {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      var color = textureSample(myTexture, mySampler, texcoord);
+      var color2 = color * uniforms.color;
+      if (color2.a < 0.1) {
+        discard;
+      }
+      return color;
+    }`
+  }))
   const gradientShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
       color: vec4f,
@@ -209,7 +259,14 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         }
         return texture
       })
-      const shaderModule = graphic.color ? coloredTextureShaderModule.instance : textureShaderModule.instance
+      let shaderModule: GPUShaderModule
+      if (graphic.pattern) {
+        shaderModule = colorMaskedTextureShaderModule.instance
+      } else if (graphic.color) {
+        shaderModule = coloredTextureShaderModule.instance
+      } else {
+        shaderModule = textureShaderModule.instance
+      }
       const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
         vertex: {
           module: shaderModule,
@@ -218,7 +275,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         fragment: {
           module: shaderModule,
           entryPoint: 'fragment_main',
-          targets: [{ format }]
+          targets: [{ format, blend }]
         },
         multisample: {
           count: sampleCount,
@@ -272,7 +329,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           fragment: {
             module: shaderModule,
             entryPoint: 'fragment_main',
-            targets: [{ format }]
+            targets: [{ format, blend }]
           },
           primitive: {
             topology: graphic.type === 'triangles' ? 'triangle-list'
