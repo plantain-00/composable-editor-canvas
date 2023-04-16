@@ -7,7 +7,7 @@ import { colorNumberToRec, getColorString, mergeOpacityToColor } from '../../uti
 import { m3, Matrix } from '../../utils/matrix'
 import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
-import { Vec4 } from '../../utils/types'
+import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
 import type { Align, VerticalAlign } from '../../utils/flow-layout'
 import { Lazy } from '../../utils/lazy'
@@ -47,7 +47,7 @@ export type FilterGraphic =
   }
   | {
     type: 'blur'
-    value: [number, number]
+    value: Vec2
   }
 
 export type Graphic = (LineOrTriangleGraphic | TextureGraphic) & {

@@ -5,7 +5,7 @@ import { Matrix, m3 } from "../../utils/matrix";
 import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-layout";
 import { Vec4 } from "../../utils/types";
 import { MapCache, WeakmapCache, WeakmapCache2, WeakmapMapCache } from "../../utils/weakmap-cache";
-import { Graphic, LineOrTriangleGraphic, PatternGraphic, defaultVec4Color, getNumArrayPointsBounding, getTextureGraphicMatrix, getWorldMatrix, forEachPatternGraphicRepeatedGraphic } from "./create-webgl-renderer";
+import { Graphic, LineOrTriangleGraphic, PatternGraphic, defaultVec4Color, getNumArrayPointsBounding, getTextureGraphicMatrix, getWorldMatrix, forEachPatternGraphicRepeatedGraphic, FilterGraphic } from "./create-webgl-renderer";
 import { Bounding } from "../../utils/geometry";
 
 export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
@@ -132,6 +132,113 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       return textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
     }`
   }))
+  const colorMatrixTextureShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      matrix: mat3x3f,
+      opacity: f32,
+      colorMatrix: array<vec4f, 5>,
+      flipY: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+    
+    @vertex
+    fn vertex_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput
+    {
+      var pos = array<vec2f, 6>(
+        vec2f(0.0, 0.0),
+        vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, 1.0),
+        vec2f(1.0, 0.0),
+        vec2f(1.0, 1.0),
+      );
+      let xy = pos[vertexIndex];
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy * vec2f(1, uniforms.flipY), 0, 1);
+      vsOut.texcoord = xy;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) texcoord: vec2f) -> @location(0) vec4f
+    {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      var c = textureSample(myTexture, mySampler, texcoord) * vec4f(1, 1, 1, uniforms.opacity);
+      var r = uniforms.colorMatrix[0][0] * c.r + uniforms.colorMatrix[0][1] * c.g + uniforms.colorMatrix[0][2] * c.b + uniforms.colorMatrix[0][3] * c.a + uniforms.colorMatrix[1][0];
+      var g = uniforms.colorMatrix[1][1] * c.r + uniforms.colorMatrix[1][2] * c.g + uniforms.colorMatrix[1][3] * c.b + uniforms.colorMatrix[2][0] * c.a + uniforms.colorMatrix[2][1];
+      var b = uniforms.colorMatrix[2][2] * c.r + uniforms.colorMatrix[2][3] * c.g + uniforms.colorMatrix[3][0] * c.b + uniforms.colorMatrix[3][1] * c.a + uniforms.colorMatrix[3][2];
+      var a = uniforms.colorMatrix[3][3] * c.r + uniforms.colorMatrix[4][0] * c.g + uniforms.colorMatrix[4][1] * c.b + uniforms.colorMatrix[4][2] * c.a + uniforms.colorMatrix[4][3];
+      return vec4f(r, g, b, a);
+    }`
+  }))
+  const blurTextureShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      matrix: mat3x3f,
+      opacity: f32,
+      px: vec4f,
+      flipY: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+    
+    @vertex
+    fn vertex_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput
+    {
+      var pos = array<vec2f, 6>(
+        vec2f(0.0, 0.0),
+        vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, 1.0),
+        vec2f(1.0, 0.0),
+        vec2f(1.0, 1.0),
+      );
+      let xy = pos[vertexIndex];
+      var vsOut: VertexOutput;
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy * vec2f(1, uniforms.flipY), 0, 1);
+      vsOut.texcoord = xy;
+      return vsOut;
+    }
+    
+    @fragment
+    fn fragment_main(@location(0) texcoord: vec2f) -> @location(0) vec4f
+    {
+      if (texcoord.x < 0.0 || texcoord.x > 1.0 || texcoord.y < 0.0 || texcoord.y > 1.0) {
+        discard;
+      }
+      var r = vec4f(0.0);
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-7.0*uniforms.px.x, -7.0*uniforms.px.y))*0.0044299121055113265;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-6.0*uniforms.px.x, -6.0*uniforms.px.y))*0.00895781211794;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-5.0*uniforms.px.x, -5.0*uniforms.px.y))*0.0215963866053;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-4.0*uniforms.px.x, -4.0*uniforms.px.y))*0.0443683338718;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-3.0*uniforms.px.x, -3.0*uniforms.px.y))*0.0776744219933;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-2.0*uniforms.px.x, -2.0*uniforms.px.y))*0.115876621105;
+      r += textureSample(myTexture, mySampler, texcoord + vec2(-1.0*uniforms.px.x, -1.0*uniforms.px.y))*0.147308056121;
+      r += textureSample(myTexture, mySampler, texcoord                                               )*0.159576912161;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 1.0*uniforms.px.x,  1.0*uniforms.px.y))*0.147308056121;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 2.0*uniforms.px.x,  2.0*uniforms.px.y))*0.115876621105;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 3.0*uniforms.px.x,  3.0*uniforms.px.y))*0.0776744219933;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 4.0*uniforms.px.x,  4.0*uniforms.px.y))*0.0443683338718;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 5.0*uniforms.px.x,  5.0*uniforms.px.y))*0.0215963866053;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 6.0*uniforms.px.x,  6.0*uniforms.px.y))*0.00895781211794;
+      r += textureSample(myTexture, mySampler, texcoord + vec2( 7.0*uniforms.px.x,  7.0*uniforms.px.y))*0.0044299121055113265;
+      return r;
+    }`
+  }))
   const colorMaskedTextureShaderModule = new Lazy(() => device.createShaderModule({
     code: `struct Uniforms {
       matrix: mat3x3f,
@@ -225,6 +332,20 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
   const texturePipelineCache = new MapCache<GPUShaderModule, GPURenderPipeline>()
 
+  const getFilterShaderModuleAndUniforms = (filter: FilterGraphic) => {
+    if (filter.type === 'color matrix') {
+      return {
+        shaderModule: colorMatrixTextureShaderModule.instance,
+        input: { type: 'vec4 array' as const, count: 5, value: filter.value },
+      }
+    } else {
+      return {
+        shaderModule: blurTextureShaderModule.instance,
+        input: { type: 'vec2' as const, value: filter.value },
+      }
+    }
+  }
+
   const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, passEncoder: GPURenderPassEncoder) => {
     forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
       drawGraphic(g, m, passEncoder)
@@ -260,12 +381,24 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         return texture
       })
       let shaderModule: GPUShaderModule
-      if (graphic.pattern) {
+      const inputs: MemoryLayoutInput[] = [{ type: 'mat3x3', value: textureMatrix }]
+      if (graphic.filters && graphic.filters.length > 0) {
+        const p = getFilterShaderModuleAndUniforms(graphic.filters[graphic.filters.length - 1])
+        shaderModule = p.shaderModule
+        inputs.push(
+          { type: 'number', value: graphic.opacity ?? 1 },
+          p.input,
+          { type: 'number', value: 1 },
+        )
+      } else if (graphic.pattern) {
         shaderModule = colorMaskedTextureShaderModule.instance
+        inputs.push({ type: 'vec4', value: graphic.color ?? defaultVec4Color })
       } else if (graphic.color) {
         shaderModule = coloredTextureShaderModule.instance
+        inputs.push({ type: 'vec4', value: graphic.color })
       } else {
         shaderModule = textureShaderModule.instance
+        inputs.push({ type: 'number', value: graphic.opacity ?? 1 })
       }
       const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
         vertex: {
@@ -288,10 +421,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         entries: [
           {
             binding: 0, resource: {
-              buffer: createUniformsBuffer(device, [
-                { type: 'mat3x3', value: textureMatrix },
-                graphic.color ? { type: 'vec4', value: graphic.color } : { type: 'number', value: graphic.opacity ?? 1 },
-              ])
+              buffer: createUniformsBuffer(device, inputs)
             }
           },
           { binding: 1, resource: sampler.instance },
