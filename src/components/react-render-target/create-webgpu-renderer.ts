@@ -19,7 +19,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   context.configure({
     device,
     format,
-    alphaMode: 'opaque',
   })
   const blend: GPUBlendState = {
     color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
@@ -30,14 +29,13 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     code: `struct Uniforms {
       color: vec4f,
       matrix: mat3x3f,
-      flipY: f32,
     };
     @group(0) @binding(0) var<uniform> uniforms: Uniforms;
     
     @vertex
     fn vertex_main(@location(0) position: vec2f) -> @builtin(position) vec4f
     {
-      return vec4f((uniforms.matrix * vec3(position.xy, 1)).xy * vec2(1, uniforms.flipY), 0, 1);
+      return vec4f((uniforms.matrix * vec3(position.xy, 1)).xy, 0, 1);
     }
     
     @fragment
@@ -137,7 +135,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       matrix: mat3x3f,
       opacity: f32,
       colorMatrix: array<vec4f, 5>,
-      flipY: f32,
     };
     @group(0) @binding(0) var<uniform> uniforms: Uniforms;
     @group(0) @binding(1) var mySampler: sampler;
@@ -161,7 +158,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
-      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy * vec2f(1, uniforms.flipY), 0, 1);
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy, 0, 1);
       vsOut.texcoord = xy;
       return vsOut;
     }
@@ -185,7 +182,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       matrix: mat3x3f,
       opacity: f32,
       px: vec4f,
-      flipY: f32,
     };
     @group(0) @binding(0) var<uniform> uniforms: Uniforms;
     @group(0) @binding(1) var mySampler: sampler;
@@ -209,7 +205,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
-      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy * vec2f(1, uniforms.flipY), 0, 1);
+      vsOut.position = vec4f((uniforms.matrix * vec3(xy, 1)).xy, 0, 1);
       vsOut.texcoord = xy;
       return vsOut;
     }
@@ -289,7 +285,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     code: `struct Uniforms {
       color: vec4f,
       matrix: mat3x3f,
-      flipY: f32,
     };
     @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 
@@ -302,7 +297,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     fn vertex_main(@location(0) position: vec2f, @location(1) color: vec4f) -> VertexOutput
     {
       var vsOut: VertexOutput;
-      vsOut.position = vec4f((uniforms.matrix * vec3(position.xy, 1)).xy * vec2(1, uniforms.flipY), 0, 1);
+      vsOut.position = vec4f((uniforms.matrix * vec3(position.xy, 1)).xy, 0, 1);
       vsOut.color = color;
       return vsOut;
     }
@@ -345,6 +340,46 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
     }
   }
+  const drawTexture = (shaderModule: GPUShaderModule, passEncoder: GPURenderPassEncoder, inputs: MemoryLayoutInput[], texture: GPUTexture) => {
+    const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vertex_main',
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fragment_main',
+        targets: [{ format, blend }]
+      },
+      multisample: {
+        count: sampleCount,
+      },
+      layout: 'auto',
+    }))
+    passEncoder.setPipeline(pipeline);
+    passEncoder.setBindGroup(0, device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0, resource: {
+            buffer: createUniformsBuffer(device, inputs)
+          }
+        },
+        { binding: 1, resource: sampler.instance },
+        { binding: 2, resource: texture.createView() },
+      ],
+    }));
+    passEncoder.draw(6);
+  }
+  const createTexture = (width: number, height: number) => {
+    return device.createTexture({
+      size: [width, height],
+      format,
+      usage: GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.COPY_DST |
+        GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+  }
 
   const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, passEncoder: GPURenderPassEncoder) => {
     forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
@@ -357,29 +392,53 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     if (graphic.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)
 
-      const tex = canvasTextureCache.get(graphic.src, () => {
-        const texture = device.createTexture({
-          format: 'rgba8unorm',
-          size: [graphic.src.width, graphic.src.height],
-          usage: GPUTextureUsage.TEXTURE_BINDING |
-            GPUTextureUsage.COPY_DST |
-            GPUTextureUsage.RENDER_ATTACHMENT,
-        });
+      let texture = canvasTextureCache.get(graphic.src, () => {
+        const gpuTexture = createTexture(graphic.src.width, graphic.src.height);
         if (graphic.src instanceof ImageBitmap) {
           device.queue.copyExternalImageToTexture(
             { source: graphic.src },
-            { texture },
+            { texture: gpuTexture },
             { width: graphic.src.width, height: graphic.src.height },
           );
         } else if (graphic.canvas) {
           device.queue.copyExternalImageToTexture(
             { source: graphic.canvas },
-            { texture },
+            { texture: gpuTexture },
             { width: graphic.src.width, height: graphic.src.height },
           );
         }
-        return texture
+        return gpuTexture
       })
+      if (graphic.filters && graphic.filters.length > 1) {
+        const textures: GPUTexture[] = []
+        for (let i = 0; i < graphic.filters.length - 1; i++) {
+          let filterTexture: GPUTexture
+          if (textures.length < 2) {
+            filterTexture = createTexture(canvas.width, canvas.height)
+            textures.push(filterTexture)
+          } else {
+            filterTexture = textures[i % 2]
+          }
+          const filterCommandEncoder = device.createCommandEncoder();
+          const filterPassEncoder = filterCommandEncoder.beginRenderPass({
+            colorAttachments: [{
+              loadOp: 'clear',
+              storeOp: 'store',
+              view: sampleTexture.instance.createView(),
+              resolveTarget: filterTexture.createView()
+            }]
+          });
+          const p = getFilterShaderModuleAndUniforms(graphic.filters[i])
+          drawTexture(p.shaderModule, filterPassEncoder, [
+            { type: 'mat3x3', value: m3.projection(1, 1) },
+            { type: 'number', value: graphic.opacity ?? 1 },
+            p.input,
+          ], texture)
+          filterPassEncoder.end();
+          device.queue.submit([filterCommandEncoder.finish()]);
+          texture = filterTexture
+        }
+      }
       let shaderModule: GPUShaderModule
       const inputs: MemoryLayoutInput[] = [{ type: 'mat3x3', value: textureMatrix }]
       if (graphic.filters && graphic.filters.length > 0) {
@@ -388,7 +447,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         inputs.push(
           { type: 'number', value: graphic.opacity ?? 1 },
           p.input,
-          { type: 'number', value: 1 },
         )
       } else if (graphic.pattern) {
         shaderModule = colorMaskedTextureShaderModule.instance
@@ -400,35 +458,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         shaderModule = textureShaderModule.instance
         inputs.push({ type: 'number', value: graphic.opacity ?? 1 })
       }
-      const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
-        vertex: {
-          module: shaderModule,
-          entryPoint: 'vertex_main',
-        },
-        fragment: {
-          module: shaderModule,
-          entryPoint: 'fragment_main',
-          targets: [{ format, blend }]
-        },
-        multisample: {
-          count: sampleCount,
-        },
-        layout: 'auto',
-      }))
-      passEncoder.setPipeline(pipeline);
-      passEncoder.setBindGroup(0, device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-          {
-            binding: 0, resource: {
-              buffer: createUniformsBuffer(device, inputs)
-            }
-          },
-          { binding: 1, resource: sampler.instance },
-          { binding: 2, resource: tex.createView() },
-        ],
-      }));
-      passEncoder.draw(6);
+      drawTexture(shaderModule, passEncoder, inputs, texture)
 
       if (graphic.pattern) {
         drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, passEncoder)
@@ -481,7 +511,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
               buffer: createUniformsBuffer(device, [
                 { type: 'vec4', value: color || defaultVec4Color },
                 { type: 'mat3x3', value: matrix },
-                { type: 'number', value: 1 },
               ])
             }
           },
