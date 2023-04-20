@@ -1,0 +1,357 @@
+import { m4 } from 'twgl.js'
+import * as twgl from 'twgl.js'
+import earcut from 'earcut'
+import { MapCache, WeakmapCache } from '../utils/weakmap-cache'
+import { Nullable, OptionalField, Vec4 } from '../utils/types'
+import { Camera, Graphic3d, Light } from './webgl-3d-renderer'
+import { Lazy } from '../utils/lazy'
+import { createUniformsBuffer } from './react-render-target'
+
+export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
+  if (!navigator.gpu) return
+  const context = canvas.getContext("webgpu")
+  if (!context) return
+  const adapter = await navigator.gpu.requestAdapter()
+  if (!adapter) return
+  const device = await adapter.requestDevice()
+  const format = navigator.gpu.getPreferredCanvasFormat()
+  context.configure({
+    device,
+    format,
+  })
+  const blend: GPUBlendState = {
+    color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+    alpha: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+  }
+
+  const primaryShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      worldViewProjection: mat4x4f,
+      lightWorldPos: vec3f,
+      world: mat4x4f,
+      viewInverse: mat4x4f,
+      worldInverseTranspose: mat4x4f,
+      lightColor: vec4f,
+      diffuseMult: vec4f,
+      shininess: f32,
+      specular: vec4f,
+      specularFactor: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexInput {
+      @location(0) position: vec4f,
+      @location(1) normal: vec3f,
+      @location(2) texcoord: vec2f,
+    };
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+      @location(1) normal: vec3f,
+      @location(2) surfaceToLight: vec3f,
+      @location(3) surfaceToView: vec3f,
+    };
+
+    fn lit(l: f32, h: f32, m: f32) -> vec4f {
+      var a: f32 = 0.0;
+      if l > 0.0 {
+        a = pow(max(0.0, h), m);
+      }
+      return vec4f(1.0, abs(l), a, 1.0);
+    }
+  
+    @vertex
+    fn vertex_main(v: VertexInput) -> VertexOutput {
+      var vsOut: VertexOutput;
+      vsOut.position = uniforms.worldViewProjection * v.position;
+      vsOut.texcoord = v.texcoord;
+      vsOut.normal = (uniforms.worldInverseTranspose * vec4f(v.normal, 0.0)).xyz;
+      vsOut.surfaceToLight = uniforms.lightWorldPos - (uniforms.world * v.position).xyz;
+      vsOut.surfaceToView = (uniforms.viewInverse[3] - (uniforms.world * v.position)).xyz;
+      return vsOut;
+    }
+
+    @fragment
+    fn fragment_main(v: VertexOutput) -> @location(0) vec4f {
+      var diffuseColor = textureSample(myTexture, mySampler, v.texcoord) * uniforms.diffuseMult;
+      var normal = normalize(v.normal);
+      var surfaceToLight = normalize(v.surfaceToLight);
+      var surfaceToView = normalize(v.surfaceToView);
+      var halfVector = normalize(surfaceToLight + surfaceToView);
+      var litR = lit(dot(normal, surfaceToLight), dot(normal, halfVector), uniforms.shininess);
+      return vec4((uniforms.lightColor * (diffuseColor * litR.y + uniforms.specular * litR.z * uniforms.specularFactor)).rgb, diffuseColor.a);
+    }`
+  }))
+  const basicShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      worldViewProjection: mat4x4f,
+      lightWorldPos: vec3f,
+      world: mat4x4f,
+      viewInverse: mat4x4f,
+      worldInverseTranspose: mat4x4f,
+      lightColor: vec4f,
+      diffuseMult: vec4f,
+      shininess: f32,
+      specular: vec4f,
+      specularFactor: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
+    @vertex
+    fn vertex_main(@location(0) position: vec4f) -> @builtin(position) vec4f
+    {
+      return uniforms.worldViewProjection * position;
+    }
+
+    @fragment
+    fn fragment_main() -> @location(0) vec4f
+    {
+      return uniforms.diffuseMult;
+    }`
+  }))
+
+  const sampler = device.createSampler({
+    magFilter: 'nearest',
+    minFilter: 'nearest',
+  });
+  const sampleCount = 4
+  const sampleTexture = new Lazy(() => device.createTexture({
+    size: [canvas.width, canvas.height],
+    sampleCount,
+    format,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  }))
+  const depthTexture = new Lazy(() => device.createTexture({
+    size: [canvas.width, canvas.height],
+    format: 'depth24plus',
+    sampleCount,
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  }))
+  const texture = device.createTexture({
+    size: [2, 2],
+    format: 'rgba8unorm',
+    usage:
+      GPUTextureUsage.TEXTURE_BINDING |
+      GPUTextureUsage.COPY_DST,
+  });
+  device.queue.writeTexture(
+    { texture },
+    new Uint8Array([
+      255, 255, 255, 255,
+      255, 255, 255, 255,
+      255, 255, 255, 255,
+      255, 255, 255, 255,
+    ]),
+    { bytesPerRow: 8, rowsPerImage: 2 },
+    { width: 2, height: 2 },
+  );
+
+  const basicPipelineCache = new MapCache<Graphic3d['geometry']['type'], GPURenderPipeline>()
+  const bufferCache = new WeakmapCache<Graphic3d['geometry'], OptionalField<ReturnType<typeof createBuffers>, 'primaryBuffers'>>()
+
+  const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: Vec4) => {
+    if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
+      sampleTexture.instance.destroy()
+      sampleTexture.reset()
+      depthTexture.instance.destroy()
+      depthTexture.reset()
+    }
+
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginRenderPass({
+      colorAttachments: [{
+        clearValue: backgroundColor,
+        loadOp: 'clear',
+        storeOp: 'store',
+        view: sampleTexture.instance.createView(),
+        resolveTarget: context.getCurrentTexture().createView()
+      }],
+      depthStencilAttachment: {
+        view: depthTexture.instance.createView(),
+        depthClearValue: 1,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+      },
+    });
+
+    const projection = m4.perspective(fov, canvas.clientWidth / canvas.clientHeight, near, far);
+    const camera = m4.lookAt(eye, target, up);
+    const viewProjection = m4.multiply(projection, m4.inverse(camera))
+
+    graphics.forEach((g) => {
+      if (!g) {
+        return
+      }
+      let world = m4.identity()
+      if (g.position) {
+        world = m4.translate(world, g.position)
+      }
+      const pipeline = basicPipelineCache.get(g.geometry.type, () => {
+        let shaderModule: GPUShaderModule
+        const bufferLayouts: GPUVertexBufferLayout[] = [{ arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] }]
+        if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'polygon') {
+          shaderModule = basicShaderModule.instance
+        } else {
+          shaderModule = primaryShaderModule.instance
+          bufferLayouts.push(
+            { arrayStride: 3 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }] },
+            { arrayStride: 2 * 4, attributes: [{ shaderLocation: 2, offset: 0, format: 'float32x2' }] },
+          )
+        }
+        return device.createRenderPipeline({
+          vertex: {
+            module: shaderModule,
+            entryPoint: 'vertex_main',
+            buffers: bufferLayouts,
+          },
+          fragment: {
+            module: shaderModule,
+            entryPoint: 'fragment_main',
+            targets: [{ format, blend }]
+          },
+          primitive: {
+            cullMode: 'back',
+            topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : 'triangle-list',
+          },
+          depthStencil: {
+            depthWriteEnabled: true,
+            depthCompare: 'less',
+            format: 'depth24plus',
+          },
+          multisample: {
+            count: sampleCount,
+          },
+          layout: 'auto',
+        })
+      })
+      passEncoder.setPipeline(pipeline);
+      const bindGroupEntries: GPUBindGroupEntry[] = [{
+        binding: 0, resource: {
+          buffer: createUniformsBuffer(device, [
+            { type: 'mat4x4', value: m4.multiply(viewProjection, world) },
+            { type: 'vec3', value: light.position },
+            { type: 'mat4x4', value: world },
+            { type: 'mat4x4', value: camera },
+            { type: 'mat4x4', value: m4.transpose(m4.inverse(world)) },
+            { type: 'vec4', value: light.color },
+            { type: 'vec4', value: g.color },
+            { type: 'number', value: light.shininess },
+            { type: 'vec4', value: light.specular },
+            { type: 'number', value: light.specularFactor },
+          ])
+        },
+      }]
+      if (g.geometry.type !== 'lines' && g.geometry.type !== 'line strip' && g.geometry.type !== 'polygon') {
+        bindGroupEntries.push(
+          { binding: 1, resource: sampler },
+          { binding: 2, resource: texture.createView() },
+        )
+      }
+      passEncoder.setBindGroup(0, device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: bindGroupEntries,
+      }));
+      const { positionBuffer, primaryBuffers, count } = bufferCache.get(g.geometry, () => {
+        if (g.geometry.type === 'sphere') {
+          return createBuffers(device, twgl.primitives.createSphereVertices(g.geometry.radius, 72, 36))
+        }
+        if (g.geometry.type === 'cube') {
+          return createBuffers(device, twgl.primitives.createCubeVertices(g.geometry.size))
+        }
+        if (g.geometry.type === 'cylinder') {
+          return createBuffers(device, twgl.primitives.createCylinderVertices(g.geometry.radius, g.geometry.height, 36, 4))
+        }
+        if (g.geometry.type === 'cune') {
+          return createBuffers(device, twgl.primitives.createTruncatedConeVertices(g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4))
+        }
+        if (g.geometry.type === 'polygon') {
+          const vertices = g.geometry.points
+          const index = earcut(vertices, undefined, 3)
+          const triangles: number[] = []
+          for (let i = 0; i < index.length; i += 3) {
+            triangles.push(
+              vertices[index[i] * 3], vertices[index[i] * 3 + 1], vertices[index[i] * 3 + 2],
+              vertices[index[i + 1] * 3], vertices[index[i + 1] * 3 + 1], vertices[index[i + 1] * 3 + 2],
+              vertices[index[i + 2] * 3], vertices[index[i + 2] * 3 + 1], vertices[index[i + 2] * 3 + 2]
+            )
+          }
+          return {
+            positionBuffer: createVertexBuffer(device, new Float32Array(triangles)),
+            count: g.geometry.points.length / 3,
+          }
+        }
+        return {
+          positionBuffer: createVertexBuffer(device, new Float32Array(g.geometry.points)),
+          count: g.geometry.points.length / 3,
+        }
+      })
+      if (positionBuffer) {
+        passEncoder.setVertexBuffer(0, positionBuffer);
+      }
+      if (primaryBuffers) {
+        passEncoder.setVertexBuffer(1, primaryBuffers.normalBuffer);
+        passEncoder.setVertexBuffer(2, primaryBuffers.texcoordBuffer);
+        passEncoder.setIndexBuffer(primaryBuffers.indicesBuffer, 'uint16');
+        passEncoder.drawIndexed(count)
+      } else {
+        passEncoder.draw(count)
+      }
+    })
+
+    passEncoder.end();
+    device.queue.submit([commandEncoder.finish()]);
+  }
+
+  const pick: (
+    inputX: number,
+    inputY: number,
+    filter?: (graphic: Graphic3d, index: number) => boolean,
+  ) => number | undefined = () => {
+    return undefined
+  }
+
+  return {
+    render,
+    pick,
+  }
+}
+
+function createVertexBuffer(device: GPUDevice, data: twgl.primitives.TypedArray) {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.VERTEX,
+    mappedAtCreation: true,
+  });
+  const dst = new Float32Array(buffer.getMappedRange());
+  dst.set(data);
+  buffer.unmap();
+  return buffer;
+}
+
+function createIndexBuffer(device: GPUDevice, data: twgl.primitives.TypedArray) {
+  const buffer = device.createBuffer({
+    size: data.byteLength,
+    usage: GPUBufferUsage.INDEX,
+    mappedAtCreation: true,
+  });
+  const dst = new Uint16Array(buffer.getMappedRange());
+  dst.set(data);
+  buffer.unmap();
+  return buffer;
+}
+
+function createBuffers(device: GPUDevice, buffers: Record<string, twgl.primitives.TypedArray>) {
+  const { position, normal, texcoord, indices } = buffers
+  const positionBuffer = createVertexBuffer(device, position);
+  const normalBuffer = createVertexBuffer(device, normal);
+  const texcoordBuffer = createVertexBuffer(device, texcoord);
+  const indicesBuffer = createIndexBuffer(device, indices);
+  return {
+    positionBuffer,
+    primaryBuffers: { normalBuffer, texcoordBuffer, indicesBuffer },
+    count: indices.length,
+  }
+}

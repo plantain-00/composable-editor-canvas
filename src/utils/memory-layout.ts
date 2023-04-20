@@ -4,6 +4,7 @@ import { Vec2, Vec3, Vec4 } from "./types";
 export type MemoryLayoutInput =
   | { type: 'vec4', value: Vec4 }
   | { type: 'mat3x3', value: Matrix }
+  | { type: 'mat4x4', value: number[] | Float32Array }
   | MemoryLayoutInlineInput
   | { type: 'vec4 array', count: number, value: number[] }
   | { type: 'inline', children: MemoryLayoutInlineInput[] }
@@ -25,6 +26,8 @@ export function createMemoryLayoutArray(...inputs: MemoryLayoutInput[]) {
       result.set(input.value.slice(0, 3), index)
       result.set(input.value.slice(3, 6), index + 4)
       result.set(input.value.slice(6, 9), index + 8)
+    } else if (input.type === 'mat4x4') {
+      result.set(input.value.slice(0, 16), index)
     } else if (input.type === 'vec4' || input.type === 'vec3' || input.type === 'vec2') {
       result.set(input.value, index)
     } else if (input.type === 'number') {
@@ -55,6 +58,9 @@ export function createMemoryLayoutArray(...inputs: MemoryLayoutInput[]) {
 function getMemoryLayoutSize(input: MemoryLayoutInput) {
   if (input.type === 'mat3x3') {
     return 12
+  }
+  if (input.type === 'mat4x4') {
+    return 16
   }
   if (input.type === 'vec4' || input.type === 'number' || input.type === 'vec2' || input.type === 'vec3' || input.type === 'inline') {
     return 4
