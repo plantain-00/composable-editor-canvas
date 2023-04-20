@@ -17,6 +17,13 @@ export type RequiredField<T, K extends keyof T> = T & {
   [P in K]-?: T[P];
 }
 
+/**
+ * @public
+ */
+export type OptionalField<T, K extends keyof T> = Omit<T, K> & {
+  [P in K]?: T[P];
+}
+
 export type Vec2 = [number, number]
 export type Vec3 = [number, number, number]
 export type Vec4 = [number, number, number, number]

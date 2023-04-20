@@ -578,7 +578,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   }
 }
 
-function createUniformsBuffer(device: GPUDevice, inputs: MemoryLayoutInput[]) {
+export function createUniformsBuffer(device: GPUDevice, inputs: MemoryLayoutInput[]) {
   const uniformValues = createMemoryLayoutArray(...inputs)
   const uniformBuffer = device.createBuffer({
     size: uniformValues.byteLength,
