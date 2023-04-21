@@ -4,6 +4,7 @@ import earcut from 'earcut'
 import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
+import { Lazy } from '../utils/lazy'
 
 export interface Camera {
   eye: Vec3
@@ -71,7 +72,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
   }
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  const programInfo = twgl.createProgramInfo(gl, [`
+  const primaryProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
   uniform mat4 u_worldViewProjection;
   uniform vec3 u_lightWorldPos;
   uniform mat4 u_world;
@@ -133,8 +134,23 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
         diffuseColor.a);
     gl_FragColor = outColor;
   }`,
-  ])
-  const pickingProgramInfo = twgl.createProgramInfo(gl, [`
+  ]))
+  const basicProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
+  uniform mat4 u_worldViewProjection;
+  attribute vec4 position;
+
+  void main() {
+    gl_Position = u_worldViewProjection * position;
+  }
+  `, `
+  precision mediump float;
+  uniform vec4 u_diffuseMult;
+
+  void main() {
+    gl_FragColor = u_diffuseMult;
+  }`,
+  ]))
+  const pickingProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
   uniform mat4 u_worldViewProjection;
 
   attribute vec4 position;
@@ -163,7 +179,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     }
     gl_FragColor = u_pickColor;
   }
-  `])
+  `]))
 
   const tex = twgl.createTexture(gl, {
     min: gl.NEAREST,
@@ -213,6 +229,12 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       if (g.position) {
         world = m4.translate(world, g.position)
       }
+      let programInfo: twgl.ProgramInfo
+      if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'polygon') {
+        programInfo = basicProgramInfo.instance
+      } else {
+        programInfo = primaryProgramInfo.instance
+      }
       const drawObject: twgl.DrawObject = {
         programInfo,
         bufferInfo: bufferInfoCache.get(g.geometry, () => {
@@ -229,20 +251,10 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
             return twgl.primitives.createTruncatedConeBufferInfo(gl, g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4)
           }
           if (g.geometry.type === 'polygon') {
-            const vertices = g.geometry.points
-            const index = earcut(vertices, undefined, 3)
-            const triangles: number[] = []
-            for (let i = 0; i < index.length; i += 3) {
-              triangles.push(
-                vertices[index[i] * 3], vertices[index[i] * 3 + 1], vertices[index[i] * 3 + 2],
-                vertices[index[i + 1] * 3], vertices[index[i + 1] * 3 + 1], vertices[index[i + 1] * 3 + 2],
-                vertices[index[i + 2] * 3], vertices[index[i + 2] * 3 + 1], vertices[index[i + 2] * 3 + 2]
-              )
-            }
             return twgl.createBufferInfoFromArrays(gl, {
               position: {
                 numComponents: 3,
-                data: triangles,
+                data: get3dPolygonTriangles(g.geometry.points),
               }
             })
           }
@@ -269,7 +281,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
         index: i,
         drawObject: {
           ...drawObject,
-          programInfo: pickingProgramInfo,
+          programInfo: pickingProgramInfo.instance,
         },
       })
     })
@@ -312,6 +324,19 @@ interface PickingObjectInfo {
   graphic: Graphic3d
   index: number
   drawObject: twgl.DrawObject
+}
+
+export function get3dPolygonTriangles(vertices: number[]) {
+  const index = earcut(vertices, undefined, 3)
+  const triangles: number[] = []
+  for (let i = 0; i < index.length; i += 3) {
+    triangles.push(
+      vertices[index[i] * 3], vertices[index[i] * 3 + 1], vertices[index[i] * 3 + 2],
+      vertices[index[i + 1] * 3], vertices[index[i + 1] * 3 + 1], vertices[index[i + 1] * 3 + 2],
+      vertices[index[i + 2] * 3], vertices[index[i + 2] * 3 + 1], vertices[index[i + 2] * 3 + 2]
+    )
+  }
+  return triangles
 }
 
 export function getDashedLine(p1: Vec3, p2: Vec3, dash: number) {
