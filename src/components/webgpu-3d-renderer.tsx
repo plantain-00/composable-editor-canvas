@@ -1,9 +1,8 @@
 import { m4 } from 'twgl.js'
 import * as twgl from 'twgl.js'
-import earcut from 'earcut'
 import { MapCache, WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, OptionalField, Vec4 } from '../utils/types'
-import { Camera, Graphic3d, Light } from './webgl-3d-renderer'
+import { Camera, Graphic3d, Light, get3dPolygonTriangles } from './webgl-3d-renderer'
 import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
 
@@ -268,18 +267,8 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
           return createBuffers(device, twgl.primitives.createTruncatedConeVertices(g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4))
         }
         if (g.geometry.type === 'polygon') {
-          const vertices = g.geometry.points
-          const index = earcut(vertices, undefined, 3)
-          const triangles: number[] = []
-          for (let i = 0; i < index.length; i += 3) {
-            triangles.push(
-              vertices[index[i] * 3], vertices[index[i] * 3 + 1], vertices[index[i] * 3 + 2],
-              vertices[index[i + 1] * 3], vertices[index[i + 1] * 3 + 1], vertices[index[i + 1] * 3 + 2],
-              vertices[index[i + 2] * 3], vertices[index[i + 2] * 3 + 1], vertices[index[i + 2] * 3 + 2]
-            )
-          }
           return {
-            positionBuffer: createVertexBuffer(device, new Float32Array(triangles)),
+            positionBuffer: createVertexBuffer(device, new Float32Array(get3dPolygonTriangles(g.geometry.points))),
             count: g.geometry.points.length / 3,
           }
         }
