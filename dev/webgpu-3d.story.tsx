@@ -1,9 +1,9 @@
 import * as React from "react"
-import { bindMultipleRefs, createWebgl3DRenderer, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine } from "../src"
+import { bindMultipleRefs, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
-  const renderer = React.useRef<ReturnType<typeof createWebgl3DRenderer>>()
+  const renderer = React.useRef<Awaited<ReturnType<typeof createWebgpu3DRenderer>>>()
   const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
@@ -115,7 +115,7 @@ export default () => {
         width={width}
         height={height}
         onMouseDown={e => onStartMoveCanvas({ x: e.clientX, y: e.clientY })}
-        onMouseMove={e => setHovering(renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.geometry.type !== 'lines'))}
+        onMouseMove={async e => setHovering(await renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.geometry.type !== 'lines'))}
       />
       {moveCanvasMask}
     </div>

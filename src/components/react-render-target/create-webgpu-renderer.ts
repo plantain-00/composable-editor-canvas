@@ -319,7 +319,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     sampleCount,
     format,
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  }))
+  }), t => t.destroy())
 
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const gradientBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
@@ -550,7 +550,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
 
   const resizeCanvasToDisplaySize = () => {
     if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
-      sampleTexture.instance.destroy()
       sampleTexture.reset()
     }
   }
