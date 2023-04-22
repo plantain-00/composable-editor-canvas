@@ -5,6 +5,7 @@ import { Nullable, OptionalField, Vec4 } from '../utils/types'
 import { Camera, Graphic3d, Light, get3dPolygonTriangles } from './webgl-3d-renderer'
 import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
+import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
 
 export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return
@@ -111,6 +112,52 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
       return uniforms.diffuseMult;
     }`
   }))
+  const pickingShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      worldViewProjection: mat4x4f,
+      lightWorldPos: vec3f,
+      world: mat4x4f,
+      viewInverse: mat4x4f,
+      worldInverseTranspose: mat4x4f,
+      lightColor: vec4f,
+      diffuseMult: vec4f,
+      shininess: f32,
+      specular: vec4f,
+      specularFactor: f32,
+      pickColor: vec4f,
+      threshhold: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    @group(0) @binding(1) var mySampler: sampler;
+    @group(0) @binding(2) var myTexture: texture_2d<f32>;
+
+    struct VertexInput {
+      @location(0) position: vec4f,
+      @location(1) texcoord: vec2f,
+    };
+
+    struct VertexOutput {
+      @builtin(position) position: vec4f,
+      @location(0) texcoord: vec2f,
+    };
+
+    @vertex
+    fn vertex_main(v: VertexInput) -> VertexOutput {
+      var vsOut: VertexOutput;
+      vsOut.position = uniforms.worldViewProjection * v.position;
+      vsOut.texcoord = v.texcoord;
+      return vsOut;
+    }
+
+    @fragment
+    fn fragment_main(v: VertexOutput) -> @location(0) vec4f {
+      var diffuseColor = textureSample(myTexture, mySampler, v.texcoord) * uniforms.diffuseMult;
+      if (diffuseColor.a <= uniforms.threshhold) {
+        discard;
+      }
+      return uniforms.pickColor;
+    }`
+  }))
 
   const sampler = device.createSampler({
     magFilter: 'nearest',
@@ -122,13 +169,13 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     sampleCount,
     format,
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  }))
+  }), t => t.destroy())
   const depthTexture = new Lazy(() => device.createTexture({
     size: [canvas.width, canvas.height],
     format: 'depth24plus',
     sampleCount,
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
-  }))
+  }), t => t.destroy())
   const texture = device.createTexture({
     size: [2, 2],
     format: 'rgba8unorm',
@@ -147,16 +194,24 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     { bytesPerRow: 8, rowsPerImage: 2 },
     { width: 2, height: 2 },
   );
+  const pickingTexture = new Lazy(() => device.createTexture({
+    size: [canvas.width, canvas.height],
+    format,
+    usage: GPUTextureUsage.TEXTURE_BINDING |
+      GPUTextureUsage.COPY_SRC |
+      GPUTextureUsage.RENDER_ATTACHMENT,
+  }), t => t.destroy())
 
   const basicPipelineCache = new MapCache<Graphic3d['geometry']['type'], GPURenderPipeline>()
+  const pickingPipelineCache = new MapCache<Graphic3d['geometry']['type'], GPURenderPipeline>()
   const bufferCache = new WeakmapCache<Graphic3d['geometry'], OptionalField<ReturnType<typeof createBuffers>, 'primaryBuffers'>>()
+  let pickingDrawObjectsInfo: Nullable<PickingObjectInfo>[] = []
 
   const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: Vec4) => {
     if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
-      sampleTexture.instance.destroy()
       sampleTexture.reset()
-      depthTexture.instance.destroy()
       depthTexture.reset()
+      pickingTexture.reset()
     }
 
     const commandEncoder = device.createCommandEncoder();
@@ -179,9 +234,10 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     const projection = m4.perspective(fov, canvas.clientWidth / canvas.clientHeight, near, far);
     const camera = m4.lookAt(eye, target, up);
     const viewProjection = m4.multiply(projection, m4.inverse(camera))
-
-    graphics.forEach((g) => {
+    pickingDrawObjectsInfo = []
+    graphics.forEach((g, i) => {
       if (!g) {
+        pickingDrawObjectsInfo.push(undefined)
         return
       }
       let world = m4.identity()
@@ -240,6 +296,8 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
             { type: 'number', value: light.shininess },
             { type: 'vec4', value: light.specular },
             { type: 'number', value: light.specularFactor },
+            { type: 'vec4', value: colorNumberToRec(i) },
+            { type: 'number', value: 0.1 },
           ])
         },
       }]
@@ -277,9 +335,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
           count: g.geometry.points.length / 3,
         }
       })
-      if (positionBuffer) {
-        passEncoder.setVertexBuffer(0, positionBuffer);
-      }
+      passEncoder.setVertexBuffer(0, positionBuffer);
       if (primaryBuffers) {
         passEncoder.setVertexBuffer(1, primaryBuffers.normalBuffer);
         passEncoder.setVertexBuffer(2, primaryBuffers.texcoordBuffer);
@@ -288,23 +344,133 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
       } else {
         passEncoder.draw(count)
       }
+      pickingDrawObjectsInfo.push({
+        graphic: g,
+        index: i,
+        bindGroupEntries,
+        positionBuffer,
+        primaryBuffers,
+        count,
+      })
     })
 
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
   }
 
-  const pick: (
+  const pick = async (
     inputX: number,
     inputY: number,
-    filter?: (graphic: Graphic3d, index: number) => boolean,
-  ) => number | undefined = () => {
-    return undefined
+    filter: (graphic: Graphic3d, index: number) => boolean = () => true,
+  ) => {
+    const rect = canvas.getBoundingClientRect();
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const x = (inputX - rect.left) * canvas.width / w | 0;
+    const y = (inputY - rect.top) * canvas.height / h | 0;
+
+    const commandEncoder = device.createCommandEncoder();
+    const passEncoder = commandEncoder.beginRenderPass({
+      colorAttachments: [{
+        clearValue: [1, 1, 1, 1],
+        loadOp: 'clear',
+        storeOp: 'store',
+        view: sampleTexture.instance.createView(),
+        resolveTarget: pickingTexture.instance.createView()
+      }],
+      depthStencilAttachment: {
+        view: depthTexture.instance.createView(),
+        depthClearValue: 1,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+      },
+    });
+    for (const p of pickingDrawObjectsInfo) {
+      if (p && filter(p.graphic, p.index)) {
+        const g = p.graphic
+        const pipeline = pickingPipelineCache.get(g.geometry.type, () => {
+          const shaderModule = pickingShaderModule.instance
+          const bufferLayouts: GPUVertexBufferLayout[] = [
+            { arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
+            { arrayStride: 2 * 4, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x2' }] },
+          ]
+          return device.createRenderPipeline({
+            vertex: {
+              module: shaderModule,
+              entryPoint: 'vertex_main',
+              buffers: bufferLayouts,
+            },
+            fragment: {
+              module: shaderModule,
+              entryPoint: 'fragment_main',
+              targets: [{ format, blend }]
+            },
+            primitive: {
+              cullMode: 'back',
+              topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : 'triangle-list',
+            },
+            depthStencil: {
+              depthWriteEnabled: true,
+              depthCompare: 'less',
+              format: 'depth24plus',
+            },
+            multisample: {
+              count: sampleCount,
+            },
+            layout: 'auto',
+          })
+        })
+        passEncoder.setPipeline(pipeline);
+        passEncoder.setBindGroup(0, device.createBindGroup({
+          layout: pipeline.getBindGroupLayout(0),
+          entries: p.bindGroupEntries,
+        }));
+        passEncoder.setVertexBuffer(0, p.positionBuffer);
+        if (p.primaryBuffers) {
+          passEncoder.setVertexBuffer(1, p.primaryBuffers.texcoordBuffer);
+          passEncoder.setIndexBuffer(p.primaryBuffers.indicesBuffer, 'uint16');
+          passEncoder.drawIndexed(p.count)
+        } else {
+          passEncoder.draw(p.count)
+        }
+      }
+    }
+    passEncoder.end();
+    device.queue.submit([commandEncoder.finish()]);
+
+    const commandEncoder2 = device.createCommandEncoder();
+    const pickColor = device.createBuffer({
+      size: 4,
+      usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    })
+    commandEncoder2.copyTextureToBuffer(
+      { texture: pickingTexture.instance, origin: { x, y } },
+      { buffer: pickColor },
+      { width: 1, height: 1 },
+    )
+    device.queue.submit([commandEncoder2.finish()]);
+    await pickColor.mapAsync(1, 0, 4)
+    const buffer = new Uint8Array(pickColor.getMappedRange(0, 4))
+    const index = pixelColorToColorNumber([buffer[2], buffer[1], buffer[0]])
+    return index === 0xffffff ? undefined : index
   }
 
   return {
     render,
     pick,
+  }
+}
+
+interface PickingObjectInfo {
+  graphic: Graphic3d
+  index: number
+  bindGroupEntries: GPUBindGroupEntry[]
+  positionBuffer: GPUBuffer
+  count: number
+  primaryBuffers?: {
+    normalBuffer: GPUBuffer;
+    texcoordBuffer: GPUBuffer;
+    indicesBuffer: GPUBuffer;
   }
 }
 
