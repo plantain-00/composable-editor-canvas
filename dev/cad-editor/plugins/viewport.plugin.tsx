@@ -50,7 +50,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
                 children.push(ContentRender(content, renderCtx))
               }
             })
-            return renderCtx.target.renderGroup(children, { matrix: ctx.m3.multiply(ctx.m3.translation(content.x, content.y), ctx.m3.scaling(content.scale, content.scale)) })
+            return renderCtx.target.renderGroup(children, { matrix: ctx.m3.multiply(ctx.m3.multiply(ctx.m3.translation(content.x, content.y), ctx.m3.scaling(content.scale, content.scale)), ctx.m3.rotation(content.rotate || 0)) })
           }
         })
       }

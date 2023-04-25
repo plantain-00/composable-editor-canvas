@@ -525,11 +525,13 @@ export function isTextStyleContent(content: BaseContent): content is TextStyleCo
 export type ViewportContent = BaseContent<'viewport'> & Position & StrokeFields & {
   border: BaseContent
   scale: number
+  rotate?: number
 }
 
 export const ViewportContent = and(BaseContent('viewport'), Position, StrokeFields, {
   border: Content,
   scale: number,
+  rotate: optional(number),
 })
 
 export function isViewportContent(content: BaseContent): content is ViewportContent {

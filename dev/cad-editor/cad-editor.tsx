@@ -207,7 +207,19 @@ export const CADEditor = React.forwardRef((props: {
   })
   const [rotate, setRotate] = useLocalStorageState(props.id + '-rotate', 0)
   const { offset: rotateOffset, onStart: startRotate, mask: rotateMask } = useDragRotate(
-    () => setRotate(angleToRadian(rotateOffset?.angle)),
+    () => {
+      if (activeViewport && active !== undefined) {
+        setState((draft) => {
+          draft = getContentByPath(draft)
+          const content = draft[active]
+          if (content && isViewportContent(content)) {
+            content.rotate = currentRotate
+          }
+        })
+        return
+      }
+      setRotate(angleToRadian(rotateOffset?.angle))
+    },
     {
       transformOffset: (r, e) => {
         if (e && r !== undefined && !e.shiftKey) {
@@ -231,6 +243,8 @@ export const CADEditor = React.forwardRef((props: {
   })
 
   const scaleWithViewport = scale * (activeViewport?.scale ?? 1)
+  const currentRotate = rotateOffset?.angle !== undefined ? angleToRadian(rotateOffset.angle) : undefined
+  const rotateWithViewport = currentRotate ?? (activeViewport ? activeViewport.rotate ?? 0 : rotate)
   const transform: Transform = {
     x,
     y,
@@ -239,7 +253,7 @@ export const CADEditor = React.forwardRef((props: {
       x: width / 2,
       y: height / 2,
     },
-    rotate: rotateOffset?.angle !== undefined ? angleToRadian(rotateOffset.angle) : rotate,
+    rotate: activeViewport ? rotate : currentRotate ?? rotate,
   }
   if (active !== undefined) {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
@@ -248,6 +262,9 @@ export const CADEditor = React.forwardRef((props: {
         content.x += (offset.x + xOffset) / scale
         content.y += (offset.y + yOffset) / scale
         content.scale *= scaleOffset
+        if (rotateOffset?.angle !== undefined) {
+          content.rotate = angleToRadian(rotateOffset.angle)
+        }
       }
     })
     previewPatches.push(...patches)
@@ -927,7 +944,7 @@ export const CADEditor = React.forwardRef((props: {
             top: `${height - 204}px`,
             boxSizing: 'border-box',
             position: 'absolute',
-            transform: `rotate(${transform.rotate}rad)`,
+            transform: `rotate(${rotateWithViewport}rad)`,
             border: '1px solid black',
             borderRadius: '50px',
           }}
