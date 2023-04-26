@@ -47,7 +47,7 @@ export function useFlowLayoutEditor<T>(props: {
       setLocation(range.min + contentLocation)
       setSelectionStart(undefined)
       props.setState(draft => {
-        draft.splice(range.min, range.max - range.min, ...newContents)
+        draft.splice(range.min, range.size, ...newContents)
       })
       return
     }
@@ -62,7 +62,7 @@ export function useFlowLayoutEditor<T>(props: {
       setLocation(range.min)
       setSelectionStart(undefined)
       props.setState(draft => {
-        draft.splice(range.min, range.max - range.min)
+        draft.splice(range.min, range.size)
       })
       return
     }
@@ -181,6 +181,7 @@ export function useFlowLayoutEditor<T>(props: {
     props.onBlur?.()
   }
   const downLocation = React.useRef<number>()
+  const [dragLocation, setDragLocation] = React.useState<number>()
   const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     // type-coverage:ignore-next-line
     const bounding = (e.target as HTMLDivElement).getBoundingClientRect()
@@ -192,20 +193,39 @@ export function useFlowLayoutEditor<T>(props: {
   const positionToLocation = (p: Position, ignoreInvisible = true) => {
     return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible) ?? layoutResult.length - 1
   }
+  const isPositionInRange = (p: Position) => {
+    if (range) {
+      for (let i = range.min; i < range.max; i++) {
+        const r = layoutResult[i]
+        if (p.x > r.x && p.y > r.y && p.x < r.x + props.getWidth(r.content) && p.y < r.y + lineHeights[r.row]) {
+          return true
+        }
+      }
+    }
+    return false
+  }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const p = positionToLocation(getPosition(e))
+    const h = getPosition(e)
+    const p = positionToLocation(h)
     if (e.shiftKey) {
       if (selectionStart === undefined || Math.abs(selectionStart - p) < Math.abs(location - p)) {
         setSelectionStart(location)
       }
       setLocation(p)
     } else {
+      if (isPositionInRange(h)) {
+        setDragLocation(p)
+        return
+      }
       downLocation.current = p
     }
   }
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (downLocation.current === undefined) {
+      if (dragLocation !== undefined) {
+        setDragLocation(positionToLocation(getPosition(e), false))
+      }
       return
     }
     const s = getPosition(e)
@@ -226,10 +246,27 @@ export function useFlowLayoutEditor<T>(props: {
   }
   const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove(e)
+    if (dragLocation !== undefined && range) {
+      if (dragLocation < range.min) {
+        props.setState(draft => {
+          draft.splice(dragLocation, 0, ...draft.splice(range.min, range.size))
+        })
+        setLocation(dragLocation + range.size)
+        setSelectionStart(dragLocation)
+      } else if (dragLocation > range.max) {
+        props.setState(draft => {
+          draft.splice(dragLocation - range.size, 0, ...draft.splice(range.min, range.size))
+        })
+        setLocation(dragLocation)
+        setSelectionStart(dragLocation - range.size)
+      }
+      setDragLocation(undefined)
+    }
     ref.current?.focus()
   }
   useGlobalMouseUp(useEvent(() => {
     downLocation.current = undefined
+    setDragLocation(undefined)
   }))
 
   const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
@@ -263,8 +300,8 @@ export function useFlowLayoutEditor<T>(props: {
   const firstLineHeight = lineHeights[0]
   const lastLineHeight = lineHeights[lineHeights.length - 1]
 
-  const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location) } : undefined
-  const p = layoutResult[location] ?? layoutResult[layoutResult.length - 1]
+  const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location), size: Math.abs(selectionStart - location) } : undefined
+  const p = layoutResult[dragLocation ?? location] ?? layoutResult[layoutResult.length - 1]
   const cursorX = p.x
   const cursorY = p.y - scrollY
   const cursorRow = p.row
