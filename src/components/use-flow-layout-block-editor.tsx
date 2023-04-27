@@ -46,69 +46,77 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   const inputContent = (newContents: readonly V[]) => {
     if (props.readOnly) return
     if (range) {
-      const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setSelectionStart(undefined)
-      setLocation([blockIndex + newContents.length + 1, 0])
+      setLocation([range.min[0] + newContents.length + 1, 0])
       props.setState(draft => {
-        draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
-        if (maxBlockIndex > blockIndex) {
-          draft[maxBlockIndex].children.splice(0, maxContentIndex)
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
-        } else {
-          draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
-            ...props.state[blockIndex],
-            children: props.state[blockIndex].children.slice(maxContentIndex),
-          }))
-        }
+        inputContentRange(draft, newContents)
       })
       return
     }
     setLocation([blockLocation + newContents.length + 1, 0])
     props.setState(draft => {
-      draft[blockLocation].children.splice(contentLocation, props.state[blockLocation].children.length - contentLocation)
-      draft.splice(blockLocation + 1, 0, ...castDraft(newContents), castDraft({
-        ...props.state[blockLocation],
-        children: props.state[blockLocation].children.slice(contentLocation),
-      }))
+      inputContentPosition(draft, newContents, location)
     })
+  }
+  const inputContentRange = (draft: Draft<V>[], newContents: readonly V[]) => {
+    if (!range) return
+    const [blockIndex, contentIndex] = range.min
+    const [maxBlockIndex, maxContentIndex] = range.max
+    draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
+    if (maxBlockIndex > blockIndex) {
+      draft[maxBlockIndex].children.splice(0, maxContentIndex)
+      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
+    } else {
+      draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
+        ...props.state[blockIndex],
+        children: props.state[blockIndex].children.slice(maxContentIndex),
+      }))
+    }
+  }
+  const inputContentPosition = (draft: Draft<V>[], newContents: readonly V[], loc: [number, number]) => {
+    draft[loc[0]].children.splice(loc[1], props.state[loc[0]].children.length - loc[1])
+    draft.splice(loc[0] + 1, 0, ...castDraft(newContents), castDraft({
+      ...props.state[loc[0]],
+      children: props.state[loc[0]].children.slice(loc[1]),
+    }))
+  }
+  const inputInlineRange = (draft: Draft<V>[], items: readonly T[]) => {
+    if (!range) return
+    const [blockIndex, contentIndex] = range.min
+    const [maxBlockIndex, maxContentIndex] = range.max
+    const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
+    const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
+    draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
+    if (maxBlockIndex > blockIndex) {
+      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
+    }
+  }
+  const inputInlinePosition = (draft: Draft<V>[], items: readonly T[], loc: [number, number]) => {
+    draft[loc[0]].children.splice(loc[1], 0, ...castDraft(items))
   }
   const inputInline = (items: readonly T[]) => {
     if (props.readOnly) return
     if (range) {
       const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setSelectionStart(undefined)
       setLocation([blockIndex, contentIndex + items.length])
       props.setState(draft => {
-        const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
-        const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-        draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
-        if (maxBlockIndex > blockIndex) {
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-        }
+        inputInlineRange(draft, items)
       })
       return
     }
     setLocation([blockLocation, contentLocation + items.length])
     props.setState(draft => {
-      draft[blockLocation].children.splice(contentLocation, 0, ...castDraft(items))
+      inputInlinePosition(draft, items, location)
     })
   }
   const backspace = () => {
     if (props.readOnly) return
     if (range) {
-      const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setLocation(range.min)
       setSelectionStart(undefined)
       props.setState(draft => {
-        const newContents = maxBlockIndex > blockIndex ? castDraft(props.state[maxBlockIndex].children.slice(maxContentIndex)) : []
-        const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-        draft[blockIndex].children.splice(contentIndex, deletionCount, ...newContents)
-        if (maxBlockIndex > blockIndex) {
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-        }
+        inputInlineRange(draft, [])
       })
       return
     }
@@ -211,6 +219,9 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     if (cut) {
       backspace()
     }
+    return getSelectedContents(range)
+  }
+  const getSelectedContents = (range: { min: [number, number], max: [number, number] }) => {
     const [blockIndex, contentIndex] = range.min
     const [maxBlockIndex, maxContentIndex] = range.max
     const endIndex = blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length
@@ -263,6 +274,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     props.onBlur?.()
   }
   const downLocation = React.useRef<[number, number]>()
+  const [dragLocation, setDragLocation] = React.useState<[number, number]>()
   const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     // type-coverage:ignore-next-line
     const bounding = (e.target as HTMLDivElement).getBoundingClientRect()
@@ -295,20 +307,47 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     }
     return [props.state.length - 1, props.state[props.state.length - 1].children.length]
   }
+  const isPositionInRange = (p: Position) => {
+    if (range) {
+      for (let blockIndex = 0; blockIndex < layoutResult.length; blockIndex++) {
+        const block = layoutResult[blockIndex]
+        for (let contentIndex = 0; contentIndex < block.length; contentIndex++) {
+          const r = block[contentIndex]
+          if (r.visible) {
+            const loc = [blockIndex, contentIndex] as const
+            if (compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0) {
+              if (p.x > r.x && p.y > r.y && p.x < r.x + props.getWidth(r.content, props.state[blockIndex]) && p.y < r.y + lineHeights[r.row]) {
+                return true
+              }
+            }
+          }
+        }
+      }
+    }
+    return false
+  }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const p = positionToLocation(getPosition(e))
+    const h = getPosition(e)
+    const p = positionToLocation(h)
     if (e.shiftKey) {
       if (selectionStart === undefined) {
         setSelectionStart(location)
       }
       setLocation(p)
     } else {
+      if (isPositionInRange(h)) {
+        setDragLocation(p)
+        return
+      }
       downLocation.current = p
     }
   }
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (downLocation.current === undefined) {
+      if (dragLocation !== undefined) {
+        setDragLocation(positionToLocation(getPosition(e), false))
+      }
       return
     }
     const s = getPosition(e)
@@ -329,10 +368,51 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   }
   const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove(e)
+    if (dragLocation !== undefined && range) {
+      if (compareLocations(dragLocation, range.min) < 0) {
+        const contents = getSelectedContents(range)
+        if (contents.length === 1) {
+          const items = contents[0].children
+          props.setState(draft => {
+            inputInlineRange(draft, [])
+            inputInlinePosition(draft, items, dragLocation)
+          })
+          setLocation([dragLocation[0], dragLocation[1] + items.length])
+          setSelectionStart(dragLocation)
+        } else {
+          props.setState(draft => {
+            inputInlineRange(draft, [])
+            inputContentPosition(draft, contents, dragLocation)
+          })
+          setLocation([dragLocation[0] + contents.length + 1, 0])
+          setSelectionStart([dragLocation[0] + 1, 0])
+        }
+      } else if (compareLocations(dragLocation, range.max) > 0) {
+        const contents = getSelectedContents(range)
+        if (contents.length === 1) {
+          const items = contents[0].children
+          props.setState(draft => {
+            inputInlinePosition(draft, items, dragLocation)
+            inputInlineRange(draft, [])
+          })
+          setSelectionStart([dragLocation[0], dragLocation[1] - items.length])
+          setLocation(dragLocation)
+        } else {
+          props.setState(draft => {
+            inputContentPosition(draft, contents, dragLocation)
+            inputInlineRange(draft, [])
+          })
+          setLocation([dragLocation[0] + 2, 0])
+          setSelectionStart([dragLocation[0] - contents.length + 2, 0])
+        }
+      }
+      setDragLocation(undefined)
+    }
     ref.current?.focus()
   }
   useGlobalMouseUp(useEvent(() => {
     downLocation.current = undefined
+    setDragLocation(undefined)
   }))
 
   const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
@@ -407,7 +487,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   if (selectionStart !== undefined) {
     range = compareLocations(selectionStart, location) > 0 ? { min: location, max: selectionStart } : { min: selectionStart, max: location }
   }
-  const p = layoutResult[blockLocation]?.[contentLocation]
+  const p = layoutResult[dragLocation?.[0] ?? blockLocation]?.[dragLocation?.[1] ?? contentLocation]
   const cursorX = p?.x ?? 0
   const cursorY = (p?.y ?? 0) - scrollY
   const cursorRow = p?.row ?? 0
@@ -511,7 +591,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
 /**
  * @public
  */
-export function compareLocations(c1: [number, number], c2: [number, number]) {
+export function compareLocations(c1: readonly [number, number], c2: readonly [number, number]) {
   if (c1[0] < c2[0]) return -1
   if (c1[0] > c2[0]) return 1
   if (c1[1] < c2[1]) return -1
