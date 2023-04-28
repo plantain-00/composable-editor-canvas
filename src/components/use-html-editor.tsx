@@ -66,53 +66,68 @@ export function useHtmlEditor(props: {
   const inputContent = (newContents: readonly HtmlBlock[]) => {
     if (props.readOnly) return
     if (range) {
-      const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setSelectionStart(undefined)
-      setLocation([blockIndex + newContents.length + 1, 0])
+      setLocation([range.min[0] + newContents.length + 1, 0])
       props.setState(draft => {
-        draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
-        if (maxBlockIndex > blockIndex) {
-          draft[maxBlockIndex].children.splice(0, maxContentIndex)
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
-        } else {
-          draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
-            ...props.state[blockIndex],
-            children: props.state[blockIndex].children.slice(maxContentIndex),
-          }))
-        }
+        inputContentRange(draft, newContents)
       })
       return
     }
     setLocation([blockLocation + newContents.length + 1, 0])
     props.setState(draft => {
-      draft[blockLocation].children.splice(contentLocation, props.state[blockLocation].children.length - contentLocation)
-      draft.splice(blockLocation + 1, 0, ...castDraft(newContents), castDraft({
-        ...props.state[blockLocation],
-        children: props.state[blockLocation].children.slice(contentLocation),
-      }))
+      inputContentPosition(draft, newContents, location)
     })
+  }
+  const inputContentRange = (draft: Draft<HtmlBlock>[], newContents: readonly HtmlBlock[]) => {
+    if (!range) return
+    const [blockIndex, contentIndex] = range.min
+    const [maxBlockIndex, maxContentIndex] = range.max
+    draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
+    if (maxBlockIndex > blockIndex) {
+      draft[maxBlockIndex].children.splice(0, maxContentIndex)
+      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
+    } else {
+      draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
+        ...props.state[blockIndex],
+        children: props.state[blockIndex].children.slice(maxContentIndex),
+      }))
+    }
+  }
+  const inputContentPosition = (draft: Draft<HtmlBlock>[], newContents: readonly HtmlBlock[], loc: [number, number]) => {
+    draft[loc[0]].children.splice(loc[1], props.state[loc[0]].children.length - loc[1])
+    draft.splice(loc[0] + 1, 0, ...castDraft(newContents), castDraft({
+      ...props.state[loc[0]],
+      children: props.state[loc[0]].children.slice(loc[1]),
+    }))
+  }
+  const inputInlineRange = (draft: Draft<HtmlBlock>[], items: readonly HtmlTextInline[]) => {
+    if (!range) return
+    const [blockIndex, contentIndex] = range.min
+    const [maxBlockIndex, maxContentIndex] = range.max
+    const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
+    const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
+    draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
+    if (maxBlockIndex > blockIndex) {
+      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
+    }
+  }
+  const inputInlinePosition = (draft: Draft<HtmlBlock>[], items: readonly HtmlTextInline[], loc: [number, number]) => {
+    draft[loc[0]].children.splice(loc[1], 0, ...castDraft(items))
   }
   const inputInline = (items: readonly HtmlTextInline[]) => {
     if (props.readOnly) return
     if (range) {
       const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setSelectionStart(undefined)
       setLocation([blockIndex, contentIndex + items.length])
       props.setState(draft => {
-        const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
-        const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-        draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
-        if (maxBlockIndex > blockIndex) {
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-        }
+        inputInlineRange(draft, items)
       })
       return
     }
     setLocation([blockLocation, contentLocation + items.length])
     props.setState(draft => {
-      draft[blockLocation].children.splice(contentLocation, 0, ...castDraft(items))
+      inputInlinePosition(draft, items, location)
     })
   }
   const inputText = (text: string | (string | HtmlTextInline)[]) => {
@@ -131,17 +146,10 @@ export function useHtmlEditor(props: {
   const backspace = () => {
     if (props.readOnly) return
     if (range) {
-      const [blockIndex, contentIndex] = range.min
-      const [maxBlockIndex, maxContentIndex] = range.max
       setLocation(range.min)
       setSelectionStart(undefined)
       props.setState(draft => {
-        const newContents = maxBlockIndex > blockIndex ? castDraft(props.state[maxBlockIndex].children.slice(maxContentIndex)) : []
-        const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-        draft[blockIndex].children.splice(contentIndex, deletionCount, ...newContents)
-        if (maxBlockIndex > blockIndex) {
-          draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-        }
+        inputInlineRange(draft, [])
       })
       return
     }
@@ -258,6 +266,9 @@ export function useHtmlEditor(props: {
     if (cut) {
       backspace()
     }
+    return getSelectedContents(range)
+  }
+  const getSelectedContents = (range: { min: [number, number], max: [number, number] }) => {
     const [blockIndex, contentIndex] = range.min
     const [maxBlockIndex, maxContentIndex] = range.max
     const endIndex = blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length
@@ -344,6 +355,7 @@ export function useHtmlEditor(props: {
     props.onBlur?.()
   }
   const downLocation = React.useRef<[number, number]>()
+  const [dragLocation, setDragLocation] = React.useState<[number, number]>()
   const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const rect = rootRef.current?.getBoundingClientRect()
     return {
@@ -397,20 +409,45 @@ export function useHtmlEditor(props: {
     }
     return [props.state.length - 1, props.state[props.state.length - 1].children.length]
   }
+  const isPositionInRange = (p: Position) => {
+    if (range && layoutResults.current) {
+      for (let blockIndex = 0; blockIndex < layoutResults.current.cells.length; blockIndex++) {
+        const block = layoutResults.current.cells[blockIndex]
+        for (let contentIndex = 0; contentIndex < block.length; contentIndex++) {
+          const r = block[contentIndex]
+          const loc = [blockIndex, contentIndex] as const
+          if (compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0) {
+            if (p.x > r.x && p.y > r.y && p.x < r.x + r.width && p.y < r.y + r.height) {
+              return true
+            }
+          }
+        }
+      }
+    }
+    return false
+  }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
-    const p = positionToLocation(getPosition(e))
+    const h = getPosition(e)
+    const p = positionToLocation(h)
     if (e.shiftKey) {
       if (selectionStart === undefined) {
         setSelectionStart(location)
       }
       setLocation(p)
     } else {
+      if (isPositionInRange(h)) {
+        setDragLocation(p)
+        return
+      }
       downLocation.current = p
     }
   }
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (downLocation.current === undefined) {
+      if (dragLocation !== undefined) {
+        setDragLocation(positionToLocation(getPosition(e)))
+      }
       return
     }
     const s = getPosition(e)
@@ -432,10 +469,51 @@ export function useHtmlEditor(props: {
   }
   const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove(e)
+    if (dragLocation !== undefined && range) {
+      if (compareLocations(dragLocation, range.min) < 0) {
+        const contents = getSelectedContents(range)
+        if (contents.length === 1) {
+          const items = contents[0].children
+          props.setState(draft => {
+            inputInlineRange(draft, [])
+            inputInlinePosition(draft, items, dragLocation)
+          })
+          setLocation([dragLocation[0], dragLocation[1] + items.length])
+          setSelectionStart(dragLocation)
+        } else {
+          props.setState(draft => {
+            inputInlineRange(draft, [])
+            inputContentPosition(draft, contents, dragLocation)
+          })
+          setLocation([dragLocation[0] + contents.length + 1, 0])
+          setSelectionStart([dragLocation[0] + 1, 0])
+        }
+      } else if (compareLocations(dragLocation, range.max) > 0) {
+        const contents = getSelectedContents(range)
+        if (contents.length === 1) {
+          const items = contents[0].children
+          props.setState(draft => {
+            inputInlinePosition(draft, items, dragLocation)
+            inputInlineRange(draft, [])
+          })
+          setSelectionStart([dragLocation[0], dragLocation[1] - items.length])
+          setLocation(dragLocation)
+        } else {
+          props.setState(draft => {
+            inputContentPosition(draft, contents, dragLocation)
+            inputInlineRange(draft, [])
+          })
+          setLocation([dragLocation[0] + 2, 0])
+          setSelectionStart([dragLocation[0] - contents.length + 2, 0])
+        }
+      }
+      setDragLocation(undefined)
+    }
     cursorRef.current?.focus()
   }
   useGlobalMouseUp(useEvent(() => {
     downLocation.current = undefined
+    setDragLocation(undefined)
   }))
 
   const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
@@ -455,13 +533,14 @@ export function useHtmlEditor(props: {
   }, [props.state, rootRef.current])
   React.useEffect(() => {
     if (!layoutResults.current) return
-    const parentResult = layoutResults.current.cells[blockLocation]
+    const parentResult = layoutResults.current.cells[dragLocation?.[0] ?? blockLocation]
     let rect: Region | undefined
     if (parentResult) {
-      if (contentLocation === 0) {
+      const c = dragLocation?.[1] ?? contentLocation
+      if (c === 0) {
         rect = parentResult[0]
       } else {
-        const previous = parentResult[contentLocation - 1]
+        const previous = parentResult[c - 1]
         if (previous) {
           rect = {
             ...previous,
@@ -471,7 +550,7 @@ export function useHtmlEditor(props: {
       }
     }
     setCursorRect(rect)
-  }, [layoutResults.current, blockLocation, contentLocation])
+  }, [layoutResults.current, blockLocation, contentLocation, dragLocation])
 
   const newContentHeight = rootRef.current?.offsetHeight
   if (newContentHeight && contentHeight < newContentHeight) {
@@ -480,7 +559,7 @@ export function useHtmlEditor(props: {
   const firstLineHeight = layoutResults.current?.cells?.[0]?.[0]?.height ?? defaultFontSize
   const lastLineHeight = layoutResults.current?.cells?.[props.state.length - 1]?.[0]?.height ?? defaultFontSize
 
-  const p = layoutResults.current?.cells?.[blockLocation]?.[contentLocation]
+  const p = layoutResults.current?.cells?.[dragLocation?.[0] ?? blockLocation]?.[dragLocation?.[1] ?? contentLocation]
   const cursorX = p?.x ?? 0
   const cursorY = (p?.y ?? 0) - scrollY
   const cursorHeight = p?.height ?? 0
