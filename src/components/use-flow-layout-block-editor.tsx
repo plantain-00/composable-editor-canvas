@@ -37,11 +37,298 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   align?: Align
   verticalAlign?: VerticalAlign
 }) {
+  const { range, inputContent, inputInline, getCopiedContents, skipVoidBlock, scrollRef,
+    scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref, setLocation, location, contentHeight, setContentHeight, blockLocation,
+    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation(props)
+
+  const arrowUp = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setLocation(range.min)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(location)
+    }
+    if (cursorY < firstLineHeight || cursorRow <= 0) {
+      setLocation([0, 0])
+      return
+    }
+    setLocation(positionToLocation({
+      x: cursorX,
+      y: cursorY - lineHeights[cursorRow - 1] / 2 + scrollY,
+    }, false, true))
+  }
+  const arrowDown = (shift = false) => {
+    if (!shift && range) {
+      setSelectionStart(undefined)
+      setLocation(range.max)
+      return
+    }
+    if (shift && selectionStart === undefined) {
+      setSelectionStart(location)
+    }
+    if (cursorRow >= lineHeights.length - 1) {
+      setLocation([props.state.length - 1, props.state[props.state.length - 1].children.length])
+      return
+    }
+    setLocation(positionToLocation({
+      x: cursorX,
+      y: cursorY + lineHeights[cursorRow] + lineHeights[cursorRow + 1] / 2 + scrollY,
+    }, false))
+  }
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    keyDown(e, arrowUp, arrowDown)
+  }
+  const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    // type-coverage:ignore-next-line
+    const bounding = (e.target as HTMLDivElement).getBoundingClientRect()
+    return {
+      x: e.clientX - bounding.left,
+      y: e.clientY - bounding.top,
+    }
+  }
+  const positionToLocation = (p: Position, ignoreInvisible = true, forward?: boolean): [number, number] => {
+    for (let i = 0; i < layoutResult.length; i++) {
+      if (layoutResult[i].length > 0 && layoutResult[i][0].y > p.y) {
+        return skipVoidBlock([i, 0], forward)
+      }
+      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible, props.getHeight)
+      if (loc !== undefined) {
+        return skipVoidBlock([i, loc], forward)
+      }
+    }
+    return [props.state.length - 1, props.state[props.state.length - 1].children.length]
+  }
+  const isPositionInRange = (p: Position) => {
+    if (range) {
+      for (let blockIndex = 0; blockIndex < layoutResult.length; blockIndex++) {
+        const block = layoutResult[blockIndex]
+        for (let contentIndex = 0; contentIndex < block.length; contentIndex++) {
+          const r = block[contentIndex]
+          if (r.visible) {
+            const loc = [blockIndex, contentIndex] as const
+            if (compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0) {
+              if (p.x > r.x && p.y > r.y && p.x < r.x + props.getWidth(r.content, props.state[blockIndex]) && p.y < r.y + lineHeights[r.row]) {
+                return true
+              }
+            }
+          }
+        }
+      }
+    }
+    return false
+  }
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    mouseDown(e, getPosition, positionToLocation, isPositionInRange)
+  }
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    mouseMove(e, getPosition, p => positionToLocation(p, false), 0, firstLineHeight, lastLineHeight)
+  }
+  const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    onMouseMove(e)
+    mouseUp()
+  }
+
+  const layoutResult: FlowLayoutResult<T>[][] = []
+  let newContentHeight = 0
+  const lineHeights: number[] = []
+  let row = 0
+  let blockEnd = 0
+  const getComposition = props.getComposition
+  const lineHeight = props.lineHeight
+  props.state.forEach((block, blockIndex) => {
+    const start = block.listStyleType && props.isSameType?.(block, props.state[blockIndex - 1]) ? 0 : (block.blockStart ?? 0)
+    const end = block.listStyleType && props.isSameType?.(block, props.state[blockIndex + 1]) ? 0 : (block.blockEnd ?? 0)
+    const blockStart = Math.max(start, blockEnd)
+    const r = flowLayout({
+      state: block.children,
+      width: props.width,
+      height: props.autoHeight ? undefined : props.height,
+      lineHeight: typeof lineHeight === 'number' ? lineHeight : (c) => lineHeight(c, block),
+      getWidth: c => props.getWidth(c, block),
+      isNewLineContent: props.isNewLineContent,
+      isPartOfComposition: props.isPartOfComposition,
+      getComposition: getComposition ? (i) => getComposition(blockIndex, i) : undefined,
+      endContent: props.endContent,
+      scrollX: block.inlineStart,
+      scrollY: scrollY + newContentHeight + blockStart,
+      row,
+      align: props.align,
+    })
+    layoutResult.push(r.layoutResult)
+    if (!block.void) {
+      newContentHeight += r.newContentHeight
+    }
+    newContentHeight += blockStart
+    lineHeights.push(...r.lineHeights)
+    row += r.lineHeights.length
+    blockEnd = end
+  })
+  newContentHeight += blockEnd
+
+  if (props.height && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
+    let offset = props.height - newContentHeight
+    if (offset > 0) {
+      if (props.verticalAlign === 'middle') {
+        offset /= 2
+      }
+      layoutResult.forEach(r => {
+        r.forEach(f => {
+          f.y += offset
+        })
+      })
+    }
+  }
+
+  if (contentHeight < newContentHeight) {
+    setContentHeight(newContentHeight)
+  }
+  const firstLineHeight = lineHeights[0]
+  const lastLineHeight = lineHeights[lineHeights.length - 1]
+
+  const p = layoutResult[dragLocation?.[0] ?? blockLocation]?.[dragLocation?.[1] ?? contentLocation]
+  const cursorX = p?.x ?? 0
+  const cursorY = (p?.y ?? 0) - scrollY
+  const cursorRow = p?.row ?? 0
+
+  const lastLocation = React.useRef<[number, number]>()
+  const lastCursorY = React.useRef<number>()
+  React.useEffect(() => {
+    if ((equals(lastLocation.current?.[0], location[0]) &&
+      equals(lastLocation.current?.[1], location[1]) &&
+      equals(lastCursorY.current, cursorY)) || props.autoHeight) {
+      return
+    }
+    const y = cursorY + scrollY
+    if (y < 0) {
+      setY(-cursorY)
+    } else if (y > props.height - lastLineHeight) {
+      setY(props.height - lastLineHeight - cursorY)
+    }
+    lastLocation.current = location
+    lastCursorY.current = cursorY
+  }, [location, cursorY, scrollY, lastLineHeight])
+
+  return {
+    ref,
+    range,
+    layoutResult,
+    lineHeights,
+    cursor: {
+      x: cursorX,
+      y: cursorY + scrollY,
+      row: cursorRow,
+    },
+    inputContent,
+    inputInline,
+    location,
+    setLocation,
+    getCopiedContents,
+    isSelected,
+    actualHeight,
+    setSelectionStart,
+    getPosition,
+    positionToLocation,
+    scrollY,
+    renderEditor: (children: JSX.Element) => {
+      return <div
+        style={{
+          position: 'relative',
+          width: props.width + 'px',
+          height: actualHeight + 'px',
+          border: '1px solid black',
+          clipPath: 'inset(0px 0px)',
+          ...props.style,
+        }}
+        onMouseLeave={onMouseUp}
+        ref={scrollRef}
+      >
+        <Cursor
+          ref={ref}
+          onKeyDown={onKeyDown}
+          onCompositionEnd={props.onCompositionEnd}
+          onBlur={onBlur}
+          onFocus={props.onFocus}
+          readOnly={props.readOnly}
+          style={{
+            left: cursorX + 'px',
+            top: cursorY + scrollY + 'px',
+            height: lineHeights[cursorRow] + 'px',
+          }}
+        />
+        {children}
+        <div
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onDoubleClick={props.onDoubleClick}
+          style={{ inset: '0px', cursor: 'text', position: 'absolute' }}
+        ></div>
+        {!props.autoHeight && <Scrollbar
+          value={scrollY}
+          type='vertical'
+          containerSize={props.height}
+          contentSize={contentHeight}
+          onChange={setY}
+          align='head'
+        />}
+      </div>
+    },
+  }
+}
+
+/**
+ * @public
+ */
+export function compareLocations(c1: readonly [number, number], c2: readonly [number, number]) {
+  if (c1[0] < c2[0]) return -1
+  if (c1[0] > c2[0]) return 1
+  if (c1[1] < c2[1]) return -1
+  if (c1[1] > c2[1]) return 1
+  return 0
+}
+
+/**
+ * @public
+ */
+export interface FlowLayoutBlock<T> extends Partial<FlowLayoutBlockStyle> {
+  children: readonly T[]
+}
+
+/**
+ * @public
+ */
+export interface FlowLayoutBlockStyle {
+  blockStart: number
+  blockEnd: number
+  inlineStart: number
+  listStyleType: 'disc' | 'decimal'
+  void: boolean
+}
+
+export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[], void?: boolean | undefined }>(props: {
+  state: readonly V[]
+  height: number
+  setState(recipe: (draft: Draft<V>[]) => void): void
+  readOnly?: boolean
+  onLocationChanged?(location?: [number, number]): void
+  autoHeight?: boolean
+  onBlur?: () => void
+  keepSelectionOnBlur?: boolean
+  processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
+}) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
   const [selectionStart, setSelectionStart] = React.useState<[number, number]>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
+
+  const range = selectionStart !== undefined
+    ? compareLocations(selectionStart, location) > 0
+      ? { min: location, max: selectionStart }
+      : { min: selectionStart, max: location }
+    : undefined
 
   const inputContent = (newContents: readonly V[]) => {
     if (props.readOnly) return
@@ -172,42 +459,6 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       setLocation(skipVoidBlock([blockLocation + 1, 0]))
     }
   }
-  const arrowUp = (shift = false) => {
-    if (!shift && range) {
-      setSelectionStart(undefined)
-      setLocation(range.min)
-      return
-    }
-    if (shift && selectionStart === undefined) {
-      setSelectionStart(location)
-    }
-    if (cursorY < firstLineHeight || cursorRow <= 0) {
-      setLocation([0, 0])
-      return
-    }
-    setLocation(positionToLocation({
-      x: cursorX,
-      y: cursorY - lineHeights[cursorRow - 1] / 2 + scrollY,
-    }, false, true))
-  }
-  const arrowDown = (shift = false) => {
-    if (!shift && range) {
-      setSelectionStart(undefined)
-      setLocation(range.max)
-      return
-    }
-    if (shift && selectionStart === undefined) {
-      setSelectionStart(location)
-    }
-    if (cursorRow >= lineHeights.length - 1) {
-      setLocation([props.state.length - 1, props.state[props.state.length - 1].children.length])
-      return
-    }
-    setLocation(positionToLocation({
-      x: cursorX,
-      y: cursorY + lineHeights[cursorRow] + lineHeights[cursorRow + 1] / 2 + scrollY,
-    }, false))
-  }
   const selectAll = () => {
     setSelectionStart([0, 0])
     setLocation([props.state.length - 1, props.state[props.state.length - 1].children.length])
@@ -240,49 +491,6 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     }
     return result
   }
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing) {
-      return
-    }
-    if (e.keyCode === 229) {
-      return
-    }
-    if (props.processInput?.(e)) {
-      return
-    }
-    if (e.key === 'Enter') {
-      inputContent([])
-      return true
-    }
-    if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
-    if (e.key === 'Backspace') return backspace()
-    if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
-    if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
-    if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)
-    if (e.key === 'ArrowDown') return arrowDown(e.shiftKey)
-    if (metaKeyIfMacElseCtrlKey(e)) {
-      if (e.key === 'a') return selectAll()
-    } else {
-      e.preventDefault()
-    }
-  }
-  const onBlur = () => {
-    if (!props.keepSelectionOnBlur) {
-      setSelectionStart(undefined)
-    }
-    props.onLocationChanged?.()
-    props.onBlur?.()
-  }
-  const downLocation = React.useRef<[number, number]>()
-  const [dragLocation, setDragLocation] = React.useState<[number, number]>()
-  const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    // type-coverage:ignore-next-line
-    const bounding = (e.target as HTMLDivElement).getBoundingClientRect()
-    return {
-      x: e.clientX - bounding.left,
-      y: e.clientY - bounding.top,
-    }
-  }
   const skipVoidBlock = ([i, j]: [number, number], forward?: boolean) => {
     while (props.state[i].void) {
       if (forward) {
@@ -295,38 +503,50 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     }
     return [i, j] as [number, number]
   }
-  const positionToLocation = (p: Position, ignoreInvisible = true, forward?: boolean): [number, number] => {
-    for (let i = 0; i < layoutResult.length; i++) {
-      if (layoutResult[i].length > 0 && layoutResult[i][0].y > p.y) {
-        return skipVoidBlock([i, 0], forward)
-      }
-      const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible, props.getHeight)
-      if (loc !== undefined) {
-        return skipVoidBlock([i, loc], forward)
-      }
+
+  const downLocation = React.useRef<[number, number]>()
+  const [dragLocation, setDragLocation] = React.useState<[number, number]>()
+
+  useGlobalMouseUp(useEvent(() => {
+    downLocation.current = undefined
+    setDragLocation(undefined)
+  }))
+
+  const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
+    minY: props.autoHeight ? 0 : contentHeight > props.height ? props.height - contentHeight : 0,
+    maxY: 0,
+    disabled: props.autoHeight,
+  })
+  React.useEffect(() => {
+    if (props.autoHeight) {
+      setY(0)
     }
-    return [props.state.length - 1, props.state[props.state.length - 1].children.length]
+  }, [props.autoHeight, setY])
+
+  let actualHeight = props.height
+  if (props.autoHeight && contentHeight > props.height) {
+    actualHeight = contentHeight
   }
-  const isPositionInRange = (p: Position) => {
-    if (range) {
-      for (let blockIndex = 0; blockIndex < layoutResult.length; blockIndex++) {
-        const block = layoutResult[blockIndex]
-        for (let contentIndex = 0; contentIndex < block.length; contentIndex++) {
-          const r = block[contentIndex]
-          if (r.visible) {
-            const loc = [blockIndex, contentIndex] as const
-            if (compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0) {
-              if (p.x > r.x && p.y > r.y && p.x < r.x + props.getWidth(r.content, props.state[blockIndex]) && p.y < r.y + lineHeights[r.row]) {
-                return true
-              }
-            }
-          }
-        }
-      }
+  const isSelected = (loc: [number, number]) => range && compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0
+
+  React.useEffect(() => {
+    props.onLocationChanged?.(location)
+  }, [location])
+
+  const onBlur = () => {
+    if (!props.keepSelectionOnBlur) {
+      setSelectionStart(undefined)
     }
-    return false
+    props.onLocationChanged?.()
+    props.onBlur?.()
   }
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+
+  const onMouseDown = (
+    e: React.MouseEvent<HTMLDivElement>,
+    getPosition: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => Position,
+    positionToLocation: (p: Position) => [number, number],
+    isPositionInRange: (p: Position) => boolean,
+  ) => {
     e.preventDefault()
     const h = getPosition(e)
     const p = positionToLocation(h)
@@ -343,15 +563,22 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       downLocation.current = p
     }
   }
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseMove = (
+    e: React.MouseEvent<HTMLDivElement>,
+    getPosition: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => Position,
+    positionToLocation: (p: Position) => [number, number],
+    scrollY: number,
+    firstLineHeight: number,
+    lastLineHeight: number,
+  ) => {
     if (downLocation.current === undefined) {
       if (dragLocation !== undefined) {
-        setDragLocation(positionToLocation(getPosition(e), false))
+        setDragLocation(positionToLocation(getPosition(e)))
       }
       return
     }
     const s = getPosition(e)
-    const p = positionToLocation(s, false)
+    const p = positionToLocation(s)
     setLocation(p)
     if (p[0] === downLocation.current[0] && p[1] === downLocation.current[1]) {
       setSelectionStart(undefined)
@@ -359,15 +586,15 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       setSelectionStart(downLocation.current)
     }
     if (!props.autoHeight) {
-      if (s.y >= 0 && s.y <= firstLineHeight) {
+      const y = s.y + scrollY
+      if (y >= 0 && y <= firstLineHeight) {
         setY(y => filterY(y + 2))
-      } else if (s.y <= props.height && s.y >= props.height - lastLineHeight) {
+      } else if (y <= props.height && y >= props.height - lastLineHeight) {
         setY(y => filterY(y - 2))
       }
     }
   }
-  const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    onMouseMove(e)
+  const onMouseUp = () => {
     if (dragLocation !== undefined && range) {
       if (compareLocations(dragLocation, range.min) < 0) {
         const contents = getSelectedContents(range)
@@ -410,209 +637,42 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     }
     ref.current?.focus()
   }
-  useGlobalMouseUp(useEvent(() => {
-    downLocation.current = undefined
-    setDragLocation(undefined)
-  }))
-
-  const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
-    minY: props.autoHeight ? 0 : contentHeight > props.height ? props.height - contentHeight : 0,
-    maxY: 0,
-    disabled: props.autoHeight,
-  })
-  React.useEffect(() => {
-    if (props.autoHeight) {
-      setY(0)
-    }
-  }, [props.autoHeight, setY])
-
-  const layoutResult: FlowLayoutResult<T>[][] = []
-  let newContentHeight = 0
-  const lineHeights: number[] = []
-  let row = 0
-  let blockEnd = 0
-  const getComposition = props.getComposition
-  const lineHeight = props.lineHeight
-  props.state.forEach((block, blockIndex) => {
-    const start = block.listStyleType && props.isSameType?.(block, props.state[blockIndex - 1]) ? 0 : (block.blockStart ?? 0)
-    const end = block.listStyleType && props.isSameType?.(block, props.state[blockIndex + 1]) ? 0 : (block.blockEnd ?? 0)
-    const blockStart = Math.max(start, blockEnd)
-    const r = flowLayout({
-      state: block.children,
-      width: props.width,
-      height: props.autoHeight ? undefined : props.height,
-      lineHeight: typeof lineHeight === 'number' ? lineHeight : (c) => lineHeight(c, block),
-      getWidth: c => props.getWidth(c, block),
-      isNewLineContent: props.isNewLineContent,
-      isPartOfComposition: props.isPartOfComposition,
-      getComposition: getComposition ? (i) => getComposition(blockIndex, i) : undefined,
-      endContent: props.endContent,
-      scrollX: block.inlineStart,
-      scrollY: scrollY + newContentHeight + blockStart,
-      row,
-      align: props.align,
-    })
-    layoutResult.push(r.layoutResult)
-    if (!block.void) {
-      newContentHeight += r.newContentHeight
-    }
-    newContentHeight += blockStart
-    lineHeights.push(...r.lineHeights)
-    row += r.lineHeights.length
-    blockEnd = end
-  })
-  newContentHeight += blockEnd
-
-  if (props.height && (props.verticalAlign === 'middle' || props.verticalAlign === 'bottom')) {
-    let offset = props.height - newContentHeight
-    if (offset > 0) {
-      if (props.verticalAlign === 'middle') {
-        offset /= 2
-      }
-      layoutResult.forEach(r => {
-        r.forEach(f => {
-          f.y += offset
-        })
-      })
-    }
-  }
-
-  if (contentHeight < newContentHeight) {
-    setContentHeight(newContentHeight)
-  }
-  const firstLineHeight = lineHeights[0]
-  const lastLineHeight = lineHeights[lineHeights.length - 1]
-
-  let range: { min: [number, number], max: [number, number] } | undefined
-  if (selectionStart !== undefined) {
-    range = compareLocations(selectionStart, location) > 0 ? { min: location, max: selectionStart } : { min: selectionStart, max: location }
-  }
-  const p = layoutResult[dragLocation?.[0] ?? blockLocation]?.[dragLocation?.[1] ?? contentLocation]
-  const cursorX = p?.x ?? 0
-  const cursorY = (p?.y ?? 0) - scrollY
-  const cursorRow = p?.row ?? 0
-
-  const lastLocation = React.useRef<[number, number]>()
-  const lastCursorY = React.useRef<number>()
-  React.useEffect(() => {
-    if ((equals(lastLocation.current?.[0], location[0]) &&
-      equals(lastLocation.current?.[1], location[1]) &&
-      equals(lastCursorY.current, cursorY)) || props.autoHeight) {
+  const onKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    arrowUp: (shift?: boolean) => void,
+    arrowDown: (shift?: boolean) => void,
+    callback?: () => void,
+  ) => {
+    if (e.nativeEvent.isComposing) {
       return
     }
-    const y = cursorY + scrollY
-    if (y < 0) {
-      setY(-cursorY)
-    } else if (y > props.height - lastLineHeight) {
-      setY(props.height - lastLineHeight - cursorY)
+    if (e.keyCode === 229) {
+      return
     }
-    lastLocation.current = location
-    lastCursorY.current = cursorY
-  }, [location, cursorY, scrollY, lastLineHeight])
-
-  React.useEffect(() => {
-    props.onLocationChanged?.(location)
-  }, [location])
-
-  let actualHeight = props.height
-  if (props.autoHeight && contentHeight > props.height) {
-    actualHeight = contentHeight
+    if (props.processInput?.(e)) {
+      return
+    }
+    if (e.key === 'Enter') {
+      inputContent([])
+      return true
+    }
+    if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
+    if (e.key === 'Backspace') return backspace()
+    if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
+    if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
+    if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)
+    if (e.key === 'ArrowDown') return arrowDown(e.shiftKey)
+    if (metaKeyIfMacElseCtrlKey(e)) {
+      if (e.key === 'a') return selectAll()
+    } else {
+      e.preventDefault()
+    }
+    callback?.()
   }
-  const isSelected = (loc: [number, number]) => range && compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0
 
   return {
-    ref,
-    range,
-    layoutResult,
-    lineHeights,
-    cursor: {
-      x: cursorX,
-      y: cursorY + scrollY,
-      row: cursorRow,
-    },
-    inputContent,
-    inputInline,
-    location,
-    setLocation,
-    getCopiedContents,
-    isSelected,
-    actualHeight,
-    setSelectionStart,
-    getPosition,
-    positionToLocation,
-    scrollY,
-    renderEditor: (children: JSX.Element) => {
-      return <div
-        style={{
-          position: 'relative',
-          width: props.width + 'px',
-          height: actualHeight + 'px',
-          border: '1px solid black',
-          clipPath: 'inset(0px 0px)',
-          ...props.style,
-        }}
-        onMouseLeave={onMouseUp}
-        ref={scrollRef}
-      >
-        <Cursor
-          ref={ref}
-          onKeyDown={onKeyDown}
-          onCompositionEnd={props.onCompositionEnd}
-          onBlur={onBlur}
-          onFocus={props.onFocus}
-          readOnly={props.readOnly}
-          style={{
-            left: cursorX + 'px',
-            top: cursorY + scrollY + 'px',
-            height: lineHeights[cursorRow] + 'px',
-          }}
-        />
-        {children}
-        <div
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onDoubleClick={props.onDoubleClick}
-          style={{ inset: '0px', cursor: 'text', position: 'absolute' }}
-        ></div>
-        {!props.autoHeight && <Scrollbar
-          value={scrollY}
-          type='vertical'
-          containerSize={props.height}
-          contentSize={contentHeight}
-          onChange={setY}
-          align='head'
-        />}
-      </div>
-    },
+    range, inputContent, inputInline, getCopiedContents, skipVoidBlock, scrollRef,
+    scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref, setLocation, location, contentHeight, setContentHeight, blockLocation,
+    contentLocation, isSelected, actualHeight, onBlur, onMouseUp, onMouseDown, onMouseMove, onKeyDown,
   }
-}
-
-/**
- * @public
- */
-export function compareLocations(c1: readonly [number, number], c2: readonly [number, number]) {
-  if (c1[0] < c2[0]) return -1
-  if (c1[0] > c2[0]) return 1
-  if (c1[1] < c2[1]) return -1
-  if (c1[1] > c2[1]) return 1
-  return 0
-}
-
-/**
- * @public
- */
-export interface FlowLayoutBlock<T> extends Partial<FlowLayoutBlockStyle> {
-  children: readonly T[]
-}
-
-/**
- * @public
- */
-export interface FlowLayoutBlockStyle {
-  blockStart: number
-  blockEnd: number
-  inlineStart: number
-  listStyleType: 'disc' | 'decimal'
-  void: boolean
 }
