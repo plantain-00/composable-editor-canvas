@@ -1,13 +1,12 @@
-import { castDraft } from "immer"
 import type { Draft } from 'immer/dist/types/types-external';
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
-import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick, useEvent, useGlobalMouseUp } from "."
+import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick } from "."
 import { equals, getColorString, Merger, Position, Reducer, Region, Size } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
-import { useWheelScroll } from "./use-wheel-scroll"
+import { useFlowLayoutBlockOperation } from './use-flow-layout-block-editor'
 
 /**
  * @public
@@ -26,24 +25,18 @@ export function useHtmlEditor(props: {
   onFocus?: () => void
   plugin?: HtmlEditorPlugin
   resizeOffset: Size
+  keepSelectionOnBlur?: boolean
 }) {
-  const [location, setLocation] = React.useState<[number, number]>([0, 0])
-  const [blockLocation, contentLocation] = location
-  const [selectionStart, setSelectionStart] = React.useState<[number, number]>()
-  const cursorRef = React.useRef<HTMLInputElement | null>(null)
   const rootRef = React.useRef<HTMLDivElement | null>(null)
-  const [contentHeight, setContentHeight] = React.useState(0)
   const [cursorRect, setCursorRect] = React.useState<Region>()
   const layoutResults = React.useRef<HtmlLayoutResult>()
 
-  const range = selectionStart !== undefined
-    ? compareLocations(selectionStart, location) > 0
-      ? { min: location, max: selectionStart }
-      : { min: selectionStart, max: location }
-    : undefined
-  const currentLocation = range ? range.min : location
+  const { range, inputContent, inputInline, getCopiedContents, scrollRef,
+    scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref: cursorRef, setLocation, location, contentHeight, setContentHeight, blockLocation,
+    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation(props)
+
   const getCurrentContent = (draft: readonly HtmlBlock[]) => {
-    const blockIndex = currentLocation[0]
+    const blockIndex = range ? range.min[0] : location[0]
     const block = draft[blockIndex]
     const contentIndex = block ? location[1] <= 0 ? 0 : location[1] - 1 ?? block.children.length - 1 : undefined
     return {
@@ -63,73 +56,6 @@ export function useHtmlEditor(props: {
     }
     return
   }
-  const inputContent = (newContents: readonly HtmlBlock[]) => {
-    if (props.readOnly) return
-    if (range) {
-      setSelectionStart(undefined)
-      setLocation([range.min[0] + newContents.length + 1, 0])
-      props.setState(draft => {
-        inputContentRange(draft, newContents)
-      })
-      return
-    }
-    setLocation([blockLocation + newContents.length + 1, 0])
-    props.setState(draft => {
-      inputContentPosition(draft, newContents, location)
-    })
-  }
-  const inputContentRange = (draft: Draft<HtmlBlock>[], newContents: readonly HtmlBlock[]) => {
-    if (!range) return
-    const [blockIndex, contentIndex] = range.min
-    const [maxBlockIndex, maxContentIndex] = range.max
-    draft[blockIndex].children.splice(contentIndex, props.state[blockIndex].children.length)
-    if (maxBlockIndex > blockIndex) {
-      draft[maxBlockIndex].children.splice(0, maxContentIndex)
-      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex - 1, ...castDraft(newContents))
-    } else {
-      draft.splice(blockIndex + 1, 0, ...castDraft(newContents), castDraft({
-        ...props.state[blockIndex],
-        children: props.state[blockIndex].children.slice(maxContentIndex),
-      }))
-    }
-  }
-  const inputContentPosition = (draft: Draft<HtmlBlock>[], newContents: readonly HtmlBlock[], loc: [number, number]) => {
-    draft[loc[0]].children.splice(loc[1], props.state[loc[0]].children.length - loc[1])
-    draft.splice(loc[0] + 1, 0, ...castDraft(newContents), castDraft({
-      ...props.state[loc[0]],
-      children: props.state[loc[0]].children.slice(loc[1]),
-    }))
-  }
-  const inputInlineRange = (draft: Draft<HtmlBlock>[], items: readonly HtmlTextInline[]) => {
-    if (!range) return
-    const [blockIndex, contentIndex] = range.min
-    const [maxBlockIndex, maxContentIndex] = range.max
-    const newContents = maxBlockIndex > blockIndex ? [...items, ...props.state[maxBlockIndex].children.slice(maxContentIndex)] : items
-    const deletionCount = (blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length) - contentIndex
-    draft[blockIndex].children.splice(contentIndex, deletionCount, ...castDraft(newContents))
-    if (maxBlockIndex > blockIndex) {
-      draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
-    }
-  }
-  const inputInlinePosition = (draft: Draft<HtmlBlock>[], items: readonly HtmlTextInline[], loc: [number, number]) => {
-    draft[loc[0]].children.splice(loc[1], 0, ...castDraft(items))
-  }
-  const inputInline = (items: readonly HtmlTextInline[]) => {
-    if (props.readOnly) return
-    if (range) {
-      const [blockIndex, contentIndex] = range.min
-      setSelectionStart(undefined)
-      setLocation([blockIndex, contentIndex + items.length])
-      props.setState(draft => {
-        inputInlineRange(draft, items)
-      })
-      return
-    }
-    setLocation([blockLocation, contentLocation + items.length])
-    props.setState(draft => {
-      inputInlinePosition(draft, items, location)
-    })
-  }
   const inputText = (text: string | (string | HtmlTextInline)[]) => {
     if (props.readOnly) return
     const result: HtmlTextInline[] = []
@@ -142,73 +68,6 @@ export function useHtmlEditor(props: {
       }
     }
     inputInline(result)
-  }
-  const backspace = () => {
-    if (props.readOnly) return
-    if (range) {
-      setLocation(range.min)
-      setSelectionStart(undefined)
-      props.setState(draft => {
-        inputInlineRange(draft, [])
-      })
-      return
-    }
-    if (blockLocation === 0 && contentLocation === 0) {
-      return
-    }
-    if (contentLocation !== 0) {
-      setLocation([blockLocation, contentLocation - 1])
-      props.setState(draft => {
-        draft[blockLocation].children.splice(contentLocation - 1, 1)
-      })
-    } else if (props.state[blockLocation - 1].void) {
-      setLocation([blockLocation - 1, 0])
-      props.setState(draft => {
-        draft.splice(blockLocation - 1, 1)
-      })
-    } else {
-      setLocation([blockLocation - 1, props.state[blockLocation - 1].children.length])
-      props.setState(draft => {
-        draft[blockLocation - 1].children.push(...draft[blockLocation].children)
-        draft.splice(blockLocation, 1)
-      })
-    }
-  }
-  const arrowLeft = (shift = false) => {
-    if (!shift && range) {
-      setSelectionStart(undefined)
-      setLocation(range.min)
-      return
-    }
-    if (blockLocation === 0 && contentLocation === 0) {
-      return
-    }
-    if (shift && selectionStart === undefined) {
-      setSelectionStart(location)
-    }
-    if (contentLocation !== 0) {
-      setLocation([blockLocation, contentLocation - 1])
-    } else {
-      setLocation(skipVoidBlock([blockLocation - 1, props.state[blockLocation - 1].children.length], true))
-    }
-  }
-  const arrowRight = (shift = false) => {
-    if (!shift && range) {
-      setSelectionStart(undefined)
-      setLocation(range.max)
-      return
-    }
-    if (blockLocation === props.state.length - 1 && contentLocation === props.state[props.state.length - 1].children.length) {
-      return
-    }
-    if (shift && selectionStart === undefined) {
-      setSelectionStart(location)
-    }
-    if (contentLocation !== props.state[blockLocation].children.length) {
-      setLocation([blockLocation, contentLocation + 1])
-    } else {
-      setLocation(skipVoidBlock([blockLocation + 1, 0]))
-    }
   }
   const arrowUp = (shift = false) => {
     if (!shift && range) {
@@ -255,38 +114,6 @@ export function useHtmlEditor(props: {
       y: y + scrollY,
     }))
   }
-  const selectAll = () => {
-    setSelectionStart([0, 0])
-    setLocation([props.state.length - 1, props.state[props.state.length - 1].children.length])
-  }
-  const getCopiedContents = (cut = false): HtmlBlock[] | undefined => {
-    if (range === undefined) {
-      return
-    }
-    if (cut) {
-      backspace()
-    }
-    return getSelectedContents(range)
-  }
-  const getSelectedContents = (range: { min: [number, number], max: [number, number] }) => {
-    const [blockIndex, contentIndex] = range.min
-    const [maxBlockIndex, maxContentIndex] = range.max
-    const endIndex = blockIndex === maxBlockIndex ? maxContentIndex : props.state[blockIndex].children.length
-    const result: HtmlBlock[] = [{
-      ...props.state[blockIndex],
-      children: props.state[blockIndex].children.slice(contentIndex, endIndex),
-    }]
-    for (let i = blockIndex + 1; i < maxBlockIndex; i++) {
-      result.push(props.state[i])
-    }
-    if (maxBlockIndex > blockIndex) {
-      result.push({
-        ...props.state[maxBlockIndex],
-        children: props.state[maxBlockIndex].children.slice(0, maxContentIndex),
-      })
-    }
-    return result
-  }
   const paste = () => {
     if (props.readOnly) return
     navigator.clipboard.readText().then(v => {
@@ -305,75 +132,36 @@ export function useHtmlEditor(props: {
     })
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing) {
-      return
-    }
-    if (e.keyCode === 229) {
-      return
-    }
-    if (props.processInput?.(e)) {
-      return
-    }
-    if (e.key === 'Enter') {
-      inputContent([])
-      return true
-    }
-    if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
-    if (e.key === 'Backspace') return backspace()
-    if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
-    if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
-    if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)
-    if (e.key === 'ArrowDown') return arrowDown(e.shiftKey)
-    if (metaKeyIfMacElseCtrlKey(e)) {
-      if (e.key === 'a') return selectAll()
-      if (e.key === 'v') {
-        paste()
-        e.preventDefault()
-        return
-      }
-      if (e.key === 'c' || e.key === 'x') {
-        const contents = getCopiedContents(e.key === 'x')
-        if (contents) {
-          const html = renderToStaticMarkup(<>{renderContents(contents, () => false, renderInline)}</>)
-          // eslint-disable-next-line plantain/promise-not-await
-          navigator.clipboard.write([new ClipboardItem({
-            'text/plain': new Blob([JSON.stringify(contents)], { type: 'text/plain' }),
-            'text/html': new Blob([html], { type: 'text/html' }),
-          })])
+    keyDown(e, arrowUp, arrowDown, () => {
+      if (metaKeyIfMacElseCtrlKey(e)) {
+        if (e.key === 'v') {
+          paste()
+          e.preventDefault()
+          return
         }
-        return
+        if (e.key === 'c' || e.key === 'x') {
+          const contents = getCopiedContents(e.key === 'x')
+          if (contents) {
+            const html = renderToStaticMarkup(<>{renderContents(contents, () => false, renderInline)}</>)
+            // eslint-disable-next-line plantain/promise-not-await
+            navigator.clipboard.write([new ClipboardItem({
+              'text/plain': new Blob([JSON.stringify(contents)], { type: 'text/plain' }),
+              'text/html': new Blob([html], { type: 'text/html' }),
+            })])
+          }
+          return
+        }
+      } else if (e.key.length === 1) {
+        inputText(e.key)
       }
-    } else if (e.key.length === 1) {
-      e.preventDefault()
-      inputText(e.key)
-    } else {
-      e.preventDefault()
-    }
+    })
   }
-  const onBlur = () => {
-    props.onLocationChanged?.()
-    props.onBlur?.()
-  }
-  const downLocation = React.useRef<[number, number]>()
-  const [dragLocation, setDragLocation] = React.useState<[number, number]>()
   const getPosition = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const rect = rootRef.current?.getBoundingClientRect()
     return {
       x: e.clientX - (rect?.left ?? 0),
       y: e.clientY - (rect?.top ?? 0),
     }
-  }
-  const skipVoidBlock = ([i, j]: [number, number], forward?: boolean) => {
-    while (props.state[i].void) {
-      if (forward) {
-        i--
-        j = props.state[i].children.length
-      } else {
-        i++
-        j = 0
-      }
-    }
-    return [i, j] as [number, number]
   }
   const positionToLocation = (p: Position): [number, number] => {
     if (layoutResults.current) {
@@ -427,105 +215,15 @@ export function useHtmlEditor(props: {
     return false
   }
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const h = getPosition(e)
-    const p = positionToLocation(h)
-    if (e.shiftKey) {
-      if (selectionStart === undefined) {
-        setSelectionStart(location)
-      }
-      setLocation(p)
-    } else {
-      if (isPositionInRange(h)) {
-        setDragLocation(p)
-        return
-      }
-      downLocation.current = p
-    }
+    mouseDown(e, getPosition, positionToLocation, isPositionInRange)
   }
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (downLocation.current === undefined) {
-      if (dragLocation !== undefined) {
-        setDragLocation(positionToLocation(getPosition(e)))
-      }
-      return
-    }
-    const s = getPosition(e)
-    const p = positionToLocation(s)
-    setLocation(p)
-    if (p[0] === downLocation.current[0] && p[1] === downLocation.current[1]) {
-      setSelectionStart(undefined)
-    } else {
-      setSelectionStart(downLocation.current)
-    }
-    if (!props.autoHeight) {
-      const y = s.y + scrollY
-      if (y >= 0 && y <= firstLineHeight) {
-        setY(y => filterY(y + 2))
-      } else if (y <= props.height && y >= props.height - lastLineHeight) {
-        setY(y => filterY(y - 2))
-      }
-    }
+    mouseMove(e, getPosition, positionToLocation, scrollY, firstLineHeight, lastLineHeight)
   }
   const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     onMouseMove(e)
-    if (dragLocation !== undefined && range) {
-      if (compareLocations(dragLocation, range.min) < 0) {
-        const contents = getSelectedContents(range)
-        if (contents.length === 1) {
-          const items = contents[0].children
-          props.setState(draft => {
-            inputInlineRange(draft, [])
-            inputInlinePosition(draft, items, dragLocation)
-          })
-          setLocation([dragLocation[0], dragLocation[1] + items.length])
-          setSelectionStart(dragLocation)
-        } else {
-          props.setState(draft => {
-            inputInlineRange(draft, [])
-            inputContentPosition(draft, contents, dragLocation)
-          })
-          setLocation([dragLocation[0] + contents.length + 1, 0])
-          setSelectionStart([dragLocation[0] + 1, 0])
-        }
-      } else if (compareLocations(dragLocation, range.max) > 0) {
-        const contents = getSelectedContents(range)
-        if (contents.length === 1) {
-          const items = contents[0].children
-          props.setState(draft => {
-            inputInlinePosition(draft, items, dragLocation)
-            inputInlineRange(draft, [])
-          })
-          setSelectionStart([dragLocation[0], dragLocation[1] - items.length])
-          setLocation(dragLocation)
-        } else {
-          props.setState(draft => {
-            inputContentPosition(draft, contents, dragLocation)
-            inputInlineRange(draft, [])
-          })
-          setLocation([dragLocation[0] + 2, 0])
-          setSelectionStart([dragLocation[0] - contents.length + 2, 0])
-        }
-      }
-      setDragLocation(undefined)
-    }
-    cursorRef.current?.focus()
+    mouseUp()
   }
-  useGlobalMouseUp(useEvent(() => {
-    downLocation.current = undefined
-    setDragLocation(undefined)
-  }))
-
-  const { ref: scrollRef, y: scrollY, setY, filterY } = useWheelScroll<HTMLDivElement>({
-    minY: props.autoHeight ? 0 : contentHeight > props.height ? props.height - contentHeight : 0,
-    maxY: 0,
-    disabled: props.autoHeight,
-  })
-  React.useEffect(() => {
-    if (props.autoHeight) {
-      setY(0)
-    }
-  }, [props.autoHeight, setY])
 
   React.useLayoutEffect(() => {
     if (!rootRef.current) return
@@ -579,16 +277,6 @@ export function useHtmlEditor(props: {
     lastLocation.current = location
     lastCursorY.current = cursorY
   }, [location, cursorY, scrollY])
-
-  React.useEffect(() => {
-    props.onLocationChanged?.(location)
-  }, [location])
-
-  let actualHeight = props.height
-  if (props.autoHeight && contentHeight > props.height) {
-    actualHeight = contentHeight
-  }
-  const isSelected = (loc: [number, number]) => range && compareLocations(loc, range.min) >= 0 && compareLocations(loc, range.max) < 0
 
   const renderResult = renderContents(props.state, isSelected, renderInline)
 
