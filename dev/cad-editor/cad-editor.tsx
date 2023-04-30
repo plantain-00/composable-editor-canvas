@@ -471,8 +471,8 @@ export const CADEditor = React.forwardRef((props: {
       const point = reverseTransformPosition(start, transform)
       const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point))
       if (activeIndex >= 0) {
-        if (active === activeIndex && activeContent) {
-          const viewport = getDefaultViewport(activeContent, state)
+        if (active === activeIndex && activeViewport) {
+          const viewport = getDefaultViewport(activeViewport, state, activeViewport.rotate)
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
