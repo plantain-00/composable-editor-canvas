@@ -259,8 +259,9 @@ export const CADEditor = React.forwardRef((props: {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
       const content = draft[active]
       if (content && isViewportContent(content)) {
-        content.x += (offset.x + xOffset) / scale
-        content.y += (offset.y + yOffset) / scale
+        const p = core.rotatePosition(offset, { x: 0, y: 0 }, -rotate)
+        content.x += (p.x + xOffset) / scale
+        content.y += (p.y + yOffset) / scale
         content.scale *= scaleOffset
         if (rotateOffset?.angle !== undefined) {
           content.rotate = angleToRadian(rotateOffset.angle)
