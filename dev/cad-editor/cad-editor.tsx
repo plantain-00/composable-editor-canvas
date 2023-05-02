@@ -174,10 +174,10 @@ export const CADEditor = React.forwardRef((props: {
   const activeContent = active !== undefined ? editingContent[active] : undefined
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
   const activeViewport = activeContent && isViewportContent(activeContent) ? activeContent : undefined
-  const transformViewport = activeViewport ? (p: Position) => ({
+  const transformViewport = activeViewport ? (p: Position) => core.rotatePosition({
     x: (p.x - activeViewport.x) / activeViewport.scale,
     y: (p.y - activeViewport.y) / activeViewport.scale,
-  }) : undefined
+  }, { x: 0, y: 0 }, -(activeViewport.rotate || 0)) : undefined
   const [xOffset, setXOffset] = React.useState(0)
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
@@ -776,7 +776,7 @@ export const CADEditor = React.forwardRef((props: {
       width: width / transform.scale,
       height: height / transform.scale,
       rotate: transform.rotate,
-      center: reverseTransform(transform.center),
+      center: reverseTransformPosition(transform.center, transform),
     },
     width: minimapWidth,
     height: minimapHeight,
