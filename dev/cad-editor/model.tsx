@@ -1232,7 +1232,11 @@ export const SnapResult = {
 }
 
 export function getDefaultViewport(content: BaseContent, contents: readonly Nullable<BaseContent<string>>[], rotate?: number) {
-  let points = getContentsPoints(contents, contents, c => !isViewportContent(c))
+  const points = getContentsPoints(contents, contents, c => !isViewportContent(c))
+  return getViewportByPoints(content, points, rotate)
+}
+
+export function getViewportByPoints(content: BaseContent, points: Position[], rotate?: number) {
   if (rotate) {
     points = points.map(p => rotatePosition(p, { x: 0, y: 0 }, rotate))
   }
