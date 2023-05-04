@@ -281,7 +281,9 @@ export const CADEditor = React.forwardRef((props: {
         draft = getContentByPath(draft)
         const content = draft[active]
         if (content && isViewportContent(content)) {
-          content.x += (activeContentBounding.end.x - activeContentBounding.start.x) / 10
+          const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
+          content.x += p.x
+          content.y += p.y
         }
       })
     } else {
@@ -295,7 +297,9 @@ export const CADEditor = React.forwardRef((props: {
         draft = getContentByPath(draft)
         const content = draft[active]
         if (content && isViewportContent(content)) {
-          content.x -= (activeContentBounding.end.x - activeContentBounding.start.x) / 10
+          const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
+          content.x -= p.x
+          content.y -= p.y
         }
       })
     } else {
@@ -309,7 +313,9 @@ export const CADEditor = React.forwardRef((props: {
         draft = getContentByPath(draft)
         const content = draft[active]
         if (content && isViewportContent(content)) {
-          content.y += (activeContentBounding.end.y - activeContentBounding.start.y) / 10
+          const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
+          content.x += p.x
+          content.y += p.y
         }
       })
     } else {
@@ -323,7 +329,9 @@ export const CADEditor = React.forwardRef((props: {
         draft = getContentByPath(draft)
         const content = draft[active]
         if (content && isViewportContent(content)) {
-          content.y -= (activeContentBounding.end.y - activeContentBounding.start.y) / 10
+          const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
+          content.x -= p.x
+          content.y -= p.y
         }
       })
     } else {
