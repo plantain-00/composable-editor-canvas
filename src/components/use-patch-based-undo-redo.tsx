@@ -1,6 +1,5 @@
 import * as React from "react"
-import produce, { applyPatches, castDraft } from "immer"
-import type { Patch, WritableDraft } from "immer/dist/types/types-external"
+import { produce, applyPatches, castDraft, Patch, Draft } from "immer"
 
 /**
  * @public
@@ -51,7 +50,7 @@ export function usePatchBasedUndoRedo<T, P>(
     state: history.state,
     applyPatchFromOtherOperators,
     applyPatchFromSelf,
-    setState: (recipe: (draft: WritableDraft<T>) => void) => {
+    setState: (recipe: (draft: Draft<T>) => void) => {
       return produce(history.state, recipe, (patches, reversePatches) => {
         if (patches.length === 0) {
           return

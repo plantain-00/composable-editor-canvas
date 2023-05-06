@@ -1,5 +1,4 @@
-import produce from "immer"
-import type { Draft } from "immer/dist/types/types-external"
+import { produce, Draft } from "immer"
 import * as React from "react"
 
 /**

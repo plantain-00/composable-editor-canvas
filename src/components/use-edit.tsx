@@ -1,5 +1,4 @@
-import { produceWithPatches } from "immer"
-import type { Draft, Patch } from "immer/dist/types/types-external"
+import { produceWithPatches, Draft, Patch } from "immer"
 import * as React from "react"
 import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"

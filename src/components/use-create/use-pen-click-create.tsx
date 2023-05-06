@@ -1,4 +1,4 @@
-import produce from "immer"
+import { produce } from "immer"
 import * as React from "react"
 
 import { useKey } from ".."

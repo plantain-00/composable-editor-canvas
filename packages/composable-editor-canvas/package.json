@@ -16,7 +16,7 @@
   "dependencies": {
     "earcut": "2",
     "expression-engine": "1",
-    "immer": "9",
+    "immer": "9 || 10",
     "twgl.js": "4 || 5"
   },
   "peerDependencies": {
