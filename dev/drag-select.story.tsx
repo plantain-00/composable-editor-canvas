@@ -1,4 +1,4 @@
-import produce from "immer"
+import { produce } from "immer"
 import React from "react"
 import { Region, useDragSelect } from "../src"
 

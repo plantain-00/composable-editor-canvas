@@ -10,7 +10,7 @@
   "author": "York Yao",
   "license": "MIT",
   "dependencies": {
-    "immer": "9"
+    "immer": "9 || 10"
   },
   "peerDependencies": {
     "react": "18"

@@ -1,4 +1,4 @@
-import type { Draft } from 'immer/dist/types/types-external';
+import type { Draft } from 'immer';
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
 import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick } from "."

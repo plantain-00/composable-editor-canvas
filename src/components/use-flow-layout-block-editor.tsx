@@ -1,5 +1,4 @@
-import { castDraft } from "immer"
-import type { Draft } from 'immer/dist/types/types-external';
+import { castDraft, Draft } from "immer"
 import * as React from "react"
 import { useEvent, useGlobalMouseUp } from "."
 import { Align, equals, flowLayout, FlowLayoutResult, getFlowLayoutLocation, Position, VerticalAlign } from "../utils"

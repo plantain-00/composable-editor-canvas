@@ -1,7 +1,6 @@
 import React from "react"
 import { ObjectEditor, Button, defaultFontFamily, isHtmlText, HtmlBlock, metaKeyIfMacElseCtrlKey, usePatchBasedUndoRedo, useHtmlEditor, getKeys, HtmlEditorPlugin } from "../../src"
-import { Patch } from "immer/dist/types/types-external"
-import produce from "immer"
+import { produce, Patch } from "immer"
 import { RichTextEditorPluginHook, RichTextEditorPluginStyle } from "./model"
 
 export const RichTextEditor = React.forwardRef((props: {

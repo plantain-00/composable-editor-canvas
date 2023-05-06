@@ -1,6 +1,6 @@
 import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget } from '../../src'
-import produce, { enablePatches, Patch, produceWithPatches } from 'immer'
+import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
 import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select } from './model'

@@ -1,5 +1,5 @@
 import React from "react"
-import produce from "immer"
+import { produce } from "immer"
 import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useKey, useLineClickCreate, useRefState, useWindowSize } from "../src";
 
 export function Combination6() {

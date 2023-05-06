@@ -1,4 +1,4 @@
-import produce from "immer"
+import { produce } from "immer"
 import React from "react"
 import { Align, aligns, EnumEditor, metaKeyIfMacElseCtrlKey, reactCanvasRenderTarget, ReactRenderTarget, useFlowLayoutEditor, VerticalAlign, verticalAligns } from "../src"
 

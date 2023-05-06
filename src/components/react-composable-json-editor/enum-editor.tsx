@@ -1,5 +1,5 @@
 import * as React from "react"
-import produce, { castDraft } from "immer"
+import { produce, castDraft } from "immer"
 import { controlStyle, JsonEditorProps } from "./common"
 
 /**

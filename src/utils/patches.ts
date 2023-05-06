@@ -1,5 +1,4 @@
-import type { Patch } from "immer/dist/types/types-external"
-import produce from "immer"
+import { produce, Patch } from "immer"
 import { getByPath } from ".."
 
 /**

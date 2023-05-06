@@ -1,4 +1,4 @@
-import produce from "immer"
+import { produce } from "immer"
 import React from "react"
 import { EllipseArc, ellipseArcToPolyline, useEllipseArcClickCreate } from "../src"
 import { defaultAngleDelta } from "./cad-editor/model"

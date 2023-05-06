@@ -1,4 +1,4 @@
-import type { Patch } from "immer/dist/types/types-external"
+import type { Patch } from "immer"
 import * as React from "react"
 import { SelectPath } from "./use-selected"
 

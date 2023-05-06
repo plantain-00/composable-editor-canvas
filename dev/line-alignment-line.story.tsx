@@ -1,4 +1,4 @@
-import produce from "immer"
+import { produce } from "immer"
 import React from "react"
 import { AlignmentLine, ResizeBar, useDragResize, useLineAlignment } from "../src"
 import { defaultContents } from "./story-util"

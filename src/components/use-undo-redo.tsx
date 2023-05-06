@@ -1,6 +1,5 @@
 import * as React from "react"
-import produce, { castDraft } from "immer"
-import type { WritableDraft } from "immer/dist/types/types-external"
+import { produce, castDraft, Draft } from "immer"
 
 /**
  * @public
@@ -19,7 +18,7 @@ export function useUndoRedo<T>(defaultState: T) {
   return {
     state,
     stateIndex,
-    setState: (recipe: (draft: WritableDraft<T>) => void) => {
+    setState: (recipe: (draft: Draft<T>) => void) => {
       const s = produce(state, recipe)
       if (s === state) {
         return state

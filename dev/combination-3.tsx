@@ -1,8 +1,7 @@
 import React from "react"
 import { HtmlBlock } from "../src"
 import { setWsHeartbeat } from 'ws-heartbeat/client'
-import { Patch } from "immer/dist/types/types-external"
-import { produceWithPatches } from "immer"
+import { produceWithPatches, Patch } from "immer"
 import { RichTextEditor, RichTextEditorPlugin, RichTextEditorRef } from "./rich-text-editor/rich-text-editor"
 import { h1, h2, h3, h4, h5, h6, hr, ol, p, ul } from "./rich-text-editor/plugins/blocks"
 import { backgroundColor, bold, color, fontFamily, fontSize, italic, passThrough, underline } from './rich-text-editor/plugins/styles'

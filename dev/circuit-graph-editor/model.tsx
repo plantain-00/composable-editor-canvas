@@ -1,4 +1,4 @@
-import produce from 'immer'
+import { produce } from 'immer'
 import React from 'react';
 import { BooleanEditor, EditPoint, getPointByLengthAndDirection, getTwoPointsAngle, isSamePoint, isZero, Nullable, Position, ReactRenderTarget, rotatePositionByCenter, WeakmapCache, WeakmapCache3 } from "../../src";
 
