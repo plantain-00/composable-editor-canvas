@@ -16,7 +16,7 @@ import { Lazy } from '../../utils/lazy'
  * @public
  */
 export interface LineOrTriangleGraphic {
-  type: 'triangles' | 'lines' | 'line strip' | 'triangle strip' | 'triangle fan'
+  type: 'triangles' | 'lines' | 'line strip' | 'triangle strip'
   points: number[]
   color?: Vec4
   colors?: number[]
@@ -392,7 +392,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         type: line.type === 'triangles' ? gl.TRIANGLES
           : line.type === 'line strip' ? gl.LINE_STRIP
             : line.type === 'lines' ? gl.LINES
-              : line.type === 'triangle strip' ? gl.TRIANGLE_STRIP : gl.TRIANGLE_FAN,
+              : gl.TRIANGLE_STRIP,
       }
       if (line.pattern) {
         const bounding = getNumArrayPointsBounding(line.points)
@@ -622,7 +622,7 @@ export function getPathGraphics(
       }).flat()
     }
 
-    if (strokeWidth === 1 && strokeWidthScale !== 1) {
+    if ((strokeWidth === 1 && strokeWidthScale !== 1) || strokeWidth * strokeWidthScale === 1) {
       graphics.push({
         type: 'lines',
         points: combinedLinesCache.get(points, lineCapWithClosed, () => {
@@ -693,10 +693,10 @@ export function getPathGraphics(
     const index = earcut(vertices, holes)
     const triangles: number[] = []
     for (let i = 0; i < index.length; i += 3) {
-      triangles.push(
-        vertices[index[i] * 2], vertices[index[i] * 2 + 1],
+      triangles.unshift(
+        vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1],
         vertices[index[i + 1] * 2], vertices[index[i + 1] * 2 + 1],
-        vertices[index[i + 2] * 2], vertices[index[i + 2] * 2 + 1]
+        vertices[index[i] * 2], vertices[index[i] * 2 + 1],
       )
     }
     let pattern: PatternGraphic | undefined

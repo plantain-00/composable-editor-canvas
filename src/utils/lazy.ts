@@ -7,6 +7,9 @@ export class Lazy<T> {
     }
     return this._instance
   }
+  get instanced() {
+    return this._instance !== undefined
+  }
   reset() {
     if (this._instance) {
       this.destroy?.(this._instance)

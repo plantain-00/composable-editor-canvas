@@ -4,7 +4,7 @@ import { mergeOpacityToColor } from "../../utils/color";
 import { Matrix, m3 } from "../../utils/matrix";
 import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-layout";
 import { Vec4 } from "../../utils/types";
-import { MapCache, WeakmapCache, WeakmapCache2, WeakmapMapCache } from "../../utils/weakmap-cache";
+import { MapCache2, WeakmapCache, WeakmapCache2, WeakmapMap2Cache } from "../../utils/weakmap-cache";
 import { Graphic, LineOrTriangleGraphic, PatternGraphic, defaultVec4Color, getNumArrayPointsBounding, getTextureGraphicMatrix, getWorldMatrix, forEachPatternGraphicRepeatedGraphic, FilterGraphic } from "./create-webgl-renderer";
 import { Bounding } from "../../utils/geometry";
 
@@ -320,12 +320,19 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     format,
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
   }), t => t.destroy())
+  const stencilTexture = new Lazy(() => device.createTexture({
+    format: 'stencil8',
+    size: [canvas.width, canvas.height],
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  }), t => t.destroy())
 
+  type State = 'normal' | 'mask' | 'masked' | 'after pattern'
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const gradientBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
-  const basicPipelineCache = new WeakmapMapCache<GPUShaderModule, LineOrTriangleGraphic['type'], GPURenderPipeline>()
+  const basicPipelineCache = new WeakmapMap2Cache<GPUShaderModule, LineOrTriangleGraphic['type'], State, GPURenderPipeline>()
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
-  const texturePipelineCache = new MapCache<GPUShaderModule, GPURenderPipeline>()
+  const texturePipelineCache = new MapCache2<GPUShaderModule, State, GPURenderPipeline>()
+  let afterPattern = false
 
   const getFilterShaderModuleAndUniforms = (filter: FilterGraphic) => {
     if (filter.type === 'color matrix') {
@@ -340,8 +347,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
     }
   }
-  const drawTexture = (shaderModule: GPUShaderModule, passEncoder: GPURenderPassEncoder, inputs: MemoryLayoutInput[], texture: GPUTexture) => {
-    const pipeline = texturePipelineCache.get(shaderModule, () => device.createRenderPipeline({
+  const drawTexture = (shaderModule: GPUShaderModule, passEncoder: GPURenderPassEncoder, inputs: MemoryLayoutInput[], texture: GPUTexture, state: State = 'normal') => {
+    const pipeline = texturePipelineCache.get(shaderModule, state, () => device.createRenderPipeline({
       vertex: {
         module: shaderModule,
         entryPoint: 'vertex_main',
@@ -349,9 +356,24 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       fragment: {
         module: shaderModule,
         entryPoint: 'fragment_main',
-        targets: [{ format, blend }]
+        targets: state === 'mask' ? [] : [{ format, blend }]
       },
-      multisample: {
+      depthStencil: state === 'mask' ? {
+        format: 'stencil8',
+        depthCompare: 'always',
+        depthWriteEnabled: false,
+        stencilFront: {
+          passOp: 'replace',
+        },
+      } : state === 'masked' ? {
+        depthCompare: 'always',
+        depthWriteEnabled: false,
+        format: 'stencil8',
+        stencilFront: {
+          compare: 'equal',
+        },
+      } : undefined,
+      multisample: state !== 'normal' ? undefined : {
         count: sampleCount,
       },
       layout: 'auto',
@@ -369,6 +391,9 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         { binding: 2, resource: texture.createView() },
       ],
     }));
+    if (state === 'mask') {
+      passEncoder.setStencilReference(1);
+    }
     passEncoder.draw(6);
   }
   const createTexture = (width: number, height: number) => {
@@ -381,13 +406,48 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     })
   }
 
-  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, passEncoder: GPURenderPassEncoder) => {
+  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder) => {
+    const passEncoder = commandEncoder.beginRenderPass({
+      colorAttachments: [{
+        view: context.getCurrentTexture().createView(),
+        loadOp: 'load',
+        storeOp: 'store',
+      }],
+      depthStencilAttachment: {
+        view: stencilTexture.instance.createView(),
+        stencilLoadOp: 'load',
+        stencilStoreOp: 'store',
+      }
+    });
+    passEncoder.setStencilReference(1);
     forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
-      drawGraphic(g, m, passEncoder)
+      drawGraphic(g, m, passEncoder, commandEncoder, true)
+    })
+    passEncoder.end();
+    afterPattern = true
+    return commandEncoder.beginRenderPass({
+      colorAttachments: [{
+        loadOp: 'load',
+        storeOp: 'store',
+        view: context.getCurrentTexture().createView()
+      }],
     })
   }
-  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder) => {
-    const color = mergeOpacityToColor(graphic.color, graphic.opacity)
+  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false) => {
+    const color = mergeOpacityToColor(graphic.pattern ? defaultVec4Color : graphic.color, graphic.opacity)
+    if (graphic.pattern) {
+      passEncoder.end()
+      passEncoder = commandEncoder.beginRenderPass({
+        colorAttachments: [],
+        depthStencilAttachment: {
+          view: stencilTexture.instance.createView(),
+          stencilClearValue: 0,
+          stencilLoadOp: 'clear',
+          stencilStoreOp: 'store',
+        }
+      });
+    }
+    const state = graphic.pattern ? 'mask' : inPattern ? 'masked' : afterPattern ? 'after pattern' : 'normal'
 
     if (graphic.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)
@@ -458,14 +518,15 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         shaderModule = textureShaderModule.instance
         inputs.push({ type: 'number', value: graphic.opacity ?? 1 })
       }
-      drawTexture(shaderModule, passEncoder, inputs, texture)
+      drawTexture(shaderModule, passEncoder, inputs, texture, state)
 
       if (graphic.pattern) {
-        drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, passEncoder)
+        passEncoder.end()
+        passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder)
       }
-    } else if (graphic.type !== 'triangle fan') {
+    } else {
       const shaderModule = graphic.colors ? gradientShaderModule.instance : basicShaderModule.instance
-      const pipeline = basicPipelineCache.get(shaderModule, graphic.type, () => {
+      const pipeline = basicPipelineCache.get(shaderModule, graphic.type, state, () => {
         const bufferLayout: GPUVertexBufferLayout = graphic.colors ? {
           attributes: [
             { shaderLocation: 0, offset: 0, format: 'float32x2' },
@@ -489,14 +550,29 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           fragment: {
             module: shaderModule,
             entryPoint: 'fragment_main',
-            targets: [{ format, blend }]
+            targets: state === 'mask' ? [] : [{ format, blend }]
           },
+          depthStencil: state === 'mask' ? {
+            format: 'stencil8',
+            depthCompare: 'always',
+            depthWriteEnabled: false,
+            stencilFront: {
+              passOp: 'replace',
+            },
+          } : state === 'masked' ? {
+            depthCompare: 'always',
+            depthWriteEnabled: false,
+            format: 'stencil8',
+            stencilFront: {
+              compare: 'equal',
+            },
+          } : undefined,
           primitive: {
             topology: graphic.type === 'triangles' ? 'triangle-list'
               : graphic.type === 'line strip' ? 'line-strip'
                 : graphic.type === 'lines' ? 'line-list' : 'triangle-strip',
           },
-          multisample: {
+          multisample: state !== 'normal' ? undefined : {
             count: sampleCount,
           },
           layout: 'auto',
@@ -539,27 +615,36 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           return buffer
         }));
       }
+      if (state === 'mask') {
+        passEncoder.setStencilReference(1);
+      }
       passEncoder.draw(graphic.points.length / 2);
 
       if (graphic.pattern) {
+        passEncoder.end()
         const bounding = getNumArrayPointsBounding(graphic.points)
-        drawPattern(graphic.pattern, matrix, bounding, passEncoder)
+        passEncoder = drawPattern(graphic.pattern, matrix, bounding, commandEncoder)
       }
     }
+    return passEncoder
   }
 
   const resizeCanvasToDisplaySize = () => {
-    if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
+    if (sampleTexture.instanced && (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height)) {
       sampleTexture.reset()
+    }
+    if (stencilTexture.instanced && (canvas.width !== stencilTexture.instance.width || canvas.height !== stencilTexture.instance.height)) {
+      stencilTexture.reset()
     }
   }
 
   return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number, rotate?: number) => {
     resizeCanvasToDisplaySize()
+    afterPattern = false
     const worldMatrix = getWorldMatrix(canvas, x, y, scale, rotate)
 
     const commandEncoder = device.createCommandEncoder();
-    const passEncoder = commandEncoder.beginRenderPass({
+    let passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [{
         clearValue: backgroundColor,
         loadOp: 'clear',
@@ -570,7 +655,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     });
     for (const graphic of graphics) {
       const matrix = graphic.matrix ? m3.multiply(worldMatrix, graphic.matrix) : worldMatrix
-      drawGraphic(graphic, matrix, passEncoder)
+      passEncoder = drawGraphic(graphic, matrix, passEncoder, commandEncoder)
     }
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
