@@ -217,6 +217,14 @@ export class MapCache<TKey1, TValue> {
     }
     return result
   }
+
+  public clear() {
+    this.cache.clear()
+  }
+
+  public values() {
+    return this.cache.values()
+  }
 }
 
 /**
