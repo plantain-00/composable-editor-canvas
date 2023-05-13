@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, m3, WeakmapMapCache } from "../../src"
-import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
+import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
   type?: string
@@ -170,12 +170,20 @@ export function Renderer(props: {
         }
       }
     }
+    let newAssistentContentsChildren: unknown[] = []
     newContents.forEach(content => {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isAssistence: true }))
+        newAssistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isAssistence: true }))
       }
     })
+    if (newAssistentContentsChildren.length > 0 && props.active !== undefined) {
+      const p = previewContents[props.active]
+      if (p && isViewportContent(p)) {
+        newAssistentContentsChildren = [target.renderGroup(newAssistentContentsChildren, { matrix: getViewportMatrix(p) })]
+      }
+    }
+    assistentContentsChildren.push(...newAssistentContentsChildren)
   }
 
   if (props.operatorVisible !== false) {

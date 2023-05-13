@@ -10105,6 +10105,7 @@ function getModel(ctx) {
     }
     return { lines: [], renderingLines: [] };
   }
+  const renderCache = new ctx.WeakmapMapCache();
   const React = ctx.React;
   return {
     type: "viewport",
@@ -10131,19 +10132,22 @@ function getModel(ctx) {
         return render(content.border, {
           ...renderCtx,
           clip: renderCtx.isHoveringOrSelected ? void 0 : () => {
-            const children = [];
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents;
-            sortedContents.forEach((content2) => {
-              var _a2;
-              if (!content2 || content2.visible === false || ctx.isViewportContent(content2)) {
-                return;
-              }
-              const ContentRender = (_a2 = ctx.getContentModel(content2)) == null ? void 0 : _a2.render;
-              if (ContentRender) {
-                children.push(ContentRender(content2, renderCtx));
-              }
+            const children = renderCache.get(sortedContents, renderCtx.target.type, () => {
+              const children2 = [];
+              sortedContents.forEach((content2) => {
+                var _a2;
+                if (!content2 || content2.visible === false || ctx.isViewportContent(content2)) {
+                  return;
+                }
+                const ContentRender = (_a2 = ctx.getContentModel(content2)) == null ? void 0 : _a2.render;
+                if (ContentRender) {
+                  children2.push(ContentRender(content2, renderCtx));
+                }
+              });
+              return children2;
             });
-            return renderCtx.target.renderGroup(children, { matrix: ctx.m3.multiply(ctx.m3.multiply(ctx.m3.translation(content.x, content.y), ctx.m3.scaling(content.scale, content.scale)), ctx.m3.rotation(-(content.rotate || 0))) });
+            return renderCtx.target.renderGroup(children, { matrix: ctx.getViewportMatrix(content) });
           }
         });
       }

@@ -17,6 +17,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
     }
     return { lines: [], renderingLines: [] }
   }
+  const renderCache = new ctx.WeakmapMapCache<readonly core.Nullable<model.BaseContent>[], string, unknown[]>()
   const React = ctx.React
   return {
     type: 'viewport',
@@ -39,18 +40,22 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
         return render(content.border, {
           ...renderCtx,
           clip: renderCtx.isHoveringOrSelected ? undefined : () => {
-            const children: ReturnType<typeof renderCtx.target.renderGroup>[] = []
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents
-            sortedContents.forEach((content) => {
-              if (!content || content.visible === false || ctx.isViewportContent(content)) {
-                return
-              }
-              const ContentRender = ctx.getContentModel(content)?.render
-              if (ContentRender) {
-                children.push(ContentRender(content, renderCtx))
-              }
-            })
-            return renderCtx.target.renderGroup(children, { matrix: ctx.m3.multiply(ctx.m3.multiply(ctx.m3.translation(content.x, content.y), ctx.m3.scaling(content.scale, content.scale)), ctx.m3.rotation(-(content.rotate || 0))) })
+            // type-coverage:ignore-next-line
+            const children = renderCache.get(sortedContents, renderCtx.target.type, () => {
+              const children: ReturnType<typeof renderCtx.target.renderGroup>[] = []
+              sortedContents.forEach((content) => {
+                if (!content || content.visible === false || ctx.isViewportContent(content)) {
+                  return
+                }
+                const ContentRender = ctx.getContentModel(content)?.render
+                if (ContentRender) {
+                  children.push(ContentRender(content, renderCtx))
+                }
+              })
+              return children
+            }) as ReturnType<typeof renderCtx.target.renderGroup>[]
+            return renderCtx.target.renderGroup(children, { matrix: ctx.getViewportMatrix(content) })
           }
         })
       }
