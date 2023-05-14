@@ -19,7 +19,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const viewportHeight = height / scale
     const viewportX = (width - viewportWidth) / 2 - x / scale
     const viewportY = (height - viewportHeight) / 2 - y / scale
-    const strokeWidthScale = options?.strokeWidthScale ?? 1
+    const strokeWidthScale = options?.strokeWidthScale || 1
     const rotate = options?.transform?.rotate ?? 0
     return (
       <svg

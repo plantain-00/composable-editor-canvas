@@ -435,7 +435,7 @@ function Canvas(props: {
             ctx.rotate(props.transform.rotate)
           }
         }
-        const scale = props.strokeWidthScale ?? 1
+        const scale = props.strokeWidthScale || 1
         const rerender = () => setImageLoadStatus(c => c + 1)
         for (const draw of props.draws) {
           draw(ctx, scale, rerender)

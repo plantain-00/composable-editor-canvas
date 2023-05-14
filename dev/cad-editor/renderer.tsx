@@ -28,7 +28,7 @@ export function Renderer(props: {
   const debug = new Debug(props.debug)
   const target = rendererCenter[props.type || getAllRendererTypes()[0]]
 
-  const strokeWidthScale = props.printMode ? 1 : 1 / props.scale
+  const strokeWidthScale = props.printMode ? 0 : 1 / props.scale
   const renderCache = React.useRef(new WeakmapMapCache<readonly Nullable<BaseContent>[], number, unknown[]>())
   useValueChanged(props.type, () => renderCache.current.clear())
   useValueChanged(props.backgroundColor, () => renderCache.current.clear())

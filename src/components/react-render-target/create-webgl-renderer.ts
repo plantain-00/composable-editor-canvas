@@ -622,7 +622,7 @@ export function getPathGraphics(
       }).flat()
     }
 
-    if ((strokeWidth === 1 && strokeWidthScale !== 1) || strokeWidth * strokeWidthScale === 1) {
+    if (strokeWidthScale !== 0 && (strokeWidth === 1 || strokeWidth * strokeWidthScale === 1)) {
       graphics.push({
         type: 'lines',
         points: combinedLinesCache.get(points, lineCapWithClosed, () => {
@@ -642,7 +642,7 @@ export function getPathGraphics(
         color: strokeColor,
       })
     } else {
-      strokeWidth *= strokeWidthScale
+      strokeWidth *= (strokeWidthScale || 1)
       const trianglePoints = combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
         return combineStripTriangles(points.map(p => {
           return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))

@@ -510,10 +510,10 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         )
       } else if (graphic.pattern) {
         shaderModule = colorMaskedTextureShaderModule.instance
-        inputs.push({ type: 'vec4', value: graphic.color ?? defaultVec4Color })
+        inputs.push({ type: 'vec4', value: color ?? defaultVec4Color })
       } else if (graphic.color) {
         shaderModule = coloredTextureShaderModule.instance
-        inputs.push({ type: 'vec4', value: graphic.color })
+        inputs.push({ type: 'vec4', value: color ?? defaultVec4Color })
       } else {
         shaderModule = textureShaderModule.instance
         inputs.push({ type: 'number', value: graphic.opacity ?? 1 })
