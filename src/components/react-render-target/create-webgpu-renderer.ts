@@ -322,17 +322,17 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   }), t => t.destroy())
   const stencilTexture = new Lazy(() => device.createTexture({
     format: 'stencil8',
+    sampleCount,
     size: [canvas.width, canvas.height],
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
   }), t => t.destroy())
 
-  type State = 'normal' | 'mask' | 'masked' | 'after pattern'
+  type State = 'normal' | 'mask' | 'masked'
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
   const gradientBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
   const basicPipelineCache = new WeakmapMap2Cache<GPUShaderModule, LineOrTriangleGraphic['type'], State, GPURenderPipeline>()
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
   const texturePipelineCache = new MapCache2<GPUShaderModule, State, GPURenderPipeline>()
-  let afterPattern = false
 
   const getFilterShaderModuleAndUniforms = (filter: FilterGraphic) => {
     if (filter.type === 'color matrix') {
@@ -373,7 +373,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           compare: 'equal',
         },
       } : undefined,
-      multisample: state !== 'normal' ? undefined : {
+      multisample: {
         count: sampleCount,
       },
       layout: 'auto',
@@ -409,7 +409,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder) => {
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [{
-        view: context.getCurrentTexture().createView(),
+        view: sampleTexture.instance.createView(),
+        resolveTarget: context.getCurrentTexture().createView(),
         loadOp: 'load',
         storeOp: 'store',
       }],
@@ -424,12 +425,12 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       drawGraphic(g, m, passEncoder, commandEncoder, true)
     })
     passEncoder.end();
-    afterPattern = true
     return commandEncoder.beginRenderPass({
       colorAttachments: [{
         loadOp: 'load',
         storeOp: 'store',
-        view: context.getCurrentTexture().createView()
+        view: sampleTexture.instance.createView(),
+        resolveTarget: context.getCurrentTexture().createView()
       }],
     })
   }
@@ -447,7 +448,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         }
       });
     }
-    const state = graphic.pattern ? 'mask' : inPattern ? 'masked' : afterPattern ? 'after pattern' : 'normal'
+    const state = graphic.pattern ? 'mask' : inPattern ? 'masked' : 'normal'
 
     if (graphic.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)
@@ -572,7 +573,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
               : graphic.type === 'line strip' ? 'line-strip'
                 : graphic.type === 'lines' ? 'line-list' : 'triangle-strip',
           },
-          multisample: state !== 'normal' ? undefined : {
+          multisample: {
             count: sampleCount,
           },
           layout: 'auto',
@@ -640,7 +641,6 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
 
   return (graphics: Graphic[], backgroundColor: Vec4, x: number, y: number, scale: number, rotate?: number) => {
     resizeCanvasToDisplaySize()
-    afterPattern = false
     const worldMatrix = getWorldMatrix(canvas, x, y, scale, rotate)
 
     const commandEncoder = device.createCommandEncoder();
