@@ -1241,6 +1241,20 @@ export function combineStripTriangles(triangles: number[][]) {
   return result
 }
 
+export function triangleStripToTriangles(points: number[]) {
+  const result: number[] = []
+  let flag = false
+  for (let i = 5; i < points.length; i += 2) {
+    if (flag) {
+      result.push(points[i - 5], points[i - 4], points[i - 3], points[i - 2], points[i - 1], points[i])
+    } else {
+      result.push(points[i - 5], points[i - 4], points[i - 1], points[i], points[i - 3], points[i - 2])
+    }
+    flag = !flag
+  }
+  return result
+}
+
 /**
  * @public
  */
