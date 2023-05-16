@@ -5,7 +5,7 @@ import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { colorNumberToRec, getColorString, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
-import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, triangleStripToTriangles, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
@@ -644,9 +644,11 @@ export function getPathGraphics(
     } else {
       strokeWidth *= (strokeWidthScale || 1)
       const trianglePoints = combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
-        return combineStripTriangles(points.map(p => {
-          return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))
-        }))
+        return points.map(p => {
+          return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
+            return triangleStripToTriangles(getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))
+          })
+        }).flat()
       })
       let pattern: PatternGraphic | undefined
       let color = strokeColor
@@ -669,7 +671,7 @@ export function getPathGraphics(
         color = [0, 0, 0, 0]
       }
       graphics.push({
-        type: 'triangle strip',
+        type: 'triangles',
         points: trianglePoints,
         color,
         pattern,
@@ -1062,8 +1064,8 @@ function getRadialGradientGraphic(radialGradient: RadialGradient, points: Positi
     const colors: number[] = []
     stop1.points.forEach((p1, j) => {
       const p2 = stop2.points[j]
-      triangles.push(p1.x, p1.y, p2.x, p2.y)
-      colors.push(...stop1.color, ...stop2.color)
+      triangles.unshift(p1.x, p1.y, p2.x, p2.y)
+      colors.unshift(...stop1.color, ...stop2.color)
     })
     fillTriangles.push(triangles)
     fillColors.push(colors)
