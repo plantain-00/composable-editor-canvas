@@ -63,11 +63,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       var pos = array<vec2f, 6>(
         vec2f(0.0, 0.0),
-        vec2f(1.0, 0.0),
-        vec2f(0.0, 1.0),
         vec2f(0.0, 1.0),
         vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
         vec2f(1.0, 1.0),
+        vec2f(1.0, 0.0),
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
@@ -108,11 +108,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       var pos = array<vec2f, 6>(
         vec2f(0.0, 0.0),
-        vec2f(1.0, 0.0),
-        vec2f(0.0, 1.0),
         vec2f(0.0, 1.0),
         vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
         vec2f(1.0, 1.0),
+        vec2f(1.0, 0.0),
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
@@ -150,11 +150,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       var pos = array<vec2f, 6>(
         vec2f(0.0, 0.0),
-        vec2f(1.0, 0.0),
-        vec2f(0.0, 1.0),
         vec2f(0.0, 1.0),
         vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
         vec2f(1.0, 1.0),
+        vec2f(1.0, 0.0),
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
@@ -197,11 +197,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       var pos = array<vec2f, 6>(
         vec2f(0.0, 0.0),
-        vec2f(1.0, 0.0),
-        vec2f(0.0, 1.0),
         vec2f(0.0, 1.0),
         vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
         vec2f(1.0, 1.0),
+        vec2f(1.0, 0.0),
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
@@ -254,11 +254,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     {
       var pos = array<vec2f, 6>(
         vec2f(0.0, 0.0),
-        vec2f(1.0, 0.0),
-        vec2f(0.0, 1.0),
         vec2f(0.0, 1.0),
         vec2f(1.0, 0.0),
+        vec2f(0.0, 1.0),
         vec2f(1.0, 1.0),
+        vec2f(1.0, 0.0),
       );
       let xy = pos[vertexIndex];
       var vsOut: VertexOutput;
