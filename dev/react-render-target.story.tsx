@@ -136,6 +136,7 @@ export default () => {
       target.renderCircle(50, 50, 20),
       target.renderCircle(50, 50, 35),
       target.renderText(0, 40, 'abc', 0xff0000, 30, 'monospace'),
+      target.renderCircle(90, 50, 20, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
     ]
     return target.renderResult([
       target.renderGroup(items, { opacity: 0.2 }),

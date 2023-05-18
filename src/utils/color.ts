@@ -54,3 +54,13 @@ export function mergeOpacityToColor(color?: Vec4, opacity?: number): Vec4 | unde
   }
   return [color[0], color[1], color[2], color[3] * opacity]
 }
+
+export function mergeOpacities(opacity1?: number, opacity2?: number): number | undefined {
+  if (opacity1 === undefined) {
+    return opacity2
+  }
+  if (opacity2 === undefined) {
+    return opacity1
+  }
+  return opacity1 * opacity2
+}
