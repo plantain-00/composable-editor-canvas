@@ -1,6 +1,6 @@
 /// <reference types="@webgpu/types" />
 import { Lazy } from "../../utils/lazy";
-import { mergeOpacityToColor } from "../../utils/color";
+import { mergeOpacities, mergeOpacityToColor } from "../../utils/color";
 import { Matrix, m3 } from "../../utils/matrix";
 import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-layout";
 import { Vec4 } from "../../utils/types";
@@ -406,7 +406,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     })
   }
 
-  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder) => {
+  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder, opacity?: number) => {
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [{
         view: sampleTexture.instance.createView(),
@@ -422,7 +422,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     });
     passEncoder.setStencilReference(1);
     forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
-      drawGraphic(g, m, passEncoder, commandEncoder, true)
+      drawGraphic(g, m, passEncoder, commandEncoder, true, opacity)
     })
     passEncoder.end();
     return commandEncoder.beginRenderPass({
@@ -434,9 +434,10 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }],
     })
   }
-  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false) => {
-    const color = mergeOpacityToColor(graphic.pattern ? defaultVec4Color : graphic.color, graphic.opacity)
-    if (graphic.pattern) {
+  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false, opacity?: number) => {
+    const op = mergeOpacities(graphic.opacity, opacity)
+    const color = mergeOpacityToColor(graphic.pattern ? defaultVec4Color : graphic.color, op)
+    if (graphic.pattern && !inPattern) {
       passEncoder.end()
       passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [],
@@ -448,7 +449,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         }
       });
     }
-    const state = graphic.pattern ? 'mask' : inPattern ? 'masked' : 'normal'
+    const state = inPattern ? 'masked' : graphic.pattern ? 'mask' : 'normal'
 
     if (graphic.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)
@@ -521,9 +522,9 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
       drawTexture(shaderModule, passEncoder, inputs, texture, state)
 
-      if (graphic.pattern) {
+      if (graphic.pattern && !inPattern) {
         passEncoder.end()
-        passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder)
+        passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder, op)
       }
     } else {
       const shaderModule = graphic.colors ? gradientShaderModule.instance : basicShaderModule.instance
@@ -621,10 +622,10 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       }
       passEncoder.draw(graphic.points.length / 2);
 
-      if (graphic.pattern) {
+      if (graphic.pattern && !inPattern) {
         passEncoder.end()
         const bounding = getNumArrayPointsBounding(graphic.points)
-        passEncoder = drawPattern(graphic.pattern, matrix, bounding, commandEncoder)
+        passEncoder = drawPattern(graphic.pattern, matrix, bounding, commandEncoder, op)
       }
     }
     return passEncoder

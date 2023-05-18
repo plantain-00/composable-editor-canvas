@@ -3,7 +3,7 @@ import earcut from 'earcut'
 import type * as React from "react"
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
-import { colorNumberToRec, getColorString, mergeOpacityToColor } from '../../utils/color'
+import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
 import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, triangleStripToTriangles, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
@@ -277,9 +277,13 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     matrix: Matrix,
     bounding: Bounding,
     drawObject: twgl.DrawObject,
+    opacity?: number,
   ) => {
     flushDraw()
 
+    gl.clearStencil(0)
+    gl.clear(gl.STENCIL_BUFFER_BIT)
+    gl.colorMask(false, false, false, false)
     gl.enable(gl.STENCIL_TEST);
     gl.stencilFunc(gl.ALWAYS, 1, 0xFF);
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
@@ -287,17 +291,18 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
     gl.stencilFunc(gl.EQUAL, 1, 0xFF);
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.colorMask(true, true, true, true)
 
     forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
-      drawGraphic(g, m)
+      drawGraphic(g, m, opacity)
     })
     flushDraw()
 
     gl.disable(gl.STENCIL_TEST);
-    gl.clear(gl.STENCIL_BUFFER_BIT)
   }
-  const drawGraphic = (line: Graphic, matrix: Matrix) => {
-    const color = mergeOpacityToColor(line.color, line.opacity)
+  const drawGraphic = (line: Graphic, matrix: Matrix, opacity?: number) => {
+    const op = mergeOpacities(line.opacity, opacity)
+    const color = mergeOpacityToColor(line.color, op)
     if (line.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, line)
 
@@ -362,7 +367,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
         },
       }
       if (line.pattern) {
-        drawPattern(line.pattern, matrix, { xMin: line.x, yMin: line.y, xMax: line.x + width, yMax: line.y + height }, drawObject)
+        drawPattern(line.pattern, matrix, { xMin: line.x, yMin: line.y, xMax: line.x + width, yMax: line.y + height }, drawObject, op)
       } else {
         objectsToDraw.push(drawObject)
       }
@@ -396,7 +401,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
       if (line.pattern) {
         const bounding = getNumArrayPointsBounding(line.points)
-        drawPattern(line.pattern, matrix, bounding, drawObject)
+        drawPattern(line.pattern, matrix, bounding, drawObject, op)
       } else {
         objectsToDraw.push(drawObject)
       }
