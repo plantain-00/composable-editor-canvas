@@ -110,10 +110,11 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   const textureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
     attribute vec4 position;
     uniform mat3 matrix;
+    uniform float flipY;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
+      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
       texcoord = position.xy;
     }
     `, `
@@ -281,6 +282,19 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   ) => {
     flushDraw()
 
+    let texture: WebGLTexture | WebGLRenderbuffer | undefined
+    if (pattern.graphics.some(p => p.pattern)) {
+      const framebufferInfo = twgl.createFramebufferInfo(gl, undefined, canvas.width, canvas.height)
+      twgl.bindFramebufferInfo(gl, framebufferInfo)
+      forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+        drawGraphic(g, m, opacity)
+      })
+      flushDraw()
+      texture = framebufferInfo.attachments[0]
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+    }
+
     gl.clearStencil(0)
     gl.clear(gl.STENCIL_BUFFER_BIT)
     gl.colorMask(false, false, false, false)
@@ -293,10 +307,23 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
     gl.colorMask(true, true, true, true)
 
-    forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
-      drawGraphic(g, m, opacity)
-    })
-    flushDraw()
+    if (texture) {
+      twgl.drawObjectList(gl, [{
+        programInfo: textureProgramInfo.instance,
+        bufferInfo: textureBufferInfo,
+        uniforms: {
+          matrix: m3.projection(1, 1),
+          opacity: opacity ?? 1,
+          texture,
+          flipY: -1,
+        },
+      }])
+    } else {
+      forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+        drawGraphic(g, m, opacity)
+      })
+      flushDraw()
+    }
 
     gl.disable(gl.STENCIL_TEST);
   }
