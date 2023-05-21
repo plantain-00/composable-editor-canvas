@@ -428,11 +428,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     renderPass.setStencilReference(1)
     return renderPass
   }
-  const createMaskedRenderPass = (commandEncoder: GPUCommandEncoder) => {
+  const createMaskedRenderPass = (commandEncoder: GPUCommandEncoder, targetTexture = context.getCurrentTexture(), reference = 1) => {
     const renderPass = commandEncoder.beginRenderPass({
       colorAttachments: [{
         view: sampleTexture.instance.createView(),
-        resolveTarget: context.getCurrentTexture().createView(),
+        resolveTarget: targetTexture.createView(),
         loadOp: 'load',
         storeOp: 'store',
       }],
@@ -442,19 +442,35 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         stencilStoreOp: 'store',
       }
     })
-    renderPass.setStencilReference(1)
+    renderPass.setStencilReference(reference)
     return renderPass
   }
 
-  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder, opacity?: number) => {
+  const drawPattern = (pattern: PatternGraphic, matrix: Matrix, bounding: Bounding, commandEncoder: GPUCommandEncoder, opacity?: number, targetTexture?: GPUTexture) => {
+    let texture: GPUTexture | undefined
+    const byFramebuffer = pattern.graphics.some(p => p.pattern)
+    if (byFramebuffer) {
+      texture = createTexture(canvas.width, canvas.height);
+      const framebufferCommandEncoder = device.createCommandEncoder();
+      let framebufferPassEncoder = createMaskedRenderPass(framebufferCommandEncoder, texture, 0)
+      forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+        framebufferPassEncoder = drawGraphic(g, m, framebufferPassEncoder, framebufferCommandEncoder, true, opacity, texture)
+      })
+      framebufferPassEncoder.end();
+      device.queue.submit([framebufferCommandEncoder.finish()]);
+    }
     let passEncoder = createMaskedRenderPass(commandEncoder)
-    forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
-      passEncoder = drawGraphic(g, m, passEncoder, commandEncoder, true, opacity)
-    })
+    if (texture) {
+      drawTexture(textureShaderModule.instance, passEncoder, [{ type: 'mat3x3', value: m3.projection(1, 1) }, { type: 'number', value: opacity ?? 1 }], texture, 'masked')
+    } else {
+      forEachPatternGraphicRepeatedGraphic(pattern, matrix, bounding, (g, m) => {
+        passEncoder = drawGraphic(g, m, passEncoder, commandEncoder, true, opacity, targetTexture)
+      })
+    }
     passEncoder.end();
-    return createRenderPass(commandEncoder)
+    return createRenderPass(commandEncoder, targetTexture)
   }
-  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false, opacity?: number) => {
+  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false, opacity?: number, targetTexture?: GPUTexture) => {
     const op = mergeOpacities(graphic.opacity, opacity)
     const color = mergeOpacityToColor(graphic.pattern ? defaultVec4Color : graphic.color, op)
     if (graphic.pattern) {
@@ -513,7 +529,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
 
       if (graphic.pattern) {
         passEncoder.end()
-        passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder, op)
+        passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder, op, targetTexture)
       }
     } else {
       const shaderModule = graphic.colors ? gradientShaderModule.instance : basicShaderModule.instance
@@ -563,7 +579,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       if (graphic.pattern) {
         passEncoder.end()
         const bounding = getNumArrayPointsBounding(graphic.points)
-        passEncoder = drawPattern(graphic.pattern, matrix, bounding, commandEncoder, op)
+        passEncoder = drawPattern(graphic.pattern, matrix, bounding, commandEncoder, op, targetTexture)
       }
     }
     return passEncoder
