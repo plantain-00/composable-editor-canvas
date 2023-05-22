@@ -15,7 +15,6 @@ export function usePointSnap<T>(
     getCircle?: (content: T) => { circle: Circle, bounding?: TwoPointsFormRegion }
     getParam?(content: T, point: Position): number
   } | undefined,
-  scale = 1,
   offset?: Position,
   delta = 5,
   getGridSnap = (p: Position) => ({ x: Math.round(p.x), y: Math.round(p.y) }),
@@ -81,7 +80,7 @@ export function usePointSnap<T>(
         }
       }
       for (const snapPoint of snapPoints) {
-        const d = delta * 2 / scale
+        const d = delta * 2
         if (snapPoint.type === 'center') {
           assistentContents.push(createCircle({
             x: snapPoint.x,
