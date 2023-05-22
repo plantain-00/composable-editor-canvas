@@ -385,8 +385,8 @@ export const CADEditor = React.forwardRef((props: {
     getIntersectionPoints,
     snapTypes,
     getContentModel,
-    scaleWithViewport,
     snapOffset,
+    5 / scaleWithViewport,
   )
 
   // commands
@@ -695,7 +695,7 @@ export const CADEditor = React.forwardRef((props: {
       onEditMove(s.position, selectedContents, s.target)
       // hover by position
       const indexes = getSortedContents(editingContent).indexes
-      setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes))
+      setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes, 3 / scaleWithViewport))
     }
   })
   const onDoubleClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {

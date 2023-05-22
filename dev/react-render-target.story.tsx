@@ -172,46 +172,57 @@ export default () => {
       {renderArcs(reactCanvasRenderTarget)}
       {renderArcs(reactWebglRenderTarget)}
       {navigator.gpu && renderArcs(reactWebgpuRenderTarget)}
+      <br />
       {renderCircles(reactSvgRenderTarget)}
       {renderCircles(reactCanvasRenderTarget)}
       {renderCircles(reactWebglRenderTarget)}
       {navigator.gpu && renderCircles(reactWebgpuRenderTarget)}
+      <br />
       {renderTexts(reactSvgRenderTarget)}
       {renderTexts(reactCanvasRenderTarget)}
       {renderTexts(reactWebglRenderTarget)}
       {navigator.gpu && renderTexts(reactWebgpuRenderTarget)}
+      <br />
       {renderEllipseArcs(reactSvgRenderTarget)}
       {renderEllipseArcs(reactCanvasRenderTarget)}
       {renderEllipseArcs(reactWebglRenderTarget)}
       {navigator.gpu && renderEllipseArcs(reactWebgpuRenderTarget)}
+      <br />
       {renderEllipses(reactSvgRenderTarget)}
       {renderEllipses(reactCanvasRenderTarget)}
       {renderEllipses(reactWebglRenderTarget)}
       {navigator.gpu && renderEllipses(reactWebgpuRenderTarget)}
+      <br />
       {renderRects(reactSvgRenderTarget)}
       {renderRects(reactCanvasRenderTarget)}
       {renderRects(reactWebglRenderTarget)}
       {navigator.gpu && renderRects(reactWebgpuRenderTarget)}
+      <br />
       {renderPaths(reactSvgRenderTarget)}
       {renderPaths(reactCanvasRenderTarget)}
       {renderPaths(reactWebglRenderTarget)}
       {navigator.gpu && renderPaths(reactWebgpuRenderTarget)}
+      <br />
       {renderImages(reactSvgRenderTarget)}
       {renderImages(reactCanvasRenderTarget)}
       {renderImages(reactWebglRenderTarget)}
       {navigator.gpu && renderImages(reactWebgpuRenderTarget)}
+      <br />
       {renderPolylines(reactSvgRenderTarget)}
       {renderPolylines(reactCanvasRenderTarget)}
       {renderPolylines(reactWebglRenderTarget)}
       {navigator.gpu && renderPolylines(reactWebgpuRenderTarget)}
+      <br />
       {renderPolygons(reactSvgRenderTarget)}
       {renderPolygons(reactCanvasRenderTarget)}
       {renderPolygons(reactWebglRenderTarget)}
       {navigator.gpu && renderPolygons(reactWebgpuRenderTarget)}
+      <br />
       {renderPathCommands(reactSvgRenderTarget)}
       {renderPathCommands(reactCanvasRenderTarget)}
       {renderPathCommands(reactWebglRenderTarget)}
       {navigator.gpu && renderPathCommands(reactWebgpuRenderTarget)}
+      <br />
       {renderGroups(reactSvgRenderTarget)}
       {renderGroups(reactCanvasRenderTarget)}
       {renderGroups(reactWebglRenderTarget)}
