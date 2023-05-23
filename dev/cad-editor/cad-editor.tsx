@@ -917,7 +917,7 @@ export const CADEditor = React.forwardRef((props: {
 
   const main = (
     <div ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}>
-      <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+      <div style={{ cursor: editPoint?.cursor ?? (operations.type === 'operate' && operations.operate.name === 'move canvas' ? 'grab' : 'crosshair'), position: 'absolute', inset: '0px', overflow: 'hidden' }} onMouseMove={onMouseMove}>
         {rtree && <MemoizedRenderer
           type={renderTarget}
           contents={editingContent}

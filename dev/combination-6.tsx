@@ -153,7 +153,7 @@ export function Combination6() {
   })
 
   return (
-    <div style={{ position: 'absolute', inset: '0px' }} onMouseMove={onMouseMove}>
+    <div style={{ position: 'absolute', inset: '0px', overflow: 'hidden' }} onMouseMove={onMouseMove}>
       {target.renderResult(children, width, height, { attributes: { onClick } })}
       <div style={{ position: 'absolute', top: '0px' }}>
         <Button style={{ color: creating === 'drop' ? 'red' : undefined }} onClick={() => startCreation('drop')}>drop</Button>
