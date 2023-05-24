@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, m3, WeakmapMapCache } from "../../src"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache } from "../../src"
 import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
@@ -256,7 +256,7 @@ export function Renderer(props: {
     const activeContent = props.active !== undefined ? previewContents[props.active] : undefined
     if (activeContent && isViewportContent(activeContent)) {
       assistentContentsChildren.push(target.renderGroup(assistentContentsChildren2, {
-        matrix: m3.multiply(m3.multiply(m3.translation(activeContent.x, activeContent.y), m3.scaling(activeContent.scale, activeContent.scale)), m3.rotation(-(activeContent.rotate || 0))),
+        matrix: getViewportMatrix(activeContent),
       }))
     } else {
       assistentContentsChildren.push(...assistentContentsChildren2)
