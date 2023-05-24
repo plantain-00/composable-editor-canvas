@@ -477,7 +477,7 @@ export const CADEditor = React.forwardRef((props: {
       }
     } else {
       // double click
-      const point = reverseTransformPosition(start, transform)
+      const point = reverseTransform(start)
       const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point))
       if (activeIndex >= 0) {
         if (active === activeIndex && activeViewport) {
