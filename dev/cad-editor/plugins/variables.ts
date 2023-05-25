@@ -9096,9 +9096,9 @@ function getModel(ctx) {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)
       };
     },
-    editPanel(content, transform, update, contents, cancel, activeChild) {
+    editPanel(content, scale, update, contents, cancel, transformPosition, activeChild) {
       var _a, _b, _c;
-      const p = ctx.transformPosition(content, transform);
+      const p = transformPosition(content);
       if (!activeChild)
         return /* @__PURE__ */ React.createElement(React.Fragment, null);
       const [row, column] = activeChild;
@@ -9110,21 +9110,21 @@ function getModel(ctx) {
       if (!child)
         return /* @__PURE__ */ React.createElement(React.Fragment, null);
       const textStyleContent = ctx.getTextStyleContent(cell, contents);
-      const fontSize = textStyleContent.fontSize * transform.scale;
+      const fontSize = textStyleContent.fontSize * scale;
       return /* @__PURE__ */ React.createElement(
         ctx.TextEditor,
         {
           fontSize,
-          width: child.width * transform.scale,
-          height: child.height * transform.scale,
+          width: child.width * scale,
+          height: child.height * scale,
           color: textStyleContent.color,
           fontFamily: textStyleContent.fontFamily,
           align: (_b = textStyleContent.align) != null ? _b : "center",
           verticalAlign: (_c = textStyleContent.verticalAlign) != null ? _c : "middle",
-          lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : void 0,
+          lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : void 0,
           onCancel: cancel,
-          x: p.x + child.x * transform.scale,
-          y: p.y + child.y * transform.scale,
+          x: p.x + child.x * scale,
+          y: p.y + child.y * scale,
           borderWidth: 0,
           value: cell.text,
           setValue: (v) => update((c) => {
@@ -9687,20 +9687,20 @@ function getModel(ctx) {
         ]
       };
     },
-    editPanel(content, transform, update, contents, cancel) {
-      const p = ctx.transformPosition(content, transform);
+    editPanel(content, scale, update, contents, cancel, transformPosition) {
+      const p = transformPosition(content);
       const textStyleContent = ctx.getTextStyleContent(content, contents);
-      const fontSize = textStyleContent.fontSize * transform.scale;
+      const fontSize = textStyleContent.fontSize * scale;
       if (content.width) {
         return /* @__PURE__ */ React.createElement(
           ctx.TextEditor,
           {
             fontSize,
-            width: content.width * transform.scale,
+            width: content.width * scale,
             color: textStyleContent.color,
             fontFamily: textStyleContent.fontFamily,
             align: textStyleContent.align,
-            lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : void 0,
+            lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : void 0,
             onCancel: cancel,
             x: p.x,
             y: p.y,

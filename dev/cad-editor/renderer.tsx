@@ -12,6 +12,7 @@ export function Renderer(props: {
   othersSelectedContents?: readonly { selection: number[], operator: string }[]
   hovering?: readonly number[][]
   active?: number
+  activeViewportIndex?: number
   x: number
   y: number
   scale: number
@@ -177,8 +178,8 @@ export function Renderer(props: {
         newAssistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isAssistence: true }))
       }
     })
-    if (newAssistentContentsChildren.length > 0 && props.active !== undefined) {
-      const p = previewContents[props.active]
+    if (newAssistentContentsChildren.length > 0 && props.activeViewportIndex !== undefined) {
+      const p = previewContents[props.activeViewportIndex]
       if (p && isViewportContent(p)) {
         newAssistentContentsChildren = [target.renderGroup(newAssistentContentsChildren, { matrix: getViewportMatrix(p) })]
       }
@@ -236,7 +237,15 @@ export function Renderer(props: {
     }
   }
 
-  if (props.active !== undefined) {
+  if (props.activeViewportIndex !== undefined) {
+    const content = previewContents[props.activeViewportIndex]
+    if (content) {
+      const ContentRender = getContentModel(content)?.render
+      if (ContentRender) {
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
+      }
+    }
+  } else if (props.active !== undefined) {
     const content = previewContents[props.active]
     if (content) {
       const ContentRender = getContentModel(content)?.render
@@ -253,7 +262,7 @@ export function Renderer(props: {
     }
   })
   if (assistentContentsChildren2.length > 0) {
-    const activeContent = props.active !== undefined ? previewContents[props.active] : undefined
+    const activeContent = props.activeViewportIndex !== undefined ? previewContents[props.activeViewportIndex] : undefined
     if (activeContent && isViewportContent(activeContent)) {
       assistentContentsChildren.push(target.renderGroup(assistentContentsChildren2, {
         matrix: getViewportMatrix(activeContent),

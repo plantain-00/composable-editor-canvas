@@ -169,15 +169,24 @@ export const CADEditor = React.forwardRef((props: {
   const strokeStyleId = model.getStrokeStyles(state).find(s => s.content.isCurrent)?.index
   const fillStyleId = model.getFillStyles(state).find(s => s.content.isCurrent)?.index
   const textStyleId = model.getTextStyles(state).find(s => s.content.isCurrent)?.index
+  const [activeViewportIndex, setActiveViewportIndex] = React.useState<number>()
   const [active, setActive] = React.useState<number>()
   const [activeChild, setActiveChild] = React.useState<number[]>()
   const activeContent = active !== undefined ? editingContent[active] : undefined
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
-  const activeViewport = activeContent && isViewportContent(activeContent) ? activeContent : undefined
-  const transformViewport = activeViewport ? (p: Position) => core.rotatePosition({
+  const activeViewportContent = activeViewportIndex !== undefined ? editingContent[activeViewportIndex] : undefined
+  const activeViewport = activeViewportContent && isViewportContent(activeViewportContent) ? activeViewportContent : undefined
+  const reverseTransformViewport = activeViewport ? (p: Position) => core.rotatePosition({
     x: (p.x - activeViewport.x) / activeViewport.scale,
     y: (p.y - activeViewport.y) / activeViewport.scale,
   }, { x: 0, y: 0 }, -(activeViewport.rotate || 0)) : undefined
+  const transformViewport = activeViewport ? (p: Position) => {
+    p = core.rotatePosition(p, { x: 0, y: 0 }, activeViewport.rotate || 0)
+    return {
+      x: p.x * activeViewport.scale + activeViewport.x,
+      y: p.y * activeViewport.scale + activeViewport.y,
+    }
+  } : undefined
   const [xOffset, setXOffset] = React.useState(0)
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
@@ -208,10 +217,10 @@ export const CADEditor = React.forwardRef((props: {
   const [rotate, setRotate] = useLocalStorageState(props.id + '-rotate', 0)
   const { offset: rotateOffset, onStart: startRotate, mask: rotateMask } = useDragRotate(
     () => {
-      if (activeViewport && active !== undefined) {
+      if (activeViewport && activeViewportIndex !== undefined) {
         setState((draft) => {
           draft = getContentByPath(draft)
-          const content = draft[active]
+          const content = draft[activeViewportIndex]
           if (content && isViewportContent(content)) {
             content.rotate = currentRotate
           }
@@ -234,7 +243,7 @@ export const CADEditor = React.forwardRef((props: {
   useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
   useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
-    if (active !== undefined) {
+    if (activeViewportIndex !== undefined) {
       applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       return
     }
@@ -255,9 +264,9 @@ export const CADEditor = React.forwardRef((props: {
     },
     rotate: activeViewport ? rotate : currentRotate ?? rotate,
   }
-  if (active !== undefined) {
+  if (activeViewportIndex !== undefined) {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
-      const content = draft[active]
+      const content = draft[activeViewportIndex]
       if (content && isViewportContent(content)) {
         const p = core.rotatePosition(offset, { x: 0, y: 0 }, -rotate)
         content.x += (p.x + xOffset) / scale
@@ -276,10 +285,10 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   useKey((k) => k.key === 'ArrowLeft' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (active !== undefined && activeContentBounding) {
+    if (activeViewportIndex !== undefined && activeContentBounding) {
       setState((draft) => {
         draft = getContentByPath(draft)
-        const content = draft[active]
+        const content = draft[activeViewportIndex]
         if (content && isViewportContent(content)) {
           const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
           content.x += p.x
@@ -292,10 +301,10 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowRight' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (active !== undefined && activeContentBounding) {
+    if (activeViewportIndex !== undefined && activeContentBounding) {
       setState((draft) => {
         draft = getContentByPath(draft)
-        const content = draft[active]
+        const content = draft[activeViewportIndex]
         if (content && isViewportContent(content)) {
           const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
           content.x -= p.x
@@ -308,10 +317,10 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowUp' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (active !== undefined && activeContentBounding) {
+    if (activeViewportIndex !== undefined && activeContentBounding) {
       setState((draft) => {
         draft = getContentByPath(draft)
-        const content = draft[active]
+        const content = draft[activeViewportIndex]
         if (content && isViewportContent(content)) {
           const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
           content.x += p.x
@@ -324,10 +333,10 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((k) => k.key === 'ArrowDown' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (active !== undefined && activeContentBounding) {
+    if (activeViewportIndex !== undefined && activeContentBounding) {
       setState((draft) => {
         draft = getContentByPath(draft)
-        const content = draft[active]
+        const content = draft[activeViewportIndex]
         if (content && isViewportContent(content)) {
           const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
           content.x -= p.x
@@ -340,9 +349,10 @@ export const CADEditor = React.forwardRef((props: {
     e.preventDefault()
   })
   useKey((e) => e.key === 'Escape', () => {
+    if (activeViewport) return
     setActive(undefined)
     setActiveChild(undefined)
-  }, [setActive, setActiveChild])
+  }, [setActive, setActiveChild, activeViewport])
   useDelayedAction(xOffset !== 0 || yOffset !== 0 || scaleOffset !== 1, 500, () => {
     applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
     setXOffset(0)
@@ -425,9 +435,16 @@ export const CADEditor = React.forwardRef((props: {
   const lastPosition = editLastPosition ?? commandLastPosition
   const reverseTransform = (p: Position) => {
     p = reverseTransformPosition(p, transform)
+    if (reverseTransformViewport) {
+      p = reverseTransformViewport(p)
+    }
+    return p
+  }
+  const transformPosition = (p: Position) => {
     if (transformViewport) {
       p = transformViewport(p)
     }
+    p = core.transformPosition(p, transform)
     return p
   }
 
@@ -436,12 +453,12 @@ export const CADEditor = React.forwardRef((props: {
     if (end) {
       const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
-        if (active !== undefined && activeViewport && transformViewport) {
+        if (activeViewportIndex !== undefined && activeViewport) {
           const viewport = getViewportByPoints(activeViewport, polygon, activeViewport.rotate)
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
-              const content = draft[active]
+              const content = draft[activeViewportIndex]
               if (content && isViewportContent(content)) {
                 content.x = viewport.x
                 content.y = viewport.y
@@ -480,12 +497,12 @@ export const CADEditor = React.forwardRef((props: {
       const point = reverseTransform(start)
       const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point))
       if (activeIndex >= 0) {
-        if (active === activeIndex && activeViewport) {
+        if (activeViewportIndex === activeIndex && activeViewport) {
           const viewport = getDefaultViewport(activeViewport, state, activeViewport.rotate)
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
-              const content = draft[active]
+              const content = draft[activeViewportIndex]
               if (content && isViewportContent(content)) {
                 content.x = viewport.x
                 content.y = viewport.y
@@ -494,7 +511,7 @@ export const CADEditor = React.forwardRef((props: {
             })
           }
         }
-        setActive(activeIndex)
+        setActiveViewportIndex(activeIndex)
         return
       }
       const indexes = getSortedContents(editingContent).indexes
@@ -513,9 +530,13 @@ export const CADEditor = React.forwardRef((props: {
         setActive(index[0])
         return
       }
-      if (active) {
+      if (active !== undefined) {
         setActive(undefined)
         setActiveChild(undefined)
+        return
+      }
+      if (activeViewportIndex !== undefined) {
+        setActiveViewportIndex(undefined)
         return
       }
       const result = zoomContentsToFit(width, height, editingContent, state, 0.8, transform.rotate)
@@ -659,7 +680,7 @@ export const CADEditor = React.forwardRef((props: {
           addSelection(...hovering)
         }
         setHovering()
-      } else if (active && !activeViewport) {
+      } else if (active !== undefined && !activeViewport) {
         setActive(undefined)
         setActiveChild(undefined)
         return
@@ -909,7 +930,7 @@ export const CADEditor = React.forwardRef((props: {
   }
   let editPanel: JSX.Element | undefined
   if (activeContent) {
-    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, transform, contentsUpdater, state, () => setActive(undefined), activeChild)
+    editPanel = getContentModel(activeContent)?.editPanel?.(activeContent, scaleWithViewport, contentsUpdater, state, () => setActive(undefined), transformPosition, activeChild)
   }
   if (props.debug) {
     console.info(debug.print())
@@ -927,6 +948,7 @@ export const CADEditor = React.forwardRef((props: {
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           active={active}
+          activeViewportIndex={activeViewportIndex}
           onClick={onClick}
           onMouseDown={onMouseDown}
           onContextMenu={onContextMenu}
