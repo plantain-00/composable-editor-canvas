@@ -178,18 +178,18 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         ],
       }
     },
-    editPanel(content, transform, update, contents, cancel) {
-      const p = ctx.transformPosition(content, transform)
+    editPanel(content, scale, update, contents, cancel, transformPosition) {
+      const p = transformPosition(content)
       const textStyleContent = ctx.getTextStyleContent(content, contents)
-      const fontSize = textStyleContent.fontSize * transform.scale
+      const fontSize = textStyleContent.fontSize * scale
       if (content.width) {
         return <ctx.TextEditor
           fontSize={fontSize}
-          width={content.width * transform.scale}
+          width={content.width * scale}
           color={textStyleContent.color}
           fontFamily={textStyleContent.fontFamily}
           align={textStyleContent.align}
-          lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : undefined}
+          lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : undefined}
           onCancel={cancel}
           x={p.x}
           y={p.y}

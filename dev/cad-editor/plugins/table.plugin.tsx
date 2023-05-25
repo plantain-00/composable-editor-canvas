@@ -301,8 +301,8 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },
-    editPanel(content, transform, update, contents, cancel, activeChild) {
-      const p = ctx.transformPosition(content, transform)
+    editPanel(content, scale, update, contents, cancel, transformPosition, activeChild) {
+      const p = transformPosition(content)
       if (!activeChild) return <></>
       const [row, column] = activeChild
       const cell = content.rows[row].cells?.find(c => c.column === column)
@@ -311,19 +311,19 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       const child = children.find(f => f.row === row && f.column === column)
       if (!child) return <></>
       const textStyleContent = ctx.getTextStyleContent(cell, contents)
-      const fontSize = textStyleContent.fontSize * transform.scale
+      const fontSize = textStyleContent.fontSize * scale
       return <ctx.TextEditor
         fontSize={fontSize}
-        width={child.width * transform.scale}
-        height={child.height * transform.scale}
+        width={child.width * scale}
+        height={child.height * scale}
         color={textStyleContent.color}
         fontFamily={textStyleContent.fontFamily}
         align={textStyleContent.align ?? 'center'}
         verticalAlign={textStyleContent.verticalAlign ?? 'middle'}
-        lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * transform.scale : undefined}
+        lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : undefined}
         onCancel={cancel}
-        x={p.x + child.x * transform.scale}
-        y={p.y + child.y * transform.scale}
+        x={p.x + child.x * scale}
+        y={p.y + child.y * scale}
         borderWidth={0}
         value={cell.text}
         setValue={(v) => update(c => { if (isTableContent(c)) { setTableCell(c, row, column, t => t.text = v) } })}
