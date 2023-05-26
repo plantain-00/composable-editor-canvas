@@ -1,6 +1,6 @@
 import { Patch } from "immer"
 import React from "react"
-import { Nullable, Position, prependPatchPath, SelectPath } from "../../src"
+import { Nullable, Position, prependPatchPath, SelectPath, Size, Transform } from "../../src"
 import { BaseContent, fixedInputStyle, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
@@ -44,7 +44,8 @@ export interface Command extends CommandType {
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
     textStyleId: number | undefined,
-  }): void
+    transform: Transform
+  } & Size): void
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
   selectType?: 'select part'

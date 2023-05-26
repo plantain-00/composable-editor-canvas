@@ -175,7 +175,7 @@ export type Model<T> = Partial<FeatureModels> & {
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   offset?(content: T, point: Position, distance: number): T | T[] | void
-  render?<V>(content: T, ctx: RenderContext<V>): V
+  render?<V, P>(content: T, ctx: RenderContext<V, P>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
   getEditPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): {
@@ -224,9 +224,9 @@ export interface Select {
   selectable?: (index: number[]) => boolean
 }
 
-export interface RenderContext<V> {
+export interface RenderContext<V, T = V> {
   transformColor: (color: number) => number
-  target: ReactRenderTarget<V>
+  target: ReactRenderTarget<V, T>
   transformStrokeWidth: (strokeWidth: number) => number,
   contents: readonly Nullable<BaseContent>[]
   getStrokeColor(content: StrokeFields & FillFields): number | undefined
@@ -963,9 +963,9 @@ export function getContentsSnapPoints<T extends ContainerFields>(
   })
 }
 
-export function renderContainerChildren<V>(
+export function renderContainerChildren<V, P>(
   container: ContainerFields,
-  ctx: RenderContext<V>,
+  ctx: RenderContext<V, P>,
 ) {
   ctx = {
     ...ctx,
@@ -1096,7 +1096,7 @@ export function getContainerMirror(content: ContainerFields, line: GeneralFormLi
     getContentModel(c)?.mirror?.(c, line, angle, contents)
   })
 }
-export function getContainerRender<V>(content: ContainerFields, ctx: RenderContext<V>) {
+export function getContainerRender<V, P>(content: ContainerFields, ctx: RenderContext<V, P>) {
   const children = renderContainerChildren(content, ctx)
   return ctx.target.renderGroup(children)
 }
