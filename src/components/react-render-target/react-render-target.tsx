@@ -4,7 +4,7 @@ import { Matrix } from "../../utils/matrix"
 import { radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 
-export interface ReactRenderTarget<T = JSX.Element> {
+export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
   renderResult(
     children: T[],
@@ -19,7 +19,7 @@ export interface ReactRenderTarget<T = JSX.Element> {
       debug: boolean
       strokeWidthScale: number
     }>
-  ): JSX.Element
+  ): V
   renderEmpty(): T
   renderGroup(
     children: T[],

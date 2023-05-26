@@ -61,7 +61,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId })
+            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId, width, height, transform })
           })
           setSelected()
           return true

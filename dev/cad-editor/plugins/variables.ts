@@ -3755,6 +3755,54 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/export-code.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "25,13 7,51 22,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "75,13 93,51 78,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "export code",
+    execute({ contents, selected, width, height, transform }) {
+      const result = [];
+      contents.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected)) {
+          const model = ctx.getContentModel(content);
+          if (model == null ? void 0 : model.render) {
+            const code = model.render(content, {
+              target: ctx.codeRenderTarget,
+              transformColor: (c) => c,
+              transformStrokeWidth: (w) => w,
+              getFillColor: (c) => c.fillColor,
+              getStrokeColor: (c) => {
+                var _a;
+                return (_a = c.strokeColor) != null ? _a : ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor;
+              },
+              getFillPattern: (c) => c.fillPattern ? {
+                width: c.fillPattern.width,
+                height: c.fillPattern.height,
+                pattern: () => {
+                  var _a, _b, _c, _d;
+                  return ctx.codeRenderTarget.renderPath((_b = (_a = c.fillPattern) == null ? void 0 : _a.lines) != null ? _b : [], {
+                    strokeColor: (_d = (_c = c.fillPattern) == null ? void 0 : _c.strokeColor) != null ? _d : ctx.defaultStrokeColor
+                  });
+                }
+              } : void 0,
+              contents
+            });
+            result.push(code);
+          }
+        }
+      });
+      navigator.clipboard.writeText(ctx.codeRenderTarget.renderResult(result, width, height, {
+        transform
+      }));
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/export-jsx.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
