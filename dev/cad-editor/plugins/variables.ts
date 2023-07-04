@@ -6068,6 +6068,15 @@ function getModel(ctx) {
       content.center.x += offset.x;
       content.center.y += offset.y;
     },
+    rotate(content, center, angle, contents) {
+      content.center = ctx.rotatePositionByCenter(content.center, center, -angle);
+      content.contents.forEach((c) => {
+        var _a, _b;
+        if (!c)
+          return;
+        (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, c, center, angle, contents);
+      });
+    },
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents));
     },
