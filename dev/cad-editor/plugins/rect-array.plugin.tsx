@@ -48,6 +48,18 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
     type: 'rect array',
     ...ctx.containerModel,
     move: ctx.getContainerMove,
+    rotate(content, center, angle, contents) {
+      const x = content.columnSpacing * (content.columnCount - 1) * 0.5
+      const y = content.rowSpacing * (content.rowCount - 1) * 0.5
+      content.contents.forEach((c) => {
+        if (!c) return
+        const m = ctx.getContentModel(c)
+        if (!m) return
+        m.move?.(c, { x, y })
+        m.rotate?.(c, center, angle, contents)
+        m.move?.(c, { x: -x, y: -y })
+      })
+    },
     explode(content) {
       return ctx.getContentsExplode(getAllContentsFromCache(content))
     },
