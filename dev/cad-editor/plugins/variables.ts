@@ -6847,6 +6847,21 @@ function getModel(ctx) {
     type: "rect array",
     ...ctx.containerModel,
     move: ctx.getContainerMove,
+    rotate(content, center, angle, contents) {
+      const x = content.columnSpacing * (content.columnCount - 1) * 0.5;
+      const y = content.rowSpacing * (content.rowCount - 1) * 0.5;
+      content.contents.forEach((c) => {
+        var _a, _b, _c;
+        if (!c)
+          return;
+        const m = ctx.getContentModel(c);
+        if (!m)
+          return;
+        (_a = m.move) == null ? void 0 : _a.call(m, c, { x, y });
+        (_b = m.rotate) == null ? void 0 : _b.call(m, c, center, angle, contents);
+        (_c = m.move) == null ? void 0 : _c.call(m, c, { x: -x, y: -y });
+      });
+    },
     explode(content) {
       return ctx.getContentsExplode(getAllContentsFromCache(content));
     },
