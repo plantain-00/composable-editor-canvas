@@ -13,6 +13,7 @@ import { Combination3 } from './combination-3'
 import { Combination4 } from './combination-4'
 import { Combination5 } from './combination-5'
 import { Combination6 } from './combination-6'
+import { Combination7 } from './combination-7'
 
 const combinations = [
   { path: 'whiteboard', name: 'whiteboard', component: WhiteBoard },
@@ -22,6 +23,7 @@ const combinations = [
   { path: 'combination4', name: 'combination 4', component: Combination4 },
   { path: 'combination5', name: 'combination 5', component: Combination5 },
   { path: 'combination6', name: 'combination 6', component: Combination6 },
+  { path: 'combination7', name: 'combination 7', component: Combination7 },
 ]
 
 function StoryApp() {
