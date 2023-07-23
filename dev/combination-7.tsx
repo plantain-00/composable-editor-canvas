@@ -12,9 +12,14 @@ export function Combination7() {
       size: 24,
       facing: 0,
       canControl: true,
-      life: {
+      health: {
         total: 500,
         current: 200,
+      },
+      attack: {
+        damage: 50,
+        range: 2,
+        speed: 1700,
       },
     },
     {
@@ -23,7 +28,7 @@ export function Combination7() {
       size: 24,
       facing: 0,
       canControl: true,
-      life: {
+      health: {
         total: 600,
         current: 100,
       },
@@ -34,13 +39,14 @@ export function Combination7() {
       size: 24,
       facing: 0,
       canControl: false,
-      life: {
+      health: {
         total: 700,
         current: 700,
       },
     },
   ])
   const [selected, setSelected] = React.useState<number[]>([])
+  const attacking = React.useRef(false)
 
   const children = models.map((m, i) => {
     const p = getPointByLengthAndAngle(m.position, m.size * Math.SQRT2, m.facing)
@@ -57,10 +63,10 @@ export function Combination7() {
         getPointByLengthAndAngle(m.position, -m.size * 2, m.facing),
       ], { strokeColor: color }),
     ]
-    if (m.life) {
+    if (m.health) {
       const height = 6
       const width = m.size
-      const rate = m.life.current / m.life.total
+      const rate = m.health.current / m.health.total
       result.push(
         target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, width, height),
         target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, rate * m.size, height, {
@@ -97,6 +103,10 @@ export function Combination7() {
       }
     }))
   }, [models, setModels, selected])
+  useKey(e => e.key === 'a', () => {
+    attacking.current = true
+  })
+
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
     if (end) {
       const region = {
@@ -107,6 +117,21 @@ export function Combination7() {
     } else {
       for (const [i, model] of models.entries()) {
         if (getTwoPointsDistance(model.position, start) <= model.size) {
+          if (attacking.current) {
+            attacking.current = false
+            setModels(produce(models, draft => {
+              for (const j of selected) {
+                if (draft[j].canControl) {
+                  draft[j].action = {
+                    type: 'attack',
+                    target: i,
+                    last: 0,
+                  }
+                }
+              }
+            }))
+            break
+          }
           setSelected([i])
           break
         }
@@ -119,10 +144,40 @@ export function Combination7() {
     const step = (time: number) => {
       if (lastTime !== undefined) {
         const t = (time - lastTime) * 0.001
-        const newModels: Model[] = []
+        const newModels = [...modelsRef.current]
         let changed = false
-        for (const model of modelsRef.current) {
+        for (const [i, model] of newModels.entries()) {
           if (model.action) {
+            if (model.action.type === 'attack') {
+              const target = newModels[model.action.target]
+              const newFacing = getTwoPointsAngle(target.position, model.position)
+              if (target.health && model.attack && time - model.action.last > model.attack.speed) {
+                const health = Math.max(0, target.health.current - Math.floor(model.attack.damage + Math.random() * model.attack.range))
+                newModels[model.action.target] = produce(target, draft => {
+                  if (draft.health) {
+                    draft.health.current = health
+                  }
+                })
+                const dead = health === 0
+                newModels[i] = produce(model, draft => {
+                  draft.facing = newFacing
+                  if (dead) {
+                    draft.action = undefined
+                  } else if (draft.action && draft.action.type === 'attack') {
+                    draft.action.last = time
+                  }
+                })
+                changed = true
+                continue
+              }
+              if (newFacing !== model.facing) {
+                newModels[i] = produce(model, draft => {
+                  draft.facing = newFacing
+                })
+                changed = true
+              }
+              continue
+            }
             const s = t * model.speed
             const to = model.action.to
             const d = getTwoPointsDistance(model.position, to)
@@ -142,31 +197,24 @@ export function Combination7() {
               })
             }
             let valid = true
-            for (let i = 0; i < modelsRef.current.length; i++) {
-              let m: Model | undefined
-              if (i < newModels.length) {
-                m = newModels[i]
-              } else if (i > newModels.length) {
-                m = modelsRef.current[i]
-              }
-              if (m && getTwoPointsDistance(m.position, newModel.position) < m.size + newModel.size) {
-                valid = false
-                break
+            for (let j = 0; j < newModels.length; j++) {
+              if (j !== i) {
+                const m = newModels[j]
+                if (getTwoPointsDistance(m.position, newModel.position) < m.size + newModel.size) {
+                  valid = false
+                  break
+                }
               }
             }
             if (valid) {
-              newModels.push(newModel)
+              newModels[i] = newModel
               changed = true
             } else if (newFacing !== model.facing) {
-              newModels.push(produce(model, draft => {
+              newModels[i] = produce(model, draft => {
                 draft.facing = newFacing
-              }))
+              })
               changed = true
-            } else {
-              newModels.push(model)
             }
-          } else {
-            newModels.push(model)
           }
         }
         if (changed) {
@@ -194,15 +242,26 @@ interface Model {
   size: number
   facing: number
   canControl: boolean
-  life?: {
+  health?: {
     total: number
     current: number
   }
+  attack?: {
+    damage: number
+    range: number
+    speed: number
+  }
 }
 
-type Action = ActionMove
+type Action = ActionMove | ActionAttack
 
 interface ActionMove {
   type: 'move'
   to: Position
+}
+
+interface ActionAttack {
+  type: 'attack'
+  target: number
+  last: number
 }
