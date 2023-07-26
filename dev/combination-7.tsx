@@ -20,6 +20,8 @@ export function Combination7() {
         damage: 50,
         range: 2,
         speed: 1700,
+        last: 0,
+        bulletSpeed: 900,
       },
     },
     {
@@ -30,7 +32,7 @@ export function Combination7() {
       canControl: true,
       health: {
         total: 600,
-        current: 100,
+        current: 500,
       },
     },
     {
@@ -45,22 +47,17 @@ export function Combination7() {
       },
     },
   ])
+  const [bullets, setBullets, bulletsRef] = useRefState<Bullet[]>([])
   const [selected, setSelected] = React.useState<number[]>([])
   const attacking = React.useRef(false)
 
   const children = models.map((m, i) => {
-    const p = getPointByLengthAndAngle(m.position, m.size * Math.SQRT2, m.facing)
     const color = selected.includes(i) ? m.canControl ? 0x00ff00 : 0x0000ff : undefined
     const result = [
       target.renderCircle(m.position.x, m.position.y, m.size, { strokeColor: color }),
       target.renderPolyline([
-        getPointByLengthAndAngle(p, -m.size, m.facing + Math.PI / 4),
-        p,
-        getPointByLengthAndAngle(p, -m.size, m.facing - Math.PI / 4),
-      ], { strokeColor: color }),
-      target.renderPolyline([
-        getPointByLengthAndAngle(m.position, -m.size, m.facing),
-        getPointByLengthAndAngle(m.position, -m.size * 2, m.facing),
+        getPointByLengthAndAngle(m.position, m.size, m.facing),
+        getPointByLengthAndAngle(m.position, m.size * 2, m.facing),
       ], { strokeColor: color }),
     ]
     if (m.health) {
@@ -76,6 +73,7 @@ export function Combination7() {
     }
     return target.renderGroup(result)
   })
+  children.push(...bullets.map(b => target.renderCircle(b.position.x, b.position.y, 5)))
 
   const onContextMenu = (e: React.MouseEvent<HTMLOrSVGElement>) => {
     setModels(produce(models, draft => {
@@ -125,7 +123,6 @@ export function Combination7() {
                   draft[j].action = {
                     type: 'attack',
                     target: i,
-                    last: 0,
                   }
                 }
               }
@@ -146,26 +143,53 @@ export function Combination7() {
         const t = (time - lastTime) * 0.001
         const newModels = [...modelsRef.current]
         let changed = false
+
+        const newBullets: Bullet[] = []
+        for (const bullet of bulletsRef.current) {
+          const s = t * bullet.speed
+          const source = newModels[bullet.source]
+          const target = newModels[bullet.target]
+          const d = getTwoPointsDistance(bullet.position, target.position)
+          if (d <= s) {
+            if (target.health && source.attack) {
+              const health = Math.max(0, target.health.current - Math.floor(source.attack.damage + Math.random() * source.attack.range))
+              newModels[bullet.target] = produce(target, draft => {
+                if (draft.health) {
+                  draft.health.current = health
+                }
+              })
+              if (health === 0) {
+                newModels[bullet.source] = produce(source, draft => {
+                  draft.action = undefined
+                })
+              }
+              changed = true
+            }
+          } else {
+            const p = getPointByLengthAndDirection(bullet.position, s, target.position)
+            newBullets.push(produce(bullet, draft => {
+              draft.position = p
+            }))
+          }
+        }
+
         for (const [i, model] of newModels.entries()) {
           if (model.action) {
             if (model.action.type === 'attack') {
               const target = newModels[model.action.target]
               const newFacing = getTwoPointsAngle(target.position, model.position)
-              if (target.health && model.attack && time - model.action.last > model.attack.speed) {
-                const health = Math.max(0, target.health.current - Math.floor(model.attack.damage + Math.random() * model.attack.range))
-                newModels[model.action.target] = produce(target, draft => {
-                  if (draft.health) {
-                    draft.health.current = health
-                  }
-                })
-                const dead = health === 0
+              if (target.health && target.health.current > 0 && model.attack && time - model.attack.last > model.attack.speed) {
                 newModels[i] = produce(model, draft => {
                   draft.facing = newFacing
-                  if (dead) {
-                    draft.action = undefined
-                  } else if (draft.action && draft.action.type === 'attack') {
-                    draft.action.last = time
+                  if (draft.attack) {
+                    draft.attack.last = time
                   }
+                })
+                newBullets.push({
+                  position: model.position,
+                  source: i,
+                  target: model.action.target,
+                  speed: model.attack.bulletSpeed,
                 })
                 changed = true
                 continue
@@ -220,6 +244,9 @@ export function Combination7() {
         if (changed) {
           setModels(newModels)
         }
+        if (newBullets.length > 0 || bulletsRef.current.length > 0) {
+          setBullets(newBullets)
+        }
       }
       lastTime = time
       requestAnimationFrame(step)
@@ -250,7 +277,16 @@ interface Model {
     damage: number
     range: number
     speed: number
+    last: number
+    bulletSpeed: number
   }
+}
+
+interface Bullet {
+  position: Position
+  source: number
+  target: number
+  speed: number
 }
 
 type Action = ActionMove | ActionAttack
@@ -263,5 +299,4 @@ interface ActionMove {
 interface ActionAttack {
   type: 'attack'
   target: number
-  last: number
 }
