@@ -18,10 +18,11 @@ export function Combination7() {
       },
       attack: {
         damage: 50,
-        range: 2,
+        damageRange: 2,
         speed: 1700,
         last: 0,
         bulletSpeed: 900,
+        range: 300,
       },
     },
     {
@@ -149,10 +150,10 @@ export function Combination7() {
           const s = t * bullet.speed
           const source = newModels[bullet.source]
           const target = newModels[bullet.target]
-          const d = getTwoPointsDistance(bullet.position, target.position)
+          const d = getTwoPointsDistance(bullet.position, target.position) - target.size
           if (d <= s) {
             if (target.health && source.attack) {
-              const health = Math.max(0, target.health.current - Math.floor(source.attack.damage + Math.random() * source.attack.range))
+              const health = Math.max(0, target.health.current - Math.floor(source.attack.damage + Math.random() * source.attack.damageRange))
               newModels[bullet.target] = produce(target, draft => {
                 if (draft.health) {
                   draft.health.current = health
@@ -178,21 +179,33 @@ export function Combination7() {
             if (model.action.type === 'attack') {
               const target = newModels[model.action.target]
               const newFacing = getTwoPointsAngle(target.position, model.position)
-              if (target.health && target.health.current > 0 && model.attack && time - model.attack.last > model.attack.speed) {
-                newModels[i] = produce(model, draft => {
-                  draft.facing = newFacing
-                  if (draft.attack) {
-                    draft.attack.last = time
-                  }
-                })
-                newBullets.push({
-                  position: model.position,
-                  source: i,
-                  target: model.action.target,
-                  speed: model.attack.bulletSpeed,
-                })
-                changed = true
-                continue
+              if (target.health && target.health.current > 0 && model.attack) {
+                if (getTwoPointsDistance(model.position, target.position) > model.attack.range + model.size + target.size) {
+                  const s = t * model.speed
+                  const p = getPointByLengthAndDirection(model.position, s, target.position)
+                  newModels[i] = produce(model, draft => {
+                    draft.position = p
+                    draft.facing = newFacing
+                  })
+                  changed = true
+                  continue
+                }
+                if (time - model.attack.last > model.attack.speed) {
+                  newModels[i] = produce(model, draft => {
+                    draft.facing = newFacing
+                    if (draft.attack) {
+                      draft.attack.last = time
+                    }
+                  })
+                  newBullets.push({
+                    position: getPointByLengthAndDirection(model.position, model.size, target.position),
+                    source: i,
+                    target: model.action.target,
+                    speed: model.attack.bulletSpeed,
+                  })
+                  changed = true
+                  continue
+                }
               }
               if (newFacing !== model.facing) {
                 newModels[i] = produce(model, draft => {
@@ -275,10 +288,11 @@ interface Model {
   }
   attack?: {
     damage: number
-    range: number
+    damageRange: number
     speed: number
     last: number
     bulletSpeed: number
+    range: number
   }
 }
 
