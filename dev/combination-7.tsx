@@ -15,6 +15,13 @@ export function Combination7() {
       health: {
         total: 500,
         current: 200,
+        regeneration: 10,
+        armor: 0,
+      },
+      mana: {
+        total: 400,
+        current: 300,
+        regeneration: 5,
       },
       attack: {
         damage: 50,
@@ -34,6 +41,8 @@ export function Combination7() {
       health: {
         total: 600,
         current: 500,
+        regeneration: 10,
+        armor: 10,
       },
     },
     {
@@ -45,6 +54,8 @@ export function Combination7() {
       health: {
         total: 700,
         current: 700,
+        regeneration: 10,
+        armor: -10,
       },
     },
   ])
@@ -153,7 +164,8 @@ export function Combination7() {
           const d = getTwoPointsDistance(bullet.position, target.position) - target.size
           if (d <= s) {
             if (target.health && source.attack) {
-              const health = Math.max(0, target.health.current - Math.floor(source.attack.damage + Math.random() * source.attack.damageRange))
+              const damage = (source.attack.damage + Math.random() * source.attack.damageRange) * (1 - (0.06 * target.health.armor) / (1 + 0.06 * Math.abs(target.health.armor)))
+              const health = Math.max(0, target.health.current - damage)
               newModels[bullet.target] = produce(target, draft => {
                 if (draft.health) {
                   draft.health.current = health
@@ -175,6 +187,26 @@ export function Combination7() {
         }
 
         for (const [i, model] of newModels.entries()) {
+          if (model.health && model.health.regeneration && model.health.current < model.health.total) {
+            const h = t * model.health.regeneration
+            newModels[i] = produce(model, draft => {
+              if (draft.health) {
+                draft.health.current = Math.min(draft.health.current + h, draft.health.total)
+              }
+            })
+            changed = true
+          }
+
+          if (model.mana && model.mana.regeneration && model.mana.current < model.mana.total) {
+            const h = t * model.mana.regeneration
+            newModels[i] = produce(model, draft => {
+              if (draft.mana) {
+                draft.mana.current = Math.min(draft.mana.current + h, draft.mana.total)
+              }
+            })
+            changed = true
+          }
+
           if (model.action) {
             if (model.action.type === 'attack') {
               const target = newModels[model.action.target]
@@ -285,6 +317,13 @@ interface Model {
   health?: {
     total: number
     current: number
+    regeneration: number
+    armor: number
+  }
+  mana?: {
+    total: number
+    current: number
+    regeneration: number
   }
   attack?: {
     damage: number
