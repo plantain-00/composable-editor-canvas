@@ -56,7 +56,7 @@ export function getByPath<T>(target: T, path?: SelectPath) {
  */
 export function getItemByPath<T>(target: unknown, path: SelectPath) {
   // type-coverage:ignore-next-line
-  let result: any = target
+  let result: any = target // eslint-disable-line @typescript-eslint/no-explicit-any
   for (const p of path) {
     // type-coverage:ignore-next-line
     result = result[p]

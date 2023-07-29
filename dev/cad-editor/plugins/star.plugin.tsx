@@ -147,6 +147,7 @@ export function isStarContent(content: model.BaseContent): content is StarConten
 }
 
 export function getCommand(ctx: PluginContext): Command {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const React = ctx.React
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
