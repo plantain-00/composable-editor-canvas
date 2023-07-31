@@ -14,13 +14,14 @@ export function Combination7() {
       canControl: true,
       health: {
         total: 500,
-        current: 200,
+        current: 0.4,
         regeneration: 10,
         armor: 0,
+        magicResistance: 0,
       },
       mana: {
         total: 400,
-        current: 300,
+        current: 0.75,
         regeneration: 5,
       },
       attack: {
@@ -31,6 +32,12 @@ export function Combination7() {
         bulletSpeed: 900,
         range: 300,
       },
+      abilities: {
+        strength: 20,
+        agility: 30,
+        intelligence: 15,
+        primary: 'agility',
+      },
     },
     {
       position: { x: 300, y: 200 },
@@ -40,9 +47,10 @@ export function Combination7() {
       canControl: true,
       health: {
         total: 600,
-        current: 500,
+        current: 0.8,
         regeneration: 10,
         armor: 10,
+        magicResistance: 0.25,
       },
     },
     {
@@ -53,9 +61,10 @@ export function Combination7() {
       canControl: false,
       health: {
         total: 700,
-        current: 700,
+        current: 1,
         regeneration: 10,
         armor: -10,
+        magicResistance: 0,
       },
     },
   ])
@@ -75,7 +84,7 @@ export function Combination7() {
     if (m.health) {
       const height = 6
       const width = m.size
-      const rate = m.health.current / m.health.total
+      const rate = m.health.current
       result.push(
         target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, width, height),
         target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, rate * m.size, height, {
@@ -164,8 +173,10 @@ export function Combination7() {
           const d = getTwoPointsDistance(bullet.position, target.position) - target.size
           if (d <= s) {
             if (target.health && source.attack) {
-              const damage = (source.attack.damage + Math.random() * source.attack.damageRange) * (1 - (0.06 * target.health.armor) / (1 + 0.06 * Math.abs(target.health.armor)))
-              const health = Math.max(0, target.health.current - damage)
+              const armor = getArmor(target.health.armor, target)
+              const damage = getDamageAfterArmor(getDamage(source.attack.damage, source) + Math.random() * source.attack.damageRange, armor)
+              const totalHealth = getTotalHealth(target.health.total, target.abilities?.strength)
+              const health = Math.max(0, target.health.current - damage / totalHealth)
               newModels[bullet.target] = produce(target, draft => {
                 if (draft.health) {
                   draft.health.current = health
@@ -187,21 +198,23 @@ export function Combination7() {
         }
 
         for (const [i, model] of newModels.entries()) {
-          if (model.health && model.health.regeneration && model.health.current < model.health.total) {
-            const h = t * model.health.regeneration
+          if (model.health && model.health.regeneration && model.health.current < 1) {
+            const h = t * getHealthRegeneration(model.health.regeneration, model.abilities?.strength)
             newModels[i] = produce(model, draft => {
               if (draft.health) {
-                draft.health.current = Math.min(draft.health.current + h, draft.health.total)
+                const totalHealth = getTotalHealth(draft.health.total, draft.abilities?.strength)
+                draft.health.current = Math.min(draft.health.current + h / totalHealth, 1)
               }
             })
             changed = true
           }
 
-          if (model.mana && model.mana.regeneration && model.mana.current < model.mana.total) {
-            const h = t * model.mana.regeneration
+          if (model.mana && model.mana.regeneration && model.mana.current < 1) {
+            const h = t * getManaRegeneration(model.mana.regeneration, model.abilities?.intelligence)
             newModels[i] = produce(model, draft => {
               if (draft.mana) {
-                draft.mana.current = Math.min(draft.mana.current + h, draft.mana.total)
+                const totalMana = getTotalMana(draft.mana.total, draft.abilities?.intelligence)
+                draft.mana.current = Math.min(draft.mana.current + h / totalMana, 1)
               }
             })
             changed = true
@@ -222,7 +235,8 @@ export function Combination7() {
                   changed = true
                   continue
                 }
-                if (time - model.attack.last > model.attack.speed) {
+                const attackSpeed = getAttackSpeed(model.attack.speed, model.abilities?.agility)
+                if (time - model.attack.last > attackSpeed) {
                   newModels[i] = produce(model, draft => {
                     draft.facing = newFacing
                     if (draft.attack) {
@@ -319,6 +333,7 @@ interface Model {
     current: number
     regeneration: number
     armor: number
+    magicResistance: number
   }
   mana?: {
     total: number
@@ -332,6 +347,12 @@ interface Model {
     last: number
     bulletSpeed: number
     range: number
+  }
+  abilities?: {
+    strength: number
+    agility: number
+    intelligence: number
+    primary: 'strength' | 'agility' | 'intelligence' | 'universal'
   }
 }
 
@@ -352,4 +373,54 @@ interface ActionMove {
 interface ActionAttack {
   type: 'attack'
   target: number
+}
+
+function getTotalHealth(totalHealth: number, strength = 0) {
+  return totalHealth + strength * 22
+}
+
+function getTotalMana(totalMana: number, intelligence = 0) {
+  return totalMana + intelligence * 12
+}
+
+function getAttackSpeed(attackSpeed: number, agility = 0) {
+  return attackSpeed / (1 + agility * 0.01)
+}
+
+function getArmor(armor: number, model: Model) {
+  if (model.abilities?.primary === 'agility') {
+    armor += model.abilities.agility / 6
+  }
+  return armor
+}
+
+function getDamage(damage: number, model: Model) {
+  if (model.abilities) {
+    if (model.abilities.primary === 'strength') {
+      damage += model.abilities.strength
+    } else if (model.abilities.primary === 'agility') {
+      damage += model.abilities.agility
+    } else if (model.abilities.primary === 'intelligence') {
+      damage += model.abilities.intelligence
+    } else {
+      damage += (model.abilities.strength + model.abilities.agility + model.abilities.intelligence) * 0.7
+    }
+  }
+  return damage
+}
+
+function getHealthRegeneration(regeneration: number, strength = 0) {
+  return regeneration + strength * 0.1
+}
+
+function getManaRegeneration(regeneration: number, intelligence = 0) {
+  return regeneration + intelligence * 0.05
+}
+
+export function getMagicResistance(magicResistance: number, intelligence = 0) {
+  return magicResistance + intelligence * 0.001
+}
+
+function getDamageAfterArmor(damage: number, armor: number) {
+  return damage * (1 - (0.06 * armor) / (1 + 0.06 * Math.abs(armor)))
 }
