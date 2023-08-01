@@ -33,16 +33,16 @@ export function NumberEditor(props: JsonEditorProps<number> & {
       padding: 0,
     }
   }
-  if (props.readOnly) {
+  if (props.readOnly|| !props.setValue) {
     extraStyle.opacity = 0.5
   }
   return (
     <input
       value={text}
       type={props.type ?? 'number'}
-      disabled={props.readOnly}
+      disabled={props.readOnly|| !props.setValue}
       onChange={(e) => {
-        if (props.readOnly) {
+        if (props.readOnly|| !props.setValue) {
           return
         }
         setText(e.target.value)

@@ -1,6 +1,6 @@
 import React from "react";
 import { produce } from 'immer'
-import { Position, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance, pointIsInRegion, reactCanvasRenderTarget, useDragSelect, useKey, useRefState, useWindowSize } from "../src";
+import { BooleanEditor, EnumEditor, NumberEditor, ObjectEditor, Position, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance, pointIsInRegion, reactCanvasRenderTarget, useDragSelect, useKey, useRefState, useWindowSize } from "../src";
 
 export function Combination7() {
   const target = reactCanvasRenderTarget
@@ -71,6 +71,60 @@ export function Combination7() {
   const [bullets, setBullets, bulletsRef] = useRefState<Bullet[]>([])
   const [selected, setSelected] = React.useState<number[]>([])
   const attacking = React.useRef(false)
+
+  let panel: JSX.Element | undefined
+  if (selected.length > 0) {
+    const target = models[selected[0]]
+    const updater = (update: (content: Model) => void) => {
+      setModels(produce(models, draft => {
+        update(draft[0])
+      }))
+    }
+    const properties: Record<string, JSX.Element> = {
+      speed: <NumberEditor value={target.speed} setValue={v => updater(m => { m.speed = v })} />,
+      canControl: <BooleanEditor value={target.canControl} setValue={v => updater(m => { m.canControl = v })} />,
+    }
+    if (target.health) {
+      const totalHealth = getTotalHealth(target.health.total, target.abilities?.strength)
+      properties.baseHealth = <NumberEditor value={Math.round(target.health.total)} setValue={v => updater(m => { if (m.health) { m.health.total = v } })} />
+      properties.totalHealth = <NumberEditor value={Math.round(totalHealth)} />
+      properties.currentHealth = <NumberEditor value={Math.round(totalHealth * target.health.current)} />
+      properties.baseHealthRegeneration = <NumberEditor value={target.health.regeneration} setValue={v => updater(m => { if (m.health) { m.health.regeneration = v } })} />
+      properties.totalHealthRegeneration = <NumberEditor value={getHealthRegeneration(target.health.regeneration, target.abilities?.strength)} />
+      properties.baseArmor = <NumberEditor value={target.health.armor} setValue={v => updater(m => { if (m.health) { m.health.armor = v } })} />
+      properties.totalArmor = <NumberEditor value={Math.round(getArmor(target.health.armor, target))} />
+      properties.baseMagicResistance = <NumberEditor value={target.health.magicResistance} setValue={v => updater(m => { if (m.health) { m.health.magicResistance = v } })} />
+      properties.totalMagicResistance = <NumberEditor value={getMagicResistance(target.health.magicResistance, target.abilities?.intelligence)} />
+    }
+    if (target.mana) {
+      const totalMana = getTotalMana(target.mana.total, target.abilities?.intelligence)
+      properties.baseMana = <NumberEditor value={Math.round(target.mana.total)} setValue={v => updater(m => { if (m.mana) { m.mana.total = v } })} />
+      properties.totalMana = <NumberEditor value={Math.round(totalMana)} />
+      properties.currentMana = <NumberEditor value={Math.round(totalMana * target.mana.current)} />
+      properties.baseManaRegeneration = <NumberEditor value={target.mana.regeneration} setValue={v => updater(m => { if (m.mana) { m.mana.regeneration = v } })} />
+      properties.totalManaRegeneration = <NumberEditor value={getManaRegeneration(target.mana.regeneration, target.abilities?.intelligence)} />
+    }
+    if (target.attack) {
+      properties.baseDamage = <NumberEditor value={target.attack.damage} setValue={v => updater(m => { if (m.attack) { m.attack.damage = v } })} />
+      properties.damageRange = <NumberEditor value={target.attack.damageRange} setValue={v => updater(m => { if (m.attack) { m.attack.damageRange = v } })} />
+      properties.totalDamage = <NumberEditor value={Math.round(getDamage(target.attack.damage, target))} />
+      properties.baseAttackSpeed = <NumberEditor value={target.attack.speed} setValue={v => updater(m => { if (m.attack) { m.attack.speed = v } })} />
+      properties.totalAttackSpeed = <NumberEditor value={Math.round(getAttackSpeed(target.attack.speed, target.abilities?.agility))} />
+      properties.bulletSpeed = <NumberEditor value={target.attack.bulletSpeed} setValue={v => updater(m => { if (m.attack) { m.attack.bulletSpeed = v } })} />
+      properties.attackRange = <NumberEditor value={target.attack.range} setValue={v => updater(m => { if (m.attack) { m.attack.range = v } })} />
+    }
+    if (target.abilities) {
+      properties.strength = <NumberEditor value={target.abilities.strength} setValue={v => updater(m => { if (m.abilities) { m.abilities.strength = v } })} />
+      properties.agility = <NumberEditor value={target.abilities.agility} setValue={v => updater(m => { if (m.abilities) { m.abilities.agility = v } })} />
+      properties.intelligence = <NumberEditor value={target.abilities.intelligence} setValue={v => updater(m => { if (m.abilities) { m.abilities.intelligence = v } })} />
+      properties.primary = <EnumEditor enums={['strength', 'agility', 'intelligence', 'universal']} value={target.abilities.primary} setValue={v => updater(m => { if (m.abilities) { m.abilities.primary = v } })} />
+    }
+    panel = (
+      <div style={{ position: 'absolute', right: '0px', top: '0px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
+        <ObjectEditor inline properties={properties} />
+      </div>
+    )
+  }
 
   const children = models.map((m, i) => {
     const color = selected.includes(i) ? m.canControl ? 0x00ff00 : 0x0000ff : undefined
@@ -197,8 +251,9 @@ export function Combination7() {
           }
         }
 
-        for (const [i, model] of newModels.entries()) {
-          if (model.health && model.health.regeneration && model.health.current < 1) {
+        for (const i of newModels.keys()) {
+          let model = newModels[i]
+          if (model.health && model.health.regeneration && model.health.current > 0 && model.health.current < 1) {
             const h = t * getHealthRegeneration(model.health.regeneration, model.abilities?.strength)
             newModels[i] = produce(model, draft => {
               if (draft.health) {
@@ -207,6 +262,7 @@ export function Combination7() {
               }
             })
             changed = true
+            model = newModels[i]
           }
 
           if (model.mana && model.mana.regeneration && model.mana.current < 1) {
@@ -218,6 +274,7 @@ export function Combination7() {
               }
             })
             changed = true
+            model = newModels[i]
           }
 
           if (model.action) {
@@ -313,12 +370,13 @@ export function Combination7() {
     requestAnimationFrame(step)
   }, [])
 
-  return (
+  return <>
     <div style={{ position: 'absolute', inset: '0px', overflow: 'hidden' }} onMouseDown={onStartSelect} onContextMenu={onContextMenu}>
       {target.renderResult(children, width, height)}
       {dragSelectMask}
     </div>
-  )
+    {panel}
+  </>
 }
 
 interface Model {
@@ -417,7 +475,7 @@ function getManaRegeneration(regeneration: number, intelligence = 0) {
   return regeneration + intelligence * 0.05
 }
 
-export function getMagicResistance(magicResistance: number, intelligence = 0) {
+function getMagicResistance(magicResistance: number, intelligence = 0) {
   return magicResistance + intelligence * 0.001
 }
 

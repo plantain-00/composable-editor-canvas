@@ -17,7 +17,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
             type='checkbox'
             checked={props.value.includes(e)}
             style={{ marginRight: '5px' }}
-            disabled={props.readOnly}
+            disabled={props.readOnly || !props.setValue}
             onChange={() => {
               if (props.readOnly || !props.setValue) {
                 return
@@ -51,7 +51,7 @@ export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> 
     return (
       <select
         style={{ ...controlStyle, ...props.style }}
-        disabled={props.readOnly}
+        disabled={props.readOnly || !props.setValue}
         value={props.value}
         onChange={(e) => {
           if (props.readOnly || !props.setValue) {
@@ -75,7 +75,7 @@ export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> 
         <label key={e} style={{ marginRight: '10px' }}>
           <input
             type='radio'
-            disabled={props.readOnly}
+            disabled={props.readOnly || !props.setValue}
             checked={props.value === e}
             style={{ marginRight: '5px' }}
             onChange={() => {
