@@ -25,16 +25,16 @@ export function StringEditor(props: JsonEditorProps<string> & {
       padding: 0,
     }
   }
-  if (props.readOnly) {
+  if (props.readOnly || !props.setValue) {
     extraStyle.opacity = 0.5
   }
   if (props.textarea) {
     return (
       <textarea
         value={text}
-        disabled={props.readOnly}
+        disabled={props.readOnly || !props.setValue}
         onChange={(e) => {
-          if (props.readOnly) {
+          if (props.readOnly || !props.setValue) {
             return
           }
           setText(e.target.value)
@@ -64,7 +64,7 @@ export function StringEditor(props: JsonEditorProps<string> & {
     <>
       <input
         value={text}
-        disabled={props.readOnly}
+        disabled={props.readOnly || !props.setValue}
         type={props.type ?? 'text'}
         onChange={(e) => {
           if (props.readOnly || !props.setValue) {
