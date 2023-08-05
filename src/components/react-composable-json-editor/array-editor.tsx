@@ -3,11 +3,11 @@ import { Button } from "./button"
 import { getChildProps, groupStyle } from "./common"
 
 export interface ArrayProps {
-  add: () => void
-  remove: (index: number) => void
-  copy: (index: number) => void
-  moveUp: (index: number) => void
-  moveDown: (index: number) => void
+  add?: () => void
+  remove?: (index: number) => void
+  copy?: (index: number) => void
+  moveUp?: (index: number) => void
+  moveDown?: (index: number) => void
 }
 
 /**
@@ -29,16 +29,16 @@ export function ArrayEditor(props: ArrayProps & {
                 <div style={{ paddingRight: '5px', width: '14px' }}>{i + 1}</div>
                 <div style={{ flex: 1, display: 'flex' }}>{React.cloneElement(p, getChildProps(props))}</div>
                 {!props.readOnly && <div>
-                  <Button onClick={() => props.remove(i)}>{removeIcon}</Button>
-                  <Button onClick={() => props.copy(i)}>{copyIcon}</Button>
-                  {i > 0 && <Button onClick={() => props.moveUp(i)}>{topIcon}</Button>}
-                  {i < props.items.length - 1 && <Button onClick={() => props.moveDown(i)}>{bottomIcon}</Button>}
+                  {props.remove && <Button onClick={() => props.remove?.(i)}>{removeIcon}</Button>}
+                  {props.copy && <Button onClick={() => props.copy?.(i)}>{copyIcon}</Button>}
+                  {i > 0 && props.moveUp && <Button onClick={() => props.moveUp?.(i)}>{topIcon}</Button>}
+                  {i < props.items.length - 1 && props.moveDown && <Button onClick={() => props.moveDown?.(i)}>{bottomIcon}</Button>}
                 </div>}
               </div>
             )
           })}
         </div>
-        {!props.readOnly && <Button onClick={props.add}>{addIcon}</Button>}
+        {!props.readOnly && props.add && <Button onClick={props.add}>{addIcon}</Button>}
       </div>
     )
   }
@@ -49,16 +49,16 @@ export function ArrayEditor(props: ArrayProps & {
           <React.Fragment key={i}>
             <div style={{ marginBottom: '5px', marginTop: '5px' }}>
               {props.title?.(i) ?? (i + 1)}
-              {!props.readOnly && <Button style={{ marginLeft: '5px' }} onClick={() => props.remove(i)}>{removeIcon}</Button>}
-              {!props.readOnly && <Button onClick={() => props.copy(i)}>{copyIcon}</Button>}
-              {!props.readOnly && i > 0 && <Button onClick={() => props.moveUp(i)}>{topIcon}</Button>}
-              {!props.readOnly && i < props.items.length - 1 && <Button onClick={() => props.moveDown(i)}>{bottomIcon}</Button>}
+              {!props.readOnly && props.remove && <Button style={{ marginLeft: '5px' }} onClick={() => props.remove?.(i)}>{removeIcon}</Button>}
+              {!props.readOnly && props.copy && <Button onClick={() => props.copy?.(i)}>{copyIcon}</Button>}
+              {!props.readOnly && props.moveUp && i > 0 && <Button onClick={() => props.moveUp?.(i)}>{topIcon}</Button>}
+              {!props.readOnly && props.moveDown && i < props.items.length - 1 && <Button onClick={() => props.moveDown?.(i)}>{bottomIcon}</Button>}
             </div>
             <div style={{ display: 'flex' }}>{React.cloneElement(p, getChildProps(props))}</div>
           </React.Fragment>
         )
       })}
-      {!props.readOnly && <Button onClick={props.add}>{addIcon}</Button>}
+      {!props.readOnly && props.add && <Button onClick={props.add}>{addIcon}</Button>}
     </div>
   )
 }
@@ -90,17 +90,17 @@ export function ObjectArrayEditor(props: ArrayProps & {
                 <td style={{ paddingRight: '5px' }}>{i + 1}</td>
                 {Object.values(p).map((v, j) => <td key={j}>{React.cloneElement(v, getChildProps(props))}</td>)}
                 {!props.readOnly && <td>
-                  <Button onClick={() => props.remove(i)}>{removeIcon}</Button>
-                  <Button onClick={() => props.copy(i)}>{copyIcon}</Button>
-                  {i > 0 && <Button onClick={() => props.moveUp(i)}>{topIcon}</Button>}
-                  {i < props.properties.length - 1 && <Button onClick={() => props.moveDown(i)}>{bottomIcon}</Button>}
+                  {props.remove && <Button onClick={() => props.remove?.(i)}>{removeIcon}</Button>}
+                  {props.copy && <Button onClick={() => props.copy?.(i)}>{copyIcon}</Button>}
+                  {props.moveUp && i > 0 && <Button onClick={() => props.moveUp?.(i)}>{topIcon}</Button>}
+                  {props.moveDown && i < props.properties.length - 1 && <Button onClick={() => props.moveDown?.(i)}>{bottomIcon}</Button>}
                 </td>}
               </tr>
             )
           })}
         </tbody>
       </table>
-      {!props.readOnly && <Button onClick={props.add}>{addIcon}</Button>}
+      {!props.readOnly && props.add && <Button onClick={props.add}>{addIcon}</Button>}
     </div>
   )
 }
