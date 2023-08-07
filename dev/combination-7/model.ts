@@ -24,12 +24,18 @@ export interface Model {
     damageRange: number
     speed: number
     time: number
-    last: number
+    cooldown: number
     bulletSpeed: number
     range: number
   }
   abilities?: Abilities
   items?: number[]
+  itemCooldowns?: ItemCooldown[]
+}
+
+export interface ItemCooldown {
+  itemIndex: number
+  cooldown: number
 }
 
 export interface Abilities {
@@ -61,6 +67,12 @@ export interface Item {
   strength?: number
   agility?: number
   intelligence?: number
+  ability?: Ability
+}
+
+export interface Ability {
+  cooldown: number
+  act(itemIndex: number, updater: Updater): void
 }
 
 export type Action = ActionMove | ActionAttack
@@ -74,3 +86,5 @@ export interface ActionAttack {
   type: 'attack'
   target: number
 }
+
+export type Updater = (update: (content: Model) => void) => void

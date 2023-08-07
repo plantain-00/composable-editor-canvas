@@ -1,9 +1,9 @@
 import { produce } from 'immer'
 import { getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
-import { Bullet, Model } from "./model"
+import { Bullet, ItemCooldown, Model } from "./model"
 import { getArmor, getAttackDamage, getAttackTime, getDamageAfterArmor, getHealthRegeneration, getManaRegeneration, getModelResult, getTotalHealth, getTotalMana } from './utils'
 
-export function updateModels(t: number, time: number, models: Model[], bullets: Bullet[]) {
+export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
   const newModels = [...models]
   let changed = false
 
@@ -84,11 +84,11 @@ export function updateModels(t: number, time: number, models: Model[], bullets: 
             continue
           }
           const attackSpeed = getAttackTime(model.attack.time, modelResult.attack?.speed, modelResult.abilities?.agility)
-          if (time - model.attack.last > attackSpeed) {
+          if (model.attack.cooldown === 0) {
             newModels[i] = produce(model, draft => {
               draft.facing = newFacing
               if (draft.attack) {
-                draft.attack.last = time
+                draft.attack.cooldown = attackSpeed * 0.001
               }
             })
             newBullets.push({
@@ -100,6 +100,14 @@ export function updateModels(t: number, time: number, models: Model[], bullets: 
             changed = true
             continue
           }
+          newModels[i] = produce(model, draft => {
+            draft.facing = newFacing
+            if (draft.attack) {
+              draft.attack.cooldown = Math.max(0, draft.attack.cooldown - t)
+            }
+          })
+          changed = true
+          continue
         }
         if (newFacing !== model.facing) {
           newModels[i] = produce(model, draft => {
@@ -146,6 +154,23 @@ export function updateModels(t: number, time: number, models: Model[], bullets: 
         })
         changed = true
       }
+    }
+
+    if (model.itemCooldowns && model.itemCooldowns.length > 0) {
+      const newItemCooldowns: ItemCooldown[] = []
+      for (const itemCooldown of model.itemCooldowns) {
+        const cooldown = Math.max(0, itemCooldown.cooldown - t)
+        if (cooldown) {
+          newItemCooldowns.push({
+            itemIndex: itemCooldown.itemIndex,
+            cooldown,
+          })
+        }
+      }
+      newModels[i] = produce(model, draft => {
+        draft.itemCooldowns = newItemCooldowns
+      })
+      changed = true
     }
   }
   return {
