@@ -42,6 +42,11 @@ export const buttonStyle: React.CSSProperties = {
   borderRadius: '0.25rem',
 }
 
+export const labelStyle: React.CSSProperties = {
+  ...buttonStyle,
+  cursor: undefined,
+}
+
 export const groupStyle: React.CSSProperties = {
   padding: '10px',
   border: '1px solid rgba(0,0,0,.125)',

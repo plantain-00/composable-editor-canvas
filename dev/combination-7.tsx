@@ -13,6 +13,7 @@ export function Combination7() {
   const [models, setModels, modelsRef] = useRefState(initialModels)
   const [bullets, setBullets, bulletsRef] = useRefState<Bullet[]>([])
   const [selected, setSelected] = React.useState<number[]>([])
+  const [, setTime, timeRef] = useRefState(0)
   const attacking = React.useRef(false)
 
   let panel: JSX.Element | undefined
@@ -86,14 +87,13 @@ export function Combination7() {
   })
 
   React.useEffect(() => {
-    let lastTime: number | undefined
     const step = (time: number) => {
-      if (lastTime !== undefined) {
-        const result = updateModels((time - lastTime) * 0.001, time, modelsRef.current, bulletsRef.current)
+      if (timeRef.current !== 0) {
+        const result = updateModels((time - timeRef.current) * 0.001, modelsRef.current, bulletsRef.current)
         if (result.models) setModels(result.models)
         if (result.bullets) setBullets(result.bullets)
       }
-      lastTime = time
+      setTime(time)
       requestAnimationFrame(step)
     }
     requestAnimationFrame(step)

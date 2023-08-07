@@ -1,56 +1,39 @@
 import React from "react"
-import { ArrayEditor, BooleanEditor, Button, EnumEditor, NumberEditor, ObjectEditor } from "../../src"
+import { ArrayEditor, BooleanEditor, Label, EnumEditor, NumberEditor, ObjectEditor, Button } from "../../src"
 import { getArmor, getAttackDamage, getAttackSpeed, getAttackTime, getHealthRegeneration, getMagicResistance, getManaRegeneration, getModelResult, getTotalHealth, getTotalMana } from "./utils"
-import { Model } from "./model"
+import { Model, Updater } from "./model"
 import { items } from "./items"
 
-export function Panel({ target, updater }: { target: Model, updater: (update: (content: Model) => void) => void }) {
+export function Panel({ target, updater }: { target: Model, updater: Updater }) {
   const [selectedItem, setSelectedItem] = React.useState(0)
   const modelResult = getModelResult(target)
   const properties: Record<string, JSX.Element> = {
-    baseSpeed: <NumberEditor value={target.speed} setValue={v => updater(m => { m.speed = v })} />,
-    totalSpeed: <NumberEditor value={modelResult.speed} />,
+    speed: <Label>{modelResult.speed}<NumberEditor value={target.speed} style={{ width: '60px' }} setValue={v => updater(m => { m.speed = v })} /></Label>,
     canControl: <BooleanEditor value={target.canControl} setValue={v => updater(m => { m.canControl = v })} />,
   }
   if (target.health && modelResult.health) {
     const totalHealth = getTotalHealth(modelResult.health.total, modelResult.abilities?.strength)
-    properties.baseHealth = <NumberEditor value={Math.round(target.health.total)} setValue={v => updater(m => { if (m.health) { m.health.total = v } })} />
-    properties.totalHealth = <NumberEditor value={Math.round(totalHealth)} />
-    properties.currentHealth = <NumberEditor value={Math.round(totalHealth * target.health.current)} />
-    properties.baseHealthRegeneration = <NumberEditor value={target.health.regeneration} setValue={v => updater(m => { if (m.health) { m.health.regeneration = v } })} />
-    properties.totalHealthRegeneration = <NumberEditor value={getHealthRegeneration(modelResult.health.regeneration, modelResult.abilities?.strength)} />
-    properties.baseArmor = <NumberEditor value={target.health.armor} setValue={v => updater(m => { if (m.health) { m.health.armor = v } })} />
-    properties.totalArmor = <NumberEditor value={Math.round(getArmor(modelResult.health.armor, modelResult.abilities))} />
-    properties.baseMagicResistance = <NumberEditor value={target.health.magicResistance} setValue={v => updater(m => { if (m.health) { m.health.magicResistance = v } })} />
-    properties.totalMagicResistance = <NumberEditor value={getMagicResistance(target.health.magicResistance, modelResult.bonusMagicResistance, modelResult.abilities?.intelligence)} />
+    properties.health = <Label>{Math.round(totalHealth * target.health.current)}/{Math.round(totalHealth)}<NumberEditor value={Math.round(target.health.total)} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.total = v } })} /></Label>
+    properties.healthRegeneration = <Label>{getHealthRegeneration(modelResult.health.regeneration, modelResult.abilities?.strength)}<NumberEditor value={target.health.regeneration} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.regeneration = v } })} /></Label>
+    properties.armor = <Label>{Math.round(getArmor(modelResult.health.armor, modelResult.abilities))}<NumberEditor value={target.health.armor} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.armor = v } })} /></Label>
+    properties.magicResistance = <Label>{getMagicResistance(target.health.magicResistance, modelResult.bonusMagicResistance, modelResult.abilities?.intelligence)}<NumberEditor value={target.health.magicResistance} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.magicResistance = v } })} /></Label>
   }
   if (target.mana && modelResult.mana) {
     const totalMana = getTotalMana(modelResult.mana.total, modelResult.abilities?.intelligence)
-    properties.baseMana = <NumberEditor value={Math.round(target.mana.total)} setValue={v => updater(m => { if (m.mana) { m.mana.total = v } })} />
-    properties.totalMana = <NumberEditor value={Math.round(totalMana)} />
-    properties.currentMana = <NumberEditor value={Math.round(totalMana * target.mana.current)} />
-    properties.baseManaRegeneration = <NumberEditor value={target.mana.regeneration} setValue={v => updater(m => { if (m.mana) { m.mana.regeneration = v } })} />
-    properties.totalManaRegeneration = <NumberEditor value={getManaRegeneration(modelResult.mana.regeneration, modelResult.abilities?.intelligence)} />
+    properties.mana = <Label>{Math.round(totalMana * target.mana.current)}/{Math.round(totalMana)}<NumberEditor value={Math.round(target.mana.total)} style={{ width: '60px' }} setValue={v => updater(m => { if (m.mana) { m.mana.total = v } })} /></Label>
+    properties.manaRegeneration = <Label>{getManaRegeneration(modelResult.mana.regeneration, modelResult.abilities?.intelligence)}<NumberEditor value={target.mana.regeneration} style={{ width: '60px' }} setValue={v => updater(m => { if (m.mana) { m.mana.regeneration = v } })} /></Label>
   }
   if (target.attack && modelResult.attack) {
-    properties.baseDamage = <NumberEditor value={target.attack.damage} setValue={v => updater(m => { if (m.attack) { m.attack.damage = v } })} />
-    properties.damageRange = <NumberEditor value={target.attack.damageRange} setValue={v => updater(m => { if (m.attack) { m.attack.damageRange = v } })} />
-    properties.totalDamage = <NumberEditor value={Math.round(getAttackDamage(modelResult.attack.damage, modelResult.abilities))} />
-    properties.baseAttackSpeed = <NumberEditor value={target.attack.speed} setValue={v => updater(m => { if (m.attack) { m.attack.speed = v } })} />
-    properties.totalAttackSpeed = <NumberEditor value={getAttackSpeed(modelResult.attack.speed, modelResult.abilities?.agility)} />
-    properties.baseAttackTime = <NumberEditor value={target.attack.time} setValue={v => updater(m => { if (m.attack) { m.attack.time = v } })} />
-    properties.totalAttackTime = <NumberEditor value={Math.round(getAttackTime(target.attack.time, modelResult.attack.speed, modelResult.abilities?.agility))} />
-    properties.bulletSpeed = <NumberEditor value={target.attack.bulletSpeed} setValue={v => updater(m => { if (m.attack) { m.attack.bulletSpeed = v } })} />
-    properties.baseAttackRange = <NumberEditor value={target.attack.range} setValue={v => updater(m => { if (m.attack) { m.attack.range = v } })} />
-    properties.totalAttackRange = <NumberEditor value={modelResult.attack.range} />
+    properties.damage = <Label>{Math.round(getAttackDamage(modelResult.attack.damage, modelResult.abilities))}+-{target.attack.damageRange}<NumberEditor value={target.attack.damage} style={{ width: '60px' }} setValue={v => updater(m => { if (m.attack) { m.attack.damage = v } })} /></Label>
+    properties.attackSpeed = <Label>{getAttackSpeed(modelResult.attack.speed, modelResult.abilities?.agility)}<NumberEditor value={target.attack.speed} style={{ width: '60px' }} setValue={v => updater(m => { if (m.attack) { m.attack.speed = v } })} /></Label>
+    properties.attackTime = <Label>{Math.round(getAttackTime(target.attack.time, modelResult.attack.speed, modelResult.abilities?.agility))}<NumberEditor value={target.attack.time} style={{ width: '60px' }} setValue={v => updater(m => { if (m.attack) { m.attack.time = v } })} /></Label>
+    properties.bulletSpeed = <NumberEditor value={target.attack.bulletSpeed} style={{ width: '60px' }} setValue={v => updater(m => { if (m.attack) { m.attack.bulletSpeed = v } })} />
+    properties.attackRange = <Label>{modelResult.attack.range}<NumberEditor value={target.attack.range} style={{ width: '60px' }} setValue={v => updater(m => { if (m.attack) { m.attack.range = v } })} /></Label>
   }
   if (target.abilities && modelResult.abilities) {
-    properties.baseStrength = <NumberEditor value={target.abilities.strength} setValue={v => updater(m => { if (m.abilities) { m.abilities.strength = v } })} />
-    properties.totalStrength = <NumberEditor value={modelResult.abilities.strength} />
-    properties.baseAgility = <NumberEditor value={target.abilities.agility} setValue={v => updater(m => { if (m.abilities) { m.abilities.agility = v } })} />
-    properties.totalAgility = <NumberEditor value={modelResult.abilities.agility} />
-    properties.baseIntelligence = <NumberEditor value={target.abilities.intelligence} setValue={v => updater(m => { if (m.abilities) { m.abilities.intelligence = v } })} />
-    properties.totalIntelligence = <NumberEditor value={modelResult.abilities.intelligence} />
+    properties.strength = <Label>{modelResult.abilities.strength}<NumberEditor value={target.abilities.strength} style={{ width: '60px' }} setValue={v => updater(m => { if (m.abilities) { m.abilities.strength = v } })} /></Label>
+    properties.agility = <Label>{modelResult.abilities.agility}<NumberEditor value={target.abilities.agility} style={{ width: '60px' }} setValue={v => updater(m => { if (m.abilities) { m.abilities.agility = v } })} /></Label>
+    properties.intelligence = <Label>{modelResult.abilities.intelligence}<NumberEditor value={target.abilities.intelligence} style={{ width: '60px' }} setValue={v => updater(m => { if (m.abilities) { m.abilities.intelligence = v } })} /></Label>
     properties.primary = <EnumEditor enums={['strength', 'agility', 'intelligence', 'universal']} value={target.abilities.primary} setValue={v => updater(m => { if (m.abilities) { m.abilities.primary = v } })} />
   }
   return (
@@ -62,7 +45,17 @@ export function Panel({ target, updater }: { target: Model, updater: (update: (c
         inline
         add={() => updater(m => { if (m.items) { m.items.push(selectedItem) } })}
         remove={i => updater(m => { if (m.items) { m.items.splice(i, 1) } })}
-        items={target.items.map(f => <Button>{items[f].name}</Button>)}
+        items={target.items.map(f => {
+          const item = items[f]
+          const cooldown = target.itemCooldowns?.find(c => c.itemIndex === f)?.cooldown
+          if (!item.ability) {
+            return <Label>{items[f].name}</Label>
+          }
+          return <Button onClick={() => {
+            if (!item.ability || cooldown) return
+            item.ability.act(f, updater)
+          }}>{items[f].name} {cooldown ? cooldown.toFixed(1) : ''}</Button>
+        })}
       />}
       <ObjectEditor inline properties={properties} />
     </div>

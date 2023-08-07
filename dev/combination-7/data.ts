@@ -16,7 +16,7 @@ export const initialModels: Model[] = [
     },
     mana: {
       total: 400,
-      current: 0.75,
+      current: 0.1,
       regeneration: 0.5,
     },
     attack: {
@@ -24,7 +24,7 @@ export const initialModels: Model[] = [
       damageRange: 2,
       speed: 100,
       time: 1700,
-      last: 0,
+      cooldown: 0,
       bulletSpeed: 900,
       range: 300,
     },
