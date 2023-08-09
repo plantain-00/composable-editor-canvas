@@ -422,6 +422,30 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
       })
     }
   }
+  const del = () => {
+    if (props.readOnly) return
+    if (range) {
+      setLocation(range.min)
+      setSelectionStart(undefined)
+      props.setState(draft => {
+        inputInlineRange(draft, [])
+      })
+      return
+    }
+    if (blockLocation === props.state.length - 1 && contentLocation === props.state[props.state.length - 1].children.length) {
+      return
+    }
+    if (contentLocation !== props.state[blockLocation].children.length) {
+      props.setState(draft => {
+        draft[blockLocation].children.splice(contentLocation, 1)
+      })
+    } else {
+      props.setState(draft => {
+        draft[blockLocation].children.push(...draft[blockLocation + 1].children)
+        draft.splice(blockLocation + 1, 1)
+      })
+    }
+  }
   const arrowLeft = (shift = false) => {
     if (!shift && range) {
       setSelectionStart(undefined)
@@ -657,6 +681,7 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
     }
     if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
     if (e.key === 'Backspace') return backspace()
+    if (e.key === 'Delete') return del()
     if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
     if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
     if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)

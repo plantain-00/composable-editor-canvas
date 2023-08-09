@@ -1,7 +1,7 @@
 import React from "react";
 import { produce } from 'immer'
 import { getTwoPointsDistance, pointIsInRegion, reactCanvasRenderTarget, useDragSelect, useKey, useRefState, useWindowSize } from "../src";
-import { Bullet, Model } from './combination-7/model'
+import { Bullet, ModelStatus } from './combination-7/model'
 import { initialModels } from "./combination-7/data";
 import { updateModels } from "./combination-7/tick";
 import { Panel } from "./combination-7/panel";
@@ -14,11 +14,11 @@ export function Combination7() {
   const [bullets, setBullets, bulletsRef] = useRefState<Bullet[]>([])
   const [selected, setSelected] = React.useState<number[]>([])
   const [, setTime, timeRef] = useRefState(0)
-  const attacking = React.useRef(false)
+  const status = React.useRef<ModelStatus>()
 
   let panel: JSX.Element | undefined
   if (selected.length > 0) {
-    panel = <Panel target={models[selected[0]]} updater={(update: (content: Model) => void) => {
+    panel = <Panel target={models[selected[0]]} status={status} updater={update => {
       setModels(produce(models, draft => {
         update(draft[0])
       }))
@@ -52,7 +52,9 @@ export function Combination7() {
     }))
   }, [models, setModels, selected])
   useKey(e => e.key === 'a', () => {
-    attacking.current = true
+    status.current = {
+      type: 'attack'
+    }
   })
 
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
@@ -65,18 +67,18 @@ export function Combination7() {
     } else {
       for (const [i, model] of models.entries()) {
         if (getTwoPointsDistance(model.position, start) <= model.size) {
-          if (attacking.current) {
-            attacking.current = false
+          if (status.current) {
             setModels(produce(models, draft => {
               for (const j of selected) {
-                if (draft[j].canControl) {
+                if (draft[j].canControl && status.current) {
                   draft[j].action = {
-                    type: 'attack',
+                    ...status.current,
                     target: i,
                   }
                 }
               }
             }))
+            status.current = undefined
             break
           }
           setSelected([i])

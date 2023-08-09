@@ -2,6 +2,7 @@ import { produce } from 'immer'
 import { getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
 import { Bullet, ItemCooldown, Model } from "./model"
 import { getArmor, getAttackDamage, getAttackTime, getDamageAfterArmor, getHealthRegeneration, getManaRegeneration, getModelResult, getTotalHealth, getTotalMana } from './utils'
+import { items, updateItemCooldown } from './items'
 
 export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
   const newModels = [...models]
@@ -14,24 +15,32 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
     const target = newModels[bullet.target]
     const d = getTwoPointsDistance(bullet.position, target.position) - target.size
     if (d <= s) {
-      if (target.health && source.attack) {
+      if (target.health) {
         const sourceResult = getModelResult(source)
         const targetResult = getModelResult(target)
-        const armor = getArmor(targetResult.health?.armor, targetResult.abilities)
-        const damage = getDamageAfterArmor(getAttackDamage(sourceResult.attack?.damage, sourceResult.abilities) + Math.random() * source.attack.damageRange, armor)
-        const totalHealth = getTotalHealth(targetResult.health?.total, targetResult.abilities?.strength)
-        const health = Math.max(0, target.health.current - damage / totalHealth)
-        newModels[bullet.target] = produce(target, draft => {
-          if (draft.health) {
-            draft.health.current = health
+        if (bullet.itemIndex !== undefined) {
+          const newModel = items[bullet.itemIndex].ability?.cast?.hit(target, targetResult)
+          if (newModel) {
+            newModels[bullet.target] = newModel
+            changed = true
           }
-        })
-        if (health === 0) {
-          newModels[bullet.source] = produce(source, draft => {
-            draft.action = undefined
+        } else if (source.attack) {
+          const armor = getArmor(targetResult.health?.armor, targetResult.abilities)
+          const totalHealth = getTotalHealth(targetResult.health?.total, targetResult.abilities?.strength)
+          const damage = getDamageAfterArmor(getAttackDamage(sourceResult.attack?.damage, sourceResult.abilities) + Math.random() * source.attack.damageRange, armor)
+          const health = Math.max(0, target.health.current - damage / totalHealth)
+          newModels[bullet.target] = produce(target, draft => {
+            if (draft.health) {
+              draft.health.current = health
+            }
           })
+          if (health === 0) {
+            newModels[bullet.source] = produce(source, draft => {
+              draft.action = undefined
+            })
+          }
+          changed = true
         }
-        changed = true
       }
     } else {
       const p = getPointByLengthAndDirection(bullet.position, s, target.position)
@@ -68,46 +77,108 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       model = newModels[i]
     }
 
+    if (model.itemCooldowns && model.itemCooldowns.length > 0) {
+      const newItemCooldowns: ItemCooldown[] = []
+      for (const itemCooldown of model.itemCooldowns) {
+        const cooldown = Math.max(0, itemCooldown.cooldown - t)
+        if (cooldown) {
+          newItemCooldowns.push({
+            itemIndex: itemCooldown.itemIndex,
+            cooldown,
+          })
+        }
+      }
+      newModels[i] = produce(model, draft => {
+        draft.itemCooldowns = newItemCooldowns
+      })
+      changed = true
+      model = newModels[i]
+    }
+
     if (model.action) {
       if (model.action.type === 'attack') {
         const target = newModels[model.action.target]
         const newFacing = getTwoPointsAngle(target.position, model.position)
-        if (target.health && target.health.current > 0 && model.attack && modelResult.attack) {
-          if (getTwoPointsDistance(model.position, target.position) > modelResult.attack.range + model.size + target.size) {
-            const s = t * modelResult.speed
-            const p = getPointByLengthAndDirection(model.position, s, target.position)
-            newModels[i] = produce(model, draft => {
-              draft.position = p
-              draft.facing = newFacing
-            })
-            changed = true
-            continue
-          }
-          const attackSpeed = getAttackTime(model.attack.time, modelResult.attack?.speed, modelResult.abilities?.agility)
-          if (model.attack.cooldown === 0) {
+        if (target.health && target.health.current > 0) {
+          const distance = getTwoPointsDistance(model.position, target.position) - model.size - target.size
+          if (model.action.itemIndex !== undefined) {
+            const itemIndex = model.action.itemIndex
+            const item = items[itemIndex]
+            if (item.ability?.cast) {
+              if (distance > item.ability.cast.range) {
+                const s = t * modelResult.speed
+                const p = getPointByLengthAndDirection(model.position, s, target.position)
+                newModels[i] = produce(model, draft => {
+                  draft.position = p
+                  draft.facing = newFacing
+                })
+                changed = true
+                continue
+              }
+              const cooldown = model.itemCooldowns?.find(c => c.itemIndex === itemIndex)?.cooldown
+              if (!cooldown) {
+                newModels[i] = produce(model, draft => {
+                  draft.facing = newFacing
+                  if (item.ability) {
+                    updateItemCooldown(draft, itemIndex, item.ability.cooldown)
+                    item.ability.launch(itemIndex, update => {
+                      update(draft)
+                    })
+                  }
+                })
+                newBullets.push({
+                  position: getPointByLengthAndDirection(model.position, model.size, target.position),
+                  source: i,
+                  target: model.action.target,
+                  itemIndex,
+                  speed: item.ability.cast.bulletSpeed,
+                })
+                changed = true
+                continue
+              }
+              newModels[i] = produce(model, draft => {
+                draft.facing = newFacing
+              })
+              changed = true
+              continue
+            }
+          } else if (model.attack && modelResult.attack) {
+            if (distance > modelResult.attack.range) {
+              const s = t * modelResult.speed
+              const p = getPointByLengthAndDirection(model.position, s, target.position)
+              newModels[i] = produce(model, draft => {
+                draft.position = p
+                draft.facing = newFacing
+              })
+              changed = true
+              continue
+            }
+            const attackSpeed = getAttackTime(model.attack.time, modelResult.attack?.speed, modelResult.abilities?.agility)
+            if (model.attack.cooldown === 0) {
+              newModels[i] = produce(model, draft => {
+                draft.facing = newFacing
+                if (draft.attack) {
+                  draft.attack.cooldown = attackSpeed * 0.001
+                }
+              })
+              newBullets.push({
+                position: getPointByLengthAndDirection(model.position, model.size, target.position),
+                source: i,
+                target: model.action.target,
+                speed: model.attack.bulletSpeed,
+              })
+              changed = true
+              continue
+            }
             newModels[i] = produce(model, draft => {
               draft.facing = newFacing
               if (draft.attack) {
-                draft.attack.cooldown = attackSpeed * 0.001
+                draft.attack.cooldown = Math.max(0, draft.attack.cooldown - t)
               }
-            })
-            newBullets.push({
-              position: getPointByLengthAndDirection(model.position, model.size, target.position),
-              source: i,
-              target: model.action.target,
-              speed: model.attack.bulletSpeed,
             })
             changed = true
             continue
           }
-          newModels[i] = produce(model, draft => {
-            draft.facing = newFacing
-            if (draft.attack) {
-              draft.attack.cooldown = Math.max(0, draft.attack.cooldown - t)
-            }
-          })
-          changed = true
-          continue
         }
         if (newFacing !== model.facing) {
           newModels[i] = produce(model, draft => {
@@ -154,23 +225,6 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
         })
         changed = true
       }
-    }
-
-    if (model.itemCooldowns && model.itemCooldowns.length > 0) {
-      const newItemCooldowns: ItemCooldown[] = []
-      for (const itemCooldown of model.itemCooldowns) {
-        const cooldown = Math.max(0, itemCooldown.cooldown - t)
-        if (cooldown) {
-          newItemCooldowns.push({
-            itemIndex: itemCooldown.itemIndex,
-            cooldown,
-          })
-        }
-      }
-      newModels[i] = produce(model, draft => {
-        draft.itemCooldowns = newItemCooldowns
-      })
-      changed = true
     }
   }
   return {
