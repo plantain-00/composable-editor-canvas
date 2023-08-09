@@ -1,10 +1,14 @@
 import React from "react"
 import { ArrayEditor, BooleanEditor, Label, EnumEditor, NumberEditor, ObjectEditor, Button } from "../../src"
 import { getArmor, getAttackDamage, getAttackSpeed, getAttackTime, getHealthRegeneration, getMagicResistance, getManaRegeneration, getModelResult, getTotalHealth, getTotalMana } from "./utils"
-import { Model, Updater } from "./model"
+import { Model, ModelStatus, Updater } from "./model"
 import { items } from "./items"
 
-export function Panel({ target, updater }: { target: Model, updater: Updater }) {
+export function Panel({ target, updater, status }: {
+  target: Model
+  updater: Updater
+  status: React.MutableRefObject<ModelStatus | undefined>
+}) {
   const [selectedItem, setSelectedItem] = React.useState(0)
   const modelResult = getModelResult(target)
   const properties: Record<string, JSX.Element> = {
@@ -18,9 +22,11 @@ export function Panel({ target, updater }: { target: Model, updater: Updater }) 
     properties.armor = <Label>{Math.round(getArmor(modelResult.health.armor, modelResult.abilities))}<NumberEditor value={target.health.armor} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.armor = v } })} /></Label>
     properties.magicResistance = <Label>{getMagicResistance(target.health.magicResistance, modelResult.bonusMagicResistance, modelResult.abilities?.intelligence)}<NumberEditor value={target.health.magicResistance} style={{ width: '60px' }} setValue={v => updater(m => { if (m.health) { m.health.magicResistance = v } })} /></Label>
   }
+  let mana: number | undefined
   if (target.mana && modelResult.mana) {
     const totalMana = getTotalMana(modelResult.mana.total, modelResult.abilities?.intelligence)
-    properties.mana = <Label>{Math.round(totalMana * target.mana.current)}/{Math.round(totalMana)}<NumberEditor value={Math.round(target.mana.total)} style={{ width: '60px' }} setValue={v => updater(m => { if (m.mana) { m.mana.total = v } })} /></Label>
+    mana = Math.round(totalMana * target.mana.current)
+    properties.mana = <Label>{mana}/{Math.round(totalMana)}<NumberEditor value={Math.round(target.mana.total)} style={{ width: '60px' }} setValue={v => updater(m => { if (m.mana) { m.mana.total = v } })} /></Label>
     properties.manaRegeneration = <Label>{getManaRegeneration(modelResult.mana.regeneration, modelResult.abilities?.intelligence)}<NumberEditor value={target.mana.regeneration} style={{ width: '60px' }} setValue={v => updater(m => { if (m.mana) { m.mana.regeneration = v } })} /></Label>
   }
   if (target.attack && modelResult.attack) {
@@ -51,9 +57,17 @@ export function Panel({ target, updater }: { target: Model, updater: Updater }) 
           if (!item.ability) {
             return <Label>{items[f].name}</Label>
           }
-          return <Button onClick={() => {
-            if (!item.ability || cooldown) return
-            item.ability.act(f, updater)
+          const disabled = !!cooldown || mana === undefined || mana < item.ability.mana
+          return <Button style={{ opacity: disabled ? 0.5 : 1 }} onClick={() => {
+            if (!item.ability || disabled) return
+            if (item.ability.cast) {
+              status.current = {
+                type: 'attack',
+                itemIndex: f,
+              }
+              return
+            }
+            item.ability.launch(f, updater)
           }}>{items[f].name} {cooldown ? cooldown.toFixed(1) : ''}</Button>
         })}
       />}

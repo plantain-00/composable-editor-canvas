@@ -1,4 +1,5 @@
 import { Position } from "../../src"
+import { getModelResult } from './utils'
 
 export interface Model {
   position: Position
@@ -50,6 +51,7 @@ export interface Bullet {
   source: number
   target: number
   speed: number
+  itemIndex?: number
 }
 
 export interface Item {
@@ -72,7 +74,13 @@ export interface Item {
 
 export interface Ability {
   cooldown: number
-  act(itemIndex: number, updater: Updater): void
+  mana: number
+  cast?: {
+    range: number
+    bulletSpeed: number
+    hit(target: Model, targetResult: ReturnType<typeof getModelResult>): Model | undefined
+  }
+  launch(itemIndex: number, updater: Updater): void
 }
 
 export type Action = ActionMove | ActionAttack
@@ -85,6 +93,9 @@ export interface ActionMove {
 export interface ActionAttack {
   type: 'attack'
   target: number
+  itemIndex?: number
 }
+
+export type ModelStatus = Omit<ActionAttack, 'target'>
 
 export type Updater = (update: (content: Model) => void) => void

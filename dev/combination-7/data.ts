@@ -16,7 +16,7 @@ export const initialModels: Model[] = [
     },
     mana: {
       total: 400,
-      current: 0.1,
+      current: 0.5,
       regeneration: 0.5,
     },
     attack: {

@@ -74,6 +74,23 @@ export function useFlowLayoutEditor<T>(props: {
       draft.splice(location - 1, 1)
     })
   }
+  const del = () => {
+    if (props.readOnly) return
+    if (range) {
+      setLocation(range.min)
+      setSelectionStart(undefined)
+      props.setState(draft => {
+        draft.splice(range.min, range.size)
+      })
+      return
+    }
+    if (location === props.state.length) {
+      return
+    }
+    props.setState(draft => {
+      draft.splice(location, 1)
+    })
+  }
   const arrowLeft = (shift = false) => {
     if (!shift && range) {
       setSelectionStart(undefined)
@@ -163,6 +180,7 @@ export function useFlowLayoutEditor<T>(props: {
     }
     if (['CapsLock', 'Tab', 'Shift', 'Meta', 'Escape', 'Control'].includes(e.key)) return
     if (e.key === 'Backspace') return backspace()
+    if (e.key === 'Delete') return del()
     if (e.key === 'ArrowLeft') return arrowLeft(e.shiftKey)
     if (e.key === 'ArrowRight') return arrowRight(e.shiftKey)
     if (e.key === 'ArrowUp') return arrowUp(e.shiftKey)
