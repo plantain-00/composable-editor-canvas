@@ -6,6 +6,7 @@ import { initialModels } from "./combination-7/data";
 import { updateModels } from "./combination-7/tick";
 import { Panel } from "./combination-7/panel";
 import { renderModels } from "./combination-7/render";
+import { units } from "./combination-7/units";
 
 export function Combination7() {
   const target = reactCanvasRenderTarget
@@ -66,7 +67,7 @@ export function Combination7() {
       setSelected(Array.from(models.entries()).filter(([, m]) => pointIsInRegion(m.position, region)).map(([i]) => i))
     } else {
       for (const [i, model] of models.entries()) {
-        if (getTwoPointsDistance(model.position, start) <= model.size) {
+        if (getTwoPointsDistance(model.position, start) <= units[model.unit].size) {
           if (status.current) {
             setModels(produce(models, draft => {
               for (const j of selected) {

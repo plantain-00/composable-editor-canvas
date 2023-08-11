@@ -2,22 +2,29 @@ import { Position } from "../../src"
 import { getModelResult } from './utils'
 
 export interface Model {
+  unit: number
   position: Position
-  speed: number
   action?: Action
-  size: number
   facing: number
   canControl: boolean
+  health?: number
+  mana?: number
+  attackCooldown?: number
+  items?: number[]
+  itemCooldowns?: ItemCooldown[]
+}
+
+export interface Unit {
+  speed: number
+  size: number
   health?: {
     total: number
-    current: number
     regeneration: number
     armor: number
     magicResistance: number
   }
   mana?: {
     total: number
-    current: number
     regeneration: number
   }
   attack?: {
@@ -25,13 +32,10 @@ export interface Model {
     damageRange: number
     speed: number
     time: number
-    cooldown: number
     bulletSpeed: number
     range: number
   }
-  abilities?: Abilities
-  items?: number[]
-  itemCooldowns?: ItemCooldown[]
+  attributes?: Attributes
 }
 
 export interface ItemCooldown {
@@ -39,7 +43,7 @@ export interface ItemCooldown {
   cooldown: number
 }
 
-export interface Abilities {
+export interface Attributes {
   strength: number
   agility: number
   intelligence: number

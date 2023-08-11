@@ -1,24 +1,26 @@
 import { getPointByLengthAndAngle, reactCanvasRenderTarget } from "../../src";
 import { Bullet, Model } from "./model";
+import { units } from "./units";
 
 export function renderModels(models: Model[], bullets: Bullet[], selected: number[]) {
   const target = reactCanvasRenderTarget
   const children = models.map((m, i) => {
+    const size = units[m.unit].size
     const color = selected.includes(i) ? m.canControl ? 0x00ff00 : 0x0000ff : undefined
     const result = [
-      target.renderCircle(m.position.x, m.position.y, m.size, { strokeColor: color }),
+      target.renderCircle(m.position.x, m.position.y, size, { strokeColor: color }),
       target.renderPolyline([
-        getPointByLengthAndAngle(m.position, m.size, m.facing),
-        getPointByLengthAndAngle(m.position, m.size * 2, m.facing),
+        getPointByLengthAndAngle(m.position, size, m.facing),
+        getPointByLengthAndAngle(m.position, size * 2, m.facing),
       ], { strokeColor: color }),
     ]
-    if (m.health) {
+    if (m.health !== undefined) {
       const height = 6
-      const width = m.size
-      const rate = m.health.current
+      const width = size
+      const rate = m.health
       result.push(
-        target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, width, height),
-        target.renderRect(m.position.x - width / 2, m.position.y - m.size - height, rate * m.size, height, {
+        target.renderRect(m.position.x - width / 2, m.position.y - size - height, width, height),
+        target.renderRect(m.position.x - width / 2, m.position.y - size - height, rate * size, height, {
           fillColor: rate > 0.67 ? 0x00ff00 : rate > 0.33 ? 0xffff00 : 0x000000,
         }),
       )

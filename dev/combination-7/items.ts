@@ -1,6 +1,6 @@
 import { produce } from 'immer'
 import { Item, Model } from './model'
-import { getMagicResistance, getModelResult, getTotalHealth, getTotalMana } from './utils'
+import { getModelResult } from './utils'
 
 export const items: Item[] = [
   {
@@ -48,10 +48,11 @@ export const items: Item[] = [
       mana: 0,
       launch(itemIndex, updater) {
         updater(m => {
-          if (m.mana) {
+          if (m.mana !== undefined) {
             const modelResult = getModelResult(m)
-            const totalMana = getTotalMana(m.mana.total, modelResult.abilities?.intelligence)
-            m.mana.current = Math.min(m.mana.current + 175 / totalMana, 1)
+            if (modelResult.mana) {
+              m.mana = Math.min(m.mana + 175 / modelResult.mana.total, 1)
+            }
           }
           const item = items[itemIndex]
           if (item.ability) {
@@ -73,25 +74,24 @@ export const items: Item[] = [
         range: 300,
         bulletSpeed: 3000,
         hit(target, targetResult) {
-          if (!targetResult.health || !target.health) return
-          const magicResistance = getMagicResistance(targetResult.health.magicResistance, targetResult.bonusMagicResistance, targetResult.abilities?.intelligence)
-          const totalHealth = getTotalHealth(targetResult.health?.total, targetResult.abilities?.strength)
+          if (!targetResult.health || target.health === undefined) return
+          const magicResistance = targetResult.health.magicResistance
+          const totalHealth = targetResult.health.total
           const damage = 400 * (1 - magicResistance)
-          const health = Math.max(0, target.health.current - damage / totalHealth)
+          const health = Math.max(0, target.health - damage / totalHealth)
           return produce(target, draft => {
-            if (draft.health) {
-              draft.health.current = health
-            }
+            draft.health = health
           })
         },
       },
       launch(itemIndex, updater) {
         updater(m => {
           const item = items[itemIndex]
-          if (m.mana && item.ability) {
+          if (m.mana !== undefined && item.ability) {
             const modelResult = getModelResult(m)
-            const totalMana = getTotalMana(m.mana.total, modelResult.abilities?.intelligence)
-            m.mana.current = Math.min(m.mana.current - item.ability.mana / totalMana, 1)
+            if (modelResult.mana) {
+              m.mana = Math.min(m.mana - item.ability.mana / modelResult.mana.total, 1)
+            }
             updateItemCooldown(m, itemIndex, item.ability.cooldown)
           }
         })
