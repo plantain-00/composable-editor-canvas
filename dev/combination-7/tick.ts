@@ -1,8 +1,9 @@
 import { produce } from 'immer'
 import { getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
 import { Bullet, ItemCooldown, Model } from "./model"
-import { getArmor, getAttackDamage, getAttackTime, getDamageAfterArmor, getHealthRegeneration, getManaRegeneration, getModelResult, getTotalHealth, getTotalMana } from './utils'
+import { getDamageAfterArmor, getModelResult } from './utils'
 import { items, updateItemCooldown } from './items'
+import { units } from './units'
 
 export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
   const newModels = [...models]
@@ -13,9 +14,9 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
     const s = t * bullet.speed
     const source = newModels[bullet.source]
     const target = newModels[bullet.target]
-    const d = getTwoPointsDistance(bullet.position, target.position) - target.size
+    const d = getTwoPointsDistance(bullet.position, target.position) - units[target.unit].size
     if (d <= s) {
-      if (target.health) {
+      if (units[target.unit].health) {
         const sourceResult = getModelResult(source)
         const targetResult = getModelResult(target)
         if (bullet.itemIndex !== undefined) {
@@ -24,15 +25,11 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
             newModels[bullet.target] = newModel
             changed = true
           }
-        } else if (source.attack) {
-          const armor = getArmor(targetResult.health?.armor, targetResult.abilities)
-          const totalHealth = getTotalHealth(targetResult.health?.total, targetResult.abilities?.strength)
-          const damage = getDamageAfterArmor(getAttackDamage(sourceResult.attack?.damage, sourceResult.abilities) + Math.random() * source.attack.damageRange, armor)
-          const health = Math.max(0, target.health.current - damage / totalHealth)
+        } else if (sourceResult.attack && targetResult.health) {
+          const damage = getDamageAfterArmor(sourceResult.attack.damage + Math.random() * sourceResult.attack.damageRange, targetResult.health.armor)
+          const health = Math.max(0, (targetResult.health.current - damage) / targetResult.health.total)
           newModels[bullet.target] = produce(target, draft => {
-            if (draft.health) {
-              draft.health.current = health
-            }
+            draft.health = health
           })
           if (health === 0) {
             newModels[bullet.source] = produce(source, draft => {
@@ -53,24 +50,24 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
   for (const i of newModels.keys()) {
     let model = newModels[i]
     const modelResult = getModelResult(model)
-    if (model.health && modelResult.health && model.health.regeneration && model.health.current > 0 && model.health.current < 1) {
-      const h = t * getHealthRegeneration(modelResult.health.regeneration, modelResult.abilities?.strength)
-      const totalHealth = getTotalHealth(modelResult.health.total, modelResult.abilities?.strength)
+    if (model.health !== undefined && modelResult.health && modelResult.health.regeneration && model.health > 0 && model.health < 1) {
+      const h = t * modelResult.health.regeneration
+      const totalHealth = modelResult.health.total
       newModels[i] = produce(model, draft => {
         if (draft.health) {
-          draft.health.current = Math.min(draft.health.current + h / totalHealth, 1)
+          draft.health = Math.min(draft.health + h / totalHealth, 1)
         }
       })
       changed = true
       model = newModels[i]
     }
 
-    if (model.mana && modelResult.mana && model.mana.regeneration && model.mana.current < 1) {
-      const h = t * getManaRegeneration(modelResult.mana.regeneration, modelResult.abilities?.intelligence)
-      const totalMana = getTotalMana(modelResult.mana.total, modelResult.abilities?.intelligence)
+    if (model.mana !== undefined && modelResult.mana && modelResult.mana.regeneration && model.mana < 1) {
+      const h = t * modelResult.mana.regeneration
+      const totalMana = modelResult.mana.total
       newModels[i] = produce(model, draft => {
         if (draft.mana) {
-          draft.mana.current = Math.min(draft.mana.current + h / totalMana, 1)
+          draft.mana = Math.min(draft.mana + h / totalMana, 1)
         }
       })
       changed = true
@@ -99,8 +96,8 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       if (model.action.type === 'attack') {
         const target = newModels[model.action.target]
         const newFacing = getTwoPointsAngle(target.position, model.position)
-        if (target.health && target.health.current > 0) {
-          const distance = getTwoPointsDistance(model.position, target.position) - model.size - target.size
+        if (target.health && target.health > 0) {
+          const distance = getTwoPointsDistance(model.position, target.position) - units[model.unit].size - units[target.unit].size
           if (model.action.itemIndex !== undefined) {
             const itemIndex = model.action.itemIndex
             const item = items[itemIndex]
@@ -119,6 +116,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
               if (!cooldown) {
                 newModels[i] = produce(model, draft => {
                   draft.facing = newFacing
+                  draft.action = undefined
                   if (item.ability) {
                     updateItemCooldown(draft, itemIndex, item.ability.cooldown)
                     item.ability.launch(itemIndex, update => {
@@ -127,7 +125,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
                   }
                 })
                 newBullets.push({
-                  position: getPointByLengthAndDirection(model.position, model.size, target.position),
+                  position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
                   source: i,
                   target: model.action.target,
                   itemIndex,
@@ -142,7 +140,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
               changed = true
               continue
             }
-          } else if (model.attack && modelResult.attack) {
+          } else if (modelResult.attack) {
             if (distance > modelResult.attack.range) {
               const s = t * modelResult.speed
               const p = getPointByLengthAndDirection(model.position, s, target.position)
@@ -153,27 +151,25 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
               changed = true
               continue
             }
-            const attackSpeed = getAttackTime(model.attack.time, modelResult.attack?.speed, modelResult.abilities?.agility)
-            if (model.attack.cooldown === 0) {
+            const attackTime = modelResult.attack.time
+            if (modelResult.attack.cooldown === 0) {
               newModels[i] = produce(model, draft => {
                 draft.facing = newFacing
-                if (draft.attack) {
-                  draft.attack.cooldown = attackSpeed * 0.001
-                }
+                draft.attackCooldown = attackTime * 0.001
               })
               newBullets.push({
-                position: getPointByLengthAndDirection(model.position, model.size, target.position),
+                position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
                 source: i,
                 target: model.action.target,
-                speed: model.attack.bulletSpeed,
+                speed: modelResult.attack.bulletSpeed,
               })
               changed = true
               continue
             }
             newModels[i] = produce(model, draft => {
               draft.facing = newFacing
-              if (draft.attack) {
-                draft.attack.cooldown = Math.max(0, draft.attack.cooldown - t)
+              if (draft.attackCooldown) {
+                draft.attackCooldown = Math.max(0, draft.attackCooldown - t)
               }
             })
             changed = true
@@ -210,7 +206,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       for (let j = 0; j < newModels.length; j++) {
         if (j !== i) {
           const m = newModels[j]
-          if (getTwoPointsDistance(m.position, newModel.position) < m.size + newModel.size) {
+          if (getTwoPointsDistance(m.position, newModel.position) < units[m.unit].size + units[newModel.unit].size) {
             valid = false
             break
           }

@@ -1,50 +1,29 @@
 import { items } from "./items"
-import { Abilities, Model } from "./model"
-
-export function getTotalHealth(totalHealth = 0, strength = 0) {
-  return totalHealth + strength * 22
-}
-
-export function getTotalMana(totalMana: number, intelligence = 0) {
-  return totalMana + intelligence * 12
-}
-
-export function getAttackTime(attackTime: number, attackSpeed = 0, agility = 0) {
-  return attackTime * 100 / getAttackSpeed(attackSpeed, agility)
-}
-
-export function getAttackSpeed(attackSpeed: number, agility = 0) {
-  return attackSpeed + agility
-}
-
-export function getArmor(armor = 0, abilities?: Abilities) {
-  if (abilities?.primary === 'agility') {
-    armor += abilities.agility / 6
-  }
-  return armor
-}
-
-export function getAttackDamage(damage = 0, abilities?: Abilities) {
-  if (abilities) {
-    if (abilities.primary === 'strength') {
-      damage += abilities.strength
-    } else if (abilities.primary === 'agility') {
-      damage += abilities.agility
-    } else if (abilities.primary === 'intelligence') {
-      damage += abilities.intelligence
-    } else {
-      damage += (abilities.strength + abilities.agility + abilities.intelligence) * 0.7
-    }
-  }
-  return damage
-}
+import { Model } from "./model"
+import { units } from "./units"
 
 export function getModelResult(model: Model) {
-  let speed = model.speed
-  const abilities = model.abilities ? { ...model.abilities } : undefined
-  const health = model.health ? { ...model.health } : undefined
-  const mana = model.mana ? { ...model.mana } : undefined
-  const attack = model.attack ? { ...model.attack } : undefined
+  const unit = units[model.unit]
+  let speed = unit.speed
+  const attributes = unit.attributes ? {
+    ...unit.attributes,
+    base: unit.attributes,
+  } : undefined
+  const health = unit.health && model.health !== undefined ? {
+    ...unit.health,
+    current: model.health,
+    base: unit.health,
+  } : undefined
+  const mana = unit.mana && model.mana !== undefined ? {
+    ...unit.mana,
+    current: model.mana,
+    base: unit.mana,
+  } : undefined
+  const attack = unit.attack && model.attackCooldown !== undefined ? {
+    ...unit.attack,
+    cooldown: model.attackCooldown,
+    base: unit.attack,
+  } : undefined
   const bonusMagicResistance = 1
   if (model.items) {
     for (const i of model.items) {
@@ -65,33 +44,57 @@ export function getModelResult(model: Model) {
         if (item.attackSpeed) attack.speed += item.attackSpeed
         if (item.attackRange) attack.range += item.attackRange
       }
-      if (abilities) {
-        if (item.strength) abilities.strength += item.strength
-        if (item.agility) abilities.agility += item.agility
-        if (item.intelligence) abilities.intelligence += item.intelligence
+      if (attributes) {
+        if (item.strength) attributes.strength += item.strength
+        if (item.agility) attributes.agility += item.agility
+        if (item.intelligence) attributes.intelligence += item.intelligence
       }
     }
   }
+  if (health) {
+    if (attributes?.strength) {
+      health.total += attributes.strength * 22
+      health.regeneration += attributes.strength * 0.1
+    }
+    if (attributes?.agility) {
+      health.armor += attributes.agility / 6
+    }
+    if (attributes?.intelligence) {
+      health.magicResistance = 1 - (1 - (health.magicResistance + attributes.intelligence * 0.001)) * bonusMagicResistance
+    }
+    health.current *= health.total
+  }
+  if (mana) {
+    if (attributes?.intelligence) {
+      mana.total += attributes.intelligence * 12
+      mana.regeneration += attributes.intelligence * 0.05
+    }
+    mana.current *= mana.total
+  }
+  if (attack && attributes) {
+    if (attributes.primary === 'strength') {
+      attack.damage += attributes.strength
+    } else if (attributes.primary === 'agility') {
+      attack.damage += attributes.agility
+    } else if (attributes.primary === 'intelligence') {
+      attack.damage += attributes.intelligence
+    } else {
+      attack.damage += (attributes.strength + attributes.agility + attributes.intelligence) * 0.7
+    }
+    if (attributes.agility) {
+      attack.speed += attributes.agility
+    }
+    attack.time *= 100 / attack.speed
+  }
   return {
+    size: unit.size,
+    baseSpeed: unit.speed,
     speed,
     health,
     mana,
     attack,
-    bonusMagicResistance,
-    abilities,
+    attributes,
   }
-}
-
-export function getHealthRegeneration(regeneration: number, strength = 0) {
-  return regeneration + strength * 0.1
-}
-
-export function getManaRegeneration(regeneration: number, intelligence = 0) {
-  return regeneration + intelligence * 0.05
-}
-
-export function getMagicResistance(magicResistance: number, bonus = 1, intelligence = 0) {
-  return 1 - (1 - (magicResistance + intelligence * 0.001)) * bonus
 }
 
 export function getDamageAfterArmor(damage: number, armor: number) {
