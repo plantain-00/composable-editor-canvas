@@ -1,8 +1,8 @@
 import { produce } from 'immer'
 import { getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
-import { Bullet, ItemCooldown, Model } from "./model"
-import { getDamageAfterArmor, getModelResult } from './utils'
-import { items, updateItemCooldown } from './items'
+import { AbilityCooldown, Bullet, Model } from "./model"
+import { getAbilityFromIndex, getDamageAfterArmor, getModelResult } from './utils'
+import { updateAbilityCooldown } from './items'
 import { units } from './units'
 
 export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
@@ -19,8 +19,9 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       if (units[target.unit].health) {
         const sourceResult = getModelResult(source)
         const targetResult = getModelResult(target)
-        if (bullet.itemIndex !== undefined) {
-          const newModel = items[bullet.itemIndex].ability?.cast?.hit(target, targetResult)
+        if (bullet.ability) {
+          const ability = getAbilityFromIndex(bullet.ability)
+          const newModel = ability?.cast?.hit(target, targetResult)
           if (newModel) {
             newModels[bullet.target] = newModel
             changed = true
@@ -74,19 +75,20 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       model = newModels[i]
     }
 
-    if (model.itemCooldowns && model.itemCooldowns.length > 0) {
-      const newItemCooldowns: ItemCooldown[] = []
-      for (const itemCooldown of model.itemCooldowns) {
-        const cooldown = Math.max(0, itemCooldown.cooldown - t)
+    if (model.abilityCooldowns && model.abilityCooldowns.length > 0) {
+      const newAbilityCooldowns: AbilityCooldown[] = []
+      for (const abilityCooldown of model.abilityCooldowns) {
+        const cooldown = Math.max(0, abilityCooldown.cooldown - t)
         if (cooldown) {
-          newItemCooldowns.push({
-            itemIndex: itemCooldown.itemIndex,
+          newAbilityCooldowns.push({
+            index: abilityCooldown.index,
+            source: abilityCooldown.source,
             cooldown,
           })
         }
       }
       newModels[i] = produce(model, draft => {
-        draft.itemCooldowns = newItemCooldowns
+        draft.abilityCooldowns = newAbilityCooldowns
       })
       changed = true
       model = newModels[i]
@@ -98,11 +100,11 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
         const newFacing = getTwoPointsAngle(target.position, model.position)
         if (target.health && target.health > 0) {
           const distance = getTwoPointsDistance(model.position, target.position) - units[model.unit].size - units[target.unit].size
-          if (model.action.itemIndex !== undefined) {
-            const itemIndex = model.action.itemIndex
-            const item = items[itemIndex]
-            if (item.ability?.cast) {
-              if (distance > item.ability.cast.range) {
+          if (model.action.ability) {
+            const ability = getAbilityFromIndex(model.action.ability)
+            const { index, source } = model.action.ability
+            if (ability?.cast) {
+              if (distance > ability.cast.range) {
                 const s = t * modelResult.speed
                 const p = getPointByLengthAndDirection(model.position, s, target.position)
                 newModels[i] = produce(model, draft => {
@@ -112,24 +114,25 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
                 changed = true
                 continue
               }
-              const cooldown = model.itemCooldowns?.find(c => c.itemIndex === itemIndex)?.cooldown
+              const cooldown = model.abilityCooldowns?.find(c => c.source === source && c.index === index)?.cooldown
               if (!cooldown) {
                 newModels[i] = produce(model, draft => {
                   draft.facing = newFacing
                   draft.action = undefined
-                  if (item.ability) {
-                    updateItemCooldown(draft, itemIndex, item.ability.cooldown)
-                    item.ability.launch(itemIndex, update => {
-                      update(draft)
-                    })
-                  }
+                  updateAbilityCooldown(draft, index, source, ability.cooldown)
+                  ability.launch(index, update => {
+                    update(draft)
+                  })
                 })
                 newBullets.push({
                   position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
                   source: i,
                   target: model.action.target,
-                  itemIndex,
-                  speed: item.ability.cast.bulletSpeed,
+                  ability: {
+                    index,
+                    source,
+                  },
+                  speed: ability.cast.bulletSpeed,
                 })
                 changed = true
                 continue

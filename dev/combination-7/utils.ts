@@ -1,5 +1,6 @@
+import { abilities } from "./abilities"
 import { items } from "./items"
-import { Model } from "./model"
+import { AbilityIndex, Model } from "./model"
 import { units } from "./units"
 
 export function getModelResult(model: Model) {
@@ -99,4 +100,11 @@ export function getModelResult(model: Model) {
 
 export function getDamageAfterArmor(damage: number, armor: number) {
   return damage * (1 - (0.06 * armor) / (1 + 0.06 * Math.abs(armor)))
+}
+
+export function getAbilityFromIndex(ability: AbilityIndex) {
+  if (ability.source === 'abilities') {
+    return abilities[ability.index]
+  }
+  return items[ability.index].ability
 }

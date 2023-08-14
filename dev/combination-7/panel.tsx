@@ -3,6 +3,7 @@ import { ArrayEditor, BooleanEditor, Label, ObjectEditor, Button } from "../../s
 import { getModelResult } from "./utils"
 import { Model, ModelStatus, Updater } from "./model"
 import { items } from "./items"
+import { abilities } from "./abilities"
 
 export function Panel({ target, updater, status }: {
   target: Model
@@ -51,7 +52,7 @@ export function Panel({ target, updater, status }: {
         remove={i => updater(m => { if (m.items) { m.items.splice(i, 1) } })}
         items={target.items.map(f => {
           const item = items[f]
-          const cooldown = target.itemCooldowns?.find(c => c.itemIndex === f)?.cooldown
+          const cooldown = target.abilityCooldowns?.find(c => c.source === 'items' && c.index === f)?.cooldown
           if (!item.ability) {
             return <Label>{items[f].name}</Label>
           }
@@ -61,12 +62,37 @@ export function Panel({ target, updater, status }: {
             if (item.ability.cast) {
               status.current = {
                 type: 'attack',
-                itemIndex: f,
+                ability: {
+                  index: f,
+                  source: 'items',
+                },
               }
               return
             }
             item.ability.launch(f, updater)
           }}>{items[f].name} {cooldown ? cooldown.toFixed(1) : ''}</Button>
+        })}
+      />}
+      {target.abilities && <ArrayEditor
+        inline
+        items={target.abilities.map(f => {
+          const ability = abilities[f]
+          const cooldown = target.abilityCooldowns?.find(c => c.source === 'abilities' && c.index === f)?.cooldown
+          const disabled = !!cooldown || mana === undefined || mana < ability.mana
+          return <Button style={{ opacity: disabled ? 0.5 : 1 }} onClick={() => {
+            if (disabled) return
+            if (ability.cast) {
+              status.current = {
+                type: 'attack',
+                ability: {
+                  index: f,
+                  source: 'abilities',
+                },
+              }
+              return
+            }
+            ability.launch(f, updater)
+          }}>{abilities[f].name} {cooldown ? cooldown.toFixed(1) : ''}</Button>
         })}
       />}
       <ObjectEditor inline properties={properties} />

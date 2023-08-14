@@ -11,7 +11,8 @@ export interface Model {
   mana?: number
   attackCooldown?: number
   items?: number[]
-  itemCooldowns?: ItemCooldown[]
+  abilities?: number[]
+  abilityCooldowns?: AbilityCooldown[]
 }
 
 export interface Unit {
@@ -38,10 +39,13 @@ export interface Unit {
   attributes?: Attributes
 }
 
-export interface ItemCooldown {
-  itemIndex: number
+export interface AbilityCooldown {
+  index: number
   cooldown: number
+  source: AbilitySource
 }
+
+export type AbilitySource = 'items' | 'abilities'
 
 export interface Attributes {
   strength: number
@@ -55,7 +59,12 @@ export interface Bullet {
   source: number
   target: number
   speed: number
-  itemIndex?: number
+  ability?: AbilityIndex
+}
+
+export interface AbilityIndex {
+  index: number
+  source: AbilitySource
 }
 
 export interface Item {
@@ -77,6 +86,7 @@ export interface Item {
 }
 
 export interface Ability {
+  name: string
   cooldown: number
   mana: number
   cast?: {
@@ -84,7 +94,7 @@ export interface Ability {
     bulletSpeed: number
     hit(target: Model, targetResult: ReturnType<typeof getModelResult>): Model | undefined
   }
-  launch(itemIndex: number, updater: Updater): void
+  launch(index: number, updater: Updater): void
 }
 
 export type Action = ActionMove | ActionAttack
@@ -97,7 +107,7 @@ export interface ActionMove {
 export interface ActionAttack {
   type: 'attack'
   target: number
-  itemIndex?: number
+  ability?: AbilityIndex
 }
 
 export type ModelStatus = Omit<ActionAttack, 'target'>
