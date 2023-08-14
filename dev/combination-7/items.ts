@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { Item, Model } from './model'
+import { AbilitySource, Item, Model } from './model'
 import { getModelResult } from './utils'
 
 export const items: Item[] = [
@@ -44,9 +44,10 @@ export const items: Item[] = [
     mana: 250,
     speed: 45,
     ability: {
+      name: 'Replenish Mana',
       cooldown: 55,
       mana: 0,
-      launch(itemIndex, updater) {
+      launch(index, updater) {
         updater(m => {
           if (m.mana !== undefined) {
             const modelResult = getModelResult(m)
@@ -54,9 +55,9 @@ export const items: Item[] = [
               m.mana = Math.min(m.mana + 175 / modelResult.mana.total, 1)
             }
           }
-          const item = items[itemIndex]
+          const item = items[index]
           if (item.ability) {
-            updateItemCooldown(m, itemIndex, item.ability.cooldown)
+            updateAbilityCooldown(m, index, 'items', item.ability.cooldown)
           }
         })
       },
@@ -68,6 +69,7 @@ export const items: Item[] = [
     agility: 7,
     intelligence: 7,
     ability: {
+      name: 'Energy Burst',
       cooldown: 35,
       mana: 120,
       cast: {
@@ -84,15 +86,15 @@ export const items: Item[] = [
           })
         },
       },
-      launch(itemIndex, updater) {
+      launch(index, updater) {
         updater(m => {
-          const item = items[itemIndex]
+          const item = items[index]
           if (m.mana !== undefined && item.ability) {
             const modelResult = getModelResult(m)
             if (modelResult.mana) {
               m.mana = Math.min(m.mana - item.ability.mana / modelResult.mana.total, 1)
             }
-            updateItemCooldown(m, itemIndex, item.ability.cooldown)
+            updateAbilityCooldown(m, index, 'items', item.ability.cooldown)
           }
         })
       },
@@ -100,12 +102,12 @@ export const items: Item[] = [
   },
 ]
 
-export function updateItemCooldown(m: Model, itemIndex: number, cooldown: number) {
-  if (!m.itemCooldowns) m.itemCooldowns = []
-  const index = m.itemCooldowns.findIndex(c => c.itemIndex === itemIndex)
-  if (index >= 0) {
-    m.itemCooldowns[index].cooldown = cooldown
+export function updateAbilityCooldown(m: Model, index: number, source: AbilitySource, cooldown: number) {
+  if (!m.abilityCooldowns) m.abilityCooldowns = []
+  const abilityCooldown = m.abilityCooldowns.find(c => c.index === index)
+  if (abilityCooldown) {
+    abilityCooldown.cooldown = cooldown
   } else {
-    m.itemCooldowns.push({ itemIndex, cooldown })
+    m.abilityCooldowns.push({ index, cooldown, source })
   }
 }
