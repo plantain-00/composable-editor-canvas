@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
+import { Position, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
 import { AbilityCooldown, Bullet, Model } from "./model"
 import { getAbilityFromIndex, getDamageAfterArmor, getModelResult } from './utils'
 import { updateAbilityCooldown } from './items'
@@ -11,11 +11,17 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
 
   const newBullets: Bullet[] = []
   for (const bullet of bullets) {
-    const s = t * bullet.speed
     const source = newModels[bullet.source]
     const target = newModels[bullet.target]
-    const d = getTwoPointsDistance(bullet.position, target.position) - units[target.unit].size
-    if (d <= s) {
+    let position: Position | undefined
+    if (bullet.type === undefined) {
+      const s = t * bullet.speed
+      const d = getTwoPointsDistance(bullet.position, target.position) - units[target.unit].size
+      if (d > s) {
+        position = getPointByLengthAndDirection(bullet.position, s, target.position)
+      }
+    }
+    if (!position) {
       if (units[target.unit].health) {
         const sourceResult = getModelResult(source)
         const targetResult = getModelResult(target)
@@ -41,9 +47,11 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
         }
       }
     } else {
-      const p = getPointByLengthAndDirection(bullet.position, s, target.position)
+      const p = position
       newBullets.push(produce(bullet, draft => {
-        draft.position = p
+        if (draft.type === undefined) {
+          draft.position = p
+        }
       }))
     }
   }
@@ -124,6 +132,19 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
                     update(draft)
                   })
                 })
+                if (!ability.cast.bulletSpeed) {
+                  newBullets.push({
+                    type: 'instant',
+                    source: i,
+                    target: model.action.target,
+                    ability: {
+                      index,
+                      source,
+                    },
+                  })
+                  changed = true
+                  continue
+                }
                 newBullets.push({
                   position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
                   source: i,

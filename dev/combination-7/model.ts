@@ -54,12 +54,18 @@ export interface Attributes {
   primary: 'strength' | 'agility' | 'intelligence' | 'universal'
 }
 
-export interface Bullet {
+export type Bullet = {
+  type?: never
   position: Position
   source: number
   target: number
   speed: number
   ability?: AbilityIndex
+} | {
+  type: 'instant'
+  source: number
+  target: number
+  ability: AbilityIndex
 }
 
 export interface AbilityIndex {
@@ -91,7 +97,7 @@ export interface Ability {
   mana: number
   cast?: {
     range: number
-    bulletSpeed: number
+    bulletSpeed?: number
     hit(target: Model, targetResult: ReturnType<typeof getModelResult>): Model | undefined
   }
   launch(index: number, updater: Updater): void

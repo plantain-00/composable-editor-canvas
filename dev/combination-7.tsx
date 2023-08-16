@@ -59,7 +59,7 @@ export function Combination7() {
   })
 
   const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
-    if (end) {
+    if (end && Math.abs(start.x - end.x) > 10 && Math.abs(start.y - end.y) > 10 ) {
       const region = {
         start: { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y) },
         end: { x: Math.max(start.x, end.x), y: Math.max(start.y, end.y) },

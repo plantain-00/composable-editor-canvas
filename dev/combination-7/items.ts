@@ -74,7 +74,6 @@ export const items: Item[] = [
       mana: 120,
       cast: {
         range: 300,
-        bulletSpeed: 3000,
         hit(target, targetResult) {
           if (!targetResult.health || target.health === undefined) return
           const magicResistance = targetResult.health.magicResistance

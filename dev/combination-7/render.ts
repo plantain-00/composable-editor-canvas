@@ -27,6 +27,11 @@ export function renderModels(models: Model[], bullets: Bullet[], selected: numbe
     }
     return target.renderGroup(result)
   })
-  children.push(...bullets.map(b => target.renderCircle(b.position.x, b.position.y, 5)))
+  children.push(...bullets.map(b => {
+    if (b.type === 'instant') {
+      return target.renderEmpty()
+    }
+    return target.renderCircle(b.position.x, b.position.y, 5)
+  }))
   return children
 }
