@@ -1,6 +1,5 @@
-import { produce } from 'immer'
 import { AbilitySource, Item, Model } from './model'
-import { getModelResult } from './utils'
+import { attackMagicDamage, getModelResult } from './utils'
 
 export const items: Item[] = [
   {
@@ -75,31 +74,28 @@ export const items: Item[] = [
       cast: {
         range: 300,
         hit(target, targetResult) {
-          if (!targetResult.health || target.health === undefined) return
-          const magicResistance = targetResult.health.magicResistance
-          const totalHealth = targetResult.health.total
-          const damage = 400 * (1 - magicResistance)
-          const health = Math.max(0, target.health - damage / totalHealth)
-          return produce(target, draft => {
-            draft.health = health
-          })
+          return attackMagicDamage(target, targetResult, 400)
         },
       },
       launch(index, updater) {
         updater(m => {
-          const item = items[index]
-          if (m.mana !== undefined && item.ability) {
-            const modelResult = getModelResult(m)
-            if (modelResult.mana) {
-              m.mana = Math.min(m.mana - item.ability.mana / modelResult.mana.total, 1)
-            }
-            updateAbilityCooldown(m, index, 'items', item.ability.cooldown)
-          }
+          consumeItemMana(m, index)
         })
       },
     },
   },
 ]
+
+function consumeItemMana(m: Model, index: number) {
+  const item = items[index]
+  if (m.mana !== undefined && item.ability) {
+    const modelResult = getModelResult(m)
+    if (modelResult.mana) {
+      m.mana = Math.min(m.mana - item.ability.mana / modelResult.mana.total, 1)
+    }
+    updateAbilityCooldown(m, index, 'items', item.ability.cooldown)
+  }
+}
 
 export function updateAbilityCooldown(m: Model, index: number, source: AbilitySource, cooldown: number) {
   if (!m.abilityCooldowns) m.abilityCooldowns = []

@@ -1,7 +1,7 @@
 import { produce } from 'immer'
 import { Position, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
 import { AbilityCooldown, Bullet, Model } from "./model"
-import { getAbilityFromIndex, getDamageAfterArmor, getModelResult } from './utils'
+import { getAbilityFromIndex, getDamageAfterArmor, getModelResult, getModelsAroundPositionByRadiusExcept } from './utils'
 import { updateAbilityCooldown } from './items'
 import { units } from './units'
 
@@ -12,30 +12,42 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
   const newBullets: Bullet[] = []
   for (const bullet of bullets) {
     const source = newModels[bullet.source]
-    const target = newModels[bullet.target]
     let position: Position | undefined
     if (bullet.type === undefined) {
       const s = t * bullet.speed
+      const target = newModels[bullet.target]
       const d = getTwoPointsDistance(bullet.position, target.position) - units[target.unit].size
       if (d > s) {
         position = getPointByLengthAndDirection(bullet.position, s, target.position)
       }
+    } else if (bullet.type === 'position') {
+      const s = t * bullet.speed
+      const d = getTwoPointsDistance(bullet.position, bullet.target)
+      if (d > s) {
+        position = getPointByLengthAndDirection(bullet.position, s, bullet.target)
+      }
     }
     if (!position) {
-      if (units[target.unit].health) {
+      const targets = bullet.type === 'position'
+        ? getModelsAroundPositionByRadiusExcept(newModels, bullet.target, bullet.radius, bullet.source)
+        : [[bullet.target, newModels[bullet.target]] as const]
+      for (const [index, target] of targets) {
+        if (!units[target.unit].health) continue
         const sourceResult = getModelResult(source)
         const targetResult = getModelResult(target)
         if (bullet.ability) {
           const ability = getAbilityFromIndex(bullet.ability)
-          const newModel = ability?.cast?.hit(target, targetResult)
-          if (newModel) {
-            newModels[bullet.target] = newModel
-            changed = true
+          if (ability?.cast) {
+            const newModel = ability.cast.hit(target, targetResult)
+            if (newModel) {
+              newModels[index] = newModel
+              changed = true
+            }
           }
         } else if (sourceResult.attack && targetResult.health) {
           const damage = getDamageAfterArmor(sourceResult.attack.damage + Math.random() * sourceResult.attack.damageRange, targetResult.health.armor)
           const health = Math.max(0, (targetResult.health.current - damage) / targetResult.health.total)
-          newModels[bullet.target] = produce(target, draft => {
+          newModels[index] = produce(target, draft => {
             draft.health = health
           })
           if (health === 0) {
@@ -49,7 +61,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
     } else {
       const p = position
       newBullets.push(produce(bullet, draft => {
-        if (draft.type === undefined) {
+        if (draft.type === undefined || draft.type === 'position') {
           draft.position = p
         }
       }))
@@ -104,17 +116,28 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
 
     if (model.action) {
       if (model.action.type === 'attack') {
-        const target = newModels[model.action.target]
-        const newFacing = getTwoPointsAngle(target.position, model.position)
-        if (target.health && target.health > 0) {
-          const distance = getTwoPointsDistance(model.position, target.position) - units[model.unit].size - units[target.unit].size
+        let targetPosition: Position
+        let canAttack: boolean
+        let targetSize = 0
+        if (typeof model.action.target === 'number') {
+          const target = newModels[model.action.target]
+          targetPosition = target.position
+          canAttack = !!target.health && target.health > 0
+          targetSize = units[target.unit].size
+        } else {
+          targetPosition = model.action.target
+          canAttack = true
+        }
+        const newFacing = getTwoPointsAngle(targetPosition, model.position)
+        if (canAttack) {
+          const distance = getTwoPointsDistance(model.position, targetPosition) - units[model.unit].size - targetSize
           if (model.action.ability) {
             const ability = getAbilityFromIndex(model.action.ability)
             const { index, source } = model.action.ability
             if (ability?.cast) {
               if (distance > ability.cast.range) {
                 const s = t * modelResult.speed
-                const p = getPointByLengthAndDirection(model.position, s, target.position)
+                const p = getPointByLengthAndDirection(model.position, s, targetPosition)
                 newModels[i] = produce(model, draft => {
                   draft.position = p
                   draft.facing = newFacing
@@ -132,6 +155,24 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
                     update(draft)
                   })
                 })
+                if (typeof model.action.target !== 'number') {
+                  if (ability.cast.bulletSpeed && ability.cast.radius) {
+                    newBullets.push({
+                      type: 'position',
+                      position: getPointByLengthAndDirection(model.position, units[model.unit].size, targetPosition),
+                      source: i,
+                      target: targetPosition,
+                      speed: ability.cast.bulletSpeed,
+                      radius: ability.cast.radius,
+                      ability: {
+                        index,
+                        source,
+                      },
+                    })
+                    changed = true
+                  }
+                  continue
+                }
                 if (!ability.cast.bulletSpeed) {
                   newBullets.push({
                     type: 'instant',
@@ -146,7 +187,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
                   continue
                 }
                 newBullets.push({
-                  position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
+                  position: getPointByLengthAndDirection(model.position, units[model.unit].size, targetPosition),
                   source: i,
                   target: model.action.target,
                   ability: {
@@ -167,7 +208,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
           } else if (modelResult.attack) {
             if (distance > modelResult.attack.range) {
               const s = t * modelResult.speed
-              const p = getPointByLengthAndDirection(model.position, s, target.position)
+              const p = getPointByLengthAndDirection(model.position, s, targetPosition)
               newModels[i] = produce(model, draft => {
                 draft.position = p
                 draft.facing = newFacing
@@ -176,13 +217,13 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
               continue
             }
             const attackTime = modelResult.attack.time
-            if (modelResult.attack.cooldown === 0) {
+            if (modelResult.attack.cooldown === 0 && typeof model.action.target === 'number') {
               newModels[i] = produce(model, draft => {
                 draft.facing = newFacing
                 draft.attackCooldown = attackTime * 0.001
               })
               newBullets.push({
-                position: getPointByLengthAndDirection(model.position, units[model.unit].size, target.position),
+                position: getPointByLengthAndDirection(model.position, units[model.unit].size, targetPosition),
                 source: i,
                 target: model.action.target,
                 speed: modelResult.attack.bulletSpeed,

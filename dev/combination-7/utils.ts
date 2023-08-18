@@ -1,7 +1,9 @@
+import { produce } from 'immer'
 import { abilities } from "./abilities"
 import { items } from "./items"
 import { AbilityIndex, Model } from "./model"
 import { units } from "./units"
+import { Position, getTwoPointsDistance } from '../../src'
 
 export function getModelResult(model: Model) {
   const unit = units[model.unit]
@@ -98,6 +100,8 @@ export function getModelResult(model: Model) {
   }
 }
 
+export type ModelResult = ReturnType<typeof getModelResult>
+
 export function getDamageAfterArmor(damage: number, armor: number) {
   return damage * (1 - (0.06 * armor) / (1 + 0.06 * Math.abs(armor)))
 }
@@ -107,4 +111,28 @@ export function getAbilityFromIndex(ability: AbilityIndex) {
     return abilities[ability.index]
   }
   return items[ability.index].ability
+}
+
+export function attackPureDamage(target: Model, targetResult: ModelResult, value: number) {
+  if (!targetResult.health || target.health === undefined) return target
+  const totalHealth = targetResult.health.total
+  const health = Math.max(0, target.health - value / totalHealth)
+  return produce(target, draft => {
+    draft.health = health
+  })
+}
+
+export function attackMagicDamage(target: Model, targetResult: ModelResult, value: number) {
+  if (!targetResult.health || target.health === undefined) return target
+  const magicResistance = targetResult.health.magicResistance
+  const totalHealth = targetResult.health.total
+  const damage = value * (1 - magicResistance)
+  const health = Math.max(0, target.health - damage / totalHealth)
+  return produce(target, draft => {
+    draft.health = health
+  })
+}
+
+export function getModelsAroundPositionByRadiusExcept(models: Model[], position: Position, radius: number, index: number) {
+  return Array.from(models.entries()).filter(([i, m]) => i !== index && getTwoPointsDistance(m.position, position) - units[m.unit].size <= radius)
 }
