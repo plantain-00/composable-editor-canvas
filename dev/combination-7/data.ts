@@ -10,7 +10,7 @@ export const initialModels: Model[] = [
     mana: 0.5,
     attackCooldown: 0,
     items: [],
-    abilities: [0],
+    abilities: [0, 1],
   },
   {
     unit: 1,

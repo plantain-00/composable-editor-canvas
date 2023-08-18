@@ -21,7 +21,19 @@ export function renderModels(models: Model[], bullets: Bullet[], selected: numbe
       result.push(
         target.renderRect(m.position.x - width / 2, m.position.y - size - height, width, height),
         target.renderRect(m.position.x - width / 2, m.position.y - size - height, rate * size, height, {
-          fillColor: rate > 0.67 ? 0x00ff00 : rate > 0.33 ? 0xffff00 : 0x000000,
+          fillColor: 0x00ff00,
+        }),
+      )
+    }
+    if (m.mana !== undefined) {
+      const height = 6
+      const y = -6
+      const width = size
+      const rate = m.mana
+      result.push(
+        target.renderRect(m.position.x - width / 2, m.position.y - size - height - y, width, height),
+        target.renderRect(m.position.x - width / 2, m.position.y - size - height - y, rate * size, height, {
+          fillColor: 0x0000ff,
         }),
       )
     }

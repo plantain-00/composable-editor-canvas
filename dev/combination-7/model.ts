@@ -1,5 +1,5 @@
 import { Position } from "../../src"
-import { getModelResult } from './utils'
+import { ModelResult } from "./utils"
 
 export interface Model {
   unit: number
@@ -66,6 +66,14 @@ export type Bullet = {
   source: number
   target: number
   ability: AbilityIndex
+} | {
+  type: 'position'
+  position: Position
+  source: number
+  target: Position
+  speed: number
+  radius: number
+  ability: AbilityIndex
 }
 
 export interface AbilityIndex {
@@ -98,7 +106,8 @@ export interface Ability {
   cast?: {
     range: number
     bulletSpeed?: number
-    hit(target: Model, targetResult: ReturnType<typeof getModelResult>): Model | undefined
+    radius?: number
+    hit(target: Model, targetResult: ModelResult): Model
   }
   launch(index: number, updater: Updater): void
 }
@@ -112,10 +121,13 @@ export interface ActionMove {
 
 export interface ActionAttack {
   type: 'attack'
-  target: number
+  target: number | Position
   ability?: AbilityIndex
 }
 
-export type ModelStatus = Omit<ActionAttack, 'target'>
+export type ModelStatus = {
+  type: 'attack'
+  ability?: AbilityIndex
+}
 
 export type Updater = (update: (content: Model) => void) => void
