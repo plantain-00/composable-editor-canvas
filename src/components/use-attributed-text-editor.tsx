@@ -448,7 +448,7 @@ export function useAttributedTextEditor<T extends object>(props: {
     }
   }
   const positionToLocation = (p: Position, ignoreInvisible = true) => {
-    return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible) ?? layoutResult.length - 1
+    return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible)?.location ?? layoutResult.length - 1
   }
   const isPositionInRange = (p: Position) => {
     if (range) {
