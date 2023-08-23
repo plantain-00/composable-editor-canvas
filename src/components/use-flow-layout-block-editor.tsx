@@ -40,6 +40,7 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref, setLocation, location, contentHeight, setContentHeight, blockLocation,
     contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation(props)
 
+  const [lineEnd, setLineEnd] = React.useState(false)
   const arrowUp = (shift = false) => {
     if (!shift && range) {
       setSelectionStart(undefined)
@@ -94,7 +95,8 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
       }
       const loc = getFlowLayoutLocation(p, lineHeights, layoutResult[i], scrollY, c => props.getWidth(c, props.state[i]), ignoreInvisible, props.getHeight)
       if (loc !== undefined) {
-        return skipVoidBlock([i, loc], forward)
+        setLineEnd(loc.lineEnd)
+        return skipVoidBlock([i, loc.location], forward)
       }
     }
     return [props.state.length - 1, props.state[props.state.length - 1].children.length]
@@ -186,8 +188,15 @@ export function useFlowLayoutBlockEditor<T, V extends FlowLayoutBlock<T> = FlowL
   const firstLineHeight = lineHeights[0]
   const lastLineHeight = lineHeights[lineHeights.length - 1]
 
-  const p = layoutResult[dragLocation?.[0] ?? blockLocation]?.[dragLocation?.[1] ?? contentLocation]
-  const cursorX = p?.x ?? 0
+  let cursorLocation = dragLocation?.[1] ?? contentLocation
+  const cursorBlockLocation = dragLocation?.[0] ?? blockLocation
+  const cursorBlock = layoutResult[cursorBlockLocation]
+  const cursorAtEnd = lineEnd && cursorLocation > 0 && cursorBlock?.[cursorLocation - 1]
+  if (cursorAtEnd) {
+    cursorLocation--
+  }
+  const p = cursorBlock?.[cursorLocation]
+  const cursorX = (p?.x ?? 0) + (cursorAtEnd ? props.getWidth(cursorBlock?.[cursorLocation].content, props.state[cursorBlockLocation]) : 0)
   const cursorY = (p?.y ?? 0) - scrollY
   const cursorRow = p?.row ?? 0
 

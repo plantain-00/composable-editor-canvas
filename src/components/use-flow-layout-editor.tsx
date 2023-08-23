@@ -40,6 +40,7 @@ export function useFlowLayoutEditor<T>(props: {
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
+  const [lineEnd, setLineEnd] = React.useState(false)
 
   const inputContent = (newContents: T[], contentLocation = newContents.length) => {
     if (props.readOnly) return
@@ -209,7 +210,12 @@ export function useFlowLayoutEditor<T>(props: {
     }
   }
   const positionToLocation = (p: Position, ignoreInvisible = true) => {
-    return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible) ?? layoutResult.length - 1
+    const loc = getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible)
+    if (loc) {
+      setLineEnd(loc.lineEnd)
+      return loc.location
+    }
+    return layoutResult.length - 1
   }
   const isPositionInRange = (p: Position) => {
     if (range) {
@@ -319,8 +325,13 @@ export function useFlowLayoutEditor<T>(props: {
   const lastLineHeight = lineHeights[lineHeights.length - 1]
 
   const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location), size: Math.abs(selectionStart - location) } : undefined
-  const p = layoutResult[dragLocation ?? location] ?? layoutResult[layoutResult.length - 1]
-  const cursorX = p.x
+  let cursorLocation = dragLocation ?? location
+  const cursorAtEnd = lineEnd && cursorLocation > 0 && layoutResult[cursorLocation - 1]
+  if (cursorAtEnd) {
+    cursorLocation--
+  }
+  const p = layoutResult[cursorLocation] ?? layoutResult[layoutResult.length - 1]
+  const cursorX = p.x + (cursorAtEnd ? props.getWidth(layoutResult[cursorLocation].content) : 0)
   const cursorY = p.y - scrollY
   const cursorRow = p.row
 

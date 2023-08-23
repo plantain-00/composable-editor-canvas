@@ -183,10 +183,10 @@ export function getFlowLayoutLocation<T>(
   getHeight?: (content: T) => number | undefined,
 ) {
   if (y < scrollY) {
-    return 0
+    return { location: 0, lineEnd: false }
   }
   if (layoutResult.length > 0 && y < layoutResult[0].y) {
-    return 0
+    return { location: 0, lineEnd: false }
   }
   const getLineHeight = (row: number) => {
     return typeof lineHeight === 'number' ? lineHeight : lineHeight[row]
@@ -204,22 +204,22 @@ export function getFlowLayoutLocation<T>(
       x >= p.x &&
       x <= p.x + getWidth(p.content)
     ) {
-      return p.i + 1
+      return { location: p.i + 1, lineEnd: false }
     }
     if (y >= p.y && y <= p.y + lineHeight) {
       if (
         x <= p.x + getWidth(p.content) / 2 &&
         (!result || result.x + getWidth(result.content) / 2 <= x)
       ) {
-        return p.i
+        return { location: p.i, lineEnd: false }
       }
       result = p
     } else if (result !== undefined && i !== layoutResult.length - 1) {
-      return result.i + 1
+      return { location: result.i + 1, lineEnd: true }
     }
   }
   if (result !== undefined) {
-    return result.i
+    return { location: result.i, lineEnd: false }
   }
   return
 }

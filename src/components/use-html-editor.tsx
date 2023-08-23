@@ -30,6 +30,7 @@ export function useHtmlEditor(props: {
   const rootRef = React.useRef<HTMLDivElement | null>(null)
   const [cursorRect, setCursorRect] = React.useState<Region>()
   const layoutResults = React.useRef<HtmlLayoutResult>()
+  const [lineEnd, setLineEnd] = React.useState(false)
 
   const { range, inputContent, inputInline, getCopiedContents, scrollRef,
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref: cursorRef, setLocation, location, contentHeight, setContentHeight, blockLocation,
@@ -164,6 +165,7 @@ export function useHtmlEditor(props: {
     }
   }
   const positionToLocation = (p: Position): [number, number] => {
+    setLineEnd(false)
     if (layoutResults.current) {
       let previous: [number, number] | undefined
       for (let i = 0; i < layoutResults.current.cells.length; i++) {
@@ -189,6 +191,7 @@ export function useHtmlEditor(props: {
             if (j === 0 && previous) {
               return previous
             }
+            setLineEnd(true)
             return [i, j]
           }
           previous = [i, j]
@@ -237,6 +240,8 @@ export function useHtmlEditor(props: {
       const c = dragLocation?.[1] ?? contentLocation
       if (c === 0) {
         rect = parentResult[0]
+      } else if (!lineEnd) {
+        rect = parentResult[c]
       } else {
         const previous = parentResult[c - 1]
         if (previous) {
@@ -248,7 +253,7 @@ export function useHtmlEditor(props: {
       }
     }
     setCursorRect(rect)
-  }, [layoutResults.current, blockLocation, contentLocation, dragLocation])
+  }, [layoutResults.current, blockLocation, contentLocation, dragLocation, lineEnd])
 
   const newContentHeight = rootRef.current?.offsetHeight
   if (newContentHeight && contentHeight < newContentHeight) {
