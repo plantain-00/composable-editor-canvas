@@ -2,7 +2,7 @@ import React from "react"
 
 export function useAudioRecorder() {
   const mediaRecorder = React.useRef<MediaRecorder>()
-  const timer = React.useRef<NodeJS.Timer>()
+  const timer = React.useRef<NodeJS.Timeout>()
   const analyser = React.useRef<AnalyserNode>()
 
   const [audioUrl, setAudioUrl] = React.useState<string>()
