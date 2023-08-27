@@ -286,6 +286,7 @@ export function Renderer(props: {
       },
       onClick: props.onClick,
       onMouseDown: props.onMouseDown,
+      onMouseUp: props.onMouseUp,
       onContextMenu: props.onContextMenu,
       onDoubleClick: props.onDoubleClick,
     },

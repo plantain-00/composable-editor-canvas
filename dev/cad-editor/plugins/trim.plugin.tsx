@@ -2,6 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
+import type { LineContent } from './line-polyline.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
@@ -14,7 +15,8 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'trim',
     useCommand({ onEnd, type, selected, backgroundColor, contents }) {
       const [candidates, setCandidates] = React.useState<{ content: model.BaseContent, children: model.BaseContent[] }[]>([])
-      const [current, setCurrent] = React.useState<{ content: model.BaseContent, parent: model.BaseContent }>()
+      const [currents, setCurrents] = React.useState<{ content: model.BaseContent, children: model.BaseContent[] }[]>([])
+      const [trackPoints, setTrackPoints] = React.useState<core.Position[]>([])
       const { state, setState, resetHistory, undo, redo } = ctx.useUndoRedo<{ content: model.BaseContent, children: model.BaseContent[] }[]>([])
 
       React.useEffect(() => {
@@ -43,13 +45,20 @@ export function getCommand(ctx: PluginContext): Command {
       }, [type])
 
       const assistentContents: (model.BaseContent & model.StrokeFields)[] = []
-      if (current && ctx.isStrokeContent(current.content)) {
-        assistentContents.push({
-          ...current.content,
-          strokeWidth: (current.content.strokeWidth ?? ctx.getDefaultStrokeWidth(current.content)) + 2,
-          strokeColor: backgroundColor,
-          trueStrokeColor: true,
-        })
+      for (const current of currents) {
+        for (const child of current.children) {
+          if (ctx.isStrokeContent(child)) {
+            assistentContents.push({
+              ...child,
+              strokeWidth: (child.strokeWidth ?? ctx.getDefaultStrokeWidth(child)) + 2,
+              strokeColor: backgroundColor,
+              trueStrokeColor: true,
+            })
+          }
+        }
+      }
+      if (trackPoints.length > 1) {
+        assistentContents.push({ points: trackPoints, type: 'polyline' } as LineContent)
       }
       for (const { children } of state) {
         for (const child of children) {
@@ -65,10 +74,11 @@ export function getCommand(ctx: PluginContext): Command {
       }
       const reset = () => {
         setCandidates([])
-        setCurrent(undefined)
+        setCurrents([])
         resetHistory()
+        setTrackPoints([])
       }
-      ctx.useKey((e) => e.key === 'Escape', reset, [setCandidates, setCurrent, resetHistory])
+      ctx.useKey((e) => e.key === 'Escape', reset, [setCandidates, setCurrents, resetHistory, setTrackPoints, reset])
       ctx.useKey((k) => k.code === 'KeyZ' && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo)
       ctx.useKey((k) => k.code === 'KeyZ' && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo)
       ctx.useKey((e) => e.key === 'Enter', () => {
@@ -106,32 +116,68 @@ export function getCommand(ctx: PluginContext): Command {
 
       return {
         onStart() {
-          if (current) {
-            const index = state.findIndex(s => s.content === current.parent)
+          if (currents.length > 0) {
             setState(draft => {
-              if (index >= 0) {
-                draft[index].children.push(current.content)
-              } else {
-                draft.push({ content: current.parent, children: [current.content] })
+              for (const current of currents) {
+                const index = state.findIndex(s => s.content === current.content)
+                if (index >= 0) {
+                  draft[index].children.push(...current.children)
+                } else {
+                  draft.push(current)
+                }
               }
             })
           }
+          setTrackPoints([])
+        },
+        onMouseDown(p) {
+          if (currents.length === 0) {
+            setTrackPoints([p])
+          }
         },
         onMove(p) {
+          if (trackPoints.length > 0) {
+            const newTracePoints = [...trackPoints, p]
+            if (newTracePoints.length > 1) {
+              const trackLines = Array.from(ctx.iteratePolylineLines(newTracePoints))
+              const newCurrents: typeof currents = []
+              for (const candidate of candidates) {
+                for (const child of candidate.children) {
+                  const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
+                  if (geometries) {
+                    for (const line of geometries.lines) {
+                      if (trackLines.some(t => ctx.getTwoLineSegmentsIntersectionPoint(...line, ...t))) {
+                        const index = newCurrents.findIndex(s => s.content === candidate.content)
+                        if (index >= 0) {
+                          newCurrents[index].children.push(child)
+                        } else {
+                          newCurrents.push({ content: candidate.content, children: [child] })
+                        }
+                        break
+                      }
+                    }
+                  }
+                }
+              }
+              setCurrents(newCurrents)
+            }
+            setTrackPoints(newTracePoints)
+            return
+          }
           for (const candidate of candidates) {
             for (const child of candidate.children) {
               const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
               if (geometries) {
                 for (const line of geometries.lines) {
                   if (ctx.getPointAndLineSegmentMinimumDistance(p, line[0], line[1]) < 5) {
-                    setCurrent({ content: child, parent: candidate.content })
+                    setCurrents([{ children: [child], content: candidate.content }])
                     return
                   }
                 }
               }
             }
           }
-          setCurrent(undefined)
+          setCurrents([])
         },
         assistentContents,
         reset,
@@ -143,5 +189,6 @@ export function getCommand(ctx: PluginContext): Command {
     },
     hotkey: 'TR',
     icon,
+    pointSnapDisabled: true,
   }
 }

@@ -24,6 +24,8 @@ export interface Command extends CommandType {
   }): {
     onStart(p: Position, target?: SnapTarget): void
     onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
+    onMouseDown?: (p: Position) => void
+    onMouseUp?: (p: Position) => void
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
@@ -49,6 +51,7 @@ export interface Command extends CommandType {
   contentSelectable?(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean
   selectCount?: number
   selectType?: 'select part'
+  pointSnapDisabled?: boolean
 }
 
 export interface CommandType {
@@ -86,6 +89,8 @@ export function useCommands(
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
   const onMoves: ((p: Position, viewportPosition?: Position, target?: SnapTarget) => void)[] = []
+  const onMouseDowns: ((p: Position) => void)[] = []
+  const onMouseUps: ((p: Position) => void)[] = []
   const updateSelectedContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[], selected: BaseContent[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
@@ -108,7 +113,7 @@ export function useCommands(
     }
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
-      const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, lastPosition, reset } = command.useCommand({
+      const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, onMouseDown, onMouseUp, lastPosition, reset } = command.useCommand({
         onEnd,
         transform,
         type,
@@ -137,6 +142,12 @@ export function useCommands(
       }
       if (onMove) {
         onMoves.push(onMove)
+      }
+      if (onMouseDown) {
+        onMouseDowns.push(onMouseDown)
+      }
+      if (onMouseUp) {
+        onMouseUps.push(onMouseUp)
       }
       if (assistentContents) {
         commandAssistentContents.push(...assistentContents)
@@ -223,6 +234,16 @@ export function useCommands(
     onCommandMove(p: Position, viewportPosition?: Position, target?: SnapTarget) {
       for (const onMove of onMoves) {
         onMove(p, viewportPosition, target)
+      }
+    },
+    onCommandDown(p: Position) {
+      for (const onMouseDown of onMouseDowns) {
+        onMouseDown(p)
+      }
+    },
+    onCommandUp(p: Position) {
+      for (const onMouseUp of onMouseUps) {
+        onMouseUp(p)
       }
     },
     getCommandByHotkey(key: string) {
