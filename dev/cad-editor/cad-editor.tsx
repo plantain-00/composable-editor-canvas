@@ -391,7 +391,7 @@ export const CADEditor = React.forwardRef((props: {
   // snap point
   const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
-    operations.type === 'operate' || editPoint !== undefined,
+    (operations.type === 'operate' && !getCommand(operations.operate.name)?.pointSnapDisabled) || editPoint !== undefined,
     getIntersectionPoints,
     snapTypes,
     getContentModel,
@@ -400,7 +400,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
     ({ updateContents, nextCommand, repeatedly, result } = {}) => {
       commandResultHandler.current?.(result)
       commandResultHandler.current = undefined
@@ -699,7 +699,12 @@ export const CADEditor = React.forwardRef((props: {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     } else if (e.buttons === 4) {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
+    } else {
+      onCommandDown(reverseTransform({ x: e.clientX, y: e.clientY }))
     }
+  })
+  const onMouseUp = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    onCommandUp(reverseTransform({ x: e.clientX, y: e.clientY }))
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
@@ -951,6 +956,7 @@ export const CADEditor = React.forwardRef((props: {
           activeViewportIndex={activeViewportIndex}
           onClick={onClick}
           onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
           onContextMenu={onContextMenu}
           onDoubleClick={onDoubleClick}
           x={transform.x}

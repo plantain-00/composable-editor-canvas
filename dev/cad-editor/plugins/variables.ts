@@ -10026,7 +10026,8 @@ function getCommand(ctx) {
     useCommand({ onEnd, type, selected, backgroundColor, contents }) {
       var _a, _b;
       const [candidates, setCandidates] = React.useState([]);
-      const [current, setCurrent] = React.useState();
+      const [currents, setCurrents] = React.useState([]);
+      const [trackPoints, setTrackPoints] = React.useState([]);
       const { state, setState, resetHistory, undo, redo } = ctx.useUndoRedo([]);
       React.useEffect(() => {
         var _a2, _b2;
@@ -10054,13 +10055,20 @@ function getCommand(ctx) {
         }
       }, [type]);
       const assistentContents = [];
-      if (current && ctx.isStrokeContent(current.content)) {
-        assistentContents.push({
-          ...current.content,
-          strokeWidth: ((_a = current.content.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(current.content)) + 2,
-          strokeColor: backgroundColor,
-          trueStrokeColor: true
-        });
+      for (const current of currents) {
+        for (const child of current.children) {
+          if (ctx.isStrokeContent(child)) {
+            assistentContents.push({
+              ...child,
+              strokeWidth: ((_a = child.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(child)) + 2,
+              strokeColor: backgroundColor,
+              trueStrokeColor: true
+            });
+          }
+        }
+      }
+      if (trackPoints.length > 1) {
+        assistentContents.push({ points: trackPoints, type: "polyline" });
       }
       for (const { children } of state) {
         for (const child of children) {
@@ -10076,10 +10084,11 @@ function getCommand(ctx) {
       }
       const reset = () => {
         setCandidates([]);
-        setCurrent(void 0);
+        setCurrents([]);
         resetHistory();
+        setTrackPoints([]);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates, setCurrent, resetHistory]);
+      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates, setCurrents, resetHistory, setTrackPoints, reset]);
       ctx.useKey((k) => k.code === "KeyZ" && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo);
       ctx.useKey((k) => k.code === "KeyZ" && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo);
       ctx.useKey((e) => e.key === "Enter", () => {
@@ -10117,33 +10126,69 @@ function getCommand(ctx) {
       }, [reset, type]);
       return {
         onStart() {
-          if (current) {
-            const index = state.findIndex((s) => s.content === current.parent);
+          if (currents.length > 0) {
             setState((draft) => {
-              if (index >= 0) {
-                draft[index].children.push(current.content);
-              } else {
-                draft.push({ content: current.parent, children: [current.content] });
+              for (const current of currents) {
+                const index = state.findIndex((s) => s.content === current.content);
+                if (index >= 0) {
+                  draft[index].children.push(...current.children);
+                } else {
+                  draft.push(current);
+                }
               }
             });
           }
+          setTrackPoints([]);
+        },
+        onMouseDown(p) {
+          if (currents.length === 0) {
+            setTrackPoints([p]);
+          }
         },
         onMove(p) {
-          var _a2, _b2;
+          var _a2, _b2, _c, _d;
+          if (trackPoints.length > 0) {
+            const newTracePoints = [...trackPoints, p];
+            if (newTracePoints.length > 1) {
+              const trackLines = Array.from(ctx.iteratePolylineLines(newTracePoints));
+              const newCurrents = [];
+              for (const candidate of candidates) {
+                for (const child of candidate.children) {
+                  const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+                  if (geometries) {
+                    for (const line of geometries.lines) {
+                      if (trackLines.some((t) => ctx.getTwoLineSegmentsIntersectionPoint(...line, ...t))) {
+                        const index = newCurrents.findIndex((s) => s.content === candidate.content);
+                        if (index >= 0) {
+                          newCurrents[index].children.push(child);
+                        } else {
+                          newCurrents.push({ content: candidate.content, children: [child] });
+                        }
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+              setCurrents(newCurrents);
+            }
+            setTrackPoints(newTracePoints);
+            return;
+          }
           for (const candidate of candidates) {
             for (const child of candidate.children) {
-              const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+              const geometries = (_d = (_c = ctx.getContentModel(child)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, child, contents);
               if (geometries) {
                 for (const line of geometries.lines) {
                   if (ctx.getPointAndLineSegmentMinimumDistance(p, line[0], line[1]) < 5) {
-                    setCurrent({ content: child, parent: candidate.content });
+                    setCurrents([{ children: [child], content: candidate.content }]);
                     return;
                   }
                 }
               }
             }
           }
-          setCurrent(void 0);
+          setCurrents([]);
         },
         assistentContents,
         reset
@@ -10154,7 +10199,8 @@ function getCommand(ctx) {
       return (model == null ? void 0 : model.break) !== void 0 && !ctx.contentIsReferenced(content, contents);
     },
     hotkey: "TR",
-    icon
+    icon,
+    pointSnapDisabled: true
   };
 }
 export {

@@ -19,7 +19,9 @@ export function breakPolylineToPolylines(
         if (!isSamePoint(lastPoints[lastPoints.length - 1], p)) {
           lastPoints.push(p)
         }
-        result.push(lastPoints)
+        if (lastPoints.length > 1) {
+          result.push(lastPoints)
+        }
         lastPoints = [p]
       })
       if (!isSamePoint(lastPoints[lastPoints.length - 1], line[1])) {
@@ -27,7 +29,9 @@ export function breakPolylineToPolylines(
       }
     }
   })
-  result.push(lastPoints)
+  if (lastPoints.length > 1) {
+    result.push(lastPoints)
+  }
   if (result.length > 1) {
     const startPoint = result[0][0]
     const lastResult = result[result.length - 1]
