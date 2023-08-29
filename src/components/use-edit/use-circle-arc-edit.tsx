@@ -13,8 +13,11 @@ export function useCircleArcEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Arc & { data?: T }>({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' | 'radius' } & Arc, T>(
-    onEnd,
+  const { onStart, mask, reset } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' | 'radius' } & Arc, T>(
+    () => {
+      setOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
+      onEnd()
+    },
     (start, end) => {
       end = getAngleSnapPosition(start.data, end, options?.getAngleSnap)
       setCursorPosition(end)
@@ -33,7 +36,6 @@ export function useCircleArcEdit<T = void>(
         setOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: angle, data: start.data.data })
       }
     },
-    () => setOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 }),
     options,
   )
 
@@ -42,5 +44,9 @@ export function useCircleArcEdit<T = void>(
     onStart,
     mask,
     cursorPosition,
+    reset() {
+      setOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: 0 })
+      reset()
+    },
   }
 }

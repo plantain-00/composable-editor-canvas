@@ -1,12 +1,14 @@
 import React from "react"
-import { useSelectBeforeOperate } from "../src"
+import { useGlobalKeyDown, useSelectBeforeOperate } from "../src"
 
 export default () => {
-  const { isSelected, addSelection, filterSelection, executeOperation, selectBeforeOperate, message } = useSelectBeforeOperate<{ count?: number, selectable?: (index: number[]) => boolean }, 'alert', number[]>({}, (_, s) => {
+  const { isSelected, addSelection, filterSelection, executeOperation, selectBeforeOperate, message, onSelectBeforeOperateKeyDown } = useSelectBeforeOperate<{ count?: number, selectable?: (index: number[]) => boolean }, 'alert', number[]>({}, (_, s) => {
     alert(s.map(([i]) => i).join(','))
     return true
   })
-
+  useGlobalKeyDown(e => {
+    onSelectBeforeOperateKeyDown(e)
+  })
   const startOperation = (maxCount?: number, selectable?: (index: number[]) => boolean) => {
     const { result, needSelect } = filterSelection(selectable, maxCount)
     if (needSelect) {

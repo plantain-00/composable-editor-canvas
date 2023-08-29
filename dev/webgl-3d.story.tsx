@@ -1,5 +1,5 @@
 import * as React from "react"
-import { getAxesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian } from "../src"
+import { getAxesGraphics, bindMultipleRefs, createWebgl3DRenderer, getDashedLine, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, useGlobalKeyDown } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -7,15 +7,19 @@ export default () => {
   const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     setRotate((v) => ({ x: v.x + offset.x, y: v.y + offset.y }))
   })
-  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setScale(1)
-    setX(0)
-    setY(0)
-    setRotate({ x: 0, y: 0 })
-    e.preventDefault()
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragMove()
+    } else if (e.code === 'Digit0' && !e.shiftKey && metaKeyIfMacElseCtrlKey(e)) {
+      setScale(1)
+      setX(0)
+      setY(0)
+      setRotate({ x: 0, y: 0 })
+      e.preventDefault()
+    }
   })
   const size = useWindowSize()
   const width = size.width / 2

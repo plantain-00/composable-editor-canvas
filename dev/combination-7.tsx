@@ -1,6 +1,6 @@
 import React from "react";
 import { produce } from 'immer'
-import { getTwoPointsDistance, pointIsInRegion, reactCanvasRenderTarget, useDragSelect, useKey, useRefState, useWindowSize } from "../src";
+import { getTwoPointsDistance, pointIsInRegion, reactCanvasRenderTarget, useDragSelect, useGlobalKeyDown, useRefState, useWindowSize } from "../src";
 import { Bullet, ModelStatus } from './combination-7/model'
 import { initialModels } from "./combination-7/data";
 import { updateModels } from "./combination-7/tick";
@@ -41,25 +41,7 @@ export function Combination7() {
     e.preventDefault()
   }
 
-  useKey(e => e.key === 'Escape', () => {
-    setSelected([])
-  }, [setSelected])
-  useKey(e => e.key === 's', () => {
-    setModels(produce(models, draft => {
-      for (const i of selected) {
-        if (draft[i].canControl && draft[i].action) {
-          draft[i].action = undefined
-        }
-      }
-    }))
-  }, [models, setModels, selected])
-  useKey(e => e.key === 'a', () => {
-    status.current = {
-      type: 'attack'
-    }
-  })
-
-  const { onStartSelect, dragSelectMask } = useDragSelect((start, end) => {
+  const { onStartSelect, dragSelectMask, resetDragSelect } = useDragSelect((start, end) => {
     if (end && Math.abs(start.x - end.x) > 10 && Math.abs(start.y - end.y) > 10) {
       const region = {
         start: { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y) },
@@ -108,7 +90,24 @@ export function Combination7() {
       }
     }
   })
-
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragSelect()
+      setSelected([])
+    } else if (e.key === 's') {
+      setModels(produce(models, draft => {
+        for (const i of selected) {
+          if (draft[i].canControl && draft[i].action) {
+            draft[i].action = undefined
+          }
+        }
+      }))
+    } else if (e.key === 'a') {
+      status.current = {
+        type: 'attack'
+      }
+    }
+  })
   React.useEffect(() => {
     const step = (time: number) => {
       if (timeRef.current !== 0) {

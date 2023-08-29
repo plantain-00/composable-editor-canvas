@@ -1,10 +1,17 @@
 import React from 'react'
-import { useUndoRedo, useKey, metaKeyIfMacElseCtrlKey } from '../src'
+import { useUndoRedo, metaKeyIfMacElseCtrlKey, useGlobalKeyDown } from '../src'
 
 export default () => {
   const { state, setState, undo, redo } = useUndoRedo({ count: 0 })
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), undo)
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), redo)
+  useGlobalKeyDown(e => {
+    if (e.code === 'KeyZ' && metaKeyIfMacElseCtrlKey(e)) {
+      if (e.shiftKey) {
+        redo(e)
+      } else {
+        undo(e)
+      }
+    }
+  })
   return (
     <button
       onClick={() => setState((draft) => { draft.count++ })}

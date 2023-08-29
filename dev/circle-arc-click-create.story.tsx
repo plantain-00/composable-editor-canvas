@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { Arc, polarToCartesian, useCircleArcClickCreate } from "../src"
+import { Arc, polarToCartesian, useCircleArcClickCreate, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Arc[]>([])
-  const { circle, arc, onClick, onMove, input } = useCircleArcClickCreate('center radius', (c) => {
+  const { circle, arc, onClick, onMove, input, reset } = useCircleArcClickCreate('center radius', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
   const arcCircle = circle || arc
   return (

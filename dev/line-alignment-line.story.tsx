@@ -1,6 +1,6 @@
 import { produce } from "immer"
 import React from "react"
-import { AlignmentLine, ResizeBar, useDragResize, useLineAlignment } from "../src"
+import { AlignmentLine, ResizeBar, useDragResize, useGlobalKeyDown, useLineAlignment } from "../src"
 import { defaultContents } from "./story-util"
 
 export default () => {
@@ -8,7 +8,7 @@ export default () => {
   const [selectedIndex, setSelectedIndex] = React.useState(0)
 
   const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAlignments } = useLineAlignment(10)
-  const { offset, onStart, mask } = useDragResize(
+  const { offset, onStart, mask, resetDragResize } = useDragResize(
     () => {
       clearLineAlignments()
       setContents(produce(contents, (draft) => {
@@ -33,6 +33,11 @@ export default () => {
       },
     }
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragResize()
+    }
+  })
   return (
     <>
       {contents.map((content, i) => (

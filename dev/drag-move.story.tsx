@@ -1,12 +1,17 @@
 import React from "react"
-import { useDragMove } from "../src"
+import { useDragMove, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [x, setX] = React.useState(0)
   const [y, setY] = React.useState(0)
-  const { offset, onStart, mask } = useDragMove(() => {
+  const { offset, onStart, mask, resetDragMove } = useDragMove(() => {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragMove()
+    }
   })
 
   return (

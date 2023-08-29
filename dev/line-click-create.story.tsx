@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { Position, useLineClickCreate } from "../src"
+import { Position, useGlobalKeyDown, useLineClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Position[][]>([])
-  const { line, onClick, onMove, input } = useLineClickCreate(true, (c) => {
+  const { line, onClick, onMove, input, reset } = useLineClickCreate(true, (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset(true)
+    }
   })
 
   return (

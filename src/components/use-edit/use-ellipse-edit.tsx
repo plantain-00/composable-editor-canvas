@@ -13,8 +13,11 @@ export function useEllipseEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Ellipse & { data?: T }>({ cx: 0, cy: 0, rx: 0, ry: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useDragEdit<{ type: 'center' | 'major axis' | 'minor axis' } & Ellipse, T>(
-    onEnd,
+  const { onStart, mask, reset } = useDragEdit<{ type: 'center' | 'major axis' | 'minor axis' } & Ellipse, T>(
+    () => {
+      setOffset({ cx: 0, cy: 0, rx: 0, ry: 0 })
+      onEnd()
+    },
     (start, end) => {
       end = getAngleSnapPosition({ x: start.data.cx, y: start.data.cy }, end, options?.getAngleSnap)
       setCursorPosition(end)
@@ -31,7 +34,6 @@ export function useEllipseEdit<T = void>(
         }
       }
     },
-    () => setOffset({ cx: 0, cy: 0, rx: 0, ry: 0 }),
     options,
   )
 
@@ -40,5 +42,9 @@ export function useEllipseEdit<T = void>(
     onStart,
     mask,
     cursorPosition,
+    reset() {
+      setOffset({ cx: 0, cy: 0, rx: 0, ry: 0 })
+      reset()
+    },
   }
 }

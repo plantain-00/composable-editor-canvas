@@ -1,6 +1,6 @@
 import { produce } from "immer"
 import React from "react"
-import { PolylineEditBar, usePolylineEdit } from "../src"
+import { PolylineEditBar, useGlobalKeyDown, usePolylineEdit } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState([
@@ -8,13 +8,18 @@ export default () => {
     { x: 300, y: 200 },
     { x: 100, y: 200 },
   ])
-  const { offset, onStart, mask } = usePolylineEdit(() => setContent(points))
+  const { offset, onStart, mask, reset } = usePolylineEdit(() => setContent(points))
   const points = produce(content, (draft) => {
     if (offset) {
       for (const pointIndex of offset.pointIndexes) {
         draft[pointIndex].x += offset.x
         draft[pointIndex].y += offset.y
       }
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
     }
   })
   return (

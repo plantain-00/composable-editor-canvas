@@ -840,7 +840,6 @@ function getCommand(ctx) {
         clearText();
         resetInput();
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates]);
       return {
         onStart(p) {
           setCursorPosition(p);
@@ -1523,7 +1522,7 @@ function getCommand(ctx) {
   return {
     name: "clone",
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(
+      const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(
         () => onEnd({ repeatedly: true }),
         {
           repeatedly: true,
@@ -1535,7 +1534,11 @@ function getCommand(ctx) {
       if (type) {
         message = startPosition ? "specify end point" : "specify start point";
       }
-      const { input, setInputPosition } = ctx.useCursorInput(message);
+      const { input, setInputPosition, resetInput } = ctx.useCursorInput(message);
+      const reset = () => {
+        resetDragMove();
+        resetInput();
+      };
       return {
         onStart: (s) => onStart(s),
         mask,
@@ -1915,7 +1918,6 @@ function getCommand(ctx) {
       const reset = () => {
         setResult(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         onStart() {
           if (result) {
@@ -2048,7 +2050,6 @@ function getCommand(ctx) {
           setCursorPosition(void 0);
           setInputPosition(void 0);
         };
-        ctx.useKey((e) => e.key === "Escape", reset, [setCopyData, resetInput, setInputPosition, setInputPosition]);
         const assistentContents = [];
         if (cursorPosition && copyData) {
           const offset = {
@@ -2198,7 +2199,6 @@ function getCommand(ctx) {
         clearText();
         resetInput();
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates]);
       return {
         onStart(p) {
           setCursorPosition(p);
@@ -3700,7 +3700,6 @@ function getCommand(ctx) {
         resetInput();
         setDependentVariable("y");
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [resetInput, setDependentVariable]);
       return {
         input,
         onStart() {
@@ -3985,7 +3984,6 @@ function getCommand(ctx) {
       const reset = () => {
         setResult(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         onStart() {
           if (result) {
@@ -4114,7 +4112,6 @@ function getCommand(ctx) {
         clearText();
         resetInput();
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates]);
       return {
         onStart(p) {
           setCursorPosition(p);
@@ -5076,7 +5073,6 @@ function getCommand(ctx) {
         resetInput();
         setText(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       const assistentContents = [];
       if (result) {
         assistentContents.push(result);
@@ -5148,7 +5144,7 @@ function getCommand(ctx) {
   return {
     name: "measure",
     useCommand({ transform, type, scale }) {
-      const { onStart, mask, startPosition, reset } = ctx.useDragMove(void 0, {
+      const { onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(void 0, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -5156,7 +5152,11 @@ function getCommand(ctx) {
       if (type) {
         message = startPosition ? "specify end point" : "specify start point";
       }
-      const { input, setInputPosition, cursorPosition, setCursorPosition } = ctx.useCursorInput(message);
+      const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message);
+      const reset = () => {
+        resetDragMove();
+        resetInput();
+      };
       const assistentContents = [];
       if (startPosition && cursorPosition) {
         const start = startPosition;
@@ -5224,7 +5224,7 @@ function getCommand(ctx) {
     name: "mirror",
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(false);
-      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -5232,7 +5232,7 @@ function getCommand(ctx) {
       if (type) {
         message = startPosition ? "specify second point" : "specify first point";
       }
-      const { input, setInputPosition, clearText, setCursorPosition } = ctx.useCursorInput(message, type ? (e, text) => {
+      const { input, setInputPosition, clearText, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === "Enter") {
           if (text.toLowerCase() === "y" || text.toLowerCase() === "n") {
             setChangeOriginal(!changeOriginal);
@@ -5240,6 +5240,10 @@ function getCommand(ctx) {
           }
         }
       } : void 0);
+      const reset = () => {
+        resetDragMove();
+        resetInput();
+      };
       return {
         onStart: (s) => onStart(s),
         mask: type ? mask : void 0,
@@ -5314,7 +5318,7 @@ function getCommand(ctx) {
   return {
     name: "move",
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true
       });
@@ -5322,7 +5326,11 @@ function getCommand(ctx) {
       if (type) {
         message = startPosition ? "specify end point" : "specify start point";
       }
-      const { input, setInputPosition } = ctx.useCursorInput(message);
+      const { input, setInputPosition, resetInput } = ctx.useCursorInput(message);
+      const reset = () => {
+        resetDragMove();
+        resetInput();
+      };
       return {
         onStart: (s) => onStart(s),
         mask,
@@ -6755,7 +6763,6 @@ function getCommand(ctx) {
         resetInput();
         setText(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         input,
         onStart() {
@@ -7706,7 +7713,7 @@ function getCommand(ctx) {
     icon,
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(true);
-      const { offset, onStart, mask, center: startPosition, reset } = ctx.useDragRotate(
+      const { offset, onStart, mask, center: startPosition, resetDragRotate } = ctx.useDragRotate(
         onEnd,
         {
           transform,
@@ -7751,7 +7758,7 @@ function getCommand(ctx) {
         onMove(_, p) {
           setInputPosition(p);
         },
-        reset,
+        reset: resetDragRotate,
         subcommand: type ? /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -8832,7 +8839,6 @@ function getCommand(ctx) {
       const reset = () => {
         setResult(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         onStart() {
           if (result) {
@@ -9517,7 +9523,6 @@ function getCommand(ctx) {
       const reset = () => {
         setResult(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         onStart() {
           if (result) {
@@ -9981,7 +9986,6 @@ function getCommand(ctx) {
       const reset = () => {
         setResult(void 0);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setResult]);
       return {
         onStart() {
           if (result) {
@@ -10049,6 +10053,8 @@ function getCommand(ctx) {
               if (result) {
                 allContents.push({ content, children: result });
               }
+            } else {
+              allContents.push({ content, children: [content] });
             }
           }
           setCandidates(allContents);
@@ -10088,42 +10094,6 @@ function getCommand(ctx) {
         resetHistory();
         setTrackPoints([]);
       };
-      ctx.useKey((e) => e.key === "Escape", reset, [setCandidates, setCurrents, resetHistory, setTrackPoints, reset]);
-      ctx.useKey((k) => k.code === "KeyZ" && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo);
-      ctx.useKey((k) => k.code === "KeyZ" && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo);
-      ctx.useKey((e) => e.key === "Enter", () => {
-        if (!type)
-          return;
-        const removedIndexes = [];
-        const newContents = [];
-        for (const { content, children } of state) {
-          const parentModel = ctx.getContentModel(content);
-          if (parentModel == null ? void 0 : parentModel.break) {
-            let points = [];
-            for (const child of children) {
-              const model = ctx.getContentModel(child);
-              if ((model == null ? void 0 : model.getStartPoint) && model.getEndPoint) {
-                points.push(model.getStartPoint(child), model.getEndPoint(child));
-              }
-            }
-            points = ctx.deduplicatePosition(points);
-            const r = parentModel.break(content, points, contents);
-            if (r) {
-              removedIndexes.push(ctx.getContentIndex(content, contents));
-              newContents.push(...r.filter((c) => children.every((f) => !ctx.deepEquals(f, c))));
-            }
-          }
-        }
-        onEnd({
-          updateContents: (contents2) => {
-            for (const index of removedIndexes) {
-              contents2[index] = void 0;
-            }
-            contents2.push(...newContents);
-          }
-        });
-        reset();
-      }, [reset, type]);
       return {
         onStart() {
           if (currents.length > 0) {
@@ -10189,6 +10159,47 @@ function getCommand(ctx) {
             }
           }
           setCurrents([]);
+        },
+        onKeyDown(e) {
+          if (e.code === "KeyZ" && ctx.metaKeyIfMacElseCtrlKey(e)) {
+            if (e.shiftKey) {
+              redo(e);
+            } else {
+              undo(e);
+            }
+          } else if (e.key === "Enter") {
+            if (!type)
+              return;
+            const removedIndexes = [];
+            const newContents = [];
+            for (const { content, children } of state) {
+              const parentModel = ctx.getContentModel(content);
+              if (parentModel == null ? void 0 : parentModel.break) {
+                let points = [];
+                for (const child of children) {
+                  const model = ctx.getContentModel(child);
+                  if ((model == null ? void 0 : model.getStartPoint) && model.getEndPoint) {
+                    points.push(model.getStartPoint(child), model.getEndPoint(child));
+                  }
+                }
+                points = ctx.deduplicatePosition(points);
+                const r = parentModel.break(content, points, contents);
+                if (r) {
+                  removedIndexes.push(ctx.getContentIndex(content, contents));
+                  newContents.push(...r.filter((c) => children.every((f) => !ctx.deepEquals(f, c))));
+                }
+              }
+            }
+            onEnd({
+              updateContents: (contents2) => {
+                for (const index of removedIndexes) {
+                  contents2[index] = void 0;
+                }
+                contents2.push(...newContents);
+              }
+            });
+            reset();
+          }
         },
         assistentContents,
         reset

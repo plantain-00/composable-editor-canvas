@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useEllipseClickCreate, useKey } from ".."
+import { useEllipseClickCreate } from ".."
 import { EllipseArc, getEllipseAngle, Position } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 
@@ -55,8 +55,6 @@ export function useEllipseArcClickCreate(
     setCursorPosition(undefined)
     clearText()
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setEllipseArc, setStartAngle, setCursorPosition])
 
   return {
     ellipse,

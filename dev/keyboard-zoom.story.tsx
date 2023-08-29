@@ -1,11 +1,18 @@
 import React from "react"
-import { useZoom, useKey, metaKeyIfMacElseCtrlKey } from "../src"
+import { useZoom, metaKeyIfMacElseCtrlKey, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [scale, setScale] = React.useState(1)
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
-  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
-  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
+  useGlobalKeyDown(e => {
+    if (metaKeyIfMacElseCtrlKey(e)) {
+      if (e.code === 'Minus') {
+        zoomOut(e)
+      } else if (e.code === 'Equal') {
+        zoomIn(e)
+      }
+    }
+  })
   return (
     <div
       style={{

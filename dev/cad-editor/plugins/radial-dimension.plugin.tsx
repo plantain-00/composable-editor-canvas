@@ -179,7 +179,6 @@ export function getCommand(ctx: PluginContext): Command {
         resetInput()
         setText(undefined)
       }
-      ctx.useKey((e) => e.key === 'Escape', reset, [setResult])
       return {
         input,
         onStart() {

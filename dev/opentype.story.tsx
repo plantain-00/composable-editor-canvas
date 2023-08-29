@@ -1,6 +1,6 @@
 import React from 'react'
 import * as opentype from 'opentype.js'
-import { bindMultipleRefs, Button, EnumEditor, metaKeyIfMacElseCtrlKey, NumberEditor, ObjectEditor, PathCommand, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget, scaleByCursorPosition, StringEditor, useKey, useWheelScroll, useWheelZoom, useWindowSize } from '../src'
+import { bindMultipleRefs, Button, EnumEditor, metaKeyIfMacElseCtrlKey, NumberEditor, ObjectEditor, PathCommand, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget, scaleByCursorPosition, StringEditor, useGlobalKeyDown, useWheelScroll, useWheelZoom, useWindowSize } from '../src'
 import type { CopyData } from './cad-editor/plugins/copy-paste.plugin'
 
 export default () => {
@@ -39,12 +39,13 @@ export default () => {
     }
     fetchFonts()
   }, [])
-
-  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setScale(1)
-    setX(0)
-    setY(0)
-    e.preventDefault()
+  useGlobalKeyDown(e => {
+    if (e.code === 'Digit0' && !e.shiftKey && metaKeyIfMacElseCtrlKey(e)) {
+      setScale(1)
+      setX(0)
+      setY(0)
+      e.preventDefault()
+    }
   })
 
   React.useEffect(() => {

@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { Circle, useCircleClickCreate } from "../src"
+import { Circle, useCircleClickCreate, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Circle[]>([])
-  const { circle, onClick, onMove, input } = useCircleClickCreate('center radius', (c) => {
+  const { circle, onClick, onMove, input, reset } = useCircleClickCreate('center radius', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
 
   return (

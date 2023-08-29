@@ -254,7 +254,6 @@ export function getCommand(ctx: PluginContext): Command {
         resetInput()
         setText(undefined)
       }
-      ctx.useKey((e) => e.key === 'Escape', reset, [setResult])
       const assistentContents: (LinearDimensionContent | LineContent)[] = []
       if (result) {
         assistentContents.push(result)

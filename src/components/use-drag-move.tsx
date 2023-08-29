@@ -2,7 +2,6 @@ import * as React from "react"
 import { Position } from "../utils/geometry"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
-import { useKey } from "./use-key"
 import { angleToRadian } from "../utils/radian"
 
 export function useDragMove<T = void>(
@@ -22,16 +21,14 @@ export function useDragMove<T = void>(
   const scale = options?.scale ?? 1
   const parentRotate = -angleToRadian(options?.parentRotate)
 
-  const reset = () => {
+  const resetDragMove = () => {
     setOffset({ x: 0, y: 0 })
     setDragStartPosition(undefined)
   }
 
-  useKey((e) => e.key === 'Escape',reset , [setDragStartPosition])
-
   return {
     offset,
-    reset,
+    resetDragMove,
     startPosition: dragStartPosition,
     onStart(p: Position, startPosition?: Partial<Position & { data: T }>) {
       setDragStartPosition({
@@ -59,8 +56,7 @@ export function useDragMove<T = void>(
       onDragEnd={() => {
         onDragEnd?.()
         if (options?.repeatedly) return
-        setOffset({ x: 0, y: 0 })
-        setDragStartPosition(undefined)
+        resetDragMove()
       }}
     />
   }

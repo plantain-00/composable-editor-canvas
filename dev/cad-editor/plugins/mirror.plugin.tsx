@@ -14,7 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'mirror',
     useCommand({ onEnd, transform, type, scale }) {
       const [changeOriginal, setChangeOriginal] = React.useState(false)
-      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -22,7 +22,7 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = startPosition ? 'specify second point' : 'specify first point'
       }
-      const { input, setInputPosition, clearText, setCursorPosition } = ctx.useCursorInput(message, type ? (e, text) => {
+      const { input, setInputPosition, clearText, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === 'Enter') {
           if (text.toLowerCase() === 'y' || text.toLowerCase() === 'n') {
             setChangeOriginal(!changeOriginal)
@@ -30,6 +30,10 @@ export function getCommand(ctx: PluginContext): Command {
           }
         }
       } : undefined)
+      const reset = () => {
+        resetDragMove()
+        resetInput()
+      }
       return {
         onStart: s => onStart(s),
         mask: type ? mask : undefined,

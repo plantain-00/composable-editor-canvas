@@ -1,15 +1,19 @@
 import { produce } from "immer"
 import React from "react"
-import { PathCommand, reactSvgRenderTarget, usePathClickCreate } from "../src"
+import { PathCommand, reactSvgRenderTarget, useGlobalKeyDown, usePathClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<PathCommand[][]>([])
-  const { preview, onClick, onMove, input, setInputType } = usePathClickCreate(true, (c) => {
+  const { preview, onClick, onMove, input, setInputType, reset } = usePathClickCreate(true, (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
   })
-
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset(true)
+    }
+  })
 
   return (
     <div style={{ height: '100%' }}>

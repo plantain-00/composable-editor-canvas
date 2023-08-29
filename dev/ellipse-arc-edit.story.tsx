@@ -1,11 +1,11 @@
 import { produce } from "immer"
 import React from "react"
-import { EllipseArc, EllipseArcEditBar, ellipseArcToPolyline, normalizeAngleRange, useEllipseArcEdit } from "../src"
+import { EllipseArc, EllipseArcEditBar, ellipseArcToPolyline, normalizeAngleRange, useEllipseArcEdit, useGlobalKeyDown } from "../src"
 import { defaultAngleDelta } from "./cad-editor/model"
 
 export default () => {
   const [content, setContent] = React.useState<EllipseArc>({ cx: 200, cy: 200, rx: 100, ry: 150, angle: 45, startAngle: -30, endAngle: 120 })
-  const { offset, onStart, mask } = useEllipseArcEdit(() => setContent(ellipseArc))
+  const { offset, onStart, mask, reset } = useEllipseArcEdit(() => setContent(ellipseArc))
   const ellipseArc = produce(content, (draft) => {
     if (offset) {
       draft.cx += offset.cx
@@ -15,6 +15,11 @@ export default () => {
       draft.startAngle += offset.startAngle
       draft.endAngle += offset.endAngle
       normalizeAngleRange(draft)
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
     }
   })
   const points = ellipseArcToPolyline(ellipseArc, defaultAngleDelta)

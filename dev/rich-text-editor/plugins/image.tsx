@@ -1,5 +1,5 @@
 import React from "react"
-import { NumberEditor, StringEditor, getImageFromCache, HtmlEditorPluginInline, ResizeBar, HtmlTextInline, Size, useDragResize } from "../../../src"
+import { NumberEditor, StringEditor, getImageFromCache, HtmlEditorPluginInline, ResizeBar, HtmlTextInline, Size, useDragResize, useGlobalKeyDown } from "../../../src"
 import { RichTextEditorPluginHook } from "../model"
 
 export interface RichTextImage extends Size {
@@ -22,7 +22,7 @@ export const image: HtmlEditorPluginInline = {
 
 export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, currentContentLayout, updateCurrentContent, setResizeOffset }) => {
   const [text, setText] = React.useState('')
-  const { offset, onStart, mask } = useDragResize(
+  const { offset, onStart, mask, resetDragResize } = useDragResize(
     () => {
       updateCurrentContent(c => {
         if (isRichTextImage(c)) {
@@ -35,6 +35,11 @@ export const useImage: RichTextEditorPluginHook = ({ inputText, currentContent, 
       keepRatio: currentContent && isRichTextImage(currentContent) ? currentContent.width / currentContent.height : undefined,
     },
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragResize()
+    }
+  })
   React.useEffect(() => {
     setResizeOffset(offset)
   }, [offset.x, offset.y])

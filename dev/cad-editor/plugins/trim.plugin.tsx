@@ -38,6 +38,8 @@ export function getCommand(ctx: PluginContext): Command {
               if (result) {
                 allContents.push({ content, children: result })
               }
+            } else {
+              allContents.push({ content, children: [content] })
             }
           }
           setCandidates(allContents)
@@ -78,41 +80,6 @@ export function getCommand(ctx: PluginContext): Command {
         resetHistory()
         setTrackPoints([])
       }
-      ctx.useKey((e) => e.key === 'Escape', reset, [setCandidates, setCurrents, resetHistory, setTrackPoints, reset])
-      ctx.useKey((k) => k.code === 'KeyZ' && !k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), undo)
-      ctx.useKey((k) => k.code === 'KeyZ' && k.shiftKey && ctx.metaKeyIfMacElseCtrlKey(k), redo)
-      ctx.useKey((e) => e.key === 'Enter', () => {
-        if (!type) return
-        const removedIndexes: number[] = []
-        const newContents: model.BaseContent[] = []
-        for (const { content, children } of state) {
-          const parentModel = ctx.getContentModel(content)
-          if (parentModel?.break) {
-            let points: core.Position[] = []
-            for (const child of children) {
-              const model = ctx.getContentModel(child)
-              if (model?.getStartPoint && model.getEndPoint) {
-                points.push(model.getStartPoint(child), model.getEndPoint(child))
-              }
-            }
-            points = ctx.deduplicatePosition(points)
-            const r = parentModel.break(content, points, contents)
-            if (r) {
-              removedIndexes.push(ctx.getContentIndex(content, contents))
-              newContents.push(...r.filter(c => children.every(f => !ctx.deepEquals(f, c))))
-            }
-          }
-        }
-        onEnd({
-          updateContents: (contents) => {
-            for (const index of removedIndexes) {
-              contents[index] = undefined
-            }
-            contents.push(...newContents)
-          },
-        })
-        reset()
-      }, [reset, type])
 
       return {
         onStart() {
@@ -178,6 +145,46 @@ export function getCommand(ctx: PluginContext): Command {
             }
           }
           setCurrents([])
+        },
+        onKeyDown(e) {
+          if (e.code === 'KeyZ' && ctx.metaKeyIfMacElseCtrlKey(e)) {
+            if (e.shiftKey) {
+              redo(e)
+            } else {
+              undo(e)
+            }
+          } else if (e.key === 'Enter') {
+            if (!type) return
+            const removedIndexes: number[] = []
+            const newContents: model.BaseContent[] = []
+            for (const { content, children } of state) {
+              const parentModel = ctx.getContentModel(content)
+              if (parentModel?.break) {
+                let points: core.Position[] = []
+                for (const child of children) {
+                  const model = ctx.getContentModel(child)
+                  if (model?.getStartPoint && model.getEndPoint) {
+                    points.push(model.getStartPoint(child), model.getEndPoint(child))
+                  }
+                }
+                points = ctx.deduplicatePosition(points)
+                const r = parentModel.break(content, points, contents)
+                if (r) {
+                  removedIndexes.push(ctx.getContentIndex(content, contents))
+                  newContents.push(...r.filter(c => children.every(f => !ctx.deepEquals(f, c))))
+                }
+              }
+            }
+            onEnd({
+              updateContents: (contents) => {
+                for (const index of removedIndexes) {
+                  contents[index] = undefined
+                }
+                contents.push(...newContents)
+              },
+            })
+            reset()
+          }
         },
         assistentContents,
         reset,

@@ -2,7 +2,6 @@ import * as React from "react"
 import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position } from "../../utils/geometry"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { useCursorInput } from "../use-cursor-input"
-import { useKey } from "../use-key"
 
 export function useCircleClickCreate(
   type: '2 points' | '3 points' | 'center radius' | 'center diameter' | undefined,
@@ -97,8 +96,6 @@ export function useCircleClickCreate(
     setCircle(undefined)
     resetInput()
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setStartPosition, setMiddlePosition])
 
   return {
     circle,

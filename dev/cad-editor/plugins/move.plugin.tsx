@@ -12,7 +12,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'move',
     useCommand({ onEnd, transform, type, scale }) {
-      const { offset, onStart, mask, startPosition, reset } = ctx.useDragMove(onEnd, {
+      const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(onEnd, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -20,7 +20,11 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = startPosition ? 'specify end point' : 'specify start point'
       }
-      const { input, setInputPosition } = ctx.useCursorInput(message)
+      const { input, setInputPosition, resetInput } = ctx.useCursorInput(message)
+      const reset = () => {
+        resetDragMove()
+        resetInput()
+      }
 
       return {
         onStart: s => onStart(s),

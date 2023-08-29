@@ -89,7 +89,6 @@ export function getCommand(ctx: PluginContext): Command {
         clearText()
         resetInput()
       }
-      ctx.useKey((e) => e.key === 'Escape', reset, [setCandidates])
 
       return {
         onStart(p) {

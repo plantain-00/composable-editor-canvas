@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as twgl from 'twgl.js'
-import { bindMultipleRefs, combineStripTriangles, getPolylineTriangles, m3, metaKeyIfMacElseCtrlKey, scaleByCursorPosition, useDragMove, useKey, useWheelScroll, useWheelZoom, useWindowSize, useZoom, Vec4 } from "../src"
+import { bindMultipleRefs, combineStripTriangles, getPolylineTriangles, m3, metaKeyIfMacElseCtrlKey, scaleByCursorPosition, useDragMove, useGlobalKeyDown, useWheelScroll, useWheelZoom, useWindowSize, useZoom, Vec4 } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -14,11 +14,20 @@ export default () => {
     }
   })
   const { zoomIn, zoomOut } = useZoom(scale, setScale)
-  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
-  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragMove()
+    } else if (metaKeyIfMacElseCtrlKey(e) ) {
+      if (e.code === 'Minus') {
+        zoomOut(e)
+      } else if (e.code === 'Equal') {
+        zoomIn(e)
+      }
+    }
   })
   const size = useWindowSize()
   const width = size.width / 2

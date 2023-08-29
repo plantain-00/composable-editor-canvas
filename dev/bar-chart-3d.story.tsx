@@ -1,5 +1,5 @@
 import React from "react"
-import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, Position, ChartTooltip, Vec3, Vec4, getChartAxis3D, angleToRadian } from "../src"
+import { useWindowSize, createWebgl3DRenderer, useWheelScroll, useWheelZoom, useDragMove, Graphic3d, updateCamera, bindMultipleRefs, Position, ChartTooltip, Vec3, Vec4, getChartAxis3D, angleToRadian, useGlobalKeyDown } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -7,7 +7,7 @@ export default () => {
   const { x, y, ref: wheelScrollRef } = useWheelScroll<HTMLCanvasElement>()
   const { scale, ref: wheelZoomRef } = useWheelZoom<HTMLCanvasElement>()
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     setRotate((v) => ({ x: v.x + offset.x, y: v.y + offset.y }))
   })
   const size = useWindowSize()
@@ -23,6 +23,11 @@ export default () => {
     if (!ref.current) return
     renderer.current = createWebgl3DRenderer(ref.current)
   }, [ref.current])
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragMove()
+    }
+  })
 
   React.useEffect(() => {
     const points1 = [65, 59, 80, 81, 56, 55, 40].map((s, i) => [(i + 1) * 20, s, 0] as Vec3)

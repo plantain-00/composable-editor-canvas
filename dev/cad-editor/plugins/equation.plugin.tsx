@@ -146,8 +146,6 @@ export function getCommand(ctx: PluginContext): Command {
         setDependentVariable('y')
       }
 
-      ctx.useKey((e) => e.key === 'Escape', reset, [resetInput, setDependentVariable])
-
       return {
         input,
         onStart() {

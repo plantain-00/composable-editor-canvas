@@ -1,10 +1,15 @@
 import { produce } from "immer"
 import React from "react"
-import { Arc, CircleArcEditBar, normalizeAngleRange, polarToCartesian, useCircleArcEdit } from "../src"
+import { Arc, CircleArcEditBar, normalizeAngleRange, polarToCartesian, useCircleArcEdit, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState<Arc>({ x: 200, y: 200, r: 100, startAngle: -30, endAngle: 120 })
-  const { offset, onStart, mask } = useCircleArcEdit(() => setContent(circleArc))
+  const { offset, onStart, mask, reset } = useCircleArcEdit(() => setContent(circleArc))
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
+  })
   const circleArc = produce(content, (draft) => {
     if (offset) {
       draft.x += offset.x
