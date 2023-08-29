@@ -1,7 +1,6 @@
 import { produce } from "immer"
 import * as React from "react"
 
-import { useKey } from ".."
 import { isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position } from "../../utils"
 
 /**
@@ -15,9 +14,6 @@ export function usePenClickCreate(
   const reset = () => {
     setPoints([])
   }
-  useKey((e) => e.key === 'Escape', () => {
-    reset()
-  }, [setPoints])
 
   return {
     points,

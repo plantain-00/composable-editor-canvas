@@ -16,7 +16,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'measure',
     useCommand({ transform, type, scale }) {
-      const { onStart, mask, startPosition, reset } = ctx.useDragMove(undefined, {
+      const { onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(undefined, {
         transform,
         ignoreLeavingEvent: true,
       })
@@ -24,7 +24,11 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = startPosition ? 'specify end point' : 'specify start point'
       }
-      const { input, setInputPosition, cursorPosition, setCursorPosition } = ctx.useCursorInput(message)
+      const { input, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message)
+      const reset = () => {
+        resetDragMove()
+        resetInput()
+      }
 
       const assistentContents: (LineContent | ArcContent | TextContent)[] = []
       if (startPosition && cursorPosition) {

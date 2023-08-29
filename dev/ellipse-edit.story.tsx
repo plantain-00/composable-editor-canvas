@@ -1,16 +1,21 @@
 import { produce } from "immer"
 import React from "react"
-import { Ellipse, EllipseEditBar, useEllipseEdit } from "../src"
+import { Ellipse, EllipseEditBar, useEllipseEdit, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState<Ellipse>({ cx: 200, cy: 200, rx: 100, ry: 150, angle: 45 })
-  const { offset, onStart, mask } = useEllipseEdit(() => setContent(ellipse))
+  const { offset, onStart, mask, reset } = useEllipseEdit(() => setContent(ellipse))
   const ellipse = produce(content, (draft) => {
     if (offset) {
       draft.cx += offset.cx
       draft.cy += offset.cy
       draft.rx += offset.rx
       draft.ry += offset.ry
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
     }
   })
   return (

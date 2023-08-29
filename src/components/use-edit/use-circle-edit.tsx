@@ -14,8 +14,11 @@ export function useCircleEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Circle & { data?: T }>({ x: 0, y: 0, r: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useDragEdit<{ type: 'center' | 'edge' } & Circle, T>(
-    onEnd,
+  const { onStart, mask, reset } = useDragEdit<{ type: 'center' | 'edge' } & Circle, T>(
+    () => {
+      setOffset({ x: 0, y: 0, r: 0 })
+      onEnd()
+    },
     (start, end) => {
       end = getAngleSnapPosition(start.data, end, options?.getAngleSnap)
       setCursorPosition(end)
@@ -28,7 +31,6 @@ export function useCircleEdit<T = void>(
         setOffset({ x: 0, y: 0, r, data: start.data.data })
       }
     },
-    () => setOffset({ x: 0, y: 0, r: 0 }),
     options,
   )
 
@@ -37,5 +39,9 @@ export function useCircleEdit<T = void>(
     offset,
     onStart,
     mask,
+    reset() {
+      setOffset({ x: 0, y: 0, r: 0 })
+      reset()
+    },
   }
 }

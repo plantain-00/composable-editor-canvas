@@ -13,8 +13,11 @@ export function usePolylineEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<Position & { pointIndexes: number[], data?: T }>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask, dragStartPosition } = useDragEdit<{ pointIndexes: number[] }, T>(
-    onEnd,
+  const { onStart, mask, dragStartPosition, reset } = useDragEdit<{ pointIndexes: number[] }, T>(
+    () => {
+      setOffset(undefined)
+      onEnd()
+    },
     (start, end) => {
       end = getAngleSnapPosition(start, end, options?.getAngleSnap)
       setCursorPosition(end)
@@ -22,7 +25,6 @@ export function usePolylineEdit<T = void>(
       const y = end.y - start.y
       setOffset({ x, y, pointIndexes: start.data.pointIndexes, data: start.data.data })
     },
-    () => setOffset(undefined),
     options,
   )
 
@@ -34,5 +36,9 @@ export function usePolylineEdit<T = void>(
     mask,
     cursorPosition,
     dragStartPosition,
+    reset() {
+      setOffset(undefined)
+      reset()
+    },
   }
 }

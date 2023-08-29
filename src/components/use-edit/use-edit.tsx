@@ -1,5 +1,5 @@
 import * as React from "react"
-import { DragMask, useKey } from ".."
+import { DragMask } from ".."
 import { Position } from "../.."
 
 /**
@@ -24,17 +24,11 @@ export type EditOptions = Partial<{
 export function useDragEdit<V, T = void>(
   onEnd: () => void,
   onDragging: (start: Position & { data: EditData<T, V> }, end: Position) => void,
-  reset: () => void,
   options?: Partial<{
     transform: (p: Position) => Position
   }>,
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data: EditData<T, V> }>()
-
-  useKey((e) => e.key === 'Escape', () => {
-    reset()
-    setDragStartPosition(undefined)
-  }, [setDragStartPosition])
 
   return {
     dragStartPosition,
@@ -45,6 +39,9 @@ export function useDragEdit<V, T = void>(
         data,
       })
     },
+    reset() {
+      setDragStartPosition(undefined)
+    },
     mask: dragStartPosition && <DragMask
       onDragging={(e) => {
         e.stopPropagation()
@@ -54,7 +51,6 @@ export function useDragEdit<V, T = void>(
       }}
       onDragEnd={() => {
         onEnd()
-        reset()
         setDragStartPosition(undefined)
       }}
       style={{

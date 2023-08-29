@@ -1,6 +1,6 @@
 import React from "react"
 import { produce } from "immer"
-import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useKey, useLineClickCreate, useRefState, useWindowSize } from "../src";
+import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize } from "../src";
 
 export function Combination6() {
   const { width, height } = useWindowSize()
@@ -111,8 +111,6 @@ export function Combination6() {
     setCreating(undefined)
     setCursor(undefined)
   }
-  useKey((e) => e.key === 'Escape', reset, [setCreating])
-
   if (line) {
     assistentContents.push(lineToContent(line, radius, creating))
   } else if (cursorPosition) {
@@ -149,6 +147,12 @@ export function Combination6() {
       onMove(p)
     } else if (creating === 'shoot down') {
       setCursor(p)
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+      resetCreate(true)
     }
   })
 

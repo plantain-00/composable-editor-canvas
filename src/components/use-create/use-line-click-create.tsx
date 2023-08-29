@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
+import { useCursorInput } from ".."
 import { getPointByLengthAndDirection, getTwoPointsDistance, Position } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 
@@ -115,7 +115,12 @@ export function useLineClickCreate<T = unknown>(
     }
   } : undefined)
 
-  const reset = () => {
+  const reset = (saveCurrent?: boolean) => {
+    if (saveCurrent) {
+      if (positions.length > 1) {
+        onEnd(positions, positionTargets)
+      }
+    }
     setPositions([])
     setLine(undefined)
     resetInput()
@@ -124,13 +129,6 @@ export function useLineClickCreate<T = unknown>(
     setTabSwitchIndex(0)
     setPositionTargets([])
   }
-
-  useKey((e) => e.key === 'Escape', () => {
-    if (positions.length > 1) {
-      onEnd(positions, positionTargets)
-    }
-    reset()
-  }, [positions, setPositions, positionTargets])
 
   return {
     line,

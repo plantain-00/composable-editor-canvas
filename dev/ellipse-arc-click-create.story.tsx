@@ -1,14 +1,19 @@
 import { produce } from "immer"
 import React from "react"
-import { EllipseArc, ellipseArcToPolyline, useEllipseArcClickCreate } from "../src"
+import { EllipseArc, ellipseArcToPolyline, useEllipseArcClickCreate, useGlobalKeyDown } from "../src"
 import { defaultAngleDelta } from "./cad-editor/model"
 
 export default () => {
   const [contents, setContents] = React.useState<EllipseArc[]>([])
-  const { ellipse, ellipseArc, onClick, onMove, input } = useEllipseArcClickCreate('ellipse center', (c) => {
+  const { ellipse, ellipseArc, onClick, onMove, input, reset } = useEllipseArcClickCreate('ellipse center', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
   const arcEllipse = ellipse || ellipseArc
   return (

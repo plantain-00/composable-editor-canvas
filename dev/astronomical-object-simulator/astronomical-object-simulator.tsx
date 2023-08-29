@@ -1,7 +1,7 @@
 import React from 'react';
 import { produce, Patch, enablePatches, produceWithPatches } from 'immer'
 import { v3 } from 'twgl.js'
-import { bindMultipleRefs, Button, colorNumberToPixelColor, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, pixelColorToColorNumber, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, Button, colorNumberToPixelColor, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, pixelColorToColorNumber, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
@@ -28,7 +28,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
     }
   })
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     if (is3D) {
       setRotate((v) => ({ x: v.x + offset.x, y: v.y + offset.y }))
     } else {
@@ -100,63 +100,14 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       y: height / 2,
     },
   }
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    undo(e)
-  })
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    redo(e)
-  })
-  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setScale(1)
-    setX(0)
-    setY(0)
-    setRotate({ x: 0, y: 0 })
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'KeyC' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (selected !== undefined) {
-      const content = state[selected]
-      if (content) {
-        navigator.clipboard.writeText(JSON.stringify(content))
-      }
-    }
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'KeyV' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), async (e) => {
-    try {
-      const text = await navigator.clipboard.readText()
-      const copyData: BaseContent = JSON.parse(text)
-      if (isSphereContent(copyData)) {
-        setPasting(copyData)
-        return
-      }
-    } catch (error) {
-      console.info(error)
-    }
-    e.preventDefault()
-  })
+
   const reset = () => {
     setCreating(false)
     setHovering(undefined)
     setSelected(undefined)
     setPasting(undefined)
   }
-  useKey((e) => e.key === 'Escape', reset, [setCreating])
-  useKey((k) => k.code === 'Backspace' && !k.shiftKey && !metaKeyIfMacElseCtrlKey(k), () => {
-    if (is3D) return
-    if (hovering !== undefined) {
-      setState(draft => {
-        draft[hovering] = undefined
-      })
-      setHovering(undefined)
-    } else if (selected !== undefined) {
-      setState(draft => {
-        draft[selected] = undefined
-      })
-      setSelected(undefined)
-    }
-  })
-  const { editPoint, updateEditPreview, onEditMove, onEditClick } = useEdit<BaseContent, readonly number[]>(
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, resetEdit } = useEdit<BaseContent, readonly number[]>(
     () => applyPatchFromSelf(previewPatches, previewReversePatches),
     (s) => {
       if (isSphereContent(s)) {
@@ -279,6 +230,63 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
       )
     }
   }
+  useGlobalKeyDown(async e => {
+    if (e.key === 'Escape') {
+      reset()
+      resetCreate(true)
+      resetEdit()
+      resetDragMove()
+    } else if (e.code === 'Backspace') {
+      if (is3D) return
+      if (hovering !== undefined) {
+        setState(draft => {
+          draft[hovering] = undefined
+        })
+        setHovering(undefined)
+      } else if (selected !== undefined) {
+        setState(draft => {
+          draft[selected] = undefined
+        })
+        setSelected(undefined)
+      }
+    } else if (metaKeyIfMacElseCtrlKey(e)) {
+      if (e.shiftKey) {
+        if (e.code === 'KeyZ') {
+          await redo(e)
+        }
+      } else {
+        if (e.code === 'KeyZ') {
+          await undo(e)
+        } else if (e.code === 'Digit0') {
+          setScale(1)
+          setX(0)
+          setY(0)
+          setRotate({ x: 0, y: 0 })
+          e.preventDefault()
+        } else if (e.code === 'KeyC') {
+          e.preventDefault()
+          if (selected !== undefined) {
+            const content = state[selected]
+            if (content) {
+              await navigator.clipboard.writeText(JSON.stringify(content))
+            }
+          }
+        } else if (e.code === 'KeyV') {
+          try {
+            const text = await navigator.clipboard.readText()
+            const copyData: BaseContent = JSON.parse(text)
+            if (isSphereContent(copyData)) {
+              setPasting(copyData)
+              return
+            }
+          } catch (error) {
+            console.info(error)
+          }
+          e.preventDefault()
+        }
+      }
+    }
+  })
 
   React.useImperativeHandle<AstronomicalObjectSimulatorRef, AstronomicalObjectSimulatorRef>(ref, () => ({
     handlePatchesEvent(data: { patches: Patch[], reversePatches: Patch[], operator: string }) {

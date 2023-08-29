@@ -2,7 +2,6 @@ import * as React from "react"
 import { getTwoPointsAngle, Position } from "../utils/geometry"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
-import { useKey } from "./use-key"
 import { radianToAngle } from "../utils/radian"
 
 /**
@@ -21,16 +20,15 @@ export function useDragRotate(
   const [offset, setOffset] = React.useState<Position & { angle?: number }>()
   const [center, setCenter] = React.useState<Position>()
   const parentRotate = options?.parentRotate ?? 0
-  const reset = () => {
+  const resetDragRotate = () => {
     setOffset(undefined)
     setCenter(undefined)
   }
-  useKey((e) => e.key === 'Escape', reset, [setCenter])
   return {
     offset,
     center,
     onStart: setCenter,
-    reset,
+    resetDragRotate,
     mask: center && <DragMask
       ignoreLeavingEvent={options?.ignoreLeavingEvent}
       onDragging={(e) => {
@@ -45,8 +43,7 @@ export function useDragRotate(
       }}
       onDragEnd={() => {
         onDragEnd?.()
-        setOffset(undefined)
-        setCenter(undefined)
+        resetDragRotate()
       }}
     />
   }

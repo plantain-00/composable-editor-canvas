@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
+import { useCursorInput } from ".."
 import { Position, Image } from "../../utils"
 import { getImageFromCache } from "../react-render-target/image-loader"
 
@@ -24,8 +24,6 @@ export function useImageClickCreate(
   const reset = () => {
     setImage(undefined)
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setImage])
 
   React.useEffect(() => {
     if (enabled) {

@@ -1,9 +1,9 @@
 import React from "react"
-import { Circle, getTwoPointsDistance, Region, useEdit } from "../src"
+import { Circle, getTwoPointsDistance, Region, useEdit, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState<Circle>({ x: 300, y: 200, r: 100 })
-  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<Circle>(
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<Circle>(
     () => setContent(circle),
     (s) => ({
       editPoints: [
@@ -23,6 +23,11 @@ export default () => {
       ],
     }),
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetEdit()
+    }
+  })
   const assistentContents: Region[] = []
   const newContent = updateEditPreview()
   const circle = newContent?.result ?? content

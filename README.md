@@ -20,7 +20,7 @@ A composable editor canvas library.
 + `usePatchBasedUndoRedo` <https://plantain-00.github.io/composable-editor-canvas/?p=patch-based-undo-redo.story.story>
 + `useWheelScroll` <https://plantain-00.github.io/composable-editor-canvas/?p=wheel-scroll.story>
 + `useWheelZoom`<https://plantain-00.github.io/composable-editor-canvas/?p=wheel-zoom.story>
-+ `useZoom` `useKey` <https://plantain-00.github.io/composable-editor-canvas/?p=keyboard-zoom.story>
++ `useZoom` <https://plantain-00.github.io/composable-editor-canvas/?p=keyboard-zoom.story>
 + `Scrollbar` <https://plantain-00.github.io/composable-editor-canvas/?p=scrollbar.story>
 + `useDragMove` <https://plantain-00.github.io/composable-editor-canvas/?p=drag-move.story>
 + `useDragRotate` `RotationBar` <https://plantain-00.github.io/composable-editor-canvas/?p=drag-rotate.story>

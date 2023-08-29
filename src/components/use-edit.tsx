@@ -2,7 +2,6 @@ import { produceWithPatches, Draft, Patch } from "immer"
 import * as React from "react"
 import { getTwoNumbersDistance, Position, Region } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
-import { useKey } from "./use-key"
 import { prependPatchPath } from "./use-partial-edit"
 import { SnapTarget } from "./use-point-snap"
 import { SelectPath } from "./use-selected"
@@ -41,10 +40,6 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       reset()
     }
   }, [readOnly])
-
-  useKey((e) => e.key === 'Escape', () => {
-    reset()
-  }, [setEditPoint, setStartPosition, setCursorPosition, setSnapTarget])
 
   return {
     editPoint,
@@ -151,6 +146,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
         reset()
       }
     },
+    resetEdit: reset,
   }
 }
 

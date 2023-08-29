@@ -1,10 +1,10 @@
 import { produce } from "immer"
 import React from "react"
-import { Region, useDragSelect } from "../src"
+import { Region, useDragSelect, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Region[]>([])
-  const { onStartSelect, dragSelectMask } = useDragSelect<number[] | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
+  const { onStartSelect, dragSelectMask, resetDragSelect } = useDragSelect<number[] | undefined>((dragSelectStartPosition, dragSelectEndPosition) => {
     if (dragSelectEndPosition) {
       setContents(produce(contents, (draft) => {
         draft.push({
@@ -16,6 +16,11 @@ export default () => {
       }))
     }
   }, (e) => e.shiftKey)
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragSelect()
+    }
+  })
 
   return (
     <div

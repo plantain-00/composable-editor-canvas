@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useKey } from "./use-key"
 import { SelectPath, useSelected, UseSelectedOptions } from "./use-selected"
 
 /**
@@ -10,7 +9,7 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
   executeOperation: (operation: TOperate, selected: readonly TPath[]) => boolean,
   options?: Partial<UseSelectedOptions<TPath>>,
 ) {
-  const { selected, isSelected, addSelection, removeSelection, filterSelection, setSelected } = useSelected<TPath>(options)
+  const { selected, isSelected, addSelection, removeSelection, filterSelection, setSelected, onSelectedKeyDown } = useSelected<TPath>(options)
   const [operations, setOperations] = React.useState<{
     type: 'select'
     select: TSelect
@@ -27,10 +26,6 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
     setOperations({ type: 'select', select: defaultOperation })
   }
 
-  useKey((e) => e.key === 'Escape', () => {
-    setOperations({ type: 'select', select: defaultOperation })
-  }, [setOperations])
-
   const startNextOperation = (s = selected) => {
     if (operations.type === 'select then operate') {
       if (executeOperation(operations.operate, s)) {
@@ -40,8 +35,6 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
       setOperations({ type: 'operate', operate: operations.operate })
     }
   }
-
-  useKey((e) => e.key === 'Enter', () => startNextOperation())
 
   let message = ''
   if (operations.type === 'select then operate') {
@@ -78,6 +71,14 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
     executeOperation,
     startNextOperation,
     resetOperation,
+    onSelectBeforeOperateKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        resetOperation()
+      } else if (e.key === 'Enter') {
+        startNextOperation()
+      }
+      onSelectedKeyDown(e)
+    },
     selectBeforeOperate(select: TSelect, operate: TOperate) {
       setOperations({ type: 'select then operate', select, operate })
     },

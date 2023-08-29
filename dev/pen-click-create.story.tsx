@@ -1,15 +1,19 @@
 import { produce } from "immer"
 import React from "react"
-import { Position, usePenClickCreate } from "../src"
+import { Position, useGlobalKeyDown, usePenClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Position[][]>([])
-  const { points, onClick, onMove } = usePenClickCreate(true, () => {
+  const { points, onClick, onMove, reset } = usePenClickCreate(true, () => {
     setContents(produce(contents, (draft) => {
       draft.push(points)
     }))
   })
-
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
+  })
 
   return (
     <div style={{ height: '100%' }}>

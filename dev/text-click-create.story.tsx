@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { getColorString, Text, useTextClickCreate } from "../src"
+import { getColorString, Text, useGlobalKeyDown, useTextClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Text[]>([])
-  const { text, onClick, onMove, input } = useTextClickCreate(true, (c) => {
+  const { text, onClick, onMove, input, reset } = useTextClickCreate(true, (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
 
   return (

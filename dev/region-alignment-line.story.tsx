@@ -1,6 +1,6 @@
 import { produce } from "immer"
 import React from "react"
-import { AlignmentLine, useDragMove, useRegionAlignment } from "../src"
+import { AlignmentLine, useDragMove, useGlobalKeyDown, useRegionAlignment } from "../src"
 import { defaultContents } from "./story-util"
 
 export default () => {
@@ -8,7 +8,7 @@ export default () => {
   const [selectedIndex, setSelectedIndex] = React.useState(0)
 
   const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clearRegionAlignments } = useRegionAlignment(10)
-  const { offset, onStart, mask, startPosition } = useDragMove<number>(
+  const { offset, onStart, mask, startPosition, resetDragMove } = useDragMove<number>(
     () => {
       clearRegionAlignments()
       if (offset.x === 0 && offset.y === 0 && startPosition?.data !== undefined) {
@@ -31,6 +31,11 @@ export default () => {
       },
     }
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragMove()
+    }
+  })
   return (
     <>
       {contents.map((content, i) => (

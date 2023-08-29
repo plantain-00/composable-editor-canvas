@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
+import { useCursorInput } from ".."
 import { PathCommand, Position } from "../../utils"
 
 /**
@@ -77,7 +77,12 @@ export function usePathClickCreate(
     }
   } : undefined)
 
-  const reset = () => {
+  const reset = (saveCurrent?: boolean) => {
+    if (saveCurrent) {
+      if (path.length > 1) {
+        onEnd(path)
+      }
+    }
     setPath([])
     setCurrent(undefined)
     resetInput()
@@ -87,13 +92,6 @@ export function usePathClickCreate(
     setControlPoint2(undefined)
     setRadius(undefined)
   }
-
-  useKey((e) => e.key === 'Escape', () => {
-    if (path.length > 1) {
-      onEnd(path)
-    }
-    reset()
-  }, [path, setPath, setCurrent])
 
   const clickPosition = (p: Position) => {
     setCursorPosition(p)

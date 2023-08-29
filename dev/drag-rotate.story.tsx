@@ -1,6 +1,6 @@
 import { produce } from "immer"
 import React from "react"
-import { RotationBar, useDragRotate } from "../src"
+import { RotationBar, useDragRotate, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState({
@@ -11,7 +11,7 @@ export default () => {
     rotate: 0,
     url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-images/grapefruit-slice-332-332.jpg',
   })
-  const { offset, onStart, mask } = useDragRotate(
+  const { offset, onStart, mask, resetDragRotate } = useDragRotate(
     () => setContent(previewContent),
     {
       transformOffset: (r, e) => {
@@ -25,6 +25,11 @@ export default () => {
       },
     }
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragRotate()
+    }
+  })
   const previewContent = produce(content, (draft) => {
     if (offset?.angle !== undefined) {
       draft.rotate = offset.angle

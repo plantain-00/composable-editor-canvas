@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Position } from "../utils/geometry"
 import { DragMask } from "./drag-mask"
-import { useKey } from "./use-key"
 
 /**
  * @public
@@ -12,16 +11,15 @@ export function useDragSelect<T = void>(
 ) {
   const [dragStartPosition, setDragStartPosition] = React.useState<Position & { data?: T }>()
   const [dragEndPosition, setDragEndPosition] = React.useState<Position>()
-  useKey((e) => e.key === 'Escape', () => {
+  const resetDragSelect = () => {
     setDragStartPosition(undefined)
     setDragEndPosition(undefined)
-  }, [setDragStartPosition, setDragEndPosition])
+  }
   const endDragSelect = (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (dragStartPosition) {
       onDragEnd(dragStartPosition, dragEndPosition, e)
     }
-    setDragStartPosition(undefined)
-    setDragEndPosition(undefined)
+    resetDragSelect()
   }
   return {
     dragSelectStartPosition: dragStartPosition,
@@ -33,6 +31,7 @@ export function useDragSelect<T = void>(
       })
     },
     endDragSelect,
+    resetDragSelect,
     dragSelectMask: dragStartPosition && <DragMask
       onDragging={(e) => {
         const isSquare = typeof square === 'boolean' ? square : square ? square(e) : undefined

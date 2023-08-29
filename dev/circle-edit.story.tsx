@@ -1,17 +1,20 @@
 import { produce } from "immer"
 import React from "react"
-import { Circle, CircleEditBar, useCircleEdit } from "../src"
+import { Circle, CircleEditBar, useCircleEdit, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState<Circle>({ x: 300, y: 200, r: 100 })
-
-  const { offset, onStart, mask } = useCircleEdit(() => setContent(circle))
+  const { offset, onStart, mask, reset } = useCircleEdit(() => setContent(circle))
   const circle = produce(content, (draft) => {
     draft.x += offset.x
     draft.y += offset.y
     draft.r += offset.r
   })
-
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
+  })
   return (
     <>
       <div

@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { Ellipse, useEllipseClickCreate } from "../src"
+import { Ellipse, useEllipseClickCreate, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Ellipse[]>([])
-  const { ellipse, onClick, onMove, input } = useEllipseClickCreate('ellipse center', (c) => {
+  const { ellipse, onClick, onMove, input, reset } = useEllipseClickCreate('ellipse center', (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
 
   return (

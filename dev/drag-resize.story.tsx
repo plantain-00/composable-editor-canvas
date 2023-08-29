@@ -1,6 +1,6 @@
 import { produce } from "immer"
 import React from "react"
-import { metaKeyIfMacElseCtrlKey, ResizeBar, useDragResize } from "../src"
+import { metaKeyIfMacElseCtrlKey, ResizeBar, useDragResize, useGlobalKeyDown } from "../src"
 
 export default () => {
   const [content, setContent] = React.useState({
@@ -9,13 +9,18 @@ export default () => {
     width: 100,
     height: 100,
   })
-  const { offset, onStart, mask } = useDragResize(
+  const { offset, onStart, mask, resetDragResize } = useDragResize(
     () => setContent(previewContent),
     {
       centeredScaling: (e) => e.shiftKey,
       keepRatio: (e) => metaKeyIfMacElseCtrlKey(e) ? content.width / content.height : undefined,
     },
   )
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      resetDragResize()
+    }
+  })
   const previewContent = produce(content, (draft) => {
     draft.width += offset.width
     draft.height += offset.height

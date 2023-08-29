@@ -1,6 +1,6 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, solveEquations, Transform, useEdit, useEvent, useKey, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, solveEquations, Transform, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, EquationData, getContentModel, isDeviceContent, isJunctionContent, JunctionContent, LineContent, ContentUpdater, modelCenter, registerModel, updateReferencedContents } from "./model";
 import { powerModel } from "./plugins/power";
 import { resistanceModel } from './plugins/resistance';
@@ -123,12 +123,6 @@ export const CircuitGraphEditor = React.forwardRef((props: {
       y: height / 2,
     },
   }
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    undo(e)
-  })
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    redo(e)
-  })
   const reset = () => {
     setOperation(undefined)
     startJunctionId.current = undefined
@@ -138,21 +132,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     setSelected(undefined)
     setAction(undefined)
   }
-  useKey((e) => e.key === 'Escape', reset, [setOperation, setSnapPoint])
-  useKey((k) => k.code === 'Backspace' && !k.shiftKey && !metaKeyIfMacElseCtrlKey(k), () => {
-    if (hovering !== undefined && !contentIsReferenced(hovering, state)) {
-      setState(draft => {
-        draft[hovering] = undefined
-      })
-      setHovering(undefined)
-    } else if (selected !== undefined && !contentIsReferenced(selected, state)) {
-      setState(draft => {
-        draft[selected] = undefined
-      })
-      setSelected(undefined)
-    }
-  })
-  const { editPoint, updateEditPreview, onEditMove, onEditClick, editLastPosition, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
+  const { editPoint, updateEditPreview, onEditMove, onEditClick, editLastPosition, getEditAssistentContents, resetEdit } = useEdit<BaseContent, readonly number[]>(
     () => {
       const newPatches: Patch[] = []
       const newReversePatches: Patch[] = []
@@ -389,6 +369,35 @@ export const CircuitGraphEditor = React.forwardRef((props: {
     if (lastOperation) {
       startOperation(lastOperation)
       e.preventDefault()
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+      resetCreate(true)
+      resetEdit()
+    } else if (metaKeyIfMacElseCtrlKey(e)) {
+      if (e.shiftKey) {
+        if (e.code === 'KeyZ') {
+          redo(e)
+        }
+      } else {
+        if (e.code === 'KeyZ') {
+          undo(e)
+        } else if (e.code === 'Backspace') {
+          if (hovering !== undefined && !contentIsReferenced(hovering, state)) {
+            setState(draft => {
+              draft[hovering] = undefined
+            })
+            setHovering(undefined)
+          } else if (selected !== undefined && !contentIsReferenced(selected, state)) {
+            setState(draft => {
+              draft[selected] = undefined
+            })
+            setSelected(undefined)
+          }
+        }
+      }
     }
   })
 

@@ -1,8 +1,11 @@
 import React from "react"
-import { useSelected } from "../src"
+import { useGlobalKeyDown, useSelected } from "../src"
 
 export default () => {
-  const { isSelected, addSelection } = useSelected({ maxCount: 3 })
+  const { isSelected, addSelection, onSelectedKeyDown } = useSelected({ maxCount: 3 })
+  useGlobalKeyDown(e => {
+    onSelectedKeyDown(e)
+  })
 
   return (
     <div>

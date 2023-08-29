@@ -12,8 +12,11 @@ export function useEllipseArcEdit<T = void>(
 ) {
   const [offset, setOffset] = React.useState<EllipseArc & { data?: T }>({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
-  const { onStart, mask } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' } & EllipseArc, T>(
-    onEnd,
+  const { onStart, mask, reset } = useDragEdit<{ type: 'center' | 'start angle' | 'end angle' } & EllipseArc, T>(
+    () => {
+      setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
+      onEnd()
+    },
     (start, end) => {
       end = getAngleSnapPosition({ x: start.data.cx, y: start.data.cy }, end, options?.getAngleSnap)
       setCursorPosition(end)
@@ -31,7 +34,6 @@ export function useEllipseArcEdit<T = void>(
         setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: angle, data: start.data.data })
       }
     },
-    () => setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 }),
     options,
   )
 
@@ -40,5 +42,9 @@ export function useEllipseArcEdit<T = void>(
     onStart,
     mask,
     cursorPosition,
+    reset() {
+      setOffset({ cx: 0, cy: 0, rx: 0, ry: 0, startAngle: 0, endAngle: 0 })
+      reset()
+    },
   }
 }

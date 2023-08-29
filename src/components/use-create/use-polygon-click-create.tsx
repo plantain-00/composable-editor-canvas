@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
+import { useCursorInput } from ".."
 import { getPointByLengthAndDirection, getPolygonPoints, Position } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 
@@ -75,8 +75,6 @@ export function usePolygonClickCreate(
     setPolygon(undefined)
     resetInput()
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setStartPosition])
 
   React.useEffect(() => {
     if (startPosition && cursorPosition) {

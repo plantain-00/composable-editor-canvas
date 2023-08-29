@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Nullable } from "../utils"
-import { useKey } from "./use-key"
 
 export function useSelected<T extends SelectPath = SelectPath>(options?: Partial<UseSelectedOptions<T>>) {
   const [selected, setSelected] = React.useState<readonly T[]>([])
@@ -8,10 +7,6 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
   React.useEffect(() => {
     options?.onChange?.(selected)
   }, [selected])
-
-  useKey((e) => e.key === 'Escape', () => {
-    setSelected([])
-  }, [setSelected])
 
   const addSelection = (
     value: readonly T[],
@@ -54,6 +49,11 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     },
     addSelection,
     removeSelection,
+    onSelectedKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setSelected([])
+      }
+    },
     setSelected(...value: readonly Nullable<T>[]) {
       const s = value.filter((v): v is T => v !== undefined)
       if (s.length !== 0 || selected.length !== 0) {

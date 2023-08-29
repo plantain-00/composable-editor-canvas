@@ -96,7 +96,6 @@ export function getCommand(ctx: PluginContext): Command[] {
           setCursorPosition(undefined)
           setInputPosition(undefined)
         }
-        ctx.useKey((e) => e.key === 'Escape', reset, [setCopyData, resetInput, setInputPosition, setInputPosition])
 
         const assistentContents: model.BaseContent[] = []
         if (cursorPosition && copyData) {

@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, useKey, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown } from '../../src'
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -47,7 +47,7 @@ export const CADEditor = React.forwardRef((props: {
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
   const { width, height } = useWindowSize()
-  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message } = useSelectBeforeOperate<Select, Operation, number[]>(
+  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message, onSelectBeforeOperateKeyDown } = useSelectBeforeOperate<Select, Operation, number[]>(
     {},
     (p, s) => {
       if (p?.type === 'command') {
@@ -215,7 +215,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
   const [rotate, setRotate] = useLocalStorageState(props.id + '-rotate', 0)
-  const { offset: rotateOffset, onStart: startRotate, mask: rotateMask } = useDragRotate(
+  const { offset: rotateOffset, onStart: startRotate, mask: rotateMask, resetDragRotate } = useDragRotate(
     () => {
       if (activeViewport && activeViewportIndex !== undefined) {
         setState((draft) => {
@@ -240,9 +240,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   )
   const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
-  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
-  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask } = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     if (activeViewportIndex !== undefined) {
       applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       return
@@ -284,75 +282,6 @@ export const CADEditor = React.forwardRef((props: {
     transform.y += offset.y
   }
 
-  useKey((k) => k.key === 'ArrowLeft' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (activeViewportIndex !== undefined && activeContentBounding) {
-      setState((draft) => {
-        draft = getContentByPath(draft)
-        const content = draft[activeViewportIndex]
-        if (content && isViewportContent(content)) {
-          const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
-          content.x += p.x
-          content.y += p.y
-        }
-      })
-    } else {
-      setX((v) => v + width / 10)
-    }
-    e.preventDefault()
-  })
-  useKey((k) => k.key === 'ArrowRight' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (activeViewportIndex !== undefined && activeContentBounding) {
-      setState((draft) => {
-        draft = getContentByPath(draft)
-        const content = draft[activeViewportIndex]
-        if (content && isViewportContent(content)) {
-          const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
-          content.x -= p.x
-          content.y -= p.y
-        }
-      })
-    } else {
-      setX((v) => v - width / 10)
-    }
-    e.preventDefault()
-  })
-  useKey((k) => k.key === 'ArrowUp' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (activeViewportIndex !== undefined && activeContentBounding) {
-      setState((draft) => {
-        draft = getContentByPath(draft)
-        const content = draft[activeViewportIndex]
-        if (content && isViewportContent(content)) {
-          const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
-          content.x += p.x
-          content.y += p.y
-        }
-      })
-    } else {
-      setY((v) => v + height / 10)
-    }
-    e.preventDefault()
-  })
-  useKey((k) => k.key === 'ArrowDown' && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (activeViewportIndex !== undefined && activeContentBounding) {
-      setState((draft) => {
-        draft = getContentByPath(draft)
-        const content = draft[activeViewportIndex]
-        if (content && isViewportContent(content)) {
-          const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
-          content.x -= p.x
-          content.y -= p.y
-        }
-      })
-    } else {
-      setY((v) => v - height / 10)
-    }
-    e.preventDefault()
-  })
-  useKey((e) => e.key === 'Escape', () => {
-    if (activeViewport) return
-    setActive(undefined)
-    setActiveChild(undefined)
-  }, [setActive, setActiveChild, activeViewport])
   useDelayedAction(xOffset !== 0 || yOffset !== 0 || scaleOffset !== 1, 500, () => {
     applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
     setXOffset(0)
@@ -379,7 +308,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
-  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents } = useEdit<BaseContent, readonly number[]>(
+  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, readonly number[]>(
     (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
@@ -389,7 +318,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // snap point
-  const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
+  const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset, onSnapOffsetKeyDown } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
     (operations.type === 'operate' && !getCommand(operations.operate.name)?.pointSnapDisabled) || editPoint !== undefined,
     getIntersectionPoints,
@@ -400,7 +329,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, onCommandKeyDown, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
     ({ updateContents, nextCommand, repeatedly, result } = {}) => {
       commandResultHandler.current?.(result)
       commandResultHandler.current = undefined
@@ -449,7 +378,7 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   // select by region
-  const { onStartSelect, dragSelectMask, endDragSelect } = useDragSelect((start, end, e) => {
+  const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end, e) => {
     if (end) {
       const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
@@ -579,39 +508,6 @@ export const CADEditor = React.forwardRef((props: {
     previewReversePatches.push(...reversePatches)
   }
 
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (operations.type !== 'select') return
-    undo(e)
-    setSelected()
-  })
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    if (operations.type !== 'select') return
-    redo(e)
-    setSelected()
-  })
-  useKey((k) => k.code === 'KeyA' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    addSelection(...editingContent.map((_, i) => [i]))
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'Digit0' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    setScale(1)
-    setX(0)
-    setY(0)
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'KeyC' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    startOperation({ type: 'command', name: 'copy' })
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'KeyV' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    startOperation({ type: 'command', name: 'paste' })
-    e.preventDefault()
-  })
-  useKey((k) => k.code === 'KeyX' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), (e) => {
-    startOperation({ type: 'command', name: 'cut' })
-    e.preventDefault()
-  })
-
   React.useEffect(() => props.setCanUndo?.(canUndo), [canUndo])
   React.useEffect(() => props.setCanRedo?.(canRedo), [canRedo])
   React.useEffect(() => {
@@ -726,6 +622,116 @@ export const CADEditor = React.forwardRef((props: {
   })
   const onDoubleClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     endDragSelect(e)
+  })
+  useGlobalKeyDown(e => {
+    onCommandKeyDown(e)
+    onSelectBeforeOperateKeyDown(e)
+    onSnapOffsetKeyDown(e)
+    if (metaKeyIfMacElseCtrlKey(e)) {
+      if (e.code === 'Minus') {
+        zoomOut(e)
+      } else if (e.code === 'Equal') {
+        zoomIn(e)
+      } else if (e.key === 'ArrowLeft') {
+        if (activeViewportIndex !== undefined && activeContentBounding) {
+          setState((draft) => {
+            draft = getContentByPath(draft)
+            const content = draft[activeViewportIndex]
+            if (content && isViewportContent(content)) {
+              const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
+              content.x += p.x
+              content.y += p.y
+            }
+          })
+        } else {
+          setX((v) => v + width / 10)
+        }
+        e.preventDefault()
+      } else if (e.key === 'ArrowRight') {
+        if (activeViewportIndex !== undefined && activeContentBounding) {
+          setState((draft) => {
+            draft = getContentByPath(draft)
+            const content = draft[activeViewportIndex]
+            if (content && isViewportContent(content)) {
+              const p = core.rotatePosition({ x: (activeContentBounding.end.x - activeContentBounding.start.x) / 10, y: 0 }, { x: 0, y: 0 }, -rotate)
+              content.x -= p.x
+              content.y -= p.y
+            }
+          })
+        } else {
+          setX((v) => v - width / 10)
+        }
+        e.preventDefault()
+      } else if (e.key === 'ArrowUp') {
+        if (activeViewportIndex !== undefined && activeContentBounding) {
+          setState((draft) => {
+            draft = getContentByPath(draft)
+            const content = draft[activeViewportIndex]
+            if (content && isViewportContent(content)) {
+              const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
+              content.x += p.x
+              content.y += p.y
+            }
+          })
+        } else {
+          setY((v) => v + height / 10)
+        }
+        e.preventDefault()
+      } else if (e.key === 'ArrowDown') {
+        if (activeViewportIndex !== undefined && activeContentBounding) {
+          setState((draft) => {
+            draft = getContentByPath(draft)
+            const content = draft[activeViewportIndex]
+            if (content && isViewportContent(content)) {
+              const p = core.rotatePosition({ x: 0, y: (activeContentBounding.end.y - activeContentBounding.start.y) / 10 }, { x: 0, y: 0 }, -rotate)
+              content.x -= p.x
+              content.y -= p.y
+            }
+          })
+        } else {
+          setY((v) => v - height / 10)
+        }
+        e.preventDefault()
+      } else if (e.code === 'KeyZ') {
+        if (operations.type === 'select') {
+          if (e.shiftKey) {
+            redo(e)
+          } else {
+            undo(e)
+          }
+          setSelected()
+        }
+      } else if (!e.shiftKey) {
+        if (e.code === 'KeyA') {
+          addSelection(...editingContent.map((_, i) => [i]))
+          e.preventDefault()
+        } else if (e.code === 'Digit0') {
+          setScale(1)
+          setX(0)
+          setY(0)
+          e.preventDefault()
+        } else if (e.code === 'KeyC') {
+          startOperation({ type: 'command', name: 'copy' })
+          e.preventDefault()
+        } else if (e.code === 'KeyV') {
+          startOperation({ type: 'command', name: 'paste' })
+          e.preventDefault()
+        } else if (e.code === 'KeyX') {
+          startOperation({ type: 'command', name: 'cut' })
+          e.preventDefault()
+        }
+      }
+    } else if (e.key === 'Escape') {
+      if (!activeViewport) {
+        setActive(undefined)
+        setActiveChild(undefined)
+      }
+      resetCommands(true)
+      resetEdit()
+      resetDragSelect()
+      resetDragRotate()
+      resetDragMove()
+    }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected) => {
@@ -1081,15 +1087,16 @@ function useSnapOffset(enabled: boolean) {
   const [text, setText] = React.useState('')
   const [active, setActive] = React.useState(false)
 
-  useKey((e) => e.key === 'Escape', () => {
-    setOffset(undefined)
-    setText('')
-  }, [setOffset, setText])
-
   return {
     snapOffset: offset,
     snapOffsetActive: active,
     setSnapOffset: setOffset,
+    onSnapOffsetKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOffset(undefined)
+        setText('')
+      }
+    },
     snapOffsetInput: enabled && (
       <input
         placeholder={offset ? `${offset.x},${offset.y}` : 'x,y'}

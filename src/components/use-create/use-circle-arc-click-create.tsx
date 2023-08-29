@@ -1,6 +1,5 @@
 import * as React from "react"
 
-import { useKey } from ".."
 import { Arc, getTwoPointsAngle, Position, radianToAngle } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { useCircleClickCreate } from "./use-circle-click-create"
@@ -56,8 +55,6 @@ export function useCircleArcClickCreate(
     setArc(undefined)
     clearText()
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setArc, setStartAngle, setCursorPosition])
 
   return {
     circle,

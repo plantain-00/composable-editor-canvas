@@ -26,6 +26,7 @@ export interface Command extends CommandType {
     onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
     onMouseDown?: (p: Position) => void
     onMouseUp?: (p: Position) => void
+    onKeyDown?: (e: KeyboardEvent) => void
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
@@ -36,7 +37,7 @@ export interface Command extends CommandType {
     }
     assistentContents?: BaseContent[]
     lastPosition?: Position
-    reset?(): void
+    reset?(saveCurrent?: boolean): void
   }
   execute?(props: {
     contents: Nullable<BaseContent>[],
@@ -91,6 +92,7 @@ export function useCommands(
   const onMoves: ((p: Position, viewportPosition?: Position, target?: SnapTarget) => void)[] = []
   const onMouseDowns: ((p: Position) => void)[] = []
   const onMouseUps: ((p: Position) => void)[] = []
+  const onKeyDowns: ((e: KeyboardEvent) => void)[] = []
   const updateSelectedContents: ((content: BaseContent, contents: readonly Nullable<BaseContent>[], selected: BaseContent[]) => {
     assistentContents?: BaseContent[] | undefined;
     newContents?: BaseContent[] | undefined;
@@ -100,7 +102,7 @@ export function useCommands(
   const onStartMap: Record<string, ((p: Position, target?: SnapTarget) => void)> = {}
   const hotkeys: { key: string, command: string }[] = []
   const lastPositions: Position[] = []
-  const resets: (() => void)[] = []
+  const resets: ((saveCurrent?: boolean) => void)[] = []
   Object.values(commandCenter).forEach((command) => {
     if (command.type) {
       for (const type of command.type) {
@@ -113,7 +115,7 @@ export function useCommands(
     }
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
-      const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, onMouseDown, onMouseUp, lastPosition, reset } = command.useCommand({
+      const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, onMouseDown, onMouseUp, onKeyDown, lastPosition, reset } = command.useCommand({
         onEnd,
         transform,
         type,
@@ -148,6 +150,9 @@ export function useCommands(
       }
       if (onMouseUp) {
         onMouseUps.push(onMouseUp)
+      }
+      if (onKeyDown) {
+        onKeyDowns.push(onKeyDown)
       }
       if (assistentContents) {
         commandAssistentContents.push(...assistentContents)
@@ -246,14 +251,19 @@ export function useCommands(
         onMouseUp(p)
       }
     },
+    onCommandKeyDown(e: KeyboardEvent) {
+      for (const onKeyDown of onKeyDowns) {
+        onKeyDown(e)
+      }
+    },
     getCommandByHotkey(key: string) {
       key = key.toUpperCase()
       return hotkeys.find((k) => k.key === key)?.command
     },
     commandLastPosition: lastPositions[0],
-    resetCommands() {
+    resetCommands(saveCurrent?: boolean) {
       resets.forEach(r => {
-        r()
+        r(saveCurrent)
       })
     }
   }

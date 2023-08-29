@@ -1,5 +1,5 @@
 import React from 'react'
-import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, useKey, Position, Size, useSelected, isSamePath, metaKeyIfMacElseCtrlKey } from '../../src'
+import { Scrollbar, useWheelScroll, useWheelZoom, useUndoRedo, bindMultipleRefs, useDragMove, useZoom, useDragRotate, useDragResize, useDragSelect, AlignmentLine, useRegionAlignment, useLineAlignment, Position, Size, useSelected, isSamePath, metaKeyIfMacElseCtrlKey, useGlobalKeyDown } from '../../src'
 import { styleGuide } from './data'
 import { HoverRenderer } from './hover'
 import { StyleGuide } from './model'
@@ -44,15 +44,10 @@ export function App() {
     maxOffsetX: (contentSize.width - containerSize.width) / 2,
     maxOffsetY: (contentSize.height - containerSize.height) / 2,
   })
-
-  useKey((k) => k.code === 'KeyZ' && !k.shiftKey && metaKeyIfMacElseCtrlKey(k), undo)
-  useKey((k) => k.code === 'KeyZ' && k.shiftKey && metaKeyIfMacElseCtrlKey(k), redo)
   const { zoomIn, zoomOut } = useZoom(relativeScale, setRelativeScale)
-  useKey((k) => k.code === 'Minus' && metaKeyIfMacElseCtrlKey(k), zoomOut)
-  useKey((k) => k.code === 'Equal' && metaKeyIfMacElseCtrlKey(k), zoomIn)
 
-  const { selected: [selected], setSelected } = useSelected<number[]>({ maxCount: 1 })
-  const { selected: [hovered], setSelected: setHovered } = useSelected<number[]>({ maxCount: 1 })
+  const { selected: [selected], setSelected, onSelectedKeyDown } = useSelected<number[]>({ maxCount: 1 })
+  const { selected: [hovered], setSelected: setHovered, onSelectedKeyDown: onHoveredKeyDown } = useSelected<number[]>({ maxCount: 1 })
   const transform = {
     containerSize,
     targetSize,
@@ -66,7 +61,7 @@ export function App() {
   const parentRotate = selectedTarget?.kind === 'content' ? selectedTarget.parents.reduce((p, c) => p + (c.rotate ?? 0), 0) : undefined
 
   const { regionAlignmentX, regionAlignmentY, changeOffsetByRegionAlignment, clearRegionAlignments } = useRegionAlignment(6 / scale)
-  const { offset: moveOffset, onStart: onStartMove, mask: dragMoveMask, startPosition: dragMoveStartPosition } = useDragMove(
+  const { offset: moveOffset, onStart: onStartMove, mask: dragMoveMask, startPosition: dragMoveStartPosition, resetDragMove } = useDragMove(
     () => {
       clearRegionAlignments()
       if (moveOffset.x === 0 && moveOffset.y === 0 && dragMoveStartPosition) {
@@ -96,7 +91,7 @@ export function App() {
     },
   )
 
-  const { offset: rotateOffset, onStart: onStartRotate, mask: dragRotateMask, center } = useDragRotate(
+  const { offset: rotateOffset, onStart: onStartRotate, mask: dragRotateMask, center, resetDragRotate } = useDragRotate(
     () => {
       setState((draft) => {
         const target = getTargetByPath(selected, draft)
@@ -121,7 +116,7 @@ export function App() {
   )
 
   const { lineAlignmentX, lineAlignmentY, changeOffsetByLineAlignment, clearLineAlignments } = useLineAlignment(6 / scale)
-  const { offset: resizeOffset, onStart: onStartResize, mask: dragResizeMask, startPosition: dragResizeStartPosition } = useDragResize(
+  const { offset: resizeOffset, onStart: onStartResize, mask: dragResizeMask, startPosition: dragResizeStartPosition, resetDragResize } = useDragResize(
     () => {
       clearLineAlignments()
       setState((draft) => {
@@ -162,7 +157,7 @@ export function App() {
     },
   )
 
-  const { onStartSelect, dragSelectMask, dragSelectStartPosition } = useDragSelect((dragSelectStartPosition, dragSelectEndPosition) => {
+  const { onStartSelect, dragSelectMask, dragSelectStartPosition, resetDragSelect } = useDragSelect((dragSelectStartPosition, dragSelectEndPosition) => {
     if (!dragSelectEndPosition) {
       setSelected(selectByPosition(state, transformPosition(dragSelectStartPosition, transform), scale))
     } else {
@@ -172,6 +167,29 @@ export function App() {
       }
     }
   }, (e) => e.shiftKey)
+
+  useGlobalKeyDown(e => {
+    onSelectedKeyDown(e)
+    onHoveredKeyDown(e)
+    if (e.key === 'Escape') {
+      resetDragSelect()
+      resetDragRotate()
+      resetDragResize()
+      resetDragMove()
+    } else if ( metaKeyIfMacElseCtrlKey(e)) {
+      if (e.code === 'KeyZ') {
+        if (e.shiftKey) {
+          redo(e)
+        } else {
+          undo(e)
+        }
+      } else if (e.code === 'Minus') {
+        zoomOut(e)
+      } else if (e.code === 'Equal') {
+        zoomIn(e)
+      }
+    }
+  })
 
   const offset = {
     x: moveOffset.x + resizeOffset.x,

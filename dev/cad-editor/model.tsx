@@ -1377,7 +1377,7 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
       e.stopPropagation()
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'z') {
-          e.shiftKey ? redo() : undo()
+          e.shiftKey ? redo(e) : undo(e)
           return true
         }
       }

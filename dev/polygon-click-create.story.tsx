@@ -1,15 +1,20 @@
 import { produce } from "immer"
 import React from "react"
-import { Position, usePolygonClickCreate } from "../src"
+import { Position, useGlobalKeyDown, usePolygonClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Position[][]>([])
-  const { polygon, onClick, onMove, input } = usePolygonClickCreate(true, (c) => {
+  const { polygon, onClick, onMove, input, reset } = usePolygonClickCreate(true, (c) => {
     const data = c || polygon
     if (data) {
       setContents(produce(contents, (draft) => {
         draft.push(data)
       }))
+    }
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
     }
   })
 

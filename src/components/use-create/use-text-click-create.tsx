@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { useCursorInput, useKey } from ".."
+import { useCursorInput } from ".."
 import { Position, Text } from "../../utils"
 
 /**
@@ -38,8 +38,6 @@ export function useTextClickCreate(
     setText(undefined)
     resetInput()
   }
-
-  useKey((e) => e.key === 'Escape', reset, [setText])
 
   return {
     text,

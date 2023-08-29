@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Position } from "../utils"
-import { useKey } from "./use-key"
 
 export function useCursorInput(
   message: string,
@@ -26,7 +25,6 @@ export function useCursorInput(
     setInputPosition(undefined)
     setText('')
   }
-  useKey((e) => e.key === 'Escape', resetInput, [setCursorPosition, setInputPosition, setText])
 
   return {
     resetInput,

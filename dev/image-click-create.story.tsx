@@ -1,13 +1,18 @@
 import { produce } from "immer"
 import React from "react"
-import { Image, useImageClickCreate } from "../src"
+import { Image, useGlobalKeyDown, useImageClickCreate } from "../src"
 
 export default () => {
   const [contents, setContents] = React.useState<Image[]>([])
-  const { image, onClick, onMove, input } = useImageClickCreate(true, (c) => {
+  const { image, onClick, onMove, input, reset } = useImageClickCreate(true, (c) => {
     setContents(produce(contents, (draft) => {
       draft.push(c)
     }))
+  })
+  useGlobalKeyDown(e => {
+    if (e.key === 'Escape') {
+      reset()
+    }
   })
 
   return (
