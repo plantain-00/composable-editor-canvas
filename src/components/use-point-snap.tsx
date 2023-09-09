@@ -60,6 +60,27 @@ export function usePointSnap<T>(
     return
   }
 
+  const transformResult = (transformSnapPosition: ((p: Position) => Position) | undefined, r: SnapResult<T>): SnapResult<T> => {
+    if (transformSnapPosition) {
+      return {
+        ...r,
+        position: transformSnapPosition(r.position),
+      }
+    }
+    return r
+  }
+
+  const saveSnapPoint = (transformSnapPosition?: (p: Position) => Position, p?: SnapPoint) => {
+    if (p && transformSnapPosition) {
+      setSnapPoint({
+        ...p,
+        ...transformSnapPosition(p),
+      })
+    } else {
+      setSnapPoint(p)
+    }
+  }
+
   return {
     snapPoint,
     getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(
@@ -140,10 +161,11 @@ export function usePointSnap<T>(
       contents: readonly Nullable<T>[],
       getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
       lastPosition?: Position,
+      transformSnapPosition?: (p: Position) => Position
     ): SnapResult<T> {
       if (!enabled) {
-        setSnapPoint(undefined)
-        return getOffsetSnapPoint(p)
+        saveSnapPoint(transformSnapPosition, undefined)
+        return transformResult(transformSnapPosition, getOffsetSnapPoint(p))
       }
       let contentsInRange = contents
       if (getContentsInRange) {
@@ -162,14 +184,14 @@ export function usePointSnap<T>(
               getTwoNumbersDistance(p.x, point.x) <= delta &&
               getTwoNumbersDistance(p.y, point.y) <= delta
             ) {
-              setSnapPoint(point)
-              return {
+              saveSnapPoint(transformSnapPosition, point)
+              return transformResult(transformSnapPosition, {
                 ...getOffsetSnapPoint(point),
                 target: {
                   snapIndex: i,
                   content,
                 },
-              }
+              })
             }
           }
         }
@@ -190,8 +212,8 @@ export function usePointSnap<T>(
                 getTwoNumbersDistance(p.x, point.x) <= delta &&
                 getTwoNumbersDistance(p.y, point.y) <= delta
               ) {
-                setSnapPoint({ ...point, type: 'intersection' })
-                return getOffsetSnapPoint(point)
+                saveSnapPoint(transformSnapPosition, { ...point, type: 'intersection' })
+                return transformResult(transformSnapPosition, getOffsetSnapPoint(point))
               }
             }
           }
@@ -227,11 +249,11 @@ export function usePointSnap<T>(
                 const points = getLineCircleIntersectionPoints(lastPosition, circle, circle)
                 for (const point of points) {
                   if (getTwoPointsDistance(p, point) <= delta) {
-                    setSnapPoint({ ...point, type: 'perpendicular' })
-                    return {
+                    saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                    return transformResult(transformSnapPosition, {
                       ...getOffsetSnapPoint(point),
                       ...getSnapTarget(model, content, point),
-                    }
+                    })
                   }
                 }
               }
@@ -258,11 +280,11 @@ export function usePointSnap<T>(
                   if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
                     const distance = getTwoPointsDistance(p, perpendicularPoint)
                     if (distance <= delta) {
-                      setSnapPoint({ ...perpendicularPoint, type: 'perpendicular' })
-                      return {
+                      saveSnapPoint(transformSnapPosition, { ...perpendicularPoint, type: 'perpendicular' })
+                      return transformResult(transformSnapPosition, {
                         ...getOffsetSnapPoint(perpendicularPoint),
                         ...getSnapTarget(model, content, perpendicularPoint),
-                      }
+                      })
                     }
                   }
                 }
@@ -300,11 +322,11 @@ export function usePointSnap<T>(
                 const points = getLineCircleIntersectionPoints(p, circle, circle)
                 for (const point of points) {
                   if (getTwoPointsDistance(p, point) <= delta) {
-                    setSnapPoint({ ...point, type: 'nearest' })
-                    return {
+                    saveSnapPoint(transformSnapPosition, { ...point, type: 'nearest' })
+                    return transformResult(transformSnapPosition, {
                       ...getOffsetSnapPoint(point),
                       ...getSnapTarget(model, content, point),
-                    }
+                    })
                   }
                 }
               }
@@ -329,11 +351,11 @@ export function usePointSnap<T>(
                 for (const line of lines) {
                   const { point, distance } = getPointAndLineSegmentNearestPointAndDistance(p, ...line)
                   if (distance <= delta) {
-                    setSnapPoint({ ...point, type: 'nearest' })
-                    return {
+                    saveSnapPoint(transformSnapPosition, { ...point, type: 'nearest' })
+                    return transformResult(transformSnapPosition, {
                       ...getOffsetSnapPoint(point),
                       ...getSnapTarget(model, content, point),
-                    }
+                    })
                   }
                 }
               }
@@ -347,8 +369,8 @@ export function usePointSnap<T>(
       if (lastPosition && types.includes('angle')) {
         p = getAngleSnapPosition(lastPosition, p, getAngleSnap)
       }
-      setSnapPoint(undefined)
-      return getOffsetSnapPoint(p)
+      saveSnapPoint(transformSnapPosition, undefined)
+      return transformResult(transformSnapPosition, getOffsetSnapPoint(p))
     }
   }
 }
