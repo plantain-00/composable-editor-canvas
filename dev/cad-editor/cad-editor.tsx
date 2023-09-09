@@ -176,17 +176,8 @@ export const CADEditor = React.forwardRef((props: {
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
   const activeViewportContent = activeViewportIndex !== undefined ? editingContent[activeViewportIndex] : undefined
   const activeViewport = activeViewportContent && isViewportContent(activeViewportContent) ? activeViewportContent : undefined
-  const reverseTransformViewport = activeViewport ? (p: Position) => core.rotatePosition({
-    x: (p.x - activeViewport.x) / activeViewport.scale,
-    y: (p.y - activeViewport.y) / activeViewport.scale,
-  }, { x: 0, y: 0 }, -(activeViewport.rotate || 0)) : undefined
-  const transformViewport = activeViewport ? (p: Position) => {
-    p = core.rotatePosition(p, { x: 0, y: 0 }, activeViewport.rotate || 0)
-    return {
-      x: p.x * activeViewport.scale + activeViewport.x,
-      y: p.y * activeViewport.scale + activeViewport.y,
-    }
-  } : undefined
+  const reverseTransformViewport = activeViewport ? (p: Position) => model.reverseTransformPositionByViewport(p, activeViewport) : undefined
+  const transformViewport = activeViewport ? (p: Position) => model.transformPositionByViewport(p, activeViewport) : undefined
   const [xOffset, setXOffset] = React.useState(0)
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
@@ -613,7 +604,16 @@ export const CADEditor = React.forwardRef((props: {
       onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
-      const s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
+      let s: core.SnapResult<BaseContent<string>>
+      if (editPoint && isViewportContent(editPoint.content)) {
+        const viewport = editPoint.content
+        s = getSnapPoint(model.reverseTransformPositionByViewport(p, editPoint.content), editingContent, getContentsInRange, lastPosition, c => model.transformPositionByViewport(c, viewport))
+        if (!s.target) {
+          s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
+        }
+      } else {
+        s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
+      }
       onEditMove(s.position, selectedContents, s.target)
       // hover by position
       const indexes = getSortedContents(editingContent).indexes

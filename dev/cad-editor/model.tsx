@@ -1410,3 +1410,18 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
 export function getViewportMatrix(p: ViewportContent) {
   return m3.multiply(m3.multiply(m3.translation(p.x, p.y), m3.scaling(p.scale, p.scale)), m3.rotation(-(p.rotate || 0)))
 }
+
+export function transformPositionByViewport(p: Position, viewport: ViewportContent) {
+  p = rotatePosition(p, { x: 0, y: 0 }, viewport.rotate || 0)
+  return {
+    x: p.x * viewport.scale + viewport.x,
+    y: p.y * viewport.scale + viewport.y,
+  }
+}
+
+export function reverseTransformPositionByViewport(p: Position, viewport: ViewportContent) {
+  return rotatePosition({
+    x: (p.x - viewport.x) / viewport.scale,
+    y: (p.y - viewport.y) / viewport.scale,
+  }, { x: 0, y: 0 }, -(viewport.rotate || 0))
+}
