@@ -7174,7 +7174,7 @@ function getModel(ctx) {
             { ...midpoints[0], direction: "top" },
             { ...midpoints[1], direction: "right" },
             { ...midpoints[2], direction: "bottom" },
-            { ...midpoints[3], direction: "left" }
+            { ...midpoints[3] || midpoints[1], direction: "left" }
           ].map((p, i) => ({
             x: p.x,
             y: p.y,
@@ -7190,8 +7190,8 @@ function getModel(ctx) {
               }
               c.x += offset.x + offset.width / 2;
               c.y += offset.y + offset.height / 2;
-              c.width += offset.width;
-              c.height += offset.height;
+              c.width = Math.abs(c.width + offset.width);
+              c.height = Math.abs(c.height + offset.height);
               return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
             }
           }))
