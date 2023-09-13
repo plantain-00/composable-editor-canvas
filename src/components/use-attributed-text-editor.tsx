@@ -31,6 +31,7 @@ export function useAttributedTextEditor<T extends object>(props: {
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
+  const [currentAttributes, setCurrentAttributes] = React.useState<{ index: number, attributes: T }>()
 
   const inputText = (text: string) => {
     if (props.readOnly) return
@@ -50,10 +51,32 @@ export function useAttributedTextEditor<T extends object>(props: {
     for (const s of middleState) {
       const k = newLocation - index
       if (k >= 0 && k <= s.insert.length && !inserted) {
-        newState.push({
-          attributes: s.attributes,
-          insert: s.insert.slice(0, k) + text + s.insert.slice(k),
-        })
+        if (currentAttributes) {
+          if (k > 0) {
+            newState.push({
+              attributes: s.attributes,
+              insert: s.insert.slice(0, k),
+            })
+          }
+          newState.push({
+            attributes: {
+              ...s.attributes,
+              ...currentAttributes.attributes,
+            },
+            insert: text,
+          })
+          if (k < s.insert.length) {
+            newState.push({
+              attributes: s.attributes,
+              insert: s.insert.slice(k),
+            })
+          }
+        } else {
+          newState.push({
+            attributes: s.attributes,
+            insert: s.insert.slice(0, k) + text + s.insert.slice(k),
+          })
+        }
         inserted = true
       } else {
         newState.push(s)
@@ -61,7 +84,11 @@ export function useAttributedTextEditor<T extends object>(props: {
       index += s.insert.length
     }
     if (!inserted) {
-      newState.push({ insert: text })
+      if (currentAttributes) {
+        newState.push({ insert: text, attributes: currentAttributes.attributes })
+      } else {
+        newState.push({ insert: text })
+      }
     }
     props.setState(newState)
   }
@@ -327,7 +354,21 @@ export function useAttributedTextEditor<T extends object>(props: {
     })
   }
   const setSelectedAttributes = (attributes: T | ((oldAttributes?: T) => T)) => {
-    if (!range) return
+    if (!range) {
+      if (typeof attributes !== 'function') {
+        if (currentAttributes?.index === location) {
+          attributes = {
+            ...currentAttributes.attributes,
+            ...attributes,
+          }
+        }
+        setCurrentAttributes({
+          index: location,
+          attributes,
+        })
+      }
+      return
+    }
     const getNewAttributes = (oldAttributes?: T) => {
       if (typeof attributes === 'function') {
         return attributes(oldAttributes)
@@ -562,7 +603,17 @@ export function useAttributedTextEditor<T extends object>(props: {
   const cursorX = p.x
   const cursorY = p.y - scrollY
   const cursorRow = p.row
-  const cursorContent = layoutInput[range ? range.min : location]
+  const cursorIndex = range ? range.min : location
+  let cursorContent = layoutInput[cursorIndex > 0 ? cursorIndex - 1 : cursorIndex]
+  if (currentAttributes && !range && currentAttributes.index === location) {
+    cursorContent = {
+      ...cursorContent,
+      attributes: {
+        ...cursorContent.attributes,
+        ...currentAttributes.attributes,
+      }
+    }
+  }
 
   const lastLocation = React.useRef<number>()
   const lastCursorY = React.useRef<number>()
@@ -583,6 +634,11 @@ export function useAttributedTextEditor<T extends object>(props: {
   React.useEffect(() => {
     props.onLocationChanged?.(location)
   }, [location])
+  React.useEffect(() => {
+    if (currentAttributes && location !== currentAttributes?.index) {
+      setCurrentAttributes(undefined)
+    }
+  }, [location, currentAttributes, setCurrentAttributes])
 
   let actualHeight = props.height
   if (props.autoHeight && contentHeight > props.height) {

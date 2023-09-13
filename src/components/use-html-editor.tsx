@@ -1,4 +1,5 @@
 import type { Draft } from 'immer';
+import { produce } from 'immer'
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
 import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick } from "."
@@ -31,6 +32,7 @@ export function useHtmlEditor(props: {
   const [cursorRect, setCursorRect] = React.useState<Region>()
   const layoutResults = React.useRef<HtmlLayoutResult>()
   const [lineEnd, setLineEnd] = React.useState(false)
+  const [currentStyle, setCurrentStyle] = React.useState<{ index: [number, number], style: Partial<HtmlTextStyle> }>()
 
   const { range, inputContent, inputInline, getCopiedContents, scrollRef,
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref: cursorRef, setLocation, location, contentHeight, setContentHeight, blockLocation,
@@ -47,6 +49,12 @@ export function useHtmlEditor(props: {
     }
   }
   const { currentBlock, currentContent, currentContentLayout } = getCurrentContent(props.state)
+  let cursorContent:  HtmlTextInline | undefined
+  if (currentContent && currentStyle && !range && compareLocations(currentStyle.index, location) === 0 && isHtmlText(currentContent)) {
+    cursorContent = { ...currentContent, ...currentStyle.style }
+  } else {
+    cursorContent = currentContent
+  }
 
   const renderInline = (c: HtmlTextInline) => {
     if (props.plugin?.inlines) {
@@ -63,7 +71,11 @@ export function useHtmlEditor(props: {
     for (const t of text) {
       if (typeof t === 'string') {
         const newText: HtmlText = { ...currentContent, text: t, kind: undefined }
-        result.push(newText)
+        if (currentStyle) {
+          result.push({ ...newText, ...currentStyle.style })
+        } else {
+          result.push(newText)
+        }
       } else {
         result.push({ ...currentContent, ...t })
       }
@@ -304,6 +316,19 @@ export function useHtmlEditor(props: {
           }
         }
       })
+    } else {
+      let style: Partial<HtmlTextStyle>
+      if (currentStyle && compareLocations(currentStyle.index, location) === 0) {
+        style = currentStyle.style
+      } else {
+        style = {}
+      }
+      setCurrentStyle({
+        index: location,
+        style: produce(style, draft => {
+          recipe(draft)
+        }),
+      })
     }
   }
   const updateTextInline = (type: BlockType) => {
@@ -370,9 +395,14 @@ export function useHtmlEditor(props: {
       }
     })
   }
+  React.useEffect(() => {
+    if (currentStyle && compareLocations(location, currentStyle.index) !== 0) {
+      setCurrentStyle(undefined)
+    }
+  }, [location, currentStyle, setCurrentStyle])
 
   return {
-    currentContent,
+    currentContent: cursorContent,
     currentBlock,
     currentContentLayout,
     updateSelection,

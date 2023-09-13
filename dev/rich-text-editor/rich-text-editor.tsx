@@ -44,6 +44,7 @@ export const RichTextEditor = React.forwardRef((props: {
     autoHeight: props.autoHeight,
     plugin: props.plugin,
     resizeOffset,
+    keepSelectionOnBlur: true,
   })
 
   const hooksProcessInputs: NonNullable<ReturnType<RichTextEditorPluginHook>['processInput']>[] = []
