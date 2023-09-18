@@ -2,8 +2,8 @@ import React from "react"
 import { Align, AttributedText, CanvasDraw, EnumEditor, NumberEditor, StringEditor, ObjectEditor, VerticalAlign, aligns, getTextSizeFromCache, reactCanvasRenderTarget, useAttributedTextEditor, verticalAligns, BooleanEditor } from "../src"
 
 export default () => {
-  type Attribute = Partial<{ color: number, fontFamily: string, bold: boolean, italic: boolean }>
-  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: 'abc' }, { insert: '123', attributes: { color: 0xff0000 } }])
+  type Attribute = Partial<{ color: number, fontFamily: string, bold: boolean, italic: boolean, readonly?: string }>
+  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: 'abc' }, { insert: '123', attributes: { color: 0xff0000, readonly: '1' } }, { insert: 'edf', attributes: { readonly: '1' } }, { insert: 'ghi', attributes: { color: 0x00ff00 } }])
   const [align, setAlign] = React.useState<Align>('left')
   const [verticalAlign, setVerticalAlign] = React.useState<VerticalAlign>('top')
   const fontSize = 20
@@ -23,6 +23,7 @@ export default () => {
     getWidth,
     align,
     verticalAlign,
+    getReadonlyType: attributes => attributes?.readonly,
   })
   const children: CanvasDraw[] = []
   const target = reactCanvasRenderTarget
