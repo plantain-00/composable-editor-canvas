@@ -26,6 +26,7 @@ export function useAttributedTextEditor<T extends object>(props: {
   onBlur?: () => void
   onFocus?: () => void
   autoFocus?: boolean
+  getReadonlyType?: (attributes?: T) => string | undefined
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
@@ -48,9 +49,10 @@ export function useAttributedTextEditor<T extends object>(props: {
     const newState: AttributedText<T>[] = []
     let index = 0
     let inserted = false
+    const inReadonlyRange = readonlyRanges.find(r => location === r.max)?.max === newLocation
     for (const s of middleState) {
       const k = newLocation - index
-      if (k >= 0 && k <= s.insert.length && !inserted) {
+      if (k >= 0 && (inReadonlyRange ? k < s.insert.length : k <= s.insert.length) && !inserted) {
         if (currentAttributes) {
           if (k > 0) {
             newState.push({
@@ -184,6 +186,12 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (location === 0) {
       return
     }
+    const readonlyRange = readonlyRanges.find(r => location === r.max)
+    if (readonlyRange) {
+      setLocation(readonlyRange.min)
+      props.setState(deleteContentsInRange(readonlyRange))
+      return
+    }
     setLocation(location - 1)
     const newState: AttributedText<T>[] = []
     let index = 0
@@ -210,6 +218,11 @@ export function useAttributedTextEditor<T extends object>(props: {
       return
     }
     if (location === layoutInput.length) {
+      return
+    }
+    const readonlyRange = readonlyRanges.find(r => location === r.min)
+    if (readonlyRange) {
+      props.setState(deleteContentsInRange(readonlyRange))
       return
     }
     const newState: AttributedText<T>[] = []
@@ -242,7 +255,7 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
-    setLocation(location - 1)
+    setLocation(getNewLocation(location - 1, 'min'))
   }
   const arrowRight = (shift = false) => {
     if (!shift && range) {
@@ -256,7 +269,7 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
-    setLocation(location + 1)
+    setLocation(getNewLocation(location + 1, 'max'))
   }
   const arrowUp = (shift = false) => {
     if (!shift && range) {
@@ -271,10 +284,10 @@ export function useAttributedTextEditor<T extends object>(props: {
       setLocation(0)
       return
     }
-    setLocation(positionToLocation({
+    setLocation(getNewLocation(positionToLocation({
       x: cursorX,
       y: cursorY - lineHeights[cursorRow - 1] / 2 + scrollY,
-    }, false))
+    }, false), 'min'))
   }
   const arrowDown = (shift = false) => {
     if (!shift && range) {
@@ -289,10 +302,10 @@ export function useAttributedTextEditor<T extends object>(props: {
       setLocation(layoutInput.length)
       return
     }
-    setLocation(positionToLocation({
+    setLocation(getNewLocation(positionToLocation({
       x: cursorX,
       y: cursorY + lineHeights[cursorRow] + lineHeights[cursorRow + 1] / 2 + scrollY,
-    }, false))
+    }, false), 'max'))
   }
   const selectAll = () => {
     setSelectionStart(0)
@@ -432,8 +445,8 @@ export function useAttributedTextEditor<T extends object>(props: {
   const onDoubleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const p = positionToLocation(getPosition(e))
     const { newSelectionStart, newLocation } = getWordByDoubleClick(layoutInput, p, c => c.insert)
-    if (newSelectionStart !== undefined) setSelectionStart(newSelectionStart)
-    if (newLocation !== undefined) setLocation(newLocation)
+    if (newSelectionStart !== undefined) setSelectionStart(getNewLocation(newSelectionStart, 'min'))
+    if (newLocation !== undefined) setLocation(getNewLocation(newLocation, 'max'))
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
@@ -505,7 +518,7 @@ export function useAttributedTextEditor<T extends object>(props: {
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault()
     const h = getPosition(e)
-    const p = positionToLocation(h)
+    const p = getNewLocation(positionToLocation(h), 'nearest')
     if (e.shiftKey) {
       if (selectionStart === undefined || Math.abs(selectionStart - p) < Math.abs(location - p)) {
         setSelectionStart(location)
@@ -527,7 +540,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       return
     }
     const s = getPosition(e)
-    const p = positionToLocation(s, false)
+    const p = getNewLocation(positionToLocation(s, false), 'farthest')
     setLocation(p)
     if (p === downLocation.current) {
       setSelectionStart(undefined)
@@ -573,10 +586,40 @@ export function useAttributedTextEditor<T extends object>(props: {
   }, [props.autoHeight, setY])
 
   const layoutInput: AttributedText<T>[] = []
+  const readonlyRanges: { min: number, max: number, type: string }[] = []
   for (const s of props.state) {
+    const type = props.getReadonlyType?.(s.attributes)
+    if (type) {
+      const min = layoutInput.length
+      const max = layoutInput.length + s.insert.length
+      const readonlyRange = readonlyRanges.find(r => r.type === type && r.max === min)
+      if (readonlyRange) {
+        readonlyRange.max = max
+      } else {
+        readonlyRanges.push({
+          min,
+          max,
+          type,
+        })
+      }
+    }
     for (const c of s.insert) {
       layoutInput.push({ insert: c, attributes: s.attributes })
     }
+  }
+  const getNewLocation = (p: number, type: 'min' | 'max' | 'nearest' | 'farthest') => {
+    const readonlyRange = readonlyRanges.find(r => p > r.min && p < r.max)
+    if (readonlyRange) {
+      if (type === 'farthest') {
+        p = downLocation.current ?? p
+        return p > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.min : readonlyRange.max
+      }
+      if (type === 'nearest') {
+        return p > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.max : readonlyRange.min
+      }
+      return readonlyRange[type]
+    }
+    return p
   }
   const { layoutResult, newContentHeight, lineHeights } = flowLayout({
     state: layoutInput,
