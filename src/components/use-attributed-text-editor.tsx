@@ -49,10 +49,17 @@ export function useAttributedTextEditor<T extends object>(props: {
     const newState: AttributedText<T>[] = []
     let index = 0
     let inserted = false
-    const inReadonlyRange = readonlyRanges.find(r => location === r.max)?.max === newLocation
+    const inReadonlyRangeStart = readonlyRanges.find(r => location === r.min)?.min === newLocation
+    const inReadonlyRangeEnd = readonlyRanges.find(r => location === r.max)?.max === newLocation
     for (const s of middleState) {
       const k = newLocation - index
-      if (k >= 0 && (inReadonlyRange ? k < s.insert.length : k <= s.insert.length) && !inserted) {
+      if (k >= 0 && (inReadonlyRangeEnd ? k < s.insert.length : k <= s.insert.length) && !inserted) {
+        if (inReadonlyRangeStart && k === 0) {
+          newState.push({ insert: text, attributes: currentAttributes?.attributes }, s)
+          inserted = true
+          index += s.insert.length
+          continue
+        }
         if (currentAttributes) {
           if (k > 0) {
             newState.push({
@@ -86,11 +93,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       index += s.insert.length
     }
     if (!inserted) {
-      if (currentAttributes) {
-        newState.push({ insert: text, attributes: currentAttributes.attributes })
-      } else {
-        newState.push({ insert: text })
-      }
+      newState.push({ insert: text, attributes: currentAttributes?.attributes })
     }
     props.setState(newState)
   }
