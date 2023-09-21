@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries>()
+  const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
   const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
     const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2

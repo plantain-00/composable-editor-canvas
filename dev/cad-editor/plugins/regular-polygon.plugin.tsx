@@ -50,7 +50,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     },
     offset(content, point, distance) {
       if (!distance) {
-        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       const radius = distance / Math.cos(Math.PI / content.count)
@@ -99,7 +99,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
                   return
                 }
                 c.radius = ctx.getTwoPointsDistance(cursor, c)
-                c.angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, c))
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, c))
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] }] }
               },
             } as core.EditPoint<model.BaseContent>))
@@ -155,7 +155,7 @@ export function getCommand(ctx: PluginContext): Command {
               y: p0.y,
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
-              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+              angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
               strokeStyleId,
               fillStyleId,
             } as RegularPolygonContent)
@@ -174,7 +174,7 @@ export function getCommand(ctx: PluginContext): Command {
           y: p0.y,
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
-          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+          angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
           strokeStyleId,
           fillStyleId,
         })

@@ -1,3 +1,4 @@
+import { GeometryLine } from "./intersection"
 import { isRecord } from "./is-record"
 import { angleToRadian, radianToAngle } from "./radian"
 import { Vec3 } from "./types"
@@ -94,22 +95,22 @@ export function deepEquals<T>(a: T, b: T): boolean {
 /**
  * @public
  */
-export function getPointByLengthAndAngle(
+export function getPointByLengthAndRadian(
   startPoint: Position,
   length: number,
-  angle: number,
+  radian: number,
 ) {
-  const direction = multipleDirection(getDirectionByAngle(angle), length)
+  const direction = multipleDirection(getDirectionByRadian(radian), length)
   return {
     x: startPoint.x + direction.x,
     y: startPoint.y + direction.y,
   }
 }
 
-export function getDirectionByAngle(angle: number): Position {
+export function getDirectionByRadian(radian: number): Position {
   return {
-    x: Math.cos(angle),
-    y: Math.sin(angle),
+    x: Math.cos(radian),
+    y: Math.sin(radian),
   }
 }
 
@@ -153,6 +154,81 @@ export function getPointAndLineSegmentNearestPointAndDistance(position: Position
   }
 }
 
+export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line: GeometryLine) {
+  if (Array.isArray(line)) {
+    return getPointAndLineSegmentNearestPointAndDistance(p, ...line)
+  }
+  return getPointAndArcNearestPointAndDistance(p, line.arc)
+}
+
+export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine) {
+  if (Array.isArray(line)) {
+    return getPointAndLineSegmentMinimumDistance(p, ...line)
+  }
+  return getPointAndArcMinimumDistance(p, line.arc)
+}
+
+export function getPointAndArcMinimumDistance(position: Position, arc: Arc) {
+  const { distance } = getPointAndArcNearestPointAndDistance(position, arc)
+  return distance
+}
+
+export function getAngleInRange(angle: number, range: AngleRange) {
+  while (angle > range.endAngle && angle >= range.startAngle + 360) {
+    angle -= 360
+  }
+  while (angle < range.startAngle) {
+    angle += 360
+  }
+  return angle
+}
+
+export function angleInRange(angle: number, range: AngleRange) {
+  return getAngleInRange(angle, range) <= range.endAngle
+}
+
+export function getPerpendicularPointToCircle(position: Position, circle: Circle) {
+  const radian1 = getTwoPointsRadian(position, circle)
+  const radian2 = radian1 + Math.PI
+  const point1 = getCirclePointAtRadian(circle, radian1)
+  const point2 = getCirclePointAtRadian(circle, radian2)
+  const d1 = getTwoPointsDistance(position, point1)
+  const d2 = getTwoPointsDistance(position, point2)
+  if (d1 < d2) {
+    return {
+      point: point1,
+      distance: d1,
+      radian: radian1,
+    }
+  }
+  return {
+    point: point2,
+    distance: d2,
+    radian: radian2,
+  }
+}
+
+export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
+  const { point, distance, radian } = getPerpendicularPointToCircle(position, arc)
+  if (angleInRange(radianToAngle(radian), arc)) {
+    return { point, distance }
+  }
+  const point3 = getArcPointAtAngle(arc, arc.startAngle)
+  const point4 = getArcPointAtAngle(arc, arc.endAngle)
+  const d3 = getTwoPointsDistance(position, point3)
+  const d4 = getTwoPointsDistance(position, point4)
+  if (d3 < d4) {
+    return {
+      point: point3,
+      distance: d3,
+    }
+  }
+  return {
+    point: point4,
+    distance: d4,
+  }
+}
+
 /**
  * @public
  */
@@ -164,6 +240,11 @@ export function pointIsOnLineSegment(p: Position, point1: Position, point2: Posi
     return true
   }
   return false
+}
+
+export function pointIsOnArc(p: Position, arc: Arc) {
+  const radian = getCircleRadian(p, arc)
+  return angleInRange(radianToAngle(radian), arc)
 }
 
 /**
@@ -427,6 +508,19 @@ export function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Po
   return false
 }
 
+export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Position[]) {
+  for (const line of getPolygonLine(polygon)) {
+    if (!Array.isArray(g)) {
+      if (getLineSegmentArcIntersectionPoints(...line, g.arc).length > 0) {
+        return true
+      }
+    } else if (lineIntersectWithLine(...g, ...line)) {
+      return true
+    }
+  }
+  return false
+}
+
 function* getPolygonLine(polygon: Position[]): Generator<[Position, Position], void, unknown> {
   for (let i = 0; i < polygon.length; i++) {
     yield [polygon[i], polygon[i + 1 < polygon.length ? i + 1 : 0]]
@@ -466,6 +560,23 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
     return result
   }
   return undefined
+}
+
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
+  if (Array.isArray(line1)) {
+    if (Array.isArray(line2)) {
+      const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
+      if (point) {
+        return [point]
+      }
+      return []
+    }
+    return getLineSegmentArcIntersectionPoints(...line1, line2.arc)
+  }
+  if (Array.isArray(line2)) {
+    return getLineSegmentArcIntersectionPoints(...line2, line1.arc)
+  }
+  return getTwoArcIntersectionPoints(line1.arc, line2.arc)
 }
 
 /**
@@ -539,6 +650,14 @@ export function getLineSegmentCircleIntersectionPoints(start: Position, end: Pos
   return getLineCircleIntersectionPoints(start, end, circle).filter((p) => pointIsOnLineSegment(p, start, end))
 }
 
+export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc) {
+  return getLineSegmentCircleIntersectionPoints(start, end, arc).filter((p) => pointIsOnArc(p, arc))
+}
+
+export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
+  return getTwoCircleIntersectionPoints(arc1, arc2).filter((p) => pointIsOnArc(p, arc1) && pointIsOnArc(p, arc2))
+}
+
 /**
  * @public
  */
@@ -603,14 +722,14 @@ export function rotatePositionByEllipseCenter(p: Position, content: Ellipse) {
 /**
  * @public
  */
-export function rotatePosition(position: Position, center: Position, rotation: number) {
-  if (!rotation) {
+export function rotatePosition(position: Position, center: Position, radian: number) {
+  if (!radian) {
     return position
   }
   const offsetX = position.x - center.x
   const offsetY = position.y - center.y
-  const sin = Math.sin(rotation)
-  const cos = Math.cos(rotation)
+  const sin = Math.sin(radian)
+  const cos = Math.cos(radian)
   return {
     x: cos * offsetX - sin * offsetY + center.x,
     y: sin * offsetX + cos * offsetY + center.y,
@@ -636,11 +755,11 @@ export function getPolygonPoints(point: Position, center: Position, sides: numbe
 /**
  * @public
  */
-export function getEllipseRadiusOfAngle(ellipse: Ellipse, angle: number) {
+export function getEllipseRadiusOfAngle(ellipse: Ellipse, radian: number) {
   if (ellipse.angle) {
-    angle -= angleToRadian(ellipse.angle)
+    radian -= angleToRadian(ellipse.angle)
   }
-  return ellipse.rx * ellipse.ry / Math.sqrt((ellipse.rx * Math.sin(angle)) ** 2 + (ellipse.ry * Math.cos(angle)) ** 2)
+  return ellipse.rx * ellipse.ry / Math.sqrt((ellipse.rx * Math.sin(radian)) ** 2 + (ellipse.ry * Math.cos(radian)) ** 2)
 }
 
 /**
@@ -1095,7 +1214,7 @@ export function getPolylineTriangles(
     parallelLines.push(getParallelLinesByDistance(line, radius))
   }
 
-  const angleLimit = typeof lineJoinWithLimit === 'number' ? Math.asin(1 / lineJoinWithLimit) * 2 : undefined
+  const radianLimit = typeof lineJoinWithLimit === 'number' ? Math.asin(1 / lineJoinWithLimit) * 2 : undefined
 
   const result: number[] = []
   for (let i = 0; i < points.length; i++) {
@@ -1103,7 +1222,7 @@ export function getPolylineTriangles(
       if (i === 0) {
         let p = points[0]
         if (lineCapWithClosed === 'round') {
-          const angle = radianToAngle(getTwoPointsAngle(p, points[1]))
+          const angle = radianToAngle(getTwoPointsRadian(p, points[1]))
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle - 90, endAngle: angle + 90 }, 5)
           for (const s of ps) {
             result.push(s.x, s.y, p.x, p.y)
@@ -1134,7 +1253,7 @@ export function getPolylineTriangles(
           }
         }
         if (lineCapWithClosed === 'round') {
-          const angle = radianToAngle(getTwoPointsAngle(p, points[i - 1]))
+          const angle = radianToAngle(getTwoPointsRadian(p, points[i - 1]))
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle + 90, endAngle: angle - 90, counterclockwise: true }, 5)
           for (const s of ps) {
             result.push(p.x, p.y, s.x, s.y)
@@ -1150,27 +1269,27 @@ export function getPolylineTriangles(
     const a = points[previousIndex]
     const b = points[i]
     const c = points[nextIndex + 1]
-    let angle = getTwoPointsAngle(c, b) - getTwoPointsAngle(b, a)
-    if (angle < -Math.PI) {
-      angle += Math.PI * 2
-    } else if (angle > Math.PI) {
-      angle -= Math.PI * 2
+    let radian = getTwoPointsRadian(c, b) - getTwoPointsRadian(b, a)
+    if (radian < -Math.PI) {
+      radian += Math.PI * 2
+    } else if (radian > Math.PI) {
+      radian -= Math.PI * 2
     }
 
-    if (!equals(angle, 0) && !equals(angle, Math.PI) && !equals(angle, -Math.PI)) {
+    if (!equals(radian, 0) && !equals(radian, Math.PI) && !equals(radian, -Math.PI)) {
       let lineJoin = lineJoinWithLimit
-      if (angleLimit !== undefined) {
-        let a = Math.abs(angle)
+      if (radianLimit !== undefined) {
+        let a = Math.abs(radian)
         if (a > Math.PI / 2) {
           a = Math.PI - a
         }
-        if (a < angleLimit) {
+        if (a < radianLimit) {
           lineJoin = 'bevel'
         }
       }
 
       if (lineJoin === 'bevel' || lineJoin === 'round') {
-        if (angle > 0 && angle < Math.PI) {
+        if (radian > 0 && radian < Math.PI) {
           const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
           const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], getPerpendicular(points[i], lines[previousIndex]))
           const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[1], getPerpendicular(points[i], lines[nextIndex]))
@@ -1179,8 +1298,8 @@ export function getPolylineTriangles(
             if (lineJoin === 'bevel') {
               ps = [p1, p2]
             } else {
-              const startAngle = radianToAngle(getTwoPointsAngle(p1, b))
-              const endAngle = radianToAngle(getTwoPointsAngle(p2, b))
+              const startAngle = radianToAngle(getTwoPointsRadian(p1, b))
+              const endAngle = radianToAngle(getTwoPointsRadian(p2, b))
               ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle }, 5)
             }
             for (const s of ps) {
@@ -1196,8 +1315,8 @@ export function getPolylineTriangles(
             if (lineJoin === 'bevel') {
               ps = [p1, p2]
             } else {
-              const startAngle = radianToAngle(getTwoPointsAngle(p1, b))
-              const endAngle = radianToAngle(getTwoPointsAngle(p2, b))
+              const startAngle = radianToAngle(getTwoPointsRadian(p1, b))
+              const endAngle = radianToAngle(getTwoPointsRadian(p2, b))
               ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle, counterclockwise: true }, 5)
             }
             for (const s of ps) {
@@ -1370,11 +1489,11 @@ export function getEllipseCenter(ellipse: Ellipse) {
   return { x: ellipse.cx, y: ellipse.cy }
 }
 
-export function getCircleAngle(p: Position, circle: Circle) {
-  return getTwoPointsAngle(p, circle)
+export function getCircleRadian(p: Position, circle: Circle) {
+  return getTwoPointsRadian(p, circle)
 }
 
-export function getTwoPointsAngle(to: Position, from: Position = { x: 0, y: 0 }) {
+export function getTwoPointsRadian(to: Position, from: Position = { x: 0, y: 0 }) {
   return Math.atan2(to.y - from.y, to.x - from.x)
 }
 
@@ -1419,6 +1538,15 @@ export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
   return inside;
 }
 
+export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
+  if (Array.isArray(line)) {
+    return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
+  }
+  const start = getArcPointAtAngle(line.arc, line.arc.startAngle)
+  const end = getArcPointAtAngle(line.arc, line.arc.endAngle)
+  return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
+}
+
 export function* iteratePolylineLines(points: Position[]) {
   for (let i = 1; i < points.length; i++) {
     yield [points[i - 1], points[i]] as [Position, Position]
@@ -1444,15 +1572,15 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
 }
 
 export function getArcPointAtAngle(content: Circle, angle: number) {
-  return getCirclePointAtAngle(content, angleToRadian(angle))
+  return getCirclePointAtRadian(content, angleToRadian(angle))
 }
 
-export function getCirclePointAtAngle(content: Circle, angle: number) {
-  return getPointByLengthAndAngle(content, content.r, angle)
+export function getCirclePointAtRadian(content: Circle, radian: number) {
+  return getPointByLengthAndRadian(content, content.r, radian)
 }
 
-export function getEllipsePointAtAngle(content: Ellipse, angle: number) {
-  const direction = getDirectionByAngle(angle)
+export function getEllipsePointAtRadian(content: Ellipse, radian: number) {
+  const direction = getDirectionByRadian(radian)
   const p = {
     x: content.cx + content.rx * direction.x,
     y: content.cy + content.ry * direction.y,
@@ -1499,8 +1627,8 @@ export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
   const lineSegmentCount = 360 / angleDelta
   const points: Position[] = []
   for (let i = 0; i < lineSegmentCount; i++) {
-    const angle = angleToRadian(angleDelta * i)
-    points.push(getEllipsePointAtAngle(content, angle))
+    const radian = angleToRadian(angleDelta * i)
+    points.push(getEllipsePointAtRadian(content, radian))
   }
   return points
 }
@@ -1513,7 +1641,7 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
 }
 
 export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {
-  return getEllipsePointAtAngle(content, angleToRadian(angle))
+  return getEllipsePointAtRadian(content, angleToRadian(angle))
 }
 
 /**

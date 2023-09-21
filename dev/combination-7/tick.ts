@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { Position, getPointByLengthAndDirection, getTwoPointsAngle, getTwoPointsDistance } from "../../src"
+import { Position, getPointByLengthAndDirection, getTwoPointsRadian, getTwoPointsDistance } from "../../src"
 import { AbilityCooldown, Bullet, Model } from "./model"
 import { getAbilityFromIndex, getDamageAfterArmor, getModelResult, getModelsAroundPositionByRadiusExcept } from './utils'
 import { updateAbilityCooldown } from './items'
@@ -128,7 +128,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
           targetPosition = model.action.target
           canAttack = true
         }
-        const newFacing = getTwoPointsAngle(targetPosition, model.position)
+        const newFacing = getTwoPointsRadian(targetPosition, model.position)
         if (canAttack) {
           const distance = getTwoPointsDistance(model.position, targetPosition) - units[model.unit].size - targetSize
           if (model.action.ability) {
@@ -252,7 +252,7 @@ export function updateModels(t: number, models: Model[], bullets: Bullet[]) {
       const s = t * modelResult.speed
       const to = model.action.to
       const d = getTwoPointsDistance(model.position, to)
-      const newFacing = getTwoPointsAngle(to, model.position)
+      const newFacing = getTwoPointsRadian(to, model.position)
       let newModel: Model
       if (d <= s) {
         newModel = produce(model, draft => {

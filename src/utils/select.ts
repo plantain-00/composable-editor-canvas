@@ -1,4 +1,5 @@
-import { Circle, getPointAndLineSegmentMinimumDistance, getPointAndPolygonMaximumDistance, getPointAndPolygonMinimumDistance, getPolygonFromTwoPointsFormRegion, getTwoNumbersDistance, getTwoPointsDistance, getTwoPointsFormRegion, lineIntersectWithPolygon, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
+import { geometryLineInPolygon, geometryLineIntersectWithPolygon, getPointAndGeometryLineMinimumDistance, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
+import { GeometryLine } from "./intersection"
 import { Nullable } from "./types"
 
 /**
@@ -9,9 +10,8 @@ export function getContentByClickPosition<T>(
   position: Position,
   contentSelectable: (path: number[]) => boolean,
   getModel: (content: T) => {
-    getCircle?: (content: T) => { circle: Circle, fill?: boolean },
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
-      lines: [Position, Position][]
+      lines: GeometryLine[]
       regions?: {
         points: Position[]
       }[]
@@ -33,19 +33,11 @@ export function getContentByClickPosition<T>(
       continue
     }
     const model = getModel(content)
-    if (model?.getCircle) {
-      const { circle, fill } = model.getCircle(content)
-      if (fill && contentSelectable([i]) && getTwoPointsDistance(circle, position) <= circle.r) {
-        return [i]
-      }
-      if (contentSelectable([i]) && getTwoNumbersDistance(getTwoPointsDistance(circle, position), circle.r) <= delta) {
-        return [i]
-      }
-    } else if (model?.getGeometries) {
+    if (model?.getGeometries) {
       const { lines, regions } = model.getGeometries(content, contents)
       for (let j = 0; j < lines.length; j++) {
         const line = lines[j]
-        const minDistance = getPointAndLineSegmentMinimumDistance(position, ...line)
+        const minDistance = getPointAndGeometryLineMinimumDistance(position, line)
         if (minDistance <= delta) {
           if (part && model.canSelectPart && contentSelectable([i, j])) {
             return [i, j]
@@ -80,13 +72,12 @@ export function getContentsByClickTwoPositions<T>(
   startPosition: Position,
   endPosition: Position,
   getModel: (content: T) => {
-    getCircle?: (content: T) => { circle: Circle, bounding: TwoPointsFormRegion },
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
-      lines: [Position, Position][]
+      lines: GeometryLine[]
       bounding?: TwoPointsFormRegion
       regions?: {
         points: Position[]
-        lines: [Position, Position][]
+        lines: GeometryLine[]
       }[]
     },
   } | undefined,
@@ -104,13 +95,12 @@ export function getContentsByRegion<T>(
   partial: boolean,
   rotated: boolean,
   getModel: (content: T) => {
-    getCircle?: (content: T) => { circle: Circle, bounding: TwoPointsFormRegion },
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
-      lines: [Position, Position][]
+      lines: GeometryLine[]
       bounding?: TwoPointsFormRegion
       regions?: {
         points: Position[]
-        lines: [Position, Position][]
+        lines: GeometryLine[]
       }[]
     },
   } | undefined,
@@ -127,29 +117,16 @@ export function getContentsByRegion<T>(
     }
     if (!contentSelectable || contentSelectable([i])) {
       const model = getModel(content)
-      if (model?.getCircle) {
-        const { circle, bounding } = model.getCircle(content)
-        if (rotated
-          ? pointInPolygon(circle, polygon) && getPointAndPolygonMinimumDistance(circle, polygon) >= circle.r
-          : pointInPolygon(bounding.start, polygon) && pointInPolygon(bounding.end, polygon)) {
-          result.push([i])
-        } else if (partial) {
-          const minDistance = getPointAndPolygonMinimumDistance(circle, polygon)
-          const maxDistance = getPointAndPolygonMaximumDistance(circle, polygon)
-          if (minDistance <= circle.r && maxDistance >= circle.r) {
-            result.push([i])
-          }
-        }
-      } else if (model?.getGeometries) {
+      if (model?.getGeometries) {
         const { lines, bounding, regions } = model.getGeometries(content, contents)
         if (rotated
-          ? lines.every(([p1, p2]) => pointInPolygon(p1, polygon) && pointInPolygon(p2, polygon))
+          ? lines.every(line => geometryLineInPolygon(line, polygon))
           && (!regions || regions.every(r => r.points.every(p => pointInPolygon(p, polygon))))
           : bounding && pointInPolygon(bounding.start, polygon) && pointInPolygon(bounding.end, polygon)) {
           result.push([i])
         } else if (partial) {
           for (const line of lines) {
-            if (lineIntersectWithPolygon(...line, polygon)) {
+            if (geometryLineIntersectWithPolygon(line, polygon)) {
               result.push([i])
               return
             }
@@ -157,7 +134,7 @@ export function getContentsByRegion<T>(
           if (regions) {
             for (const r of regions) {
               for (const line of r.lines) {
-                if (lineIntersectWithPolygon(...line, polygon)) {
+                if (geometryLineIntersectWithPolygon(line, polygon)) {
                   result.push([i])
                   return
                 }

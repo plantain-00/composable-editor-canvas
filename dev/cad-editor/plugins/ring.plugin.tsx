@@ -16,11 +16,13 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
-      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, angleDelta)
-      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, angleDelta)
+      const arc1 = { ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }
+      const arc2 = { ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }
+      const points1 = ctx.arcToPolyline(arc1, angleDelta)
+      const points2 = ctx.arcToPolyline(arc2, angleDelta)
       const points = [...points1, ...points2]
-      const lines1 = Array.from(ctx.iteratePolygonLines(points1))
-      const lines2 = Array.from(ctx.iteratePolygonLines(points2))
+      const lines1 = [{ type: 'arc' as const, arc: arc1 }]
+      const lines2 = [{ type: 'arc' as const, arc: arc2 }]
       return {
         lines: [...lines1, ...lines2],
         bounding: ctx.getPointsBounding(points),
@@ -103,6 +105,8 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRingGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRingGeometriesFromCache(content).lines),
   }
 }
 

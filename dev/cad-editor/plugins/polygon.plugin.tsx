@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
   const PolygonContent = ctx.and(ctx.BaseContent('polygon'), ctx.StrokeFields, ctx.FillFields, {
     points: [ctx.Position]
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
     return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points))
@@ -58,7 +58,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     offset(content, point, distance) {
       const { lines } = getPolygonGeometries(content)
       if (!distance) {
-        distance = Math.min(...lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
       const index = ctx.getLinesOffsetDirection(point, lines)

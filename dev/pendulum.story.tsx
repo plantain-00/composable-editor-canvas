@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, getTwoPointsAngle, getPointByLengthAndAngle, reactCanvasRenderTarget, useRefState, useRefState2, useWindowSize, useEvent, getTwoPointsDistance } from "../src"
+import { Button, getTwoPointsRadian, getPointByLengthAndRadian, reactCanvasRenderTarget, useRefState, useRefState2, useWindowSize, useEvent, getTwoPointsDistance } from "../src"
 
 export default () => {
   const size = useWindowSize()
@@ -9,18 +9,18 @@ export default () => {
   const center = { x: width / 2, y: height / 3 }
   const [length, setLength] = React.useState(width / 2)
   const [editing, setEditing] = React.useState(false)
-  const [state, setState] = React.useState({ angle: -Math.PI / 4, speed: 0 })
+  const [state, setState] = React.useState({ radian: -Math.PI / 4, speed: 0 })
   const [editingState, setEditingState] = React.useState<(typeof state) & { length: number }>()
   const [running, setRunning, runningRef] = useRefState(false)
   const [runningState, setRunningState, runningStateRef] = useRefState2<typeof state>()
   const currentState = runningState ?? editingState ?? state
   const currentLength = editingState?.length ?? length
   const position = {
-    x: center.x - currentLength * Math.sin(currentState.angle),
-    y: center.y + currentLength * Math.cos(currentState.angle),
+    x: center.x - currentLength * Math.sin(currentState.radian),
+    y: center.y + currentLength * Math.cos(currentState.radian),
     r: 10,
   }
-  const p = getPointByLengthAndAngle(position, currentState.speed * currentLength + position.r * (currentState.speed >= 0 ? 1 : -1), getTwoPointsAngle(position, center) + Math.PI / 2)
+  const p = getPointByLengthAndRadian(position, currentState.speed * currentLength + position.r * (currentState.speed >= 0 ? 1 : -1), getTwoPointsRadian(position, center) + Math.PI / 2)
   const children = [
     target.renderCircle(center.x, center.y, 5),
     target.renderCircle(position.x, position.y, position.r, { fillColor: 0x000000, strokeWidth: 0 }),
@@ -44,17 +44,17 @@ export default () => {
       if (lastTime !== undefined) {
         const t = (time - lastTime) * 0.005
         const current = runningStateRef.current ?? state
-        const initialY = center.y + currentLength * Math.cos(state.angle)
-        const y = center.y + currentLength * Math.cos(current.angle)
+        const initialY = center.y + currentLength * Math.cos(state.radian)
+        const y = center.y + currentLength * Math.cos(current.radian)
         const g = 9.8
-        let newSpeed = current.speed - g * Math.sin(current.angle) / currentLength * t
+        let newSpeed = current.speed - g * Math.sin(current.radian) / currentLength * t
         if (y !== initialY) {
           const newSpeed2 = Math.sqrt(g * Math.abs(y - initialY) * 2) / currentLength
           if (newSpeed2 < Math.abs(newSpeed)) {
             newSpeed = Math.sign(newSpeed) * newSpeed2
           }
         }
-        setRunningState({ angle: current.angle + current.speed * t, speed: newSpeed })
+        setRunningState({ radian: current.radian + current.speed * t, speed: newSpeed })
       }
       lastTime = time
       requestAnimationFrame(step)
@@ -73,7 +73,7 @@ export default () => {
     if (editing) {
       const p = { x: e.clientX, y: e.clientY }
       setEditingState({
-        angle: getTwoPointsAngle(p, center) - Math.PI / 2,
+        radian: getTwoPointsRadian(p, center) - Math.PI / 2,
         speed: 0,
         length: getTwoPointsDistance(p, center),
       })

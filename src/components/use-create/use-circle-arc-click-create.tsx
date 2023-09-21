@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { Arc, getTwoPointsAngle, Position, radianToAngle } from "../../utils"
+import { Arc, getTwoPointsRadian, Position, radianToAngle } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { useCircleClickCreate } from "./use-circle-click-create"
 
@@ -69,11 +69,11 @@ export function useCircleArcClickCreate(
       if (arc) {
         p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         if (startAngle === undefined) {
-          const angle = radianToAngle(getTwoPointsAngle(p, arc))
+          const angle = radianToAngle(getTwoPointsRadian(p, arc))
           setStartAngle(angle)
           setArc({ ...arc, startAngle: angle, endAngle: angle })
         } else {
-          let angle = radianToAngle(getTwoPointsAngle(p, arc))
+          let angle = radianToAngle(getTwoPointsRadian(p, arc))
           if (angle < startAngle) {
             angle += 360
           }
@@ -94,7 +94,7 @@ export function useCircleArcClickCreate(
         p = getAngleSnapPosition(arc, p, options?.getAngleSnap)
         setCursorPosition(p)
         if (startAngle !== undefined) {
-          let angle = radianToAngle(getTwoPointsAngle(p, arc))
+          let angle = radianToAngle(getTwoPointsRadian(p, arc))
           if (angle < startAngle) {
             angle += 360
           }

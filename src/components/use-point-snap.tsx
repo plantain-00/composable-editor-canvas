@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, isSamePoint, getLineCircleIntersectionPoints, getPerpendicularPoint, getPointAndLineSegmentNearestPointAndDistance, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -11,8 +11,7 @@ export function usePointSnap<T>(
   types: readonly SnapPointType[],
   getModel: (content: T) => {
     getSnapPoints?: (content: T, contents: readonly Nullable<T>[]) => SnapPoint[]
-    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: [Position, Position][], bounding?: TwoPointsFormRegion }
-    getCircle?: (content: T) => { circle: Circle, bounding?: TwoPointsFormRegion }
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: GeometryLine[], bounding?: TwoPointsFormRegion }
     getParam?(content: T, point: Position): number
   } | undefined,
   offset?: Position,
@@ -226,38 +225,7 @@ export function usePointSnap<T>(
           }
           const model = getModel(content)
           if (model) {
-            if (model.getCircle) {
-              const { bounding, circle } = model.getCircle(content)
-              if (
-                bounding &&
-                pointIsInRegion(
-                  p,
-                  {
-                    start: {
-                      x: bounding.start.x - delta,
-                      y: bounding.start.y - delta,
-                    },
-                    end: {
-                      x: bounding.end.x + delta,
-                      y: bounding.end.y + delta,
-                    },
-                  },
-                ) &&
-                !isSamePoint(circle, lastPosition) &&
-                getTwoNumbersDistance(getTwoPointsDistance(p, circle), circle.r) <= delta
-              ) {
-                const points = getLineCircleIntersectionPoints(lastPosition, circle, circle)
-                for (const point of points) {
-                  if (getTwoPointsDistance(p, point) <= delta) {
-                    saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
-                    return transformResult(transformSnapPosition, {
-                      ...getOffsetSnapPoint(point),
-                      ...getSnapTarget(model, content, point),
-                    })
-                  }
-                }
-              }
-            } else if (model.getGeometries) {
+            if (model.getGeometries) {
               const { bounding, lines } = model.getGeometries(content, contents)
               if (
                 bounding &&
@@ -276,6 +244,17 @@ export function usePointSnap<T>(
                 )
               ) {
                 for (const line of lines) {
+                  if (!Array.isArray(line)) {
+                    const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.arc)
+                    if (angleInRange(radianToAngle(perpendicularPoint.radian), line.arc) && getTwoPointsDistance(p, perpendicularPoint.point) <= delta) {
+                      saveSnapPoint(transformSnapPosition, { ...perpendicularPoint.point, type: 'perpendicular' })
+                      return transformResult(transformSnapPosition, {
+                        ...getOffsetSnapPoint(perpendicularPoint.point),
+                        ...getSnapTarget(model, content, perpendicularPoint.point),
+                      })
+                    }
+                    continue
+                  }
                   const perpendicularPoint = getPerpendicularPoint(lastPosition, twoPointLineToGeneralFormLine(...line))
                   if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
                     const distance = getTwoPointsDistance(p, perpendicularPoint)
@@ -300,37 +279,7 @@ export function usePointSnap<T>(
           }
           const model = getModel(content)
           if (model) {
-            if (model.getCircle) {
-              const { bounding, circle } = model.getCircle(content)
-              if (
-                bounding &&
-                pointIsInRegion(
-                  p,
-                  {
-                    start: {
-                      x: bounding.start.x - delta,
-                      y: bounding.start.y - delta,
-                    },
-                    end: {
-                      x: bounding.end.x + delta,
-                      y: bounding.end.y + delta,
-                    },
-                  },
-                ) &&
-                getTwoNumbersDistance(getTwoPointsDistance(p, circle), circle.r) <= delta
-              ) {
-                const points = getLineCircleIntersectionPoints(p, circle, circle)
-                for (const point of points) {
-                  if (getTwoPointsDistance(p, point) <= delta) {
-                    saveSnapPoint(transformSnapPosition, { ...point, type: 'nearest' })
-                    return transformResult(transformSnapPosition, {
-                      ...getOffsetSnapPoint(point),
-                      ...getSnapTarget(model, content, point),
-                    })
-                  }
-                }
-              }
-            } else if (model.getGeometries) {
+            if (model.getGeometries) {
               const { bounding, lines } = model.getGeometries(content, contents)
               if (
                 bounding &&
@@ -349,7 +298,7 @@ export function usePointSnap<T>(
                 )
               ) {
                 for (const line of lines) {
-                  const { point, distance } = getPointAndLineSegmentNearestPointAndDistance(p, ...line)
+                  const { point, distance } = getPointAndGeometryLineNearestPointAndDistance(p, line)
                   if (distance <= delta) {
                     saveSnapPoint(transformSnapPosition, { ...point, type: 'nearest' })
                     return transformResult(transformSnapPosition, {

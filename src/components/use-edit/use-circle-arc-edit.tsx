@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Arc } from "../.."
-import { getTwoPointsAngle, getTwoPointsDistance, Position, radianToAngle } from "../../utils"
+import { getTwoPointsRadian, getTwoPointsDistance, Position, radianToAngle } from "../../utils"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { EditOptions, useDragEdit } from "./use-edit"
 
@@ -29,10 +29,10 @@ export function useCircleArcEdit<T = void>(
         const r = getTwoPointsDistance(end, start.data) - start.data.r
         setOffset({ x: 0, y: 0, r, startAngle: 0, endAngle: 0, data: start.data.data })
       } else if (start.data.type === 'start angle') {
-        const angle = radianToAngle(getTwoPointsAngle(end, start.data)) - start.data.startAngle
+        const angle = radianToAngle(getTwoPointsRadian(end, start.data)) - start.data.startAngle
         setOffset({ x: 0, y: 0, r: 0, startAngle: angle, endAngle: 0, data: start.data.data })
       } else if (start.data.type === 'end angle') {
-        const angle = radianToAngle(getTwoPointsAngle(end, start.data)) - start.data.endAngle
+        const angle = radianToAngle(getTwoPointsRadian(end, start.data)) - start.data.endAngle
         setOffset({ x: 0, y: 0, r: 0, startAngle: 0, endAngle: angle, data: start.data.data })
       }
     },
