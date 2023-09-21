@@ -1,7 +1,7 @@
 import React from 'react';
 import { produce, Patch, enablePatches, produceWithPatches } from 'immer'
 import { v3 } from 'twgl.js'
-import { bindMultipleRefs, Button, colorNumberToPixelColor, EditPoint, getPointByLengthAndAngle, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, pixelColorToColorNumber, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, Button, colorNumberToPixelColor, EditPoint, getPointByLengthAndRadian, getTwoPointsDistance, metaKeyIfMacElseCtrlKey, Nullable, NumberEditor, ObjectEditor, pixelColorToColorNumber, Position, reverseTransformPosition, scaleByCursorPosition, Transform, useDragMove, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useRefState, useRefState2, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent } from '../circuit-graph-editor/model';
 import { Renderer } from './renderer';
 import { isSphereContent, Position3D, SphereContent } from './model';
@@ -130,7 +130,7 @@ export const AstronomicalObjectSimulator = React.forwardRef((props: {
         if (speedX || s.speed.y) {
           const pos = { x: contentX, y: s.y }
           const speedPos = { x: speedX, y: s.speed.y }
-          const p = getPointByLengthAndAngle(pos, s.radius + getTwoPointsDistance(speedPos), Math.atan2(s.speed.y, speedX))
+          const p = getPointByLengthAndRadian(pos, s.radius + getTwoPointsDistance(speedPos), Math.atan2(s.speed.y, speedX))
           editPoints.push({
             x: p.x,
             y: p.y,

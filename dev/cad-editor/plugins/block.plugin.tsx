@@ -89,7 +89,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     const block = ctx.getReference(content.refId, contents, isBlockContent)
     if (block) {
       return blockLinesCache.get(block, content, () => {
-        const lines: [core.Position, core.Position][] = []
+        const lines: core.GeometryLine[] = []
         const boundings: core.TwoPointsFormRegion[] = []
         const renderingLines: core.Position[][] = []
         const regions: NonNullable<model.Geometries['regions']> = []

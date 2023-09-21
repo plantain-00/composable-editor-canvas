@@ -113,7 +113,7 @@ export function getCommand(ctx: PluginContext): Command {
                   const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
                   if (geometries) {
                     for (const line of geometries.lines) {
-                      if (trackLines.some(t => ctx.getTwoLineSegmentsIntersectionPoint(...line, ...t))) {
+                      if (trackLines.some(t => ctx.getTwoGeometryLinesIntersectionPoint(line, t).length > 0)) {
                         const index = newCurrents.findIndex(s => s.content === candidate.content)
                         if (index >= 0) {
                           newCurrents[index].children.push(child)
@@ -136,7 +136,7 @@ export function getCommand(ctx: PluginContext): Command {
               const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
               if (geometries) {
                 for (const line of geometries.lines) {
-                  if (ctx.getPointAndLineSegmentMinimumDistance(p, line[0], line[1]) < 5) {
+                  if (ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5) {
                     setCurrents([{ children: [child], content: candidate.content }])
                     return
                   }

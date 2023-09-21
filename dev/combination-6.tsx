@@ -1,6 +1,6 @@
 import React from "react"
 import { produce } from "immer"
-import { Button, CanvasDraw, Position, getDirectionByAngle, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsAngle, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize } from "../src";
+import { Button, CanvasDraw, Position, getDirectionByRadian, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize } from "../src";
 
 export function Combination6() {
   const { width, height } = useWindowSize()
@@ -125,8 +125,8 @@ export function Combination6() {
     children.push(target.renderCircle(s.x, s.y, r, { fillColor: color, strokeWidth: 0 }))
     if (s.speed.x || s.speed.y) {
       const distance = getTwoPointsDistance(s.speed)
-      const angle = getTwoPointsAngle(s.speed)
-      const p = getPointByLengthAndAngle(s, distance + radius, angle)
+      const angle = getTwoPointsRadian(s.speed)
+      const p = getPointByLengthAndRadian(s, distance + radius, angle)
       children.push(target.renderPolyline([s, p], { strokeColor: color }))
     }
   }
@@ -194,8 +194,8 @@ function lineToContent([p1, p2]: Position[], radius: number, type?: CreateType) 
     p1 = { x: p1.x, y: radius }
     p2 = { x: p2.x, y: radius }
   } else if (type === 'shoot down') {
-    const angle = getTwoPointsAngle(p2, p1)
-    const speed = multipleDirection(getDirectionByAngle(angle), launchSpeed)
+    const angle = getTwoPointsRadian(p2, p1)
+    const speed = multipleDirection(getDirectionByRadian(angle), launchSpeed)
     return {
       type: 'shoot down' as const,
       ...p1,

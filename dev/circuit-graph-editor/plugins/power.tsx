@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, getPointByLengthAndAngle, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsAngle, Nullable, NumberEditor, Position } from "../../../src"
+import { Button, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsRadian, Nullable, NumberEditor, Position } from "../../../src"
 import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type PowerDevice = BaseDevice<'power'> & {
@@ -67,12 +67,12 @@ function getPowerGeometriesFromCache(content: Omit<PowerDevice, "type">, content
       const center = getTwoPointCenter(start.position, end.position)
       const p1 = getPointByLengthAndDirection(center, 3, start.position)
       const p2 = getPointByLengthAndDirection(center, 3, end.position)
-      const angle = getTwoPointsAngle(start.position, end.position)
+      const radian = getTwoPointsRadian(start.position, end.position)
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],
-        [getPointByLengthAndAngle(p1, 4, angle), getPointByLengthAndAngle(p1, -4, angle)],
-        [getPointByLengthAndAngle(p2, 8, angle), getPointByLengthAndAngle(p2, -8, angle)],
+        [getPointByLengthAndRadian(p1, 4, radian), getPointByLengthAndRadian(p1, -4, radian)],
+        [getPointByLengthAndRadian(p2, 8, radian), getPointByLengthAndRadian(p2, -8, radian)],
       ]
       return {
         data: {

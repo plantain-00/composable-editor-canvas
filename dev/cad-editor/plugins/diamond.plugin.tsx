@@ -9,7 +9,7 @@ export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields &
 
 export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
   const DiamondContent = ctx.and(ctx.BaseContent('diamond'), ctx.StrokeFields, ctx.FillFields, ctx.Region)
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getGeometries(content: Omit<DiamondContent, "type">) {
     return geometriesCache.get(content, () => {
       const points = [
@@ -48,7 +48,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     },
     offset(content, point, distance) {
       if (!distance) {
-        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       distance *= this.isPointIn?.(content, point) ? -2 : 2
       const scale = content.width / content.height

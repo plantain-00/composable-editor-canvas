@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsAngle, getTextStyleFont } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndRadian, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsRadian, getTextStyleFont } from "../../utils"
 
 /**
  * @public
@@ -25,30 +25,30 @@ export function getLinearDimensionGeometries(
   let arrow2Points: Position[]
   let textPoints: Position[] = []
   const { textPosition, size, textRotation } = getTextPosition(content)
-  const centerRotation = getTwoPointsAngle(content.position, center)
+  const centerRotation = getTwoPointsRadian(content.position, center)
   const rotation = Math.abs(centerRotation)
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
     const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
-    const r = getTwoPointsAngle(right, left)
+    const r = getTwoPointsRadian(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {
       rotationDelta += Math.PI * 2
     }
     const direction = rotationDelta > 0 && rotationDelta < Math.PI ? -1 : 1
-    line1Points = [left, getPointByLengthAndAngle(left, distance + dimensionStyle.margin, r + direction * Math.PI / 2)]
-    line2Points = [right, getPointByLengthAndAngle(right, distance + dimensionStyle.margin, r + direction * Math.PI / 2)]
-    let p1 = getPointByLengthAndAngle(left, distance, r + direction * Math.PI / 2)
-    let p2 = getPointByLengthAndAngle(right, distance, r + direction * Math.PI / 2)
+    line1Points = [left, getPointByLengthAndRadian(left, distance + dimensionStyle.margin, r + direction * Math.PI / 2)]
+    line2Points = [right, getPointByLengthAndRadian(right, distance + dimensionStyle.margin, r + direction * Math.PI / 2)]
+    let p1 = getPointByLengthAndRadian(left, distance, r + direction * Math.PI / 2)
+    let p2 = getPointByLengthAndRadian(right, distance, r + direction * Math.PI / 2)
     const p1p2Distance = getTwoPointsDistance(content.p1, content.p2)
     let arrowDirection = 1
     if (size && p1p2Distance <= dimensionStyle.arrowSize * 2 + size.width) {
       arrowDirection = -1
     }
-    const arrow1 = getPointByLengthAndAngle(p1, arrowDirection * dimensionStyle.arrowSize, r)
-    const arrow2 = getPointByLengthAndAngle(p2, arrowDirection * dimensionStyle.arrowSize, r + Math.PI)
+    const arrow1 = getPointByLengthAndRadian(p1, arrowDirection * dimensionStyle.arrowSize, r)
+    const arrow2 = getPointByLengthAndRadian(p2, arrowDirection * dimensionStyle.arrowSize, r + Math.PI)
     arrow1Points = [
       p1,
       rotatePositionByCenter(arrow1, p1, dimensionStyle.arrowAngle),
@@ -175,15 +175,15 @@ export function getLinearDimensionTextPosition(
   let text: string
   let size: Size | undefined
   let textRotation = 0
-  const centerRotation = getTwoPointsAngle(content.position, center)
+  const centerRotation = getTwoPointsRadian(content.position, center)
   const rotation = Math.abs(centerRotation)
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
     const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
     const distance = getTwoPointsDistance(content.position, footPoint)
-    textRotation = getTwoPointsAngle(right, left)
-    const r = getTwoPointsAngle(right, left)
+    textRotation = getTwoPointsRadian(right, left)
+    const r = getTwoPointsRadian(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {
       rotationDelta += Math.PI * 2
@@ -193,7 +193,7 @@ export function getLinearDimensionTextPosition(
     text = formatNumber(getTwoNumbersDistance(left.x, right.x)).toString()
     size = getTextSize(getTextStyleFont(content), text)
     if (size) {
-      textPosition = getPointByLengthAndAngle(textPosition, size.width / 2, textRotation - Math.PI)
+      textPosition = getPointByLengthAndRadian(textPosition, size.width / 2, textRotation - Math.PI)
     }
   } else if (rotation > Math.PI / 4 && rotation < Math.PI * 3 / 4) {
     textPosition = {

@@ -908,7 +908,7 @@ function getModel(ctx) {
       const endAngle = ctx.angleToRadian(content.endAngle);
       const middleAngle = (startAngle + endAngle) / 2;
       const geometries = {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
+        lines: [{ type: "arc", arc: content }],
         points,
         start: {
           x: content.x + content.r * Math.cos(startAngle),
@@ -973,7 +973,7 @@ function getModel(ctx) {
         if (points.length < 2) {
           return;
         }
-        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleAngle(p, content)));
+        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleRadian(p, content)));
         angles.sort((a, b) => a - b);
         return angles.map((a, i) => ({
           ...content,
@@ -1064,16 +1064,6 @@ function getModel(ctx) {
           ...quadrantPoints.map((p) => ({ ...p, type: "endpoint" }))
         ]);
       },
-      getCircle(content) {
-        return {
-          circle: content,
-          fill: ctx.hasFill(content),
-          bounding: {
-            start: { x: content.x - content.r, y: content.y - content.r },
-            end: { x: content.x + content.r, y: content.y + content.r }
-          }
-        };
-      },
       getGeometries: getCircleGeometries,
       propertyPanel(content, update, contents, { acquirePoint }) {
         return {
@@ -1141,8 +1131,8 @@ function getModel(ctx) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
-      getParam: (content, point) => ctx.getCircleAngle(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param)
+      getParam: (content, point) => ctx.getCircleRadian(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param)
     },
     {
       type: "arc",
@@ -1181,7 +1171,7 @@ function getModel(ctx) {
         if (points.length === 0) {
           return;
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleAngle(p, content)), content));
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleRadian(p, content)), content));
         angles.sort((a, b) => a - b);
         const result = [];
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -1263,7 +1253,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.startAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c));
+                  c.startAngle = ctx.radianToAngle(ctx.getCircleRadian(cursor, c));
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1276,7 +1266,7 @@ function getModel(ctx) {
                   if (!isArcContent(c)) {
                     return;
                   }
-                  c.endAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c));
+                  c.endAngle = ctx.radianToAngle(ctx.getCircleRadian(cursor, c));
                   c.r = ctx.getTwoPointsDistance(cursor, c);
                   ctx.normalizeAngleRange(c);
                   return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
@@ -1357,8 +1347,8 @@ function getModel(ctx) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getCircleAngle(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param)
+      getParam: (content, point) => ctx.getCircleRadian(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param)
     }
   ];
 }
@@ -2299,7 +2289,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -2 : 2;
       const scale = content.width / content.height;
@@ -2559,16 +2549,16 @@ function getModel(ctx) {
       const points = ctx.ellipseArcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolylineLines(points));
       const center = ctx.getEllipseCenter(content);
-      const startAngle = ctx.angleToRadian(content.startAngle);
-      const endAngle = ctx.angleToRadian(content.endAngle);
-      const middleAngle = (startAngle + endAngle) / 2;
+      const startRadian = ctx.angleToRadian(content.startAngle);
+      const endRadian = ctx.angleToRadian(content.endAngle);
+      const middleRadian = (startRadian + endRadian) / 2;
       return {
         lines,
         points,
         center,
-        start: ctx.getEllipsePointAtAngle(content, startAngle),
-        end: ctx.getEllipsePointAtAngle(content, endAngle),
-        middle: ctx.getEllipsePointAtAngle(content, middleAngle),
+        start: ctx.getEllipsePointAtRadian(content, startRadian),
+        end: ctx.getEllipsePointAtRadian(content, endRadian),
+        middle: ctx.getEllipsePointAtRadian(content, middleRadian),
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -2607,7 +2597,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getEllipseGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getEllipseGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       return ctx.produce(content, (d) => {
@@ -2782,7 +2772,7 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
     getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param))
+    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param))
   };
   return [
     ellipseModel,
@@ -2832,7 +2822,7 @@ function getModel(ctx) {
       },
       offset(content, point, distance) {
         if (!distance) {
-          distance = Math.min(...getEllipseArcGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+          distance = Math.min(...getEllipseArcGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
         }
         distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1;
         return ctx.produce(content, (d) => {
@@ -2988,7 +2978,7 @@ function getModel(ctx) {
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param))
+      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param))
     }
   ];
 }
@@ -3070,7 +3060,7 @@ function getCommand(ctx) {
               {
                 type: "line",
                 points: [
-                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.startAngle)),
+                  ctx.getEllipsePointAtRadian(ellipseArc, ctx.angleToRadian(ellipseArc.startAngle)),
                   {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
@@ -3085,7 +3075,7 @@ function getCommand(ctx) {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
                   },
-                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.endAngle))
+                  ctx.getEllipsePointAtRadian(ellipseArc, ctx.angleToRadian(ellipseArc.endAngle))
                 ],
                 dashArray: [4 / scale]
               }
@@ -4067,8 +4057,8 @@ function getCommand(ctx) {
       })));
     }
     return circles.map(({ foot1, foot2, center: c }) => {
-      const angle1 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot1, c));
-      const angle2 = ctx.radianToAngle(ctx.getTwoPointsAngle(foot2, c));
+      const angle1 = ctx.radianToAngle(ctx.getTwoPointsRadian(foot1, c));
+      const angle2 = ctx.radianToAngle(ctx.getTwoPointsRadian(foot2, c));
       const min = Math.min(angle1, angle2);
       const max = Math.max(angle1, angle2);
       if (max - min < 180) {
@@ -4387,7 +4377,7 @@ function getModel(ctx) {
       const [p1, p2] = content.points;
       const line = ctx.twoPointLineToGeneralFormLine(p1, p2);
       if (!distance) {
-        distance = Math.min(...getPolylineGeometries(content).lines.map((line2) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line2)));
+        distance = Math.min(...getPolylineGeometries(content).lines.map((line2) => ctx.getPointAndGeometryLineMinimumDistance(point, line2)));
       }
       const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0];
       const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine));
@@ -4488,7 +4478,7 @@ function getModel(ctx) {
       offset(content, point, distance) {
         var _a;
         if (!distance) {
-          distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+          distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
         }
         if (content.points.length === 2) {
           return (_a = lineModel.offset) == null ? void 0 : _a.call(lineModel, content, point, distance);
@@ -4613,7 +4603,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
+          const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start));
           assistentContents.push(
             {
               type: "arc",
@@ -4677,7 +4667,7 @@ function getCommand(ctx) {
           const start = line[line.length - 2];
           const end = line[line.length - 1];
           const r = ctx.getTwoPointsDistance(start, end);
-          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
+          const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start));
           assistentContents.push(
             {
               type: "arc",
@@ -5162,7 +5152,7 @@ function getCommand(ctx) {
         const start = startPosition;
         const end = cursorPosition;
         const r = ctx.getTwoPointsDistance(start, end);
-        const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start));
+        const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start));
         assistentContents.push(
           {
             type: "arc",
@@ -5263,7 +5253,7 @@ function getCommand(ctx) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
-            const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, startPosition));
+            const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, startPosition));
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
                 var _a, _b;
@@ -6170,7 +6160,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              c.itemAngle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center));
+              c.itemAngle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content.center) - ctx.getTwoPointsRadian(base, content.center));
               return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
             }
           });
@@ -6184,7 +6174,7 @@ function getModel(ctx) {
               if (!isPolarArrayContent(c)) {
                 return;
               }
-              let angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, content.center) - ctx.getTwoPointsAngle(base, content.center));
+              let angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content.center) - ctx.getTwoPointsRadian(base, content.center));
               if (c.itemAngle > 0) {
                 if (angle < 0) {
                   angle += 360;
@@ -6409,7 +6399,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       const { lines } = getPolygonGeometries(content);
       if (!distance) {
-        distance = Math.min(...lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
       const index = ctx.getLinesOffsetDirection(point, lines);
@@ -7133,7 +7123,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getRectGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getRectGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= 2 * (((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1);
       return ctx.produce(content, (d) => {
@@ -7358,7 +7348,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       const radius = distance / Math.cos(Math.PI / content.count);
@@ -7408,7 +7398,7 @@ function getModel(ctx) {
                   return;
                 }
                 c.radius = ctx.getTwoPointsDistance(cursor, c);
-                c.angle = ctx.radianToAngle(ctx.getTwoPointsAngle(cursor, c));
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, c));
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
               }
             }))
@@ -7481,7 +7471,7 @@ function getCommand(ctx) {
               y: p0.y,
               radius: ctx.getTwoPointsDistance(p0, p1),
               count: 5,
-              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+              angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
               strokeStyleId,
               fillStyleId
             });
@@ -7500,7 +7490,7 @@ function getCommand(ctx) {
           y: p0.y,
           radius: ctx.getTwoPointsDistance(p0, p1),
           count: 5,
-          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+          angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
           strokeStyleId,
           fillStyleId
         });
@@ -7533,11 +7523,13 @@ function getModel(ctx) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
       const angleDelta = (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta;
-      const points1 = ctx.arcToPolyline({ ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
-      const points2 = ctx.arcToPolyline({ ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }, angleDelta);
+      const arc1 = { ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 };
+      const arc2 = { ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 };
+      const points1 = ctx.arcToPolyline(arc1, angleDelta);
+      const points2 = ctx.arcToPolyline(arc2, angleDelta);
       const points = [...points1, ...points2];
-      const lines1 = Array.from(ctx.iteratePolygonLines(points1));
-      const lines2 = Array.from(ctx.iteratePolygonLines(points2));
+      const lines1 = [{ type: "arc", arc: arc1 }];
+      const lines2 = [{ type: "arc", arc: arc2 }];
       return {
         lines: [...lines1, ...lines2],
         bounding: ctx.getPointsBounding(points),
@@ -7640,7 +7632,9 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRingGeometriesFromCache(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRingGeometriesFromCache(content).lines)
   };
 }
 function isRingContent(content) {
@@ -7826,7 +7820,16 @@ function getModel(ctx) {
       const points = ctx.getRoundedRectPoints(content, content.radius, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
-        lines,
+        lines: [
+          { type: "arc", arc: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
+          [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
+          { type: "arc", arc: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
+          [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
+          { type: "arc", arc: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
+          [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
+          { type: "arc", arc: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
+          [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }]
+        ],
         points: rectPoints,
         arcPoints: [
           { x: rectPoints[0].x + content.radius, y: rectPoints[0].y },
@@ -7862,7 +7865,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -2 : 2;
       return ctx.produce(content, (d) => {
@@ -7922,11 +7925,11 @@ function getModel(ctx) {
     },
     getSnapPoints(content) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getGeometries(content);
+        const { points } = getGeometries(content);
         return [
           { x: content.x, y: content.y, type: "center" },
           ...points.map((p) => ({ ...p, type: "endpoint" })),
-          ...lines.map(([start, end]) => ({
+          ...Array.from(ctx.iteratePolygonLines(points)).map(([start, end]) => ({
             x: (start.x + end.x) / 2,
             y: (start.y + end.y) / 2,
             type: "midpoint"
@@ -7976,7 +7979,9 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getGeometries(content).lines)
   };
 }
 function isRoundedRectContent(content) {
@@ -8533,7 +8538,7 @@ function getModel(ctx) {
     offset(content, point, distance) {
       var _a;
       if (!distance) {
-        distance = Math.min(...getStarGeometriesFromCache(content).lines.map((line) => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)));
+        distance = Math.min(...getStarGeometriesFromCache(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
       const angle = Math.PI / content.count;
@@ -8669,7 +8674,7 @@ function getCommand(ctx) {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+              angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
               strokeStyleId,
               fillStyleId
             });
@@ -8690,7 +8695,7 @@ function getCommand(ctx) {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+          angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
           strokeStyleId,
           fillStyleId
         });
@@ -10127,7 +10132,7 @@ function getCommand(ctx) {
                   const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
                   if (geometries) {
                     for (const line of geometries.lines) {
-                      if (trackLines.some((t) => ctx.getTwoLineSegmentsIntersectionPoint(...line, ...t))) {
+                      if (trackLines.some((t) => ctx.getTwoGeometryLinesIntersectionPoint(line, t).length > 0)) {
                         const index = newCurrents.findIndex((s) => s.content === candidate.content);
                         if (index >= 0) {
                           newCurrents[index].children.push(child);
@@ -10150,7 +10155,7 @@ function getCommand(ctx) {
               const geometries = (_d = (_c = ctx.getContentModel(child)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, child, contents);
               if (geometries) {
                 for (const line of geometries.lines) {
-                  if (ctx.getPointAndLineSegmentMinimumDistance(p, line[0], line[1]) < 5) {
+                  if (ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5) {
                     setCurrents([{ children: [child], content: candidate.content }]);
                     return;
                   }

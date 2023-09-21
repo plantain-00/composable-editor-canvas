@@ -1,4 +1,4 @@
-import { getTwoPointsAngle, Position, rotatePositionByCenter } from "./geometry"
+import { getTwoPointsRadian, Position, rotatePositionByCenter } from "./geometry"
 import { radianToAngle } from "./radian"
 
 export function getAngleSnapPosition(
@@ -7,7 +7,7 @@ export function getAngleSnapPosition(
   getAngleSnap?: (angle: number) => number | undefined,
 ) {
   if (getAngleSnap && startPosition) {
-    const angle = radianToAngle(getTwoPointsAngle(newPosition, startPosition))
+    const angle = radianToAngle(getTwoPointsRadian(newPosition, startPosition))
     const newAngle = getAngleSnap(angle)
     if (newAngle !== undefined && newAngle !== angle) {
       newPosition = rotatePositionByCenter(newPosition, startPosition, angle - newAngle)

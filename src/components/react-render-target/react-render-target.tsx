@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsAngle, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
@@ -321,8 +321,8 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
             const t1 = getPerpendicularPoint(center, line1)
             const t2 = getPerpendicularPoint(center, line2)
             points.push({ x: t1.x, y: t1.y })
-            const startAngle = radianToAngle(getTwoPointsAngle(t1, center))
-            const endAngle = radianToAngle(getTwoPointsAngle(t2, center))
+            const startAngle = radianToAngle(getTwoPointsRadian(t1, center))
+            const endAngle = radianToAngle(getTwoPointsRadian(t2, center))
             points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
           }
         }
@@ -403,10 +403,10 @@ export function getPathCommandEndPoint(pathCommands: PathCommand[], index: numbe
         )
         if (center) {
           const t2 = getPerpendicularPoint(center, line2)
-          const endAngle = getTwoPointsAngle(t2, center)
+          const endRadian = getTwoPointsRadian(t2, center)
           return {
-            x: center.x + command.radius * Math.cos(endAngle),
-            y: center.y + command.radius * Math.sin(endAngle),
+            x: center.x + command.radius * Math.cos(endRadian),
+            y: center.y + command.radius * Math.sin(endRadian),
           }
         }
       }

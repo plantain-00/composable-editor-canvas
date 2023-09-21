@@ -57,7 +57,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     },
     offset(content, point, distance) {
       if (!distance) {
-        distance = Math.min(...getStarGeometriesFromCache(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getStarGeometriesFromCache(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       const angle = Math.PI / content.count
@@ -170,7 +170,7 @@ export function getCommand(ctx: PluginContext): Command {
               outerRadius,
               innerRadius: outerRadius * 0.5,
               count: 5,
-              angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+              angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
               strokeStyleId,
               fillStyleId,
             } as StarContent)
@@ -191,7 +191,7 @@ export function getCommand(ctx: PluginContext): Command {
           outerRadius,
           innerRadius: outerRadius * 0.5,
           count: 5,
-          angle: ctx.radianToAngle(ctx.getTwoPointsAngle(p1, p0)),
+          angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p1, p0)),
           strokeStyleId,
           fillStyleId,
         })

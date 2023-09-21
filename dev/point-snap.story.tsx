@@ -8,7 +8,7 @@ export default () => {
   const [position, setPosition] = React.useState<Position>()
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap<Circle>(
     true,
-    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getCircle: (c) => ({ circle: c }) })))),
+    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', arc: { ...c, startAngle: 0, endAngle: 360 } }] }) })))),
     allSnapTypes,
     () => ({
       getSnapPoints(c) {
@@ -20,9 +20,9 @@ export default () => {
           { x: c.x, y: c.y + c.r, type: 'endpoint' },
         ]
       },
-      getCircle(c) {
+      getGeometries(c) {
         return {
-          circle: c,
+          lines: [{ type: 'arc', arc: { ...c, startAngle: 0, endAngle: 360 } }],
           bounding: {
             start: { x: c.x - c.r, y: c.y - c.r },
             end: { x: c.x + c.r, y: c.y + c.r },

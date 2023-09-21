@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or('line', 'polyline')), ctx.StrokeFields, ctx.FillFields, {
     points: ctx.minItems(2, [ctx.Position])
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getPolylineGeometries(content: Omit<LineContent, "type">) {
     return geometriesCache.get(content, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
@@ -56,7 +56,7 @@ export function getModel(ctx: PluginContext) {
       const [p1, p2] = content.points
       const line = ctx.twoPointLineToGeneralFormLine(p1, p2)
       if (!distance) {
-        distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0]
       const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine))
@@ -132,7 +132,7 @@ export function getModel(ctx: PluginContext) {
       },
       offset(content, point, distance) {
         if (!distance) {
-          distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+          distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
         }
         if (content.points.length === 2) {
           return lineModel.offset?.(content, point, distance)
@@ -246,7 +246,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start))
+          const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start))
           assistentContents.push(
             {
               type: 'arc',
@@ -310,7 +310,7 @@ export function getCommand(ctx: PluginContext): Command[] {
           const start = line[line.length - 2]
           const end = line[line.length - 1]
           const r = ctx.getTwoPointsDistance(start, end)
-          const angle = ctx.radianToAngle(ctx.getTwoPointsAngle(end, start))
+          const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start))
           assistentContents.push(
             {
               type: 'arc',

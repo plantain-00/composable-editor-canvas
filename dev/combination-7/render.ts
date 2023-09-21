@@ -1,4 +1,4 @@
-import { getPointByLengthAndAngle, reactCanvasRenderTarget } from "../../src";
+import { getPointByLengthAndRadian, reactCanvasRenderTarget } from "../../src";
 import { Bullet, Model } from "./model";
 import { units } from "./units";
 
@@ -10,8 +10,8 @@ export function renderModels(models: Model[], bullets: Bullet[], selected: numbe
     const result = [
       target.renderCircle(m.position.x, m.position.y, size, { strokeColor: color }),
       target.renderPolyline([
-        getPointByLengthAndAngle(m.position, size, m.facing),
-        getPointByLengthAndAngle(m.position, size * 2, m.facing),
+        getPointByLengthAndRadian(m.position, size, m.facing),
+        getPointByLengthAndRadian(m.position, size * 2, m.facing),
       ], { strokeColor: color }),
     ]
     if (m.health !== undefined) {

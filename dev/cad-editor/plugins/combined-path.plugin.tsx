@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
   const CombinedPathContent = ctx.and(ctx.BaseContent('combined path'), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields)
   const getGeometries = (content: CombinedPathContent) => {
     return ctx.getGeometriesFromCache(content, () => {
-      const lines: [core.Position, core.Position][] = []
+      const lines: core.GeometryLine[] = []
       const result: { points: core.Position[] }[] = []
       const boundings: core.Position[] = []
       content.contents.forEach((c) => {

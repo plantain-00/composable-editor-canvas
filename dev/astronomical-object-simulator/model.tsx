@@ -1,4 +1,4 @@
-import { getArrow, getPointByLengthAndAngle, getTwoPointsDistance, Position, ReactRenderTarget } from "../../src";
+import { getArrow, getPointByLengthAndRadian, getTwoPointsDistance, Position, ReactRenderTarget } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -42,7 +42,7 @@ export const sphereModel: Model<SphereContent> = {
     const speedX = yz ? content.speed.z : content.speed.x
     if (speedX || content.speed.y) {
       const speedPos = { x: speedX, y: content.speed.y }
-      const p = getPointByLengthAndAngle(pos, content.radius + getTwoPointsDistance(speedPos), Math.atan2(content.speed.y, speedX))
+      const p = getPointByLengthAndRadian(pos, content.radius + getTwoPointsDistance(speedPos), Math.atan2(content.speed.y, speedX))
       const { arrowPoints, endPoint } = getArrow(pos, p, 10, 15)
       children.push(
         target.renderPolyline([pos, endPoint], { strokeColor: content.color }),
@@ -53,7 +53,7 @@ export const sphereModel: Model<SphereContent> = {
       const accelerationX = yz ? content.acceleration.z : content.acceleration.x
       if (accelerationX || content.acceleration.y) {
         const accelerationPos = { x: accelerationX, y: content.acceleration.y }
-        const p = getPointByLengthAndAngle(pos, content.radius + getTwoPointsDistance(accelerationPos), Math.atan2(content.acceleration.y, accelerationX))
+        const p = getPointByLengthAndRadian(pos, content.radius + getTwoPointsDistance(accelerationPos), Math.atan2(content.acceleration.y, accelerationX))
         const { arrowPoints, endPoint } = getArrow(pos, p, 10, 15)
         children.push(
           target.renderPolyline([pos, endPoint], { strokeColor: content.color, dashArray: [5] }),

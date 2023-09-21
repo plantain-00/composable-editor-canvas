@@ -1,9 +1,10 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, Circle, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, getPointAndLineSegmentMinimumDistance, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3 } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
+import { ArcContent } from './plugins/circle-arc.plugin'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -184,7 +185,6 @@ export type Model<T> = Partial<FeatureModels> & {
   } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): SnapPoint[]
   getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
-  getCircle?(content: Omit<T, 'type'>): { circle: Circle, bounding: TwoPointsFormRegion }
   canSelectPart?: boolean
   propertyPanel?(
     content: Omit<T, 'type'>,
@@ -257,7 +257,7 @@ export type Geometries<T extends object = object> = T & {
   /**
    * Used for (1)line intersection, (2)select line by click, (3)select line by box, (4)snap point, (5)select child line
    */
-  lines: [Position, Position][]
+  lines: GeometryLine[]
   /**
    * Used for (1)select line by box, (2)snap point, (3)rtree
    */
@@ -270,7 +270,7 @@ export type Geometries<T extends object = object> = T & {
     /**
      * Used for (1)select region by box
      */
-    lines: [Position, Position][]
+    lines: GeometryLine[]
   }[]
   /**
    * Used for (1)line rendering
@@ -337,6 +337,9 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
   }
   const line = getContentModel(content)?.getGeometries?.(content)?.lines?.[index[1]]
   if (line) {
+    if (!Array.isArray(line)) {
+      return { type: 'arc', ...line.arc } as ArcContent
+    }
     return { type: 'line', points: line } as LineContent
   }
   return undefined
@@ -354,10 +357,7 @@ export function getContentsPoints(
     }
     if (!filter(c)) return
     const model = getContentModel(c)
-    if (model?.getCircle) {
-      const { bounding } = model.getCircle(c)
-      points.push(bounding.start, bounding.end)
-    } else if (model?.getGeometries) {
+    if (model?.getGeometries) {
       const { bounding } = model.getGeometries(c, state)
       if (bounding) {
         points.push(bounding.start, bounding.end)
@@ -1025,7 +1025,7 @@ export function getContentsGeometries<T extends ContainerFields>(
   getAllContents = (c: T) => c.contents,
 ) {
   return getGeometriesFromCache(content, () => {
-    const lines: [Position, Position][] = []
+    const lines: GeometryLine[] = []
     const renderingLines: Position[][] = []
     const boundings: Position[] = []
     const regions: NonNullable<Geometries['regions']> = []
@@ -1113,7 +1113,7 @@ export function getContentsBreak(array: Nullable<BaseContent>[], points: Positio
       const model = getContentModel(c)
       if (model?.break && model.getGeometries) {
         const geometries = model.getGeometries(c, contents)
-        const s = points.filter(p => geometries.lines.some(line => isZero(getPointAndLineSegmentMinimumDistance(p, ...line), 0.1)))
+        const s = points.filter(p => geometries.lines.some(line => isZero(getPointAndGeometryLineMinimumDistance(p, line), 0.1)))
         const r = model.break(c, s, contents)
         if (r) {
           result.push(...r)
@@ -1272,19 +1272,26 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
   }
 }
 
-export function getLinesParamAtPoint(point: Position, lines: [Position, Position][]) {
+export function getLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
-    if (isZero(getPointAndLineSegmentMinimumDistance(point, ...line))) {
+    if (isZero(getPointAndGeometryLineMinimumDistance(point, line))) {
+      if (!Array.isArray(line)) {
+        const angle = getAngleInRange(radianToAngle(getTwoPointsRadian(point, line.arc)), line.arc)
+        return i + (angle - line.arc.startAngle) / (line.arc.endAngle - line.arc.startAngle)
+      }
       return i + getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
     }
   }
   return 0
 }
 
-export function getLinesPointAtParam(param: number, lines: [Position, Position][]) {
+export function getLinesPointAtParam(param: number, lines: GeometryLine[]) {
   const index = Math.floor(param)
   const line = lines[index]
+  if (!Array.isArray(line)) {
+    return getArcPointAtAngle(line.arc, (param - index) * (line.arc.endAngle - line.arc.startAngle) + line.arc.startAngle)
+  }
   const distance = (param - index) * getTwoPointsDistance(...line)
   return getPointByLengthAndDirection(line[0], distance, line[1])
 }
@@ -1340,8 +1347,8 @@ export function trimOffsetResult(points: Position[], point: Position) {
     let newLines = breakPolyline(Array.from(iteratePolylineLines(points)), intersectionPoints)
     const newLines1 = newLines.filter((_, i) => i % 2 === 0)
     const newLines2 = newLines.filter((_, i) => i % 2 === 1)
-    const distance1 = Math.min(...newLines1.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndLineSegmentMinimumDistance(point, ...line))).flat(2))
-    const distance2 = Math.min(...newLines2.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndLineSegmentMinimumDistance(point, ...line))).flat(2))
+    const distance1 = Math.min(...newLines1.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
+    const distance2 = Math.min(...newLines2.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
     newLines = distance1 > distance2 ? newLines2 : newLines1
     mergePolylines(newLines)
     return newLines.map(line => line.points)

@@ -1,4 +1,4 @@
-import { and, Circle, formatNumber, getPointByLengthAndAngle, getPointByLengthAndDirection, getPointsBounding, getTextStyleFont, getTwoPointsAngle, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, optional, Position, rotatePosition, rotatePositionByCenter, Size, string, TextStyle } from "../../utils"
+import { and, Circle, formatNumber, getPointByLengthAndRadian, getPointByLengthAndDirection, getPointsBounding, getTextStyleFont, getTwoPointsRadian, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, optional, Position, rotatePosition, rotatePositionByCenter, Size, string, TextStyle } from "../../utils"
 
 /**
  * @public
@@ -66,7 +66,7 @@ export function getRadialDimensionTextPosition(
   let textPosition = content.position
   const text = `R${formatNumber(circle.r)}`
   const size = getTextSize(getTextStyleFont(content), text)
-  let textRotation = getTwoPointsAngle(content.position, circle)
+  let textRotation = getTwoPointsRadian(content.position, circle)
   if (size) {
     const distance = getTwoPointsDistance(circle, content.position)
     if (distance > circle.r) {
@@ -80,7 +80,7 @@ export function getRadialDimensionTextPosition(
       textRotation = textRotation + Math.PI
     }
   }
-  textPosition = getPointByLengthAndAngle(textPosition, margin, textRotation - Math.PI / 2)
+  textPosition = getPointByLengthAndRadian(textPosition, margin, textRotation - Math.PI / 2)
   return {
     textPosition,
     textRotation,

@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   const RectContent = ctx.and(ctx.BaseContent('rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
     angle: ctx.number
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], midpoints: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], midpoints: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getRectGeometries(content: Omit<RectContent, "type">) {
     return geometriesCache.get(content, () => {
       const points = [
@@ -68,7 +68,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     },
     offset(content, point, distance) {
       if (!distance) {
-        distance = Math.min(...getRectGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getRectGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       distance *= 2 * (this.isPointIn?.(content, point) ? -1 : 1)
       return ctx.produce(content, (d) => {

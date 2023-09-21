@@ -1,6 +1,6 @@
 import { produce } from 'immer'
 import React from 'react';
-import { BooleanEditor, EditPoint, getPointByLengthAndDirection, getTwoPointsAngle, isSamePoint, isZero, Nullable, Position, ReactRenderTarget, rotatePositionByCenter, WeakmapCache, WeakmapCache3 } from "../../src";
+import { BooleanEditor, EditPoint, getPointByLengthAndDirection, getTwoPointsRadian, isSamePoint, isZero, Nullable, Position, ReactRenderTarget, rotatePositionByCenter, WeakmapCache, WeakmapCache3 } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -283,7 +283,7 @@ export function getDeviceText<V>(
   currentValue?: number,
   unit = 'A',
 ) {
-  const angle = Math.abs(getTwoPointsAngle(data.right, data.left)) / Math.PI
+  const angle = Math.abs(getTwoPointsRadian(data.right, data.left)) / Math.PI
   let x = data.center.x
   let y = data.center.y
   let x2 = data.center.x

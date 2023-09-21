@@ -46,7 +46,7 @@ export function getModel(ctx: PluginContext) {
       const endAngle = ctx.angleToRadian(content.endAngle)
       const middleAngle = (startAngle + endAngle) / 2
       const geometries = {
-        lines: Array.from(ctx.iteratePolylineLines(points)),
+        lines: [{ type: 'arc' as const, arc: content }],
         points,
         start: {
           x: content.x + content.r * Math.cos(startAngle),
@@ -111,7 +111,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length < 2) {
           return
         }
-        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleAngle(p, content)))
+        const angles = points.map((p) => ctx.radianToAngle(ctx.getCircleRadian(p, content)))
         angles.sort((a, b) => a - b)
         return angles.map((a, i) => ({
           ...content,
@@ -201,16 +201,6 @@ export function getModel(ctx: PluginContext) {
           ...quadrantPoints.map(p => ({ ...p, type: 'endpoint' as const })),
         ])
       },
-      getCircle(content) {
-        return {
-          circle: content,
-          fill: ctx.hasFill(content),
-          bounding: {
-            start: { x: content.x - content.r, y: content.y - content.r },
-            end: { x: content.x + content.r, y: content.y + content.r },
-          }
-        }
-      },
       getGeometries: getCircleGeometries,
       propertyPanel(content, update, contents, { acquirePoint }) {
         return {
@@ -238,8 +228,8 @@ export function getModel(ctx: PluginContext) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
-      getParam: (content, point) => ctx.getCircleAngle(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param),
+      getParam: (content, point) => ctx.getCircleRadian(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
     } as model.Model<CircleContent>,
     {
       type: 'arc',
@@ -278,7 +268,7 @@ export function getModel(ctx: PluginContext) {
         if (points.length === 0) {
           return
         }
-        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleAngle(p, content)), content))
+        const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleRadian(p, content)), content))
         angles.sort((a, b) => a - b)
         const result: ArcContent[] = []
         if (!ctx.equals(angles[0], content.startAngle)) {
@@ -359,7 +349,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.startAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c))
+                  c.startAngle = ctx.radianToAngle(ctx.getCircleRadian(cursor, c))
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -372,7 +362,7 @@ export function getModel(ctx: PluginContext) {
                   if (!isArcContent(c)) {
                     return
                   }
-                  c.endAngle = ctx.radianToAngle(ctx.getCircleAngle(cursor, c))
+                  c.endAngle = ctx.radianToAngle(ctx.getCircleRadian(cursor, c))
                   c.r = ctx.getTwoPointsDistance(cursor, c)
                   ctx.normalizeAngleRange(c)
                   return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
@@ -425,8 +415,8 @@ export function getModel(ctx: PluginContext) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getCircleAngle(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtAngle(content, param),
+      getParam: (content, point) => ctx.getCircleRadian(point, content),
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
     } as model.Model<ArcContent>,
   ]
 }

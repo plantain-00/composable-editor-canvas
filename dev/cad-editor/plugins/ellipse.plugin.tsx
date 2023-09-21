@@ -42,16 +42,16 @@ export function getModel(ctx: PluginContext) {
       const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolylineLines(points))
       const center = ctx.getEllipseCenter(content)
-      const startAngle = ctx.angleToRadian(content.startAngle)
-      const endAngle = ctx.angleToRadian(content.endAngle)
-      const middleAngle = (startAngle + endAngle) / 2
+      const startRadian = ctx.angleToRadian(content.startAngle)
+      const endRadian = ctx.angleToRadian(content.endAngle)
+      const middleRadian = (startRadian + endRadian) / 2
       return {
         lines,
         points,
         center,
-        start: ctx.getEllipsePointAtAngle(content, startAngle),
-        end: ctx.getEllipsePointAtAngle(content, endAngle),
-        middle: ctx.getEllipsePointAtAngle(content, middleAngle),
+        start: ctx.getEllipsePointAtRadian(content, startRadian),
+        end: ctx.getEllipsePointAtRadian(content, endRadian),
+        middle: ctx.getEllipsePointAtRadian(content, middleRadian),
         bounding: ctx.getPointsBounding(points),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -87,7 +87,7 @@ export function getModel(ctx: PluginContext) {
     },
     offset(content, point, distance) {
       if (!distance) {
-        distance = Math.min(...getEllipseGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+        distance = Math.min(...getEllipseGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       distance *= this.isPointIn?.(content, point) ? -1 : 1
       return ctx.produce(content, (d) => {
@@ -232,7 +232,7 @@ export function getModel(ctx: PluginContext) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
     getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param)),
+    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
   }
   return [
     ellipseModel,
@@ -282,7 +282,7 @@ export function getModel(ctx: PluginContext) {
       },
       offset(content, point, distance) {
         if (!distance) {
-          distance = Math.min(...getEllipseArcGeometries(content).lines.map(line => ctx.getPointAndLineSegmentMinimumDistance(point, ...line)))
+          distance = Math.min(...getEllipseArcGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
         }
         distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1
         return ctx.produce(content, (d) => {
@@ -396,7 +396,7 @@ export function getModel(ctx: PluginContext) {
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtAngle(content, ctx.angleToRadian(param)),
+      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
     } as model.Model<EllipseArcContent>,
   ]
 }
@@ -499,7 +499,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             assistentContents.push(
               {
                 type: 'line', points: [
-                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.startAngle)),
+                  ctx.getEllipsePointAtRadian(ellipseArc, ctx.angleToRadian(ellipseArc.startAngle)),
                   {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
@@ -513,7 +513,7 @@ export function getCommand(ctx: PluginContext): Command[] {
                     x: ellipseArc.cx,
                     y: ellipseArc.cy
                   },
-                  ctx.getEllipsePointAtAngle(ellipseArc, ctx.angleToRadian(ellipseArc.endAngle)),
+                  ctx.getEllipsePointAtRadian(ellipseArc, ctx.angleToRadian(ellipseArc.endAngle)),
                 ],
                 dashArray: [4 / scale]
               },
