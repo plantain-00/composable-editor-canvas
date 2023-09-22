@@ -870,6 +870,7 @@ export const CADEditor = React.forwardRef((props: {
     const ids: number[] = []
     const zPanel: JSX.Element[] = []
     const visiblePanel: JSX.Element[] = []
+    let areas = 0
     selectedContents.forEach(target => {
       types.add(target.content.type)
       const id = target.path[0]
@@ -929,9 +930,16 @@ export const CADEditor = React.forwardRef((props: {
         zPanel.push(<NumberEditor value={target.content.z} setValue={(v) => contentsUpdater(c => { c.z = v })} />)
       }
       visiblePanel.push(<BooleanEditor value={target.content.visible !== false} setValue={(v) => contentsUpdater(c => { c.visible = v ? undefined : false })} />)
+      const area = getContentModel(target.content)?.getArea?.(target.content)
+      if (area) {
+        areas += area
+      }
     })
     propertyPanels.z = zPanel
     propertyPanels.visible = visiblePanel
+    if (areas) {
+      propertyPanels.areas = <NumberEditor value={areas} />
+    }
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
         {Array.from(types).join(',')}

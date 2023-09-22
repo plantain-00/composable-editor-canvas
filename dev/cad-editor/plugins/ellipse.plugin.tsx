@@ -233,6 +233,7 @@ export function getModel(ctx: PluginContext) {
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
     getParam: (content, point) => ctx.getEllipseAngle(point, content),
     getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
+    getArea: (content) => Math.PI * content.rx * content.ry,
   }
   return [
     ellipseModel,
@@ -397,6 +398,10 @@ export function getModel(ctx: PluginContext) {
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getEllipseAngle(point, content),
       getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
+      getArea: (content) => {
+        const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
+        return content.rx * content.ry * (radian - Math.sin(radian)) / 2
+      },
     } as model.Model<EllipseArcContent>,
   ]
 }
