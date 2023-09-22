@@ -230,6 +230,7 @@ export function getModel(ctx: PluginContext) {
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
       getParam: (content, point) => ctx.getCircleRadian(point, content),
       getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
+      getArea: (content) => Math.PI * content.r ** 2,
     } as model.Model<CircleContent>,
     {
       type: 'arc',
@@ -417,6 +418,10 @@ export function getModel(ctx: PluginContext) {
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getCircleRadian(point, content),
       getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
+      getArea: (content) => {
+        const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
+        return content.r ** 2 * (radian - Math.sin(radian)) / 2
+      },
     } as model.Model<ArcContent>,
   ]
 }

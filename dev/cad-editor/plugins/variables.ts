@@ -1132,7 +1132,8 @@ function getModel(ctx) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
       getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param)
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
+      getArea: (content) => Math.PI * content.r ** 2
     },
     {
       type: "arc",
@@ -1348,7 +1349,11 @@ function getModel(ctx) {
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param)
+      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
+      getArea: (content) => {
+        const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
+        return content.r ** 2 * (radian - Math.sin(radian)) / 2;
+      }
     }
   ];
 }
@@ -2772,7 +2777,8 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
     getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param))
+    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
+    getArea: (content) => Math.PI * content.rx * content.ry
   };
   return [
     ellipseModel,
@@ -2978,7 +2984,11 @@ function getModel(ctx) {
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param))
+      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
+      getArea: (content) => {
+        const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
+        return content.rx * content.ry * (radian - Math.sin(radian)) / 2;
+      }
     }
   ];
 }
@@ -7241,7 +7251,8 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
     getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRectGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRectGeometries(content).lines)
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRectGeometries(content).lines),
+    getArea: (content) => content.width * content.height
   };
 }
 function isRectContent(content) {
