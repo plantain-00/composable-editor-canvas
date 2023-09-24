@@ -247,6 +247,11 @@ export function pointIsOnArc(p: Position, arc: Arc) {
   return angleInRange(radianToAngle(radian), arc)
 }
 
+export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
+  const angle = getEllipseAngle(p, ellipseArc)
+  return angleInRange(angle, ellipseArc)
+}
+
 /**
  * @public
  */
