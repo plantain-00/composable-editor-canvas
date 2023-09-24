@@ -1,0 +1,114 @@
+import { isZero, largerThan, sqrt3 } from "./geometry"
+
+/**
+ * x^2 + b x + c = 0
+ */
+export function calculateEquation2(b: number, c: number, delta?: number) {
+  const f = b ** 2 - 4 * c
+  if (f < 0 && !isZero(f, delta)) {
+    return []
+  }
+  if (isZero(f, delta)) {
+    return [-b / 2]
+  }
+  const h = Math.sqrt(f)
+  return [
+    (-b + h) / 2,
+    (-b - h) / 2
+  ]
+}
+
+/**
+ * x^4 + b x^3 + c x^2 + d x + e = 0
+ */
+export function calculateEquation4(b: number, c: number, d: number, e: number, delta?: number) {
+  const b2 = b ** 2
+  const b3 = b2 * b
+  const D = 3 * b2 - 8 * c
+  const E = -b3 + 4 * c * b - 8 * d
+  const F = 3 * b3 * b + 16 * c ** 2 - 16 * c * b2 + 16 * b * d - 64 * e
+  if (isZero(E, delta) && isZero(F, delta)) {
+    if (isZero(D, delta)) {
+      return [-b / 4]
+    }
+    if (D < 0) {
+      return []
+    }
+    const h = Math.sqrt(D)
+    return [
+      (-b + h) / 4,
+      (-b - h) / 4,
+    ]
+  }
+  const e2 = E ** 2
+  const D2 = D ** 2
+  const A = D2 - 3 * F
+  const B = D * F - 9 * e2
+  const C = F ** 2 - 3 * D * e2
+  if (isZero(A, delta) && isZero(B, delta) && isZero(C, delta)) {
+    const h = b * D
+    const g2 = 4 * D
+    return [
+      (-h + 9 * E) / g2,
+      (-h - 3 * E) / g2,
+    ]
+  }
+  const f = B ** 2 - 4 * A * C
+  if (isZero(f, delta)) {
+    const h = 2 * A * E / B
+    const j = -(b + h) / 4
+    if (Math.sign(B) !== Math.sign(A)) {
+      return [j]
+    }
+    const i = Math.sqrt(2 * B / A)
+    const k = -b + h
+    return [
+      (k + i) / 4,
+      (k - i) / 4,
+      j,
+    ]
+  } else if (f > 0) {
+    const h = Math.sqrt(f)
+    const i = A * D
+    const z1 = i - 1.5 * (B - h)
+    const z2 = i - 1.5 * (B + h)
+    const j = sqrt3(z1) + sqrt3(z2)
+    const z = D2 - D * j + j ** 2 - 3 * A
+    const k = -b + Math.sign(E) * Math.sqrt((D + j) / 3)
+    const m = Math.sqrt((2 * D - j + 2 * Math.sqrt(z)) / 3)
+    return [
+      (k + m) / 4,
+      (k - m) / 4,
+    ]
+  } else {
+    if (largerThan(D, 0, delta) && largerThan(F, 0, delta)) {
+      if (isZero(E, delta)) {
+        const h = 2 * Math.sqrt(F)
+        const i = Math.sqrt(D + h)
+        const j = Math.sqrt(D - h)
+        return [
+          (-b + i) / 4,
+          (-b - i) / 4,
+          (-b + j) / 4,
+          (-b - j) / 4,
+        ]
+      }
+      const j = Math.sqrt(A)
+      const s = Math.acos((3 * B - 2 * A * D) / 2 / A / j)
+      const h = Math.cos(s / 3)
+      const y1 = Math.sign(E) * Math.sqrt((D - 2 * j * h) / 3)
+      const i = Math.sqrt(3) * Math.sin(s / 3)
+      const y2 = Math.sqrt((D + j * (h + i)) / 3)
+      const y3 = Math.sqrt((D + j * (h - i)) / 3)
+      const k1 = y2 + y3
+      const k2 = y2 - y3
+      return [
+        (-b + y1 + k1) / 4,
+        (-b + y1 - k1) / 4,
+        (-b - y1 + k2) / 4,
+        (-b - y1 - k2) / 4,
+      ]
+    }
+    return []
+  }
+}

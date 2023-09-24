@@ -36,6 +36,21 @@ export function isZero(value: number, delta = 0.00000001) {
   return Math.abs(value) < delta
 }
 
+export function lessThan(value1: number, value2: number, delta = 0.00000001) {
+  return value1 < value2 && !isZero(value1 - value2, delta)
+}
+
+export function largerThan(value1: number, value2: number, delta = 0.00000001) {
+  return value1 > value2 && !isZero(value1 - value2, delta)
+}
+
+export function sqrt3(value: number) {
+  if (value < 0) {
+    return -((-value) ** (1 / 3))
+  }
+  return value ** (1 / 3)
+}
+
 /**
  * @public
  */
