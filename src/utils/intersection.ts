@@ -268,10 +268,10 @@ export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circ
   // b/a = (i3(e1(i2 d1 d1 - i1 d2 d2) - e2 d1 d2(i1 + i2)))/(i3^2 / 4)
   // b/a = (i3(e1(i2 d1 d1 - i1 d2 d2) - e2 d1 d2(i1 + i2)))/i3/i3*4
   // b/a = 4(e1(i2 d1 d1 - i1 d2 d2) - e2 d1 d2(i1 + i2))/i3
-  let b = 4 * (e1 * (i2 * d3 - i1 * d4) - e2 * d1 * d2 * (i1 + i2)) / i3
-  let c = (-2 * e5 * f3 * f1 + f6 * f6 + 2 * f2 * f5 + f7 * f7 - m * f1 * f1) / a
-  let d = (-2 * e5 * f3 * f6 - 2 * f5 * f7 + 2 * m * f1 * e2 * f3) / a
-  let e = ((e3 - m) * e4 * f3 * f3 + f5 * f5) / a
+  const b = 4 * (e1 * (i2 * d3 - i1 * d4) - e2 * d1 * d2 * (i1 + i2)) / i3
+  const c = (-2 * e5 * f3 * f1 + f6 * f6 + 2 * f2 * f5 + f7 * f7 - m * f1 * f1) / a
+  const d = (-2 * e5 * f3 * f6 - 2 * f5 * f7 + 2 * m * f1 * e2 * f3) / a
+  const e = ((e3 - m) * e4 * f3 * f3 + f5 * f5) / a
 
   const us = calculateEquation4(b, c, d, e)
   return us.map(u => {
