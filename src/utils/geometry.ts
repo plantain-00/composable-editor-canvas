@@ -223,6 +223,84 @@ export function getPerpendicularPointToCircle(position: Position, circle: Circle
   }
 }
 
+export function getTangencyPointToCircle({ x: x1, y: y1 }: Position, { x: x2, y: y2, r }: Circle): Position[] {
+  const a3 = r ** 2
+  // (x - x2)^2 + (y - y2)^2 = a3
+  // (x - x1)/(y - y1) = -(y - x2)/(x - x2)
+  // let u = x - x2, v = y - y2
+  // u^2 + v^2 = a3
+  // (u + x2 - x1)/(v + y2 - y1) = -v/u
+  const a1 = x2 - x1
+  const a2 = y2 - y1
+  // (u + a1)/(v + a2) + v/u = 0
+  // u(u + a1) + v(v + a2) = 0
+  // u^2 + a1 u + v^2 + a2 v = 0
+  // a1 u + a2 v + a3 = 0
+  // a2 v = -a3 - a1 u
+  // a2 a2 v^2 = a3 a3 + a1 a1 u^2 + 2 a3 a1 u
+  // a2 a2 u^2 + a2 a2 v^2 = a2 a2 a3
+  // a2 a2 u^2 + a3 a3 + a1 a1 u^2 + 2 a3 a1 u = a2 a2 a3
+  // (a1 a1 + a2 a2)u^2 + 2 a3 a1 u + a3 a3 - a2 a2 a3 = 0
+  // a = a1 a1 + a2 a2
+  // b = 2 a3 a1
+  // c = a3 a3 - a2 a2 a3
+  // bb-4ac = 4 a3 a3 a1 a1 - 4(a1 a1 + a2 a2)(a3 a3 - a2 a2 a3)
+  // bb-4ac = 4 a3(a1 a1 a3 - (a1 a1 + a2 a2)(a3 - a2 a2))
+  // bb-4ac = 4 a3(a1 a1 a3 - (a1 a1 a3 - a1 a1 a2 a2 + a2 a2 a3 - a2 a2 a2 a2))
+  // bb-4ac = 4 a3(a1 a1 a2 a2 - a2 a2 a3 + a2 a2 a2 a2)
+  // bb-4ac = 4 a2 a2 a3(a1 a1 + a2 a2 - a3)
+  // bb-4ac = 4 a2 a2 a3(a - a3)
+  const a = a1 ** 2 + a2 ** 2
+  const f = a - a3
+  if (f < 0 && !isZero(f)) {
+    return []
+  }
+  // -b/2/a = -2 a3 a1/2/a = -a1 a3/a
+  const d = -a1 * a3 / a
+  // v = (-a3 - a1 u)/a2
+  // v = (-a3 - a1 (-a1 a3/a))/a2
+  // v = (-a3 + a1 a1 a3/a)/a2
+  // v = a3(a1 a1 - a)/a/a2
+  // v = a3(-a2 a2)/a/a2
+  // v = -a2 a3/a
+  const e = -a2 * a3 / a
+  const d1 = x2 + d
+  const d2 = y2 + e
+  if (isZero(f)) {
+    return [
+      {
+        x: d1,
+        y: d2,
+      }
+    ]
+  }
+  const g = r * Math.sqrt(f) / a
+  // sqrt(bb-4ac)/2/a = sqrt(4 a2 a2 a3(a - a3))/2/a
+  // sqrt(bb-4ac)/2/a = a2 g
+  const h = a2 * g
+  const i = a1 * g
+  // v = (-a3 - a1 u)/a2
+  // v = (-a3 - a1(d + h))/a2
+  // v = (-a3 - a1(-a1 a3/a + a2 g))/a2
+  // v = (-a a3 - a1(-a1 a3 + a a2 g))/a2/a
+  // v = (-a a3 + a1 a1 a3 - a a1 a2 g)/a2/a
+  // v = ((a1 a1 - 1)a3 - a a1 a2 g)/a2/a
+  // v = (-a2 a2 a3 - a a1 a2 g)/a2/a
+  // v = (-a2 a3 - a a1 g)/a
+  // v = -a2 a3/a - a1 g
+  // v = e - i
+  return [
+    {
+      x: d1 + h,
+      y: d2 - i,
+    },
+    {
+      x: d1 - h,
+      y: d2 + i,
+    }
+  ]
+}
+
 export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
   const { point, distance, radian } = getPerpendicularPointToCircle(position, arc)
   if (angleInRange(radianToAngle(radian), arc)) {
