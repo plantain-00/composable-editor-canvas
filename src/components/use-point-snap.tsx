@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -151,6 +151,16 @@ export function usePointSnap<T>(
             { x: snapPoint.x, y: snapPoint.y - d * 1.5 },
             { x: snapPoint.x, y: snapPoint.y },
           ]))
+        } else if (snapPoint.type === 'tangency') {
+          assistentContents.push(createCircle({
+            x: snapPoint.x,
+            y: snapPoint.y + d * 0.5,
+            r: d,
+          }))
+          assistentContents.push(createPolyline([
+            { x: snapPoint.x - d * 1.5, y: snapPoint.y - d * 0.5 },
+            { x: snapPoint.x + d * 1.5, y: snapPoint.y - d * 0.5 },
+          ]))
         }
       }
       return assistentContents
@@ -272,6 +282,50 @@ export function usePointSnap<T>(
           }
         }
       }
+      if (lastPosition && types.includes('tangency')) {
+        for (const content of contentsInRange) {
+          if (!content) {
+            continue
+          }
+          const model = getModel(content)
+          if (model) {
+            if (model.getGeometries) {
+              const { bounding, lines } = model.getGeometries(content, contents)
+              if (
+                bounding &&
+                pointIsInRegion(
+                  p,
+                  {
+                    start: {
+                      x: bounding.start.x - delta,
+                      y: bounding.start.y - delta,
+                    },
+                    end: {
+                      x: bounding.end.x + delta,
+                      y: bounding.end.y + delta,
+                    },
+                  },
+                )
+              ) {
+                for (const line of lines) {
+                  if (!Array.isArray(line)) {
+                    const tangencyPoints = getTangencyPointToCircle(lastPosition, line.arc)
+                    for (const tangencyPoint of tangencyPoints) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getTwoPointsRadian(tangencyPoint, line.arc)), line.arc)) {
+                        saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint),
+                        })
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
       if (types.includes('nearest')) {
         for (const content of contentsInRange) {
           if (!content) {
@@ -346,7 +400,7 @@ export type SnapPoint = Position & { type: SnapPointType }
 /**
  * @public
  */
-export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest', 'perpendicular', 'grid', 'angle'] as const
+export const allSnapTypes = ['endpoint', 'midpoint', 'center', 'intersection', 'nearest', 'perpendicular', 'tangency', 'grid', 'angle'] as const
 
 /**
  * @public
