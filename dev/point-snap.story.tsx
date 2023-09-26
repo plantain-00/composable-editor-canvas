@@ -6,6 +6,7 @@ const contents: Circle[] = [{ x: 300, y: 200, r: 100 }, { x: 450, y: 350, r: 130
 
 export default () => {
   const [position, setPosition] = React.useState<Position>()
+  const startPosition = { x: 500, y: 100 }
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap<Circle>(
     true,
     (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', arc: { ...c, startAngle: 0, endAngle: 360 } }] }) })))),
@@ -36,6 +37,9 @@ export default () => {
     (rect) => ({ type: 'rect' as const, ...rect }),
     (points) => ({ type: 'polyline' as const, points }),
   )
+  if (position) {
+    assistentContents.push({ type: 'polyline', points: [startPosition, position] })
+  }
 
   return (
     <>
@@ -46,7 +50,7 @@ export default () => {
         xmlns="http://www.w3.org/2000/svg"
         fill='none'
         style={{ position: 'absolute', left: 0, top: 0 }}
-        onMouseMove={(e) => setPosition(getSnapPoint({ x: e.clientX, y: e.clientY }, contents).position)}
+        onMouseMove={(e) => setPosition(getSnapPoint({ x: e.clientX, y: e.clientY }, contents, undefined, startPosition).position)}
       >
         {contents.map((c, i) => <circle key={i} cx={c.x} cy={c.y} r={c.r} stroke='#00ff00' />)}
         {assistentContents.map((c, i) => {
