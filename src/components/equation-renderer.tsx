@@ -54,7 +54,13 @@ export function renderExpression(
     const width = r.size.width + options.paddingX * 2
     const height = r.size.height + options.paddingY * 2
     r.render(width / 2, height / 2)
-    result = target.renderResult(children, width, height)
+    result = target.renderResult(children, width, height, {
+      attributes: {
+        style: {
+          width: '100%',
+        }
+      }
+    })
   }
   return result
 }
