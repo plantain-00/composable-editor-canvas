@@ -1,11 +1,11 @@
 import { Expression2 } from "expression-engine"
 
-interface Factor {
+export interface Factor {
   constant?: number
   variables: (string | FactorVariable)[]
 }
 
-interface FactorVariable {
+export interface FactorVariable {
   power: number
   value: Factor[]
 }
@@ -92,7 +92,7 @@ function extractFactor(factor: Factor, power: number): ExtractFactor | void {
   }
 }
 
-function divideFactors(f1: Factor[], f2: Factor[]): Factor[] | void {
+export function divideFactors(f1: Factor[], f2: Factor[]): Factor[] | void {
   for (const factor1 of f1) {
     const factor = divideFactor(factor1, f2[0])
     if (factor) {
@@ -187,7 +187,7 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
   }
 }
 
-export function expressionToFactors(e: Expression2): Factor[] | void {
+export function expressionToFactors(e: Expression2): Factor[] | undefined {
   if (e.type === 'BinaryExpression' && (e.operator === '+' || e.operator === '-')) {
     const left = expressionToFactors(e.left)
     if (!left) return
@@ -202,6 +202,7 @@ export function expressionToFactors(e: Expression2): Factor[] | void {
   if (factor) {
     return [factor]
   }
+  return
 }
 
 function expressionToFactor(e: Expression2): Factor | void {
