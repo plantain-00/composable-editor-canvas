@@ -41,7 +41,7 @@ export default () => {
       if (!secondValue) return
       if (!factors) return
       const r = parseInputExpression(secondValue)
-      let f = expressionToFactors(r)
+      const f = expressionToFactors(r)
       if (f) {
         const g = divideFactors(factors, f)
         if (g) {
@@ -58,7 +58,7 @@ export default () => {
       if (!secondValue) return
       if (!factors) return
       const r = parseInputExpression(secondValue)
-      let f = expressionToFactors(r)
+      const f = expressionToFactors(r)
       if (f && f.length === 1) {
         const g = groupFactorsBy(factors, f[0])
         if (g) {

@@ -267,7 +267,7 @@ export function groupFactorsBy(factors: Factor[], by: Factor): Expression2 | und
   for (const factor of factors) {
     let count = 0
     let input = [factor]
-    while (true) {
+    for (;;) {
       const f = divideFactors(input, [by])
       if (!f) break
       count++

@@ -200,7 +200,7 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
       }
     }
   }
-  const constant = (f1.constant ?? 1) / (f2.constant ?? 1)
+  const constant = (f1.constant ?? 1) / (f2.constant ?? 1) * extraConstant
   return {
     variables,
     constant: constant === 1 ? undefined : constant,
