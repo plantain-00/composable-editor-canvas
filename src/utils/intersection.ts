@@ -33,7 +33,7 @@ export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x
   const radian = angleToRadian(angle)
   const d1 = Math.sin(radian)
   const d2 = Math.cos(radian)
-  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - ry))^2/ry/ry = 1
+  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
   // let u = x - cx, v = y - cy
   // (d2 u + d1 v)^2/rx/rx + (-d1 u + d2 v)^2/ry/ry = 1
   const i1 = rx * rx
@@ -160,7 +160,7 @@ export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circ
   const d2 = Math.cos(radian)
   const d3 = d1 * d1
   const d4 = d2 * d2
-  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - ry))^2/ry/ry = 1
+  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
   // let u = x - cx, v = y - cy
   // (d2 u + d1 v)^2/rx/rx + (-d1 u + d2 v)^2/ry/ry = 1
   const i1 = rx * rx

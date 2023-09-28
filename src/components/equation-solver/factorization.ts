@@ -155,6 +155,7 @@ function substractFactors(f1: Factor[], f2: Factor[]): Factor[] {
 function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
   if (f1.variables.length < f2.variables.length) return
   const variables = [...f1.variables]
+  let extraConstant = 1
   for (const v of f2.variables) {
     let index = variables.indexOf(v)
     if (index >= 0) {
@@ -164,6 +165,25 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
         const f = variables[i]
         if (typeof f === 'string' || typeof v !== 'string') {
           continue
+        }
+        if (f.power < 0) {
+          index = i
+          const power = -f.power
+          if (Number.isInteger(power)) {
+            for (const v of f.value) {
+              const p = powerFactor(v, power)
+              variables.push(...p.variables)
+              if (p.constant) {
+                extraConstant *= p.constant
+              }
+            }
+          } else {
+            variables.push({
+              power,
+              value: f.value,
+            })
+          }
+          break
         }
         const r = divideFactors(f.value, [{ variables: new Array<string>(1 / f.power).fill(v) }])
         if (r) {
@@ -229,6 +249,21 @@ function expressionToFactor(e: Expression2): Factor | void {
       const right = expressionToFactor(e.right)
       if (!right) return
       return multiplyFactor(left, right)
+    }
+    if (e.operator === '/') {
+      const left = expressionToFactor(e.left)
+      if (!left) return
+      const right = expressionToFactor(e.right)
+      if (!right) return
+      const f = divideFactor(left, right)
+      if (f) {
+        return f
+      }
+      left.variables.push({
+        value: [right],
+        power: -1,
+      })
+      return left
     }
     if (e.operator === '**') {
       if (e.right.type === 'NumericLiteral' && e.right.value < 1) {
@@ -321,7 +356,7 @@ export function factorToExpression(f: Factor): Expression2 {
   }
 }
 
-function powerFactor(factor: Factor, power: number): Factor {
+export function powerFactor(factor: Factor, power: number): Factor {
   let constant = 1
   const variables: (string | FactorVariable)[] = []
   for (let i = 0; i < power; i++) {
@@ -332,7 +367,7 @@ function powerFactor(factor: Factor, power: number): Factor {
   }
   return {
     variables,
-    constant,
+    constant: constant === 1 ? undefined : constant,
   }
 }
 
@@ -357,8 +392,9 @@ function reverseFactor(factor: Factor) {
 
 export function optimizeFactors(factors: Factor[]) {
   const result: Factor[] = []
-  for (const factor of factors) {
+  for (let factor of factors) {
     if (factor.constant === 0) continue
+    factor = optimizeFactor(factor)
     let handled = false
     for (let i = 0; i < result.length; i++) {
       const c = addFactor(result[i], factor)
@@ -377,6 +413,39 @@ export function optimizeFactors(factors: Factor[]) {
     }
   }
   return result
+}
+
+export function optimizeFactor(factor: Factor): Factor {
+  const variables: (string | FactorVariable)[] = factor.variables.filter(v => typeof v === 'string')
+  let constant = factor.constant || 1
+  for (const variable of factor.variables) {
+    if (typeof variable !== 'string') {
+      if (variable.power === -1) {
+        for (const f of variable.value) {
+          if (f.constant) {
+            constant /= f.constant
+          }
+          for (const v of f.variables) {
+            const index = variables.indexOf(v)
+            if (index >= 0) {
+              variables.splice(index, 1)
+            } else {
+              variables.push({
+                power: -1,
+                value: [{ variables: [v] }],
+              })
+            }
+          }
+        }
+        continue
+      }
+      variables.push(variable)
+    }
+  }
+  return {
+    variables,
+    constant: constant === 1 ? undefined : constant,
+  }
 }
 
 function getCommonDivisor(a: number, b: number): number {
