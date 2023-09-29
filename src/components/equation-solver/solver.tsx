@@ -401,7 +401,7 @@ function composeEquations(equations: Equation[], context: ResultContext, variabl
   }
 }
 
-function composeExpression(
+export function composeExpression(
   expression: Expression,
   context: ResultContext,
 ): Expression {
