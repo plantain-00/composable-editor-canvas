@@ -1,5 +1,5 @@
 import { Expression2, priorizedBinaryOperators } from "expression-engine";
-import { Factor, FactorVariable, divideFactors, factorToExpression, factorsToExpression, getReverseOperator, isLetter, isNumber, powerFactor } from "../components";
+import { Factor, FactorVariable, divideFactors, factorToExpression, getReverseOperator, isLetter, isNumber, powerFactor } from "../components";
 
 export function expandExpression(e: Expression2): Expression2 {
   if (e.type === 'BinaryExpression') {
@@ -167,7 +167,6 @@ export function expandExpression(e: Expression2): Expression2 {
           })
         }
       }
-      e.argument
     }
     const argument = expandExpression(e.argument)
     if (argument === e.argument) {
@@ -262,12 +261,17 @@ export function mathStyleExpressionToExpression(e: string) {
   return result
 }
 
-export function groupFactorsBy(factors: Factor[], by: Factor): Expression2 | undefined {
-  const result: { count: number, factors: Factor[][] }[] = []
+interface GroupedFactors {
+  count: number
+  factors: Factor[]
+}
+
+function getGroupedFactors(factors: Factor[], by: Factor) {
+  const result: GroupedFactors[] = []
   for (const factor of factors) {
     let count = 0
     let input = [factor]
-    for (;;) {
+    for (; ;) {
       const f = divideFactors(input, [by])
       if (!f) break
       count++
@@ -275,20 +279,24 @@ export function groupFactorsBy(factors: Factor[], by: Factor): Expression2 | und
     }
     const t = result.find(f => f.count === count)
     if (t) {
-      t.factors.push(input)
+      t.factors.push(...input)
     } else {
       result.push({
         count,
-        factors: [input],
+        factors: input,
       })
     }
   }
   result.sort((a, b) => b.count - a.count)
+  return result
+}
+
+function groupedFactorsToExpression(factors: GroupedFactors[], by: Factor) {
   let expression: Expression2 | undefined
-  for (const r of result) {
+  for (const r of factors) {
     let g: Expression2 | undefined
     for (const f of r.factors) {
-      const e = factorsToExpression(f)
+      const e = factorToExpression(f)
       if (!g) {
         g = e
       } else {
@@ -327,4 +335,79 @@ export function groupFactorsBy(factors: Factor[], by: Factor): Expression2 | und
     }
   }
   return expression
+}
+
+export function groupFactorsBy(factors: Factor[], by: Factor): Expression2 | undefined {
+  const result = getGroupedFactors(factors, by)
+  return groupedFactorsToExpression(result, by)
+}
+
+export function groupAllFactors(factors: Factor[]): Expression2 | undefined {
+  const variables: { name: string, count: number }[] = []
+  for (const factor of factors) {
+    for (const v of factor.variables) {
+      if (typeof v === 'string') {
+        const variable = variables.find(a => a.name === v)
+        if (variable) {
+          variable.count++
+        } else {
+          variables.push({ name: v, count: 1 })
+        }
+      }
+    }
+  }
+  variables.sort((a, b) => b.count - a.count)
+
+  const group = (factors: Factor[], level: number): Expression2 | undefined => {
+    if (factors.length <= 1) return
+    const by = { variables: [variables[level].name] }
+    const result = getGroupedFactors(factors, by)
+    let expression: Expression2 | undefined
+    for (const r of result) {
+      let g = group(r.factors, level + 1)
+      if (!g) {
+        for (const f of r.factors) {
+          const e = factorToExpression(f)
+          if (!g) {
+            g = e
+          } else {
+            g = {
+              type: 'BinaryExpression',
+              operator: '+',
+              left: g,
+              right: e,
+            }
+          }
+        }
+      }
+      if (r.count > 0) {
+        const e = factorToExpression(powerFactor(by, r.count))
+        if (!g) {
+          g = e
+        } else {
+          g = {
+            type: 'BinaryExpression',
+            operator: '*',
+            left: g,
+            right: e,
+          }
+        }
+      }
+      if (g) {
+        if (!expression) {
+          expression = g
+        } else {
+          expression = {
+            type: 'BinaryExpression',
+            operator: '+',
+            left: expression,
+            right: g,
+          }
+        }
+      }
+    }
+    return expression
+  }
+
+  return group(factors, 0)
 }
