@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, ExpressionEditor, Factor, StringEditor, composeExpression, divideFactors, expandExpression, expressionToFactors, factorToExpression, factorsToExpression, groupFactorsBy, mathStyleExpressionToExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors } from "../src"
+import { Button, Factor, StringEditor, composeExpression, divideFactors, expandExpression, expressionToFactors, factorToExpression, factorsToExpression, groupAllFactors, groupFactorsBy, mathStyleExpressionToExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors } from "../src"
 import { Expression2, parseExpression, printExpression, tokenizeExpression } from "expression-engine"
 
 export default () => {
@@ -14,7 +14,7 @@ export default () => {
 
   const parseInputExpression = (v: string) => parseExpression(tokenizeExpression(isMath ? mathStyleExpressionToExpression(v) : v))
   const outputExpression = (e: Expression2) => outputMath ? printMathStyleExpression(e) : printExpression(e)
-  const expand = () => {
+  const expandAll = () => {
     try {
       if (!value) return
       const r = expandExpression(parseInputExpression(value))
@@ -36,7 +36,7 @@ export default () => {
       setExpression(undefined)
     }
   }
-  const divide = () => {
+  const divideBy = () => {
     try {
       if (!secondValue) return
       if (!factors) return
@@ -53,7 +53,7 @@ export default () => {
       setError(String(error))
     }
   }
-  const group = () => {
+  const groupBy = () => {
     try {
       if (!secondValue) return
       if (!factors) return
@@ -70,7 +70,7 @@ export default () => {
       setError(String(error))
     }
   }
-  const compose = () => {
+  const replaceWith = () => {
     try {
       if (!secondValue) return
       if (!thirdValue) return
@@ -86,7 +86,7 @@ export default () => {
       setError(String(error))
     }
   }
-  const output = () => {
+  const formatStyle = () => {
     try {
       if (!value) return
       const r = parseInputExpression(value)
@@ -97,10 +97,14 @@ export default () => {
       setExpression(undefined)
     }
   }
+  const groupAll = () => {
+    if (!factors) return
+    setExpression(groupAllFactors(factors))
+  }
 
   return (
     <div>
-      <ExpressionEditor height={200} value={value} setValue={setValue} />
+      <StringEditor style={{ width: 'calc(100% - 30px)', height: '150px' }} textarea value={value} setValue={setValue} />
       <div>
         <label>
           <input type='checkbox' checked={isMath} onChange={() => setIsMath(!isMath)} />
@@ -114,16 +118,25 @@ export default () => {
       <div>
         <StringEditor style={{ width: '50px' }} value={secondValue} setValue={setSecondValue} />
         =
-        <StringEditor value={thirdValue} setValue={setThirdValue} />
+        <StringEditor style={{ width: 'calc(100% - 115px)' }} value={thirdValue} setValue={setThirdValue} />
       </div>
-      <Button onClick={expand}>expand</Button>
-      <Button onClick={divide}>divide</Button>
-      <Button onClick={group}>group</Button>
-      <Button onClick={compose}>compose</Button>
-      <Button onClick={output}>output</Button>
-      {factors && factors.map((f, i) => <div key={i}><code>{outputExpression(factorToExpression(f))}</code></div>)}
-      {factors && <div><code>{outputExpression(factorsToExpression(factors))}</code></div>}
-      {expression && <div><code>{outputExpression(expression)}</code></div>}
+      <Button onClick={expandAll}>expand all</Button>
+      <Button onClick={divideBy}>divide by</Button>
+      <Button onClick={groupBy}>group by</Button>
+      <Button onClick={replaceWith}>replace with</Button>
+      <Button onClick={formatStyle}>format style</Button>
+      <Button onClick={groupAll}>group all</Button>
+      {factors && factors.length > 0 && <div style={{ border: '1px solid black', maxHeight: '150px', overflowY: 'auto', marginBottom: '5px' }}>
+        {factors.map((f, i) => <div key={i}><code>{outputExpression(factorToExpression(f))}</code></div>)}
+      </div>}
+      {factors && <div style={{ border: '1px solid black', maxHeight: '150px', overflowY: 'auto', marginBottom: '5px', position: 'relative' }}>
+        <code>{outputExpression(factorsToExpression(factors))}</code>
+        <Button style={{ position: 'absolute', right: 0, top: 0, background: 'wheat' }} onClick={() => navigator.clipboard.writeText(outputExpression(factorsToExpression(factors)))}>copy</Button>
+      </div>}
+      {expression && <div style={{ border: '1px solid black', maxHeight: '150px', overflowY: 'auto', position: 'relative' }}>
+        <code>{outputExpression(expression)}</code>
+        <Button style={{ position: 'absolute', right: 0, top: 0, background: 'wheat' }} onClick={() => navigator.clipboard.writeText(outputExpression(expression))}>copy</Button>
+      </div>}
       {expression && renderExpression(reactSvgRenderTarget, expression)}
       {error && <div>{error}</div>}
     </div>
