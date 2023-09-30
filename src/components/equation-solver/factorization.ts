@@ -163,28 +163,32 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
     } else {
       for (let i = 0; i < variables.length; i++) {
         const f = variables[i]
-        if (typeof f === 'string' || typeof v !== 'string') {
+        if (typeof f === 'string') {
           continue
         }
-        if (f.power < 0) {
-          index = i
-          const power = -f.power
-          if (Number.isInteger(power)) {
-            for (const v of f.value) {
-              const p = powerFactor(v, power)
-              variables.push(...p.variables)
-              if (p.constant) {
-                extraConstant *= p.constant
+        if (typeof v !== 'string') {
+          if (v.power < 0) {
+            index = i
+            const power = -v.power
+            if (Number.isInteger(power)) {
+              for (const v of f.value) {
+                const p = powerFactor(v, power)
+                variables.push(...p.variables)
+                if (p.constant) {
+                  extraConstant *= p.constant
+                }
               }
+            } else {
+              variables.push({
+                power,
+                value: f.value,
+              })
             }
-          } else {
-            variables.push({
-              power,
-              value: f.value,
-            })
+            break
           }
-          break
+          continue
         }
+        if (f.power < 0) continue
         const r = divideFactors(f.value, [{ variables: new Array<string>(1 / f.power).fill(v) }])
         if (r) {
           index = i

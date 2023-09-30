@@ -7,14 +7,15 @@ export function expandExpression(e: Expression2): Expression2 {
       if (e.right.type === 'NumericLiteral') {
         if (e.right.value === 2) {
           if (e.left.type === 'BinaryExpression') {
-            if (e.left.operator === '+') {
+            if (e.left.operator === '+' || e.left.operator === '-') {
               // (a + b) ** 2 -> (a * a + 2 * (a * b)) + b ** 2
+              // (a - b) ** 2 -> (a * a - 2 * (a * b)) + b ** 2
               return expandExpression({
                 type: 'BinaryExpression',
                 operator: '+',
                 left: {
                   type: 'BinaryExpression',
-                  operator: '+',
+                  operator: e.left.operator,
                   left: {
                     type: 'BinaryExpression',
                     operator: '*',
@@ -42,6 +43,26 @@ export function expandExpression(e: Expression2): Expression2 {
                   left: e.left.right,
                   right: e.left.right,
                 }
+              })
+            }
+            if (e.left.operator === '*' || e.left.operator === '/') {
+              // (a * b) ** 2 -> ((a * a) * b) * b
+              // (a / b) ** 2 -> ((a * a) / b) / b
+              return expandExpression({
+                type: 'BinaryExpression',
+                operator: e.left.operator,
+                left: {
+                  type: 'BinaryExpression',
+                  operator: e.left.operator,
+                  left: {
+                    type: 'BinaryExpression',
+                    operator: '*',
+                    left: e.left.left,
+                    right: e.left.left,
+                  },
+                  right: e.left.right,
+                },
+                right: e.left.right
               })
             }
           }

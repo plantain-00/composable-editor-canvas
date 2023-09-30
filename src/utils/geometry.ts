@@ -228,39 +228,27 @@ export function getTangencyPointToCircle({ x: x1, y: y1 }: Position, { x: x2, y:
   // (x - x2)^2 + (y - y2)^2 = a3
   // (x - x1)/(y - y1) = -(y - x2)/(x - x2)
   // let u = x - x2, v = y - y2
-  // u^2 + v^2 = a3
+  // F1: u^2 + v^2 - a3 = 0
   // (u + x2 - x1)/(v + y2 - y1) = -v/u
-  const a1 = x2 - x1
-  const a2 = y2 - y1
+  const a1 = x2 - x1, a2 = y2 - y1
   // (u + a1)/(v + a2) + v/u = 0
   // u(u + a1) + v(v + a2) = 0
   // u^2 + a1 u + v^2 + a2 v = 0
-  // a1 u + a2 v + a3 = 0
-  // a2 v = -a3 - a1 u
-  // a2 a2 v^2 = a3 a3 + a1 a1 u^2 + 2 a3 a1 u
-  // a2 a2 u^2 + a2 a2 v^2 = a2 a2 a3
-  // a2 a2 u^2 + a3 a3 + a1 a1 u^2 + 2 a3 a1 u = a2 a2 a3
-  // (a1 a1 + a2 a2)u^2 + 2 a3 a1 u + a3 a3 - a2 a2 a3 = 0
-  // a = a1 a1 + a2 a2
+  // -F1: a1 u + a2 v + a3 = 0
+  // group v, F2: v = (-a3 - a1 u)/a2
+  // F1 replace v, *a2 a2, group u: (a2 a2 + a1 a1) u u + 2 a1 a3 u + a3 a3 + -a2 a2 a3 = 0
+  const a = a1 ** 2 + a2 ** 2
   // b = 2 a3 a1
   // c = a3 a3 - a2 a2 a3
-  // bb-4ac = 4 a3 a3 a1 a1 - 4(a1 a1 + a2 a2)(a3 a3 - a2 a2 a3)
-  // bb-4ac = 4 a3(a1 a1 a3 - (a1 a1 + a2 a2)(a3 - a2 a2))
-  // bb-4ac = 4 a3(a1 a1 a3 - (a1 a1 a3 - a1 a1 a2 a2 + a2 a2 a3 - a2 a2 a2 a2))
-  // bb-4ac = 4 a3(a1 a1 a2 a2 - a2 a2 a3 + a2 a2 a2 a2)
-  // bb-4ac = 4 a2 a2 a3(a1 a1 + a2 a2 - a3)
-  // bb-4ac = 4 a2 a2 a3(a - a3)
-  const a = a1 ** 2 + a2 ** 2
+  // (bb-4ac)/4/a2/a2/a3 = a1 a1 + a2 a2 + -a3 = a - a3
   const f = a - a3
   if (f < 0 && !isZero(f)) {
     return []
   }
   // -b/2/a = -2 a3 a1/2/a = -a1 a3/a
   const d = -a1 * a3 / a
-  // v = (-a3 - a1 u)/a2
-  // v = (-a3 - a1 (-a1 a3/a))/a2
-  // v = (-a3 + a1 a1 a3/a)/a2
-  // v = a3(a1 a1 - a)/a/a2
+  // F2 replace u with d, *a a2: v = (a1 a1 a3 + -a a3)/a/a2
+  // v = (a1 a13 - a)a3/a/a2
   // v = a3(-a2 a2)/a/a2
   // v = -a2 a3/a
   const e = -a2 * a3 / a
@@ -275,18 +263,10 @@ export function getTangencyPointToCircle({ x: x1, y: y1 }: Position, { x: x2, y:
     ]
   }
   const g = r * Math.sqrt(f) / a
-  // sqrt(bb-4ac)/2/a = sqrt(4 a2 a2 a3(a - a3))/2/a
-  // sqrt(bb-4ac)/2/a = a2 g
+  // sqrt(bb-4ac)/2/a = sqrt(4 a2 a2 a3 f)/2/a = a2 g
   const h = a2 * g
   const i = a1 * g
-  // v = (-a3 - a1 u)/a2
-  // v = (-a3 - a1(d + h))/a2
-  // v = (-a3 - a1(-a1 a3/a + a2 g))/a2
-  // v = (-a a3 - a1(-a1 a3 + a a2 g))/a2/a
-  // v = (-a a3 + a1 a1 a3 - a a1 a2 g)/a2/a
-  // v = ((a1 a1 - 1)a3 - a a1 a2 g)/a2/a
-  // v = (-a2 a2 a3 - a a1 a2 g)/a2/a
-  // v = (-a2 a3 - a a1 g)/a
+  // F2 replace u with d + h, replace d, replace h, *a, replace a: v, /a2 = (-a a1 g + -a2 a3)/a
   // v = -a2 a3/a - a1 g
   // v = e - i
   return [
@@ -708,59 +688,45 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
   const n = r2 ** 2
   // (x - x1)^2 + (y - y1)^2 = m
   // (x - x2)^2 + (y - y2)^2 = n
-
   // let u = x - x1, v = y - y1
-  // F1: u^2 + v^2 = m
-  // (u + x1 - x2)^2 + (v + y1 - y2)^2 = n
-
+  // F1: u^2 + v^2 - m = 0
+  // (u + x1 - x2)^2 + (v + y1 - y2)^2 - n = 0
   const p = x2 - x1
   const q = y2 - y1
-  // (u - p)^2 + (v - q)^2 = n
-  // u^2 - 2pu + pp + v^2 - 2qv + qq = n
-
-  // F1-: 2pu + 2qv - (pp + qq) = m - n
-  // 2(pu + qv) = (pp + qq) + m - n
-
-  const r = p ** 2 + q ** 2
-  // 2(pu + qv) = r + m - n
-  // pu + qv = (r + m - n) / 2
-
-  const d = Math.sqrt(r)
-  const l = (r + m - n) / 2 / d
+  // (u - p)^2 + (v - q)^2 - n = 0
+  // u^2 - 2pu + pp + v^2 - 2qv + qq - n = 0
+  // -F1: -2pu - 2qv + (pp + qq) + m - n = 0
+  // pu + qv = ((pp + qq) + m - n) / 2
+  const a = p ** 2 + q ** 2
+  // pu + qv = (a + m - n) / 2
+  const d = Math.sqrt(a)
+  const l = (a + m - n) / 2 / d
   // pu + qv = ld
-  // F2: qv = ld - pu
-
-  // F1*qq: qqu^2 + qqv^2 = mqq
-  // qqu^2 + (qv)^2 = mqq
-  // qqu^2 + (ld - pu)^2 = mqq
-  // qqu^2 + lldd - 2ldpu + ppu^2 = mqq
-  // (pp + qq)u^2 - 2ldpu + lldd - mqq = 0
-  // ru^2 - 2ldpu + (llr - mqq) = 0
-  // a = r, b = -2ldp, c = llr - mqq
-  // bb - 4ac = (2ldp)^2 - 4r(llr - mqq)
-  // bb - 4ac = 4llddpp - 4rlldd + 4rmqq
-  // bb - 4ac = 4rllpp - 4rllr + 4rmqq
-  // bb - 4ac = 4r(llpp - llr + mqq)
-  // bb - 4ac = 4r(ll(pp - r) + mqq)
-  // bb - 4ac = 4r(ll(-qq) + mqq) = 4rqq(m - ll)
-
+  // F2: v = (l d - p u)/q
+  // F1 replace v, *q q, group u: (p p + q q) u u + -2 d l p u + d d l l + -m q q = 0
+  // a u^2 - 2 l d p u + (l l a - m q q) = 0
+  // let b = - 2 l d p, c = l l a - m q q
+  // bb - 4ac = (2 l d p)^2 - 4 a (l l a - m q q)
+  // (bb - 4ac)/4/a = l l p p - a l l + m q q
+  // (bb - 4ac)/4/a = l l(p p - a) + m q q
+  // (bb - 4ac)/4/a = l l(-qq) + m q q
+  // bb - 4ac = 4 a q q(m - l l)
   const f = m - l ** 2
-  // bb - 4ac = 4rqqf
+  // bb - 4ac = 4aqqf
   if (f < 0 && !isZero(f)) {
     return []
   }
-  // u = -b/2/a = 2ldp/2/r = ldp/r = lp/d
+  // u = -b/2/a = 2 l d p/2/a = l d p/a = l p/d
   const c = l / d
   // u = -b/2/a = cp
   // x = u + x1 = cp + x1
   const g = c * p + x1
 
-  // F2/q: v = (ld - pu)/q
-  // v = (ld - pcp)/q
-  // v = (ldd/d - cpp)/q
-  // v = (lr/d - cpp)/q
-  // v = (cr - cpp)/q
-  // v = c(r - pp)/q = cqq/q = cq
+  // F2 replace u with c*p: v = (l d - p c p)/q
+  // v = (l d d/d - c p p)/q
+  // v = (l a/d - c p p)/q
+  // v = (c a - c p p)/q
+  // v = c(a - p p)/q = c q q/q = c q
   // y = v + y1 = cq + y1
   const i = c * q + y1
   if (isZero(f)) {
@@ -772,25 +738,24 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
     ]
   }
   const h = Math.sqrt(f)
-  // sqrt(bb - 4ac)/2/a = sqrt(4rqqf)/2/r
-  // sqrt(bb - 4ac)/2/a = sqrt(4ddqqhh)/2/r
-  // sqrt(bb - 4ac)/2/a = 2dqh/2/r = dqh/r = qh/d
+  // sqrt(bb - 4ac)/2/a = sqrt(4 a q q f)/2/a
+  // sqrt(bb - 4ac)/2/a = sqrt(4 d d q q h h)/2/a
+  // sqrt(bb - 4ac)/2/a = 2 d q h/2/r = d q h/a = q h/d
   const e = h / d
-  // sqrt(bb - 4ac)/2/a = q(de)/d = qe
+  // sqrt(bb - 4ac)/2/a = q(d e)/d = q e
   const j = e * q
 
-  // F2/q: v = (ld - pu)/q
-  // v = (ld - p(x - x1))/q
-  // v = (ld - p(g + j - x1))/q
-  // v = (ld - p(cp + x1 + j - x1))/q
-  // v = (ld - p(cp + j))/q
-  // v = (ld - p(cp + eq))/q
-  // v = (cdd - cpp - peq)/q
-  // v = (c(dd - pp) - peq)/q
-  // v = (cqq - peq)/q
-  // v = cq - pe
-  // v = (i - y1) - pe
-  // y = v + y1 = (i - y1) - pe + y1 = i - pe
+  // F2 replace u with x - x1: v = (l d - p(x - x1))/q
+  // v = (l d - p(g + j - x1))/q
+  // v = (l d - p(c p + x1 + j - x1))/q
+  // v = (l d - p(c p + j))/q
+  // v = (l d - p(c p + e q))/q
+  // v = (c d d - c p p - p e q)/q
+  // v = (c(d d - p p) - p e q)/q
+  // v = (c q q - p e q)/q
+  // v = c q - p e
+  // v = (i - y1) - p e
+  // y = v + y1 = (i - y1) - p e + y1 = i - p e
   const k = e * p
   // y = i - k
   return [
@@ -824,10 +789,9 @@ export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
  * @public
  */
 export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle) {
-  // (x - x1)^2 + (y - y1)^2 = rr
+  // (x - x1)^2 + (y - y1)^2 = r r
   // let u = x - x1, v = y - y1
-  // F1: u^2 + v^2 = rr
-
+  // F1: u^2 + v^2 - r r = 0
   // (x - x2) / (x3 - x2) = (y - y2) / (y3 - y2)
   const d = x3 - x2
   const e = y3 - y2
@@ -837,42 +801,26 @@ export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x:
   const f = x1 - x2
   const g = y1 - y2
   // e(u + f) = d(v + g)
-  // eu + ef = dv + dg
+  // e u + e f - d v + d g = 0
   const s = e * f - d * g
-  // F2: dv = eu + ef - dg = eu + s
-  // ddv^2 = (eu + s)^2
-  // F1*dd: ddu^2 + ddv^2 = rrdd
-  // ddu^2 + (eu + s)^2 = rrdd
-  // ddu^2 + eeu^2 + 2esu + ss = rrdd
-  // (dd + ee)u^2 + 2esu + (ss - rrdd) = 0
+  // F2: v = (e u + e f - d g)/d = (e u + s)/d
+  // F2 replace v, *d d, group u: (d d + e e) u u + 2 e s u + s s + -d d r r = 0
   const h = d ** 2 + e ** 2
-  // hu^2 + 2esu + (ss - rrdd) = 0
-  // a = h, b = 2es, c = ss - rrdd
-  // bb - 4ac = 4eess - 4(dd + ee)(ss - rrdd)
-  // bb - 4ac = 4ee(ef - dg)^2 - 4(dd + ee)((ef - dg)^2 - rrdd)
-  // bb - 4ac = 4ee(eeff - 2efdg + ddgg) - 4(dd + ee)(eeff - 2efdg + ddgg - rrdd)
-  // bb - 4ac = 4(eeeeff - 2eeefdg + ddeegg - (dd + ee)(eeff - 2efdg + ddgg - rrdd))
-  // bb - 4ac = 4(eeeeff - 2eeefdg + ddeegg - (ddeeff - 2ddefdg + ddddgg - rrdddd + eeeeff - 2eeefdg + ddeegg - rrddee))
-  // bb - 4ac = 4(-(ddeeff - 2ddefdg + ddddgg - rrdddd - rrddee))
-  // bb - 4ac = 4dd(-(eeff - 2efdg + ddgg - rrdd - rree))
-  // bb - 4ac = 4dd(-eeff + 2efdg - ddgg + rrdd + rree)
-  // bb - 4ac = 4dd(rr(dd + ee) - (eeff - 2efdg + ddgg))
-  // bb - 4ac = 4dd(rrh - ss)
+  // h u^2 + 2 e s u + (s s - r r d d) = 0
+  // a = h, b = 2 e s, c = s s - r r d d
+  // (bb - 4ac)/4/d/d = d d r r + e e r r + -s s = h r r -  s s
   const t = r * r * h - s * s
-  // bb - 4ac = 4ddt
+  // bb - 4ac = 4 d d t
   if (t < 0 && !isZero(t)) {
     return []
   }
-  // u = -b/2/a = -2es/2/h = -es/h
-  // x = u + x1 = -es/h + x1
+  // u = -b/2/a = -2 e s/2/h = -e s/h
+  // x = u + x1 = -e s/h + x1
   const i = -e * s / h + x1
 
-  // F2/d: v = (eu + s) / d
-  // v = (e(-es/h) + s) / d
-  // v = (-ees/h + s) / d
-  // v = (-ee + h)s/h/d
-  // v = dds/h/d = ds/h
-  // y = v + y1 = ds/h + y1
+  // F2 replace u: v = (e(-e s/h) + s) / d
+  // *h, /s: v = s(-e e + h)/h/d = s d d /h/d = d s/h
+  // y = v + y1 = d s/h + y1
   const j = d * s / h + y1
 
   if (isZero(t)) {
@@ -884,22 +832,16 @@ export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x:
     ]
   }
   const n = Math.sqrt(t)
-  // sqrt(bb - 4ac)/2/a = sqrt(4ddt)/2/h = 2d sqrt(t)/2/h = nd/h
+  // sqrt(bb - 4ac)/2/a = sqrt(4 d d t)/2/h = 2d sqrt(t)/2/h = n d/h
   const p = n * d / h
-
-  // F2/d: v = (eu + s) / d
-  // v = (e(x - x1) + s) / d
-  // v = (e(-es/h + x1 - nd/h - x1) + s) / d
-  // v = (e(-es/h - nd/h) + s) / d
-  // v = (-ees/h - end/h + s) / d
-  // v = (-ees - end + sh)/h/d
-  // v = ((h - ee)s - end)/h/d
-  // v = (dds - end)/h/d
-  // v = (ds - en)/h
-  // y = v + y1 = (ds - en)/h + y1
-  // y = j - enh
+  // F2 replace u with i - p: v = (e(x - x1) + s) / d
+  // v = (e(-e s/h + x1 - n d/h - x1) + s) / d
+  // *h, v = (-d e n + -e e s + h s)/h/d
+  // v = (-d e n + d d s)/h/d
+  // /d, v = (-e n + d s)/h
+  // y = v + y1 = (d s - e n)/h + y1
+  // y = j - e n h
   const q = n * e / h
-
   // y = j - q
   return [
     {
