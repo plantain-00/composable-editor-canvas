@@ -1,3 +1,4 @@
+import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
 import { GeometryLine } from "./intersection"
 import { isRecord } from "./is-record"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -279,6 +280,88 @@ export function getTangencyPointToCircle({ x: x1, y: y1 }: Position, { x: x2, y:
       y: d2 + i,
     }
   ]
+}
+
+export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, rx, ry, angle }: Ellipse, delta = 1e-5): Position[] {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  const h1 = cx - x1, h2 = cy - y1
+
+  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
+  // let u = x - cx, v = y - cy
+  const i1 = rx * rx, i2 = ry * ry
+  // (d2 u + d1 v)^2/i1 + (-d1 u + d2 v)^2/i2 = 1
+  // i2(d2 u + d1 v)^2 + i1(-d1 u + d2 v)^2 - i1 i2 = 0
+  // group v, F2: (d2 d2 i1 + d1 d1 i2) v v + (-2 d1 d2 i1 u + 2 d1 d2 i2 u) v + d1 d1 i1 u u + d2 d2 i2 u u + -i1 i2 = 0
+  const b1 = d2 * d2 * i1 + d1 * d1 * i2
+  const b2 = (-2 * d1 * d2 * i1 + 2 * d1 * d2 * i2) / b1
+  const b3 = (d1 * d1 * i1 + d2 * d2 * i2) / b1
+  const b5 = -i1 * i2 / b1
+  // F1: v v + b2 u v + b3 u u + b5 = 0
+
+  // (bb - 4ac)/4/i1/i2/e1/e1 = a - f1 f1 = 0
+  // replace a, f1, e1 with u + h1, e2 with v + h2, -F2, group v, u:  -h1 h1 v v + (-2 d1 d2 h1 i1 + 2 d2 d2 h2 i1 + 2 d1 d2 h1 i2 + 2 d1 d1 h2 i2 + 2 h1 h2 u) v + d1 d1 h1 h1 i1 + -2 d1 d2 h1 h2 i1 + d2 d2 h2 h2 i1 + d2 d2 h1 h1 i2 + 2 d1 d2 h1 h2 i2 + d1 d1 h2 h2 i2 + 2 d1 d1 h1 i1 u + -2 d1 d2 h2 i1 u + 2 d2 d2 h1 i2 u + 2 d1 d2 h2 i2 u + -h2 h2 u u + i1 i2 = 0
+  const a1 = -h1 * h1
+  let a2 = 2 * h1 * h2
+  let a3 = -2 * d1 * d2 * h1 * i1 + 2 * d2 * d2 * h2 * i1 + 2 * d1 * d2 * h1 * i2 + 2 * d1 * d1 * h2 * i2
+  let a4 = -h2 * h2
+  let a5 = 2 * d1 * d1 * h1 * i1 + -2 * d1 * d2 * h2 * i1 + 2 * d2 * d2 * h1 * i2 + 2 * d1 * d2 * h2 * i2
+  let a6 = d1 * d1 * h1 * h1 * i1 + -2 * d1 * d2 * h1 * h2 * i1 + d2 * d2 * h2 * h2 * i1 + d2 * d2 * h1 * h1 * i2 + 2 * d1 * d2 * h1 * h2 * i2 + d1 * d1 * h2 * h2 * i2 + i1 * i2
+  let a: number, b: number, c: number, d: number, e: number
+  let getV: (u: number) => number
+  if (!isZero(h1, delta)) {
+    a2 /= a1
+    a3 /= a1
+    a4 /= a1
+    a5 /= a1
+    a6 /= a1
+    // v v + (a2 u + a3) v + a4 u u + a5 u + a6 = 0
+    // -F1, group v: (a2 u + a3 + -b2 u) v + a4 u u + -b3 u u + a5 u + a6 + -b5 = 0
+    const c1 = a2 - b2, c2 = a4 - b3, c3 = a6 - b5
+    // (c1 u + a3) v + c2 u u + a5 u + c3 = 0
+    // let w = c1 u + a3
+    // v = -(c2 u u + a5 u + c3)/w
+    // F1 replace v, *w w, replace w, group u: (b3 c1 c1 + c2 c2 + -b2 c1 c2) u u u u + (-a5 b2 c1 + 2 a3 b3 c1 + 2 a5 c2 + -a3 b2 c2) u u u + (-a3 a5 b2 + a3 a3 b3 + b5 c1 c1 + -b2 c1 c3 + a5 a5 + 2 c2 c3) u u + (2 a3 b5 c1 + -a3 b2 c3 + 2 a5 c3) u + a3 a3 b5 + c3 c3 = 0
+    a = b3 * c1 * c1 + c2 * c2 + -b2 * c1 * c2
+    b = -a5 * b2 * c1 + 2 * a3 * b3 * c1 + 2 * a5 * c2 + -a3 * b2 * c2
+    c = -a3 * a5 * b2 + a3 * a3 * b3 + b5 * c1 * c1 + -b2 * c1 * c3 + a5 * a5 + 2 * c2 * c3
+    d = 2 * a3 * b5 * c1 + -a3 * b2 * c3 + 2 * a5 * c3
+    e = a3 * a3 * b5 + c3 * c3
+    getV = u => {
+      const w = c1 * u + a3
+      if (isZero(w, delta)) {
+        // v v + b2 u v + b3 u u + b5 = 0
+        return calculateEquation2(1, b2 * u, b3 * u * u + b5, delta)[0]
+      }
+      return -(c2 * u * u + a5 * u + c3) / w
+    }
+  } else {
+    // (a2 u + a3) v + a4 u u + a5 u + a6 = 0
+    // let w = a2 u + a3
+    // v = -(a4 u u + a5 u + a6)/w
+    // F1 replace v, *w w, replace w, group u: (a4 a4 + -a2 a4 b2 + a2 a2 b3) u u u u + (2 a4 a5 + -a3 a4 b2 + -a2 a5 b2 + 2 a2 a3 b3) u u u + (a5 a5 + 2 a4 a6 + -a3 a5 b2 + -a2 a6 b2 + a3 a3 b3 + a2 a2 b5) u u + (2 a5 a6 + -a3 a6 b2 + 2 a2 a3 b5) u + a6 a6 + a3 a3 b5
+    a = a4 * a4 + -a2 * a4 * b2 + a2 * a2 * b3
+    b = 2 * a4 * a5 + -a3 * a4 * b2 + -a2 * a5 * b2 + 2 * a2 * a3 * b3
+    c = a5 * a5 + 2 * a4 * a6 + -a3 * a5 * b2 + -a2 * a6 * b2 + a3 * a3 * b3 + a2 * a2 * b5
+    d = 2 * a5 * a6 + -a3 * a6 * b2 + 2 * a2 * a3 * b5
+    e = a6 * a6 + a3 * a3 * b5
+    getV = u => {
+      const w = a2 * u + a3
+      if (isZero(w, delta)) {
+        // v v + b2 u v + b3 u u + b5 = 0
+        return calculateEquation2(1, b2 * u, b3 * u * u + b5, delta)[0]
+      }
+      return -(a4 * u * u + a5 * u + a6) / w
+    }
+  }
+  const us = calculateEquation4(a, b, c, d, e, delta)
+  return us.map(u => {
+    const v = getV(u)
+    return {
+      x: u + cx,
+      y: v + cy,
+    }
+  })
 }
 
 export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {

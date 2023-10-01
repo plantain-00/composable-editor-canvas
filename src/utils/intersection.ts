@@ -160,7 +160,7 @@ export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circ
   const d = 4 * e1 * h2 + -4 * e2 * g2 * g4 + -2 * e2 * g2 * h2
   const e = h2 * h2 + 4 * e2 * e2 * g4
 
-  const us = calculateEquation4(b / a, c / a, d / a, e / a)
+  const us = calculateEquation4(a, b, c, d, e)
   return us.map(u => {
     const v = -(h2 + 2 * e1 * u + h1 * u * u) / (2 * e2 - g2 * u)
     return {
@@ -219,7 +219,7 @@ export function getTwoEllipseIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy:
   const d = 2 * b7 * c4 * d3 + 2 * c7 * d5 + -b4 * c4 * d5 + b5 * c4 * d5
   const e = b7 * c4 * c4 + d5 * d5
 
-  const us = calculateEquation4(b / a, c / a, d / a, e / a)
+  const us = calculateEquation4(a, b, c, d, e)
   return us.map(u => {
     const v = -(c7 * u + d4 * u * u + d5) / (d3 * u + c4)
     return {

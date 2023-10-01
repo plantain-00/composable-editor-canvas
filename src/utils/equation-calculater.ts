@@ -1,9 +1,26 @@
 import { isZero, largerThan, sqrt3 } from "./geometry"
 
 /**
- * x^2 + b x + c = 0
+ * a x + b = 0
  */
-export function calculateEquation2(b: number, c: number, delta?: number) {
+export function calculateEquation1(a: number, b: number, delta?: number) {
+  if (isZero(a, delta)) {
+    return []
+  }
+  return [-b / a]
+}
+
+/**
+ * a * x^2 + b x + c = 0
+ */
+export function calculateEquation2(a: number, b: number, c: number, delta?: number) {
+  if (isZero(a, delta)) {
+    return calculateEquation1(b, c, delta)
+  }
+  if (a !== 1) {
+    b /= a
+    c /= a
+  }
   const f = b ** 2 - 4 * c
   if (f < 0 && !isZero(f, delta)) {
     return []
@@ -19,9 +36,57 @@ export function calculateEquation2(b: number, c: number, delta?: number) {
 }
 
 /**
- * x^4 + b x^3 + c x^2 + d x + e = 0
+ * a * x^3 + b x^2 + c x + d = 0
  */
-export function calculateEquation4(b: number, c: number, d: number, e: number, delta?: number) {
+export function calculateEquation3(a: number, b: number, c: number, d: number, delta?: number) {
+  if (isZero(a, delta)) {
+    return calculateEquation2(b, c, d, delta)
+  }
+  if (a !== 1) {
+    b /= a
+    c /= a
+    d /= a
+  }
+  const A = b * b - 3 * c
+  const B = b * c - 9 * d
+  const C = c * c - 3 * b * d
+  if (isZero(A, delta) && isZero(B, delta)) {
+    return [-b / 3]
+  }
+  const f = B * B - 4 * A * C
+  if (isZero(f, delta)) {
+    const K = B / A
+    return [
+      -b + K,
+      -K / 2,
+    ]
+  }
+  const t = A * b
+  if (f > 0) {
+    const s = Math.sqrt(f)
+    const Y1 = t + 1.5 * (-B + s)
+    const Y2 = t + 1.5 * (-B - s)
+    return [(-b - sqrt3(Y1) - sqrt3(Y2)) / 3]
+  }
+  const p = Math.sqrt(A)
+  const T = (t - 1.5 * B) / A / p
+  const radian = Math.acos(T)
+  return [(-b - 2 * p * Math.cos(radian / 3)) / 3]
+}
+
+/**
+ * a * x^4 + b x^3 + c x^2 + d x + e = 0
+ */
+export function calculateEquation4(a: number, b: number, c: number, d: number, e: number, delta?: number) {
+  if (isZero(a, delta)) {
+    return calculateEquation3(b, c, d, e, delta)
+  }
+  if (a !== 1) {
+    b /= a
+    c /= a
+    d /= a
+    e /= a
+  }
   const b2 = b ** 2
   const b3 = b2 * b
   const D = 3 * b2 - 8 * c
