@@ -23,7 +23,15 @@ export function getModel(ctx: PluginContext) {
       const top = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content)
       const bottom = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content)
       return {
-        lines,
+        lines: [{
+          type: 'ellipse arc' as const,
+          ellipseArc: {
+            ...content,
+            startAngle: 0,
+            endAngle: 360,
+          },
+          lines,
+        }],
         points,
         center, left, right, top, bottom,
         bounding: ctx.getPointsBounding(points),
@@ -46,7 +54,11 @@ export function getModel(ctx: PluginContext) {
       const endRadian = ctx.angleToRadian(content.endAngle)
       const middleRadian = (startRadian + endRadian) / 2
       return {
-        lines,
+        lines: [{
+          type: 'ellipse arc' as const,
+          ellipseArc: content,
+          lines,
+        }],
         points,
         center,
         start: ctx.getEllipsePointAtRadian(content, startRadian),
@@ -415,7 +427,7 @@ export function isEllipseArcContent(content: model.BaseContent): content is Elli
 }
 
 export function getCommand(ctx: PluginContext): Command[] {
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const React = ctx.React
   const icon1 = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">

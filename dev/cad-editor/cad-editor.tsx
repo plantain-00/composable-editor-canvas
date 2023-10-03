@@ -15,6 +15,7 @@ import type { RectContent } from './plugins/rect.plugin'
 import type { ArcContent, CircleContent } from './plugins/circle-arc.plugin'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
+import type { EllipseArcContent } from './plugins/ellipse.plugin'
 
 enablePatches()
 
@@ -293,6 +294,10 @@ export const CADEditor = React.forwardRef((props: {
           const line = getContentModel(s)?.getGeometries?.(s)?.lines?.[f[1]]
           if (line) {
             if (!Array.isArray(line)) {
+              if (line.type === 'ellipse arc') {
+                selectedContents.push({ content: { type: 'ellipse arc', ...line.ellipseArc } as EllipseArcContent, path: f })
+                continue
+              }
               selectedContents.push({ content: { type: 'arc', ...line.arc } as ArcContent, path: f })
               continue
             }

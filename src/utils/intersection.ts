@@ -27,7 +27,9 @@ export function* iterateIntersectionPoints<T>(
   }
 }
 
-export type GeometryLine = [Position, Position] | { type: 'arc', arc: Arc }
+export type GeometryLine = [Position, Position]
+  | { type: 'arc', arc: Arc }
+  | { type: 'ellipse arc', ellipseArc: EllipseArc, lines: [Position, Position][] }
 
 export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { rx, ry, cx, cy, angle }: Ellipse) {
   const radian = angleToRadian(angle)

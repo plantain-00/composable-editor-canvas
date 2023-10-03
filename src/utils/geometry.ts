@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { GeometryLine } from "./intersection"
+import { GeometryLine, getArcEllipseArcIntersectionPoints, getLineSegmentEllipseArcIntersectionPoints, getTwoEllipseArcIntersectionPoints } from "./intersection"
 import { isRecord } from "./is-record"
 import { angleToRadian, radianToAngle } from "./radian"
 import { Vec3 } from "./types"
@@ -174,12 +174,18 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   if (Array.isArray(line)) {
     return getPointAndLineSegmentNearestPointAndDistance(p, ...line)
   }
+  if (line.type === 'ellipse arc') {
+    return mergeNearestPointAndDistance(line.lines.map(n => getPointAndLineSegmentNearestPointAndDistance(p, ...n)))
+  }
   return getPointAndArcNearestPointAndDistance(p, line.arc)
 }
 
 export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
     return getPointAndLineSegmentMinimumDistance(p, ...line)
+  }
+  if (line.type === 'ellipse arc') {
+    return getPointAndGeometryLineNearestPointAndDistance(p, line).distance
   }
   return getPointAndArcMinimumDistance(p, line.arc)
 }
@@ -362,6 +368,17 @@ export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, 
       y: v + cy,
     }
   })
+}
+
+export function mergeNearestPointAndDistance(points: { distance: number, point: Position }[]) {
+  let result = points[0]
+  for (const [i, r] of points.entries()) {
+    if (i === 0) continue
+    if (r.distance < result.distance) {
+      result = r
+    }
+  }
+  return result
 }
 
 export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
@@ -672,6 +689,12 @@ export function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Po
 export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Position[]) {
   for (const line of getPolygonLine(polygon)) {
     if (!Array.isArray(g)) {
+      if (g.type === 'ellipse arc') {
+        if (getLineSegmentEllipseArcIntersectionPoints(...line, g.ellipseArc).length > 0) {
+          return true
+        }
+        continue
+      }
       if (getLineSegmentArcIntersectionPoints(...line, g.arc).length > 0) {
         return true
       }
@@ -732,10 +755,25 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
+    if (line2.type === 'ellipse arc') {
+      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.ellipseArc)
+    }
     return getLineSegmentArcIntersectionPoints(...line1, line2.arc)
   }
   if (Array.isArray(line2)) {
+    if (line1.type === 'ellipse arc') {
+      return getLineSegmentEllipseArcIntersectionPoints(...line2, line1.ellipseArc)
+    }
     return getLineSegmentArcIntersectionPoints(...line2, line1.arc)
+  }
+  if (line1.type === 'ellipse arc') {
+    if (line2.type === 'ellipse arc') {
+      return getTwoEllipseArcIntersectionPoints(line1.ellipseArc, line2.ellipseArc)
+    }
+    return getArcEllipseArcIntersectionPoints(line2.arc, line1.ellipseArc)
+  }
+  if (line2.type === 'ellipse arc') {
+    return getArcEllipseArcIntersectionPoints(line1.arc, line2.ellipseArc)
   }
   return getTwoArcIntersectionPoints(line1.arc, line2.arc)
 }
@@ -1721,8 +1759,12 @@ export function deduplicatePosition(array: Position[]) {
  * @public
  */
 export function getEllipseAngle(p: Position, ellipse: Ellipse) {
+  return radianToAngle(getEllipseRadian(p, ellipse))
+}
+
+export function getEllipseRadian(p: Position, ellipse: Ellipse) {
   const newPosition = rotatePositionByCenter(p, getEllipseCenter(ellipse), ellipse.angle ?? 0)
-  return radianToAngle(Math.atan2((newPosition.y - ellipse.cy) / ellipse.ry, (newPosition.x - ellipse.cx) / ellipse.rx))
+  return Math.atan2((newPosition.y - ellipse.cy) / ellipse.ry, (newPosition.x - ellipse.cx) / ellipse.rx)
 }
 
 export function getEllipseCenter(ellipse: Ellipse) {
@@ -1782,8 +1824,15 @@ export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
   if (Array.isArray(line)) {
     return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
   }
-  const start = getArcPointAtAngle(line.arc, line.arc.startAngle)
-  const end = getArcPointAtAngle(line.arc, line.arc.endAngle)
+  let start: Position
+  let end: Position
+  if (line.type === 'ellipse arc') {
+    start = getEllipseArcPointAtAngle(line.ellipseArc, line.ellipseArc.startAngle)
+    end = getEllipseArcPointAtAngle(line.ellipseArc, line.ellipseArc.endAngle)
+  } else {
+    start = getArcPointAtAngle(line.arc, line.arc.startAngle)
+    end = getArcPointAtAngle(line.arc, line.arc.endAngle)
+  }
   return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
 }
 
