@@ -2530,7 +2530,15 @@ function getModel(ctx) {
       const top = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content);
       const bottom = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content);
       return {
-        lines,
+        lines: [{
+          type: "ellipse arc",
+          ellipseArc: {
+            ...content,
+            startAngle: 0,
+            endAngle: 360
+          },
+          lines
+        }],
         points,
         center,
         left,
@@ -2558,7 +2566,11 @@ function getModel(ctx) {
       const endRadian = ctx.angleToRadian(content.endAngle);
       const middleRadian = (startRadian + endRadian) / 2;
       return {
-        lines,
+        lines: [{
+          type: "ellipse arc",
+          ellipseArc: content,
+          lines
+        }],
         points,
         center,
         start: ctx.getEllipsePointAtRadian(content, startRadian),

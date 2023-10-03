@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -255,6 +255,7 @@ export function usePointSnap<T>(
               ) {
                 for (const line of lines) {
                   if (!Array.isArray(line)) {
+                    if (line.type === 'ellipse arc') continue
                     const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.arc)
                     if (angleInRange(radianToAngle(perpendicularPoint.radian), line.arc) && getTwoPointsDistance(p, perpendicularPoint.point) <= delta) {
                       saveSnapPoint(transformSnapPosition, { ...perpendicularPoint.point, type: 'perpendicular' })
@@ -309,6 +310,19 @@ export function usePointSnap<T>(
               ) {
                 for (const line of lines) {
                   if (!Array.isArray(line)) {
+                    if (line.type === 'ellipse arc') {
+                      const tangencyPoints = getTangencyPointToEllipse(lastPosition, line.ellipseArc)
+                      for (const tangencyPoint of tangencyPoints) {
+                        if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getEllipseRadian(tangencyPoint, line.ellipseArc)), line.ellipseArc)) {
+                          saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                          return transformResult(transformSnapPosition, {
+                            ...getOffsetSnapPoint(tangencyPoint),
+                            ...getSnapTarget(model, content, tangencyPoint),
+                          })
+                        }
+                      }
+                      continue
+                    }
                     const tangencyPoints = getTangencyPointToCircle(lastPosition, line.arc)
                     for (const tangencyPoint of tangencyPoints) {
                       if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getTwoPointsRadian(tangencyPoint, line.arc)), line.arc)) {

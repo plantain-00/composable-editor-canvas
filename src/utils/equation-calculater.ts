@@ -105,11 +105,11 @@ export function calculateEquation4(a: number, b: number, c: number, d: number, e
       (-b - h) / 4,
     ]
   }
-  const e2 = E ** 2
+  const E2 = E ** 2
   const D2 = D ** 2
   const A = D2 - 3 * F
-  const B = D * F - 9 * e2
-  const C = F ** 2 - 3 * D * e2
+  const B = D * F - 9 * E2
+  const C = F ** 2 - 3 * D * E2
   if (isZero(A, delta) && isZero(B, delta) && isZero(C, delta)) {
     const h = b * D
     const g2 = 4 * D
