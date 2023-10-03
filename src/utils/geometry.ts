@@ -170,9 +170,6 @@ export function getPointAndLineSegmentNearestPointAndDistance(position: Position
   }
 }
 
-export function getPointAndLineSegmentsNearestPointAndDistance(position: Position, lines: [Position, Position][]) {
-}
-
 export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
     return getPointAndLineSegmentNearestPointAndDistance(p, ...line)
