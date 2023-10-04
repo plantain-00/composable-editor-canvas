@@ -2536,8 +2536,7 @@ function getModel(ctx) {
             ...content,
             startAngle: 0,
             endAngle: 360
-          },
-          lines
+          }
         }],
         points,
         center,
@@ -2568,8 +2567,7 @@ function getModel(ctx) {
       return {
         lines: [{
           type: "ellipse arc",
-          ellipseArc: content,
-          lines
+          ellipseArc: content
         }],
         points,
         center,

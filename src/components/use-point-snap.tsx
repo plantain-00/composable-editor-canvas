@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -255,8 +255,21 @@ export function usePointSnap<T>(
               ) {
                 for (const line of lines) {
                   if (!Array.isArray(line)) {
-                    if (line.type === 'ellipse arc') continue
-                    const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.arc)
+                    if (line.type === 'ellipse arc') {
+                      const radian = getPerpendicularPointRadianToEllipse(lastPosition, line.ellipseArc, p)
+                      if (angleInRange(radianToAngle(radian), line.ellipseArc)) {
+                        const point = getEllipsePointAtRadian(line.ellipseArc, radian)
+                        if (getTwoPointsDistance(p, point) <= delta) {
+                          saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                          return transformResult(transformSnapPosition, {
+                            ...getOffsetSnapPoint(point),
+                            ...getSnapTarget(model, content, point),
+                          })
+                        }
+                      }
+                      continue
+                    }
+                    const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.arc, p)
                     if (angleInRange(radianToAngle(perpendicularPoint.radian), line.arc) && getTwoPointsDistance(p, perpendicularPoint.point) <= delta) {
                       saveSnapPoint(transformSnapPosition, { ...perpendicularPoint.point, type: 'perpendicular' })
                       return transformResult(transformSnapPosition, {
