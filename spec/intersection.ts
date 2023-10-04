@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleEllipseIntersectionPoints, getTangencyPointToEllipse, getTwoEllipseIntersectionPoints } from '../src'
+import { getCircleEllipseIntersectionPoints, getPerpendicularPointRadianToEllipse, getTangencyPointToEllipse, getTwoEllipseIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -12,4 +12,9 @@ test('getTwoEllipseIntersectionPoints', (t) => {
 test('getTangencyPointToEllipse', (t) => {
   t.snapshot(getTangencyPointToEllipse({ x: 1294, y: 126 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
   t.snapshot(getTangencyPointToEllipse({ x: 50, y: 100 }, { cx: 0, cy: 0, rx: 100, ry: 50, angle: 90 }))
+})
+
+test('getPerpendicularPointRadianToEllipse', (t) => {
+  t.snapshot(getPerpendicularPointRadianToEllipse({ x: 1294, y: 126 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
+  t.snapshot(getPerpendicularPointRadianToEllipse({ x: 50, y: 100 }, { cx: 0, cy: 0, rx: 100, ry: 50, angle: 90 }))
 })
