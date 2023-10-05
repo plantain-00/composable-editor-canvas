@@ -1,4 +1,4 @@
-import { calculateEquation4 } from "./equation-calculater"
+import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
 import { Arc, Circle, Ellipse, EllipseArc, getTwoCircleIntersectionPoints, getTwoGeometryLinesIntersectionPoint, isZero, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position } from "./geometry"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
@@ -237,4 +237,132 @@ export function getEllipseArcEllipseIntersectionPoints(ellipseArc: EllipseArc, e
 
 export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, ellipseArc2: EllipseArc) {
   return getEllipseArcEllipseIntersectionPoints(ellipseArc1, ellipseArc2).filter((p) => pointIsOnEllipseArc(p, ellipseArc2))
+}
+
+export interface QuadraticCurve {
+  from: Position
+  cp: Position
+  to: Position
+}
+
+export function getLineQuadraticCurveIntersectionPoints(
+  { x: x1, y: y1 }: Position,
+  { x: x2, y: y2 }: Position,
+  { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 t t + 2 c1 t + a1
+  // y = c4 t t + 2 c3 t + b1
+
+  // (x - x1) / (x2 - x1) = (y - y1) / (y2 - y1)
+  const e1 = x2 - x1, e2 = y2 - y1
+  // (x - x1) e2 - (y - y1) e1 = 0
+  // replace x, y, group t: (-c4 e1 + c2 e2) t t + (-2 c3 e1 + 2 c1 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
+  const ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c2 * t * t + 2 * c1 * t + a1,
+    y: c4 * t * t + 2 * c3 * t + b1,
+  }))
+}
+
+export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, end: Position, curve: QuadraticCurve) {
+  return getLineQuadraticCurveIntersectionPoints(start, end, curve).filter((p) => pointIsOnLineSegment(p, start, end))
+}
+
+export function getCircleQuadraticCurveIntersectionPoints(
+  { x: x1, y: y1, r: r1 }: Circle,
+  { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 t t + 2 c1 t + a1
+  // y = c4 t t + 2 c3 t + b1
+
+  // (x - x1)^2 + (y - y1)^2 = r1^2
+  // replace x, y, group t: (c2 c2 + c4 c4) t t t t + 4(c1 c2 + c3 c4) t t t + 2(2 c1 c1 + a1 c2 + 2 c3 c3 + b1 c4 + -c2 x1 + -c4 y1) t t + 4(a1 c1 + b1 c3 + -c1 x1 + -c3 y1) t + a1 a1 + b1 b1 + -r1 r1 + -2 a1 x1 + x1 x1 + -2 b1 y1 + y1 y1
+  const ts = calculateEquation4(
+    c2 * c2 + c4 * c4,
+    4 * (c1 * c2 + c3 * c4),
+    2 * (2 * c1 * c1 + a1 * c2 + 2 * c3 * c3 + b1 * c4 - c2 * x1 - c4 * y1),
+    4 * (a1 * c1 + b1 * c3 + -1 * c1 * x1 + -1 * c3 * y1),
+    a1 * a1 + b1 * b1 + -r1 * r1 + -2 * a1 * x1 + x1 * x1 + -2 * b1 * y1 + y1 * y1,
+  )
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c2 * t * t + 2 * c1 * t + a1,
+    y: c4 * t * t + 2 * c3 * t + b1,
+  }))
+}
+
+export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: QuadraticCurve) {
+  return getCircleQuadraticCurveIntersectionPoints(arc, curve).filter((p) => pointIsOnArc(p, arc))
+}
+
+export function getEllipseQuadraticCurveIntersectionPoints(
+  { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
+  { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 t t + 2 c1 t + a1
+  // y = c4 t t + 2 c3 t + b1
+
+  const radian1 = angleToRadian(angle1)
+  const d1 = Math.sin(radian1), d2 = Math.cos(radian1), d3 = 1 / rx1 / rx1, d4 = 1 / ry1 / ry1
+  // (d2(x - cx1) + d1(y - cy1))^2 d3 + (-d1(x - cx1) + d2(y - cy1))^2 d4 = 1
+  const d5 = a1 - cx1, d6 = b1 - cy1
+  // (d2(x + d5 - a1) + d1(y + d6 - b1))^2 d3 + (-d1(x + d5 - a1) + d2(y + d6 - b1))^2 d4 - 1 = 0
+  // replace x, y, group t: (c4 c4 d1 d1 d3 + 2 c2 c4 d1 d2 d3 + c2 c2 d2 d2 d3 + c2 c2 d1 d1 d4 + -2 c2 c4 d1 d2 d4 + c4 c4 d2 d2 d4) t t t t + (4 c3 c4 d1 d1 d3 + 4 c2 c3 d1 d2 d3 + 4 c1 c4 d1 d2 d3 + 4 c1 c2 d2 d2 d3 + 4 c1 c2 d1 d1 d4 + -4 c2 c3 d1 d2 d4 + -4 c1 c4 d1 d2 d4 + 4 c3 c4 d2 d2 d4) t t t + (4 c3 c3 d1 d1 d3 + 8 c1 c3 d1 d2 d3 + 4 c1 c1 d2 d2 d3 + 4 c1 c1 d1 d1 d4 + -8 c1 c3 d1 d2 d4 + 4 c3 c3 d2 d2 d4 + 2 c4 d1 d2 d3 d5 + 2 c2 d2 d2 d3 d5 + 2 c2 d1 d1 d4 d5 + -2 c4 d1 d2 d4 d5 + 2 c4 d1 d1 d3 d6 + 2 c2 d1 d2 d3 d6 + -2 c2 d1 d2 d4 d6 + 2 c4 d2 d2 d4 d6) t t + (4 c3 d1 d2 d3 d5 + 4 c1 d2 d2 d3 d5 + 4 c1 d1 d1 d4 d5 + -4 c3 d1 d2 d4 d5 + 4 c3 d1 d1 d3 d6 + 4 c1 d1 d2 d3 d6 + -4 c1 d1 d2 d4 d6 + 4 c3 d2 d2 d4 d6) t + d2 d2 d3 d5 d5 + d1 d1 d4 d5 d5 + 2 d1 d2 d3 d5 d6 + -2 d1 d2 d4 d5 d6 + d1 d1 d3 d6 d6 + d2 d2 d4 d6 d6 + -1
+  const d7 = c3 * d1 + c1 * d2, d8 = c1 * d1 - c3 * d2
+  const e1 = c4 * d1 + c2 * d2, e2 = c2 * d1 - c4 * d2, e3 = d1 * d4 * d5 - d2 * d4 * d6, e4 = d2 * d3 * d5 + d1 * d3 * d6
+  const ts = calculateEquation4(
+    e1 ** 2 * d3 + e2 ** 2 * d4,
+    4 * (d7 * e1 * d3 + d8 * e2 * d4),
+    2 * (2 * d7 ** 2 * d3 + 2 * d8 ** 2 * d4 + e1 * e4 + e2 * e3),
+    4 * (d7 * e4 + d8 * e3),
+    (d2 * d5 + d1 * d6) ** 2 * d3 + (d1 * d5 + - d2 * d6) ** 2 * d4 + -1
+  )
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c2 * t * t + 2 * c1 * t + a1,
+    y: c4 * t * t + 2 * c3 * t + b1,
+  }))
+}
+
+export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: EllipseArc, curve: QuadraticCurve) {
+  return getEllipseQuadraticCurveIntersectionPoints(ellipseArc, curve).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+}
+
+export function getTwoQuadraticCurveIntersectionPoints(
+  { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+  { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } }: QuadraticCurve,
+) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 u u + 2 c1 u + a1
+  // y = c4 u u + 2 c3 u + b1
+
+  const d1 = a5 - a4, d2 = a6 - a5 - d1, d3 = b5 - b4, d4 = b6 - b5 - d3
+  // x = d2 v v + 2 d1 v + a4
+  // y = d4 v v + 2 d3 v + b4
+
+  // c2 u u + 2 c1 u + a1 - d2 v v - 2 d1 v - a4 = 0
+  // c4 u u + 2 c3 u + b1 - d4 v v - 2 d3 v - b4 = 0
+
+  // u u + 2 c1/c2 u + (a1 - a4)/c2 - d2/c2 v v - 2 d1/c2 v = 0
+  // u u + 2 c3/c4 u + (b1 - b4)/c4 - d4/c4 v v - 2 d3/c4 v = 0
+  const e1 = (a1 - a4) / c2, e2 = (b1 - b4) / c4, e3 = 2 * c1 / c2, e4 = 2 * c3 / c4
+  const e5 = d2 / c2, e6 = d4 / c4, e7 = 2 * d1 / c2, e8 = 2 * d3 / c4
+  // F1: u u + e3 u + e1 - e5 v v - e7 v = 0
+  // u u + e4 u + e2 - e6 v v - e8 v = 0
+  // -F1, group u, v: (-e3 + e4) u + (-e6 + e5) v v + (e7 + -e8) v + -e1 + e2 = 0
+  const f1 = -e3 + e4, f2 = (-e6 + e5) / f1, f3 = (e7 + -e8) / f1, f4 = (-e1 + e2) / f1
+  // u = -(f2 v v + f3 v + f4)
+  // F1 replace u, group v: f2 f2 v v v v + 2 f2 f3 v v v + (-e3 f2 + f3 f3 + 2 f2 f4 + -e5) v v + (-e3 f3 + 2 f3 f4 + -e7) v + e1 + -e3 f4 + f4 f4
+  const vs = calculateEquation4(
+    f2 * f2,
+    2 * f2 * f3,
+    -e3 * f2 + f3 * f3 + 2 * f2 * f4 + -e5,
+    -e3 * f3 + 2 * f3 * f4 + -e7,
+    e1 + -e3 * f4 + f4 * f4
+  )
+  return vs.filter(v => v >= 0 && v <= 1).map(v => ({
+    x: d2 * v * v + 2 * d1 * v + a4,
+    y: d4 * v * v + 2 * d3 * v + b4,
+  }))
 }
