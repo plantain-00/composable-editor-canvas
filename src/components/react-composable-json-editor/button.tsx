@@ -1,11 +1,11 @@
 import * as React from "react";
-import { buttonStyle, labelStyle } from "./common";
+import { buttonStyle, disabledStyle, labelStyle } from "./common";
 
 /**
  * @public
  */
 export function Button(props: React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>): JSX.Element {
-  return <button {...props} style={{ ...buttonStyle, ...props.style }}> {props.children}</button >
+  return <button {...props} style={{ ...buttonStyle, ...props.style, ...(props.disabled ? disabledStyle : {}) }}> {props.children}</button >
 }
 
 export function Label(props: React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLSpanElement>, HTMLSpanElement>): JSX.Element {

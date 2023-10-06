@@ -1,5 +1,5 @@
-import { Expression2, priorizedBinaryOperators } from "expression-engine";
-import { Factor, FactorVariable, divideFactors, factorToExpression, getReverseOperator, isLetter, isNumber, powerFactor } from "../components";
+import { Expression2, SpreadElement2, priorizedBinaryOperators } from "expression-engine";
+import { Factor, FactorVariable, divideFactors, expressionHasVariable, factorToExpression, getReverseOperator, isLetter, isNumber, powerFactor } from "../components";
 
 export function expandExpression(e: Expression2): Expression2 {
   if (e.type === 'BinaryExpression') {
@@ -223,7 +223,7 @@ function compareFactorVariable(a: string | FactorVariable, b: string | FactorVar
 }
 
 export function printMathStyleExpression(e: Expression2) {
-  const print = (expression: Expression2, priority = Number.MAX_SAFE_INTEGER): string => {
+  const print = (expression: Expression2 | SpreadElement2<Expression2>, priority = Number.MAX_SAFE_INTEGER): string => {
     if (expression.type === 'NumericLiteral') {
       return expression.value.toString()
     }
@@ -246,10 +246,15 @@ export function printMathStyleExpression(e: Expression2) {
       }
       return result
     }
+    if (expression.type === 'CallExpression') {
+      return print(expression.callee) + '(' + expression.arguments.map((a) => print(a)).join(', ') + ')'
+    }
     return ''
   };
   return print(e)
 }
+
+const mathFunctions = ['sin', 'cos', 'tan']
 
 export function mathStyleExpressionToExpression(e: string) {
   let result = ''
@@ -265,7 +270,7 @@ export function mathStyleExpressionToExpression(e: string) {
       result += '**'
       continue
     }
-    if (c === '(' && i > 0) {
+    if (c === '(' && i > 0 && mathFunctions.every(m => !result.endsWith(m))) {
       if (isLetter(e[i - 1]) || isNumber(e[i - 1]) || e[i - 1] === ')') {
         result += '*('
         continue
@@ -431,4 +436,152 @@ export function groupAllFactors(factors: Factor[]): Expression2 | undefined {
   }
 
   return group(factors, 0)
+}
+
+export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
+  if (e.type === 'BinaryExpression') {
+    if (e.operator === '+' || e.operator === '-') {
+      return {
+        type: 'BinaryExpression',
+        operator: e.operator,
+        left: deriveExpressionWith(e.left, by),
+        right: deriveExpressionWith(e.right, by),
+      }
+    }
+    if (e.operator === '*') {
+      return {
+        type: 'BinaryExpression',
+        operator: '+',
+        left: {
+          type: 'BinaryExpression',
+          operator: '*',
+          left: deriveExpressionWith(e.left, by),
+          right: e.right,
+        },
+        right: {
+          type: 'BinaryExpression',
+          operator: '*',
+          left: e.left,
+          right: deriveExpressionWith(e.right, by),
+        },
+      }
+    }
+    if (e.operator === '/') {
+      return {
+        type: 'BinaryExpression',
+        operator: '/',
+        left: {
+          type: 'BinaryExpression',
+          operator: '/',
+          left: {
+            type: 'BinaryExpression',
+            operator: '-',
+            left: {
+              type: 'BinaryExpression',
+              operator: '*',
+              left: deriveExpressionWith(e.left, by),
+              right: e.right,
+            },
+            right: {
+              type: 'BinaryExpression',
+              operator: '*',
+              left: e.left,
+              right: deriveExpressionWith(e.right, by),
+            },
+          },
+          right: e.right,
+        },
+        right: e.right,
+      }
+    }
+    if (e.operator === '**') {
+      if (expressionHasVariable(e.left, by)) {
+        if (!expressionHasVariable(e.right, by)) {
+          return {
+            type: 'BinaryExpression',
+            operator: '*',
+            left: e.right,
+            right: {
+              type: 'BinaryExpression',
+              operator: '**',
+              left: e.left,
+              right: {
+                type: 'BinaryExpression',
+                operator: '-',
+                left: e.right,
+                right: {
+                  type: 'NumericLiteral',
+                  value: 1,
+                },
+              },
+            },
+          }
+        }
+      }
+    }
+  }
+  if (e.type === 'UnaryExpression') {
+    return {
+      type: 'UnaryExpression',
+      operator: e.operator,
+      argument: deriveExpressionWith(e.argument, by),
+    }
+  }
+  if (e.type === 'CallExpression') {
+    let functionName: string | undefined
+    if (e.callee.type === 'Identifier') {
+      functionName = e.callee.name
+    } else if (e.callee.type === 'MemberExpression' && e.callee.object.type === 'Identifier' && e.callee.object.name === 'Math' && e.callee.property.type === 'Identifier') {
+      functionName === e.callee.property.name
+    }
+    const a = e.arguments[0]
+    if (functionName && a && a.type !== 'SpreadElement' && expressionHasVariable(a, by)) {
+      if (functionName === 'sin') {
+        return {
+          type: 'BinaryExpression',
+          operator: '*',
+          left: {
+            type: 'CallExpression',
+            callee: {
+              type: 'Identifier',
+              name: 'cos',
+            },
+            arguments: e.arguments,
+          },
+          right: deriveExpressionWith(a, by),
+        }
+      } else if (functionName === 'cos') {
+        return {
+          type: 'UnaryExpression',
+          operator: '-',
+          argument: {
+            type: 'BinaryExpression',
+            operator: '*',
+            left: {
+              type: 'CallExpression',
+              callee: {
+                type: 'Identifier',
+                name: 'sin',
+              },
+              arguments: e.arguments,
+            },
+            right: deriveExpressionWith(a, by),
+          }
+        }
+      }
+    }
+  }
+  if (e.type === 'NumericLiteral') {
+    return {
+      type: 'NumericLiteral',
+      value: 0,
+    }
+  }
+  if (e.type === 'Identifier') {
+    return {
+      type: 'NumericLiteral',
+      value: e.name === by ? 1 : 0,
+    }
+  }
+  return e
 }

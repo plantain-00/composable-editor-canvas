@@ -1,4 +1,5 @@
 import { Expression2 } from "expression-engine"
+import { printMathStyleExpression } from "../../utils/expression-expansion"
 
 export interface Factor {
   constant?: number
@@ -286,6 +287,11 @@ function expressionToFactor(e: Expression2): Factor | void {
       if (!Number.isInteger(e.right.value)) return
       if (e.right.value < 1) return
       return powerFactor(left, e.right.value)
+    }
+  }
+  if (e.type === 'CallExpression') {
+    return {
+      variables: [printMathStyleExpression(e)],
     }
   }
 }
