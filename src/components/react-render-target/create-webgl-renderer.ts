@@ -5,12 +5,15 @@ import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
-import { arcToPolyline, Bounding, combineStripTriangleColors, combineStripTriangles, dashedPolylineToLines, defaultMiterLimit, equals, getParallelLinesByDistance, getPerpendicular, getPerpendicularPoint, getPointSideOfLine, getPolylineTriangles, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, triangleStripToTriangles, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { arcToPolyline, Bounding, dashedPolylineToLines, equals, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
 import type { Align, VerticalAlign } from '../../utils/flow-layout'
 import { Lazy } from '../../utils/lazy'
+import { getTwoGeneralFormLinesIntersectionPoint } from '../../utils/intersection'
+import { getPerpendicular, getPerpendicularPoint } from '../../utils/perpendicular'
+import { combineStripTriangleColors, combineStripTriangles, defaultMiterLimit, getPolylineTriangles, triangleStripToTriangles } from '../../utils/triangles'
 
 /**
  * @public

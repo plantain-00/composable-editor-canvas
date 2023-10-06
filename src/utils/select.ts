@@ -1,5 +1,6 @@
-import { geometryLineInPolygon, geometryLineIntersectWithPolygon, getPointAndGeometryLineMinimumDistance, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
-import { GeometryLine } from "./intersection"
+import { geometryLineInPolygon, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
+import { GeometryLine, geometryLineIntersectWithPolygon } from "./intersection"
+import { getPointAndGeometryLineMinimumDistance } from "./perpendicular"
 import { Nullable } from "./types"
 
 /**

@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, getTwoCircleIntersectionPoints, getTwoGeometryLinesIntersectionPoint, isZero, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
 
@@ -30,6 +30,295 @@ export function* iterateIntersectionPoints<T>(
 export type GeometryLine = [Position, Position]
   | { type: 'arc', arc: Arc }
   | { type: 'ellipse arc', ellipseArc: EllipseArc }
+
+
+/**
+ * @public
+ */
+export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
+  const result = getTwoLinesIntersectionPoint(p1Start, p1End, p2Start, p2End)
+  if (result && pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
+    return result
+  }
+  return undefined
+}
+
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
+  if (Array.isArray(line1)) {
+    if (Array.isArray(line2)) {
+      const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
+      if (point) {
+        return [point]
+      }
+      return []
+    }
+    if (line2.type === 'ellipse arc') {
+      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.ellipseArc)
+    }
+    return getLineSegmentArcIntersectionPoints(...line1, line2.arc)
+  }
+  if (Array.isArray(line2)) {
+    if (line1.type === 'ellipse arc') {
+      return getLineSegmentEllipseArcIntersectionPoints(...line2, line1.ellipseArc)
+    }
+    return getLineSegmentArcIntersectionPoints(...line2, line1.arc)
+  }
+  if (line1.type === 'ellipse arc') {
+    if (line2.type === 'ellipse arc') {
+      return getTwoEllipseArcIntersectionPoints(line1.ellipseArc, line2.ellipseArc)
+    }
+    return getArcEllipseArcIntersectionPoints(line2.arc, line1.ellipseArc)
+  }
+  if (line2.type === 'ellipse arc') {
+    return getArcEllipseArcIntersectionPoints(line1.arc, line2.ellipseArc)
+  }
+  return getTwoArcIntersectionPoints(line1.arc, line2.arc)
+}
+
+/**
+ * @public
+ */
+export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
+  return getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(p1Start, p1End), twoPointLineToGeneralFormLine(p2Start, p2End))
+}
+
+/**
+ * @public
+ */
+export function getTwoGeneralFormLinesIntersectionPoint(p1: GeneralFormLine, p2: GeneralFormLine) {
+  const { a: a1, b: b1, c: c1 } = p1
+  const { a: a2, b: b2, c: c2 } = p2
+  const d = a2 * b1 - a1 * b2
+  if (isZero(d)) {
+    return undefined
+  }
+  return {
+    x: (c1 * b2 - b1 * c2) / d,
+    y: (c2 * a1 - c1 * a2) / d,
+  }
+}
+
+/**
+ * @public
+ */
+export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { x: x2, y: y2, r: r2 }: Circle): Position[] {
+  const m = r1 ** 2
+  const n = r2 ** 2
+  // (x - x1)^2 + (y - y1)^2 = m
+  // (x - x2)^2 + (y - y2)^2 = n
+  // let u = x - x1, v = y - y1
+  // F1: u^2 + v^2 - m = 0
+  // (u + x1 - x2)^2 + (v + y1 - y2)^2 - n = 0
+  const p = x2 - x1
+  const q = y2 - y1
+  // (u - p)^2 + (v - q)^2 - n = 0
+  // u^2 - 2pu + pp + v^2 - 2qv + qq - n = 0
+  // -F1: -2pu - 2qv + (pp + qq) + m - n = 0
+  // pu + qv = ((pp + qq) + m - n) / 2
+  const a = p ** 2 + q ** 2
+  // pu + qv = (a + m - n) / 2
+  const d = Math.sqrt(a)
+  const l = (a + m - n) / 2 / d
+  // pu + qv = ld
+  // F2: v = (l d - p u)/q
+  // F1 replace v, *q q, group u: (p p + q q) u u + -2 d l p u + d d l l + -m q q = 0
+  // a u^2 - 2 l d p u + (l l a - m q q) = 0
+  // let b = - 2 l d p, c = l l a - m q q
+  // bb - 4ac = (2 l d p)^2 - 4 a (l l a - m q q)
+  // (bb - 4ac)/4/a = l l p p - a l l + m q q
+  // (bb - 4ac)/4/a = l l(p p - a) + m q q
+  // (bb - 4ac)/4/a = l l(-qq) + m q q
+  // bb - 4ac = 4 a q q(m - l l)
+  const f = m - l ** 2
+  // bb - 4ac = 4aqqf
+  if (f < 0 && !isZero(f)) {
+    return []
+  }
+  // u = -b/2/a = 2 l d p/2/a = l d p/a = l p/d
+  const c = l / d
+  // u = -b/2/a = cp
+  // x = u + x1 = cp + x1
+  const g = c * p + x1
+
+  // F2 replace u with c*p: v = (l d - p c p)/q
+  // v = (l d d/d - c p p)/q
+  // v = (l a/d - c p p)/q
+  // v = (c a - c p p)/q
+  // v = c(a - p p)/q = c q q/q = c q
+  // y = v + y1 = cq + y1
+  const i = c * q + y1
+  if (isZero(f)) {
+    return [
+      {
+        x: g,
+        y: i,
+      },
+    ]
+  }
+  const h = Math.sqrt(f)
+  // sqrt(bb - 4ac)/2/a = sqrt(4 a q q f)/2/a
+  // sqrt(bb - 4ac)/2/a = sqrt(4 d d q q h h)/2/a
+  // sqrt(bb - 4ac)/2/a = 2 d q h/2/r = d q h/a = q h/d
+  const e = h / d
+  // sqrt(bb - 4ac)/2/a = q(d e)/d = q e
+  const j = e * q
+
+  // F2 replace u with x - x1: v = (l d - p(x - x1))/q
+  // v = (l d - p(g + j - x1))/q
+  // v = (l d - p(c p + x1 + j - x1))/q
+  // v = (l d - p(c p + j))/q
+  // v = (l d - p(c p + e q))/q
+  // v = (c d d - c p p - p e q)/q
+  // v = (c(d d - p p) - p e q)/q
+  // v = (c q q - p e q)/q
+  // v = c q - p e
+  // v = (i - y1) - p e
+  // y = v + y1 = (i - y1) - p e + y1 = i - p e
+  const k = e * p
+  // y = i - k
+  return [
+    {
+      x: g + j,
+      y: i - k,
+    },
+    {
+      x: g - j,
+      y: i + k,
+    },
+  ]
+}
+
+/**
+ * @public
+ */
+export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle) {
+  return getLineCircleIntersectionPoints(start, end, circle).filter((p) => pointIsOnLineSegment(p, start, end))
+}
+
+export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc) {
+  return getLineSegmentCircleIntersectionPoints(start, end, arc).filter((p) => pointIsOnArc(p, arc))
+}
+
+export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
+  return getTwoCircleIntersectionPoints(arc1, arc2).filter((p) => pointIsOnArc(p, arc1) && pointIsOnArc(p, arc2))
+}
+
+/**
+ * @public
+ */
+export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle) {
+  // (x - x1)^2 + (y - y1)^2 = r r
+  // let u = x - x1, v = y - y1
+  // F1: u^2 + v^2 - r r = 0
+  // (x - x2) / (x3 - x2) = (y - y2) / (y3 - y2)
+  const d = x3 - x2
+  const e = y3 - y2
+  // (x - x2) / d = (y - y2) / e
+  // e(x - x2) = d(y - y2)
+  // e((u + x1) - x2) = d((v + y1) - y2)
+  const f = x1 - x2
+  const g = y1 - y2
+  // e(u + f) = d(v + g)
+  // e u + e f - d v + d g = 0
+  const s = e * f - d * g
+  // F2: v = (e u + e f - d g)/d = (e u + s)/d
+  // F2 replace v, *d d, group u: (d d + e e) u u + 2 e s u + s s + -d d r r = 0
+  const h = d ** 2 + e ** 2
+  // h u^2 + 2 e s u + (s s - r r d d) = 0
+  // a = h, b = 2 e s, c = s s - r r d d
+  // (bb - 4ac)/4/d/d = d d r r + e e r r + -s s = h r r -  s s
+  const t = r * r * h - s * s
+  // bb - 4ac = 4 d d t
+  if (t < 0 && !isZero(t)) {
+    return []
+  }
+  // u = -b/2/a = -2 e s/2/h = -e s/h
+  // x = u + x1 = -e s/h + x1
+  const i = -e * s / h + x1
+
+  // F2 replace u: v = (e(-e s/h) + s) / d
+  // *h, /s: v = s(-e e + h)/h/d = s d d /h/d = d s/h
+  // y = v + y1 = d s/h + y1
+  const j = d * s / h + y1
+
+  if (isZero(t)) {
+    return [
+      {
+        x: i,
+        y: j,
+      }
+    ]
+  }
+  const n = Math.sqrt(t)
+  // sqrt(bb - 4ac)/2/a = sqrt(4 d d t)/2/h = 2d sqrt(t)/2/h = n d/h
+  const p = n * d / h
+  // F2 replace u with i - p: v = (e(x - x1) + s) / d
+  // v = (e(-e s/h + x1 - n d/h - x1) + s) / d
+  // *h, v = (-d e n + -e e s + h s)/h/d
+  // v = (-d e n + d d s)/h/d
+  // /d, v = (-e n + d s)/h
+  // y = v + y1 = (d s - e n)/h + y1
+  // y = j - e n h
+  const q = n * e / h
+  // y = j - q
+  return [
+    {
+      x: i - p,
+      y: j - q,
+    },
+    {
+      x: i + p,
+      y: j + q,
+    },
+  ]
+}
+
+export function getGeneralFormLineCircleIntersectionPoints(line: GeneralFormLine, circle: Circle) {
+  return getLineCircleIntersectionPoints(...generalFormLineToTwoPointLine(line), circle)
+}
+
+export function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Position[]) {
+  for (const line of getPolygonLine(polygon)) {
+    if (lineIntersectWithLine(p1, p2, ...line)) {
+      return true
+    }
+  }
+  return false
+}
+
+export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Position[]) {
+  for (const line of getPolygonLine(polygon)) {
+    if (!Array.isArray(g)) {
+      if (g.type === 'ellipse arc') {
+        if (getLineSegmentEllipseArcIntersectionPoints(...line, g.ellipseArc).length > 0) {
+          return true
+        }
+        continue
+      }
+      if (getLineSegmentArcIntersectionPoints(...line, g.arc).length > 0) {
+        return true
+      }
+    } else if (lineIntersectWithLine(...g, ...line)) {
+      return true
+    }
+  }
+  return false
+}
+
+function lineIntersectWithLine(a: Position, b: Position, c: Position, d: Position) {
+  if (!(Math.min(a.x, b.x) <= Math.max(c.x, d.x) && Math.min(c.y, d.y) <= Math.max(a.y, b.y) && Math.min(c.x, d.x) <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= Math.max(c.y, d.y))) {
+    return false
+  }
+  const u = (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y)
+  const v = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y)
+  const w = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y)
+  const z = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y)
+  return u * v <= 0 && w * z <= 0
+}
+
+export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion) {
+  return lineIntersectWithPolygon(p1, p2, getPolygonFromTwoPointsFormRegion(region))
+}
 
 export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { rx, ry, cx, cy, angle }: Ellipse) {
   const radian = angleToRadian(angle)
