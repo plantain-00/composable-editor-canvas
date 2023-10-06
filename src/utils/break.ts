@@ -1,4 +1,5 @@
-import { getPointAndLineSegmentMinimumDistance, getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
+import { getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
+import { getPointAndLineSegmentMinimumDistance } from "./perpendicular"
 
 /**
  * @public

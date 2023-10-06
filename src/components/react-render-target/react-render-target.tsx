@@ -1,8 +1,11 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getBezierCurvePoints, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getQuadraticCurvePoints, getTwoGeneralFormLinesIntersectionPoint, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
+import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
+import { getPerpendicularPoint } from "../../utils/perpendicular"
+import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string

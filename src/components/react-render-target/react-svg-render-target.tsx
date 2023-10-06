@@ -1,10 +1,13 @@
 import * as React from "react"
 import { getColorString } from "../../utils/color"
-import { defaultMiterLimit, getParallelLinesByDistance, getPerpendicularPoint, getPointSideOfLine, getTwoGeneralFormLinesIntersectionPoint, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { getParallelLinesByDistance, getPointSideOfLine, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { m3 } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
+import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
+import { getPerpendicularPoint } from "../../utils/perpendicular"
+import { defaultMiterLimit } from "../../utils/triangles"
 
 /**
  * @public
