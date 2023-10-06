@@ -1,4 +1,4 @@
-import { BinaryOperator, Expression2 as Expression, printExpression } from "expression-engine"
+import { BinaryOperator, Expression2 as Expression, SpreadElement2, printExpression } from "expression-engine"
 import { isZero } from "../../utils/geometry"
 import { Equation } from "../equation-renderer"
 import { divide, expressionToFactors, extractFactors, factorsToExpression, factorToExpression, optimizeFactors } from "./factorization"
@@ -35,7 +35,7 @@ export function printEquation(equation: Equation, options?: Partial<{ keepBinary
   return printExpression(equation.left, options) + ' = ' + printExpression(equation.right, options)
 }
 
-function isSameExpression(e1: Expression, e2: Expression): boolean {
+function isSameExpression(e1: Expression | SpreadElement2<Expression>, e2: Expression | SpreadElement2<Expression>): boolean {
   if (e1.type !== e2.type) return false
   if (e1.type === 'BinaryExpression' && e2.type === 'BinaryExpression') {
     return e1.operator === e2.operator && isSameExpression(e1.left, e2.left) && isSameExpression(e1.right, e2.right)
@@ -49,7 +49,12 @@ function isSameExpression(e1: Expression, e2: Expression): boolean {
   if (e1.type === 'Identifier' && e2.type === 'Identifier') {
     return e1.name === e2.name
   }
-  return true
+  if (e1.type === 'CallExpression' && e2.type === 'CallExpression') {
+    return isSameExpression(e1.callee, e2.callee) &&
+      e1.arguments.length === e2.arguments.length &&
+      e1.arguments.every((e, i) => isSameExpression(e, e2.arguments[i]))
+  }
+  return false
 }
 
 function shouldBeAfterExpression(e1: Expression, e2: Expression): boolean {
@@ -139,13 +144,21 @@ export function optimizeExpression(
         if (expression.operator === '*') {
           return expression.right
         }
+        // a ** 0 -> 1
+        if (expression.operator === '**') {
+          return {
+            type: 'NumericLiteral',
+            value: 1,
+          }
+        }
       }
 
       // a * 1
       if (expression.right.type === 'NumericLiteral' && expression.right.value === 1) {
         // a * 1 -> a
         // a / 1 -> a
-        if (expression.operator === '*' || expression.operator === '/') {
+        // a ** 1 -> a
+        if (expression.operator === '*' || expression.operator === '/' || expression.operator === '**') {
           return expression.left
         }
       }

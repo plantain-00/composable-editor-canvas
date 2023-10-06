@@ -42,6 +42,11 @@ export const buttonStyle: React.CSSProperties = {
   borderRadius: '0.25rem',
 }
 
+export const disabledStyle: React.CSSProperties = {
+  cursor: 'not-allowed',
+  opacity: 0.5,
+}
+
 export const labelStyle: React.CSSProperties = {
   ...buttonStyle,
   cursor: undefined,

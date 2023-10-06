@@ -50,11 +50,11 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   // x = d2 rx cos - d1 ry sin + cx
   // y = d1 rx cos + d2 ry sin + cy
   // d = (x - a0 - cx)^2 + (y - a1 - cy)^2
-  // replace x, y, group sin: d = ry ry sin sin + 2(a0 d1 + -d2 a1) ry sin + rx rx cos cos - 2(a0 d2 + d1 a1) rx cos + a0 a0 + a1 a1
-  // d' = (2 ry ry sin + 2(a0 d1 + -d2 a1) ry) cos + (2 rx rx cos - 2(a0 d2 + d1 a1) rx)(-sin)
-  // d' = 2((a0 d1 - d2 a1) ry cos + (ry ry - rx rx) sin cos + (a0 d2 + d1 a1)rx sin)
-  // (d'/2)' = (a0 d1 - d2 a1) ry(-sin) + (ry ry - rx rx)(cos cos - sin sin) + (a0 d2 + d1 a1)rx cos
+  // replace x, y, group sin: d = ry ry sin(x) sin(x) + 2(a0 d1 + -d2 a1) ry sin(x) + rx rx cos(x) cos(x) - 2(a0 d2 + d1 a1) rx cos(x) + a0 a0 + a1 a1
   const b1 = (a0 * d1 - d2 * a1) * ry, b2 = ry * ry - rx * rx, b3 = (a0 * d2 + d1 * a1) * rx
+  // d = ry ry sin(x) sin(x) + 2 b1 sin(x) + rx rx cos(x) cos(x) - 2 b3 cos(x) + a0 a0 + a1 a1
+  // d'/2 = b1 cos(x) + b2 cos(x) sin(x) + b3 sin(x)
+  // (d'/2)' = -b1 sin(x) + b2 (cos(x) cos(x) - sin(x) sin(x)) + b3 cos(x)
   const f1 = (cos: number, sin: number) => b1 * cos + b2 * sin * cos + b3 * sin
   const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
   let r = r0
