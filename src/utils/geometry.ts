@@ -835,12 +835,15 @@ export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
   }
   let start: Position
   let end: Position
-  if (line.type === 'ellipse arc') {
-    start = getEllipseArcPointAtAngle(line.ellipseArc, line.ellipseArc.startAngle)
-    end = getEllipseArcPointAtAngle(line.ellipseArc, line.ellipseArc.endAngle)
+  if (line.type === 'arc') {
+    start = getArcPointAtAngle(line.curve, line.curve.startAngle)
+    end = getArcPointAtAngle(line.curve, line.curve.endAngle)
+  } else if (line.type === 'ellipse arc') {
+    start = getEllipseArcPointAtAngle(line.curve, line.curve.startAngle)
+    end = getEllipseArcPointAtAngle(line.curve, line.curve.endAngle)
   } else {
-    start = getArcPointAtAngle(line.arc, line.arc.startAngle)
-    end = getArcPointAtAngle(line.arc, line.arc.endAngle)
+    start = line.curve.from
+    end = line.curve.to
   }
   return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
 }

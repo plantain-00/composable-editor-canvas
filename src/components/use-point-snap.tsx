@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -254,40 +254,49 @@ export function usePointSnap<T>(
                 )
               ) {
                 for (const line of lines) {
-                  if (!Array.isArray(line)) {
-                    if (line.type === 'ellipse arc') {
-                      const radian = getPerpendicularPointRadianToEllipse(lastPosition, line.ellipseArc, p)
-                      if (angleInRange(radianToAngle(radian), line.ellipseArc)) {
-                        const point = getEllipsePointAtRadian(line.ellipseArc, radian)
-                        if (getTwoPointsDistance(p, point) <= delta) {
-                          saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
-                          return transformResult(transformSnapPosition, {
-                            ...getOffsetSnapPoint(point),
-                            ...getSnapTarget(model, content, point),
-                          })
-                        }
+                  if (Array.isArray(line)) {
+                    const perpendicularPoint = getPerpendicularPoint(lastPosition, twoPointLineToGeneralFormLine(...line))
+                    if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
+                      const distance = getTwoPointsDistance(p, perpendicularPoint)
+                      if (distance <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...perpendicularPoint, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(perpendicularPoint),
+                          ...getSnapTarget(model, content, perpendicularPoint),
+                        })
                       }
-                      continue
                     }
-                    const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.arc, p)
-                    if (angleInRange(radianToAngle(perpendicularPoint.radian), line.arc) && getTwoPointsDistance(p, perpendicularPoint.point) <= delta) {
+                  } else if (line.type === 'arc') {
+                    const perpendicularPoint = getPerpendicularPointToCircle(lastPosition, line.curve, p)
+                    if (angleInRange(radianToAngle(perpendicularPoint.radian), line.curve) && getTwoPointsDistance(p, perpendicularPoint.point) <= delta) {
                       saveSnapPoint(transformSnapPosition, { ...perpendicularPoint.point, type: 'perpendicular' })
                       return transformResult(transformSnapPosition, {
                         ...getOffsetSnapPoint(perpendicularPoint.point),
                         ...getSnapTarget(model, content, perpendicularPoint.point),
                       })
                     }
-                    continue
-                  }
-                  const perpendicularPoint = getPerpendicularPoint(lastPosition, twoPointLineToGeneralFormLine(...line))
-                  if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
-                    const distance = getTwoPointsDistance(p, perpendicularPoint)
-                    if (distance <= delta) {
-                      saveSnapPoint(transformSnapPosition, { ...perpendicularPoint, type: 'perpendicular' })
-                      return transformResult(transformSnapPosition, {
-                        ...getOffsetSnapPoint(perpendicularPoint),
-                        ...getSnapTarget(model, content, perpendicularPoint),
-                      })
+                  } else if (line.type === 'ellipse arc') {
+                    const radian = getPerpendicularPointRadianToEllipse(lastPosition, line.curve, p)
+                    if (angleInRange(radianToAngle(radian), line.curve)) {
+                      const point = getEllipsePointAtRadian(line.curve, radian)
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'quadratic curve') {
+                    const points = getPerpendicularPointToQuadraticCurve(lastPosition, line.curve)
+                    for (const point of points) {
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point),
+                        })
+                      }
                     }
                   }
                 }
@@ -322,23 +331,34 @@ export function usePointSnap<T>(
                 )
               ) {
                 for (const line of lines) {
-                  if (!Array.isArray(line)) {
-                    if (line.type === 'ellipse arc') {
-                      const tangencyPoints = getTangencyPointToEllipse(lastPosition, line.ellipseArc)
-                      for (const tangencyPoint of tangencyPoints) {
-                        if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getEllipseRadian(tangencyPoint, line.ellipseArc)), line.ellipseArc)) {
-                          saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
-                          return transformResult(transformSnapPosition, {
-                            ...getOffsetSnapPoint(tangencyPoint),
-                            ...getSnapTarget(model, content, tangencyPoint),
-                          })
-                        }
-                      }
-                      continue
-                    }
-                    const tangencyPoints = getTangencyPointToCircle(lastPosition, line.arc)
+                  if (Array.isArray(line)) {
+                    continue
+                  } else if (line.type === 'arc') {
+                    const tangencyPoints = getTangencyPointToCircle(lastPosition, line.curve)
                     for (const tangencyPoint of tangencyPoints) {
-                      if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getTwoPointsRadian(tangencyPoint, line.arc)), line.arc)) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getTwoPointsRadian(tangencyPoint, line.curve)), line.curve)) {
+                        saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'ellipse arc') {
+                    const tangencyPoints = getTangencyPointToEllipse(lastPosition, line.curve)
+                    for (const tangencyPoint of tangencyPoints) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta && angleInRange(radianToAngle(getEllipseRadian(tangencyPoint, line.curve)), line.curve)) {
+                        saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'quadratic curve') {
+                    const tangencyPoints = getTangencyPointToQuadraticCurve(lastPosition, line.curve)
+                    for (const tangencyPoint of tangencyPoints) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta) {
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),

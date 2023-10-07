@@ -1,21 +1,36 @@
 import { Position } from "./geometry"
+import { QuadraticCurve } from "./intersection"
 import { Vec3 } from "./types"
 
 function getValueBetween2PointsByPercent(n1: number, n2: number, percent: number) {
   return n1 + ((n2 - n1) * percent)
 }
 
+export function getQuadraticCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, point: Position) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // px = c2 u u + 2 c1 u + a1
+  // py = c4 u u + 2 c3 u + b1
+  // c2 c4 u u + 2 c1 c4 u + (a1 - px) c4 = 0
+  // c2 c4 u u + 2 c2 c3 u + (b1 - py) c2 = 0
+  // 2(c1 c4 - c2 c3)u + ((a1 - px) c4 - (b1 - py) c2) = 0
+  // u = -((a1 - px) c4 - (b1 - py) c2)/2/(c1 c4 - c2 c3)
+  return -((a1 - point.x) * c4 - (b1 - point.y) * c2) / 2 / (c1 * c4 - c2 * c3)
+}
+
+export function getQuadraticCurvePointAtPercent(p1: Position, p2: Position, p3: Position, percent: number) {
+  const xa = getValueBetween2PointsByPercent(p1.x, p2.x, percent)
+  const ya = getValueBetween2PointsByPercent(p1.y, p2.y, percent)
+  const xb = getValueBetween2PointsByPercent(p2.x, p3.x, percent)
+  const yb = getValueBetween2PointsByPercent(p2.y, p3.y, percent)
+  const x = getValueBetween2PointsByPercent(xa, xb, percent)
+  const y = getValueBetween2PointsByPercent(ya, yb, percent)
+  return { x, y }
+}
+
 export function getQuadraticCurvePoints(p1: Position, p2: Position, p3: Position, segmentCount: number) {
   const points: Position[] = []
   for (let t = 1; t < segmentCount; t++) {
-    const i = t / segmentCount
-    const xa = getValueBetween2PointsByPercent(p1.x, p2.x, i)
-    const ya = getValueBetween2PointsByPercent(p1.y, p2.y, i)
-    const xb = getValueBetween2PointsByPercent(p2.x, p3.x, i)
-    const yb = getValueBetween2PointsByPercent(p2.y, p3.y, i)
-    const x = getValueBetween2PointsByPercent(xa, xb, i)
-    const y = getValueBetween2PointsByPercent(ya, yb, i)
-    points.push({ x, y })
+    points.push(getQuadraticCurvePointAtPercent(p1, p2, p3, t / segmentCount))
   }
   return points
 }

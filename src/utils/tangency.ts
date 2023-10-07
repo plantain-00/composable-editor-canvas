@@ -1,6 +1,6 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
 import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine } from "./geometry"
-import { getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
+import { QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
 export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, radius: number) {
@@ -180,4 +180,30 @@ export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, 
       y: v + cy,
     }
   })
+}
+
+export function getTangencyPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 u u + 2 c1 u + a1
+  // y = c4 u u + 2 c3 u + b1
+
+  // x' = 2 c2 u + 2 c1
+  // y' = 2 c4 u + 2 c3
+  // k1 = dy/dx = dy/du/(dx/du) = (2 c4 u + 2 c3)/(2 c2 u + 2 c1) = (c4 u + c3)/(c2 u + c1)
+  const a4 = a1 - a0, b4 = b1 - b0
+  // k2 = (y - b0)/(x - a0) = (c4 u u + 2 c3 u + b4)/(c2 u u + 2 c1 u + a4)
+  // k1 = k2
+  // (c4 u + c3)/(c2 u + c1) = (c4 u u + 2 c3 u + b4)/(c2 u u + 2 c1 u + a4)
+  // (c4 u + c3)(c2 u u + 2 c1 u + a4) - (c2 u + c1)(c4 u u + 2 c3 u + b4) = 0
+  // group u: (-c2 c3 + c1 c4) u u + (-b4 c2 + a4 c4) u + -b4 c1 + a4 c3 = 0
+  const us = calculateEquation2(
+    c1 * c4 - c2 * c3,
+    a4 * c4 - b4 * c2,
+    a4 * c3 - b4 * c1,
+    delta,
+  )
+  return us.filter(u => u >= 0 && u <= 1).map(u => ({
+    x: c2 * u * u + 2 * c1 * u + a1,
+    y: c4 * u * u + 2 * c3 * u + b1,
+  }))
 }

@@ -908,7 +908,7 @@ function getModel(ctx) {
       const endAngle = ctx.angleToRadian(content.endAngle);
       const middleAngle = (startAngle + endAngle) / 2;
       const geometries = {
-        lines: [{ type: "arc", arc: content }],
+        lines: [{ type: "arc", curve: content }],
         points,
         start: {
           x: content.x + content.r * Math.cos(startAngle),
@@ -2532,7 +2532,7 @@ function getModel(ctx) {
       return {
         lines: [{
           type: "ellipse arc",
-          ellipseArc: {
+          curve: {
             ...content,
             startAngle: 0,
             endAngle: 360
@@ -2567,7 +2567,7 @@ function getModel(ctx) {
       return {
         lines: [{
           type: "ellipse arc",
-          ellipseArc: content
+          curve: content
         }],
         points,
         center,
@@ -7549,8 +7549,8 @@ function getModel(ctx) {
       const points1 = ctx.arcToPolyline(arc1, angleDelta);
       const points2 = ctx.arcToPolyline(arc2, angleDelta);
       const points = [...points1, ...points2];
-      const lines1 = [{ type: "arc", arc: arc1 }];
-      const lines2 = [{ type: "arc", arc: arc2 }];
+      const lines1 = [{ type: "arc", curve: arc1 }];
+      const lines2 = [{ type: "arc", curve: arc2 }];
       return {
         lines: [...lines1, ...lines2],
         bounding: ctx.getPointsBounding(points),
@@ -7842,13 +7842,13 @@ function getModel(ctx) {
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines: [
-          { type: "arc", arc: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
+          { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
           [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
-          { type: "arc", arc: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
+          { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
           [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
-          { type: "arc", arc: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
+          { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
           [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
-          { type: "arc", arc: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
+          { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
           [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }]
         ],
         points: rectPoints,
