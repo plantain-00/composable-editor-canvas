@@ -28,8 +28,9 @@ export function* iterateIntersectionPoints<T>(
 }
 
 export type GeometryLine = [Position, Position]
-  | { type: 'arc', arc: Arc }
-  | { type: 'ellipse arc', ellipseArc: EllipseArc }
+  | { type: 'arc', curve: Arc }
+  | { type: 'ellipse arc', curve: EllipseArc }
+  | { type: 'quadratic curve', curve: QuadraticCurve }
 
 
 /**
@@ -52,27 +53,33 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
+    if (line2.type === 'arc') {
+      return getLineSegmentArcIntersectionPoints(...line1, line2.curve)
+    }
     if (line2.type === 'ellipse arc') {
-      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.ellipseArc)
+      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.curve)
     }
-    return getLineSegmentArcIntersectionPoints(...line1, line2.arc)
+    return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
   }
-  if (Array.isArray(line2)) {
-    if (line1.type === 'ellipse arc') {
-      return getLineSegmentEllipseArcIntersectionPoints(...line2, line1.ellipseArc)
+  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  if (line1.type === 'arc') {
+    if (line2.type === 'arc') {
+      return getTwoArcIntersectionPoints(line1.curve, line2.curve)
     }
-    return getLineSegmentArcIntersectionPoints(...line2, line1.arc)
+    if (line2.type === 'ellipse arc') {
+      return getArcEllipseArcIntersectionPoints(line1.curve, line2.curve)
+    }
+    return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
   }
+  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
   if (line1.type === 'ellipse arc') {
     if (line2.type === 'ellipse arc') {
-      return getTwoEllipseArcIntersectionPoints(line1.ellipseArc, line2.ellipseArc)
+      return getTwoEllipseArcIntersectionPoints(line1.curve, line2.curve)
     }
-    return getArcEllipseArcIntersectionPoints(line2.arc, line1.ellipseArc)
+    return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
   }
-  if (line2.type === 'ellipse arc') {
-    return getArcEllipseArcIntersectionPoints(line1.arc, line2.ellipseArc)
-  }
-  return getTwoArcIntersectionPoints(line1.arc, line2.arc)
+  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
 /**
@@ -288,18 +295,22 @@ export function lineIntersectWithPolygon(p1: Position, p2: Position, polygon: Po
 
 export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Position[]) {
   for (const line of getPolygonLine(polygon)) {
-    if (!Array.isArray(g)) {
-      if (g.type === 'ellipse arc') {
-        if (getLineSegmentEllipseArcIntersectionPoints(...line, g.ellipseArc).length > 0) {
-          return true
-        }
-        continue
-      }
-      if (getLineSegmentArcIntersectionPoints(...line, g.arc).length > 0) {
+    if (Array.isArray(g)) {
+      if (lineIntersectWithLine(...g, ...line)) {
         return true
       }
-    } else if (lineIntersectWithLine(...g, ...line)) {
-      return true
+    } else if (g.type === 'arc') {
+      if (getLineSegmentArcIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
+    } else if (g.type === 'ellipse arc') {
+      if (getLineSegmentEllipseArcIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
+    } else if (g.type === 'quadratic curve') {
+      if (getLineSegmentQuadraticCurveIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
     }
   }
   return false

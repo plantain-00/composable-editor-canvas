@@ -25,7 +25,7 @@ export function getModel(ctx: PluginContext) {
       return {
         lines: [{
           type: 'ellipse arc' as const,
-          ellipseArc: {
+          curve: {
             ...content,
             startAngle: 0,
             endAngle: 360,
@@ -55,7 +55,7 @@ export function getModel(ctx: PluginContext) {
       return {
         lines: [{
           type: 'ellipse arc' as const,
-          ellipseArc: content,
+          curve: content,
         }],
         points,
         center,

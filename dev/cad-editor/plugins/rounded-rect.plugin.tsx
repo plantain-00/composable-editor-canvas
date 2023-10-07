@@ -25,13 +25,13 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines: [
-          { type: 'arc', arc: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
+          { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
           [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
-          { type: 'arc', arc: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
+          { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
           [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
-          { type: 'arc', arc: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
+          { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
           [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
-          { type: 'arc', arc: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
+          { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
           [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }],
         ],
         points: rectPoints,

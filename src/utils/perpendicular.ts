@@ -1,5 +1,6 @@
+import { calculateEquation3 } from "./equation-calculater"
 import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine } from "./geometry"
-import { GeometryLine } from "./intersection"
+import { GeometryLine, QuadraticCurve } from "./intersection"
 import { angleToRadian, radianToAngle } from "./radian"
 
 export function getPerpendicular(point: Position, line: GeneralFormLine) {
@@ -59,12 +60,40 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
   let r = r0
   for (; ;) {
-    if (Math.abs(f1(Math.cos(r), Math.sin(r))) < delta) break
     const cos = Math.cos(r)
     const sin = Math.sin(r)
-    r = r - f1(cos, sin) / f2(cos, sin)
+    const g = f1(cos, sin)
+    if (Math.abs(g) < delta) break
+    r = r - g / f2(cos, sin)
   }
   return r
+}
+
+export function getPerpendicularPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 u u + 2 c1 u + a1
+  // y = c4 u u + 2 c3 u + b1
+
+  // x' = 2 c2 u + 2 c1
+  // y' = 2 c4 u + 2 c3
+  // k1 = dy/dx = dy/du/(dx/du) = (2 c4 u + 2 c3)/(2 c2 u + 2 c1) = (c4 u + c3)/(c2 u + c1)
+  const a4 = a1 - a0, b4 = b1 - b0
+  // k2 = (y - b0)/(x - a0) = (c4 u u + 2 c3 u + b4)/(c2 u u + 2 c1 u + a4)
+  // k1 k2 + 1 = 0
+  // (c4 u + c3)/(c2 u + c1)(c4 u u + 2 c3 u + b4)/(c2 u u + 2 c1 u + a4) + 1 = 0
+  // (c4 u + c3)(c4 u u + 2 c3 u + b4) + (c2 u + c1)(c2 u u + 2 c1 u + a4) = 0
+  // group u: (c2 c2 + c4 c4) u u u + (3 c1 c2 + 3 c3 c4) u u + (2 c1 c1 + a4 c2 + 2 c3 c3 + b4 c4) u + a4 c1 + b4 c3 = 0
+  const us = calculateEquation3(
+    c2 * c2 + c4 * c4,
+    3 * (c1 * c2 + c3 * c4),
+    2 * c1 * c1 + a4 * c2 + 2 * c3 * c3 + b4 * c4,
+    a4 * c1 + b4 * c3,
+    delta,
+  )
+  return us.filter(u => u >= 0 && u <= 1).map(u => ({
+    x: c2 * u * u + 2 * c1 * u + a1,
+    y: c4 * u * u + 2 * c3 * u + b1,
+  }))
 }
 
 export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position) {
@@ -93,10 +122,13 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   if (Array.isArray(line)) {
     return getPointAndLineSegmentNearestPointAndDistance(p, ...line)
   }
-  if (line.type === 'ellipse arc') {
-    return getPointAndEllipseArcNearestPointAndDistance(p, line.ellipseArc)
+  if (line.type === 'arc') {
+    return getPointAndArcNearestPointAndDistance(p, line.curve)
   }
-  return getPointAndArcNearestPointAndDistance(p, line.arc)
+  if (line.type === 'ellipse arc') {
+    return getPointAndEllipseArcNearestPointAndDistance(p, line.curve)
+  }
+  return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve)
 }
 
 export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
@@ -145,14 +177,37 @@ export function getPointAndEllipseArcNearestPointAndDistance(position: Position,
   }
 }
 
+export function getPointAndQuadraticCurveNearestPointAndDistance(position: Position, curve: QuadraticCurve) {
+  const points = getPerpendicularPointToQuadraticCurve(position, curve)
+  points.push(curve.from, curve.to)
+  let result = {
+    point: points[0],
+    distance: getTwoPointsDistance(position, points[0])
+  }
+  for (let i = 1; i < points.length; i++) {
+    const point = points[i]
+    const distance = getTwoPointsDistance(position, point)
+    if (distance < result.distance) {
+      result = {
+        point,
+        distance,
+      }
+    }
+  }
+  return result
+}
+
 export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
     return getPointAndLineSegmentMinimumDistance(p, ...line)
   }
+  if (line.type === 'arc') {
+    return getPointAndArcMinimumDistance(p, line.curve)
+  }
   if (line.type === 'ellipse arc') {
     return getPointAndGeometryLineNearestPointAndDistance(p, line).distance
   }
-  return getPointAndArcMinimumDistance(p, line.arc)
+  return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve).distance
 }
 
 export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position) {

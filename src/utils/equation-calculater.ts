@@ -70,8 +70,14 @@ export function calculateEquation3(a: number, b: number, c: number, d: number, d
   }
   const p = Math.sqrt(A)
   const T = (t - 1.5 * B) / A / p
-  const radian = Math.acos(T)
-  return [(-b - 2 * p * Math.cos(radian / 3)) / 3]
+  const radian = Math.acos(T) / 3
+  const m = Math.cos(radian)
+  const q = Math.sqrt(3) * Math.sin(radian)
+  return [
+    (-b - 2 * p * m) / 3,
+    (-b + p * (m + q)) / 3,
+    (-b + p * (m - q)) / 3,
+  ]
 }
 
 /**

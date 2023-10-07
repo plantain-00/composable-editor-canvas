@@ -9,7 +9,7 @@ export default () => {
   const startPosition = { x: 500, y: 100 }
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap<Circle>(
     true,
-    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', arc: { ...c, startAngle: 0, endAngle: 360 } }] }) })))),
+    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', curve: { ...c, startAngle: 0, endAngle: 360 } }] }) })))),
     allSnapTypes,
     () => ({
       getSnapPoints(c) {
@@ -23,7 +23,7 @@ export default () => {
       },
       getGeometries(c) {
         return {
-          lines: [{ type: 'arc', arc: { ...c, startAngle: 0, endAngle: 360 } }],
+          lines: [{ type: 'arc', curve: { ...c, startAngle: 0, endAngle: 360 } }],
           bounding: {
             start: { x: c.x - c.r, y: c.y - c.r },
             end: { x: c.x + c.r, y: c.y + c.r },

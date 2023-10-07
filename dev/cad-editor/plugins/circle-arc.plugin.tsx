@@ -46,7 +46,7 @@ export function getModel(ctx: PluginContext) {
       const endAngle = ctx.angleToRadian(content.endAngle)
       const middleAngle = (startAngle + endAngle) / 2
       const geometries = {
-        lines: [{ type: 'arc' as const, arc: content }],
+        lines: [{ type: 'arc' as const, curve: content }],
         points,
         start: {
           x: content.x + content.r * Math.cos(startAngle),

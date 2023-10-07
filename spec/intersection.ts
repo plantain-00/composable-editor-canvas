@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getTangencyPointToEllipse, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
+import { getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToQuadraticCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -33,4 +33,12 @@ test('getEllipseQuadraticCurveIntersectionPoints', (t) => {
 
 test('getTwoQuadraticCurveIntersectionPoints', (t) => {
   t.snapshot(getTwoQuadraticCurveIntersectionPoints({ from: { x: 1282, y: 440 }, cp: { x: 1312, y: 527 }, to: { x: 1419, y: 519 } }, { from: { x: 1250, y: 470 }, cp: { x: 1367, y: 419 }, to: { x: 1386, y: 587 } }))
+})
+
+test('getPerpendicularPointToQuadraticCurve', (t) => {
+  t.snapshot(getPerpendicularPointToQuadraticCurve({ x: 1307, y: 539 }, { from: { x: 1250, y: 470 }, cp: { x: 1367, y: 419 }, to: { x: 1386, y: 587 } }))
+})
+
+test('getTangencyPointToQuadraticCurve', (t) => {
+  t.snapshot(getTangencyPointToQuadraticCurve({ x: 1339, y: 457 }, { from: { x: 1250, y: 470 }, cp: { x: 1367, y: 419 }, to: { x: 1386, y: 587 } }))
 })
