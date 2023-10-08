@@ -1,4 +1,4 @@
-import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
+import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
@@ -665,4 +665,63 @@ export function getTwoQuadraticCurveIntersectionPoints(
     x: d2 * v * v + 2 * d1 * v + a4,
     y: d4 * v * v + 2 * d3 * v + b4,
   }))
+}
+
+export interface BezierCurve {
+  from: Position
+  cp1: Position
+  cp2: Position
+  to: Position
+}
+
+export function getLineBezierCurveIntersectionPoints(
+  { x: x1, y: y1 }: Position,
+  { x: x2, y: y2 }: Position,
+  { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = d1 t t t + d2 t t + d3 t + b1
+
+  // (x - x1) / (x2 - x1) = (y - y1) / (y2 - y1)
+  const e1 = x2 - x1, e2 = y2 - y1
+  // (x - x1) e2 - (y - y1) e1 = 0
+  // replace x, y, group t: (-d1 e1 + c1 e2) t t t + (-d2 e1 + c2 e2) t t + (-d3 e1 + c3 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
+  const ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
+    y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
+  }))
+}
+
+export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end: Position, curve: BezierCurve) {
+  return getLineBezierCurveIntersectionPoints(start, end, curve).filter((p) => pointIsOnLineSegment(p, start, end))
+}
+
+export function getCircleBezierCurveIntersectionPoints(
+  { x: x1, y: y1, r: r1 }: Circle,
+  { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+  delta = 1e-5,
+) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = d1 t t t + d2 t t + d3 t + b1
+
+  // (x - x1)^2 + (y - y1)^2 = r1^2
+  const e1 = a1 - x1, e2 = b1 - y1, e3 = r1 ** 2
+  // (c1 t t t + c2 t t + c3 t + e1)^2 + (d1 t t t + d2 t t + d3 t + e2)^2 - e3 = 0
+  // group t: (c1 c1 + d1 d1) t t t t t t + (2 c1 c2 + 2 d1 d2) t t t t t + (c2 c2 + 2 c1 c3 + d2 d2 + 2 d1 d3) t t t t + (2 c2 c3 + 2 c1 e1 + 2 d2 d3 + 2 d1 e2) t t t + (c3 c3 + 2 c2 e1 + d3 d3 + 2 d2 e2) t t + (2 c3 e1 + 2 d3 e2) t + e1 e1 + e2 e2 + -e3
+  const e4 = c1 * c1 + d1 * d1, e5 = c1 * c2 + d1 * d2, e6 = c2 * c2 + 2 * c1 * c3 + d2 * d2 + 2 * d1 * d3
+  const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
+  const ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, x => x >= 0 && x <= 1, delta)
+  return ts.map(t => ({
+    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
+    y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
+  }))
+}
+
+export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve) {
+  return getCircleBezierCurveIntersectionPoints(arc, curve).filter((p) => pointIsOnArc(p, arc))
 }
