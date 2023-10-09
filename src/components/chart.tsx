@@ -1,14 +1,15 @@
 import React from "react"
-import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion } from "../utils/geometry"
+import { arcToPolyline, getArcPointAtAngle, getPointsBounding, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, Position, Region, Size, TwoPointsFormRegion, getTextStyleFont } from "../utils/geometry"
 import { Vec3 } from "../utils/types"
 import { getRoundedRectPoints, ReactRenderTarget } from "./react-render-target/react-render-target"
 import { Graphic3d } from "./webgl-3d-renderer"
 import { radianToAngle } from "../utils/radian"
+import { getTextSizeFromCache } from "../utils"
 
 export function getLineChart<T>(
   datas: (Position & { r?: number })[][],
   target: ReactRenderTarget<T>,
-  step: { x?: number, y: number },
+  step: { x?: number, y: number } | undefined,
   size: Size,
   padding: ChartAxisPadding,
   options?: Partial<ChartAxisOptions>,
@@ -32,7 +33,7 @@ export function getLineChart<T>(
 export function getChartAxis<T>(
   target: ReactRenderTarget<T>,
   bounding: TwoPointsFormRegion,
-  step: { x?: number, y: number },
+  step: { x?: number, y: number } | undefined,
   { width, height }: Size,
   padding: ChartAxisPadding,
   options?: Partial<ChartAxisOptions>,
@@ -44,8 +45,8 @@ export function getChartAxis<T>(
   const textLineLength = options?.textLineLength ?? 5
   const getXLabel = (x: number) => options?.getXLabel?.(x) ?? x.toString()
   const getYLabel = (y: number) => options?.getYLabel?.(y) ?? y.toString()
-  const stepX = step.x ?? 1
-  const stepY = step.y
+  const stepX = step?.x ?? 1
+  const stepY = step?.y ?? 1
   const type = options?.type ?? 'line'
 
   const startX = Math.floor(bounding.start.x / stepX) * stepX
@@ -65,17 +66,21 @@ export function getChartAxis<T>(
   const unitWidth = stepX * scaleX
 
   const children: T[] = []
-  for (let x = startX; x <= endX; x += stepX) {
-    const x0 = tx(x)
-    children.push(target.renderPolyline([{ x: x0, y: y1 }, { x: x0, y: y2 }], { strokeColor: axisColor }))
-    children.push(target.renderText(x0 + (type === 'bar' ? unitWidth / 2 : 0), y1, getXLabel(x), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'top', textAlign: 'center' }))
+  if (!options?.xLabelDisabled) {
+    for (let x = startX; x <= endX; x += stepX) {
+      const x0 = tx(x)
+      children.push(target.renderPolyline([{ x: x0, y: y1 }, { x: x0, y: y2 }], { strokeColor: axisColor }))
+      children.push(target.renderText(x0 + (type === 'bar' ? unitWidth / 2 : 0), y1, getXLabel(x), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'top', textAlign: 'center' }))
+    }
   }
-  for (let y = startY; y <= endY; y += stepY) {
-    const y0 = ty(y)
-    children.push(target.renderPolyline([{ x: x1, y: y0 }, { x: x2, y: y0 }], { strokeColor: axisColor }))
-    children.push(target.renderText(x1, y0, getYLabel(y), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'middle', textAlign: 'right' }))
-    if (options?.ySecondary) {
-      children.push(target.renderText(x2, y0, getYLabel(y), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'middle', textAlign: 'left' }))
+  if (!options?.yLabelDisabled) {
+    for (let y = startY; y <= endY; y += stepY) {
+      const y0 = ty(y)
+      children.push(target.renderPolyline([{ x: x1, y: y0 }, { x: x2, y: y0 }], { strokeColor: axisColor }))
+      children.push(target.renderText(x1, y0, getYLabel(y), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'middle', textAlign: 'right' }))
+      if (options?.ySecondary) {
+        children.push(target.renderText(x2, y0, getYLabel(y), axisTextColor, axisTextSize, axisTextFontFamily, { textBaseline: 'middle', textAlign: 'left' }))
+      }
     }
   }
   return {
@@ -103,6 +108,8 @@ interface ChartAxisOptions {
   getXLabel: (x: number) => string
   getYLabel: (y: number) => string
   ySecondary: boolean
+  xLabelDisabled?: boolean
+  yLabelDisabled?: boolean
 }
 
 interface ChartAxisPadding {
@@ -131,21 +138,35 @@ export function renderChartTooltip<T, V extends number | number[]>(
     backgroundColor: number
   }>
 ) {
-  const width = options?.width ?? 40
-  const height = options?.height ?? 30
-  const getXLabel = (x: number) => options?.getXLabel?.(x) ?? x.toString()
-  const getYLabel = (y: V) => options?.getYLabel?.(y) ?? y.toString()
-  const textColor = options?.textColor ?? 0xffffff
   const textSize = options?.textSize ?? 12
   const fontFamily = options?.fontFamily ?? 'monospace'
+  const getXLabel = (x: number) => options?.getXLabel?.(x) ?? x.toString()
+  const getYLabel = (y: V) => options?.getYLabel?.(y) ?? y.toString()
+  const xLabel = getXLabel(value.x)
+  const yLabel = getYLabel(value.y)
+  let width: number
+  if (options?.width) {
+    width = options.width
+  } else {
+    const sizeX = getTextSizeFromCache(getTextStyleFont({ fontFamily, fontSize: textSize }), xLabel)
+    const sizeY = getTextSizeFromCache(getTextStyleFont({ fontFamily, fontSize: textSize }), yLabel)
+    if (sizeX && sizeY) {
+      width = Math.max(sizeX.width, sizeY.width, 40)
+    } else {
+      width = 40
+    }
+  }
+  const height = options?.height ?? 30
+
+  const textColor = options?.textColor ?? 0xffffff
   const radius = options?.radius ?? 5
   const backgroundColor = options?.backgroundColor ?? 0x000000
   x += width / 2
   y -= height / 2
   return [
     target.renderPolygon(getRoundedRectPoints({ x, y, width, height }, radius, 30), { fillColor: backgroundColor }),
-    target.renderText(x, y, getXLabel(value.x), textColor, textSize, fontFamily, { textBaseline: 'bottom', textAlign: 'center' }),
-    target.renderText(x, y, getYLabel(value.y), textColor, textSize, fontFamily, { textBaseline: 'top', textAlign: 'center' }),
+    target.renderText(x, y, xLabel, textColor, textSize, fontFamily, { textBaseline: 'bottom', textAlign: 'center' }),
+    target.renderText(x, y, yLabel, textColor, textSize, fontFamily, { textBaseline: 'top', textAlign: 'center' }),
   ]
 }
 

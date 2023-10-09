@@ -188,7 +188,7 @@ export function calculateEquation4(a: number, b: number, c: number, d: number, e
  * p[0] * x^5 + p[1] x^4 + p[2] x^3 + p[3] x^2 + p[4] x + p[5] = 0
  * p[0] * x^6 + p[1] x^5 + p[2] x^4 + p[3] x^3 + p[4] x^2 + p[5] x + p[6] = 0
  */
-export function calculateEquation5(params: number[], x0: number, validate?: (v: number) => boolean, delta = 1e-5): number[] {
+export function calculateEquation5(params: number[], x0: number, delta = 1e-5): number[] {
   if (params.length <= 5) {
     return calculateEquation4(params[params.length - 5] || 0, params[params.length - 4] || 0, params[params.length - 3] || 0, params[params.length - 2] || 0, params[params.length - 1] || 0, delta)
   }
@@ -207,11 +207,13 @@ export function calculateEquation5(params: number[], x0: number, validate?: (v: 
     return result
   }
   let x = x0
+  let count = 0
   for (; ;) {
     const g = f1(x)
     if (Math.abs(g) < delta) break
-    if (validate && !validate(x)) return []
+    if (count > 10) return []
     x = x - g / f2(x)
+    count++
   }
   const newParams: number[] = []
   for (let i = 0; i < params.length - 1; i++) {
@@ -221,7 +223,7 @@ export function calculateEquation5(params: number[], x0: number, validate?: (v: 
       newParams.push(params[i] + newParams[i - 1] * x)
     }
   }
-  const remains = calculateEquation5(newParams, x0, validate, delta)
+  const remains = calculateEquation5(newParams, x0, delta)
   if (remains.some(r => isZero(r - x, delta))) {
     return remains
   }

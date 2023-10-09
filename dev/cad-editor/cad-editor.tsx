@@ -936,6 +936,7 @@ export const CADEditor = React.forwardRef((props: {
     if (areas) {
       propertyPanels.areas = <NumberEditor value={areas} />
     }
+    propertyPanels.debug = <core.Button onClick={() => console.info(selectedContents.map(s => s.content))}>log to console</core.Button>
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '100px', bottom: '0px', width: '400px', overflowY: 'auto', background: 'white', zIndex: 11 }}>
         {Array.from(types).join(',')}

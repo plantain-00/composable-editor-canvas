@@ -67,6 +67,25 @@ export function expandExpression(e: Expression2): Expression2 {
             }
           }
         }
+        if (Number.isInteger(e.right.value) && e.right.value >= 3) {
+          if (e.left.type !== 'Identifier') {
+            // (a + b)^3 -> (a + b)^2 (a + b)
+            return expandExpression({
+              type: 'BinaryExpression',
+              operator: '*',
+              left: {
+                type: 'BinaryExpression',
+                operator: '**',
+                left: e.left,
+                right: {
+                  type: 'NumericLiteral',
+                  value: e.right.value - 1,
+                },
+              },
+              right: e.left
+            })
+          }
+        }
       }
     }
     if (e.operator === '*') {
@@ -258,6 +277,12 @@ const mathFunctions = ['sin', 'cos', 'tan']
 
 export function mathStyleExpressionToExpression(e: string) {
   let result = ''
+  for (let i = 0; i < e.length; i++) {
+    if (e[i] === ' ' && e[i - 1] === ' ') continue
+    result += e[i]
+  }
+  e = result
+  result = ''
   for (let i = 0; i < e.length; i++) {
     const c = e[i]
     if (c === ' ' && i > 0 && i < e.length - 1) {

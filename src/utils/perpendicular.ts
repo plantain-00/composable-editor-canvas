@@ -59,12 +59,15 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   const f1 = (cos: number, sin: number) => b1 * cos + b2 * sin * cos + b3 * sin
   const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
   let r = r0
+  let count = 0
   for (; ;) {
     const cos = Math.cos(r)
     const sin = Math.sin(r)
     const g = f1(cos, sin)
     if (Math.abs(g) < delta) break
+    if (count > 10) return
     r = r - g / f2(cos, sin)
+    count++
   }
   return r
 }
@@ -154,7 +157,7 @@ export function getPointAndArcNearestPointAndDistance(position: Position, arc: A
 
 export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc) {
   const radian = getPerpendicularPointRadianToEllipse(position, ellipseArc)
-  if (angleInRange(radianToAngle(radian), ellipseArc)) {
+  if (radian !== undefined && angleInRange(radianToAngle(radian), ellipseArc)) {
     const point = getEllipsePointAtRadian(ellipseArc, radian)
     return {
       point,
