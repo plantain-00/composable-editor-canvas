@@ -3,7 +3,7 @@ import { Button, Factor, StringEditor, composeExpression, deriveExpressionWith, 
 import { Expression2, parseExpression, printExpression, tokenizeExpression } from "expression-engine"
 
 export default () => {
-  const [value, setValue] = React.useState('(x + a)^2')
+  const [value, setValue] = React.useState('(x + a)^3')
   const [secondValue, setSecondValue] = React.useState('x')
   const [thirdValue, setThirdValue] = React.useState('')
   const [isMath, setIsMath] = React.useState(true)

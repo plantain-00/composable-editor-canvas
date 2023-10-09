@@ -277,7 +277,7 @@ export function usePointSnap<T>(
                     }
                   } else if (line.type === 'ellipse arc') {
                     const radian = getPerpendicularPointRadianToEllipse(lastPosition, line.curve, p)
-                    if (angleInRange(radianToAngle(radian), line.curve)) {
+                    if (radian !== undefined && angleInRange(radianToAngle(radian), line.curve)) {
                       const point = getEllipsePointAtRadian(line.curve, radian)
                       if (getTwoPointsDistance(p, point) <= delta) {
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })

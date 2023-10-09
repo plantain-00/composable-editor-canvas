@@ -45,9 +45,9 @@ export function largerThan(value1: number, value2: number, delta = 0.00000001) {
 
 export function sqrt3(value: number) {
   if (value < 0) {
-    return -((-value) ** (1 / 3))
+    return -(Math.pow(-value, 1 / 3))
   }
-  return value ** (1 / 3)
+  return Math.pow(value, 1 / 3)
 }
 
 /**

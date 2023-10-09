@@ -715,8 +715,8 @@ export function getCircleBezierCurveIntersectionPoints(
   // group t: (c1 c1 + d1 d1) t t t t t t + (2 c1 c2 + 2 d1 d2) t t t t t + (c2 c2 + 2 c1 c3 + d2 d2 + 2 d1 d3) t t t t + (2 c2 c3 + 2 c1 e1 + 2 d2 d3 + 2 d1 e2) t t t + (c3 c3 + 2 c2 e1 + d3 d3 + 2 d2 e2) t t + (2 c3 e1 + 2 d3 e2) t + e1 e1 + e2 e2 + -e3
   const e4 = c1 * c1 + d1 * d1, e5 = c1 * c2 + d1 * d2, e6 = c2 * c2 + 2 * c1 * c3 + d2 * d2 + 2 * d1 * d3
   const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
-  const ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, x => x >= 0 && x <= 1, delta)
-  return ts.map(t => ({
+  const ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
   }))
