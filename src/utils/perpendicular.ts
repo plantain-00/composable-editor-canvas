@@ -1,4 +1,4 @@
-import { calculateEquation3 } from "./equation-calculater"
+import { calculateEquation3, newtonIterate } from "./equation-calculater"
 import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine } from "./geometry"
 import { GeometryLine, QuadraticCurve } from "./intersection"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -58,18 +58,7 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   // (d'/2)' = -b1 sin(x) + b2 (cos(x) cos(x) - sin(x) sin(x)) + b3 cos(x)
   const f1 = (cos: number, sin: number) => b1 * cos + b2 * sin * cos + b3 * sin
   const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
-  let r = r0
-  let count = 0
-  for (; ;) {
-    const cos = Math.cos(r)
-    const sin = Math.sin(r)
-    const g = f1(cos, sin)
-    if (Math.abs(g) < delta) break
-    if (count > 10) return
-    r = r - g / f2(cos, sin)
-    count++
-  }
-  return r
+  return newtonIterate(r0, r => f1(Math.cos(r), Math.sin(r)), r => f2(Math.cos(r), Math.sin(r)), delta)
 }
 
 export function getPerpendicularPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {

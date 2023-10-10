@@ -409,9 +409,16 @@ export function groupAllFactors(factors: Factor[]): Expression2 | undefined {
   }
   variables.sort((a, b) => b.count - a.count)
 
+  return groupFactorsByVariables(factors, variables.map(v => v.name))
+}
+
+export function groupFactorsByVariables(factors: Factor[], variables: string[]) {
+  console.info(variables)
   const group = (factors: Factor[], level: number): Expression2 | undefined => {
     if (factors.length <= 1) return
-    const by = { variables: [variables[level].name] }
+    const v = variables[level]
+    if (!v) return
+    const by = { variables: [variables[level]] }
     const result = getGroupedFactors(factors, by)
     let expression: Expression2 | undefined
     for (const r of result) {

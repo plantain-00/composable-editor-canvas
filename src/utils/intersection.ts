@@ -725,3 +725,149 @@ export function getCircleBezierCurveIntersectionPoints(
 export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve) {
   return getCircleBezierCurveIntersectionPoints(arc, curve).filter((p) => pointIsOnArc(p, arc))
 }
+
+export function getEllipseBezierCurveIntersectionPoints(
+  { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
+  { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+  delta = 1e-5,
+) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = c4 t t t + c5 t t + c6 t + b1
+
+  const radian1 = angleToRadian(angle1)
+  const d1 = Math.sin(radian1), d2 = Math.cos(radian1), d3 = 1 / rx1 / rx1, d4 = 1 / ry1 / ry1
+  // (d2(x - cx1) + d1(y - cy1))^2 d3 + (-d1(x - cx1) + d2(y - cy1))^2 d4 = 1
+  const d5 = a1 - cx1, d6 = b1 - cy1
+  // (d2(c1 t t t + c2 t t + c3 t + d5) + d1(c4 t t t + c5 t t + c6 t + d6))^2 d3 + (-d1(c1 t t t + c2 t t + c3 t + d5) + d2(c4 t t t + c5 t t + c6 t + d6))^2 d4 - 1 = 0
+  // group t:(c4 c4 d1 d1 d3 + c1 c1 d2 d2 d3 + c4 c4 d2 d2 d4 + -2 c1 c4 d1 d2 d4 + 2 c1 c4 d1 d2 d3 + c1 c1 d1 d1 d4) t t t t t t + (2 c4 c5 d1 d1 d3 + 2 c1 c2 d2 d2 d3 + 2 c2 c4 d1 d2 d3 + 2 c1 c2 d1 d1 d4 + -2 c2 c4 d1 d2 d4 + 2 c4 c5 d2 d2 d4 + -2 c1 c5 d1 d2 d4 + 2 c1 c5 d1 d2 d3) t t t t t + (c5 c5 d1 d1 d3 + 2 c4 c6 d1 d1 d3 + c2 c2 d2 d2 d3 + 2 c1 c3 d2 d2 d3 + 2 c3 c4 d1 d2 d3 + 2 c2 c5 d1 d2 d3 + 2 c1 c6 d1 d2 d3 + c2 c2 d1 d1 d4 + 2 c1 c3 d1 d1 d4 + -2 c3 c4 d1 d2 d4 + -2 c2 c5 d1 d2 d4 + -2 c1 c6 d1 d2 d4 + c5 c5 d2 d2 d4 + 2 c4 c6 d2 d2 d4) t t t t + (2 c5 c6 d1 d1 d3 + 2 c2 c3 d2 d2 d3 + 2 c3 c5 d1 d2 d3 + 2 c2 c6 d1 d2 d3 + 2 c2 c3 d1 d1 d4 + -2 c3 c5 d1 d2 d4 + -2 c2 c6 d1 d2 d4 + 2 c5 c6 d2 d2 d4 + 2 c1 d1 d1 d4 d5 + 2 c1 d2 d2 d3 d5 + 2 c4 d1 d2 d3 d5 + -2 c4 d1 d2 d4 d5 + 2 c4 d1 d1 d3 d6 + 2 c1 d1 d2 d3 d6 + -2 c1 d1 d2 d4 d6 + 2 c4 d2 d2 d4 d6) t t t + (c6 c6 d1 d1 d3 + c3 c3 d2 d2 d3 + 2 c3 c6 d1 d2 d3 + c3 c3 d1 d1 d4 + -2 c3 c6 d1 d2 d4 + c6 c6 d2 d2 d4 + 2 c2 d1 d1 d4 d5 + -2 c5 d1 d2 d4 d5 + 2 c5 d1 d2 d3 d5 + 2 c2 d2 d2 d3 d5 + 2 c5 d1 d1 d3 d6 + 2 c2 d1 d2 d3 d6 + -2 c2 d1 d2 d4 d6 + 2 c5 d2 d2 d4 d6) t t + (2 c3 d1 d1 d4 d5 + 2 c6 d1 d2 d3 d5 + 2 c3 d2 d2 d3 d5 + -2 c6 d1 d2 d4 d5 + 2 c6 d1 d1 d3 d6 + 2 c3 d1 d2 d3 d6 + -2 c3 d1 d2 d4 d6 + 2 c6 d2 d2 d4 d6) t + d1 d1 d4 d5 d5 + d2 d2 d3 d5 d5 + 2 d1 d2 d3 d5 d6 + -2 d1 d2 d4 d5 d6 + d1 d1 d3 d6 d6 + d2 d2 d4 d6 d6 + -1
+  const f1 = c4 * d1 + c1 * d2, f2 = c1 * d1 - c4 * d2, f3 = d1 * d5 - d2 * d6, f4 = d2 * d5 + d1 * d6
+  const f5 = c6 * d1 + c3 * d2, f6 = c3 * d1 - c6 * d2, f7 = c5 * d1 + c2 * d2, f8 = c2 * d1 - c5 * d2
+  const g1 = f7 * d3, g2 = f8 * d4, g3 = f6 * d4, g4 = f5 * d3, g5 = f4 * d3, g6 = f3 * d4
+  const ts = calculateEquation5(
+    [
+      f1 ** 2 * d3 + f2 ** 2 * d4,
+      2 * (g1 * f1 + f2 * g2),
+      f7 * g1 + f8 * g2 + 2 * (g4 * f1 + g3 * f2),
+      2 * (f5 * g1 + f6 * g2 + f1 * g5 + f2 * g6),
+      f5 * g4 + f6 * g3 + 2 * ((g1 * d2 + g2 * d1) * d5 + (g1 * d1 - g2 * d2) * d6),
+      2 * ((g4 * d2 + g3 * d1) * d5 + (g4 * d1 - g3 * d2) * d6),
+      f3 * g6 + f4 * g5 - 1,
+    ], 0.5, delta,
+  )
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
+    y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
+  }))
+}
+
+export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseArc, curve: BezierCurve) {
+  return getEllipseBezierCurveIntersectionPoints(ellipseArc, curve).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+}
+
+export function getQuadraticCurveBezierCurveIntersectionPoints(
+  { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } }: QuadraticCurve,
+  { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+  delta = 1e-5,
+) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = c4 t t t + c5 t t + c6 t + b1
+
+  const d1 = a6 - a5, d2 = a7 - a6 - d1, d3 = b6 - b5, d4 = b7 - b6 - d3
+  // x = d2 u u + 2 d1 u + a5
+  // y = d4 u u + 2 d3 u + b5
+
+  // d2 u u + 2 d1 u + a5 - (c1 t t t + c2 t t + c3 t + a1) = 0
+  // d4 u u + 2 d3 u + b5 - (c4 t t t + c5 t t + c6 t + b1) = 0
+
+  // u u + 2 d1/d2 u + a5/d2 - c1/d2 t t t - c2/d2 t t - c3/d2 t - a1/d2 = 0
+  // u u + 2 d3/d4 u + b5/d4 - c4/d4 t t t - c5/d4 t t - c6/d4 t - b1/d4 = 0
+  const e1 = 2 * d1 / d2, e2 = 2 * d3 / d4, e3 = c1 / d2, e4 = c4 / d4, e5 = c2 / d2, e6 = c5 / d4, e7 = c3 / d2, e8 = c6 / d4
+  const f1 = a5 / d2 - a1 / d2, f2 = b5 / d4 - b1 / d4
+  // F1: u u + e1 u + f1 - e3 t t t - e5 t t - e7 t = 0
+  // u u + e2 u + f2 - e4 t t t - e6 t t - e8 t = 0
+  // -F1: (e2 - e1)u  + (e3 - e4) t t t + (e5 - e6) t t + (e7 - e8) t + (f2 - f1) = 0
+  const f3 = e2 - e1, f4 = e3 - e4, f5 = e5 - e6, f6 = e7 - e8, f7 = f2 - f1
+  // f3 u  + f4 t t t + f5 t t + f6 t + f7 = 0
+  // u = -(f4 t t t + f5 t t + f6 t + f7)/f3
+  // F1 replace u, group t: f4 f4 t t t t t t + 2 f4 f5 t t t t t + (f5 f5 + 2 f4 f6) t t t t + (-e3 f3 f3 + -e1 f3 f4 + 2 f5 f6 + 2 f4 f7) t t t + (-e5 f3 f3 + -e1 f3 f5 + f6 f6 + 2 f5 f7) t t + (-e7 f3 f3 + -e1 f3 f6 + 2 f6 f7) t + f1 f3 f3 + -e1 f3 f7 + f7 f7
+  const ts = calculateEquation5(
+    [
+      f4 * f4,
+      2 * f4 * f5,
+      f5 * f5 + 2 * f4 * f6,
+      -e3 * f3 * f3 + -e1 * f3 * f4 + 2 * f5 * f6 + 2 * f4 * f7,
+      -e5 * f3 * f3 + -e1 * f3 * f5 + f6 * f6 + 2 * f5 * f7,
+      -e7 * f3 * f3 + -e1 * f3 * f6 + 2 * f6 * f7,
+      f1 * f3 * f3 + -e1 * f3 * f7 + f7 * f7,
+    ], 0.5, delta,
+  )
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
+    y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
+  }))
+}
+
+export function getTwoBezierCurveIntersectionPoints(
+  { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } }: BezierCurve,
+  { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+  delta = 1e-5,
+) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = c4 t t t + c5 t t + c6 t + b1
+
+  const d1 = -a5 + 3 * a6 + -3 * a7 + a8, d2 = 3 * (a5 - 2 * a6 + a7), d3 = 3 * (a6 - a5)
+  const d4 = -b5 + 3 * b6 + -3 * b7 + b8, d5 = 3 * (b5 - 2 * b6 + b7), d6 = 3 * (b6 - b5)
+  // x = d1 u u u + d2 u u + d3 u + a5
+  // y = d4 u u u + d5 u u + d6 u + b5
+
+  // d1 u u u + d2 u u + d3 u + a5 - (c1 t t t + c2 t t + c3 t + a1) = 0
+  // d4 u u u + d5 u u + d6 u + b5 - (c4 t t t + c5 t t + c6 t + b1) = 0
+
+  // u u u + d2/d1 u u + d3/d1 u - c1/d1 t t t - c2/d1 t t - c3/d1 t + (a5/d1 - a1/d1) = 0
+  // u u u + d5/d4 u u + d6/d4 u - c4/d4 t t t - c5/d4 t t - c6/d4 t + (b5/d4 - b1/d4) = 0
+  const e1 = d2 / d1, e2 = d3 / d1, e3 = c1 / d1, e4 = c2 / d1, e5 = c3 / d1, e6 = a5 / d1 - a1 / d1
+  const f1 = d5 / d4, f2 = d6 / d4, f3 = c4 / d4, f4 = c5 / d4, f5 = c6 / d4, f6 = b5 / d4 - b1 / d4
+  // F1: u u u + e1 u u + e2 u - e3 t t t - e4 t t - e5 t + e6 = 0
+  // u u u + f1 u u + f2 u - f3 t t t - f4 t t - f5 t + f6 = 0
+  // -F1: (f1 - e1) u u + (f2 - e2) u + (e3 - f3) t t t + (e4 - f4) t t + (e5 - f5) t + (f6 - e6) = 0
+  const g1 = f1 - e1, g2 = (f2 - e2) / g1 / 2, g3 = (e3 - f3) / g1, g4 = (e4 - f4) / g1, g5 = (e5 - f5) / g1, g6 = (f6 - e6) / g1
+  // u u + 2 g2 u + g3 t t t + g4 t t + g5 t + g6 = 0
+  // u u + 2 g2 u + g2 g2 + g3 t t t + g4 t t + g5 t + g6 - g2 g2 = 0
+  // (u + g2)^2 = -g3 t t t - g4 t t - g5 t - g6 + g2 g2
+  // let v = u + g2
+  const g7 = - g6 + g2 * g2
+  // F2: v^2 = -g3 t t t - g4 t t - g5 t + g7
+  // F1 replace u: v v v + (e1 + -3 g2) v v + (-2 e1 g2 + 3 g2 g2 + e2) v - e3 t t t + -e4 t t + -e5 t + e1 g2 g2 + -e2 g2 + e6 + -g2 g2 g2 = 0
+  const h1 = e1 - 3 * g2, h2 = -2 * e1 * g2 + 3 * g2 * g2 + e2, h3 = e1 * g2 * g2 + -e2 * g2 + e6 + -g2 * g2 * g2
+  // v v v + h1 v v + h2 v - e3 t t t + -e4 t t + -e5 t + h3 = 0
+  // replace v v: (-g3 t t t + -g4 t t + -g5 t + g7 + h2) v + (-g3 h1 + -e3) t t t + (-g4 h1 + -e4) t t + (-g5 h1 + -e5) t + g7 h1 + h3 = 0
+  const h4 = g7 + h2, h5 = -g3 * h1 + -e3, h6 = -g4 * h1 + -e4, h7 = -g5 * h1 + -e5, h8 = g7 * h1 + h3
+  // (-g3 t t t + -g4 t t + -g5 t + h4) v + h5 t t t + h6 t t + h7 t + h8 = 0
+  // v = -(h5 t t t + h6 t t + h7 t + h8)/(-g3 t t t + -g4 t t + -g5 t + h4)
+  // v^2 = (h5 t t t + h6 t t + h7 t + h8)^2/(-g3 t t t + -g4 t t + -g5 t + h4)^2
+  // -F2: g3 g3 g3 t t t t t t t t t + 3 g3 g3 g4 t t t t t t t t + (3 g3 g4 g4 + 3 g3 g3 g5) t t t t t t t + (h5 h5 + g4 g4 g4 + 6 g3 g4 g5 + -g3 g3 g7 + -2 g3 g3 h4) t t t t t t + (2 h5 h6 + 3 g4 g4 g5 + 3 g3 g5 g5 + -2 g3 g4 g7 + -4 g3 g4 h4) t t t t t + (h6 h6 + 2 h5 h7 + 3 g4 g5 g5 + -g4 g4 g7 + -2 g3 g5 g7 + -2 g4 g4 h4 + -4 g3 g5 h4) t t t t + (2 h6 h7 + 2 h5 h8 + g5 g5 g5 + -2 g4 g5 g7 + -4 g4 g5 h4 + 2 g3 g7 h4 + g3 h4 h4) t t t + (h7 h7 + 2 h6 h8 + -g5 g5 g7 + -2 g5 g5 h4 + 2 g4 g7 h4 + g4 h4 h4) t t + (2 h7 h8 + 2 g5 g7 h4 + g5 h4 h4) t + h8 h8 + -g7 h4 h4 = 0
+  const ts = calculateEquation5(
+    [
+      g3 * g3 * g3,
+      3 * g3 * g3 * g4,
+      3 * g3 * g4 * g4 + 3 * g3 * g3 * g5,
+      h5 * h5 + g4 * g4 * g4 + 6 * g3 * g4 * g5 + -g3 * g3 * g7 + -2 * g3 * g3 * h4,
+      2 * h5 * h6 + 3 * g4 * g4 * g5 + 3 * g3 * g5 * g5 + -2 * g3 * g4 * g7 + -4 * g3 * g4 * h4,
+      h6 * h6 + 2 * h5 * h7 + 3 * g4 * g5 * g5 + -g4 * g4 * g7 + -2 * g3 * g5 * g7 + -2 * g4 * g4 * h4 + -4 * g3 * g5 * h4,
+      2 * h6 * h7 + 2 * h5 * h8 + g5 * g5 * g5 + -2 * g4 * g5 * g7 + -4 * g4 * g5 * h4 + 2 * g3 * g7 * h4 + g3 * h4 * h4,
+      h7 * h7 + 2 * h6 * h8 + -g5 * g5 * g7 + -2 * g5 * g5 * h4 + 2 * g4 * g7 * h4 + g4 * h4 * h4,
+      2 * h7 * h8 + 2 * g5 * g7 * h4 + g5 * h4 * h4,
+      h8 * h8 + -g7 * h4 * h4,
+    ], 0.5, delta,
+  )
+  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
+    y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
+  }))
+}

@@ -188,7 +188,7 @@ export function calculateEquation4(a: number, b: number, c: number, d: number, e
  * p[0] * x^5 + p[1] x^4 + p[2] x^3 + p[3] x^2 + p[4] x + p[5] = 0
  * p[0] * x^6 + p[1] x^5 + p[2] x^4 + p[3] x^3 + p[4] x^2 + p[5] x + p[6] = 0
  */
-export function calculateEquation5(params: number[], x0: number, delta = 1e-5): number[] {
+export function calculateEquation5(params: number[], x0: number, delta = 1e-5, maxIteratorCount?: number): number[] {
   if (params.length <= 5) {
     return calculateEquation4(params[params.length - 5] || 0, params[params.length - 4] || 0, params[params.length - 3] || 0, params[params.length - 2] || 0, params[params.length - 1] || 0, delta)
   }
@@ -206,15 +206,8 @@ export function calculateEquation5(params: number[], x0: number, delta = 1e-5): 
     }
     return result
   }
-  let x = x0
-  let count = 0
-  for (; ;) {
-    const g = f1(x)
-    if (Math.abs(g) < delta) break
-    if (count > 10) return []
-    x = x - g / f2(x)
-    count++
-  }
+  const x = newtonIterate(x0, f1, f2, delta, maxIteratorCount)
+  if (x === undefined) return []
   const newParams: number[] = []
   for (let i = 0; i < params.length - 1; i++) {
     if (i === 0) {
@@ -223,9 +216,36 @@ export function calculateEquation5(params: number[], x0: number, delta = 1e-5): 
       newParams.push(params[i] + newParams[i - 1] * x)
     }
   }
-  const remains = calculateEquation5(newParams, x0, delta)
+  const remains = calculateEquation5(newParams, x0, delta, maxIteratorCount)
   if (remains.some(r => isZero(r - x, delta))) {
     return remains
   }
   return [x, ...remains]
+}
+
+export function newtonIterate(
+  x0: number,
+  f1:(x: number) => number,
+  f2:(x: number) => number,
+  delta: number,
+  maxIteratorCount = 20,
+) {
+  let x = x0
+  let count = 0
+  let last: number | undefined
+  for (; ;) {
+    const g = f1(x)
+    const d = Math.abs(g)
+    if (d < delta) break
+    if (last && count > 1 && d >= last) {
+      return
+    }
+    last = d
+    if (count > maxIteratorCount) {
+      return
+    }
+    x = x - g / f2(x)
+    count++
+  }
+  return x
 }
