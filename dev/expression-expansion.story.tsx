@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, Factor, StringEditor, composeExpression, deriveExpressionWith, divideFactors, expandExpression, expressionToFactors, factorToExpression, factorsToExpression, groupAllFactors, groupFactorsBy, mathStyleExpressionToExpression, optimizeExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors } from "../src"
+import { Button, Factor, StringEditor, composeExpression, deriveExpressionWith, divideFactors, expandExpression, expressionToFactors, factorToExpression, factorsToExpression, groupAllFactors, groupFactorsBy, groupFactorsByVariables, mathStyleExpressionToExpression, optimizeExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors } from "../src"
 import { Expression2, parseExpression, printExpression, tokenizeExpression } from "expression-engine"
 
 export default () => {
@@ -126,6 +126,23 @@ export default () => {
       setExpression(undefined)
     }
   }
+  const groupByVariables = () => {
+    try {
+      if (!secondValue) return
+      if (!factors) return
+      const r = parseInputExpression(secondValue)
+      const f = expressionToFactors(r)
+      if (f && f.length === 1) {
+        const g = groupFactorsByVariables(factors, f[0].variables.filter((v): v is string => typeof v === 'string'))
+        if (g) {
+          setExpression(g)
+        }
+      }
+      setError(undefined)
+    } catch (error) {
+      setError(String(error))
+    }
+  }
   const setText = (text: string) => {
     setValue(text)
     setError(undefined)
@@ -159,6 +176,7 @@ export default () => {
       <Button disabled={!factors} onClick={groupAll}>group all</Button>
       <Button disabled={!value || !secondValue} onClick={deriveWith}>derive with</Button>
       <Button disabled={!value} onClick={optimize}>optimize</Button>
+      <Button disabled={!secondValue || !factors} onClick={groupByVariables}>group by variables</Button>
       {factors && factors.length > 0 && <div style={{ border: '1px solid black', maxHeight: '150px', overflowY: 'auto', marginBottom: '5px' }}>
         {factors.map((f, i) => <div key={i}><code>{outputExpression(factorToExpression(f))}</code></div>)}
       </div>}

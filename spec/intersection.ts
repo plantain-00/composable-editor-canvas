@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToQuadraticCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
+import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -49,4 +49,16 @@ test('getLineBezierCurveIntersectionPoints', (t) => {
 
 test('getCircleBezierCurveIntersectionPoints', (t) => {
   t.snapshot(getCircleBezierCurveIntersectionPoints({ x: 1566, y: 524, r: 32 }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getEllipseBezierCurveIntersectionPoints', (t) => {
+  t.snapshot(getEllipseBezierCurveIntersectionPoints({ cx: 1571, cy: 524, rx: 53, ry: 20, angle: 61 }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getQuadraticCurveBezierCurveIntersectionPoints', (t) => {
+  t.snapshot(getQuadraticCurveBezierCurveIntersectionPoints({ from: { x: 1540, y: 574 }, cp: { x: 1459, y: 481 }, to: { x: 1625, y: 539 } }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getTwoBezierCurveIntersectionPoints', (t) => {
+  t.snapshot(getTwoBezierCurveIntersectionPoints({ from: { x: 1512, y: 496 }, cp1: { x: 1503, y: 559 }, cp2: { x: 1604, y: 483 }, to: { x: 1632, y: 574 } }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
 })
