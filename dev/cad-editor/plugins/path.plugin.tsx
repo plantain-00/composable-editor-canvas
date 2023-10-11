@@ -14,8 +14,8 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
   })
   function getPathGeometriesFromCache(content: Omit<PathContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.getPathCommandsPoints(content.commands)[0]
-      const lines = Array.from(ctx.iteratePolygonLines(points))
+      const lines = ctx.pathCommandsToGeometryLines(content.commands)[0]
+      const points = ctx.getGeometryLinesPoints(lines)
       return {
         lines,
         bounding: ctx.getPointsBounding(points),

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -298,6 +298,17 @@ export function usePointSnap<T>(
                         })
                       }
                     }
+                  } else if (line.type === 'bezier curve') {
+                    const points = getPerpendicularPointToBezierCurve(lastPosition, line.curve)
+                    for (const point of points) {
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point),
+                        })
+                      }
+                    }
                   }
                 }
               }
@@ -357,6 +368,17 @@ export function usePointSnap<T>(
                     }
                   } else if (line.type === 'quadratic curve') {
                     const tangencyPoints = getTangencyPointToQuadraticCurve(lastPosition, line.curve)
+                    for (const tangencyPoint of tangencyPoints) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'bezier curve') {
+                    const tangencyPoints = getTangencyPointToBezierCurve(lastPosition, line.curve)
                     for (const tangencyPoint of tangencyPoints) {
                       if (getTwoPointsDistance(p, tangencyPoint) <= delta) {
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })

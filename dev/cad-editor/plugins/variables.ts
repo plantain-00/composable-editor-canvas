@@ -5472,8 +5472,8 @@ function getModel(ctx) {
   });
   function getPathGeometriesFromCache(content) {
     return ctx.getGeometriesFromCache(content, () => {
-      const points = ctx.getPathCommandsPoints(content.commands)[0];
-      const lines = Array.from(ctx.iteratePolygonLines(points));
+      const lines = ctx.pathCommandsToGeometryLines(content.commands)[0];
+      const points = ctx.getGeometryLinesPoints(lines);
       return {
         lines,
         bounding: ctx.getPointsBounding(points),
@@ -8180,10 +8180,13 @@ function getModel(ctx) {
       var _a;
       const inputPoints = content.points.map((p) => [p.x, p.y]);
       let points = [];
+      let lines;
       const splineSegmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
       if (inputPoints.length > 2) {
         if (content.fitting) {
-          points = ctx.getBezierSplinePoints(content.points, splineSegmentCount);
+          const curves = ctx.getBezierSplineCurves(content.points);
+          points = curves.map((c) => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat();
+          lines = curves.map((c) => ({ type: "bezier curve", curve: c }));
         } else {
           const degree = 2;
           const knots = [];
@@ -8200,11 +8203,12 @@ function getModel(ctx) {
             const p = (0, import_b_spline.default)(t / splineSegmentCount, degree, inputPoints, knots);
             points.push({ x: p[0], y: p[1] });
           }
+          lines = Array.from(ctx.iteratePolylineLines(points));
         }
       } else {
         points = content.points;
+        lines = Array.from(ctx.iteratePolylineLines(points));
       }
-      const lines = Array.from(ctx.iteratePolylineLines(points));
       return {
         lines,
         points,

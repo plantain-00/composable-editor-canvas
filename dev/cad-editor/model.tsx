@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle, getEllipseAngle, getEllipseArcPointAtAngle, getQuadraticCurvePointAtPercent, getQuadraticCurvePercentAtPoint } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle, getEllipseAngle, getEllipseArcPointAtAngle, getQuadraticCurvePointAtPercent, getQuadraticCurvePercentAtPoint, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -355,7 +355,10 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
   if (line.type === 'ellipse arc') {
     return { type: 'ellipse arc', ...line.curve } as EllipseArcContent
   }
-  return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'quadraticCurve', cp: line.curve.cp, to: line.curve.to }] } as PathContent
+  if (line.type === 'quadratic curve') {
+    return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'quadraticCurve', cp: line.curve.cp, to: line.curve.to }] } as PathContent
+  }
+  return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'bezierCurve', cp1: line.curve.cp1, cp2: line.curve.cp2, to: line.curve.to }] } as PathContent
 }
 
 export function getContentsPoints(
@@ -1303,6 +1306,9 @@ export function getLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
       if (line.type === 'quadratic curve') {
         return i + getQuadraticCurvePercentAtPoint(line.curve, point)
       }
+      if (line.type === 'bezier curve') {
+        return i + getBezierCurvePercentAtPoint(line.curve, point)
+      }
     }
   }
   return 0
@@ -1321,7 +1327,10 @@ export function getLinesPointAtParam(param: number, lines: GeometryLine[]) {
   if (line.type === 'ellipse arc') {
     return getEllipseArcPointAtAngle(line.curve, (param - index) * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
   }
-  return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
+  }
+  return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
 }
 
 export interface PositionRef {
