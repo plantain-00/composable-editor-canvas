@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
+import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToBezierCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -61,4 +61,12 @@ test('getQuadraticCurveBezierCurveIntersectionPoints', (t) => {
 
 test('getTwoBezierCurveIntersectionPoints', (t) => {
   t.snapshot(getTwoBezierCurveIntersectionPoints({ from: { x: 1512, y: 496 }, cp1: { x: 1503, y: 559 }, cp2: { x: 1604, y: 483 }, to: { x: 1632, y: 574 } }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getTangencyPointToBezierCurve', (t) => {
+  t.snapshot(getTangencyPointToBezierCurve({ x: 1556, y: 494 }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getPerpendicularPointToBezierCurve', (t) => {
+  t.snapshot(getPerpendicularPointToBezierCurve({ x: 1556, y: 494 }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
 })

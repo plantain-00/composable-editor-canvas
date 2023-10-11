@@ -31,6 +31,7 @@ export type GeometryLine = [Position, Position]
   | { type: 'arc', curve: Arc }
   | { type: 'ellipse arc', curve: EllipseArc }
   | { type: 'quadratic curve', curve: QuadraticCurve }
+  | { type: 'bezier curve', curve: BezierCurve }
 
 
 /**
@@ -59,7 +60,10 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     if (line2.type === 'ellipse arc') {
       return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.curve)
     }
-    return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
+    if (line2.type === 'quadratic curve') {
+      return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
+    }
+    return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
   }
   if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1)
   if (line1.type === 'arc') {
@@ -69,17 +73,30 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     if (line2.type === 'ellipse arc') {
       return getArcEllipseArcIntersectionPoints(line1.curve, line2.curve)
     }
-    return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    if (line2.type === 'quadratic curve') {
+      return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    }
+    return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
   if (line1.type === 'ellipse arc') {
     if (line2.type === 'ellipse arc') {
       return getTwoEllipseArcIntersectionPoints(line1.curve, line2.curve)
     }
-    return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    if (line2.type === 'quadratic curve') {
+      return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    }
+    return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
-  return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+  if (line1.type === 'quadratic curve') {
+    if (line2.type === 'quadratic curve') {
+      return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    }
+    return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve)
+  }
+  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
 /**
@@ -309,6 +326,10 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
       }
     } else if (g.type === 'quadratic curve') {
       if (getLineSegmentQuadraticCurveIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
+    } else if (g.type === 'bezier curve') {
+      if (getLineSegmentBezierCurveIntersectionPoints(...line, g.curve).length > 0) {
         return true
       }
     }

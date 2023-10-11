@@ -1,9 +1,27 @@
-import { Position } from "./geometry"
-import { QuadraticCurve } from "./intersection"
+import { calculateEquation3 } from "./equation-calculater"
+import { Position, isZero } from "./geometry"
+import { BezierCurve, QuadraticCurve } from "./intersection"
 import { Vec3 } from "./types"
 
-function getValueBetween2PointsByPercent(n1: number, n2: number, percent: number) {
-  return n1 + ((n2 - n1) * percent)
+function interpolate2(n1: number, n2: number, percent: number) {
+  return n1 + (n2 - n1) * percent
+}
+
+function interpolate3(n1: number, n2: number, n3: number, percent: number) {
+  return interpolate2(
+    interpolate2(n1, n2, percent),
+    interpolate2(n2, n3, percent),
+    percent,
+  )
+}
+
+function interpolate4(n1: number, n2: number, n3: number, n4: number, percent: number) {
+  return interpolate3(
+    interpolate2(n1, n2, percent),
+    interpolate2(n2, n3, percent),
+    interpolate2(n3, n4, percent),
+    percent,
+  )
 }
 
 export function getQuadraticCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, point: Position) {
@@ -18,94 +36,81 @@ export function getQuadraticCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp: { 
 }
 
 export function getQuadraticCurvePointAtPercent(p1: Position, p2: Position, p3: Position, percent: number) {
-  const xa = getValueBetween2PointsByPercent(p1.x, p2.x, percent)
-  const ya = getValueBetween2PointsByPercent(p1.y, p2.y, percent)
-  const xb = getValueBetween2PointsByPercent(p2.x, p3.x, percent)
-  const yb = getValueBetween2PointsByPercent(p2.y, p3.y, percent)
-  const x = getValueBetween2PointsByPercent(xa, xb, percent)
-  const y = getValueBetween2PointsByPercent(ya, yb, percent)
-  return { x, y }
+  return {
+    x: interpolate3(p1.x, p2.x, p3.x, percent),
+    y: interpolate3(p1.y, p2.y, p3.y, percent),
+  }
 }
 
 export function getQuadraticCurvePoints(p1: Position, p2: Position, p3: Position, segmentCount: number) {
   const points: Position[] = []
-  for (let t = 1; t < segmentCount; t++) {
+  for (let t = 0; t <= segmentCount; t++) {
     points.push(getQuadraticCurvePointAtPercent(p1, p2, p3, t / segmentCount))
   }
   return points
 }
 
+export function getBezierCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, point: Position) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // px = c1 t t t + c2 t t + c3 t + a1
+  // py = c4 t t t + c5 t t + c6 t + b1
+  return calculateEquation3(c1, c2, c3, a1 - point.x)
+    .filter(t => isZero(c4 * t * t * t + c5 * t * t + c6 * t + b1 - point.y))[0]
+}
+
+export function getBezierCurvePointAtPercent(p1: Position, p2: Position, p3: Position, p4: Position, percent: number) {
+  return {
+    x: interpolate4(p1.x, p2.x, p3.x, p4.x, percent),
+    y: interpolate4(p1.y, p2.y, p3.y, p4.y, percent),
+  }
+}
+
 export function getBezierCurvePoints(p1: Position, p2: Position, p3: Position, p4: Position, segmentCount: number) {
   const points: Position[] = []
-  for (let t = 1; t < segmentCount; t++) {
-    const i = t / segmentCount
-    const xa = getValueBetween2PointsByPercent(p1.x, p2.x, i)
-    const ya = getValueBetween2PointsByPercent(p1.y, p2.y, i)
-    const xb = getValueBetween2PointsByPercent(p2.x, p3.x, i)
-    const yb = getValueBetween2PointsByPercent(p2.y, p3.y, i)
-    const xc = getValueBetween2PointsByPercent(p3.x, p4.x, i)
-    const yc = getValueBetween2PointsByPercent(p3.y, p4.y, i)
-
-    // The Blue Line
-    const xm = getValueBetween2PointsByPercent(xa, xb, i)
-    const ym = getValueBetween2PointsByPercent(ya, yb, i)
-    const xn = getValueBetween2PointsByPercent(xb, xc, i)
-    const yn = getValueBetween2PointsByPercent(yb, yc, i)
-
-    // The Black Dot
-    const x = getValueBetween2PointsByPercent(xm, xn, i);
-    const y = getValueBetween2PointsByPercent(ym, yn, i);
-    points.push({ x, y })
+  for (let t = 0; t <= segmentCount; t++) {
+    points.push(getBezierCurvePointAtPercent(p1, p2, p3, p4, t / segmentCount))
   }
   return points
 }
 
 export function getBezierCurvePoints3D(p1: Vec3, p2: Vec3, p3: Vec3, p4: Vec3, segmentCount: number) {
   const points: Vec3[] = []
-  for (let t = 1; t < segmentCount; t++) {
+  for (let t = 0; t <= segmentCount; t++) {
     const i = t / segmentCount
-    const xa = getValueBetween2PointsByPercent(p1[0], p2[0], i)
-    const ya = getValueBetween2PointsByPercent(p1[1], p2[1], i)
-    const za = getValueBetween2PointsByPercent(p1[2], p2[2], i)
-    const xb = getValueBetween2PointsByPercent(p2[0], p3[0], i)
-    const yb = getValueBetween2PointsByPercent(p2[1], p3[1], i)
-    const zb = getValueBetween2PointsByPercent(p2[2], p3[2], i)
-    const xc = getValueBetween2PointsByPercent(p3[0], p4[0], i)
-    const yc = getValueBetween2PointsByPercent(p3[1], p4[1], i)
-    const zc = getValueBetween2PointsByPercent(p3[2], p4[2], i)
-
-    // The Blue Line
-    const xm = getValueBetween2PointsByPercent(xa, xb, i)
-    const ym = getValueBetween2PointsByPercent(ya, yb, i)
-    const zm = getValueBetween2PointsByPercent(za, zb, i)
-    const xn = getValueBetween2PointsByPercent(xb, xc, i)
-    const yn = getValueBetween2PointsByPercent(yb, yc, i)
-    const zn = getValueBetween2PointsByPercent(zb, zc, i)
-
-    // The Black Dot
-    const x = getValueBetween2PointsByPercent(xm, xn, i);
-    const y = getValueBetween2PointsByPercent(ym, yn, i);
-    const z = getValueBetween2PointsByPercent(zm, zn, i);
+    const x = interpolate4(p1[0], p2[0], p3[0], p4[0], i)
+    const y = interpolate4(p1[1], p2[1], p3[1], p4[1], i)
+    const z = interpolate4(p1[2], p2[2], p3[2], p4[2], i)
     points.push([x, y, z])
   }
   return points
 }
 
-export function getBezierSplinePoints(points: Position[], segmentCount: number) {
-  const result: Position[] = []
-  getBezierSplineControlPointsOfPoints(points).map((p, i) => {
-    result.push(points[i], ...getBezierCurvePoints(points[i], ...p, points[i + 1], segmentCount))
+export function getBezierSplineCurves(points: Position[]) {
+  const result: BezierCurve[] = []
+  const cps = getBezierSplineControlPointsOfPoints(points)
+  cps.forEach((p, i) => {
+    result.push({
+      from: points[i],
+      cp1: p[0],
+      cp2: p[1],
+      to: points[i + 1],
+    })
   })
-  result.push(points[points.length - 1])
   return result
+}
+
+export function getBezierSplinePoints(points: Position[], segmentCount: number) {
+  const curves = getBezierSplineCurves(points)
+  return curves.map(c => getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, segmentCount)).flat()
 }
 
 export function getBezierSplinePoints3D(points: Vec3[], segmentCount: number) {
   const result: Vec3[] = []
-  getBezierSplineControlPointsOfPoints3D(points).map((p, i) => {
-    result.push(points[i], ...getBezierCurvePoints3D(points[i], ...p, points[i + 1], segmentCount))
+  const cps = getBezierSplineControlPointsOfPoints3D(points)
+  cps.forEach((p, i) => {
+    result.push(...getBezierCurvePoints3D(points[i], ...p, points[i + 1], segmentCount))
   })
-  result.push(points[points.length - 1])
   return result
 }
 

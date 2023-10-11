@@ -28,10 +28,13 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     return geometriesCache.get(content, () => {
       const inputPoints = content.points.map((p) => [p.x, p.y])
       let points: core.Position[] = []
+      let lines: core.GeometryLine[]
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
       if (inputPoints.length > 2) {
         if (content.fitting) {
-          points = ctx.getBezierSplinePoints(content.points, splineSegmentCount)
+          const curves = ctx.getBezierSplineCurves(content.points)
+          points = curves.map(c => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat()
+          lines = curves.map(c => ({ type: 'bezier curve' as const, curve: c }))
         } else {
           const degree = 2
           const knots: number[] = []
@@ -48,11 +51,12 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
             const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
             points.push({ x: p[0], y: p[1] })
           }
+          lines = Array.from(ctx.iteratePolylineLines(points))
         }
       } else {
         points = content.points
+        lines = Array.from(ctx.iteratePolylineLines(points))
       }
-      const lines = Array.from(ctx.iteratePolylineLines(points))
       return {
         lines,
         points,

@@ -1,9 +1,9 @@
 import * as React from "react"
-import { arcToPolyline, Circle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { arcToPolyline, Circle, ellipseArcToPolyline, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
-import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
+import { GeometryLine, getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
 import { getPerpendicularPoint } from "../../utils/perpendicular"
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 
@@ -292,20 +292,58 @@ export function getRoundedRectPoints(content: Region, radius: number, angleDelta
  */
 export function getPathCommandsPoints(pathCommands: PathCommand[]) {
   const result: Position[][] = []
-  let points: Position[] = []
+  const lines = pathCommandsToGeometryLines(pathCommands)
+  for (const line of lines) {
+    result.push(getGeometryLinesPoints(line))
+  }
+  return result
+}
+
+export function getGeometryLinesPoints(lines: GeometryLine[]) {
+  const points: Position[] = []
+  for (const n of lines) {
+    if (Array.isArray(n)) {
+      if (points.length === 0) {
+        points.push(n[0])
+      }
+      points.push(n[1])
+    } else if (n.type === 'arc') {
+      points.push(...arcToPolyline(n.curve, 5))
+    } else if (n.type === 'ellipse arc') {
+      points.push(...ellipseArcToPolyline(n.curve, 5))
+    } else if (n.type === 'quadratic curve') {
+      points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, 100))
+    } else if (n.type === 'bezier curve') {
+      points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, 100))
+    }
+  }
+  return points
+}
+
+export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): GeometryLine[][] {
+  const result: GeometryLine[][] = []
+  let lines: GeometryLine[] = []
+  let lineStartPoint: Position | undefined
+  let last: Position | undefined
   for (const command of pathCommands) {
     if (command.type === 'move') {
-      if (points.length > 0) {
-        if (points.length > 1) {
-          result.push(points)
+      if (lines.length > 0) {
+        if (lines.length > 1) {
+          result.push(lines)
         }
-        points = []
+        lines = []
+        lineStartPoint = undefined
       }
-      points.push(command.to)
+      last = command.to
+      if (!lineStartPoint) {
+        lineStartPoint = command.to
+      }
     } else if (command.type === 'line') {
-      points.push(command.to)
+      if (last) {
+        lines.push([last, command.to])
+      }
+      last = command.to
     } else if (command.type === 'arc') {
-      const last = points[points.length - 1]
       if (last) {
         const p1 = command.from
         const p2 = command.to
@@ -313,7 +351,9 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
         const line2 = twoPointLineToGeneralFormLine(p1, p2)
         const p2Direction = getPointSideOfLine(p2, line1)
         if (isZero(p2Direction)) {
-          points.push(p2)
+          if (last) {
+            lines.push([last, p2])
+          }
         } else {
           const index = p2Direction < 0 ? 0 : 1
           const center = getTwoGeneralFormLinesIntersectionPoint(
@@ -323,37 +363,65 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
           if (center) {
             const t1 = getPerpendicularPoint(center, line1)
             const t2 = getPerpendicularPoint(center, line2)
-            points.push({ x: t1.x, y: t1.y })
+            if (last) {
+              lines.push([last, { x: t1.x, y: t1.y }])
+            }
             const startAngle = radianToAngle(getTwoPointsRadian(t1, center))
             const endAngle = radianToAngle(getTwoPointsRadian(t2, center))
-            points.push(...arcToPolyline({ x: center.x, y: center.y, startAngle, endAngle, r: command.radius, counterclockwise: p2Direction > 0 }, 5))
+            lines.push({
+              type: 'arc',
+              curve: {
+                x: center.x,
+                y: center.y,
+                startAngle,
+                endAngle,
+                r: command.radius,
+                counterclockwise: p2Direction > 0,
+              }
+            })
           }
         }
       }
     } else if (command.type === 'bezierCurve') {
-      const last = points[points.length - 1]
       if (last) {
-        points.push(...getBezierCurvePoints(last, command.cp1, command.cp2, command.to, 100))
-      }
-    } else if (command.type === 'quadraticCurve') {
-      const last = points[points.length - 1]
-      if (last) {
-        points.push(...getQuadraticCurvePoints(last, command.cp, command.to, 100))
-      }
-    } else if (command.type === 'close') {
-      if (points.length > 0) {
-        if (points.length > 1) {
-          if (!isSamePoint(points[0], points[points.length - 1])) {
-            points.push(points[0])
+        lines.push({
+          type: 'bezier curve',
+          curve: {
+            from: last,
+            cp1: command.cp1,
+            cp2: command.cp2,
+            to: command.to,
           }
-          result.push(points)
+        })
+      }
+      last = command.to
+    } else if (command.type === 'quadraticCurve') {
+      if (last) {
+        lines.push({
+          type: 'quadratic curve',
+          curve: {
+            from: last,
+            cp: command.cp,
+            to: command.to,
+          }
+        })
+      }
+      last = command.to
+    } else if (command.type === 'close') {
+      if (lines.length > 0) {
+        if (lines.length > 1) {
+          if (lineStartPoint && last && !isSamePoint(lineStartPoint, last)) {
+            lines.push([last, lineStartPoint])
+          }
+          result.push(lines)
         }
-        points = []
+        lines = []
+        lineStartPoint = undefined
       }
     }
   }
-  if (points.length > 1) {
-    result.push(points)
+  if (lines.length > 0) {
+    result.push(lines)
   }
   return result
 }
