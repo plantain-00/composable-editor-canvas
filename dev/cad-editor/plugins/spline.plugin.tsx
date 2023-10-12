@@ -2,7 +2,6 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
-import bspline from 'b-spline'
 import type { LineContent } from './line-polyline.plugin'
 
 export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & {
@@ -36,22 +35,9 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
           points = curves.map(c => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat()
           lines = curves.map(c => ({ type: 'bezier curve' as const, curve: c }))
         } else {
-          const degree = 2
-          const knots: number[] = []
-          for (let i = 0; i < inputPoints.length + degree + 1; i++) {
-            if (i < degree + 1) {
-              knots.push(0)
-            } else if (i < inputPoints.length) {
-              knots.push(i - degree)
-            } else {
-              knots.push(inputPoints.length - degree)
-            }
-          }
-          for (let t = 0; t <= splineSegmentCount; t++) {
-            const p = bspline(t / splineSegmentCount, degree, inputPoints, knots)
-            points.push({ x: p[0], y: p[1] })
-          }
-          lines = Array.from(ctx.iteratePolylineLines(points))
+          const curves = ctx.getQuadraticSplineCurves(content.points)
+          points = curves.map(c => ctx.getQuadraticCurvePoints(c.from, c.cp, c.to, splineSegmentCount)).flat()
+          lines = curves.map(c => ({ type: 'quadratic curve' as const, curve: c }))
         }
       } else {
         points = content.points

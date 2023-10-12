@@ -426,11 +426,6 @@
     qs "6"
     tslib "1 || 2"
 
-"@types/b-spline@2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@types/b-spline/-/b-spline-2.0.2.tgz#e6094184c6a9ed685b3a2e37f39d4461cc873b91"
-  integrity sha512-CeCJpH5tmSm/qoSUv4ht9LidFFgi/vNxrKIHUyZnsMabStzBHCOCEodn0f5QwT27Yo0ux42Bw9ce3GF6BunstQ==
-
 "@types/body-parser@*":
   version "1.19.3"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.19.3.tgz#fb558014374f7d9e56c8f34bab2042a3a07d25cd"
@@ -1167,11 +1162,6 @@ ava@4.3.3:
     temp-dir "^2.0.0"
     write-file-atomic "^4.0.1"
     yargs "^17.5.1"
-
-b-spline@2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/b-spline/-/b-spline-2.0.2.tgz#964becb6e33de6b11bae1ba229c4477eab2e4426"
-  integrity sha512-RPhM4apTUkejCpKo9sQrOiMdy/rUua4n98oppafwAnT64ZwqJDDp+fUk9+5EBEQNtTS3CsWWFRPukqFM3sasZQ==
 
 balanced-match@^1.0.0:
   version "1.0.2"
