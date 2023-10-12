@@ -1,5 +1,5 @@
 import { calculateEquation3 } from "./equation-calculater"
-import { Position, isZero } from "./geometry"
+import { Position, getTwoPointCenter, isZero } from "./geometry"
 import { BezierCurve, QuadraticCurve } from "./intersection"
 import { Vec3 } from "./types"
 
@@ -97,6 +97,18 @@ export function getBezierSplineCurves(points: Position[]) {
       to: points[i + 1],
     })
   })
+  return result
+}
+
+export function getQuadraticSplineCurves(points: Position[]) {
+  const result: QuadraticCurve[] = []
+  for (let i = 1; i < points.length - 1; i++) {
+    result.push({
+      from: i === 1 ? points[i - 1] : getTwoPointCenter(points[i], points[i - 1]),
+      cp: points[i],
+      to: i === points.length - 2 ? points[i + 1] : getTwoPointCenter(points[i], points[i + 1]),
+    })
+  }
   return result
 }
 

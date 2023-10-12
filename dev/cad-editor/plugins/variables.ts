@@ -8070,101 +8070,7 @@ export {
   isRoundedRectContent
 };
 `,
-`var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-
-// node_modules/b-spline/index.js
-var require_b_spline = __commonJS({
-  "node_modules/b-spline/index.js"(exports, module) {
-    function interpolate(t, degree, points, knots, weights, result) {
-      var i, j, s, l;
-      var n = points.length;
-      var d = points[0].length;
-      if (degree < 1)
-        throw new Error("degree must be at least 1 (linear)");
-      if (degree > n - 1)
-        throw new Error("degree must be less than or equal to point count - 1");
-      if (!weights) {
-        weights = [];
-        for (i = 0; i < n; i++) {
-          weights[i] = 1;
-        }
-      }
-      if (!knots) {
-        var knots = [];
-        for (i = 0; i < n + degree + 1; i++) {
-          knots[i] = i;
-        }
-      } else {
-        if (knots.length !== n + degree + 1)
-          throw new Error("bad knot vector length");
-      }
-      var domain = [
-        degree,
-        knots.length - 1 - degree
-      ];
-      var low = knots[domain[0]];
-      var high = knots[domain[1]];
-      t = t * (high - low) + low;
-      if (t < low || t > high)
-        throw new Error("out of bounds");
-      for (s = domain[0]; s < domain[1]; s++) {
-        if (t >= knots[s] && t <= knots[s + 1]) {
-          break;
-        }
-      }
-      var v = [];
-      for (i = 0; i < n; i++) {
-        v[i] = [];
-        for (j = 0; j < d; j++) {
-          v[i][j] = points[i][j] * weights[i];
-        }
-        v[i][d] = weights[i];
-      }
-      var alpha;
-      for (l = 1; l <= degree + 1; l++) {
-        for (i = s; i > s - degree - 1 + l; i--) {
-          alpha = (t - knots[i]) / (knots[i + degree + 1 - l] - knots[i]);
-          for (j = 0; j < d + 1; j++) {
-            v[i][j] = (1 - alpha) * v[i - 1][j] + alpha * v[i][j];
-          }
-        }
-      }
-      var result = result || [];
-      for (i = 0; i < d; i++) {
-        result[i] = v[s][i] / v[s][d];
-      }
-      return result;
-    }
-    module.exports = interpolate;
-  }
-});
-
-// dev/cad-editor/plugins/spline.plugin.tsx
-var import_b_spline = __toESM(require_b_spline());
+`// dev/cad-editor/plugins/spline.plugin.tsx
 function getModel(ctx) {
   const SplineContent = ctx.and(ctx.BaseContent("spline"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
@@ -8188,22 +8094,9 @@ function getModel(ctx) {
           points = curves.map((c) => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat();
           lines = curves.map((c) => ({ type: "bezier curve", curve: c }));
         } else {
-          const degree = 2;
-          const knots = [];
-          for (let i = 0; i < inputPoints.length + degree + 1; i++) {
-            if (i < degree + 1) {
-              knots.push(0);
-            } else if (i < inputPoints.length) {
-              knots.push(i - degree);
-            } else {
-              knots.push(inputPoints.length - degree);
-            }
-          }
-          for (let t = 0; t <= splineSegmentCount; t++) {
-            const p = (0, import_b_spline.default)(t / splineSegmentCount, degree, inputPoints, knots);
-            points.push({ x: p[0], y: p[1] });
-          }
-          lines = Array.from(ctx.iteratePolylineLines(points));
+          const curves = ctx.getQuadraticSplineCurves(content.points);
+          points = curves.map((c) => ctx.getQuadraticCurvePoints(c.from, c.cp, c.to, splineSegmentCount)).flat();
+          lines = curves.map((c) => ({ type: "quadratic curve", curve: c }));
         }
       } else {
         points = content.points;
