@@ -1,7 +1,7 @@
 {
-  "name": "react-composable-expression-editor",
+  "name": "equation-calculater",
   "version": "1.9.0",
-  "description": "A react expression editor.",
+  "description": "A equation calculater.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -10,11 +10,7 @@
   "author": "York Yao",
   "license": "MIT",
   "dependencies": {
-    "react-render-target": "1",
-    "react-composable-json-editor": "1",
-    "use-undo-redo": "1",
-    "use-wheel-scroll": "1",
-    "use-drag-move": "1"
+    "expression-engine": "1"
   },
   "peerDependencies": {
     "react": "18"

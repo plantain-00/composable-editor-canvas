@@ -1,4 +1,3 @@
-import { GeometryLine, geometryLineIntersectWithPolygon } from "./intersection"
 import { isRecord } from "./is-record"
 import { angleToRadian, radianToAngle } from "./radian"
 import { and, boolean, minimum, number, optional, Path, string, validate, ValidationResult } from "./validators"
@@ -827,25 +826,6 @@ export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
     }
   }
   return inside;
-}
-
-export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
-  if (Array.isArray(line)) {
-    return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
-  }
-  let start: Position
-  let end: Position
-  if (line.type === 'arc') {
-    start = getArcPointAtAngle(line.curve, line.curve.startAngle)
-    end = getArcPointAtAngle(line.curve, line.curve.endAngle)
-  } else if (line.type === 'ellipse arc') {
-    start = getEllipseArcPointAtAngle(line.curve, line.curve.startAngle)
-    end = getEllipseArcPointAtAngle(line.curve, line.curve.endAngle)
-  } else {
-    start = line.curve.from
-    end = line.curve.to
-  }
-  return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
 }
 
 export function* iteratePolylineLines(points: Position[]) {

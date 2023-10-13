@@ -1,6 +1,6 @@
 {
   "name": "react-render-target",
-  "version": "1.8.6",
+  "version": "1.9.0",
   "description": "A react canvas, svg, webgl render interface.",
   "main": "index.js",
   "repository": {
@@ -11,7 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "earcut": "2",
-    "twgl.js": "4 || 5"
+    "twgl.js": "4 || 5",
+    "equation-calculater": "1"
   },
   "peerDependencies": {
     "react": "18"

@@ -1,6 +1,6 @@
 {
   "name": "equation-solver",
-  "version": "1.8.10",
+  "version": "1.9.0",
   "description": "A equation solver.",
   "main": "index.js",
   "repository": {
@@ -21,7 +21,8 @@
     "use-drag-select": "1",
     "react-render-target": "1",
     "react-composable-json-editor": "1",
-    "equation-renderer": "1"
+    "equation-renderer": "1",
+    "equation-calculater": "1"
   },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"

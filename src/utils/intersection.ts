@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
 
@@ -25,6 +25,25 @@ export function* iterateIntersectionPoints<T>(
       }
     }
   }
+}
+
+export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
+  if (Array.isArray(line)) {
+    return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
+  }
+  let start: Position
+  let end: Position
+  if (line.type === 'arc') {
+    start = getArcPointAtAngle(line.curve, line.curve.startAngle)
+    end = getArcPointAtAngle(line.curve, line.curve.endAngle)
+  } else if (line.type === 'ellipse arc') {
+    start = getEllipseArcPointAtAngle(line.curve, line.curve.startAngle)
+    end = getEllipseArcPointAtAngle(line.curve, line.curve.endAngle)
+  } else {
+    start = line.curve.from
+    end = line.curve.to
+  }
+  return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
 }
 
 export type GeometryLine = [Position, Position]
