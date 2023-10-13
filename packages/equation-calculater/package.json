@@ -1,7 +1,7 @@
 {
-  "name": "equation-solver",
+  "name": "equation-calculater",
   "version": "1.8.10",
-  "description": "A equation solver.",
+  "description": "A equation calculater.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -10,19 +10,10 @@
   "author": "York Yao",
   "license": "MIT",
   "dependencies": {
-    "expression-engine": "1",
-    "use-drag-move": "1",
-    "use-wheel-scroll": "1",
-    "use-wheel-zoom": "1",
-    "use-undo-redo": "1",
-    "use-patch-based-undo-redo": "1",
-    "use-drag-rotate": "1",
-    "use-drag-resize": "1",
-    "use-drag-select": "1",
-    "react-render-target": "1",
-    "react-composable-json-editor": "1",
-    "equation-renderer": "1",
-    "equation-calculater": "1"
+    "expression-engine": "1"
+  },
+  "peerDependencies": {
+    "react": "18"
   },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"

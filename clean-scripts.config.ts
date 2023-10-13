@@ -23,6 +23,7 @@ const packages = [
   { name: 'use-drag-rotate', entry: './src/components/use-drag-rotate.tsx' },
   { name: 'equation-renderer', entry: './src/components/equation-renderer.tsx' },
   { name: 'equation-solver', entry: './src/components/equation-solver/index.tsx' },
+  { name: 'equation-calculater', entry: './src/utils/equation-calculater.ts' },
 ]
 
 export default {
@@ -89,7 +90,7 @@ async function bundleJs(d: typeof packages[number]) {
       },
     }] : [],
     format: 'esm',
-    external: ['earcut', 'twgl.js', 'react', 'immer', 'expression-engine'],
+    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine'],
   })
   if (depdendencies.size > 0) {
     const packageJsonPath = `./packages/${d.name}/package.json`

@@ -11,7 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "earcut": "2",
-    "twgl.js": "4 || 5"
+    "twgl.js": "4 || 5",
+    "equation-calculater": "1"
   },
   "peerDependencies": {
     "react": "18"
