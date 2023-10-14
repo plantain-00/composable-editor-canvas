@@ -25,20 +25,16 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
   const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getSplineGeometries(content: Omit<SplineContent, "type">) {
     return geometriesCache.get(content, () => {
-      const inputPoints = content.points.map((p) => [p.x, p.y])
-      let points: core.Position[] = []
+      let points: core.Position[]
       let lines: core.GeometryLine[]
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
-      if (inputPoints.length > 2) {
+      if (content.points.length > 2) {
         if (content.fitting) {
-          const curves = ctx.getBezierSplineCurves(content.points)
-          points = curves.map(c => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat()
-          lines = curves.map(c => ({ type: 'bezier curve' as const, curve: c }))
+          lines = ctx.getBezierSplineCurves(content.points).map(c => ({ type: 'bezier curve' as const, curve: c }))
         } else {
-          const curves = ctx.getQuadraticSplineCurves(content.points)
-          points = curves.map(c => ctx.getQuadraticCurvePoints(c.from, c.cp, c.to, splineSegmentCount)).flat()
-          lines = curves.map(c => ({ type: 'quadratic curve' as const, curve: c }))
+          lines = ctx.getQuadraticSplineCurves(content.points).map(c => ({ type: 'quadratic curve' as const, curve: c }))
         }
+        points = ctx.getGeometryLinesPoints(lines, splineSegmentCount)
       } else {
         points = content.points
         lines = Array.from(ctx.iteratePolylineLines(points))

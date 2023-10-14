@@ -8084,20 +8084,16 @@ function getModel(ctx) {
   function getSplineGeometries(content) {
     return geometriesCache.get(content, () => {
       var _a;
-      const inputPoints = content.points.map((p) => [p.x, p.y]);
-      let points = [];
+      let points;
       let lines;
       const splineSegmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
-      if (inputPoints.length > 2) {
+      if (content.points.length > 2) {
         if (content.fitting) {
-          const curves = ctx.getBezierSplineCurves(content.points);
-          points = curves.map((c) => ctx.getBezierCurvePoints(c.from, c.cp1, c.cp2, c.to, splineSegmentCount)).flat();
-          lines = curves.map((c) => ({ type: "bezier curve", curve: c }));
+          lines = ctx.getBezierSplineCurves(content.points).map((c) => ({ type: "bezier curve", curve: c }));
         } else {
-          const curves = ctx.getQuadraticSplineCurves(content.points);
-          points = curves.map((c) => ctx.getQuadraticCurvePoints(c.from, c.cp, c.to, splineSegmentCount)).flat();
-          lines = curves.map((c) => ({ type: "quadratic curve", curve: c }));
+          lines = ctx.getQuadraticSplineCurves(content.points).map((c) => ({ type: "quadratic curve", curve: c }));
         }
+        points = ctx.getGeometryLinesPoints(lines, splineSegmentCount);
       } else {
         points = content.points;
         lines = Array.from(ctx.iteratePolylineLines(points));
