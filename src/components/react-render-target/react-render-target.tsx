@@ -299,7 +299,7 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
   return result
 }
 
-export function getGeometryLinesPoints(lines: GeometryLine[]) {
+export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100, angleDelta = 5) {
   const points: Position[] = []
   for (const n of lines) {
     if (Array.isArray(n)) {
@@ -308,13 +308,13 @@ export function getGeometryLinesPoints(lines: GeometryLine[]) {
       }
       points.push(n[1])
     } else if (n.type === 'arc') {
-      points.push(...arcToPolyline(n.curve, 5))
+      points.push(...arcToPolyline(n.curve, angleDelta))
     } else if (n.type === 'ellipse arc') {
-      points.push(...ellipseArcToPolyline(n.curve, 5))
+      points.push(...ellipseArcToPolyline(n.curve, angleDelta))
     } else if (n.type === 'quadratic curve') {
-      points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, 100))
+      points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, segmentCount))
     } else if (n.type === 'bezier curve') {
-      points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, 100))
+      points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, segmentCount))
     }
   }
   return points
