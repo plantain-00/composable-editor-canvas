@@ -1,3 +1,5 @@
+import { Position } from "./geometry"
+
 export function interpolateNurbs(
   t: number,
   degree: number,
@@ -22,4 +24,18 @@ export function interpolateNurbs(
 
 export function interpolateNurbs2(t: number, degree: number, points: number[][], knots?: number[], weights?: number[]) {
   return points[0].map((_, i) => interpolateNurbs(t, degree, points.map(p => p[i]), knots, weights))
+}
+
+export function getNurbsPoints(degree: number, points: Position[], knots?: number[], weights?: number[], segmentCount = 100) {
+  const result: Position[] = []
+  const x = points.map(p => p.x)
+  const y = points.map(p => p.y)
+  for (let t = 0; t <= segmentCount; t++) {
+    const p = t / segmentCount
+    result.push({
+      x: interpolateNurbs(p, degree, x, knots, weights),
+      y: interpolateNurbs(p, degree, y, knots, weights),
+    })
+  }
+  return result
 }

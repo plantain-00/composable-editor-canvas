@@ -1,5 +1,6 @@
 import { produce, Draft } from "immer"
 import * as React from "react"
+import { Primitive } from "../../utils/types"
 
 /**
  * @public
@@ -15,7 +16,7 @@ export function useJsonEditorData<V>(defaultValue: V) {
         }))
       }
     },
-    getArrayProps: <T,>(getArray: (v: Draft<typeof value>) => T[], defaultValue: T) => {
+    getArrayProps: <T extends object | Primitive,>(getArray: (v: Draft<typeof value>) => T[], defaultValue: T) => {
       return getArrayEditorProps(getArray, defaultValue, update => {
         setValue(produce(value, draft => {
           update(draft)
@@ -28,14 +29,14 @@ export function useJsonEditorData<V>(defaultValue: V) {
 /**
  * @public
  */
-export function getArrayEditorProps<T, V>(
+export function getArrayEditorProps<T extends object | Primitive, V>(
   getArray: (v: Draft<V>) => T[],
-  defaultValue: T,
+  defaultValue: T | (() => T),
   update: (recipe: (draft: Draft<V>) => void) => void,
 ) {
   return {
     add: () => update(draft => {
-      getArray(draft).push(defaultValue)
+      getArray(draft).push(typeof defaultValue === 'function' ? defaultValue() : defaultValue)
     }),
     remove: (i: number) => update(draft => {
       getArray(draft).splice(i, 1)

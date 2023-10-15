@@ -99,7 +99,9 @@ async function bundleJs(d: typeof packages[number]) {
       packageJson.dependencies = {}
     }
     for (const d of depdendencies) {
-      packageJson.dependencies[d] = "1"
+      if (!packageJson.dependencies[d]) {
+        packageJson.dependencies[d] = "1"
+      }
     }
     await writeFileAsync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
   }
