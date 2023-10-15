@@ -27,3 +27,5 @@ export type OptionalField<T, K extends keyof T> = Omit<T, K> & {
 export type Vec2 = [number, number]
 export type Vec3 = [number, number, number]
 export type Vec4 = [number, number, number, number]
+
+export type Primitive = string | number | boolean

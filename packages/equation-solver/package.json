@@ -14,15 +14,15 @@
     "use-drag-move": "1",
     "use-wheel-scroll": "1",
     "use-wheel-zoom": "1",
-    "use-undo-redo": "1",
-    "use-patch-based-undo-redo": "1",
+    "use-undo-redo": "^1.9.0",
+    "use-patch-based-undo-redo": "^1.9.0",
     "use-drag-rotate": "1",
     "use-drag-resize": "1",
     "use-drag-select": "1",
-    "react-render-target": "1",
-    "react-composable-json-editor": "1",
+    "react-render-target": "^1.9.0",
+    "react-composable-json-editor": "^1.9.0",
     "equation-renderer": "1",
-    "equation-calculater": "1"
+    "equation-calculater": "^1.9.0"
   },
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
