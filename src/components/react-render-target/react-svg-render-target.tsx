@@ -262,19 +262,29 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     ), options?.filters)
   },
   renderPath(lines, options) {
-    let d = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')).join(' ')
-    if (options?.closed) {
-      d += ' Z'
-    }
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
-      <path
-        d={d}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
-        fill={fill}
-        stroke={stroke}
-        fillRule='evenodd'
-      />
-    ), options)
+    const ds = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' '))
+    const clipHoles = options?.clip && ds.length > 1
+    const holes = clipHoles ? ds.slice(1).map((d, i) => <path key={i} d={d} fill='black' />) : undefined
+    return renderPattern((fill, stroke, scale, strokeWidthScale) => {
+      let d: string
+      if (clipHoles) {
+        d = ds[0]
+      } else {
+        d = ds.join(' ')
+        if (options?.closed) {
+          d += ' Z'
+        }
+      }
+      return (
+        <path
+          d={d}
+          {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+          fill={fill}
+          stroke={stroke}
+          fillRule='evenodd'
+        />
+      )
+    }, options, undefined, holes)
   },
 }
 
@@ -382,6 +392,7 @@ function renderPattern(
   children: (fill: string, stroke: string | undefined, scale: number, strokeWidthScale: number) => JSX.Element,
   options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
   noDefaultStrokeColor?: boolean,
+  holes?: JSX.Element[],
 ) {
   return (key: React.Key, scale: number, strokeWidthScale: number) => {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
@@ -484,24 +495,42 @@ function renderPattern(
     }
 
     let target: JSX.Element
+    const path = children(fill, stroke, scale, strokeWidthScale)
     if (options?.clip) {
       const id = getDomId(options.clip)
-      const path = children(fill, stroke, scale, strokeWidthScale)
-      fillDef = (
-        <>
-          <clipPath id={id}>
+      const clipContent = options.clip()(id, scale, strokeWidthScale)
+      if (holes) {
+        fillDef = (
+          <>
+            <mask id={id}>
+              {children('white', stroke, scale, strokeWidthScale)}
+              {holes}
+            </mask>
             {path}
-          </clipPath>
-          {path}
-        </>
-      )
-      target = (
-        <g clipPath={`url(#${id})`}>
-          {options.clip()(id, scale, strokeWidthScale)}
-        </g>
-      )
+          </>
+        )
+        target = (
+          <g mask={`url(#${id})`}>
+            {clipContent}
+          </g>
+        )
+      } else {
+        fillDef = (
+          <>
+            <clipPath id={id}>
+              {path}
+            </clipPath>
+            {path}
+          </>
+        )
+        target = (
+          <g clipPath={`url(#${id})`}>
+            {clipContent}
+          </g>
+        )
+      }
     } else {
-      target = children(fill, stroke, scale, strokeWidthScale)
+      target = path
     }
     return (
       <React.Fragment key={key}>

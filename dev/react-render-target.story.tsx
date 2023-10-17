@@ -141,12 +141,14 @@ export default () => {
       target.renderGroup(items, { opacity: 0.2 }),
       target.renderRect(120, 10, 80, 80, { clip: () => target.renderGroup(items, { translate: { x: 100, y: 0 } }) }),
       target.renderCircle(180, 150, 50, { clip: () => target.renderGroup(items, { matrix: m3.multiply(m3.translation(150, 150), m3.scaling(0.7, 0.7)) }) }),
+      target.renderPath([[{ x: 0, y: 200 }, { x: 120, y: 200 }, { x: 120, y: 300 }, { x: 0, y: 300 }, { x: 0, y: 200 }], [{ x: 55, y: 230 }, { x: 90, y: 220 }, { x: 90, y: 260 }, { x: 50, y: 260 }, { x: 55, y: 230 }]], { clip: () => target.renderGroup(items, { translate: { x: 10, y: 200 } }), strokeWidth: 0 }),
+      target.renderPolygon([{ x: 55, y: 230 }, { x: 90, y: 220 }, { x: 90, y: 260 }, { x: 50, y: 260 }]),
       target.renderRect(30, 100, 80, 80, {
         clip: () => target.renderGroup([
           target.renderCircle(90, 50, 20, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
         ], { translate: { x: 10, y: 90 } })
       }),
-    ], 230, 200)
+    ], 230, 300)
   }
   const { setOffset } = React.useContext(OffsetXContext)
   React.useEffect(() => {
