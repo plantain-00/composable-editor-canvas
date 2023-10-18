@@ -14,7 +14,7 @@ export type NurbsContent = model.BaseContent<'nurbs'> & model.StrokeFields & mod
 export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
   const NurbsContent = ctx.and(ctx.BaseContent('nurbs'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
-    degree: ctx.minimum(2, ctx.integer),
+    degree: ctx.minimum(1, ctx.integer),
     knots: ctx.optional([ctx.number]),
     weights: ctx.optional([ctx.number]),
   })
@@ -101,9 +101,9 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
             }}
           />)}
         />,
-        degree: <ctx.NumberEditor value={content.degree} setValue={(v) => update(c => { if (isNurbsContent(c) && Number.isInteger(v) && v >= 2) { c.degree = v; c.knots = undefined } })} />,
+        degree: <ctx.NumberEditor value={content.degree} setValue={(v) => update(c => { if (isNurbsContent(c) && Number.isInteger(v) && v >= 1) { c.degree = v; c.knots = undefined } })} />,
         knots: [
-          <ctx.BooleanEditor value={content.knots !== undefined} setValue={(v) => update(c => { if (isNurbsContent(c)) { c.knots = v ? new Array<number>(content.points.length + content.degree + 1).fill(0).map((_, i) => i) : undefined } })} />,
+          <ctx.BooleanEditor value={content.knots !== undefined} setValue={(v) => update(c => { if (isNurbsContent(c)) { c.knots = v ? ctx.getDefaultNurbsKnots(content.points.length, content.degree) : undefined } })} />,
           content.knots !== undefined ? <ctx.ArrayEditor
             inline
             {...ctx.getArrayEditorProps<number, typeof content>(v => v.knots || [], () => content.knots && content.knots.length > 0 ? content.knots[content.knots.length - 1] + 1 : 0, (v) => update(c => { if (isNurbsContent(c)) { v(c) } }))}
@@ -111,7 +111,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
           /> : undefined
         ],
         weights: [
-          <ctx.BooleanEditor value={content.weights !== undefined} setValue={(v) => update(c => { if (isNurbsContent(c)) { c.weights = v ? new Array<number>(content.points.length).fill(1) : undefined } })} />,
+          <ctx.BooleanEditor value={content.weights !== undefined} setValue={(v) => update(c => { if (isNurbsContent(c)) { c.weights = v ? ctx.getDefaultWeights(content.points.length) : undefined } })} />,
           content.weights !== undefined ? <ctx.ArrayEditor
             inline
             {...ctx.getArrayEditorProps<number, typeof content>(v => v.weights || [], 1, (v) => update(c => { if (isNurbsContent(c)) { v(c) } }))}

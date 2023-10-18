@@ -9,8 +9,8 @@ test('interpolateNurbs2', (t) => {
     [0.5, -0.5],
     [1.0, 0.0]
   ]
+  t.snapshot(tvalues.map(t => interpolateNurbs2(t, 2, points, [0, 1, 2, 3, 4, 5, 6])))
   t.snapshot(tvalues.map(t => interpolateNurbs2(t, 2, points)))
-  t.snapshot(tvalues.map(t => interpolateNurbs2(t, 2, points, [0, 0, 0, 1, 2, 2, 2])))
   t.snapshot(tvalues.map(t => interpolateNurbs2(t, 2, [
     [-1.0, 0.0],
     [-0.5, 0.5],

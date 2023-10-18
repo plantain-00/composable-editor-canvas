@@ -4,8 +4,8 @@ export function interpolateNurbs(
   t: number,
   degree: number,
   points: number[],
-  knots = new Array<number>(points.length + degree + 1).fill(0).map((_, i) => i),
-  weights = new Array<number>(points.length).fill(1),
+  knots = getDefaultNurbsKnots(points.length, degree),
+  weights = getDefaultWeights(points.length),
 ) {
   const start = degree, end = knots.length - 1 - degree
   t = t * (knots[end] - knots[start]) + knots[start]
@@ -22,11 +22,29 @@ export function interpolateNurbs(
   return v[s] / w[s]
 }
 
-export function interpolateNurbs2(t: number, degree: number, points: number[][], knots?: number[], weights?: number[]) {
+export function interpolateNurbs2(t: number, degree: number, points: number[][], knots = getDefaultNurbsKnots(points.length, degree), weights = getDefaultWeights(points.length)) {
   return points[0].map((_, i) => interpolateNurbs(t, degree, points.map(p => p[i]), knots, weights))
 }
 
-export function getNurbsPoints(degree: number, points: Position[], knots?: number[], weights?: number[], segmentCount = 100) {
+export function getDefaultNurbsKnots(pointsSize: number, degree: number) {
+  const knots: number[] = []
+  for (let i = 0; i < degree; i++) {
+    knots.push(0)
+  }
+  for (let i = 0; i <= pointsSize - degree; i++) {
+    knots.push(i)
+  }
+  for (let i = 0; i < degree; i++) {
+    knots.push(pointsSize - degree)
+  }
+  return knots
+}
+
+export function getDefaultWeights(pointsSize: number) {
+  return new Array<number>(pointsSize).fill(1)
+}
+
+export function getNurbsPoints(degree: number, points: Position[], knots = getDefaultNurbsKnots(points.length, degree), weights = getDefaultWeights(points.length), segmentCount = 100) {
   const result: Position[] = []
   const x = points.map(p => p.x)
   const y = points.map(p => p.y)
