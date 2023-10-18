@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToBezierCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
+import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPartOfBezierCurve, getPartOfQuadraticCurve, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToBezierCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -69,4 +69,12 @@ test('getTangencyPointToBezierCurve', (t) => {
 
 test('getPerpendicularPointToBezierCurve', (t) => {
   t.snapshot(getPerpendicularPointToBezierCurve({ x: 1556, y: 494 }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+})
+
+test('getPartOfQuadraticCurve', (t) => {
+  t.snapshot(getPartOfQuadraticCurve({ from: { x: 1540, y: 574 }, cp: { x: 1459, y: 481 }, to: { x: 1625, y: 539 } }, 0.2, 0.8))
+})
+
+test('getPartOfBezierCurve', (t) => {
+  t.snapshot(getPartOfBezierCurve({ from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }, 0.2, 0.8))
 })

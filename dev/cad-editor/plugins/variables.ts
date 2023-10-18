@@ -5388,7 +5388,7 @@ export {
 function getModel(ctx) {
   const NurbsContent = ctx.and(ctx.BaseContent("nurbs"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
-    degree: ctx.minimum(2, ctx.integer),
+    degree: ctx.minimum(1, ctx.integer),
     knots: ctx.optional([ctx.number]),
     weights: ctx.optional([ctx.number])
   });
@@ -5504,7 +5504,7 @@ function getModel(ctx) {
           }
         ),
         degree: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.degree, setValue: (v) => update((c) => {
-          if (isNurbsContent(c) && Number.isInteger(v) && v >= 2) {
+          if (isNurbsContent(c) && Number.isInteger(v) && v >= 1) {
             c.degree = v;
             c.knots = void 0;
           }
@@ -5512,7 +5512,7 @@ function getModel(ctx) {
         knots: [
           /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.knots !== void 0, setValue: (v) => update((c) => {
             if (isNurbsContent(c)) {
-              c.knots = v ? new Array(content.points.length + content.degree + 1).fill(0).map((_, i) => i) : void 0;
+              c.knots = v ? ctx.getDefaultNurbsKnots(content.points.length, content.degree) : void 0;
             }
           }) }),
           content.knots !== void 0 ? /* @__PURE__ */ React.createElement(
@@ -5535,7 +5535,7 @@ function getModel(ctx) {
         weights: [
           /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.weights !== void 0, setValue: (v) => update((c) => {
             if (isNurbsContent(c)) {
-              c.weights = v ? new Array(content.points.length).fill(1) : void 0;
+              c.weights = v ? ctx.getDefaultWeights(content.points.length) : void 0;
             }
           }) }),
           content.weights !== void 0 ? /* @__PURE__ */ React.createElement(
