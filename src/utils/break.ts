@@ -1,5 +1,8 @@
-import { getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
+import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
+import { getAngleInRange, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
+import { GeometryLine } from "./intersection"
 import { getPointAndLineSegmentMinimumDistance } from "./perpendicular"
+import { angleToRadian, radianToAngle } from "./radian"
 
 /**
  * @public
@@ -40,7 +43,6 @@ export function breakPolylineToPolylines(
       result[0].unshift(...lastResult.slice(0, lastResult.length - 1))
       return result.slice(0, result.length - 1)
     }
-    return result
   }
   return result
 }
@@ -72,6 +74,166 @@ export function mergePolylinesToPolyline<T extends { points: Position[] }>(lines
       }
     }
   }
+}
+
+export function getGeometryLineStartAndEnd(line: GeometryLine) {
+  if (Array.isArray(line)) {
+    return {
+      start: line[0],
+      end: line[1],
+    }
+  }
+  if (line.type === 'quadratic curve') {
+    return {
+      start: line.curve.from,
+      end: line.curve.to,
+    }
+  }
+  if (line.type === 'bezier curve') {
+    return {
+      start: line.curve.from,
+      end: line.curve.to,
+    }
+  }
+  if (line.type === 'arc') {
+    return {
+      start: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.startAngle)),
+      end: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.endAngle)),
+    }
+  }
+  return {
+    start: getEllipseArcPointAtAngle(line.curve, line.curve.startAngle),
+    end: getEllipseArcPointAtAngle(line.curve, line.curve.endAngle),
+  }
+}
+
+export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Position[]): GeometryLine[][] {
+  const result: GeometryLine[][] = []
+  let current: GeometryLine[] = []
+  let lineStart: Position | undefined
+  let lineEnd: Position | undefined
+  const save = () => {
+    if (current.length > 0) {
+      result.push(current)
+      current = []
+    }
+  }
+  for (const line of lines) {
+    const { start, end } = getGeometryLineStartAndEnd(line)
+    if (!lineStart) lineStart = start
+    let data: { isOnLine: (p: Position) => boolean, breakLine: (points: Position[]) => void } | undefined
+    if (Array.isArray(line)) {
+      data = {
+        isOnLine: p => pointIsOnLine(p, ...line) && pointIsOnLineSegment(p, ...line),
+        breakLine(points) {
+          points.sort((a, b) => getTwoPointsDistance(a, line[0]) - getTwoPointsDistance(b, line[0]))
+          points.unshift(start)
+          points.push(end)
+          for (let i = 1; i < points.length; i++) {
+            current.push([points[i - 1], points[i]])
+            if (i !== points.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'arc') {
+      data = {
+        isOnLine: p => pointIsOnCircle(p, line.curve) && pointIsOnArc(p, line.curve),
+        breakLine(points) {
+          const angles = points.map(p => getAngleInRange(radianToAngle(getCircleRadian(p, line.curve)), line.curve))
+          angles.sort((a, b) => a - b)
+          angles.unshift(line.curve.startAngle)
+          angles.push(line.curve.endAngle)
+          for (let i = 1; i < angles.length; i++) {
+            current.push({
+              type: 'arc',
+              curve: {
+                ...line.curve,
+                startAngle: angles[i - 1],
+                endAngle: angles[i],
+              },
+            })
+            if (i !== angles.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'ellipse arc') {
+      data = {
+        isOnLine: p => pointIsOnEllipse(p, line.curve) && pointIsOnEllipseArc(p, line.curve),
+        breakLine(points) {
+          const angles = points.map(p => getAngleInRange(getEllipseAngle(p, line.curve), line.curve))
+          angles.sort((a, b) => a - b)
+          angles.unshift(line.curve.startAngle)
+          angles.push(line.curve.endAngle)
+          for (let i = 1; i < angles.length; i++) {
+            current.push({
+              type: 'ellipse arc',
+              curve: {
+                ...line.curve,
+                startAngle: angles[i - 1],
+                endAngle: angles[i],
+              },
+            })
+            if (i !== angles.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'quadratic curve') {
+      data = {
+        isOnLine: p => pointIsOnQuadraticCurve(p, line.curve),
+        breakLine(points) {
+          const percents = points.map(p => getQuadraticCurvePercentAtPoint(line.curve, p))
+          percents.sort((a, b) => a - b)
+          percents.unshift(0)
+          percents.push(1)
+          for (let i = 1; i < percents.length; i++) {
+            current.push({
+              type: 'quadratic curve',
+              curve: getPartOfQuadraticCurve(line.curve, percents[i - 1], percents[i]),
+            })
+            if (i !== percents.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'bezier curve') {
+      data = {
+        isOnLine: p => pointIsOnBezierCurve(p, line.curve),
+        breakLine(points) {
+          const percents = points.map(p => getBezierCurvePercentAtPoint(line.curve, p))
+          percents.sort((a, b) => a - b)
+          percents.unshift(0)
+          percents.push(1)
+          for (let i = 1; i < percents.length; i++) {
+            current.push({
+              type: 'bezier curve',
+              curve: getPartOfBezierCurve(line.curve, percents[i - 1], percents[i]),
+            })
+            if (i !== percents.length - 1) save()
+          }
+        },
+      }
+    }
+    if (data) {
+      const { isOnLine: filter, breakLine: handle } = data
+      if (intersectionPoints.some(p => isSamePoint(p, start))) save()
+      const points = intersectionPoints.filter(p => !isSamePoint(p, start) && !isSamePoint(p, end) && filter(p))
+      if (points.length === 0) {
+        current.push(line)
+      } else {
+        handle(points)
+      }
+      if (intersectionPoints.some(p => isSamePoint(p, end))) save()
+    }
+    lineEnd = end
+  }
+  save()
+  if (result.length > 1 && lineStart && lineEnd) {
+    const start = lineStart
+    if (isSamePoint(start, lineEnd) && intersectionPoints.every((p) => !isSamePoint(start, p))) {
+      const end = result.splice(result.length - 1, 1)
+      result[0].unshift(...end[0])
+    }
+  }
+  return result
 }
 
 export function getLinesOffsetDirection(point: Position, lines: [Position, Position][]) {
