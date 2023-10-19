@@ -84,6 +84,10 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
+    break(content, intersectionPoints) {
+      const lines = getPathGeometriesFromCache(content).lines
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
+    },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)
@@ -294,6 +298,14 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => {
+      const lines = getPathGeometriesFromCache(content).lines
+      return ctx.getGeometryLineStartAndEnd(lines[0]).start
+    },
+    getEndPoint: (content) => {
+      const lines = getPathGeometriesFromCache(content).lines
+      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
+    },
   }
 }
 

@@ -5772,6 +5772,10 @@ function getModel(ctx) {
         }
       }
     },
+    break(content, intersectionPoints) {
+      const lines = getPathGeometriesFromCache(content).lines;
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
+    },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -6099,7 +6103,15 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => {
+      const lines = getPathGeometriesFromCache(content).lines;
+      return ctx.getGeometryLineStartAndEnd(lines[0]).start;
+    },
+    getEndPoint: (content) => {
+      const lines = getPathGeometriesFromCache(content).lines;
+      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
+    }
   };
 }
 function isPathContent(content) {
@@ -8387,6 +8399,10 @@ function getModel(ctx) {
     },
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+    },
+    break(content, intersectionPoints) {
+      const lines = getSplineGeometries(content).lines;
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       var _a;

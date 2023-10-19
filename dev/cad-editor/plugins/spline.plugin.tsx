@@ -99,6 +99,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
     },
+    break(content, intersectionPoints) {
+      const lines = getSplineGeometries(content).lines
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
+    },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const { points } = getSplineGeometries(content)
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)

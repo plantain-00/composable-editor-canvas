@@ -166,9 +166,21 @@ export function pointIsOnArc(p: Position, arc: Arc) {
   return angleInRange(radianToAngle(radian), arc)
 }
 
+export function pointIsOnCircle(p: Position, circle: Circle) {
+  return isZero(getTwoPointsDistance(p, circle) - circle.r)
+}
+
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
   const angle = getEllipseAngle(p, ellipseArc)
   return angleInRange(angle, ellipseArc)
+}
+
+export function pointIsOnEllipse({ x, y }: Position, { cx, cy, rx, ry, angle }: Ellipse) {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian)
+  const d2 = Math.cos(radian)
+  // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
+  return isZero((d2 * (x - cx) + d1 * (y - cy)) ^ 2 / rx / rx + (-d1 * (x - cx) + d2 * (y - cy)) ^ 2 / ry / ry - 1)
 }
 
 /**
@@ -248,6 +260,18 @@ export function twoPointLineToGeneralFormLine(point1: Position, point2: Position
     a: dy,
     b: -dx,
     c: -point1.x * dy + point1.y * dx,
+  }
+}
+
+export function pointAndDirectionToGeneralFormLine(point: Position, radian: number): GeneralFormLine {
+  // a x + b y + c = 0
+  // -a/b = sin(radian)/cos(radian)
+  const dx = Math.cos(radian)
+  const dy = Math.sin(radian)
+  return {
+    a: dy,
+    b: -dx,
+    c: -point.x * dy + point.y * dx,
   }
 }
 

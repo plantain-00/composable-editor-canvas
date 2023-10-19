@@ -1,11 +1,12 @@
 import * as React from "react"
-import { arcToPolyline, Circle, ellipseArcToPolyline, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { Arc, arcToPolyline, Circle, ellipseArcToPolyline, getCirclePointAtRadian, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
-import { radianToAngle } from "../../utils/radian"
+import { angleToRadian, radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 import { GeometryLine, getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
-import { getPerpendicularPoint } from "../../utils/perpendicular"
+import { getPerpendicular, getPerpendicularPoint } from "../../utils/perpendicular"
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
+import { getGeometryLineStartAndEnd } from "../../utils/break"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
@@ -353,6 +354,7 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
         if (isZero(p2Direction)) {
           if (last) {
             lines.push([last, p2])
+            last = p2
           }
         } else {
           const index = p2Direction < 0 ? 0 : 1
@@ -365,6 +367,7 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
             const t2 = getPerpendicularPoint(center, line2)
             if (last) {
               lines.push([last, { x: t1.x, y: t1.y }])
+              last = t2
             }
             const startAngle = radianToAngle(getTwoPointsRadian(t1, center))
             const endAngle = radianToAngle(getTwoPointsRadian(t2, center))
@@ -424,6 +427,39 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
     result.push(lines)
   }
   return result
+}
+
+export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[] {
+  const result: PathCommand[] = []
+  let last: Position | undefined
+  for (const n of lines) {
+    const { start, end } = getGeometryLineStartAndEnd(n)
+    if (!last || !isSamePoint(last, start)) {
+      result.push({ type: 'move', to: start })
+    }
+    if (Array.isArray(n)) {
+      result.push({ type: 'line', to: end })
+    } else if (n.type === 'arc') {
+      const p = getArcControlPoint(n.curve)
+      if (p) {
+        result.push({ type: 'arc', from: p, to: end, radius: n.curve.r })
+      }
+    } else if (n.type === 'quadratic curve') {
+      result.push({ type: 'quadraticCurve', cp: n.curve.cp, to: n.curve.to })
+    } else if (n.type === 'bezier curve') {
+      result.push({ type: 'bezierCurve', cp1: n.curve.cp1, cp2: n.curve.cp2, to: n.curve.to })
+    }
+    last = end
+  }
+  return result
+}
+
+export function getArcControlPoint(arc: Arc) {
+  const start = getCirclePointAtRadian(arc, angleToRadian(arc.startAngle))
+  const end = getCirclePointAtRadian(arc, angleToRadian(arc.endAngle))
+  const line1 = getPerpendicular(start, twoPointLineToGeneralFormLine(arc, start))
+  const line2 = getPerpendicular(end, twoPointLineToGeneralFormLine(arc, end))
+  return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }
 
 export function pathCommandPointsToPath(points: Position[][]) {
