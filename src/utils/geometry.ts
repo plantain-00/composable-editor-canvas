@@ -135,6 +135,15 @@ export function multipleDirection(direction: Position, scalar: number): Position
 }
 
 export function getAngleInRange(angle: number, range: AngleRange) {
+  if (range.counterclockwise) {
+    while (angle < range.endAngle && angle <= range.startAngle - 360) {
+      angle += 360
+    }
+    while (angle > range.startAngle) {
+      angle -= 360
+    }
+    return angle
+  }
   while (angle > range.endAngle && angle >= range.startAngle + 360) {
     angle -= 360
   }
@@ -145,7 +154,17 @@ export function getAngleInRange(angle: number, range: AngleRange) {
 }
 
 export function angleInRange(angle: number, range: AngleRange) {
-  return getAngleInRange(angle, range) <= range.endAngle
+  angle = getAngleInRange(angle, range)
+  if (range.counterclockwise) {
+    if (range.endAngle > range.startAngle) {
+      return angle >= range.endAngle - 360
+    }
+    return angle >= range.endAngle
+  }
+  if (range.endAngle < range.startAngle) {
+    return angle <= range.endAngle + 360
+  }
+  return angle <= range.endAngle
 }
 
 /**
@@ -897,13 +916,18 @@ export function getEllipsePointAtRadian(content: Ellipse, radian: number) {
   }
 }
 
-function getAngleRange(range: AngleRange, angleDelta: number) {
+export function getFormattedEndAngle(range: AngleRange) {
   let endAngle: number
   if (range.counterclockwise) {
     endAngle = range.startAngle < range.endAngle ? range.endAngle - 360 : range.endAngle
   } else {
     endAngle = range.startAngle > range.endAngle ? range.endAngle + 360 : range.endAngle
   }
+  return endAngle
+}
+
+function getAngleRange(range: AngleRange, angleDelta: number) {
+  const endAngle = getFormattedEndAngle(range)
   const angles: number[] = []
   for (let i = range.startAngle; ;) {
     if (equals(i, endAngle)) {
@@ -968,6 +992,15 @@ export type PathCommand =
     radius: number
   }
   | {
+    type: 'ellipseArc'
+    rx: number
+    ry: number
+    angle: number
+    largeArc: boolean
+    sweep: boolean
+    to: Position
+  }
+  | {
     type: 'bezierCurve'
     cp1: Position
     cp2: Position
@@ -1001,6 +1034,15 @@ export const PathCommand = (v: unknown, path: Path): ValidationResult => {
     to: Position,
     radius: number,
   }, path)
+  if (v.type === 'ellipseArc') return validate(v, {
+    type: 'ellipseArc',
+    rx: number,
+    ry: number,
+    angle: number,
+    largeArc: boolean,
+    sweep: boolean,
+    to: Position,
+  }, path)
   if (v.type === 'bezierCurve') return validate(v, {
     type: 'bezierCurve',
     cp1: Position,
@@ -1015,7 +1057,7 @@ export const PathCommand = (v: unknown, path: Path): ValidationResult => {
   if (v.type === 'close') return validate(v, {
     type: 'close',
   }, path)
-  return { path: [...path, 'type'], expect: 'or', args: ['move', 'line', 'arc', 'bezierCurve', 'quadraticCurve', 'close'] }
+  return { path: [...path, 'type'], expect: 'or', args: ['move', 'line', 'arc', 'ellipseArc', 'bezierCurve', 'quadraticCurve', 'close'] }
 }
 
 
