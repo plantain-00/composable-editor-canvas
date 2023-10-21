@@ -111,6 +111,8 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
             points.push([last, c.cp1, c.cp2, c.to])
           } else if (c.type === 'arc') {
             points.push([last, c.from, c.to])
+          } else if (c.type === 'ellipseArc') {
+            points.push([last, c.to])
           }
         }
       })
@@ -222,7 +224,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
           {...ctx.getArrayEditorProps<core.PathCommand, typeof content>(v => v.commands, { type: 'line', to: { x: 0, y: 0 } }, (v) => update(c => { if (isPathContent(c)) { v(c) } }))}
           items={content.commands.map((f, i) => {
             const properties: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {
-              type: <ctx.EnumEditor select value={f.type} enums={['move', 'line', 'arc', 'bezierCurve', 'quadraticCurve', 'close'] as const} setValue={(v) => update(c => {
+              type: <ctx.EnumEditor select value={f.type} enums={['move', 'line', 'arc', 'ellipseArc', 'bezierCurve', 'quadraticCurve', 'close'] as const} setValue={(v) => update(c => {
                 if (isPathContent(c)) {
                   if (v === 'move' || v === 'line') {
                     c.commands[i] = {
@@ -234,6 +236,16 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
                       type: v,
                       radius: 10,
                       from: { x: 0, y: 0 },
+                      to: { x: 0, y: 0 },
+                    }
+                  } else if (v === 'ellipseArc') {
+                    c.commands[i] = {
+                      type: v,
+                      rx: 10,
+                      ry: 10,
+                      angle: 0,
+                      sweep: true,
+                      largeArc: true,
                       to: { x: 0, y: 0 },
                     }
                   } else if (v === 'bezierCurve') {
@@ -263,6 +275,13 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
                 x: <ctx.NumberEditor value={f.from.x} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.from.x = v } } })} />,
                 y: <ctx.NumberEditor value={f.from.y} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.from.y = v } } })} />,
               }} />
+              properties.radius = <ctx.NumberEditor value={f.radius} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'arc') { m.radius = v } } })} />
+            } else if (f.type === 'ellipseArc') {
+              properties.rx = <ctx.NumberEditor value={f.rx} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'ellipseArc') { m.rx = v } } })} />
+              properties.ry = <ctx.NumberEditor value={f.ry} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'ellipseArc') { m.ry = v } } })} />
+              properties.angle = <ctx.NumberEditor value={f.angle} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'ellipseArc') { m.angle = v } } })} />
+              properties.largeArc = <ctx.BooleanEditor value={f.largeArc} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'ellipseArc') { m.largeArc = v } } })} />
+              properties.sweep = <ctx.BooleanEditor value={f.sweep} setValue={(v) => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'ellipseArc') { m.sweep = v } } })} />
             } else if (f.type === 'bezierCurve') {
               properties.cp1 = <ctx.ObjectEditor inline properties={{
                 from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPathContent(c)) { const m = c.commands[i]; if (m.type === 'bezierCurve') { m.cp1.x = p.x; m.cp1.y = p.y } } }))}>canvas</ctx.Button>,

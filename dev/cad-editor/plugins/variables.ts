@@ -5800,6 +5800,8 @@ function getModel(ctx) {
             points.push([last, c.cp1, c.cp2, c.to]);
           } else if (c.type === "arc") {
             points.push([last, c.from, c.to]);
+          } else if (c.type === "ellipseArc") {
+            points.push([last, c.to]);
           }
         }
       });
@@ -5917,7 +5919,7 @@ function getModel(ctx) {
             })),
             items: content.commands.map((f, i) => {
               const properties = {
-                type: /* @__PURE__ */ React.createElement(ctx.EnumEditor, { select: true, value: f.type, enums: ["move", "line", "arc", "bezierCurve", "quadraticCurve", "close"], setValue: (v) => update((c) => {
+                type: /* @__PURE__ */ React.createElement(ctx.EnumEditor, { select: true, value: f.type, enums: ["move", "line", "arc", "ellipseArc", "bezierCurve", "quadraticCurve", "close"], setValue: (v) => update((c) => {
                   if (isPathContent(c)) {
                     if (v === "move" || v === "line") {
                       c.commands[i] = {
@@ -5929,6 +5931,16 @@ function getModel(ctx) {
                         type: v,
                         radius: 10,
                         from: { x: 0, y: 0 },
+                        to: { x: 0, y: 0 }
+                      };
+                    } else if (v === "ellipseArc") {
+                      c.commands[i] = {
+                        type: v,
+                        rx: 10,
+                        ry: 10,
+                        angle: 0,
+                        sweep: true,
+                        largeArc: true,
                         to: { x: 0, y: 0 }
                       };
                     } else if (v === "bezierCurve") {
@@ -5980,6 +5992,55 @@ function getModel(ctx) {
                     }
                   }) })
                 } });
+                properties.radius = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.radius, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "arc") {
+                      m.radius = v;
+                    }
+                  }
+                }) });
+              } else if (f.type === "ellipseArc") {
+                properties.rx = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.rx, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "ellipseArc") {
+                      m.rx = v;
+                    }
+                  }
+                }) });
+                properties.ry = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.ry, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "ellipseArc") {
+                      m.ry = v;
+                    }
+                  }
+                }) });
+                properties.angle = /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.angle, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "ellipseArc") {
+                      m.angle = v;
+                    }
+                  }
+                }) });
+                properties.largeArc = /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: f.largeArc, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "ellipseArc") {
+                      m.largeArc = v;
+                    }
+                  }
+                }) });
+                properties.sweep = /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: f.sweep, setValue: (v) => update((c) => {
+                  if (isPathContent(c)) {
+                    const m = c.commands[i];
+                    if (m.type === "ellipseArc") {
+                      m.sweep = v;
+                    }
+                  }
+                }) });
               } else if (f.type === "bezierCurve") {
                 properties.cp1 = /* @__PURE__ */ React.createElement(ctx.ObjectEditor, { inline: true, properties: {
                   from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {

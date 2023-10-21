@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Arc, arcToPolyline, Circle, ellipseArcToPolyline, getCirclePointAtRadian, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { Arc, arcToPolyline, Circle, Ellipse, EllipseArc, ellipseArcToPolyline, getFormattedEndAngle, getCirclePointAtRadian, getEllipseAngle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
@@ -7,6 +7,7 @@ import { GeometryLine, getTwoGeneralFormLinesIntersectionPoint } from "../../uti
 import { getPerpendicular, getPerpendicularPoint } from "../../utils/perpendicular"
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 import { getGeometryLineStartAndEnd } from "../../utils/break"
+import { calculateEquation2 } from "../../utils/equation-calculater"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
@@ -385,6 +386,17 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
           }
         }
       }
+    } else if (command.type === 'ellipseArc') {
+      if (last) {
+        const ellipse = getEllipseArcByStartEnd(last, command.rx, command.ry, command.angle, command.largeArc, command.sweep, command.to)
+        if (ellipse) {
+          lines.push({
+            type: 'ellipse arc',
+            curve: ellipse
+          })
+        }
+      }
+      last = command.to
     } else if (command.type === 'bezierCurve') {
       if (last) {
         lines.push({
@@ -444,6 +456,10 @@ export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[]
       if (p) {
         result.push({ type: 'arc', from: p, to: end, radius: n.curve.r })
       }
+    } else if (n.type === 'ellipse arc') {
+      const endAngle = getFormattedEndAngle(n.curve)
+      const largeArc = Math.abs(endAngle - n.curve.startAngle) > 180
+      result.push({ type: 'ellipseArc', to: end, rx: n.curve.rx, ry: n.curve.ry, angle: n.curve.angle || 0, sweep: !n.curve.counterclockwise, largeArc })
     } else if (n.type === 'quadratic curve') {
       result.push({ type: 'quadraticCurve', cp: n.curve.cp, to: n.curve.to })
     } else if (n.type === 'bezier curve') {
@@ -520,4 +536,58 @@ export function getPathCommandEndPoint(pathCommands: PathCommand[], index: numbe
     }
   }
   return
+}
+
+export function getEllipseArcByStartEnd(
+  from: Position,
+  rx: number,
+  ry: number,
+  angle: number,
+  largeArc: boolean,
+  sweep: boolean,
+  to: Position,
+): EllipseArc | undefined {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian), d3 = 1 / rx / rx, d4 = 1 / ry / ry
+  const f1 = from.x, f2 = from.y, f3 = to.x, f4 = to.y
+  // (d2(f1 - cx) + d1(f2 - cy))^2 d3 + (-d1(f1 - cx) + d2(f2 - cy))^2 d4 - 1 = 0
+  // let u = f1 - cx, v = f2 - cy
+  // (d2 u + d1 v)^2 d3 + (-d1 u + d2 v)^2 d4 - 1 = 0
+  // group u,v F1: (d2 d2 d3 + d1 d1 d4) u u + 2 d1 d2(d3 - d4) v u + (d1 d1 d3 + d2 d2 d4) v v + -1 = 0
+
+  // (d2(f3 - cx) + d1(f4 - cy))^2 d3 + (-d1(f3 - cx) + d2(f4 - cy))^2 d4 - 1 = 0
+  const e1 = f3 - f1, e2 = f4 - f2
+  // (d2(e1 + u) + d1(e2 + v))^2 d3 + (-d1(e1 + u) + d2(e2 + v))^2 d4 - 1 = 0
+  // - F1: group u,v: 2((d2 d2 d3 + d1 d1 d4) e1 + (d3 - d4) d1 d2 e2) u + 2((d3 - d4)d1 d2 e1 + (d1 d1 d3 + d2 d2 d4) e2) v + (d2 d2 d3 + d1 d1 d4) e1 e1 + 2 d1 d2 (d3 - d4) e1 e2 + (d1 d1 d3 + 2 d2 d4) e2 e2 = 0
+  const g1 = d2 * d2 * d3 + d1 * d1 * d4, g2 = d1 * d1 * d3 + d2 * d2 * d4, g3 = d3 - d4
+  // F2: g1 u u + 2 d1 d2 g3 v u + g2 v v + -1 = 0
+  // 2(g1 e1 + g3 d1 d2 e2) u + 2(g3 d1 d2 e1 + g2 e2) v + g1 e1 e1 + 2 d1 d2 g3 e1 e2 + g2 e2 e2 = 0
+  const h2 = 2 * (g3 * d1 * d2 * e1 + g2 * e2), h1 = 2 * (g1 * e1 + g3 * d1 * d2 * e2) / h2, h3 = (g1 * e1 * e1 + 2 * d1 * d2 * g3 * e1 * e2 + g2 * e2 * e2) / h2
+  // v = -(h1 u + h3)
+  // replace F2 with v: (g1 + -2 d1 d2 g3 h1 + g2 h1 h1) u u + (-2 d1 d2 g3 h3 + 2 g2 h1 h3) u + g2 h3 h3 + -1 = 0
+  const us = calculateEquation2(g1 - 2 * d1 * d2 * g3 * h1 + g2 * h1 * h1, -2 * d1 * d2 * g3 * h3 + 2 * g2 * h1 * h3, g2 * h3 * h3 - 1)
+  if (us.length === 0) return
+  const centers = us.map(u => ({
+    x: f1 - u,
+    y: f2 + h1 * u + h3,
+  }))
+  let index: number
+  if (centers.length === 1) {
+    index = 0
+  } else {
+    const firstSide = getPointSideOfLine(centers[0], twoPointLineToGeneralFormLine(from, to))
+    if (firstSide > 0) {
+      index = largeArc === sweep ? 0 : 1
+    } else {
+      index = largeArc !== sweep ? 0 : 1
+    }
+  }
+  const center = centers[index]
+  const ellipse: Ellipse = { cx: center.x, cy: center.y, rx, ry, angle }
+  return {
+    ...ellipse,
+    startAngle: getEllipseAngle(from, ellipse),
+    endAngle: getEllipseAngle(to, ellipse),
+    counterclockwise: !sweep,
+  }
 }

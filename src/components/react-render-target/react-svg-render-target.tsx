@@ -199,6 +199,9 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
             }
           }
         }
+      } else if (command.type === 'ellipseArc') {
+        d += ` A ${command.rx} ${command.ry} ${command.angle} ${command.largeArc ? 1 : 0} ${command.sweep ? 1 : 0} ${command.to.x} ${command.to.y}`
+        last = command.to
       } else if (command.type === 'bezierCurve') {
         d += ` C ${command.cp1.x} ${command.cp1.y}, ${command.cp2.x} ${command.cp2.y}, ${command.to.x} ${command.to.y}`
         last = command.to

@@ -2,10 +2,11 @@ import * as React from "react"
 import { m3 } from "../../utils/matrix"
 import { setCanvasLineDash } from "./create-webgl-renderer"
 import { getImageFromCache } from "./image-loader"
-import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, RenderTransform, renderPartStyledPolyline } from "./react-render-target"
+import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, RenderTransform, getEllipseArcByStartEnd, renderPartStyledPolyline } from "./react-render-target"
 import { getColorString } from "../../utils/color"
 import { angleToRadian } from "../../utils/radian"
 import { defaultMiterLimit } from "../../utils/triangles"
+import { Position } from "../../utils/geometry"
 
 /**
  * @public
@@ -165,6 +166,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       ctx.save()
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
+      let last: Position | undefined
       for (const command of pathCommands) {
         if (command.type === 'move') {
           ctx.moveTo(command.to.x, command.to.y)
@@ -172,12 +174,22 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
           ctx.lineTo(command.to.x, command.to.y)
         } else if (command.type === 'arc') {
           ctx.arcTo(command.from.x, command.from.y, command.to.x, command.to.y, command.radius)
+        } else if (command.type === 'ellipseArc') {
+          if (last) {
+            const ellipse = getEllipseArcByStartEnd(last, command.rx, command.ry, command.angle, command.largeArc, command.sweep, command.to)
+            if (ellipse) {
+              ctx.ellipse(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, angleToRadian(ellipse.angle), angleToRadian(ellipse.startAngle), angleToRadian(ellipse.endAngle), ellipse.counterclockwise)
+            }
+          }
         } else if (command.type === 'bezierCurve') {
           ctx.bezierCurveTo(command.cp1.x, command.cp1.y, command.cp2.x, command.cp2.y, command.to.x, command.to.y)
         } else if (command.type === 'quadraticCurve') {
           ctx.quadraticCurveTo(command.cp.x, command.cp.y, command.to.x, command.to.y)
         } else if (command.type === 'close') {
           ctx.closePath()
+        }
+        if (command.type !== 'close') {
+          last = command.to
         }
       }
       if (options?.closed) {

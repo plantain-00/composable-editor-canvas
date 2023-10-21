@@ -128,7 +128,7 @@ export default () => {
   ], 230, 190)
 
   const renderPathCommands = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
-    target.renderPathCommands([{ type: 'move', to: { x: 220, y: 10 } }, { type: 'arc', from: { x: 220, y: 80 }, to: { x: 150, y: 10 }, radius: 20 }, { type: 'line', to: { x: 150, y: 10 } }, { type: 'quadraticCurve', cp: { x: 150, y: 90 }, to: { x: 110, y: 70 } }, { type: 'bezierCurve', cp1: { x: 70, y: 20 }, cp2: { x: 40, y: 80 }, to: { x: 10, y: 10 } }], { strokeColor: 0x00ff00 }),
+    target.renderPathCommands([{ type: 'move', to: { x: 220, y: 10 } }, { type: 'arc', from: { x: 220, y: 80 }, to: { x: 150, y: 10 }, radius: 20 }, { type: 'line', to: { x: 150, y: 10 } }, { type: 'quadraticCurve', cp: { x: 150, y: 90 }, to: { x: 110, y: 70 } }, { type: 'bezierCurve', cp1: { x: 70, y: 20 }, cp2: { x: 40, y: 80 }, to: { x: 10, y: 10 } }, { type: 'ellipseArc', rx: 30, ry: 20, angle: 0, largeArc: false, sweep: true, to: { x: 50, y: 30 } }], { strokeColor: 0x00ff00 }),
   ], 230, 90)
 
   const renderGroups = <T,>(target: ReactRenderTarget<T>) => {
