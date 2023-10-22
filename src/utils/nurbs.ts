@@ -1,28 +1,40 @@
 import { Position } from "./geometry"
 
-export function interpolateNurbs(
+export function interpolateBSpline(
   t: number,
   degree: number,
-  points: number[],
-  knots = getDefaultNurbsKnots(points.length, degree),
-  weights = getDefaultWeights(points.length),
+  x: number[],
+  knots = getDefaultNurbsKnots(x.length, degree),
 ) {
   const start = degree, end = knots.length - 1 - degree
   t = t * (knots[end] - knots[start]) + knots[start]
   const s = knots.findIndex((k, i) => i >= start && i < end && k <= t && knots[i + 1] >= t)
-  const v = points.map((_, i) => points[i] * weights[i])
-  const w = [...weights]
+  const v = [...x]
   for (let k = start; k >= 0; k--) {
     for (let i = s; i > s - k; i--) {
       const alpha = (t - knots[i]) / (knots[i + k] - knots[i])
       v[i] = (1 - alpha) * v[i - 1] + alpha * v[i]
-      w[i] = (1 - alpha) * w[i - 1] + alpha * w[i]
     }
   }
-  return v[s] / w[s]
+  return v[s]
 }
 
-export function interpolateNurbs2(t: number, degree: number, points: number[][], knots = getDefaultNurbsKnots(points.length, degree), weights = getDefaultWeights(points.length)) {
+export function interpolateNurbs(
+  t: number,
+  degree: number,
+  x: number[],
+  knots = getDefaultNurbsKnots(x.length, degree),
+  weights?: number[],
+) {
+  if (!weights) {
+    return interpolateBSpline(t, degree, x, knots)
+  }
+  const result = interpolateBSpline(t, degree, x.map((_, i) => x[i] * weights[i]), knots)
+  const weight = interpolateBSpline(t, degree, weights, knots)
+  return result / weight
+}
+
+export function interpolateNurbs2(t: number, degree: number, points: number[][], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[]) {
   return points[0].map((_, i) => interpolateNurbs(t, degree, points.map(p => p[i]), knots, weights))
 }
 
@@ -44,7 +56,7 @@ export function getDefaultWeights(pointsSize: number) {
   return new Array<number>(pointsSize).fill(1)
 }
 
-export function getNurbsPoints(degree: number, points: Position[], knots = getDefaultNurbsKnots(points.length, degree), weights = getDefaultWeights(points.length), segmentCount = 100) {
+export function getNurbsPoints(degree: number, points: Position[], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[], segmentCount = 100) {
   const result: Position[] = []
   const x = points.map(p => p.x)
   const y = points.map(p => p.y)
