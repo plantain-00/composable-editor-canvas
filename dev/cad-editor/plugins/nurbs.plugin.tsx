@@ -23,12 +23,25 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     return geometriesCache.get(content, () => {
       let points: core.Position[]
       const nurbsSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
+      let lines: core.GeometryLine[]
       if (content.points.length > 2) {
-        points = ctx.getNurbsPoints(content.degree, content.points, content.knots, content.weights, nurbsSegmentCount)
+        if (!content.weights && !content.knots && (content.degree === 2 || content.points.length === 3)) {
+          lines = ctx.getQuadraticSplineCurves(content.points).map(c => ({ type: 'quadratic curve' as const, curve: c }))
+          points = ctx.getGeometryLinesPoints(lines, nurbsSegmentCount)
+        } else if (!content.weights && !content.knots && content.degree === 3) {
+          lines = ctx.getBezierSplineCurves(content.points, false).map(c => ({ type: 'bezier curve' as const, curve: c }))
+          points = ctx.getGeometryLinesPoints(lines, nurbsSegmentCount)
+        } else if (!content.weights && !content.knots && content.degree === 1) {
+          points = content.points
+          lines = Array.from(ctx.iteratePolylineLines(points))
+        } else {
+          points = ctx.getNurbsPoints(content.degree, content.points, content.knots, content.weights, nurbsSegmentCount)
+          lines = Array.from(ctx.iteratePolylineLines(points))
+        }
       } else {
         points = content.points
+        lines = Array.from(ctx.iteratePolylineLines(points))
       }
-      const lines = Array.from(ctx.iteratePolylineLines(points))
       return {
         lines,
         points,
