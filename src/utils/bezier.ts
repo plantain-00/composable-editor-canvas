@@ -1,13 +1,14 @@
 import { calculateEquation2, calculateEquation3 } from "./equation-calculater"
 import { Position, getTwoPointCenter, isZero } from "./geometry"
 import { BezierCurve, QuadraticCurve } from "./intersection"
+import { toBezierCurves } from "./nurbs"
 import { Vec3 } from "./types"
 
-function interpolate2(n1: number, n2: number, percent: number) {
+export function interpolate2(n1: number, n2: number, percent: number) {
   return n1 + (n2 - n1) * percent
 }
 
-function interpolate3(n1: number, n2: number, n3: number, percent: number) {
+export function interpolate3(n1: number, n2: number, n3: number, percent: number) {
   return interpolate2(
     interpolate2(n1, n2, percent),
     interpolate2(n2, n3, percent),
@@ -15,7 +16,7 @@ function interpolate3(n1: number, n2: number, n3: number, percent: number) {
   )
 }
 
-function interpolate4(n1: number, n2: number, n3: number, n4: number, percent: number) {
+export function interpolate4(n1: number, n2: number, n3: number, n4: number, percent: number) {
   return interpolate3(
     interpolate2(n1, n2, percent),
     interpolate2(n2, n3, percent),
@@ -103,8 +104,23 @@ export function getBezierCurvePoints3D(p1: Vec3, p2: Vec3, p3: Vec3, p4: Vec3, s
   return points
 }
 
-export function getBezierSplineCurves(points: Position[]) {
+export function getBezierSplineCurves(points: Position[], fitting = true) {
   const result: BezierCurve[] = []
+  if (!fitting) {
+    const x = points.map(p => p.x)
+    const y = points.map(p => p.y)
+    for (let i = 1; i < points.length - 2; i++) {
+      const sx = toBezierCurves(x, i)
+      const sy = toBezierCurves(y, i)
+      result.push({
+        from: { x: sx.from, y: sy.from },
+        cp1: { x: sx.cp1, y: sy.cp1 },
+        cp2: { x: sx.cp2, y: sy.cp2 },
+        to: { x: sx.to, y: sy.to },
+      })
+    }
+    return result
+  }
   const cps = getBezierSplineControlPointsOfPoints(points)
   cps.forEach((p, i) => {
     result.push({

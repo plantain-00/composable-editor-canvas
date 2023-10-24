@@ -34,6 +34,87 @@ export function interpolateNurbs(
   return result / weight
 }
 
+export function toBezierCurves(x: number[], i: number) {
+  if (i === 1) {
+    if (x.length === 4) {
+      return {
+        from: x[0],
+        cp1: x[1],
+        cp2: x[2],
+        to: x[3],
+      }
+    }
+    if (x.length === 5) {
+      return {
+        from: x[0],
+        cp1: x[1],
+        cp2: x[1] / 2 + x[2] / 2,
+        to: x[1] / 4 + x[2] / 2 + x[3] / 4,
+      }
+    }
+    return {
+      from: x[0],
+      cp1: x[1],
+      cp2: 0.5 * x[2] + 0.5 * x[1],
+      to: x[3] / 6 + 7 / 12 * x[2] + x[1] / 4,
+    }
+  }
+  if (i === 2) {
+    if (x.length === 5) {
+      return {
+        from: 0.25 * x[1] + 0.25 * x[3] + 0.5 * x[2],
+        cp1: 0.5 * x[2] + 0.5 * x[3],
+        cp2: x[3],
+        to: x[4],
+      }
+    }
+    if (x.length === 6) {
+      return {
+        from: 7 / 12 * x[2] + x[3] / 6 + 0.25 * x[1],
+        cp1: 2 / 3 * x[2] + x[3] / 3,
+        cp2: x[2] / 3 + 2 / 3 * x[3],
+        to: x[2] / 6 + 7 / 12 * x[3] + x[4] / 4,
+      }
+    }
+    return {
+      from: x[1] / 4 + x[3] / 6 + 7 / 12 * x[2],
+      cp1: x[3] / 3 + 2 * x[2] / 3,
+      cp2: 2 / 3 * x[3] + x[2] / 3,
+      to: x[4] / 6 + 2 / 3 * x[3] + x[2] / 6,
+    }
+  }
+  if (i === x.length - 4) {
+    return {
+      from: x[x.length - 5] / 6 + 2 / 3 * x[x.length - 4] + x[x.length - 3] / 6,
+      cp1: x[x.length - 3] / 3 + 2 / 3 * x[x.length - 4],
+      cp2: 2 / 3 * x[x.length - 3] + x[x.length - 4] / 3,
+      to: x[x.length - 2] / 4 + 7 / 12 * x[x.length - 3] + x[x.length - 4] / 6,
+    }
+  }
+  if (i === x.length - 3) {
+    return {
+      from: x[x.length - 4] / 6 + 7 / 12 * x[x.length - 3] + x[x.length - 2] / 4,
+      cp1: x[x.length - 2] / 2 + x[x.length - 3] / 2,
+      cp2: x[x.length - 2],
+      to: x[x.length - 1],
+    }
+  }
+  return {
+    from: x[i + 1] / 6 + 2 / 3 * x[i] + x[i - 1] / 6,
+    cp1: x[i + 1] / 3 + 2 * x[i] / 3,
+    cp2: 2 * x[i + 1] / 3 + x[i] / 3,
+    to: x[i + 2] / 6 + 2 / 3 * x[i + 1] + x[i] / 6,
+  }
+}
+
+export function toQuadraticCurves(x: number[], i: number) {
+  return {
+    from: i === 1 ? x[0] : (x[i - 1] + x[i]) / 2,
+    cp: x[i],
+    to: i === x.length - 2 ? x[x.length - 1] : (x[i] + x[i + 1]) / 2,
+  }
+}
+
 export function interpolateNurbs2(t: number, degree: number, points: number[][], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[]) {
   return points[0].map((_, i) => interpolateNurbs(t, degree, points.map(p => p[i]), knots, weights))
 }

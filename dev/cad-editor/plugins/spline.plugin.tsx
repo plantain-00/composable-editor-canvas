@@ -31,8 +31,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       if (content.points.length > 2) {
         if (content.fitting) {
           lines = ctx.getBezierSplineCurves(content.points).map(c => ({ type: 'bezier curve' as const, curve: c }))
-        } else {
+        } else if (content.points.length === 3) {
           lines = ctx.getQuadraticSplineCurves(content.points).map(c => ({ type: 'quadratic curve' as const, curve: c }))
+        } else {
+          lines = ctx.getBezierSplineCurves(content.points, false).map(c => ({ type: 'bezier curve' as const, curve: c }))
         }
         points = ctx.getGeometryLinesPoints(lines, splineSegmentCount)
       } else {
