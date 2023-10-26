@@ -949,6 +949,20 @@ function getAngleRange(range: AngleRange, angleDelta: number) {
   return angles
 }
 
+export function getArcLength(arc: Arc) {
+  const endAngle = getFormattedEndAngle(arc)
+  return arc.r * angleToRadian(Math.abs(endAngle - arc.startAngle))
+}
+
+export function getPolygonArea(points: Position[]) {
+  let result = 0
+  for (let i = 0; i < points.length; i++) {
+    const next = i === points.length - 1 ? 0 : i + 1
+    result += points[i].x * points[next].y - points[next].x * points[i].y
+  }
+  return Math.abs(result) / 2
+}
+
 /**
  * @public
  */
