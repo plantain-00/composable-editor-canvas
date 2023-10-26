@@ -235,3 +235,38 @@ export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
 }
+
+export function getCircleTangentRadianAtRadian(circle: Circle, radian: number) {
+  return radian + Math.PI / 2
+}
+
+export function getEllipseTangentRadianAtRadian(ellipse: Ellipse, t: number) {
+  const { rx, ry, angle } = ellipse
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  // x = d2 rx cos(t) - d1 ry sin(t) + cx
+  // y = d1 rx cos(t) + d2 ry sin(t) + cy
+  // x' = -cos(t) d1 ry - d2 rx sin(t)
+  // y' = cos(t) d2 ry - d1 rx sin(t)
+  const d3 = Math.cos(t) * ry, d4 = Math.sin(t) * rx
+  return Math.atan2(d3 * d2 - d1 * d4, -d3 * d1 - d2 * d4)
+}
+
+export function getQuadraticCurveTangentRadianAtPercent({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, u: number) {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 u u + 2 c1 u + a1
+  // y = c4 u u + 2 c3 u + b1
+  // x' = 2 c2 u + 2 c1
+  // y' = 2 c4 u + 2 c3
+  return Math.atan2(c4 * u + c3, c2 * u + c1)
+}
+
+export function getBezierCurveTangentRadianAtPercent({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, t: number) {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = c4 t t t + c5 t t + c6 t + b1
+  // x' = 3 c1 t^2 + 2 c2 t + c3
+  // y' = 3 c4 t^2 + 2 c5 t + c6
+  return Math.atan2(3 * c4 * t ^ 2 + 2 * c5 * t + c6, 3 * c1 * t ^ 2 + 2 * c2 * t + c3)
+}
