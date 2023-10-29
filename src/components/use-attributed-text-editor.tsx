@@ -26,13 +26,14 @@ export function useAttributedTextEditor<T extends object>(props: {
   onBlur?: () => void
   onFocus?: () => void
   autoFocus?: boolean
-  getReadonlyType?: (attributes?: T) => string | undefined
+  getReadonlyType?: (attributes?: T) => string | true | undefined
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [contentHeight, setContentHeight] = React.useState(0)
   const [currentAttributes, setCurrentAttributes] = React.useState<{ index: number, attributes: T }>()
+  const [lineEnd, setLineEnd] = React.useState(false)
 
   const inputText = (text: string) => {
     if (props.readOnly) return
@@ -53,11 +54,12 @@ export function useAttributedTextEditor<T extends object>(props: {
     const inReadonlyRangeEnd = readonlyRanges.find(r => location === r.max)?.max === newLocation
     for (const s of middleState) {
       const k = newLocation - index
-      if (k >= 0 && (inReadonlyRangeEnd ? k < s.insert.length : k <= s.insert.length) && !inserted) {
+      const insertLength = getInsertLength(s)
+      if (k >= 0 && (inReadonlyRangeEnd ? k < insertLength : k <= insertLength) && !inserted) {
         if (inReadonlyRangeStart && k === 0) {
           newState.push({ insert: text, attributes: currentAttributes?.attributes }, s)
           inserted = true
-          index += s.insert.length
+          index += insertLength
           continue
         }
         if (currentAttributes) {
@@ -74,7 +76,7 @@ export function useAttributedTextEditor<T extends object>(props: {
             },
             insert: text,
           })
-          if (k < s.insert.length) {
+          if (k < insertLength) {
             newState.push({
               attributes: s.attributes,
               insert: s.insert.slice(k),
@@ -90,7 +92,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     if (!inserted) {
       newState.push({ insert: text, attributes: currentAttributes?.attributes })
@@ -117,7 +119,8 @@ export function useAttributedTextEditor<T extends object>(props: {
     let inserted = false
     for (const s of middleState) {
       const k = newLocation - index
-      if (k >= 0 && k <= s.insert.length && !inserted) {
+      const insertLength = getInsertLength(s)
+      if (k >= 0 && k <= insertLength && !inserted) {
         newState.push({
           attributes: s.attributes,
           insert: s.insert.slice(0, k),
@@ -132,7 +135,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     if (!inserted) {
       newState.push(...newContents)
@@ -147,11 +150,12 @@ export function useAttributedTextEditor<T extends object>(props: {
     for (const s of props.state) {
       const kMin = range.min - index
       const kMax = range.max - index
+      const insertLength = getInsertLength(s)
       if (kMin < 0) {
-        if (kMax >= s.insert.length) {
+        if (kMax >= insertLength) {
           //
         } else if (kMax >= 0) {
-          if (kMax < s.insert.length) {
+          if (kMax < insertLength) {
             newState.push({
               attributes: s.attributes,
               insert: s.insert.slice(kMax),
@@ -160,14 +164,14 @@ export function useAttributedTextEditor<T extends object>(props: {
         } else {
           newState.push(s)
         }
-      } else if (kMin < s.insert.length) {
+      } else if (kMin < insertLength) {
         if (kMin > 0) {
           newState.push({
             attributes: s.attributes,
             insert: s.insert.slice(0, kMin),
           })
         }
-        if (kMax < s.insert.length) {
+        if (kMax < insertLength) {
           newState.push({
             attributes: s.attributes,
             insert: s.insert.slice(kMax),
@@ -176,7 +180,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     return newState
   }
@@ -201,7 +205,8 @@ export function useAttributedTextEditor<T extends object>(props: {
     let deleted = false
     for (const s of props.state) {
       const k = location - index
-      if (k >= 0 && k <= s.insert.length && !deleted) {
+      const insertLength = getInsertLength(s)
+      if (k >= 0 && k <= insertLength && !deleted) {
         newState.push({
           attributes: s.attributes,
           insert: s.insert.slice(0, k - 1) + s.insert.slice(k),
@@ -210,7 +215,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     props.setState(newState)
   }
@@ -233,7 +238,8 @@ export function useAttributedTextEditor<T extends object>(props: {
     let deleted = false
     for (const s of props.state) {
       const k = location - index + 1
-      if (k >= 0 && k <= s.insert.length && !deleted) {
+      const insertLength = getInsertLength(s)
+      if (k >= 0 && k <= insertLength && !deleted) {
         newState.push({
           attributes: s.attributes,
           insert: s.insert.slice(0, k - 1) + s.insert.slice(k),
@@ -242,7 +248,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     props.setState(newState)
   }
@@ -258,7 +264,7 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
-    setLocation(getNewLocation(location - 1, 'min'))
+    setLocation(getNewLocation({ location: location - 1 }, 'min'))
   }
   const arrowRight = (shift = false) => {
     if (!shift && range) {
@@ -272,7 +278,7 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (shift && selectionStart === undefined) {
       setSelectionStart(location)
     }
-    setLocation(getNewLocation(location + 1, 'max'))
+    setLocation(getNewLocation({ location: location + 1 }, 'max'))
   }
   const arrowUp = (shift = false) => {
     if (!shift && range) {
@@ -320,8 +326,9 @@ export function useAttributedTextEditor<T extends object>(props: {
     for (const s of props.state) {
       const kMin = range.min - index
       const kMax = range.max - index
+      const insertLength = getInsertLength(s)
       if (kMin < 0) {
-        if (kMax >= s.insert.length) {
+        if (kMax >= insertLength) {
           newState.push(s)
         } else if (kMax >= 0) {
           if (kMax > 0) {
@@ -333,7 +340,7 @@ export function useAttributedTextEditor<T extends object>(props: {
         } else {
           //
         }
-      } else if (kMin < s.insert.length) {
+      } else if (kMin < insertLength) {
         newState.push({
           attributes: s.attributes,
           insert: s.insert.slice(kMin, kMax),
@@ -341,7 +348,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         //
       }
-      index += s.insert.length
+      index += insertLength
     }
     return newState
   }
@@ -369,6 +376,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       }
     })
   }
+  const getInsertLength = (s: AttributedText<T>) => props.getReadonlyType?.(s.attributes) === true ? 1 : s.insert.length
   const setSelectedAttributes = (attributes: T | ((oldAttributes?: T) => T)) => {
     if (!range) {
       if (typeof attributes !== 'function') {
@@ -399,8 +407,14 @@ export function useAttributedTextEditor<T extends object>(props: {
     for (const s of props.state) {
       const kMin = range.min - index
       const kMax = range.max - index
-      if (kMin < 0) {
-        if (kMax >= s.insert.length) {
+      const insertLength = getInsertLength(s)
+      if (props.getReadonlyType?.(s.attributes) === true && kMin === 0) {
+        newState.push({
+          attributes: getNewAttributes(s.attributes),
+          insert: s.insert,
+        })
+      } else if (kMin < 0) {
+        if (kMax >= insertLength) {
           newState.push({
             insert: s.insert,
             attributes: getNewAttributes(s.attributes),
@@ -412,7 +426,7 @@ export function useAttributedTextEditor<T extends object>(props: {
               insert: s.insert.slice(0, kMax),
             })
           }
-          if (kMax < s.insert.length) {
+          if (kMax < insertLength) {
             newState.push({
               attributes: s.attributes,
               insert: s.insert.slice(kMax),
@@ -421,7 +435,7 @@ export function useAttributedTextEditor<T extends object>(props: {
         } else {
           newState.push(s)
         }
-      } else if (kMin < s.insert.length) {
+      } else if (kMin < insertLength) {
         if (kMin > 0) {
           newState.push({
             attributes: s.attributes,
@@ -432,7 +446,7 @@ export function useAttributedTextEditor<T extends object>(props: {
           attributes: getNewAttributes(s.attributes),
           insert: s.insert.slice(kMin, kMax),
         })
-        if (kMax < s.insert.length) {
+        if (kMax < insertLength) {
           newState.push({
             attributes: s.attributes,
             insert: s.insert.slice(kMax),
@@ -441,15 +455,15 @@ export function useAttributedTextEditor<T extends object>(props: {
       } else {
         newState.push(s)
       }
-      index += s.insert.length
+      index += insertLength
     }
     props.setState(newState)
   }
   const onDoubleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    const p = positionToLocation(getPosition(e))
+    const p = positionToLocation(getPosition(e)).location
     const { newSelectionStart, newLocation } = getWordByDoubleClick(layoutInput, p, c => c.insert)
-    if (newSelectionStart !== undefined) setSelectionStart(getNewLocation(newSelectionStart, 'min'))
-    if (newLocation !== undefined) setLocation(getNewLocation(newLocation, 'max'))
+    if (newSelectionStart !== undefined) setSelectionStart(getNewLocation({ location: newSelectionStart }, 'min'))
+    if (newLocation !== undefined) setLocation(getNewLocation({ location: newLocation }, 'max'))
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
@@ -504,8 +518,13 @@ export function useAttributedTextEditor<T extends object>(props: {
       y: e.clientY - bounding.top,
     }
   }
-  const positionToLocation = (p: Position, ignoreInvisible = true) => {
-    return getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible)?.location ?? layoutResult.length - 1
+  const positionToLocation = (p: Position, ignoreInvisible = true): { location: number, fromRight?: boolean } => {
+    const loc = getFlowLayoutLocation(p, lineHeights, layoutResult, scrollY, props.getWidth, ignoreInvisible)
+    if (loc) {
+      setLineEnd(loc.lineEnd)
+      return loc
+    }
+    return { location: layoutResult.length - 1 }
   }
   const isPositionInRange = (p: Position) => {
     if (range) {
@@ -538,7 +557,7 @@ export function useAttributedTextEditor<T extends object>(props: {
   const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (downLocation.current === undefined) {
       if (dragLocation !== undefined) {
-        setDragLocation(positionToLocation(getPosition(e), false))
+        setDragLocation(positionToLocation(getPosition(e), false).location)
       }
       return
     }
@@ -589,12 +608,20 @@ export function useAttributedTextEditor<T extends object>(props: {
   }, [props.autoHeight, setY])
 
   const layoutInput: AttributedText<T>[] = []
-  const readonlyRanges: { min: number, max: number, type: string }[] = []
+  const readonlyRanges: { min: number, max: number, type?: string }[] = []
   for (const s of props.state) {
     const type = props.getReadonlyType?.(s.attributes)
     if (type) {
       const min = layoutInput.length
-      const max = layoutInput.length + s.insert.length
+      const max = layoutInput.length + getInsertLength(s)
+      if (type === true) {
+        readonlyRanges.push({
+          min,
+          max,
+        })
+        layoutInput.push({ insert: s.insert, attributes: s.attributes })
+        continue
+      }
       const readonlyRange = readonlyRanges.find(r => r.type === type && r.max === min)
       if (readonlyRange) {
         readonlyRange.max = max
@@ -610,19 +637,32 @@ export function useAttributedTextEditor<T extends object>(props: {
       layoutInput.push({ insert: c, attributes: s.attributes })
     }
   }
-  const getNewLocation = (p: number, type: 'min' | 'max' | 'nearest' | 'farthest') => {
-    const readonlyRange = readonlyRanges.find(r => p > r.min && p < r.max)
+  const getNewLocation = (p: { location: number, fromRight?: boolean }, type: 'min' | 'max' | 'nearest' | 'farthest') => {
+    if (type === 'farthest' || type === 'nearest') {
+      if (p.fromRight) {
+        const readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.min)
+        if (readonlyRange) {
+          return type === 'nearest' ? readonlyRange.min : readonlyRange.max
+        }
+      } else {
+        const readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.max)
+        if (readonlyRange) {
+          return type === 'nearest' ? readonlyRange.max : readonlyRange.min
+        }
+      }
+    }
+    const readonlyRange = readonlyRanges.find(r => p.location > r.min && p.location < r.max)
     if (readonlyRange) {
       if (type === 'farthest') {
-        p = downLocation.current ?? p
-        return p > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.min : readonlyRange.max
+        const loc = downLocation.current ?? p.location
+        return loc > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.min : readonlyRange.max
       }
       if (type === 'nearest') {
-        return p > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.max : readonlyRange.min
+        return p.location > (readonlyRange.max + readonlyRange.min) / 2 ? readonlyRange.max : readonlyRange.min
       }
       return readonlyRange[type]
     }
-    return p
+    return p.location
   }
   const { layoutResult, newContentHeight, lineHeights } = flowLayout({
     state: layoutInput,
@@ -645,11 +685,16 @@ export function useAttributedTextEditor<T extends object>(props: {
   const lastLineHeight = lineHeights[lineHeights.length - 1]
 
   const range = selectionStart !== undefined ? { min: Math.min(selectionStart, location), max: Math.max(selectionStart, location), size: Math.abs(selectionStart - location) } : undefined
-  const p = layoutResult[dragLocation ?? location] ?? layoutResult[layoutResult.length - 1]
-  const cursorX = p.x
+  let cursorLocation = dragLocation ?? location
+  const cursorAtEnd = lineEnd && cursorLocation > 0 && layoutResult[cursorLocation - 1]
+  if (cursorAtEnd) {
+    cursorLocation--
+  }
+  const p = layoutResult[cursorLocation] ?? layoutResult[layoutResult.length - 1]
+  const cursorX = p.x + (cursorAtEnd ? props.getWidth(layoutResult[cursorLocation].content) : 0)
   const cursorY = p.y - scrollY
   const cursorRow = p.row
-  const cursorIndex = range ? range.min : location
+  const cursorIndex = range ? range.min + 1 : location
   let cursorContent = layoutInput[cursorIndex > 0 ? cursorIndex - 1 : cursorIndex]
   if (currentAttributes && !range && currentAttributes.index === location) {
     cursorContent = {
