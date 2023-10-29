@@ -181,7 +181,7 @@ export function getFlowLayoutLocation<T>(
   getWidth: (content: T) => number,
   ignoreInvisible = true,
   getHeight?: (content: T) => number | undefined,
-) {
+): { location: number, lineEnd: boolean, fromRight?: boolean } | undefined {
   if (y < scrollY) {
     return { location: 0, lineEnd: false }
   }
@@ -211,7 +211,7 @@ export function getFlowLayoutLocation<T>(
         x <= p.x + getWidth(p.content) / 2 &&
         (!result || result.x + getWidth(result.content) / 2 <= x)
       ) {
-        return { location: p.i, lineEnd: false }
+        return { location: p.i, lineEnd: false, fromRight: x > p.x }
       }
       result = p
     } else if (result !== undefined && i !== layoutResult.length - 1) {

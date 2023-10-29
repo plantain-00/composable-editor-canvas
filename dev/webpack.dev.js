@@ -20,6 +20,10 @@ module.exports = {
           loader: 'tsx',
         },
       },
+      {
+        test: /\.(ttf|eot|woff2?)$/,
+        type: 'asset/resource',
+      },
     ],
   },
   plugins: [

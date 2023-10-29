@@ -2,6 +2,7 @@ import React from 'react'
 import * as opentype from 'opentype.js'
 import { bindMultipleRefs, Button, EnumEditor, metaKeyIfMacElseCtrlKey, NumberEditor, ObjectEditor, PathCommand, reactCanvasRenderTarget, ReactRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget, scaleByCursorPosition, StringEditor, useGlobalKeyDown, useWheelScroll, useWheelZoom, useWindowSize } from '../src'
 import type { CopyData } from './cad-editor/plugins/copy-paste.plugin'
+import { allFonts, opentypeCommandsToPathCommands } from './opentype/utils'
 
 export default () => {
   const size = useWindowSize()
@@ -51,13 +52,7 @@ export default () => {
   React.useEffect(() => {
     if (!font) return
     const paths = font.getPaths(text, 0, fontSize, fontSize, { xScale: xScale * fontSize / font.unitsPerEm, yScale: yScale * fontSize / font.unitsPerEm })
-    const commands: PathCommand[][] = paths.map(path => path.commands.map(c => {
-      if (c.type === 'M') return { type: 'move', to: c }
-      if (c.type === 'L') return { type: 'line', to: c }
-      if (c.type === 'C') return { type: 'bezierCurve', cp1: { x: c.x1, y: c.y1 }, cp2: { x: c.x2, y: c.y2 }, to: c }
-      if (c.type === 'Q') return { type: 'quadraticCurve', cp: { x: c.x1, y: c.y1 }, to: c }
-      return { type: 'close' }
-    }))
+    const commands = paths.map(path => opentypeCommandsToPathCommands(path))
     setCommands(commands)
   }, [text, font, fontSize, target, xScale, yScale])
 
@@ -87,7 +82,3 @@ export default () => {
 }
 
 const allRenderTargets: ReactRenderTarget<unknown>[] = [reactCanvasRenderTarget, reactSvgRenderTarget, reactWebglRenderTarget]
-const allFonts = [
-  { name: 'STSong', url: 'https://raw.githubusercontent.com/Haixing-Hu/latex-chinese-fonts/master/chinese/%E5%AE%8B%E4%BD%93/STSong.ttf' },
-  { name: 'Arial', url: 'https://raw.githubusercontent.com/Haixing-Hu/latex-chinese-fonts/master/english/Sans/Arial.ttf' },
-]
