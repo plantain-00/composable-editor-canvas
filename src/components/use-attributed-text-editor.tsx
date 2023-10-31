@@ -39,9 +39,16 @@ export function useAttributedTextEditor<T extends object>(props: {
     if (props.readOnly) return
     let middleState: AttributedText<T>[]
     let newLocation: number
+    let attributes = currentAttributes
     if (range) {
       newLocation = range.min
       middleState = deleteContentsInRange(range)
+      if (cursorContent.attributes && !props.getReadonlyType?.(cursorContent.attributes)) {
+        attributes = {
+          attributes: cursorContent.attributes,
+          index: range.min
+        }
+      }
     } else {
       newLocation = location
       middleState = props.state
@@ -57,12 +64,12 @@ export function useAttributedTextEditor<T extends object>(props: {
       const insertLength = getInsertLength(s)
       if (k >= 0 && (inReadonlyRangeEnd ? k < insertLength : k <= insertLength) && !inserted) {
         if (inReadonlyRangeStart && k === 0) {
-          newState.push({ insert: text, attributes: currentAttributes?.attributes }, s)
+          newState.push({ insert: text, attributes: attributes?.attributes }, s)
           inserted = true
           index += insertLength
           continue
         }
-        if (currentAttributes) {
+        if (attributes) {
           if (k > 0) {
             newState.push({
               attributes: s.attributes,
@@ -72,7 +79,7 @@ export function useAttributedTextEditor<T extends object>(props: {
           newState.push({
             attributes: {
               ...s.attributes,
-              ...currentAttributes.attributes,
+              ...attributes.attributes,
             },
             insert: text,
           })
@@ -95,7 +102,7 @@ export function useAttributedTextEditor<T extends object>(props: {
       index += insertLength
     }
     if (!inserted) {
-      newState.push({ insert: text, attributes: currentAttributes?.attributes })
+      newState.push({ insert: text, attributes: attributes?.attributes })
     }
     props.setState(newState)
   }
