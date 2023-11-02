@@ -18,7 +18,7 @@ export function getCommand(ctx: PluginContext): Command {
       const newIndexes: (number | undefined)[] = []
       let validContentCount = 0
       const invalidContentsIndex: number[] = []
-      const contentIsValid = (d: core.Nullable<model.BaseContent>): d is model.BaseContent => !!d && ((ctx.getContentModel(d)?.isValid?.(d) ?? true) === true)
+      const contentIsValid = (d: core.Nullable<model.BaseContent>): d is model.BaseContent => !!d && ((ctx.getContentModel(d)?.isValid(d) ?? true) === true)
       contents.forEach((d, i) => {
         if (contentIsValid(d)) {
           newIndexes.push(validContentCount)

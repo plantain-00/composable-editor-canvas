@@ -962,12 +962,10 @@ function getModel(ctx) {
         content.y = p.y;
       },
       offset(content, point, distance) {
-        return ctx.produce(content, (d) => {
-          if (!distance) {
-            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
-          }
-          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
-        });
+        if (!distance) {
+          distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
+        }
+        return ctx.getParallelCirclesByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfCircle(point, content))];
       },
       break(content, points) {
         if (points.length < 2) {
@@ -1161,12 +1159,10 @@ function getModel(ctx) {
         content.endAngle = endAngle;
       },
       offset(content, point, distance) {
-        return ctx.produce(content, (d) => {
-          if (!distance) {
-            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
-          }
-          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1);
-        });
+        if (!distance) {
+          distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r);
+        }
+        return ctx.getParallelArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfArc(point, content))];
       },
       break(content, points) {
         if (points.length === 0) {
@@ -1719,8 +1715,8 @@ function getCommand(ctx) {
       let validContentCount = 0;
       const invalidContentsIndex = [];
       const contentIsValid = (d) => {
-        var _a2, _b2, _c;
-        return !!d && ((_c = (_b2 = (_a2 = ctx.getContentModel(d)) == null ? void 0 : _a2.isValid) == null ? void 0 : _b2.call(_a2, d)) != null ? _c : true) === true;
+        var _a2, _b2;
+        return !!d && ((_b2 = (_a2 = ctx.getContentModel(d)) == null ? void 0 : _a2.isValid(d)) != null ? _b2 : true) === true;
       };
       contents.forEach((d, i) => {
         if (contentIsValid(d)) {
@@ -2610,15 +2606,10 @@ function getModel(ctx) {
       content.angle = 2 * angle - ((_a = content.angle) != null ? _a : 0);
     },
     offset(content, point, distance) {
-      var _a;
       if (!distance) {
         distance = Math.min(...getEllipseGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
-      distance *= ((_a = this.isPointIn) == null ? void 0 : _a.call(this, content, point)) ? -1 : 1;
-      return ctx.produce(content, (d) => {
-        d.rx += distance;
-        d.ry += distance;
-      });
+      return ctx.getParallelEllipsesByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipse(point, content))];
     },
     break(content, points) {
       if (points.length < 2) {
@@ -2840,11 +2831,7 @@ function getModel(ctx) {
         if (!distance) {
           distance = Math.min(...getEllipseArcGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
         }
-        distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1;
-        return ctx.produce(content, (d) => {
-          d.rx += distance;
-          d.ry += distance;
-        });
+        return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))];
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
         var _a;
@@ -4399,7 +4386,7 @@ function getModel(ctx) {
       if (!distance) {
         distance = Math.min(...getPolylineGeometries(content).lines.map((line2) => ctx.getPointAndGeometryLineMinimumDistance(point, line2)));
       }
-      const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.getPointSideOfLine(point, line) > 0 ? 1 : 0];
+      const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.pointSideToIndex(ctx.getPointSideOfLine(point, line))];
       const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine));
       const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine));
       if (!r1 || !r2)
@@ -5635,6 +5622,19 @@ function getCommand(ctx) {
     var _a;
     return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) !== void 0;
   }
+  function getOffsetResult(content, p, offset) {
+    const model = ctx.getContentModel(content);
+    if (model == null ? void 0 : model.offset) {
+      const newContent = model.offset(content, p, offset);
+      if (Array.isArray(newContent)) {
+        return newContent.filter((c) => model.isValid(c) === true);
+      }
+      if (newContent && model.isValid(newContent) === true) {
+        return [newContent];
+      }
+    }
+    return [];
+  }
   return {
     name: "offset",
     useCommand({ onEnd, type }) {
@@ -5657,16 +5657,10 @@ function getCommand(ctx) {
           resetInput();
           onEnd({
             updateContents: (contents, selected) => {
-              var _a, _b;
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c));
               for (const content of target) {
                 if (content) {
-                  const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, p, offset);
-                  if (Array.isArray(newContent)) {
-                    contents.push(...newContent);
-                  } else if (newContent) {
-                    contents.push(newContent);
-                  }
+                  contents.push(...getOffsetResult(content, p, offset));
                 }
               }
               setCursorPosition(void 0);
@@ -5682,16 +5676,11 @@ function getCommand(ctx) {
           setCursorPosition(p);
         },
         updateSelectedContent(content) {
-          var _a, _b;
           if (cursorPosition) {
-            const newContent = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) == null ? void 0 : _b.call(_a, content, cursorPosition, offset);
-            if (Array.isArray(newContent)) {
+            const newContents = getOffsetResult(content, cursorPosition, offset);
+            if (newContents.length > 0) {
               return {
-                newContents: newContent
-              };
-            } else if (newContent) {
-              return {
-                newContents: [newContent]
+                newContents
               };
             }
           }
@@ -9492,7 +9481,8 @@ function getModel(ctx) {
     tableModel,
     {
       type: "table cell text",
-      ...ctx.textModel
+      ...ctx.textModel,
+      isValid: (c, p) => ctx.validate(c, TableCellText, p)
     }
   ];
 }

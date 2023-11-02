@@ -367,6 +367,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     {
       type: 'table cell text',
       ...ctx.textModel,
+      isValid: (c, p) => ctx.validate(c, TableCellText, p),
     }
   ]
 }
