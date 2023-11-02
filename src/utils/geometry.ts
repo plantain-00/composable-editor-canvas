@@ -673,8 +673,8 @@ export interface Ellipse {
 export const Ellipse = {
   cx: number,
   cy: number,
-  rx: number,
-  ry: number,
+  rx: minimum(0, number),
+  ry: minimum(0, number),
   angle: /* @__PURE__ */ optional(number),
 }
 

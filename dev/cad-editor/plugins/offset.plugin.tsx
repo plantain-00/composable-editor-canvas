@@ -1,4 +1,5 @@
 import type { Command } from '../command'
+import type * as core from '../../../src'
 import type { PluginContext } from './types'
 import type * as model from '../model'
 
@@ -12,6 +13,19 @@ export function getCommand(ctx: PluginContext): Command {
   )
   function contentSelectable(content: model.BaseContent) {
     return ctx.getContentModel(content)?.offset !== undefined
+  }
+  function getOffsetResult(content: model.BaseContent, p: core.Position, offset: number) {
+    const model = ctx.getContentModel(content)
+    if (model?.offset) {
+      const newContent = model.offset(content, p, offset)
+      if (Array.isArray(newContent)) {
+        return newContent.filter(c => model.isValid(c) === true)
+      }
+      if (newContent && model.isValid(newContent) === true) {
+        return [newContent]
+      }
+    }
+    return []
   }
   return {
     name: 'offset',
@@ -38,12 +52,7 @@ export function getCommand(ctx: PluginContext): Command {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c))
               for (const content of target) {
                 if (content) {
-                  const newContent = ctx.getContentModel(content)?.offset?.(content, p, offset)
-                  if (Array.isArray(newContent)) {
-                    contents.push(...newContent)
-                  } else if (newContent) {
-                    contents.push(newContent)
-                  }
+                  contents.push(...getOffsetResult(content, p, offset))
                 }
               }
               setCursorPosition(undefined)
@@ -60,14 +69,10 @@ export function getCommand(ctx: PluginContext): Command {
         },
         updateSelectedContent(content) {
           if (cursorPosition) {
-            const newContent = ctx.getContentModel(content)?.offset?.(content, cursorPosition, offset)
-            if (Array.isArray(newContent)) {
+            const newContents = getOffsetResult(content, cursorPosition, offset)
+            if (newContents.length > 0) {
               return {
-                newContents: newContent,
-              }
-            } else if (newContent) {
-              return {
-                newContents: [newContent],
+                newContents,
               }
             }
           }

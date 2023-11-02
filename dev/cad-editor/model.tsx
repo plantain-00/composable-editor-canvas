@@ -29,8 +29,8 @@ export const Content = (v: unknown, path: Path): ValidationResult => {
     return { path, expect: 'type' }
   }
   const model = modelCenter[t]
-  if (!model?.isValid) {
-    return true
+  if (!model) {
+    return { path, expect: 'register' }
   }
   return model.isValid(v, path)
 }
@@ -210,7 +210,7 @@ export type Model<T> = Partial<FeatureModels> & {
   ): JSX.Element
   getRefIds?(content: T): number[] | undefined
   updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
-  isValid?(content: Omit<T, 'type'>, path?: Path): ValidationResult
+  isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position): boolean
   getStartPoint?(content: T): Position

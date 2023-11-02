@@ -99,11 +99,7 @@ export function getModel(ctx: PluginContext) {
       if (!distance) {
         distance = Math.min(...getEllipseGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= this.isPointIn?.(content, point) ? -1 : 1
-      return ctx.produce(content, (d) => {
-        d.rx += distance
-        d.ry += distance
-      })
+      return ctx.getParallelEllipsesByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipse(point, content))]
     },
     break(content, points) {
       if (points.length < 2) {
@@ -295,11 +291,7 @@ export function getModel(ctx: PluginContext) {
         if (!distance) {
           distance = Math.min(...getEllipseArcGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
         }
-        distance *= ctx.pointInPolygon(point, getEllipseArcGeometries(content).points) ? -1 : 1
-        return ctx.produce(content, (d) => {
-          d.rx += distance
-          d.ry += distance
-        })
+        return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))]
       },
       render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)

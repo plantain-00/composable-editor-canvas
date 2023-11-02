@@ -100,12 +100,10 @@ export function getModel(ctx: PluginContext) {
         content.y = p.y
       },
       offset(content, point, distance) {
-        return ctx.produce(content, (d) => {
-          if (!distance) {
-            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
-          }
-          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
-        })
+        if (!distance) {
+          distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
+        }
+        return ctx.getParallelCirclesByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfCircle(point, content))]
       },
       break(content, points) {
         if (points.length < 2) {
@@ -258,12 +256,10 @@ export function getModel(ctx: PluginContext) {
         content.endAngle = endAngle
       },
       offset(content, point, distance) {
-        return ctx.produce(content, (d) => {
-          if (!distance) {
-            distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
-          }
-          d.r += distance * (ctx.getTwoPointsDistance(content, point) < content.r ? -1 : 1)
-        })
+        if (!distance) {
+          distance = ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(point, content), content.r)
+        }
+        return ctx.getParallelArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfArc(point, content))]
       },
       break(content, points) {
         if (points.length === 0) {

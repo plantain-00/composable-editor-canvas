@@ -245,5 +245,9 @@ export function getLinesOffsetDirection(point: Position, lines: [Position, Posit
     }
   }
   const line = min?.line ?? lines[0]
-  return getPointSideOfLine(point, twoPointLineToGeneralFormLine(...line)) > 0 ? 1 : 0
+  return pointSideToIndex(getPointSideOfLine(point, twoPointLineToGeneralFormLine(...line)))
+}
+
+export function pointSideToIndex(side: number) {
+  return side > 0 ? 1 : 0
 }
