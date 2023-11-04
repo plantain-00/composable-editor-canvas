@@ -1,5 +1,6 @@
+import { getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
 import { calculateEquation3, calculateEquation5, newtonIterate } from "./equation-calculater"
-import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine } from "./geometry"
+import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine, minimumBy } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
 import { angleToRadian, radianToAngle } from "./radian"
 
@@ -9,6 +10,35 @@ export function getPerpendicular(point: Position, line: GeneralFormLine) {
     b: line.a,
     c: point.x * line.b - line.a * point.y,
   }
+}
+
+export function getPerpendicularToGeometryLine(point: Position, line: GeometryLine): GeneralFormLine | undefined {
+  if (Array.isArray(line)) {
+    return getPerpendicular(point, twoPointLineToGeneralFormLine(...line))
+  }
+  let p: Position | undefined
+  if (line.type === 'arc') {
+    p = getPerpendicularPointToCircle(point, line.curve).point
+  } else if (line.type === 'ellipse arc') {
+    const radian = getPerpendicularPointRadianToEllipse(point, line.curve)
+    if (radian !== undefined) {
+      p = getEllipsePointAtRadian(line.curve, radian)
+    }
+  } else if (line.type === 'quadratic curve') {
+    const percent = getPerpendicularPercentToQuadraticCurve(point, line.curve)[0]
+    if (percent !== undefined) {
+      p = getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, percent)
+    }
+  } else if (line.type === 'bezier curve') {
+    const percent = getPerpendicularPercentToBezierCurve(point, line.curve)[0]
+    if (percent !== undefined) {
+      p = getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, percent)
+    }
+  }
+  if (p) {
+    return twoPointLineToGeneralFormLine(point, p)
+  }
+  return
 }
 
 export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine): Position {
@@ -61,7 +91,7 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   return newtonIterate(r0, r => f1(Math.cos(r), Math.sin(r)), r => f2(Math.cos(r), Math.sin(r)), delta)
 }
 
-export function getPerpendicularPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
+export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 u u + 2 c1 u + a1
   // y = c4 u u + 2 c3 u + b1
@@ -82,13 +112,15 @@ export function getPerpendicularPointToQuadraticCurve({ x: a0, y: b0 }: Position
     a4 * c1 + b4 * c3,
     delta,
   )
-  return us.filter(u => u >= 0 && u <= 1).map(u => ({
-    x: c2 * u * u + 2 * c1 * u + a1,
-    y: c4 * u * u + 2 * c3 * u + b1,
-  }))
+  return us
 }
 
-export function getPerpendicularPointToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = 1e-5) {
+export function getPerpendicularPointToQuadraticCurve(point: Position, curve: QuadraticCurve, delta = 1e-5) {
+  const us = getPerpendicularPercentToQuadraticCurve(point, curve, delta)
+  return us.filter(u => u >= 0 && u <= 1).map(u => getQuadraticCurvePointAtPercent(curve.from, curve.cp, curve.to, u))
+}
+
+export function getPerpendicularPercentToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = 1e-5) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
@@ -114,10 +146,12 @@ export function getPerpendicularPointToBezierCurve({ x: a0, y: b0 }: Position, {
     ],
     delta,
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
-    x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
-    y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
-  }))
+  return ts
+}
+
+export function getPerpendicularPointToBezierCurve(point: Position, curve: BezierCurve, delta = 1e-5) {
+  const us = getPerpendicularPercentToBezierCurve(point, curve, delta)
+  return us.filter(u => u >= 0 && u <= 1).map(u => getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, u))
 }
 
 export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position) {
@@ -128,18 +162,7 @@ export function getPointAndLineSegmentNearestPointAndDistance(position: Position
       distance: getTwoPointsDistance(position, perpendicularPoint),
     }
   }
-  const d1 = getTwoPointsDistance(position, point1)
-  const d2 = getTwoPointsDistance(position, point2)
-  if (d1 < d2) {
-    return {
-      point: point1,
-      distance: d1,
-    }
-  }
-  return {
-    point: point2,
-    distance: d2,
-  }
+  return minimumBy([{ point: point1, distance: getTwoPointsDistance(position, point1) }, { point: point2, distance: getTwoPointsDistance(position, point2) }], v => v.distance)
 }
 
 export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line: GeometryLine) {
@@ -165,18 +188,7 @@ export function getPointAndArcNearestPointAndDistance(position: Position, arc: A
   }
   const point3 = getArcPointAtAngle(arc, arc.startAngle)
   const point4 = getArcPointAtAngle(arc, arc.endAngle)
-  const d3 = getTwoPointsDistance(position, point3)
-  const d4 = getTwoPointsDistance(position, point4)
-  if (d3 < d4) {
-    return {
-      point: point3,
-      distance: d3,
-    }
-  }
-  return {
-    point: point4,
-    distance: d4,
-  }
+  return minimumBy([{ point: point3, distance: getTwoPointsDistance(position, point3) }, { point: point4, distance: getTwoPointsDistance(position, point4) }], v => v.distance)
 }
 
 export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc) {
@@ -190,58 +202,43 @@ export function getPointAndEllipseArcNearestPointAndDistance(position: Position,
   }
   const point3 = getEllipseArcPointAtAngle(ellipseArc, ellipseArc.startAngle)
   const point4 = getEllipseArcPointAtAngle(ellipseArc, ellipseArc.endAngle)
-  const d3 = getTwoPointsDistance(position, point3)
-  const d4 = getTwoPointsDistance(position, point4)
-  if (d3 < d4) {
-    return {
-      point: point3,
-      distance: d3,
-    }
-  }
-  return {
-    point: point4,
-    distance: d4,
-  }
+  return minimumBy([{ point: point3, distance: getTwoPointsDistance(position, point3) }, { point: point4, distance: getTwoPointsDistance(position, point4) }], v => v.distance)
 }
 
-export function getPointAndQuadraticCurveNearestPointAndDistance(position: Position, curve: QuadraticCurve) {
-  const points = getPerpendicularPointToQuadraticCurve(position, curve)
-  points.push(curve.from, curve.to)
-  let result = {
-    point: points[0],
-    distance: getTwoPointsDistance(position, points[0])
+export function getPointAndQuadraticCurveNearestPointAndDistance(position: Position, curve: QuadraticCurve, extend = false) {
+  let us = getPerpendicularPercentToQuadraticCurve(position, curve)
+  if (!extend) {
+    us = us.filter(u => u >= 0 && u <= 1)
   }
-  for (let i = 1; i < points.length; i++) {
-    const point = points[i]
-    const distance = getTwoPointsDistance(position, point)
-    if (distance < result.distance) {
-      result = {
-        point,
-        distance,
-      }
-    }
-  }
-  return result
+  const points = us.map(u => ({
+    u,
+    p: getQuadraticCurvePointAtPercent(curve.from, curve.cp, curve.to, u),
+  }))
+  points.push({ u: 0, p: curve.from }, { u: 1, p: curve.to })
+  const results = points.map(p => ({
+    percent: p.u,
+    point: p.p,
+    distance: getTwoPointsDistance(position, p.p)
+  }))
+  return minimumBy(results, v => v.distance)
 }
 
-export function getPointAndBezierCurveNearestPointAndDistance(position: Position, curve: BezierCurve) {
-  const points = getPerpendicularPointToBezierCurve(position, curve)
-  points.push(curve.from, curve.to)
-  let result = {
-    point: points[0],
-    distance: getTwoPointsDistance(position, points[0])
+export function getPointAndBezierCurveNearestPointAndDistance(position: Position, curve: BezierCurve, extend = false) {
+  let us = getPerpendicularPercentToBezierCurve(position, curve)
+  if (!extend) {
+    us = us.filter(u => u >= 0 && u <= 1)
   }
-  for (let i = 1; i < points.length; i++) {
-    const point = points[i]
-    const distance = getTwoPointsDistance(position, point)
-    if (distance < result.distance) {
-      result = {
-        point,
-        distance,
-      }
-    }
-  }
-  return result
+  const points = us.map(u => ({
+    u,
+    p: getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, u),
+  }))
+  points.push({ u: 0, p: curve.from }, { u: 1, p: curve.to })
+  const results = points.map(p => ({
+    percent: p.u,
+    point: p.p,
+    distance: getTwoPointsDistance(position, p.p)
+  }))
+  return minimumBy(results, v => v.distance)
 }
 
 export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine) {

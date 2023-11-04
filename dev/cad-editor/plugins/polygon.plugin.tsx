@@ -71,7 +71,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
           points.push(p)
         }
       }
-      return ctx.trimOffsetResult(points, point).map(p => ctx.produce(content, (d) => {
+      return ctx.trimOffsetResult(points, point, true).map(p => ctx.produce(content, (d) => {
         d.points = p
       }))
     },

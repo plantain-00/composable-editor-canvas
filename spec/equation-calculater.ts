@@ -1,5 +1,5 @@
 import test from 'ava'
-import { calculateEquation2, calculateEquation3, calculateEquation4, isZero } from '../src'
+import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5, isZero } from '../src'
 
 test('calculate2', (t) => {
   function calculate(b: number, c: number) {
@@ -32,4 +32,10 @@ test('calculate4', (t) => {
   }
   calculate(2, 3, 4, 5)
   calculate(-91.9109137181446, -3883.2794987528127, 338909.5212583375, 1382.1028009808458 - 1404)
+})
+
+test('calculate5', (t) => {
+  t.snapshot(calculateEquation5([7.071056120832166, -23.262358240508846, 30.960350917062048, -14.07113243539834, -2.7073208816199905, 4.197849310408487, -0.044600854567165005], 0.5))
+  t.snapshot(calculateEquation5([7.0567150091369735, -24.17843958459045, 33.346089135242096, -16.62301668732119, -1.938654426185055, 4.3413557871976245, -0.08361877325786682], 0.5))
+  t.snapshot(calculateEquation5([7.0567150091369735, -24.17843958459045, 33.346089135242096, -16.62301668732119, -1.938654426185055, 4.3413557871976245, -0.08361877325786682], 0.5))
 })

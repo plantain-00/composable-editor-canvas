@@ -1,7 +1,6 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
-import { getAngleInRange, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getPointSideOfLine, getTwoPointsDistance, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine } from "./geometry"
+import { getAngleInRange, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getTwoPointsDistance, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
 import { GeometryLine } from "./intersection"
-import { getPointAndLineSegmentMinimumDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 
 /**
@@ -234,20 +233,4 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
     }
   }
   return result
-}
-
-export function getLinesOffsetDirection(point: Position, lines: [Position, Position][]) {
-  let min: { distance: number, line: [Position, Position] } | undefined
-  for (const line of lines) {
-    const distance = getPointAndLineSegmentMinimumDistance(point, ...line)
-    if (!min || distance < min.distance) {
-      min = { distance, line }
-    }
-  }
-  const line = min?.line ?? lines[0]
-  return pointSideToIndex(getPointSideOfLine(point, twoPointLineToGeneralFormLine(...line)))
-}
-
-export function pointSideToIndex(side: number) {
-  return side > 0 ? 1 : 0
 }

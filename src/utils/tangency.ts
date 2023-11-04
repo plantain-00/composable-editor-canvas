@@ -268,5 +268,5 @@ export function getBezierCurveTangentRadianAtPercent({ from: { x: a1, y: b1 }, c
   // y = c4 t t t + c5 t t + c6 t + b1
   // x' = 3 c1 t^2 + 2 c2 t + c3
   // y' = 3 c4 t^2 + 2 c5 t + c6
-  return Math.atan2(3 * c4 * t ^ 2 + 2 * c5 * t + c6, 3 * c1 * t ^ 2 + 2 * c2 * t + c3)
+  return Math.atan2(3 * c4 * t ** 2 + 2 * c5 * t + c6, 3 * c1 * t ** 2 + 2 * c2 * t + c3)
 }

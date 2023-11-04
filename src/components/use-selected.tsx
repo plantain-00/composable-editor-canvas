@@ -27,7 +27,6 @@ export function useSelected<T extends SelectPath = SelectPath>(options?: Partial
     }
   }
   const removeSelection = (value: readonly T[]) => {
-    console.info(selected, value)
     setSelected(selected.filter(s => value.every(v => !isSamePath(v, s))))
   }
   const filterSelection = (selectable?: (value: T) => boolean, maxCount = options?.maxCount, s = selected) => {

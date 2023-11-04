@@ -777,6 +777,25 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
   ]
 }
 
+export function getParallelLineSegmentsByDistance(line: [Position, Position], distance: number): [[Position, Position], [Position, Position]] {
+  if (isZero(distance)) {
+    return [line, line]
+  }
+  const radian = getTwoPointsRadian(line[1], line[0])
+  const leftRadian = radian - Math.PI / 2
+  const rightRadian = radian + Math.PI / 2
+  return [
+    [
+      getPointByLengthAndRadian(line[0], distance, rightRadian),
+      getPointByLengthAndRadian(line[1], distance, rightRadian)
+    ],
+    [
+      getPointByLengthAndRadian(line[0], distance, leftRadian),
+      getPointByLengthAndRadian(line[1], distance, leftRadian)
+    ],
+  ]
+}
+
 /**
  * @public
  */
@@ -1124,3 +1143,25 @@ export type Image = Region & {
 export const Image = /* @__PURE__ */ and(Region, {
   url: string,
 })
+
+export function minimumBy<T>(values: T[], by: (value: T) => number) {
+  let result = values[0]
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i]
+    if (by(value) < by(result)) {
+      result = value
+    }
+  }
+  return result
+}
+
+export function maxmiumBy<T>(values: T[], by: (value: T) => number) {
+  let result = values[0]
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i]
+    if (by(value) < by(result)) {
+      result = value
+    }
+  }
+  return result
+}

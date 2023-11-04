@@ -4522,7 +4522,7 @@ function getModel(ctx) {
             points.push(p);
           }
         }
-        return ctx.trimOffsetResult(points, point).map((p) => ctx.produce(content, (d) => {
+        return ctx.trimOffsetResult(points, point, closed).map((p) => ctx.produce(content, (d) => {
           d.points = p;
         }));
       },
@@ -5778,6 +5778,13 @@ function getModel(ctx) {
       const lines = getPathGeometriesFromCache(content).lines;
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
     },
+    offset(content, point, distance) {
+      const lines = getPathGeometriesFromCache(content).lines;
+      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((g) => ({
+        ...content,
+        commands: ctx.geometryLineToPathCommands(g)
+      }));
+    },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents);
@@ -6737,7 +6744,7 @@ function getModel(ctx) {
           points.push(p);
         }
       }
-      return ctx.trimOffsetResult(points, point).map((p) => ctx.produce(content, (d) => {
+      return ctx.trimOffsetResult(points, point, true).map((p) => ctx.produce(content, (d) => {
         d.points = p;
       }));
     },
