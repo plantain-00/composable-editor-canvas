@@ -228,19 +228,14 @@ export function newtonIterate(
   f1:(x: number) => number,
   f2:(x: number) => number,
   delta: number,
-  maxIteratorCount = 20,
+  maxIteratorCount = 100,
 ) {
   let x = x0
   let count = 0
-  let last: number | undefined
   for (; ;) {
     const g = f1(x)
     const d = Math.abs(g)
     if (d < delta) break
-    if (last && count > 1 && d >= last) {
-      return
-    }
-    last = d
     if (count > maxIteratorCount) {
       return
     }

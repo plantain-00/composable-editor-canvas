@@ -52,7 +52,6 @@ export type GeometryLine = [Position, Position]
   | { type: 'quadratic curve', curve: QuadraticCurve }
   | { type: 'bezier curve', curve: BezierCurve }
 
-
 /**
  * @public
  */
@@ -64,58 +63,93 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
   return undefined
 }
 
-export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = 1e-5) {
   if (Array.isArray(line1)) {
     if (Array.isArray(line2)) {
-      const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
+      const point = extend
+        ? getTwoLinesIntersectionPoint(...line1, ...line2)
+        : getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
       if (point) {
         return [point]
       }
       return []
     }
     if (line2.type === 'arc') {
+      if (extend) {
+        return getLineCircleIntersectionPoints(...line1, line2.curve, delta)
+      }
       return getLineSegmentArcIntersectionPoints(...line1, line2.curve)
     }
     if (line2.type === 'ellipse arc') {
+      if (extend) {
+        return getLineEllipseIntersectionPoints(...line1, line2.curve)
+      }
       return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.curve)
     }
     if (line2.type === 'quadratic curve') {
+      if (extend) {
+        return getLineQuadraticCurveIntersectionPoints(...line1, line2.curve, true)
+      }
       return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
+    }
+    if (extend) {
+      return getLineBezierCurveIntersectionPoints(...line1, line2.curve, true)
     }
     return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
   }
-  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'arc') {
     if (line2.type === 'arc') {
+      if (extend) {
+        return getTwoCircleIntersectionPoints(line1.curve, line2.curve)
+      }
       return getTwoArcIntersectionPoints(line1.curve, line2.curve)
     }
     if (line2.type === 'ellipse arc') {
+      if (extend) {
+        return getCircleEllipseIntersectionPoints(line1.curve, line2.curve)
+      }
       return getArcEllipseArcIntersectionPoints(line1.curve, line2.curve)
     }
     if (line2.type === 'quadratic curve') {
+      if (extend) {
+        return getCircleQuadraticCurveIntersectionPoints(line1.curve, line2.curve, true)
+      }
       return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    }
+    if (extend) {
+      return getCircleBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
     }
     return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
   }
-  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'ellipse arc') {
     if (line2.type === 'ellipse arc') {
+      if (extend) {
+        return getTwoEllipseIntersectionPoints(line1.curve, line2.curve)
+      }
       return getTwoEllipseArcIntersectionPoints(line1.curve, line2.curve)
     }
     if (line2.type === 'quadratic curve') {
+      if (extend) {
+        return getEllipseQuadraticCurveIntersectionPoints(line1.curve, line2.curve, true)
+      }
       return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+    }
+    if (extend) {
+      return getEllipseBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
     }
     return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
   }
-  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1)
+  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'quadratic curve') {
     if (line2.type === 'quadratic curve') {
-      return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+      return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend)
     }
-    return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve)
+    return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
   }
-  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1)
-  return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve)
+  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
 }
 
 /**
@@ -249,7 +283,7 @@ export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
 /**
  * @public
  */
-export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle) {
+export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle, delta?: number) {
   // (x - x1)^2 + (y - y1)^2 = r r
   // let u = x - x1, v = y - y1
   // F1: u^2 + v^2 - r r = 0
@@ -272,7 +306,7 @@ export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x:
   // (bb - 4ac)/4/d/d = d d r r + e e r r + -s s = h r r -  s s
   const t = r * r * h - s * s
   // bb - 4ac = 4 d d t
-  if (t < 0 && !isZero(t)) {
+  if (t < 0 && !isZero(t, delta)) {
     return []
   }
   // u = -b/2/a = -2 e s/2/h = -e s/h
@@ -284,7 +318,7 @@ export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x:
   // y = v + y1 = d s/h + y1
   const j = d * s / h + y1
 
-  if (isZero(t)) {
+  if (isZero(t, delta)) {
     return [
       {
         x: i,
@@ -589,6 +623,7 @@ export function getLineQuadraticCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+  extend = false,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -598,8 +633,11 @@ export function getLineQuadraticCurveIntersectionPoints(
   const e1 = x2 - x1, e2 = y2 - y1
   // (x - x1) e2 - (y - y1) e1 = 0
   // replace x, y, group t: (-c4 e1 + c2 e2) t t + (-2 c3 e1 + 2 c1 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
-  const ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  let ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
@@ -612,6 +650,7 @@ export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, 
 export function getCircleQuadraticCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+  extend = false,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -619,14 +658,17 @@ export function getCircleQuadraticCurveIntersectionPoints(
 
   // (x - x1)^2 + (y - y1)^2 = r1^2
   // replace x, y, group t: (c2 c2 + c4 c4) t t t t + 4(c1 c2 + c3 c4) t t t + 2(2 c1 c1 + a1 c2 + 2 c3 c3 + b1 c4 + -c2 x1 + -c4 y1) t t + 4(a1 c1 + b1 c3 + -c1 x1 + -c3 y1) t + a1 a1 + b1 b1 + -r1 r1 + -2 a1 x1 + x1 x1 + -2 b1 y1 + y1 y1
-  const ts = calculateEquation4(
+  let ts = calculateEquation4(
     c2 * c2 + c4 * c4,
     4 * (c1 * c2 + c3 * c4),
     2 * (2 * c1 * c1 + a1 * c2 + 2 * c3 * c3 + b1 * c4 - c2 * x1 - c4 * y1),
     4 * (a1 * c1 + b1 * c3 + -1 * c1 * x1 + -1 * c3 * y1),
     a1 * a1 + b1 * b1 + -r1 * r1 + -2 * a1 * x1 + x1 * x1 + -2 * b1 * y1 + y1 * y1,
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
@@ -639,6 +681,7 @@ export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: Quadrati
 export function getEllipseQuadraticCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+  extend = false,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -652,14 +695,17 @@ export function getEllipseQuadraticCurveIntersectionPoints(
   // replace x, y, group t: (c4 c4 d1 d1 d3 + 2 c2 c4 d1 d2 d3 + c2 c2 d2 d2 d3 + c2 c2 d1 d1 d4 + -2 c2 c4 d1 d2 d4 + c4 c4 d2 d2 d4) t t t t + (4 c3 c4 d1 d1 d3 + 4 c2 c3 d1 d2 d3 + 4 c1 c4 d1 d2 d3 + 4 c1 c2 d2 d2 d3 + 4 c1 c2 d1 d1 d4 + -4 c2 c3 d1 d2 d4 + -4 c1 c4 d1 d2 d4 + 4 c3 c4 d2 d2 d4) t t t + (4 c3 c3 d1 d1 d3 + 8 c1 c3 d1 d2 d3 + 4 c1 c1 d2 d2 d3 + 4 c1 c1 d1 d1 d4 + -8 c1 c3 d1 d2 d4 + 4 c3 c3 d2 d2 d4 + 2 c4 d1 d2 d3 d5 + 2 c2 d2 d2 d3 d5 + 2 c2 d1 d1 d4 d5 + -2 c4 d1 d2 d4 d5 + 2 c4 d1 d1 d3 d6 + 2 c2 d1 d2 d3 d6 + -2 c2 d1 d2 d4 d6 + 2 c4 d2 d2 d4 d6) t t + (4 c3 d1 d2 d3 d5 + 4 c1 d2 d2 d3 d5 + 4 c1 d1 d1 d4 d5 + -4 c3 d1 d2 d4 d5 + 4 c3 d1 d1 d3 d6 + 4 c1 d1 d2 d3 d6 + -4 c1 d1 d2 d4 d6 + 4 c3 d2 d2 d4 d6) t + d2 d2 d3 d5 d5 + d1 d1 d4 d5 d5 + 2 d1 d2 d3 d5 d6 + -2 d1 d2 d4 d5 d6 + d1 d1 d3 d6 d6 + d2 d2 d4 d6 d6 + -1
   const d7 = c3 * d1 + c1 * d2, d8 = c1 * d1 - c3 * d2
   const e1 = c4 * d1 + c2 * d2, e2 = c2 * d1 - c4 * d2, e3 = d1 * d4 * d5 - d2 * d4 * d6, e4 = d2 * d3 * d5 + d1 * d3 * d6
-  const ts = calculateEquation4(
+  let ts = calculateEquation4(
     e1 ** 2 * d3 + e2 ** 2 * d4,
     4 * (d7 * e1 * d3 + d8 * e2 * d4),
     2 * (2 * d7 ** 2 * d3 + 2 * d8 ** 2 * d4 + e1 * e4 + e2 * e3),
     4 * (d7 * e4 + d8 * e3),
     (d2 * d5 + d1 * d6) ** 2 * d3 + (d1 * d5 + - d2 * d6) ** 2 * d4 + -1
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
@@ -672,6 +718,7 @@ export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: Ellips
 export function getTwoQuadraticCurveIntersectionPoints(
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
   { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } }: QuadraticCurve,
+  extend = false,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 u u + 2 c1 u + a1
@@ -694,14 +741,17 @@ export function getTwoQuadraticCurveIntersectionPoints(
   const f1 = -e3 + e4, f2 = (-e6 + e5) / f1, f3 = (e7 + -e8) / f1, f4 = (-e1 + e2) / f1
   // u = -(f2 v v + f3 v + f4)
   // F1 replace u, group v: f2 f2 v v v v + 2 f2 f3 v v v + (-e3 f2 + f3 f3 + 2 f2 f4 + -e5) v v + (-e3 f3 + 2 f3 f4 + -e7) v + e1 + -e3 f4 + f4 f4
-  const vs = calculateEquation4(
+  let vs = calculateEquation4(
     f2 * f2,
     2 * f2 * f3,
     -e3 * f2 + f3 * f3 + 2 * f2 * f4 + -e5,
     -e3 * f3 + 2 * f3 * f4 + -e7,
     e1 + -e3 * f4 + f4 * f4
   )
-  return vs.filter(v => v >= 0 && v <= 1).map(v => ({
+  if (!extend) {
+    vs = vs.filter(v => v >= 0 && v <= 1)
+  }
+  return vs.map(v => ({
     x: d2 * v * v + 2 * d1 * v + a4,
     y: d4 * v * v + 2 * d3 * v + b4,
   }))
@@ -718,6 +768,7 @@ export function getLineBezierCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
+  extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -728,8 +779,11 @@ export function getLineBezierCurveIntersectionPoints(
   const e1 = x2 - x1, e2 = y2 - y1
   // (x - x1) e2 - (y - y1) e1 = 0
   // replace x, y, group t: (-d1 e1 + c1 e2) t t t + (-d2 e1 + c2 e2) t t + (-d3 e1 + c3 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
-  const ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  let ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
   }))
@@ -743,6 +797,7 @@ export function getCircleBezierCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
+  extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -755,8 +810,11 @@ export function getCircleBezierCurveIntersectionPoints(
   // group t: (c1 c1 + d1 d1) t t t t t t + (2 c1 c2 + 2 d1 d2) t t t t t + (c2 c2 + 2 c1 c3 + d2 d2 + 2 d1 d3) t t t t + (2 c2 c3 + 2 c1 e1 + 2 d2 d3 + 2 d1 e2) t t t + (c3 c3 + 2 c2 e1 + d3 d3 + 2 d2 e2) t t + (2 c3 e1 + 2 d3 e2) t + e1 e1 + e2 e2 + -e3
   const e4 = c1 * c1 + d1 * d1, e5 = c1 * c2 + d1 * d2, e6 = c2 * c2 + 2 * c1 * c3 + d2 * d2 + 2 * d1 * d3
   const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
-  const ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  let ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
   }))
@@ -770,6 +828,7 @@ export function getEllipseBezierCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
+  extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
@@ -785,7 +844,7 @@ export function getEllipseBezierCurveIntersectionPoints(
   const f1 = c4 * d1 + c1 * d2, f2 = c1 * d1 - c4 * d2, f3 = d1 * d5 - d2 * d6, f4 = d2 * d5 + d1 * d6
   const f5 = c6 * d1 + c3 * d2, f6 = c3 * d1 - c6 * d2, f7 = c5 * d1 + c2 * d2, f8 = c2 * d1 - c5 * d2
   const g1 = f7 * d3, g2 = f8 * d4, g3 = f6 * d4, g4 = f5 * d3, g5 = f4 * d3, g6 = f3 * d4
-  const ts = calculateEquation5(
+  let ts = calculateEquation5(
     [
       f1 ** 2 * d3 + f2 ** 2 * d4,
       2 * (g1 * f1 + f2 * g2),
@@ -796,7 +855,10 @@ export function getEllipseBezierCurveIntersectionPoints(
       f3 * g6 + f4 * g5 - 1,
     ], 0.5, delta,
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
@@ -810,6 +872,7 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
   { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } }: QuadraticCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
+  extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
@@ -834,7 +897,7 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
   // f3 u  + f4 t t t + f5 t t + f6 t + f7 = 0
   // u = -(f4 t t t + f5 t t + f6 t + f7)/f3
   // F1 replace u, group t: f4 f4 t t t t t t + 2 f4 f5 t t t t t + (f5 f5 + 2 f4 f6) t t t t + (-e3 f3 f3 + -e1 f3 f4 + 2 f5 f6 + 2 f4 f7) t t t + (-e5 f3 f3 + -e1 f3 f5 + f6 f6 + 2 f5 f7) t t + (-e7 f3 f3 + -e1 f3 f6 + 2 f6 f7) t + f1 f3 f3 + -e1 f3 f7 + f7 f7
-  const ts = calculateEquation5(
+  let ts = calculateEquation5(
     [
       f4 * f4,
       2 * f4 * f5,
@@ -845,7 +908,10 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
       f1 * f3 * f3 + -e1 * f3 * f7 + f7 * f7,
     ], 0.5, delta,
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
@@ -855,6 +921,7 @@ export function getTwoBezierCurveIntersectionPoints(
   { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } }: BezierCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
+  extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
@@ -892,7 +959,7 @@ export function getTwoBezierCurveIntersectionPoints(
   // v = -(h5 t t t + h6 t t + h7 t + h8)/(-g3 t t t + -g4 t t + -g5 t + h4)
   // v^2 = (h5 t t t + h6 t t + h7 t + h8)^2/(-g3 t t t + -g4 t t + -g5 t + h4)^2
   // -F2: g3 g3 g3 t t t t t t t t t + 3 g3 g3 g4 t t t t t t t t + (3 g3 g4 g4 + 3 g3 g3 g5) t t t t t t t + (h5 h5 + g4 g4 g4 + 6 g3 g4 g5 + -g3 g3 g7 + -2 g3 g3 h4) t t t t t t + (2 h5 h6 + 3 g4 g4 g5 + 3 g3 g5 g5 + -2 g3 g4 g7 + -4 g3 g4 h4) t t t t t + (h6 h6 + 2 h5 h7 + 3 g4 g5 g5 + -g4 g4 g7 + -2 g3 g5 g7 + -2 g4 g4 h4 + -4 g3 g5 h4) t t t t + (2 h6 h7 + 2 h5 h8 + g5 g5 g5 + -2 g4 g5 g7 + -4 g4 g5 h4 + 2 g3 g7 h4 + g3 h4 h4) t t t + (h7 h7 + 2 h6 h8 + -g5 g5 g7 + -2 g5 g5 h4 + 2 g4 g7 h4 + g4 h4 h4) t t + (2 h7 h8 + 2 g5 g7 h4 + g5 h4 h4) t + h8 h8 + -g7 h4 h4 = 0
-  const ts = calculateEquation5(
+  let ts = calculateEquation5(
     [
       g3 * g3 * g3,
       3 * g3 * g3 * g4,
@@ -906,7 +973,10 @@ export function getTwoBezierCurveIntersectionPoints(
       h8 * h8 + -g7 * h4 * h4,
     ], 0.5, delta,
   )
-  return ts.filter(t => t >= 0 && t <= 1).map(t => ({
+  if (!extend) {
+    ts = ts.filter(t => t >= 0 && t <= 1)
+  }
+  return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))

@@ -88,6 +88,13 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       const lines = getPathGeometriesFromCache(content).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
     },
+    offset(content, point, distance) {
+      const lines = getPathGeometriesFromCache(content).lines
+      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map(g => ({
+        ...content,
+        commands: ctx.geometryLineToPathCommands(g),
+      }))
+    },
     render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
       const fillStyleContent = ctx.getFillStyleContent(content, contents)

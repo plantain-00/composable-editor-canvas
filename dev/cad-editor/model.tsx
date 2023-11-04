@@ -1373,7 +1373,7 @@ export function getSnapTargetRef(target: CoreSnapTarget<BaseContent> | undefined
   } : undefined
 }
 
-export function trimOffsetResult(points: Position[], point: Position) {
+export function trimOffsetResult(points: Position[], point: Position, closed: boolean) {
   let intersectionPoints: Position[] = []
   for (let i = 0; i < points.length - 1; i++) {
     for (let j = i + 2; j < points.length - 1; j++) {

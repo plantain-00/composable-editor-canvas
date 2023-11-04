@@ -367,7 +367,9 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
             const t1 = getPerpendicularPoint(center, line1)
             const t2 = getPerpendicularPoint(center, line2)
             if (last) {
-              lines.push([last, { x: t1.x, y: t1.y }])
+              if (!isSamePoint(last, t1)) {
+                lines.push([last, { x: t1.x, y: t1.y }])
+              }
               last = t2
             }
             const startAngle = radianToAngle(getTwoPointsRadian(t1, center))

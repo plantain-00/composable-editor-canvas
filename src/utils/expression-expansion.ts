@@ -413,7 +413,6 @@ export function groupAllFactors(factors: Factor[]): Expression2 | undefined {
 }
 
 export function groupFactorsByVariables(factors: Factor[], variables: string[]) {
-  console.info(variables)
   const group = (factors: Factor[], level: number): Expression2 | undefined => {
     if (factors.length <= 1) return
     const v = variables[level]
