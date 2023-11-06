@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, Factor, StringEditor, composeExpression, deriveExpressionWith, divideFactors, expandExpression, expressionToFactors, factorToExpression, factorsToExpression, groupAllFactors, groupFactorsBy, groupFactorsByVariables, mathStyleExpressionToExpression, optimizeExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors } from "../src"
+import { Button, Factor, StringEditor, composeExpression, deriveExpressionWith, divideFactors, expandExpression, expressionHasVariable, expressionToFactors, factorToExpression, factorsToExpression, groupAllFactors, groupFactorsBy, groupFactorsByVariables, mathStyleExpressionToExpression, optimizeExpression, optimizeFactors, printMathStyleExpression, reactSvgRenderTarget, renderExpression, sortFactors, taylorExpandExpressionWith } from "../src"
 import { Expression2, parseExpression, printExpression, tokenizeExpression } from "expression-engine"
 
 export default () => {
@@ -106,7 +106,7 @@ export default () => {
       if (!secondValue) return
       if (!value) return
       const r = parseInputExpression(value)
-      const g = deriveExpressionWith(r, secondValue)
+      const g = optimizeExpression(deriveExpressionWith(r, secondValue), v => expressionHasVariable(v, secondValue))
       setExpression(g)
       setError(undefined)
     } catch (error) {
@@ -143,6 +143,19 @@ export default () => {
       setError(String(error))
     }
   }
+  const taylorExpand = (toPrimaryFunction: boolean) => {
+    try {
+      if (!secondValue) return
+      if (!value) return
+      const r = parseInputExpression(value)
+      const g = taylorExpandExpressionWith(r, secondValue, +thirdValue || 5, toPrimaryFunction)
+      setExpression(g)
+      setError(undefined)
+    } catch (error) {
+      setError(String(error))
+      setExpression(undefined)
+    }
+  }
   const setText = (text: string) => {
     setValue(text)
     setError(undefined)
@@ -177,6 +190,8 @@ export default () => {
       <Button disabled={!value || !secondValue} onClick={deriveWith}>derive with</Button>
       <Button disabled={!value} onClick={optimize}>optimize</Button>
       <Button disabled={!secondValue || !factors} onClick={groupByVariables}>group by variables</Button>
+      <Button disabled={!value || !secondValue} onClick={() => taylorExpand(false)}>taylor expand</Button>
+      <Button disabled={!value || !secondValue} onClick={() => taylorExpand(true)}>primary function</Button>
       {factors && factors.length > 0 && <div style={{ border: '1px solid black', maxHeight: '150px', overflowY: 'auto', marginBottom: '5px' }}>
         {factors.map((f, i) => <div key={i}><code>{outputExpression(factorToExpression(f))}</code></div>)}
       </div>}

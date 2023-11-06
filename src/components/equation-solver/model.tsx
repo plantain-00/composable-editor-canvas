@@ -1231,6 +1231,31 @@ export function optimizeExpression(
           }
         }
       }
+    } else if (expression.type === 'CallExpression') {
+      expression.arguments = expression.arguments.map(arg => arg.type === 'SpreadElement' ? arg : optimize(arg))
+      if (expression.callee.type === 'Identifier') {
+        if (expression.callee.name === 'sin') {
+          if (expression.arguments.length === 1) {
+            const arg = expression.arguments[0]
+            if (arg.type === 'NumericLiteral') {
+              return {
+                type: 'NumericLiteral',
+                value: Math.sin(arg.value),
+              }
+            }
+          }
+        } else if (expression.callee.name === 'cos') {
+          if (expression.arguments.length === 1) {
+            const arg = expression.arguments[0]
+            if (arg.type === 'NumericLiteral') {
+              return {
+                type: 'NumericLiteral',
+                value: Math.cos(arg.value),
+              }
+            }
+          }
+        }
+      }
     }
     return expression
   }

@@ -415,6 +415,12 @@ export function composeExpression(
     if (v && !Array.isArray(v)) {
       return v
     }
+  } else if (expression.type === 'CallExpression') {
+    expression.arguments.forEach((arg, i) => {
+      if (arg.type !== 'SpreadElement') {
+        expression.arguments[i] = composeExpression(arg, context)
+      }
+    })
   }
   return expression
 }
@@ -442,7 +448,7 @@ function cloneEquation(equation: Equation): Equation {
   }
 }
 
-function cloneExpression(expression: Expression): Expression {
+export function cloneExpression(expression: Expression): Expression {
   if (expression.type === 'BinaryExpression') {
     return {
       ...expression,
@@ -454,6 +460,12 @@ function cloneExpression(expression: Expression): Expression {
     return {
       ...expression,
       argument: cloneExpression(expression.argument),
+    }
+  }
+  if (expression.type === 'CallExpression') {
+    return {
+      ...expression,
+      arguments: expression.arguments.map(arg => arg.type === 'SpreadElement' ? arg : cloneExpression(arg)),
     }
   }
   return {

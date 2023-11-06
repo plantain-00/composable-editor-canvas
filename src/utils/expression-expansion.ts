@@ -1,5 +1,6 @@
 import { Expression2, SpreadElement2, priorizedBinaryOperators } from "expression-engine";
-import { Factor, FactorVariable, divideFactors, expressionHasVariable, factorToExpression, getReverseOperator, isLetter, isNumber, powerFactor } from "../components";
+import { Factor, FactorVariable, cloneExpression, composeExpression, divideFactors, expressionHasVariable, factorToExpression, getReverseOperator, isLetter, isNumber, optimizeExpression, powerFactor } from "../components";
+import { factorial } from "./factorial";
 
 export function expandExpression(e: Expression2): Expression2 {
   if (e.type === 'BinaryExpression') {
@@ -531,7 +532,12 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
           return {
             type: 'BinaryExpression',
             operator: '*',
-            left: e.right,
+            left: {
+              type: 'BinaryExpression',
+              operator: '*',
+              left: deriveExpressionWith(e.left, by),
+              right: e.right,
+            },
             right: {
               type: 'BinaryExpression',
               operator: '**',
@@ -615,4 +621,67 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
     }
   }
   return e
+}
+
+export function taylorExpandExpressionWith(e: Expression2, by: string, num: number, toPrimaryFunction?: boolean): Expression2 {
+  const hasVariable = (v: Expression2) => expressionHasVariable(v, by)
+  let result = optimizeExpression(composeExpression(cloneExpression(e), { [by]: { type: 'NumericLiteral', value: 0 } }), hasVariable)
+  if (toPrimaryFunction) {
+    result = optimizeExpression({
+      type: 'BinaryExpression',
+      operator: '*',
+      left: result,
+      right: {
+        type: 'Identifier',
+        name: by,
+      }
+    }, hasVariable)
+  }
+  for (let i = 1; i < num; i++) {
+    e = optimizeExpression(deriveExpressionWith(e, by), hasVariable)
+    const c = optimizeExpression(composeExpression(cloneExpression(e), { [by]: { type: 'NumericLiteral', value: 0 } }), hasVariable)
+    let d: Expression2 = {
+      type: 'NumericLiteral',
+      value: factorial(i)
+    }
+    if (toPrimaryFunction) {
+      d = {
+        type: 'BinaryExpression',
+        operator: '*',
+        left: d,
+        right: {
+          type: 'NumericLiteral',
+          value: i + 1,
+        },
+      }
+    }
+    result = optimizeExpression({
+      type: 'BinaryExpression',
+      left: {
+        type: 'BinaryExpression',
+        operator: '*',
+        left: {
+          type: 'BinaryExpression',
+          operator: '/',
+          left: c,
+          right: d,
+        },
+        right: {
+          type: 'BinaryExpression',
+          operator: '**',
+          left: {
+            type: 'Identifier',
+            name: by,
+          },
+          right: {
+            type: 'NumericLiteral',
+            value: toPrimaryFunction ? i + 1 : i,
+          },
+        }
+      },
+      operator: '+',
+      right: result,
+    }, hasVariable)
+  }
+  return result
 }
