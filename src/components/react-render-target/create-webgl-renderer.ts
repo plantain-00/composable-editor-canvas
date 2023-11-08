@@ -5,7 +5,7 @@ import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
-import { arcToPolyline, Bounding, dashedPolylineToLines, equals, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { arcToPolyline, Bounding, circleToArc, dashedPolylineToLines, equals, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
@@ -1069,14 +1069,14 @@ function getRadialGradientGraphic(radialGradient: RadialGradient, points: Positi
     const circle = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset, r: start.r + offset.r * s.offset }
     return {
       color: colorNumberToRec(s.color, s.opacity),
-      points: arcToPolyline({ x: circle.x, y: circle.y, r: circle.r, startAngle: 0, endAngle: 360 }, 5),
+      points: arcToPolyline(circleToArc(circle), 5),
     }
   })
   const maxDistance = Math.max(...points.map(p => getTwoPointsDistance(p, end)))
   if (maxDistance > end.r) {
     stopPoints.push({
       color: stopPoints[stopPoints.length - 1].color,
-      points: arcToPolyline({ x: end.x, y: end.y, r: maxDistance, startAngle: 0, endAngle: 360 }, 5),
+      points: arcToPolyline(circleToArc({ x: end.x, y: end.y, r: maxDistance }), 5),
     })
   }
   const fillTriangles: number[][] = []

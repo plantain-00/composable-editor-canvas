@@ -16,8 +16,8 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
-      const arc1 = { ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 }
-      const arc2 = { ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 }
+      const arc1 = ctx.circleToArc({ ...content, r: content.outerRadius })
+      const arc2 = ctx.circleToArc({ ...content, r: content.innerRadius })
       const points1 = ctx.arcToPolyline(arc1, angleDelta)
       const points2 = ctx.arcToPolyline(arc2, angleDelta)
       const points = [...points1, ...points2]

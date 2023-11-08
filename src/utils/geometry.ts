@@ -968,11 +968,6 @@ function getAngleRange(range: AngleRange, angleDelta: number) {
   return angles
 }
 
-export function getArcLength(arc: Arc) {
-  const endAngle = getFormattedEndAngle(arc)
-  return arc.r * angleToRadian(Math.abs(endAngle - arc.startAngle))
-}
-
 export function getPolygonArea(points: Position[]) {
   let result = 0
   for (let i = 0; i < points.length; i++) {
@@ -1004,6 +999,22 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
 
 export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {
   return getEllipsePointAtRadian(content, angleToRadian(angle))
+}
+
+export function circleToArc(circle: Circle): Arc {
+  return {
+    ...circle,
+    startAngle: 0,
+    endAngle: 360,
+  }
+}
+
+export function ellipseToEllipseArc(ellipse: Ellipse): EllipseArc {
+  return {
+    ...ellipse,
+    startAngle: 0,
+    endAngle: 360,
+  }
 }
 
 /**

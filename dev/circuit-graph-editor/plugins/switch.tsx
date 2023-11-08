@@ -1,5 +1,5 @@
 import React from "react"
-import { arcToPolyline, BooleanEditor, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsDistance, iteratePolylineLines, Nullable, Position, rotatePositionByCenter } from "../../../src"
+import { arcToPolyline, BooleanEditor, circleToArc, getPointByLengthAndDirection, getTwoPointCenter, getTwoPointsDistance, iteratePolylineLines, Nullable, Position, rotatePositionByCenter } from "../../../src"
 import { BaseContent, BaseDevice, deviceGeometryCache, deviceModel, Geometries, getDeviceText, getReference, isJunctionContent, Model } from "../model"
 
 export type SwitchDevice = BaseDevice<'switch'> & {
@@ -81,7 +81,7 @@ function getSwitchGeometriesFromCache(content: Omit<SwitchDevice, "type">, conte
       const radius = 3
       const lines: [Position, Position][] = [
         [start.position, getPointByLengthAndDirection(p1, radius, start.position)],
-        ...iteratePolylineLines(arcToPolyline({ x: p1.x, y: p1.y, r: radius, startAngle: 0, endAngle: 360 }, 5)),
+        ...iteratePolylineLines(arcToPolyline(circleToArc({ x: p1.x, y: p1.y, r: radius }), 5)),
       ]
       if (content.on) {
         lines.push([getPointByLengthAndDirection(p1, radius, end.position), end.position])
