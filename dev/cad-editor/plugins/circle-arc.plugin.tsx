@@ -33,10 +33,10 @@ export function getModel(ctx: PluginContext) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
-      return { quadrantPoints, ...getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 }) }
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r })) }
     }
     return geometriesCache.get(content, () => {
-      return { quadrantPoints, ...getArcGeometries({ ...content, startAngle: 0, endAngle: 360 }) }
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content)) }
     })
   }
   function getArcGeometries(content: Omit<ArcContent, "type">) {

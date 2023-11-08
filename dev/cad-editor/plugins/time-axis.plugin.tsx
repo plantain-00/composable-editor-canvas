@@ -28,7 +28,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
       if (time) {
-        const timePoints = ctx.arcToPolyline({ x: content.x + time / 10, y: content.y, r: 5, startAngle: 0, endAngle: 360 }, ctx.defaultAngleDelta)
+        const timePoints = ctx.arcToPolyline(ctx.circleToArc({ x: content.x + time / 10, y: content.y, r: 5 }), ctx.defaultAngleDelta)
         result.regions.push({
           points: timePoints,
           lines: Array.from(ctx.iteratePolygonLines(timePoints)),

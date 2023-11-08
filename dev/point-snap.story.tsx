@@ -1,5 +1,5 @@
 import React from "react"
-import { allSnapTypes, Circle, iterateIntersectionPoints, Position, usePointSnap, WeakmapCache2 } from "../src"
+import { allSnapTypes, Circle, circleToArc, iterateIntersectionPoints, Position, usePointSnap, WeakmapCache2 } from "../src"
 
 const intersectionPointsCache = new WeakmapCache2<Circle, Circle, Position[]>()
 const contents: Circle[] = [{ x: 300, y: 200, r: 100 }, { x: 450, y: 350, r: 130 }]
@@ -9,7 +9,7 @@ export default () => {
   const startPosition = { x: 500, y: 100 }
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap<Circle>(
     true,
-    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', curve: { ...c, startAngle: 0, endAngle: 360 } }] }) })))),
+    (c1, c2) => intersectionPointsCache.get(c1, c2, () => Array.from(iterateIntersectionPoints(c1, c2, contents, () => ({ getGeometries: (c) => ({ lines: [{ type: 'arc', curve: circleToArc(c) }] }) })))),
     allSnapTypes,
     () => ({
       getSnapPoints(c) {
@@ -23,7 +23,7 @@ export default () => {
       },
       getGeometries(c) {
         return {
-          lines: [{ type: 'arc', curve: { ...c, startAngle: 0, endAngle: 360 } }],
+          lines: [{ type: 'arc', curve: circleToArc(c) }],
           bounding: {
             start: { x: c.x - c.r, y: c.y - c.r },
             end: { x: c.x + c.r, y: c.y + c.r },

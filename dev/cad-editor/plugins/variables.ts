@@ -894,10 +894,10 @@ function getModel(ctx) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x);
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y);
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r);
-      return { quadrantPoints, ...getArcGeometries({ ...content, x, y, r, startAngle: 0, endAngle: 360 }) };
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r })) };
     }
     return geometriesCache.get(content, () => {
-      return { quadrantPoints, ...getArcGeometries({ ...content, startAngle: 0, endAngle: 360 }) };
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content)) };
     });
   }
   function getArcGeometries(content) {
@@ -2528,11 +2528,7 @@ function getModel(ctx) {
       return {
         lines: [{
           type: "ellipse arc",
-          curve: {
-            ...content,
-            startAngle: 0,
-            endAngle: 360
-          }
+          curve: ctx.ellipseToEllipseArc(content)
         }],
         points,
         center,
@@ -7856,8 +7852,8 @@ function getModel(ctx) {
     return ctx.getGeometriesFromCache(content, () => {
       var _a;
       const angleDelta = (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta;
-      const arc1 = { ...content, r: content.outerRadius, startAngle: 0, endAngle: 360 };
-      const arc2 = { ...content, r: content.innerRadius, startAngle: 0, endAngle: 360 };
+      const arc1 = ctx.circleToArc({ ...content, r: content.outerRadius });
+      const arc2 = ctx.circleToArc({ ...content, r: content.innerRadius });
       const points1 = ctx.arcToPolyline(arc1, angleDelta);
       const points2 = ctx.arcToPolyline(arc2, angleDelta);
       const points = [...points1, ...points2];
@@ -10117,7 +10113,7 @@ function getModel(ctx) {
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
       if (time) {
-        const timePoints = ctx.arcToPolyline({ x: content.x + time / 10, y: content.y, r: 5, startAngle: 0, endAngle: 360 }, ctx.defaultAngleDelta);
+        const timePoints = ctx.arcToPolyline(ctx.circleToArc({ x: content.x + time / 10, y: content.y, r: 5 }), ctx.defaultAngleDelta);
         result.regions.push({
           points: timePoints,
           lines: Array.from(ctx.iteratePolygonLines(timePoints))

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { arcToPolyline, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, polygonToPolyline, rotatePosition } from "../../utils/geometry"
+import { arcToPolyline, circleToArc, dashedPolylineToLines, ellipseArcToPolyline, ellipseToPolygon, polygonToPolyline, rotatePosition } from "../../utils/geometry"
 import { getPathCommandsPoints, pathCommandPointsToPath, ReactRenderTarget, renderPartStyledPolyline, RenderTransform } from "./react-render-target"
 import { createWebglRenderer, getGroupGraphics, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 import { Matrix } from "../../utils/matrix"
@@ -71,7 +71,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    const points = arcToPolyline({ x: cx, y: cy, r, startAngle: 0, endAngle: 360 }, 5)
+    const points = arcToPolyline(circleToArc({ x: cx, y: cy, r }), 5)
     return this.renderPolyline(points, options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
