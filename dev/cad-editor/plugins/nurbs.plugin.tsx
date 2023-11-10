@@ -4,20 +4,10 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type NurbsContent = model.BaseContent<'nurbs'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & {
-  points: core.Position[]
-  degree: number
-  knots?: number[]
-  weights?: number[]
-}
+export type NurbsContent = model.BaseContent<'nurbs'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & core.Nurbs
 
 export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
-  const NurbsContent = ctx.and(ctx.BaseContent('nurbs'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
-    points: [ctx.Position],
-    degree: ctx.minimum(1, ctx.integer),
-    knots: ctx.optional([ctx.number]),
-    weights: ctx.optional([ctx.number]),
-  })
+  const NurbsContent = ctx.and(ctx.BaseContent('nurbs'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, ctx.Nurbs)
   const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
   function getNurbsGeometries(content: Omit<NurbsContent, "type">) {
     return geometriesCache.get(content, () => {
@@ -139,6 +129,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    reverse: (content) => ctx.reverseNurbs(content),
   }
   return [
     nurbsModel,

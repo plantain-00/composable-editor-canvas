@@ -332,6 +332,10 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       const lines = getPathGeometriesFromCache(content).lines
       return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
     },
+    reverse: (content) => ({
+      ...content,
+      commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content).lines.map(n => ctx.reverseGeometryLine(n)).reverse()),
+    }),
   }
 }
 

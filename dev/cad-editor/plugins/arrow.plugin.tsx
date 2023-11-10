@@ -163,6 +163,13 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       }
       ctx.updateStrokeRefIds(content, update)
     },
+    reverse: (content) => ({
+      ...content,
+      p1: content.p2,
+      p2: content.p1,
+      ref1: content.ref2,
+      ref2: content.ref1,
+    }),
   }
 }
 

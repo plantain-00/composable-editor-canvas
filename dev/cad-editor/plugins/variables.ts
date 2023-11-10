@@ -235,7 +235,14 @@ function getModel(ctx) {
         }
       }
       ctx.updateStrokeRefIds(content, update);
-    }
+    },
+    reverse: (content) => ({
+      ...content,
+      p1: content.p2,
+      p2: content.p1,
+      ref1: content.ref2,
+      ref2: content.ref1
+    })
   };
 }
 function isArrowContent(content) {
@@ -1349,7 +1356,8 @@ function getModel(ctx) {
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.r ** 2 * (radian - Math.sin(radian)) / 2;
-      }
+      },
+      reverse: (content) => ctx.reverseArc(content)
     }
   ];
 }
@@ -2981,7 +2989,8 @@ function getModel(ctx) {
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2;
-      }
+      },
+      reverse: (content) => ctx.reverseEllipseArc(content)
     }
   ];
 }
@@ -4466,7 +4475,11 @@ function getModel(ctx) {
     getStartPoint: (content) => content.points[0],
     getEndPoint: (content) => content.points[content.points.length - 1],
     getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolylineGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines)
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines),
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse()
+    })
   };
   return [
     lineModel,
@@ -5369,12 +5382,7 @@ export {
 `,
 `// dev/cad-editor/plugins/nurbs.plugin.tsx
 function getModel(ctx) {
-  const NurbsContent = ctx.and(ctx.BaseContent("nurbs"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
-    points: [ctx.Position],
-    degree: ctx.minimum(1, ctx.integer),
-    knots: ctx.optional([ctx.number]),
-    weights: ctx.optional([ctx.number])
-  });
+  const NurbsContent = ctx.and(ctx.BaseContent("nurbs"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, ctx.Nurbs);
   const geometriesCache = new ctx.WeakmapCache();
   function getNurbsGeometries(content) {
     return geometriesCache.get(content, () => {
@@ -5558,7 +5566,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    reverse: (content) => ctx.reverseNurbs(content)
   };
   return [
     nurbsModel
@@ -6177,7 +6186,11 @@ function getModel(ctx) {
     getEndPoint: (content) => {
       const lines = getPathGeometriesFromCache(content).lines;
       return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
-    }
+    },
+    reverse: (content) => ({
+      ...content,
+      commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content).lines.map((n) => ctx.reverseGeometryLine(n)).reverse())
+    })
   };
 }
 function isPathContent(content) {
@@ -6293,7 +6306,11 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, PenContent, p),
     getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds
+    updateRefId: ctx.updateStrokeRefIds,
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse()
+    })
   };
 }
 function isPenContent(content) {
@@ -7842,6 +7859,34 @@ export {
   isRegularPolygonContent
 };
 `,
+`// dev/cad-editor/plugins/reverse.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "1,71 56,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "62,0 54,18 46,11", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "97,27 91,34", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "84,42 78,50", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "71,57 64,65", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "58,72 51,80", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "45,87 42,90", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "36,97 45,79 53,86", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
+  return {
+    name: "reverse",
+    execute({ contents, selected }) {
+      contents.forEach((content, index) => {
+        var _a, _b, _c, _d;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
+          const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.reverse) == null ? void 0 : _d.call(_c, content);
+          if (result) {
+            contents[index] = result;
+          }
+        }
+      });
+    },
+    contentSelectable(content) {
+      var _a;
+      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.reverse) !== void 0;
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/ring.plugin.tsx
 function getModel(ctx) {
   const RingContent = ctx.and(ctx.BaseContent("ring"), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Position, {
@@ -8547,7 +8592,11 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, SplineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse()
+    })
   };
   return [
     splineModel,
@@ -8631,7 +8680,11 @@ function getModel(ctx) {
       },
       isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
       getRefIds: ctx.getStrokeRefIds,
-      updateRefId: ctx.updateStrokeRefIds
+      updateRefId: ctx.updateStrokeRefIds,
+      reverse: (content) => ({
+        ...content,
+        points: content.points.slice().reverse()
+      })
     }
   ];
 }

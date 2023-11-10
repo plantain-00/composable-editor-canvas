@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Arc, arcToPolyline, Circle, Ellipse, EllipseArc, ellipseArcToPolyline, getFormattedEndAngle, getCirclePointAtRadian, getEllipseAngle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { Arc, arcToPolyline, Circle, Ellipse, EllipseArc, ellipseArcToPolyline, getCirclePointAtRadian, getEllipseAngle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine, getLargeArc } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
@@ -459,8 +459,7 @@ export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[]
         result.push({ type: 'arc', from: p, to: end, radius: n.curve.r })
       }
     } else if (n.type === 'ellipse arc') {
-      const endAngle = getFormattedEndAngle(n.curve)
-      const largeArc = Math.abs(endAngle - n.curve.startAngle) > 180
+      const largeArc = getLargeArc(n.curve)
       result.push({ type: 'ellipseArc', to: end, rx: n.curve.rx, ry: n.curve.ry, angle: n.curve.angle || 0, sweep: !n.curve.counterclockwise, largeArc })
     } else if (n.type === 'quadratic curve') {
       result.push({ type: 'quadraticCurve', cp: n.curve.cp, to: n.curve.to })

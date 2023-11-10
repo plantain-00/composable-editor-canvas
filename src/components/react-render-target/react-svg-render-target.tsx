@@ -1,6 +1,6 @@
 import * as React from "react"
 import { getColorString } from "../../utils/color"
-import { getParallelLinesByDistance, getPointSideOfLine, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
+import { getLargeArc, getParallelLinesByDistance, getPointSideOfLine, isZero, Position, twoPointLineToGeneralFormLine } from "../../utils/geometry"
 import { m3 } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
@@ -137,8 +137,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
   renderArc(cx, cy, r, startAngle, endAngle, options) {
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
-    const b = endAngle - startAngle <= 180
-    const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
+    const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
     return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path
@@ -152,8 +151,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
   renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
     const start = ellipsePolarToCartesian(cx, cy, rx, ry, endAngle)
     const end = ellipsePolarToCartesian(cx, cy, rx, ry, startAngle)
-    const b = endAngle - startAngle <= 180
-    const largeArcFlag = (options?.counterclockwise ? !b : b) ? "0" : "1"
+    const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
     return renderPattern((fill, stroke, scale, strokeWidthScale) => (
       <path

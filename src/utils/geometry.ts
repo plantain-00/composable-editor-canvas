@@ -945,6 +945,11 @@ export function getFormattedEndAngle(range: AngleRange) {
   return endAngle
 }
 
+export function getLargeArc(range: AngleRange) {
+  const endAngle = getFormattedEndAngle(range)
+  return Math.abs(endAngle - range.startAngle) > 180
+}
+
 function getAngleRange(range: AngleRange, angleDelta: number) {
   const endAngle = getFormattedEndAngle(range)
   const angles: number[] = []
