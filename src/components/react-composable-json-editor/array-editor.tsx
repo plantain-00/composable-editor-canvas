@@ -18,10 +18,11 @@ export function ArrayEditor(props: ArrayProps & {
   title?: (index: number) => string
   inline?: boolean
   readOnly?: boolean
+  style?: React.CSSProperties
 }): JSX.Element {
   if (props.inline) {
     return (
-      <div style={groupStyle}>
+      <div style={{ ...groupStyle, ...props.style }}>
         <div>
           {props.items.map((p, i) => {
             return (
@@ -43,7 +44,7 @@ export function ArrayEditor(props: ArrayProps & {
     )
   }
   return (
-    <div style={groupStyle}>
+    <div style={{ ...groupStyle, ...props.style }}>
       {props.items.map((p, i) => {
         return (
           <React.Fragment key={i}>
@@ -69,12 +70,13 @@ export function ArrayEditor(props: ArrayProps & {
 export function ObjectArrayEditor(props: ArrayProps & {
   properties: Record<string, JSX.Element>[]
   readOnly?: boolean
+  style?: React.CSSProperties
 }): JSX.Element | null {
   if (props.properties.length === 0) {
     return null
   }
   return (
-    <div style={groupStyle}>
+    <div style={{ ...groupStyle, ...props.style }}>
       <table>
         <thead>
           <tr>

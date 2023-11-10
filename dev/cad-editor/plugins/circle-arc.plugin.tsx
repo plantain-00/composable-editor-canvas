@@ -418,6 +418,7 @@ export function getModel(ctx: PluginContext) {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.r ** 2 * (radian - Math.sin(radian)) / 2
       },
+      reverse: (content) => ctx.reverseArc(content),
     } as model.Model<ArcContent>,
   ]
 }

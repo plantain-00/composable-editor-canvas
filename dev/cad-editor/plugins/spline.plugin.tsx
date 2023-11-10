@@ -154,6 +154,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     isValid: (c, p) => ctx.validate(c, SplineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse(),
+    }),
   }
   return [
     splineModel,
@@ -211,6 +215,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
       getRefIds: ctx.getStrokeRefIds,
       updateRefId: ctx.updateStrokeRefIds,
+      reverse: (content) => ({
+        ...content,
+        points: content.points.slice().reverse(),
+      }),
     } as model.Model<SplineArrowContent>
   ]
 }

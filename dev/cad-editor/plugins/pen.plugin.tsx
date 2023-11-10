@@ -52,6 +52,10 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
     isValid: (c, p) => ctx.validate(c, PenContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse(),
+    }),
   }
 }
 

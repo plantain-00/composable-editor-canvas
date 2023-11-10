@@ -219,6 +219,7 @@ export type Model<T> = Partial<FeatureModels> & {
   getPoint?(content: T, param: number): Position
   getChildByPoint?(content: T, point: Position, options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
   getArea?(content: T): number
+  reverse?(content: T): T
 }
 
 export interface Select {

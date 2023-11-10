@@ -1,9 +1,9 @@
 import React from "react"
-import { Button, NumberEditor, Position, StringEditor, SvgDraw, getLineChart, mathStyleExpressionToExpression, reactSvgRenderTarget, renderChartTooltip, useWindowSize } from "../src"
+import { ArrayEditor, Button, NumberEditor, Position, StringEditor, SvgDraw, getLineChart, mathStyleExpressionToExpression, reactSvgRenderTarget, renderChartTooltip, useJsonEditorData, useWindowSize } from "../src"
 import { evaluateExpression, parseExpression, tokenizeExpression } from "expression-engine"
 
 export default () => {
-  const [value, setValue] = React.useState('sin(x)')
+  const { value, update, getArrayProps } = useJsonEditorData(['sin(x)'])
   const [hovering, setHovering] = React.useState<Position & { value: Position }>()
   const [min, setMin] = React.useState(0)
   const [max, setMax] = React.useState(10)
@@ -19,26 +19,35 @@ export default () => {
 
   const drawChart = () => {
     try {
-      if (!value) return
-      const e = parseInputExpression(value)
-      const points: Position[] = []
+      if (value.length === 0) return
+      const points: Position[][] = []
       const step = (max - min) / 100
-      for (let x = min; x <= max; x += step) {
-        const y = evaluateExpression(e, {
-          sin: Math.sin,
-          cos: Math.cos,
-          tan: Math.tan,
-          x,
-        })
-        if (typeof y === 'number' && !isNaN(y)) {
-          points.push({ x, y })
+      for (const v of value) {
+        if (!v) continue
+        const p: Position[] = []
+        const e = parseInputExpression(v)
+        for (let x = min; x <= max; x += step) {
+          const y = evaluateExpression(e, {
+            sin: Math.sin,
+            cos: Math.cos,
+            tan: Math.tan,
+            x,
+          })
+          if (typeof y === 'number' && !isNaN(y)) {
+            p.push({ x, y })
+          }
+        }
+        if (p.length > 0) {
+          points.push(p)
         }
       }
-      const r = getLineChart([points, [{ x: min, y: 0 }, { x: max, y: 0 }]], target, { x: 0.01, y: 0.01 }, { width, height }, { left: 25, right: 25, top: 10, bottom: 20 }, { xLabelDisabled: true, yLabelDisabled: true })
+      const r = getLineChart([[{ x: min, y: 0 }, { x: max, y: 0 }], ...points], target, { x: 0.01, y: 0.01 }, { width, height }, { left: 25, right: 25, top: 10, bottom: 20 }, { xLabelDisabled: true, yLabelDisabled: true })
       if (!r) return
-      const { points: [points1, points2], children, select } = r
-      children.push(target.renderPolyline(points2, { strokeColor: 0x00ff00 }))
-      children.push(target.renderPolyline(points1, { strokeColor: 0xff0000 }))
+      const { points: [axis, ...p], children, select } = r
+      children.push(target.renderPolyline(axis, { strokeColor: 0x00ff00 }))
+      for (const f of p) {
+        children.push(target.renderPolyline(f, { strokeColor: 0xff0000 }))
+      }
       setResult({ children, select })
       setError(undefined)
     } catch (error) {
@@ -62,7 +71,12 @@ export default () => {
         {target.renderResult(children, width, height, { attributes: { onMouseMove: e => setHovering(result.select({ x: e.clientX, y: e.clientY })) } })}
       </div>}
       <div style={{ margin: '10px' }}>
-        <StringEditor style={{ width: 'calc(50% - 30px)', height: '150px' }} textarea value={value} setValue={setValue} />
+        <ArrayEditor
+          {...getArrayProps(v => v, '')}
+          inline
+          style={{ width: 'calc(50% - 30px)' }}
+          items={value.map((f, i) => <StringEditor style={{ height: '50px' }} textarea value={f} setValue={update((draft, v) => draft[i] = v)} />)}
+        />
         <div>
           <label>
             <input type='checkbox' checked={isMath} onChange={() => setIsMath(!isMath)} />
@@ -74,7 +88,7 @@ export default () => {
           ~
           <NumberEditor style={{ width: '50px' }} value={max} setValue={setMax} />
         </div>
-        <Button disabled={!value} onClick={drawChart}>draw chart</Button>
+        <Button disabled={value.length === 0} onClick={drawChart}>draw chart</Button>
         {error && <div>{error}</div>}
       </div>
     </div>

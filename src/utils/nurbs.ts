@@ -1,4 +1,19 @@
 import { Position } from "./geometry"
+import { Validator, integer, minimum, number, optional } from "./validators"
+
+export interface Nurbs {
+  points: Position[]
+  degree: number
+  knots?: number[]
+  weights?: number[]
+}
+
+export const Nurbs: Record<string, Validator> = {
+  points: [Position],
+  degree: /* @__PURE__ */ minimum(1, integer),
+  knots: /* @__PURE__ */ optional([number]),
+  weights: /* @__PURE__ */ optional([number]),
+}
 
 export function interpolateBSpline(
   t: number,

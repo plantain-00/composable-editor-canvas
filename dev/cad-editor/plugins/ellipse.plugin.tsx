@@ -400,6 +400,7 @@ export function getModel(ctx: PluginContext) {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2
       },
+      reverse: (content) => ctx.reverseEllipseArc(content),
     } as model.Model<EllipseArcContent>,
   ]
 }
