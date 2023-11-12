@@ -1175,7 +1175,7 @@ export function maxmiumBy<T>(values: T[], by: (value: T) => number) {
   let result = values[0]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (by(value) < by(result)) {
+    if (by(value) > by(result)) {
       result = value
     }
   }

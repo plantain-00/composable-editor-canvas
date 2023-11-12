@@ -1,6 +1,8 @@
-import { Arc, Circle, Ellipse, EllipseArc, ellipseToEllipseArc, getFormattedEndAngle } from "./geometry"
+import { getPartOfBezierCurve, getPartOfQuadraticCurve } from "./bezier"
+import { newtonIterate } from "./equation-calculater"
+import { Arc, Circle, Ellipse, EllipseArc, ellipseToEllipseArc, getFormattedEndAngle, getTwoNumberCenter } from "./geometry"
 import { BezierCurve, QuadraticCurve } from "./intersection"
-import { angleToRadian } from "./radian"
+import { angleToRadian, radianToAngle } from "./radian"
 
 export function getCircleLength(circle: Circle) {
   return 2 * Math.PI * circle.r
@@ -81,4 +83,46 @@ export function rombergIntegral(a: number, b: number, f: (t: number) => number, 
     }
     p = c
   }
+}
+
+export function getCircleRadianByLength(circle: Circle, length: number): number {
+  return length / circle.r
+}
+
+export function getArcRadianByLength(arc: Arc, length: number): number {
+  return angleToRadian(arc.startAngle) + length / arc.r * (arc.counterclockwise ? -1 : 1)
+}
+
+export function getEllipseRadianByLength(ellipse: Ellipse, length: number, delta = 1e-5) {
+  return getEllipseArcRadianByLength(ellipseToEllipseArc(ellipse), length, delta)
+}
+
+export function getEllipseArcRadianByLength(ellipseArc: EllipseArc, length: number, delta = 1e-5) {
+  const f1 = (t: number) => getEllipseArcLength({ ...ellipseArc, endAngle: radianToAngle(t) }) - length
+  const e1 = ellipseArc.rx ** 2, e2 = ellipseArc.ry ** 2
+  // dz/dt = sqrt(e1 sin(t) sin(t) + e2 cos(t) cos(t))
+  const f2 = (t: number) => Math.sqrt(e1 * Math.sin(t) ** 2 + e2 * Math.cos(t) ** 2)
+  const t0 = angleToRadian(getTwoNumberCenter(ellipseArc.startAngle, ellipseArc.endAngle))
+  return newtonIterate(t0, f1, f2, delta)
+}
+
+export function getQuadraticCurvePercentByLength(curve: QuadraticCurve, length: number, delta = 1e-5) {
+  const f1 = (t: number) => getQuadraticCurveLength(getPartOfQuadraticCurve(curve, 0, t)) - length
+  const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  const e1 = c2 * c2 + c4 * c4, e2 = 2 * c1 * c2 + 2 * c3 * c4, e3 = c1 * c1 + c3 * c3
+  // dz/dt = 2 sqrt(e1 t t + e2 t + e3)
+  const f2 = (t: number) => 2 * Math.sqrt(e1 * t * t + e2 * t + e3)
+  return newtonIterate(0.5, f1, f2, delta)
+}
+
+export function getBezierCurvePercentByLength(curve: BezierCurve, length: number, delta = 1e-5) {
+  const f1 = (t: number) => getBezierCurveLength(getPartOfBezierCurve(curve, 0, t)) - length
+  const { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } } = curve
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
+  const e1 = 9 * c1 * c1 + 9 * d1 * d1, e2 = 12 * c1 * c2 + 12 * d1 * d2, e3 = 4 * c2 * c2 + 6 * c1 * c3 + 4 * d2 * d2 + 6 * d1 * d3, e4 = 4 * c2 * c3 + 4 * d2 * d3, e5 = c3 * c3 + d3 * d3
+  // dz/dt = sqrt(e1 t t t t + e2 t t t + e3 t t + e4 t + e5)
+  const f2 = (t: number) => Math.sqrt(e1 * t * t * t * t + e2 * t * t * t + e3 * t * t + e4 * t + e5)
+  return newtonIterate(0.5, f1, f2, delta)
 }

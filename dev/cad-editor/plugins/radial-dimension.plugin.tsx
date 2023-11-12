@@ -158,7 +158,7 @@ export function getCommand(ctx: PluginContext): Command {
     selectCount: 1,
     icon,
     contentSelectable,
-    useCommand({ onEnd, selected, type, strokeStyleId }) {
+    useCommand({ onEnd, selected, type, strokeStyleId, contents }) {
       const [result, setResult] = React.useState<RadialDimensionReferenceContent>()
       const [text, setText] = React.useState<string>()
       let message = ''
@@ -184,24 +184,22 @@ export function getCommand(ctx: PluginContext): Command {
         onStart() {
           if (result) {
             onEnd({
-              updateContents: (contents) => {
-                if (!result.refId && selected.length > 0 && type) {
+              updateContents: (draft) => {
+                if (selected.length > 0 && type) {
                   const content = selected[0].content
                   if (contentSelectable(content)) {
                     result.refId = ctx.getContentIndex(content, contents)
                   }
                 }
-                if (result.refId) {
-                  contents.push({
-                    type: 'radial dimension reference',
-                    position: result.position,
-                    fontSize: result.fontSize,
-                    fontFamily: result.fontFamily,
-                    refId: result.refId,
-                    text: result.text,
-                    strokeStyleId,
-                  } as RadialDimensionReferenceContent)
-                }
+                draft.push({
+                  type: 'radial dimension reference',
+                  position: result.position,
+                  fontSize: result.fontSize,
+                  fontFamily: result.fontFamily,
+                  refId: result.refId,
+                  text: result.text,
+                  strokeStyleId,
+                } as RadialDimensionReferenceContent)
               },
               nextCommand: type,
             })

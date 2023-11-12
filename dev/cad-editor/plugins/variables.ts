@@ -768,6 +768,229 @@ function isLineContent(content) {
   return content.type === "line";
 }
 
+// dev/cad-editor/plugins/center-line.plugin.tsx
+function getModel(ctx) {
+  const CenterLineReferenceContent = ctx.and(ctx.BaseContent("center line"), {
+    ref1: ctx.PartRef,
+    ref2: ctx.PartRef
+  });
+  function getCenterLineGeometriesFromCache(content, contents) {
+    const ref1 = ctx.getRefPart(content.ref1, contents);
+    const ref2 = ctx.getRefPart(content.ref2, contents);
+    if (ref1 && ref2 && isLineContent(ref1) && isLineContent(ref2)) {
+      return centerMarkLinesCache.get(ref1, ref2, content, () => {
+        const line = ctx.maxmiumBy([
+          [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])],
+          [ctx.getTwoPointCenter(ref1.points[0], ref2.points[1]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[0])]
+        ].map((r) => ({ line: r, length: ctx.getTwoPointsDistance(...r) })), (v) => v.length).line;
+        return {
+          lines: [line],
+          bounding: ctx.getPointsBounding(line),
+          renderingLines: ctx.dashedPolylineToLines(line, [8, 4])
+        };
+      });
+    }
+    return { lines: [], renderingLines: [] };
+  }
+  const centerMarkLinesCache = new ctx.WeakmapCache3();
+  const React = ctx.React;
+  return {
+    type: "center line",
+    render(content, { target, transformStrokeWidth, contents }) {
+      const strokeWidth = transformStrokeWidth(ctx.getDefaultStrokeWidth(content));
+      const { renderingLines } = getCenterLineGeometriesFromCache(content, contents);
+      return target.renderGroup(renderingLines.map((line) => target.renderPolyline(line, { strokeWidth })));
+    },
+    getGeometries: getCenterLineGeometriesFromCache,
+    propertyPanel(content, update) {
+      return {
+        ref1: [
+          typeof content.ref1.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.id, setValue: (v) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref1.id = v;
+            }
+          }) }) : void 0,
+          content.ref1.partIndex !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.partIndex, setValue: (v) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref1.partIndex = v;
+            }
+          }) }) : void 0
+        ],
+        ref2: [
+          typeof content.ref2.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.id, setValue: (v) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref2.id = v;
+            }
+          }) }) : void 0,
+          content.ref2.partIndex !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.partIndex, setValue: (v) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref2.partIndex = v;
+            }
+          }) }) : void 0
+        ]
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, CenterLineReferenceContent, p),
+    getRefIds: (content) => [
+      ...content.ref1 && typeof content.ref1.id === "number" ? [content.ref1.id] : [],
+      ...content.ref2 && typeof content.ref2.id === "number" ? [content.ref2.id] : []
+    ],
+    updateRefId(content, update) {
+      if (content.ref1) {
+        const newRefId = update(content.ref1.id);
+        if (newRefId !== void 0) {
+          content.ref1.id = newRefId;
+        }
+      }
+      if (content.ref2) {
+        const newRefId = update(content.ref2.id);
+        if (newRefId !== void 0) {
+          content.ref2.id = newRefId;
+        }
+      }
+    }
+  };
+}
+function isCenterLineContent(content) {
+  return content.type === "center line";
+}
+function contentSelectable(content) {
+  return !!content && isLineContent(content);
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "48,0 48,100", strokeWidth: "5", strokeDasharray: "8", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "100,0 100,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,1 0,99", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create center line",
+    icon,
+    contentSelectable,
+    selectCount: 2,
+    selectType: "select part",
+    execute({ contents, selected }) {
+      contents.push({
+        type: "center line",
+        ref1: {
+          id: selected[0][0],
+          partIndex: selected[0][1]
+        },
+        ref2: {
+          id: selected[1][0],
+          partIndex: selected[1][1]
+        }
+      });
+    }
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isCenterLineContent
+};
+`,
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isCircleContent(content) {
+  return content.type === "circle";
+}
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/center-mark.plugin.tsx
+function getModel(ctx) {
+  const CenterMarkReferenceContent = ctx.and(ctx.BaseContent("center mark"), {
+    refId: ctx.or(ctx.number, ctx.Content)
+  });
+  function getCenterMarkGeometriesFromCache(content, contents) {
+    const target = ctx.getReference(content.refId, contents, contentSelectable);
+    if (target) {
+      return centerMarkLinesCache.get(target, content, () => {
+        const lines = [
+          [{ x: target.x - target.r, y: target.y }, { x: target.x + target.r, y: target.y }],
+          [{ x: target.x, y: target.y - target.r }, { x: target.x, y: target.y + target.r }]
+        ];
+        return {
+          lines,
+          bounding: ctx.getPointsBounding(lines.flat()),
+          renderingLines: lines.map((line) => ctx.dashedPolylineToLines(line, [8, 4])).flat()
+        };
+      });
+    }
+    return { lines: [], renderingLines: [] };
+  }
+  const centerMarkLinesCache = new ctx.WeakmapCache2();
+  const React = ctx.React;
+  return {
+    type: "center mark",
+    render(content, { target, transformStrokeWidth, contents }) {
+      const strokeWidth = transformStrokeWidth(ctx.getDefaultStrokeWidth(content));
+      const { renderingLines } = getCenterMarkGeometriesFromCache(content, contents);
+      return target.renderGroup(renderingLines.map((line) => target.renderPolyline(line, { strokeWidth })));
+    },
+    getGeometries: getCenterMarkGeometriesFromCache,
+    canSelectPart: true,
+    propertyPanel(content, update, contents, { acquireContent }) {
+      return {
+        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
+          if (isCenterMarkContent(c)) {
+            c.refId = v;
+          }
+        }) }) : [],
+        refIdFrom: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, (p) => update((c) => {
+          if (isCenterMarkContent(c)) {
+            c.refId = p[0][0];
+          }
+        })) }, "canvas") : []
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
+    getRefIds: (content) => typeof content.refId === "number" ? [content.refId] : [],
+    updateRefId(content, update) {
+      const newRefId = update(content.refId);
+      if (newRefId !== void 0) {
+        content.refId = newRefId;
+      }
+    }
+  };
+}
+function isCenterMarkContent(content) {
+  return content.type === "center mark";
+}
+function contentSelectable(content) {
+  return !!content && (isArcContent(content) || isCircleContent(content));
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "48,0 48,100", strokeWidth: "5", strokeDasharray: "8", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,49 100,49", strokeWidth: "5", strokeDasharray: "8", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create center mark",
+    icon,
+    contentSelectable,
+    execute({ contents, selected }) {
+      const newContents = [];
+      contents.forEach((content, index) => {
+        var _a, _b;
+        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
+          newContents.push({
+            type: "center mark",
+            refId: index
+          });
+        }
+      });
+      contents.push(...newContents);
+    }
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isCenterMarkContent
+};
+`,
+`// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
+}
+
 // dev/cad-editor/plugins/chamfer.plugin.tsx
 function getCommand(ctx) {
   function getChamfers(content1, content2, d1, d2) {
@@ -7077,7 +7300,7 @@ function getCommand(ctx) {
     selectCount: 1,
     icon,
     contentSelectable,
-    useCommand({ onEnd, selected, type, strokeStyleId }) {
+    useCommand({ onEnd, selected, type, strokeStyleId, contents }) {
       const [result, setResult] = React.useState();
       const [text, setText] = React.useState();
       let message = "";
@@ -7103,24 +7326,22 @@ function getCommand(ctx) {
         onStart() {
           if (result) {
             onEnd({
-              updateContents: (contents) => {
-                if (!result.refId && selected.length > 0 && type) {
+              updateContents: (draft) => {
+                if (selected.length > 0 && type) {
                   const content = selected[0].content;
                   if (contentSelectable(content)) {
                     result.refId = ctx.getContentIndex(content, contents);
                   }
                 }
-                if (result.refId) {
-                  contents.push({
-                    type: "radial dimension reference",
-                    position: result.position,
-                    fontSize: result.fontSize,
-                    fontFamily: result.fontFamily,
-                    refId: result.refId,
-                    text: result.text,
-                    strokeStyleId
-                  });
-                }
+                draft.push({
+                  type: "radial dimension reference",
+                  position: result.position,
+                  fontSize: result.fontSize,
+                  fontFamily: result.fontFamily,
+                  refId: result.refId,
+                  text: result.text,
+                  strokeStyleId
+                });
               },
               nextCommand: type
             });
