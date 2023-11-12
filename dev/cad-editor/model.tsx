@@ -339,7 +339,7 @@ export function getContentByIndex(state: readonly Nullable<BaseContent>[], index
   if (index.length === 1) {
     return content
   }
-  const line = getContentModel(content)?.getGeometries?.(content)?.lines?.[index[1]]
+  const line = getContentModel(content)?.getGeometries?.(content, state)?.lines?.[index[1]]
   if (line) {
     return geometryLineToContent(line)
   }
@@ -1361,6 +1361,33 @@ export function getRefPosition(positionRef: PositionRef | undefined, contents: r
         p = model?.getPoint?.(ref, positionRef.param)
       }
       return p
+    }
+  }
+  return
+}
+
+export interface PartRef {
+  id: number | BaseContent
+  partIndex?: number
+}
+
+export const PartRef = {
+  id: or(number, Content),
+  partIndex: optional(number),
+}
+
+export function getRefPart(partRef: PartRef | undefined, contents: readonly Nullable<BaseContent>[]) {
+  if (partRef !== undefined) {
+    const ref = getReference(partRef.id, contents)
+    if (ref) {
+      const model = getContentModel(ref)
+      if (partRef.partIndex !== undefined) {
+        const line = model?.getGeometries?.(ref, contents)?.lines?.[partRef.partIndex]
+        if (line) {
+          return geometryLineToContent(line)
+        }
+      }
+      return ref
     }
   }
   return

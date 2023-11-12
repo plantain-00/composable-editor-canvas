@@ -173,7 +173,7 @@ export const CADEditor = React.forwardRef((props: {
   const [active, setActive] = React.useState<number>()
   const [activeChild, setActiveChild] = React.useState<number[]>()
   const activeContent = active !== undefined ? editingContent[active] : undefined
-  const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent).bounding : undefined
+  const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent, editingContent).bounding : undefined
   const activeViewportContent = activeViewportIndex !== undefined ? editingContent[activeViewportIndex] : undefined
   const activeViewport = activeViewportContent && isViewportContent(activeViewportContent) ? activeViewportContent : undefined
   const reverseTransformViewport = activeViewport ? (p: Position) => model.reverseTransformPositionByViewport(p, activeViewport) : undefined
@@ -290,7 +290,7 @@ export const CADEditor = React.forwardRef((props: {
     } else {
       for (const f of selected) {
         if (f.length === 2 && f[0] === i) {
-          const line = getContentModel(s)?.getGeometries?.(s)?.lines?.[f[1]]
+          const line = getContentModel(s)?.getGeometries?.(s, editingContent)?.lines?.[f[1]]
           if (line) {
             selectedContents.push({ content: model.geometryLineToContent(line), path: f })
           }
