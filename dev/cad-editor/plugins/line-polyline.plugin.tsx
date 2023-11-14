@@ -53,18 +53,15 @@ export function getModel(ctx: PluginContext) {
       return ctx.breakPolyline(lines, intersectionPoints)
     },
     offset(content, point, distance) {
-      const [p1, p2] = content.points
-      const line = ctx.twoPointLineToGeneralFormLine(p1, p2)
       if (!distance) {
         distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.pointSideToIndex(ctx.getPointSideOfLine(point, line))]
-      const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine))
-      const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine))
-      if (!r1 || !r2) return
-      return ctx.produce(content, (d) => {
-        d.points = [r1, r2]
-      })
+      const { lines } = getPolylineGeometries(content)
+      const index = ctx.getLinesOffsetDirection(point, lines)
+      const points = ctx.getParallelPolylineByDistance(lines, index, distance)
+      return ctx.trimOffsetResult(points, point, closed).map(p => ctx.produce(content, (d) => {
+        d.points = p
+      }))
     },
     render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
       const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
@@ -133,49 +130,6 @@ export function getModel(ctx: PluginContext) {
       explode(content) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
-      },
-      offset(content, point, distance) {
-        if (!distance) {
-          distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
-        }
-        if (content.points.length === 2) {
-          return lineModel.offset?.(content, point, distance)
-        }
-        const first = content.points[0]
-        const last = content.points[content.points.length - 1]
-        const closed = ctx.isSamePoint(first, last)
-        const { lines } = getPolylineGeometries(content)
-        const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
-        const index = ctx.getLinesOffsetDirection(point, lines)
-        const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[index])
-        const points: core.Position[] = []
-        for (let i = 0; i < parallelLines.length + 1; i++) {
-          let newLine: core.GeneralFormLine
-          let parallelLine = parallelLines[i]
-          if (i === 0) {
-            if (closed) {
-              newLine = parallelLines[parallelLines.length - 1]
-            } else {
-              newLine = ctx.getPerpendicular(first, parallelLine)
-            }
-          } else if (i === parallelLines.length) {
-            parallelLine = parallelLines[parallelLines.length - 1]
-            if (closed) {
-              newLine = parallelLines[0]
-            } else {
-              newLine = ctx.getPerpendicular(last, parallelLine)
-            }
-          } else {
-            newLine = parallelLines[i - 1]
-          }
-          const p = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, parallelLine)
-          if (p) {
-            points.push(p)
-          }
-        }
-        return ctx.trimOffsetResult(points, point, closed).map(p => ctx.produce(content, (d) => {
-          d.points = p
-        }))
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
         const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)

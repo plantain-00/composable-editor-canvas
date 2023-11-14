@@ -4609,19 +4609,15 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     offset(content, point, distance) {
-      const [p1, p2] = content.points;
-      const line = ctx.twoPointLineToGeneralFormLine(p1, p2);
       if (!distance) {
-        distance = Math.min(...getPolylineGeometries(content).lines.map((line2) => ctx.getPointAndGeometryLineMinimumDistance(point, line2)));
+        distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
-      const newLine = ctx.getParallelLinesByDistance(line, distance)[ctx.pointSideToIndex(ctx.getPointSideOfLine(point, line))];
-      const r1 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p1, newLine));
-      const r2 = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, ctx.getPerpendicular(p2, newLine));
-      if (!r1 || !r2)
-        return;
-      return ctx.produce(content, (d) => {
-        d.points = [r1, r2];
-      });
+      const { lines } = getPolylineGeometries(content);
+      const index = ctx.getLinesOffsetDirection(point, lines);
+      const points = ctx.getParallelPolylineByDistance(lines, index, distance);
+      return ctx.trimOffsetResult(points, point, closed).map((p) => ctx.produce(content, (d) => {
+        d.points = p;
+      }));
     },
     render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
       var _a;
@@ -4713,50 +4709,6 @@ function getModel(ctx) {
       explode(content) {
         const { lines } = getPolylineGeometries(content);
         return lines.map((line) => ({ type: "line", points: line }));
-      },
-      offset(content, point, distance) {
-        var _a;
-        if (!distance) {
-          distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
-        }
-        if (content.points.length === 2) {
-          return (_a = lineModel.offset) == null ? void 0 : _a.call(lineModel, content, point, distance);
-        }
-        const first = content.points[0];
-        const last = content.points[content.points.length - 1];
-        const closed = ctx.isSamePoint(first, last);
-        const { lines } = getPolylineGeometries(content);
-        const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
-        const index = ctx.getLinesOffsetDirection(point, lines);
-        const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
-        const points = [];
-        for (let i = 0; i < parallelLines.length + 1; i++) {
-          let newLine;
-          let parallelLine = parallelLines[i];
-          if (i === 0) {
-            if (closed) {
-              newLine = parallelLines[parallelLines.length - 1];
-            } else {
-              newLine = ctx.getPerpendicular(first, parallelLine);
-            }
-          } else if (i === parallelLines.length) {
-            parallelLine = parallelLines[parallelLines.length - 1];
-            if (closed) {
-              newLine = parallelLines[0];
-            } else {
-              newLine = ctx.getPerpendicular(last, parallelLine);
-            }
-          } else {
-            newLine = parallelLines[i - 1];
-          }
-          const p = ctx.getTwoGeneralFormLinesIntersectionPoint(newLine, parallelLine);
-          if (p) {
-            points.push(p);
-          }
-        }
-        return ctx.trimOffsetResult(points, point, closed).map((p) => ctx.produce(content, (d) => {
-          d.points = p;
-        }));
       },
       render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
         var _a;
@@ -5624,8 +5576,16 @@ function getModel(ctx) {
           points = content.points;
           lines = Array.from(ctx.iteratePolylineLines(points));
         } else {
-          points = ctx.getNurbsPoints(content.degree, content.points, content.knots, content.weights, nurbsSegmentCount);
-          lines = Array.from(ctx.iteratePolylineLines(points));
+          lines = [{
+            type: "nurbs curve",
+            curve: {
+              degree: content.degree,
+              points: content.points,
+              knots: content.knots || ctx.getDefaultNurbsKnots(content.points.length, content.degree),
+              weights: content.weights
+            }
+          }];
+          points = ctx.getGeometryLinesPoints(lines, nurbsSegmentCount);
         }
       } else {
         points = content.points;
@@ -5662,6 +5622,15 @@ function getModel(ctx) {
     },
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+    },
+    break(content, intersectionPoints) {
+      const lines = getNurbsGeometries(content).lines;
+      const result = ctx.breakGeometryLines(lines, intersectionPoints);
+      return result.map((r) => r.map((t) => ctx.geometryLineToContent(t))).flat();
+    },
+    offset(content, point, distance) {
+      const lines = getNurbsGeometries(content).lines;
+      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((r) => r.map((t) => ctx.geometryLineToContent(t))).flat();
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       var _a;
@@ -5790,6 +5759,16 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => {
+      const lines = getNurbsGeometries(content).lines;
+      return ctx.getGeometryLineStartAndEnd(lines[0]).start;
+    },
+    getEndPoint: (content) => {
+      const lines = getNurbsGeometries(content).lines;
+      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
+    },
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getNurbsGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getNurbsGeometries(content).lines),
     reverse: (content) => ctx.reverseNurbs(content)
   };
   return [

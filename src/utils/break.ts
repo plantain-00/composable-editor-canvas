@@ -1,6 +1,7 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
 import { getAngleInRange, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getTwoPointsDistance, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
 import { GeometryLine } from "./intersection"
+import { getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 
 /**
@@ -98,6 +99,12 @@ export function getGeometryLineStartAndEnd(line: GeometryLine) {
     return {
       start: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.startAngle)),
       end: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.endAngle)),
+    }
+  }
+  if (line.type === 'nurbs curve') {
+    return {
+      start: getNurbsCurvePointAtParam(line.curve, 0),
+      end: getNurbsCurvePointAtParam(line.curve, getNurbsMaxParam(line.curve)),
     }
   }
   return {
@@ -207,6 +214,23 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
               curve: getPartOfBezierCurve(line.curve, percents[i - 1], percents[i]),
             })
             if (i !== percents.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'nurbs curve') {
+      data = {
+        isOnLine: p => pointIsOnNurbsCurve(p, line.curve),
+        breakLine(points) {
+          const params = points.map(p => getNurbsCurveParamAtPoint(line.curve, p))
+          params.sort((a, b) => a - b)
+          params.unshift(0)
+          params.push(getNurbsMaxParam(line.curve))
+          for (let i = 1; i < params.length; i++) {
+            current.push({
+              type: 'nurbs curve',
+              curve: getPartOfNurbsCurve(line.curve, params[i - 1], params[i]),
+            })
+            if (i !== params.length - 1) save()
           }
         },
       }

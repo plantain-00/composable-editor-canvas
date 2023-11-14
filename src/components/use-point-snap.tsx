@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve, getPerpendicularParamToNurbsCurve, getNurbsCurvePointAtParam, getTangencyParamToNurbsCurve } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -309,6 +309,18 @@ export function usePointSnap<T>(
                         })
                       }
                     }
+                  } else if (line.type === 'nurbs curve') {
+                    const param = getPerpendicularParamToNurbsCurve(lastPosition, line.curve, p)
+                    if (param !== undefined) {
+                      const point = getNurbsCurvePointAtParam(line.curve, param)
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point),
+                        })
+                      }
+                    }
                   }
                 }
               }
@@ -385,6 +397,18 @@ export function usePointSnap<T>(
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),
                           ...getSnapTarget(model, content, tangencyPoint),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'nurbs curve') {
+                    const param = getTangencyParamToNurbsCurve(lastPosition, line.curve, p)
+                    if (param !== undefined) {
+                      const point = getNurbsCurvePointAtParam(line.curve, param)
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point),
                         })
                       }
                     }

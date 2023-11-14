@@ -1,5 +1,10 @@
-import { Position } from "./geometry"
+import * as verb from 'verb-nurbs-web'
+import { Arc, EllipseArc, Position, getPointSideOfLine, getTwoPointsDistance, isZero, iteratePolylineLines, pointAndDirectionToGeneralFormLine, pointIsOnEllipseArc } from "./geometry"
 import { Validator, integer, minimum, number, optional } from "./validators"
+import { angleToRadian } from './radian'
+import { BezierCurve, QuadraticCurve } from './intersection'
+import { newtonIterate } from './equation-calculater'
+import { getParallelPolylineByDistance } from './parallel'
 
 export interface Nurbs {
   points: Position[]
@@ -164,4 +169,209 @@ export function getNurbsPoints(degree: number, points: Position[], knots = getDe
     })
   }
   return result
+}
+
+export interface NurbsCurve {
+  points: Position[]
+  degree: number
+  knots: number[]
+  weights?: number[]
+}
+
+function fromVerbNurbsCurve(curve: verb.geom.NurbsCurve): NurbsCurve {
+  return {
+    points: curve.controlPoints().map(p => fromVerbPoint(p)),
+    degree: curve.degree(),
+    knots: curve.knots(),
+    weights: curve.weights(),
+  }
+}
+
+function toVerbNurbsCurve(curve: NurbsCurve) {
+  return verb.geom.NurbsCurve.byKnotsControlPointsWeights(curve.degree, curve.knots, curve.points.map(p => toVerbPoint(p)), curve.weights)
+}
+
+function fromVerbPoint(point: verb.core.Data.Point) {
+  return { x: point[0], y: point[1] }
+}
+
+function toVerbPoint(point: Position) {
+  return [point.x, point.y]
+}
+
+export function pointIsOnNurbsCurve(point: Position, curve: NurbsCurve) {
+  const p = toVerbNurbsCurve(curve).closestPoint(toVerbPoint(point))
+  return isZero(getTwoPointsDistance(point, fromVerbPoint(p)), 1e-4)
+}
+
+export function getNurbsMaxParam(curve: NurbsCurve) {
+  return curve.points.length - curve.degree
+}
+
+export function getNurbsCurveParamAtPoint(curve: NurbsCurve, point: Position) {
+  return toVerbNurbsCurve(curve).closestParam(toVerbPoint(point))
+}
+
+export function getNurbsCurvePointAtParam(curve: NurbsCurve, param: number) {
+  return fromVerbPoint(toVerbNurbsCurve(curve).point(param))
+}
+
+export function getNurbsCurvePoints(curve: NurbsCurve, segmentCount: number) {
+  const nurbs = toVerbNurbsCurve(curve)
+  const points: Position[] = []
+  for (let t = 0; t <= segmentCount; t++) {
+    points.push(fromVerbPoint(nurbs.point(t / segmentCount)))
+  }
+  return points
+}
+
+export function getPerpendicularParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = 1e-5) {
+  const nurbs = toVerbNurbsCurve(curve)
+  const f1 = (t: number) => {
+    const [[x, y], [x1, y1]] = nurbs.derivatives(t)
+    // (y - b)/(x - a) y1/x1 = -1
+    // z = x1 (x - a) + y1 (y - b)
+    return x1 * (x - a) + y1 * (y - b)
+  }
+  const f2 = (t: number) => {
+    const [[x, y], [x1, y1], [x2, y2]] = nurbs.derivatives(t, 2)
+    // z' = x1 x' + x1' (x - a) + y1 y'+ y1' (y - b)
+    // z' = x1 x1 + x2 (x - a) + y1 y1 + y2 (y - b)
+    return x1 * x1 + x2 * (x - a) + y1 * y1 + y2 * (y - b)
+  }
+  const u0 = near ? nurbs.closestParam(toVerbPoint(near)) : getNurbsMaxParam(curve) / 2
+  return newtonIterate(u0, f1, f2, delta)
+}
+
+export function getTangencyParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = 1e-5) {
+  const nurbs = toVerbNurbsCurve(curve)
+  const f1 = (t: number) => {
+    const [[x, y], [x1, y1]] = nurbs.derivatives(t)
+    // (y - b)/(x - a) = y1/x1
+    // z = y1(x - a) - x1(y - b)
+    return y1 * (x - a) - x1 * (y - b)
+  }
+  const f2 = (t: number) => {
+    const [[x, y], [x1, y1], [x2, y2]] = nurbs.derivatives(t, 2)
+    // z' = y1 x' + y1' (x - a) - (x1 y' + x1' (y - b))
+    // z' = y1 x1 + y2 (x - a) - (x1 y1 + x2 (y - b))
+    return y1 * x1 + y2 * (x - a) - (x1 * y1 + x2 * (y - b))
+  }
+  const u0 = near ? nurbs.closestParam(toVerbPoint(near)) : getNurbsMaxParam(curve) / 2
+  return newtonIterate(u0, f1, f2, delta)
+}
+
+export function getPointAndNurbsCurveNearestPointAndDistance(position: Position, curve: NurbsCurve) {
+  const nurbs = toVerbNurbsCurve(curve)
+  const u = nurbs.closestParam(toVerbPoint(position))
+  const point = fromVerbPoint(nurbs.point(u))
+  return {
+    param: u,
+    point,
+    distance: getTwoPointsDistance(position, point)
+  }
+}
+
+export function getNurbsCurveLength(curve: NurbsCurve) {
+  return toVerbNurbsCurve(curve).length()
+}
+
+export function getNurbsCurveLengthByParam(curve: NurbsCurve, param: number) {
+  return toVerbNurbsCurve(curve).lengthAtParam(param)
+}
+
+export function getNurbsCurveParamByLength(curve: NurbsCurve, length: number) {
+  return toVerbNurbsCurve(curve).paramAtLength(length)
+}
+
+export function splitNurbsCurve(curve: NurbsCurve, t: number): [NurbsCurve, NurbsCurve] {
+  const [start, end] = toVerbNurbsCurve(curve).split(t)
+  return [fromVerbNurbsCurve(start), fromVerbNurbsCurve(end)]
+}
+
+export function getPartOfNurbsCurve(curve: NurbsCurve, t1: number, t2: number): NurbsCurve {
+  let nurbs = toVerbNurbsCurve(curve)
+  if (!isZero(t1)) {
+    nurbs = nurbs.split(t1)[1]
+  }
+  if (!isZero(t2)) {
+    nurbs = nurbs.split(t2)[0]
+  }
+  return fromVerbNurbsCurve(nurbs)
+}
+
+export function getLineSegmentNurbsCurveIntersectionPoints(start: Position, end: Position, curve: NurbsCurve) {
+  const line = new verb.geom.Line(toVerbPoint(start), toVerbPoint(end))
+  const nurbs = toVerbNurbsCurve(curve)
+  return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0))
+}
+
+export function getArcNurbsCurveIntersectionPoints(arc: Arc, curve: NurbsCurve) {
+  const start = angleToRadian(arc.startAngle)
+  const end = angleToRadian(arc.endAngle)
+  const line = new verb.geom.Arc(toVerbPoint(arc), [1, 0], [0, 1], arc.r, arc.counterclockwise ? end : start, arc.counterclockwise ? start : end)
+  const nurbs = toVerbNurbsCurve(curve)
+  return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0))
+}
+
+export function getEllipseArcNurbsCurveIntersectionPoints(arc: EllipseArc, curve: NurbsCurve) {
+  const radian = angleToRadian(arc.angle)
+  const cos = Math.cos(radian), sin = Math.sin(radian)
+  const line = new verb.geom.Ellipse([arc.cx, arc.cy], [arc.rx * cos, arc.rx * sin], [-arc.ry * sin, arc.ry * cos])
+  const nurbs = toVerbNurbsCurve(curve)
+  return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0)).filter(s => pointIsOnEllipseArc(s, arc))
+}
+
+export function getQuadraticCurveNurbsCurveIntersectionPoints(curve1: QuadraticCurve, curve: NurbsCurve) {
+  const line = new verb.geom.BezierCurve([toVerbPoint(curve1.from), toVerbPoint(curve1.cp), toVerbPoint(curve1.to)])
+  const nurbs = toVerbNurbsCurve(curve)
+  return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0))
+}
+
+export function getBezierCurveNurbsCurveIntersectionPoints(curve1: BezierCurve, curve: NurbsCurve) {
+  const line = new verb.geom.BezierCurve([toVerbPoint(curve1.from), toVerbPoint(curve1.cp1), toVerbPoint(curve1.cp2), toVerbPoint(curve1.to)])
+  const nurbs = toVerbNurbsCurve(curve)
+  return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0))
+}
+
+export function getTwoNurbsCurveIntersectionPoints(curve1: NurbsCurve, curve2: NurbsCurve) {
+  const nurbs1 = toVerbNurbsCurve(curve1)
+  const nurbs2 = toVerbNurbsCurve(curve2)
+  return verb.geom.Intersect.curves(nurbs1, nurbs2).map(s => fromVerbPoint(s.point0))
+}
+
+export function reverseNurbsCurve(curve: NurbsCurve): NurbsCurve {
+  return fromVerbNurbsCurve(toVerbNurbsCurve(curve).reverse())
+}
+
+/**
+ * 0: point on nurbs curve
+ * 1: point on left side of nurbs curve
+ * -1: point on right side of nurbs curve
+ */
+export function getPointSideOfNurbsCurve(point: Position, curve: NurbsCurve): number {
+  const p = getPointAndNurbsCurveNearestPointAndDistance(point, curve)
+  const [x1, y1] = toVerbNurbsCurve(curve).tangent(p.param)
+  const radian = Math.atan2(y1, x1)
+  const line = pointAndDirectionToGeneralFormLine(p.point, radian)
+  return getPointSideOfLine(point, line)
+}
+
+export function getParallelNurbsCurvesByDistance<T extends NurbsCurve>(curve: T, distance: number): [T, T] {
+  if (isZero(distance)) {
+    return [curve, curve]
+  }
+  const lines = Array.from(iteratePolylineLines(curve.points))
+  const p0 = getParallelPolylineByDistance(lines, 0, distance)
+  const p1 = getParallelPolylineByDistance(lines, 1, distance)
+  return [
+    {
+      ...curve,
+      points: p0.length === curve.points.length ? p0 : curve,
+    },
+    {
+      ...curve,
+      points: p1.length === curve.points.length ? p1 : curve,
+    },
+  ]
 }

@@ -1,6 +1,6 @@
 import { Arc, EllipseArc, Position } from "./geometry";
 import { QuadraticCurve, BezierCurve, GeometryLine } from "./intersection";
-import { Nurbs } from "./nurbs";
+import { Nurbs, reverseNurbsCurve } from "./nurbs";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {
   return [line[1], line[0]]
@@ -55,7 +55,10 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
   if (geometryLine.type === 'quadratic curve') {
     return { ...geometryLine, curve: reverseQuadraticCurve(geometryLine.curve) }
   }
-  return { ...geometryLine, curve: reverseBezierCurve(geometryLine.curve) }
+  if (geometryLine.type === 'bezier curve') {
+    return { ...geometryLine, curve: reverseBezierCurve(geometryLine.curve) }
+  }
+  return { ...geometryLine, curve: reverseNurbsCurve(geometryLine.curve) }
 }
 
 function knotsReverse(knots: number[]): number[] {
