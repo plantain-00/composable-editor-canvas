@@ -1,5 +1,6 @@
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurvePointAtParam, getNurbsMaxParam, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
 
@@ -39,6 +40,9 @@ export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
   } else if (line.type === 'ellipse arc') {
     start = getEllipseArcPointAtAngle(line.curve, line.curve.startAngle)
     end = getEllipseArcPointAtAngle(line.curve, line.curve.endAngle)
+  } else if (line.type === 'nurbs curve') {
+    start = getNurbsCurvePointAtParam(line.curve, 0)
+    end = getNurbsCurvePointAtParam(line.curve, getNurbsMaxParam(line.curve))
   } else {
     start = line.curve.from
     end = line.curve.to
@@ -51,6 +55,7 @@ export type GeometryLine = [Position, Position]
   | { type: 'ellipse arc', curve: EllipseArc }
   | { type: 'quadratic curve', curve: QuadraticCurve }
   | { type: 'bezier curve', curve: BezierCurve }
+  | { type: 'nurbs curve', curve: NurbsCurve }
 
 /**
  * @public
@@ -92,10 +97,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
     }
-    if (extend) {
-      return getLineBezierCurveIntersectionPoints(...line1, line2.curve, true)
+    if (line2.type === 'bezier curve') {
+      if (extend) {
+        return getLineBezierCurveIntersectionPoints(...line1, line2.curve, true)
+      }
+      return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
     }
-    return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
+    return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
   if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'arc') {
@@ -117,10 +125,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
     }
-    if (extend) {
-      return getCircleBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
+    if (line2.type === 'bezier curve') {
+      if (extend) {
+        return getCircleBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
+      }
+      return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
     }
-    return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
+    return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'ellipse arc') {
@@ -136,20 +147,33 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
     }
-    if (extend) {
-      return getEllipseBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
+    if (line2.type === 'bezier curve') {
+      if (extend) {
+        return getEllipseBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
+      }
+      return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
     }
-    return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
+    return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   if (line1.type === 'quadratic curve') {
     if (line2.type === 'quadratic curve') {
       return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend)
     }
-    return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+    if (line2.type === 'bezier curve') {
+      return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+    }
+    return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
-  return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+  if (line1.type === 'bezier curve') {
+    if (line2.type === 'bezier curve') {
+      return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+    }
+    return getBezierCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
+  }
+  if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  return getTwoNurbsCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
 /**
@@ -383,6 +407,10 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
       }
     } else if (g.type === 'bezier curve') {
       if (getLineSegmentBezierCurveIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
+    } else if (g.type === 'nurbs curve') {
+      if (getLineSegmentNurbsCurveIntersectionPoints(...line, g.curve).length > 0) {
         return true
       }
     }

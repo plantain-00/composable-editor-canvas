@@ -5,5 +5,9 @@
     "declaration": true,
     "noUncheckedIndexedAccess": false,
     "target": "es5"
-  }
+  },
+  "files": [
+    "index.ts",
+    "../dev/lib.d.ts"
+  ]
 }

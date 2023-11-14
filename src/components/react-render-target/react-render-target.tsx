@@ -8,6 +8,7 @@ import { getPerpendicular, getPerpendicularPoint } from "../../utils/perpendicul
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 import { getGeometryLineStartAndEnd } from "../../utils/break"
 import { calculateEquation2 } from "../../utils/equation-calculater"
+import { getNurbsPoints } from "../../utils/nurbs"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
@@ -317,6 +318,8 @@ export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100
       points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, segmentCount))
     } else if (n.type === 'bezier curve') {
       points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, segmentCount))
+    } else if (n.type === 'nurbs curve') {
+      points.push(...getNurbsPoints(n.curve.degree, n.curve.points, n.curve.knots, n.curve.weights, segmentCount))
     }
   }
   return points

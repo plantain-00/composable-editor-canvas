@@ -25,8 +25,16 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
           points = content.points
           lines = Array.from(ctx.iteratePolylineLines(points))
         } else {
-          points = ctx.getNurbsPoints(content.degree, content.points, content.knots, content.weights, nurbsSegmentCount)
-          lines = Array.from(ctx.iteratePolylineLines(points))
+          lines = [{
+            type: 'nurbs curve',
+            curve: {
+              degree: content.degree,
+              points: content.points,
+              knots: content.knots || ctx.getDefaultNurbsKnots(content.points.length, content.degree),
+              weights: content.weights,
+            },
+          }]
+          points = ctx.getGeometryLinesPoints(lines, nurbsSegmentCount)
         }
       } else {
         points = content.points
@@ -63,6 +71,15 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     },
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
+    },
+    break(content, intersectionPoints) {
+      const lines = getNurbsGeometries(content).lines
+      const result = ctx.breakGeometryLines(lines, intersectionPoints)
+      return result.map(r => r.map(t => ctx.geometryLineToContent(t))).flat()
+    },
+    offset(content, point, distance) {
+      const lines = getNurbsGeometries(content).lines
+      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map(r => r.map(t => ctx.geometryLineToContent(t))).flat()
     },
     render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
       const { points } = getNurbsGeometries(content)
@@ -129,6 +146,16 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    getStartPoint: (content) => {
+      const lines = getNurbsGeometries(content).lines
+      return ctx.getGeometryLineStartAndEnd(lines[0]).start
+    },
+    getEndPoint: (content) => {
+      const lines = getNurbsGeometries(content).lines
+      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
+    },
+    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getNurbsGeometries(content).lines),
+    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getNurbsGeometries(content).lines),
     reverse: (content) => ctx.reverseNurbs(content),
   }
   return [

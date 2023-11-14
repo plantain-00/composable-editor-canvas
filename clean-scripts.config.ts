@@ -90,7 +90,7 @@ async function bundleJs(d: typeof packages[number]) {
       },
     }] : [],
     format: 'esm',
-    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine'],
+    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine', 'verb-nurbs-web'],
   })
   if (depdendencies.size > 0) {
     const packageJsonPath = `./packages/${d.name}/package.json`

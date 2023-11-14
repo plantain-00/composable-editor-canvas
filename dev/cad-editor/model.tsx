@@ -1,12 +1,13 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle, getEllipseAngle, getEllipseArcPointAtAngle, getQuadraticCurvePointAtPercent, getQuadraticCurvePercentAtPoint, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, breakGeometryLines, geometryLineToPathCommands } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle, getEllipseAngle, getEllipseArcPointAtAngle, getQuadraticCurvePointAtPercent, getQuadraticCurvePercentAtPoint, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, breakGeometryLines, geometryLineToPathCommands, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
 import type { EllipseArcContent } from './plugins/ellipse.plugin'
 import type { PathContent } from './plugins/path.plugin'
+import type { NurbsContent } from './plugins/nurbs.plugin'
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -177,7 +178,7 @@ export type Model<T> = Partial<FeatureModels> & {
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  offset?(content: T, point: Position, distance: number): T | T[] | void
+  offset?(content: T, point: Position, distance: number): BaseContent | BaseContent[] | void
   render?<V, P>(content: T, ctx: RenderContext<V, P>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
@@ -359,7 +360,10 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
   if (line.type === 'quadratic curve') {
     return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'quadraticCurve', cp: line.curve.cp, to: line.curve.to }] } as PathContent
   }
-  return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'bezierCurve', cp1: line.curve.cp1, cp2: line.curve.cp2, to: line.curve.to }] } as PathContent
+  if (line.type === 'bezier curve') {
+    return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'bezierCurve', cp1: line.curve.cp1, cp2: line.curve.cp2, to: line.curve.to }] } as PathContent
+  }
+  return { type: 'nurbs', ...line.curve } as NurbsContent
 }
 
 export function getContentsPoints(
@@ -1297,7 +1301,7 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
 export function getLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
-    if (isZero(getPointAndGeometryLineMinimumDistance(point, line))) {
+    if (isZero(getPointAndGeometryLineMinimumDistance(point, line), 1e-4)) {
       if (Array.isArray(line)) {
         return i + getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
       }
@@ -1314,6 +1318,9 @@ export function getLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
       }
       if (line.type === 'bezier curve') {
         return i + getBezierCurvePercentAtPoint(line.curve, point)
+      }
+      if (line.type === 'nurbs curve') {
+        return i + getNurbsCurveParamAtPoint(line.curve, point) / getNurbsMaxParam(line.curve)
       }
     }
   }
@@ -1336,7 +1343,10 @@ export function getLinesPointAtParam(param: number, lines: GeometryLine[]) {
   if (line.type === 'quadratic curve') {
     return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
   }
-  return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
+  if (line.type === 'bezier curve') {
+    return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
+  }
+  return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
 }
 
 export interface PositionRef {

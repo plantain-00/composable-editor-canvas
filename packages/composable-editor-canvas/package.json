@@ -17,7 +17,8 @@
     "earcut": "2",
     "expression-engine": "1",
     "immer": "9 || 10",
-    "twgl.js": "4 || 5"
+    "twgl.js": "4 || 5",
+    "verb-nurbs-web": "2"
   },
   "peerDependencies": {
     "react": "18",

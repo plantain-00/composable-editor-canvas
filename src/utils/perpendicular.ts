@@ -2,6 +2,7 @@ import { getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from ".
 import { calculateEquation3, calculateEquation5, newtonIterate } from "./equation-calculater"
 import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine, minimumBy } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
+import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 
 export function getPerpendicular(point: Position, line: GeneralFormLine) {
@@ -33,6 +34,11 @@ export function getPerpendicularToGeometryLine(point: Position, line: GeometryLi
     const percent = getPerpendicularPercentToBezierCurve(point, line.curve)[0]
     if (percent !== undefined) {
       p = getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, percent)
+    }
+  } else if (line.type === 'nurbs curve') {
+    const param = getPerpendicularParamToNurbsCurve(point, line.curve)
+    if (param !== undefined) {
+      p = getNurbsCurvePointAtParam(line.curve, param)
     }
   }
   if (p) {
@@ -178,7 +184,10 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   if (line.type === 'quadratic curve') {
     return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve)
   }
-  return getPointAndBezierCurveNearestPointAndDistance(p, line.curve)
+  if (line.type === 'bezier curve') {
+    return getPointAndBezierCurveNearestPointAndDistance(p, line.curve)
+  }
+  return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve)
 }
 
 export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
@@ -254,7 +263,10 @@ export function getPointAndGeometryLineMinimumDistance(p: Position, line: Geomet
   if (line.type === 'quadratic curve') {
     return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve).distance
   }
-  return getPointAndBezierCurveNearestPointAndDistance(p, line.curve).distance
+  if (line.type === 'bezier curve') {
+    return getPointAndBezierCurveNearestPointAndDistance(p, line.curve).distance
+  }
+  return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve).distance
 }
 
 export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position) {
