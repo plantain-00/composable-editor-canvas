@@ -1,10 +1,12 @@
 import * as verb from 'verb-nurbs-web'
+import * as twgl from 'twgl.js'
 import { Arc, EllipseArc, Position, getPointSideOfLine, getTwoPointsDistance, isZero, iteratePolylineLines, pointAndDirectionToGeneralFormLine, pointIsOnEllipseArc } from "./geometry"
 import { Validator, integer, minimum, number, optional } from "./validators"
 import { angleToRadian } from './radian'
 import { BezierCurve, QuadraticCurve } from './intersection'
 import { newtonIterate } from './equation-calculater'
 import { getParallelPolylineByDistance } from './parallel'
+import { Vec2, Vec3 } from './types'
 
 export interface Nurbs {
   points: Position[]
@@ -135,8 +137,19 @@ export function toQuadraticCurves(x: number[], i: number) {
   }
 }
 
-export function interpolateNurbs2(t: number, degree: number, points: number[][], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[]) {
-  return points[0].map((_, i) => interpolateNurbs(t, degree, points.map(p => p[i]), knots, weights))
+export function interpolateNurbs2(t: number, degree: number, points: Vec2[], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[]): Vec2 {
+  return [
+    interpolateNurbs(t, degree, points.map(p => p[0]), knots, weights),
+    interpolateNurbs(t, degree, points.map(p => p[1]), knots, weights),
+  ]
+}
+
+export function interpolateNurbs3(t: number, degree: number, points: Vec3[], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[]): Vec3 {
+  return [
+    interpolateNurbs(t, degree, points.map(p => p[0]), knots, weights),
+    interpolateNurbs(t, degree, points.map(p => p[1]), knots, weights),
+    interpolateNurbs(t, degree, points.map(p => p[2]), knots, weights),
+  ]
 }
 
 export function getDefaultNurbsKnots(pointsSize: number, degree: number) {
@@ -169,6 +182,85 @@ export function getNurbsPoints(degree: number, points: Position[], knots = getDe
     })
   }
   return result
+}
+
+export function getNurbsPoints3D(degree: number, points: Vec3[], knots = getDefaultNurbsKnots(points.length, degree), weights?: number[], segmentCount = 100) {
+  const result: Vec3[] = []
+  const x = points.map(p => p[0])
+  const y = points.map(p => p[1])
+  const z = points.map(p => p[2])
+  for (let t = 0; t <= segmentCount; t++) {
+    const p = t / segmentCount
+    result.push([
+      interpolateNurbs(p, degree, x, knots, weights),
+      interpolateNurbs(p, degree, y, knots, weights),
+      interpolateNurbs(p, degree, z, knots, weights),
+    ])
+  }
+  return result
+}
+
+export function getNurbsSurfaceTrianglePoints(
+  points: Vec3[][],
+  degreeU: number,
+  knotsU = getDefaultNurbsKnots(points.length, degreeU),
+  degreeV = degreeU,
+  knotsV = getDefaultNurbsKnots(points[0].length, degreeU),
+  segmentCount = 20,
+) {
+  const triangles: number[] = []
+  let previous: Vec3[] | undefined
+  for (let i = 0; i <= segmentCount; i++) {
+    const u = i / segmentCount
+    const ps = points.map(p => interpolateNurbs3(u, degreeU, p, knotsU))
+    const x = ps.map(p => p[0])
+    const y = ps.map(p => p[1])
+    const z = ps.map(p => p[2])
+    const current: Vec3[] = []
+    for (let j = 0; j <= segmentCount; j++) {
+      const v = j / segmentCount
+      current.push([
+        interpolateNurbs(v, degreeV, x, knotsV),
+        interpolateNurbs(v, degreeV, y, knotsV),
+        interpolateNurbs(v, degreeV, z, knotsV),
+      ])
+      if (previous && j > 0) {
+        triangles.push(
+          ...previous[j - 1], ...previous[j], ...current[j - 1],
+          ...current[j - 1], ...previous[j], ...current[j],
+        )
+      }
+    }
+    previous = current
+  }
+  return triangles
+}
+
+export function getNurbsSurfaceVertices(
+  points: Vec3[][],
+  degreeU: number,
+  knotsU = getDefaultNurbsKnots(points.length, degreeU),
+  degreeV = degreeU,
+  knotsV = getDefaultNurbsKnots(points[0].length, degreeU),
+  weights?: number[][],
+): Record<string, twgl.primitives.TypedArray> {
+  const nurbs = verb.geom.NurbsSurface.byKnotsControlPointsWeights(degreeU, degreeV, knotsU, knotsV, points, weights)
+  const mesh = nurbs.tessellate()
+  const positions = twgl.primitives.createAugmentedTypedArray(3, mesh.points.length)
+  const normals = twgl.primitives.createAugmentedTypedArray(3, mesh.normals.length)
+  const texcoords = twgl.primitives.createAugmentedTypedArray(2, mesh.uvs.length)
+  const indicesLength = mesh.faces.length % 2 === 1 ? mesh.faces.length + 1: mesh.faces.length
+  const indices = twgl.primitives.createAugmentedTypedArray(3, indicesLength, Uint16Array)
+  positions.push(...mesh.points)
+  normals.push(...mesh.normals)
+  texcoords.push(...mesh.uvs)
+  indices.push(...mesh.faces)
+  return {
+    position: positions,
+    normal: normals,
+    texcoord: texcoords,
+    indices: indices,
+  }
 }
 
 export interface NurbsCurve {

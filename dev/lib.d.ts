@@ -8,5 +8,11 @@ declare module 'verb-nurbs-web' {
     declare class BezierCurve extends verb.geom.NurbsCurve {
       constructor(points: core.Data.Point[]);
     }
+    declare class NurbsSurface {
+      static byKnotsControlPointsWeights(degreeU: number, degreeV: number, knotsU: number[], knotsV: number[], controlPoints: core.Data.Point[][], weights?: number[][]): NurbsSurface
+      point(u: number, v: number): core.Data.Point
+      normal(u: number, v: number): core.Data.Point
+      tessellate() : core.Data.MeshData
+    }
   }
 }

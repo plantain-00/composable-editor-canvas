@@ -1,5 +1,5 @@
 import * as React from "react"
-import { bindMultipleRefs, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine, useGlobalKeyDown } from "../src"
+import { bindMultipleRefs, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine, useGlobalKeyDown, getNurbsSurfaceVertices } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -7,7 +7,7 @@ export default () => {
   const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>()
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const [rotate, setRotate] = React.useState({ x: 0, y: 0 })
-  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove} = useDragMove(() => {
+  const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     setRotate((v) => ({ x: v.x + offset.x, y: v.y + offset.y }))
   })
   useGlobalKeyDown(e => {
@@ -63,13 +63,37 @@ export default () => {
     },
     {
       geometry: {
-        type: 'cune',
+        type: 'cone',
         topRadius: 0,
         bottomRadius: 100,
         height: 200,
       },
       color: [1, 0, 1, 1],
       position: [0, -250, 0],
+    },
+    {
+      geometry: {
+        type: 'triangles',
+        points: [-50, -50, 50, 50, 50, 50, -50, 50, 50],
+      },
+      color: [0.5, 0, 0.5, 1],
+      position: [250, 250, 250],
+    },
+    {
+      geometry: {
+        type: 'vertices',
+        vertices: getNurbsSurfaceVertices([
+          [[0, 0, -20], [20, 0, 0], [40, 0, 0], [60, 0, 0], [80, 0, 0], [100, 0, 0]],
+          [[0, -20, 0], [20, -20, 10], [40, -20, 20], [60, -20, 0], [80, -20, 0], [100, -20, 0]],
+          [[0, -40, 0], [20, -40, 10], [40, -40, 20], [60, -40, 0], [80, -40, -4], [100, -40, -24]],
+          [[0, -50, 0], [20, -60, 0], [40, -60, -46], [60, -60, 0], [80, -60, 0], [100, -50, 0]],
+          [[0, -80, 0], [20, -80, 0], [40, -80, 0], [60, -80, 8], [80, -80, -40], [100, -80, 0]],
+          [[0, -100, 24], [20, -100, 0], [40, -100, 40], [60, -100, 0], [100, -100, -20], [100, -100, -30]],
+        ], 3, [0, 0, 0, 0, 0.333, 0.666, 1, 1, 1, 1], 3, [0, 0, 0, 0, 0.333, 0.666, 1, 1, 1, 1]),
+      },
+      color: [0, 0.5, 0, 1],
+      position: [250, 250, -250],
+      rotateY: Math.PI,
     },
   ])
 
@@ -119,7 +143,7 @@ export default () => {
         width={width}
         height={height}
         onMouseDown={e => onStartMoveCanvas({ x: e.clientX, y: e.clientY })}
-        onMouseMove={async e => setHovering(await renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.geometry.type !== 'lines'))}
+        onMouseMove={async e => setHovering(await renderer.current?.pick?.(e.clientX, e.clientY, (g) => g.geometry.type !== 'lines' && g.geometry.type !== 'triangles'))}
       />
       {moveCanvasMask}
     </div>
