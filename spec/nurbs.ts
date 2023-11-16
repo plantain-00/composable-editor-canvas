@@ -1,9 +1,9 @@
 import test from 'ava'
-import { toQuadraticCurves, toBezierCurves, equals, interpolate3, interpolate4, interpolateNurbs, interpolateNurbs2 } from '../src'
+import { toQuadraticCurves, toBezierCurves, equals, interpolate3, interpolate4, interpolateNurbs, interpolateNurbs2, Vec2 } from '../src'
 
 test('interpolateNurbs2', (t) => {
   const tvalues = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-  const points = [
+  const points: Vec2[] = [
     [-1.0, 0.0],
     [-0.5, 0.5],
     [0.5, -0.5],
@@ -21,7 +21,7 @@ test('interpolateNurbs2', (t) => {
     [0.5, -0.5]
   ], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])))
   const w = Math.pow(0.5, 0.5)
-  const points2 = [
+  const points2: Vec2[] = [
     [0.0, -0.5],
     [-0.5, -0.5],
     [-0.5, 0.0],

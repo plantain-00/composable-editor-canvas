@@ -26,11 +26,22 @@ export interface Light {
 export interface Material {
   color: Vec4
   position?: Vec3
+  rotateY?: number
 }
 
 export interface LinesGeometry {
   type: 'lines' | 'line strip'
   points: number[]
+}
+
+export interface TrianglesGeometry {
+  type: 'triangles' | 'triangle strip'
+  points: number[]
+}
+
+export interface VerticesGeometry {
+  type: 'vertices'
+  vertices: Record<string, twgl.primitives.TypedArray>
 }
 
 export interface PolygonGeometry {
@@ -54,15 +65,15 @@ export interface CylinderGeometry {
   height: number
 }
 
-export interface CuneGeometry {
-  type: 'cune'
+export interface ConeGeometry {
+  type: 'cone'
   bottomRadius: number
   topRadius: number
   height: number
 }
 
 export interface Graphic3d extends Material {
-  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | CuneGeometry | LinesGeometry | PolygonGeometry
+  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | ConeGeometry | LinesGeometry | TrianglesGeometry | PolygonGeometry | VerticesGeometry
 }
 
 export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
@@ -226,11 +237,14 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
         return
       }
       let world = m4.identity()
+      if (g.rotateY) {
+        world = m4.rotateY(world, g.rotateY)
+      }
       if (g.position) {
         world = m4.translate(world, g.position)
       }
       let programInfo: twgl.ProgramInfo
-      if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'polygon') {
+      if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'triangles' || g.geometry.type === 'triangle strip' || g.geometry.type === 'polygon') {
         programInfo = basicProgramInfo.instance
       } else {
         programInfo = primaryProgramInfo.instance
@@ -247,7 +261,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           if (g.geometry.type === 'cylinder') {
             return twgl.primitives.createCylinderBufferInfo(gl, g.geometry.radius, g.geometry.height, 36, 4)
           }
-          if (g.geometry.type === 'cune') {
+          if (g.geometry.type === 'cone') {
             return twgl.primitives.createTruncatedConeBufferInfo(gl, g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4)
           }
           if (g.geometry.type === 'polygon') {
@@ -258,6 +272,9 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
               }
             })
           }
+          if (g.geometry.type === 'vertices') {
+            return twgl.createBufferInfoFromArrays(gl, g.geometry.vertices)
+          }
           return twgl.createBufferInfoFromArrays(gl, {
             position: {
               numComponents: 3,
@@ -265,7 +282,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
             }
           })
         }),
-        type: g.geometry.type === 'lines' ? gl.LINES : g.geometry.type === 'line strip' ? gl.LINE_STRIP : gl.TRIANGLES,
+        type: g.geometry.type === 'lines' ? gl.LINES : g.geometry.type === 'line strip' ? gl.LINE_STRIP : g.geometry.type === 'triangle strip' ? gl.TRIANGLE_STRIP : gl.TRIANGLES,
         uniforms: {
           ...uniforms,
           u_diffuseMult: g.color,

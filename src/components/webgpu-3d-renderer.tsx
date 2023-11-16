@@ -241,13 +241,16 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
         return
       }
       let world = m4.identity()
+      if (g.rotateY) {
+        world = m4.rotateY(world, g.rotateY)
+      }
       if (g.position) {
         world = m4.translate(world, g.position)
       }
       const pipeline = basicPipelineCache.get(g.geometry.type, () => {
         let shaderModule: GPUShaderModule
         const bufferLayouts: GPUVertexBufferLayout[] = [{ arrayStride: 3 * 4, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] }]
-        if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'polygon') {
+        if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'triangles' || g.geometry.type === 'triangle strip' || g.geometry.type === 'polygon') {
           shaderModule = basicShaderModule.instance
         } else {
           shaderModule = primaryShaderModule.instance
@@ -269,7 +272,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
           },
           primitive: {
             cullMode: 'back',
-            topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : 'triangle-list',
+            topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : g.geometry.type === 'triangle strip' ? 'triangle-strip' : 'triangle-list',
           },
           depthStencil: {
             depthWriteEnabled: true,
@@ -301,7 +304,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
           ])
         },
       }]
-      if (g.geometry.type !== 'lines' && g.geometry.type !== 'line strip' && g.geometry.type !== 'polygon') {
+      if (g.geometry.type !== 'lines' && g.geometry.type !== 'line strip' && g.geometry.type !== 'triangles' && g.geometry.type !== 'triangle strip' && g.geometry.type !== 'polygon') {
         bindGroupEntries.push(
           { binding: 1, resource: sampler },
           { binding: 2, resource: texture.createView() },
@@ -321,7 +324,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
         if (g.geometry.type === 'cylinder') {
           return createBuffers(device, twgl.primitives.createCylinderVertices(g.geometry.radius, g.geometry.height, 36, 4))
         }
-        if (g.geometry.type === 'cune') {
+        if (g.geometry.type === 'cone') {
           return createBuffers(device, twgl.primitives.createTruncatedConeVertices(g.geometry.bottomRadius, g.geometry.topRadius, g.geometry.height, 36, 4))
         }
         if (g.geometry.type === 'polygon') {
@@ -329,6 +332,9 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
             positionBuffer: createVertexBuffer(device, new Float32Array(get3dPolygonTriangles(g.geometry.points))),
             count: g.geometry.points.length / 3,
           }
+        }
+        if (g.geometry.type === 'vertices') {
+          return createBuffers(device, g.geometry.vertices)
         }
         return {
           positionBuffer: createVertexBuffer(device, new Float32Array(g.geometry.points)),
@@ -407,7 +413,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
             },
             primitive: {
               cullMode: 'back',
-              topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : 'triangle-list',
+              topology: g.geometry.type === 'lines' ? 'line-list' : g.geometry.type === 'line strip' ? 'line-strip' : g.geometry.type === 'triangle strip' ? 'triangle-strip' : 'triangle-list',
             },
             depthStencil: {
               depthWriteEnabled: true,
