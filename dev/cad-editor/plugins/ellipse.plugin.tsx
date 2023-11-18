@@ -233,8 +233,6 @@ export function getModel(ctx: PluginContext) {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
-    getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
     getArea: (content) => Math.PI * content.rx * content.ry,
   }
   return [
@@ -303,7 +301,7 @@ export function getModel(ctx: PluginContext) {
         return target.renderPolyline(points, options)
       },
       renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
+        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle })
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },
       getOperatorRenderPosition(content) {
@@ -394,8 +392,6 @@ export function getModel(ctx: PluginContext) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2

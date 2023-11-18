@@ -124,8 +124,6 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRegularPolygonGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRegularPolygonGeometriesFromCache(content).lines),
   }
 }
 

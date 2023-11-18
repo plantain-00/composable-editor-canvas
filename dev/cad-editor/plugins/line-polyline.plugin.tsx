@@ -114,8 +114,6 @@ export function getModel(ctx: PluginContext) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     getStartPoint: (content) => content.points[0],
     getEndPoint: (content) => content.points[content.points.length - 1],
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolylineGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines),
     reverse: (content) => ({
       ...content,
       points: content.points.slice().reverse(),

@@ -226,8 +226,6 @@ export function getModel(ctx: PluginContext) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
-      getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
       getArea: (content) => Math.PI * content.r ** 2,
     } as model.Model<CircleContent>,
     {
@@ -313,7 +311,7 @@ export function getModel(ctx: PluginContext) {
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
       renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 })
+        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle })
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },
       getOperatorRenderPosition(content) {
@@ -412,8 +410,6 @@ export function getModel(ctx: PluginContext) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.r ** 2 * (radian - Math.sin(radian)) / 2

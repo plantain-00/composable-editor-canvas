@@ -139,8 +139,6 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getGeometries(content).lines),
   }
 }
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve, getPerpendicularParamToNurbsCurve, getNurbsCurvePointAtParam, getTangencyParamToNurbsCurve } from "../utils"
+import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve, getPerpendicularParamToNurbsCurve, getNurbsCurvePointAtParam, getTangencyParamToNurbsCurve, getGeometryLinesParamAtPoint } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
 
 /**
@@ -12,7 +12,6 @@ export function usePointSnap<T>(
   getModel: (content: T) => {
     getSnapPoints?: (content: T, contents: readonly Nullable<T>[]) => SnapPoint[]
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => { lines: GeometryLine[], bounding?: TwoPointsFormRegion }
-    getParam?(content: T, point: Position): number
   } | undefined,
   offset?: Position,
   delta = 5,
@@ -45,8 +44,10 @@ export function usePointSnap<T>(
     return { position: p }
   }
 
-  const getSnapTarget = (model: ReturnType<typeof getModel>, content: T, point: Position) => {
-    const param = model?.getParam?.(content, point)
+  const getSnapTarget = (model: ReturnType<typeof getModel>, content: T, point: Position, contents: readonly Nullable<T>[]) => {
+    const lines = model?.getGeometries?.(content, contents).lines
+    if (!lines) return
+    const param = getGeometryLinesParamAtPoint(point, lines)
     if (param !== undefined) {
       return {
         target: {
@@ -262,7 +263,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...perpendicularPoint, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(perpendicularPoint),
-                          ...getSnapTarget(model, content, perpendicularPoint),
+                          ...getSnapTarget(model, content, perpendicularPoint, contents),
                         })
                       }
                     }
@@ -272,7 +273,7 @@ export function usePointSnap<T>(
                       saveSnapPoint(transformSnapPosition, { ...perpendicularPoint.point, type: 'perpendicular' })
                       return transformResult(transformSnapPosition, {
                         ...getOffsetSnapPoint(perpendicularPoint.point),
-                        ...getSnapTarget(model, content, perpendicularPoint.point),
+                        ...getSnapTarget(model, content, perpendicularPoint.point, contents),
                       })
                     }
                   } else if (line.type === 'ellipse arc') {
@@ -283,7 +284,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
-                          ...getSnapTarget(model, content, point),
+                          ...getSnapTarget(model, content, point, contents),
                         })
                       }
                     }
@@ -294,7 +295,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
-                          ...getSnapTarget(model, content, point),
+                          ...getSnapTarget(model, content, point, contents),
                         })
                       }
                     }
@@ -305,7 +306,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
-                          ...getSnapTarget(model, content, point),
+                          ...getSnapTarget(model, content, point, contents),
                         })
                       }
                     }
@@ -317,7 +318,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
-                          ...getSnapTarget(model, content, point),
+                          ...getSnapTarget(model, content, point, contents),
                         })
                       }
                     }
@@ -363,7 +364,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),
-                          ...getSnapTarget(model, content, tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint, contents),
                         })
                       }
                     }
@@ -374,7 +375,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),
-                          ...getSnapTarget(model, content, tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint, contents),
                         })
                       }
                     }
@@ -385,7 +386,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),
-                          ...getSnapTarget(model, content, tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint, contents),
                         })
                       }
                     }
@@ -396,7 +397,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(tangencyPoint),
-                          ...getSnapTarget(model, content, tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint, contents),
                         })
                       }
                     }
@@ -408,7 +409,7 @@ export function usePointSnap<T>(
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'tangency' })
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
-                          ...getSnapTarget(model, content, point),
+                          ...getSnapTarget(model, content, point, contents),
                         })
                       }
                     }
@@ -450,7 +451,7 @@ export function usePointSnap<T>(
                     saveSnapPoint(transformSnapPosition, { ...point, type: 'nearest' })
                     return transformResult(transformSnapPosition, {
                       ...getOffsetSnapPoint(point),
-                      ...getSnapTarget(model, content, point),
+                      ...getSnapTarget(model, content, point, contents),
                     })
                   }
                 }

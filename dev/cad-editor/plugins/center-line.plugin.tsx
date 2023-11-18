@@ -15,9 +15,9 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
     ref2: ctx.PartRef,
   })
   function getCenterLineGeometriesFromCache(content: Omit<CenterLineReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const ref1 = ctx.getRefPart(content.ref1, contents)
-    const ref2 = ctx.getRefPart(content.ref2, contents)
-    if (ref1 && ref2 && isLineContent(ref1) && isLineContent(ref2)) {
+    const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent)
+    const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent)
+    if (ref1 && ref2) {
       return centerMarkLinesCache.get(ref1, ref2, content, () => {
         const line = ctx.maxmiumBy([
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])] as [core.Position, core.Position],

@@ -5,15 +5,15 @@ import type * as model from '../model'
 import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 
 export type CenterMarkReferenceContent = model.BaseContent<'center mark'> & {
-  refId: number | model.BaseContent
+  ref: model.PartRef
 }
 
 export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceContent> {
   const CenterMarkReferenceContent = ctx.and(ctx.BaseContent('center mark'), {
-    refId: ctx.or(ctx.number, ctx.Content)
+    ref: ctx.PartRef,
   })
   function getCenterMarkGeometriesFromCache(content: Omit<CenterMarkReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const target = ctx.getReference(content.refId, contents, contentSelectable)
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable)
     if (target) {
       return centerMarkLinesCache.get(target, content, () => {
         const lines: [core.Position, core.Position][] = [
@@ -41,18 +41,22 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
     },
     getGeometries: getCenterMarkGeometriesFromCache,
     canSelectPart: true,
-    propertyPanel(content, update, contents, { acquireContent }) {
+    propertyPanel(content, update) {
       return {
-        refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isCenterMarkContent(c)) { c.refId = v } })} /> : [],
-        refIdFrom: typeof content.refId === 'number' ? <ctx.Button onClick={() => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, p => update(c => { if (isCenterMarkContent(c)) { c.refId = p[0][0] } }))}>canvas</ctx.Button> : [],
+        ref: [
+          typeof content.ref.id === 'number' ? <ctx.NumberEditor value={content.ref.id} setValue={(v) => update(c => { if (isCenterMarkContent(c)) { c.ref.id = v } })} /> : undefined,
+          content.ref.partIndex !== undefined ? <ctx.NumberEditor value={content.ref.partIndex} setValue={(v) => update(c => { if (isCenterMarkContent(c)) { c.ref.partIndex = v } })} /> : undefined,
+        ],
       }
     },
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
-    getRefIds: (content) => typeof content.refId === 'number' ? [content.refId] : [],
+    getRefIds: (content) => typeof content.ref === 'number' ? [content.ref] : [],
     updateRefId(content, update) {
-      const newRefId = update(content.refId)
-      if (newRefId !== undefined) {
-        content.refId = newRefId
+      if (content.ref) {
+        const newRefId = update(content.ref.id)
+        if (newRefId !== undefined) {
+          content.ref.id = newRefId
+        }
       }
     },
   }
@@ -79,17 +83,15 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create center mark',
     icon,
     contentSelectable,
+    selectType: 'select part',
     execute({ contents, selected }) {
-      const newContents: CenterMarkReferenceContent[] = []
-      contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          newContents.push({
-            type: 'center mark',
-            refId: index,
-          })
-        }
-      })
-      contents.push(...newContents)
+      contents.push(...selected.map(([index, partIndex]) => ({
+        type: 'center mark',
+        ref: {
+          id: index,
+          partIndex,
+        },
+      })))
     },
   }
 }

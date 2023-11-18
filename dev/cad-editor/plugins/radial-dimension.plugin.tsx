@@ -6,15 +6,15 @@ import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circ
 import type { LineContent } from './line-polyline.plugin'
 
 export type RadialDimensionReferenceContent = model.BaseContent<'radial dimension reference'> & model.StrokeFields & model.ArrowFields & core.RadialDimension & {
-  refId: number | model.BaseContent
+  ref: model.PartRef
 }
 
 export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferenceContent> {
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent('radial dimension reference'), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
-    refId: ctx.or(ctx.number, ctx.Content)
+    ref: ctx.PartRef,
   })
   function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const target = ctx.getReference(content.refId, contents, contentSelectable)
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable)
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         return ctx.getRadialDimensionGeometries(content, target, {
@@ -60,7 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       if (regions && regions.length > 0) {
         children.push(target.renderPolyline(regions[0].points, { strokeWidth: 0, fillColor: strokeColor }))
       }
-      const referenceTarget = ctx.getReference(content.refId, contents, contentSelectable)
+      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable)
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget)
         children.push(target.renderGroup(
@@ -90,7 +90,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
                 }
                 c.position.x += cursor.x - start.x
                 c.position.y += cursor.y - start.y
-                const target = ctx.getReference(c.refId, contents, contentSelectable)
+                const target = ctx.getRefPart(content.ref, contents, contentSelectable)
                 if (!target || ctx.getTwoPointsDistance(target, c.position) > target.r) {
                   return
                 }
@@ -102,10 +102,12 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       })
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        refId: typeof content.refId === 'number' ? <ctx.NumberEditor value={content.refId} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = v } })} /> : [],
-        refIdFrom: typeof content.refId === 'number' ? <ctx.Button onClick={() => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, p => update(c => { if (isRadialDimensionReferenceContent(c)) { c.refId = p[0][0] } }))}>canvas</ctx.Button> : [],
+        ref: [
+          typeof content.ref.id === 'number' ? <ctx.NumberEditor value={content.ref.id} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.ref.id = v } })} /> : undefined,
+          content.ref.partIndex !== undefined ? <ctx.NumberEditor value={content.ref.partIndex} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.ref.partIndex = v } })} /> : undefined,
+        ],
         position: <ctx.ObjectEditor
           inline
           properties={{
@@ -125,11 +127,13 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       }
     },
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.refId === 'number' ? [content.refId] : [])],
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref === 'number' ? [content.ref] : [])],
     updateRefId(content, update) {
-      const newRefId = update(content.refId)
-      if (newRefId !== undefined) {
-        content.refId = newRefId
+      if (content.ref) {
+        const newRefId = update(content.ref.id)
+        if (newRefId !== undefined) {
+          content.ref.id = newRefId
+        }
       }
       ctx.updateStrokeRefIds(content, update)
     },
@@ -156,9 +160,10 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create radial dimension',
     selectCount: 1,
+    selectType: 'select part',
     icon,
     contentSelectable,
-    useCommand({ onEnd, selected, type, strokeStyleId, contents }) {
+    useCommand({ onEnd, selected, type, strokeStyleId }) {
       const [result, setResult] = React.useState<RadialDimensionReferenceContent>()
       const [text, setText] = React.useState<string>()
       let message = ''
@@ -186,9 +191,12 @@ export function getCommand(ctx: PluginContext): Command {
             onEnd({
               updateContents: (draft) => {
                 if (selected.length > 0 && type) {
-                  const content = selected[0].content
+                  const { content, path } = selected[0]
                   if (contentSelectable(content)) {
-                    result.refId = ctx.getContentIndex(content, contents)
+                    result.ref = {
+                      id: path[0],
+                      partIndex: path[1],
+                    }
                   }
                 }
                 draft.push({
@@ -196,7 +204,7 @@ export function getCommand(ctx: PluginContext): Command {
                   position: result.position,
                   fontSize: result.fontSize,
                   fontFamily: result.fontFamily,
-                  refId: result.refId,
+                  ref: result.ref,
                   text: result.text,
                   strokeStyleId,
                 } as RadialDimensionReferenceContent)
@@ -210,14 +218,17 @@ export function getCommand(ctx: PluginContext): Command {
           setInputPosition(viewportPosition || p)
           setCursorPosition(p)
           if (selected.length > 0 && type) {
-            const content = selected[0].content
+            const { content, path } = selected[0]
             if (contentSelectable(content)) {
               setResult({
                 type: 'radial dimension reference',
                 position: p,
                 fontSize: 16,
                 fontFamily: 'monospace',
-                refId: selected[0].path[0],
+                ref: {
+                  id: path[0],
+                  partIndex: path[1],
+                },
                 text,
                 strokeStyleId,
               })

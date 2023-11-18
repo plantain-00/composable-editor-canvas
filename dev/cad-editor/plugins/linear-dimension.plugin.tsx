@@ -83,6 +83,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     },
     getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
+        const { p1, p2 } = getLinearDimensionPositions(content, contents)
         return {
           editPoints: [
             {
@@ -99,8 +100,8 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
               },
             },
             {
-              x: content.p1.x,
-              y: content.p1.y,
+              x: p1.x,
+              y: p1.y,
               cursor: 'move',
               update(c, { cursor, start, scale, target }) {
                 if (!isLinearDimensionContent(c)) {
@@ -113,8 +114,8 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
               },
             },
             {
-              x: content.p2.x,
-              y: content.p2.y,
+              x: p2.x,
+              y: p2.y,
               cursor: 'move',
               update(c, { cursor, start, scale, target }) {
                 if (!isLinearDimensionContent(c)) {

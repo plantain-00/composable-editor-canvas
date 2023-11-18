@@ -137,8 +137,6 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getStarGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getStarGeometriesFromCache(content).lines),
   }
 }
 

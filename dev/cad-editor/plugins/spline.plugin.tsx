@@ -6,7 +6,7 @@ import type { LineContent } from './line-polyline.plugin'
 
 export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & {
   points: core.Position[]
-  fitting?: boolean
+  fitting?: boolean | 'closed'
 }
 export type SplineArrowContent = model.BaseContent<'spline arrow'> & model.StrokeFields & model.ArrowFields & model.SegmentCountFields & {
   points: core.Position[]
@@ -16,7 +16,7 @@ export type SplineArrowContent = model.BaseContent<'spline arrow'> & model.Strok
 export function getModel(ctx: PluginContext): model.Model<SplineContent | SplineArrowContent>[] {
   const SplineContent = ctx.and(ctx.BaseContent('spline'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
-    fitting: ctx.optional(ctx.boolean),
+    fitting: ctx.optional(ctx.or(ctx.boolean, 'closed')),
   })
   const SplineArrowContent = ctx.and(ctx.BaseContent('spline arrow'), ctx.StrokeFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
@@ -29,7 +29,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       let lines: core.GeometryLine[]
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
       if (content.points.length > 2) {
-        if (content.fitting) {
+        if (content.fitting === 'closed') {
+          lines = ctx.getBezierSplineCurves([...content.points.slice(content.points.length - 3), ...content.points, ...content.points.slice(0, 3)]).map(c => ({ type: 'bezier curve' as const, curve: c }))
+          lines = lines.slice(3, lines.length - 2)
+        } else if (content.fitting) {
           lines = ctx.getBezierSplineCurves(content.points).map(c => ({ type: 'bezier curve' as const, curve: c }))
         } else if (content.points.length === 3) {
           lines = ctx.getQuadraticSplineCurves(content.points).map(c => ({ type: 'quadratic curve' as const, curve: c }))
@@ -145,7 +148,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
             }}
           />)}
         />,
-        fitting: <ctx.BooleanEditor value={content.fitting === true} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v ? true : undefined } })} />,
+        fitting: <ctx.EnumEditor enums={['true', 'false', 'closed']} value={content.fitting === 'closed' ? 'closed' : content.fitting ? 'true' : 'false'} setValue={(v) => update(c => { if (isSplineContent(c)) { c.fitting = v === 'closed' ? 'closed' : v === 'true' ? true : undefined } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getFillContentPropertyPanel(content, update, contents),
         ...ctx.getSegmentCountContentPropertyPanel(content, update),

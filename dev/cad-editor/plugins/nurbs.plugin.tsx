@@ -154,8 +154,6 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
       const lines = getNurbsGeometries(content).lines
       return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
     },
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getNurbsGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getNurbsGeometries(content).lines),
     reverse: (content) => ctx.reverseNurbs(content),
   }
   return [
