@@ -160,8 +160,6 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRectGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRectGeometries(content).lines),
     getArea: (content) => content.width * content.height,
   }
 }

@@ -105,8 +105,6 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRingGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRingGeometriesFromCache(content).lines),
   }
 }
 

@@ -1,5 +1,5 @@
-import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
-import { getAngleInRange, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getTwoPointsDistance, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
+import { getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
+import { getAngleInRange, getArcPointAtAngle, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getPointByLengthAndDirection, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
 import { GeometryLine } from "./intersection"
 import { getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -127,10 +127,9 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
   for (const line of lines) {
     const { start, end } = getGeometryLineStartAndEnd(line)
     if (!lineStart) lineStart = start
-    let data: { isOnLine: (p: Position) => boolean, breakLine: (points: Position[]) => void } | undefined
+    let data: { breakLine: (points: Position[]) => void } | undefined
     if (Array.isArray(line)) {
       data = {
-        isOnLine: p => pointIsOnLine(p, ...line) && pointIsOnLineSegment(p, ...line),
         breakLine(points) {
           points.sort((a, b) => getTwoPointsDistance(a, line[0]) - getTwoPointsDistance(b, line[0]))
           points.unshift(start)
@@ -143,7 +142,6 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     } else if (line.type === 'arc') {
       data = {
-        isOnLine: p => pointIsOnCircle(p, line.curve) && pointIsOnArc(p, line.curve),
         breakLine(points) {
           const angles = points.map(p => getAngleInRange(radianToAngle(getCircleRadian(p, line.curve)), line.curve))
           angles.sort((a, b) => a - b)
@@ -164,7 +162,6 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     } else if (line.type === 'ellipse arc') {
       data = {
-        isOnLine: p => pointIsOnEllipse(p, line.curve) && pointIsOnEllipseArc(p, line.curve),
         breakLine(points) {
           const angles = points.map(p => getAngleInRange(getEllipseAngle(p, line.curve), line.curve))
           angles.sort((a, b) => a - b)
@@ -185,7 +182,6 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     } else if (line.type === 'quadratic curve') {
       data = {
-        isOnLine: p => pointIsOnQuadraticCurve(p, line.curve),
         breakLine(points) {
           const percents = points.map(p => getQuadraticCurvePercentAtPoint(line.curve, p))
           percents.sort((a, b) => a - b)
@@ -202,7 +198,6 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     } else if (line.type === 'bezier curve') {
       data = {
-        isOnLine: p => pointIsOnBezierCurve(p, line.curve),
         breakLine(points) {
           const percents = points.map(p => getBezierCurvePercentAtPoint(line.curve, p))
           percents.sort((a, b) => a - b)
@@ -219,7 +214,6 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     } else if (line.type === 'nurbs curve') {
       data = {
-        isOnLine: p => pointIsOnNurbsCurve(p, line.curve),
         breakLine(points) {
           const params = points.map(p => getNurbsCurveParamAtPoint(line.curve, p))
           params.sort((a, b) => a - b)
@@ -236,9 +230,9 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
       }
     }
     if (data) {
-      const { isOnLine: filter, breakLine: handle } = data
+      const { breakLine: handle } = data
       if (intersectionPoints.some(p => isSamePoint(p, start))) save()
-      const points = intersectionPoints.filter(p => !isSamePoint(p, start) && !isSamePoint(p, end) && filter(p))
+      const points = intersectionPoints.filter(p => !isSamePoint(p, start) && !isSamePoint(p, end) && pointIsOnGeometryLine(p, line))
       if (points.length === 0) {
         current.push(line)
       } else {
@@ -257,4 +251,81 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
     }
   }
   return result
+}
+
+export function pointIsOnGeometryLine(p: Position, line: GeometryLine) {
+  if (Array.isArray(line)) {
+    return pointIsOnLine(p, ...line) && pointIsOnLineSegment(p, ...line)
+  }
+  if (line.type === 'arc') {
+    return pointIsOnCircle(p, line.curve) && pointIsOnArc(p, line.curve)
+  }
+  if (line.type === 'ellipse arc') {
+    return pointIsOnEllipse(p, line.curve) && pointIsOnEllipseArc(p, line.curve)
+  }
+  if (line.type === 'quadratic curve') {
+    return pointIsOnQuadraticCurve(p, line.curve)
+  }
+  if (line.type === 'bezier curve') {
+    return pointIsOnBezierCurve(p, line.curve)
+  }
+  return pointIsOnNurbsCurve(p, line.curve)
+}
+
+export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine) {
+  if (Array.isArray(line)) {
+    return getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
+  }
+  if (line.type === 'arc') {
+    const angle = getAngleInRange(radianToAngle(getTwoPointsRadian(point, line.curve)), line.curve)
+    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+  }
+  if (line.type === 'ellipse arc') {
+    const angle = getAngleInRange(getEllipseAngle(point, line.curve), line.curve)
+    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+  }
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurvePercentAtPoint(line.curve, point)
+  }
+  if (line.type === 'bezier curve') {
+    return getBezierCurvePercentAtPoint(line.curve, point)
+  }
+  return getNurbsCurveParamAtPoint(line.curve, point) / getNurbsMaxParam(line.curve)
+}
+
+export function getGeometryLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (pointIsOnGeometryLine(point, line)) {
+      return i + getGeometryLineParamAtPoint(point, line)
+    }
+  }
+  return 0
+}
+
+export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
+  if (Array.isArray(line)) {
+    const distance = param * getTwoPointsDistance(...line)
+    return getPointByLengthAndDirection(line[0], distance, line[1])
+  }
+  if (line.type === 'arc') {
+    return getArcPointAtAngle(line.curve, param * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
+  }
+  if (line.type === 'ellipse arc') {
+    return getEllipseArcPointAtAngle(line.curve, param * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
+  }
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
+  }
+  if (line.type === 'bezier curve') {
+    return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
+  }
+  return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
+}
+
+export function getGeometryLinesPointAtParam(param: number, lines: GeometryLine[]) {
+  const index = Math.floor(param)
+  const line = lines[index]
+  if (!line) return
+  return getGeometryLinePointAtParam(param - index, line)
 }

@@ -775,9 +775,9 @@ function getModel(ctx) {
     ref2: ctx.PartRef
   });
   function getCenterLineGeometriesFromCache(content, contents) {
-    const ref1 = ctx.getRefPart(content.ref1, contents);
-    const ref2 = ctx.getRefPart(content.ref2, contents);
-    if (ref1 && ref2 && isLineContent(ref1) && isLineContent(ref2)) {
+    const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent);
+    const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent);
+    if (ref1 && ref2) {
       return centerMarkLinesCache.get(ref1, ref2, content, () => {
         const line = ctx.maxmiumBy([
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])],
@@ -898,10 +898,10 @@ function isArcContent(content) {
 // dev/cad-editor/plugins/center-mark.plugin.tsx
 function getModel(ctx) {
   const CenterMarkReferenceContent = ctx.and(ctx.BaseContent("center mark"), {
-    refId: ctx.or(ctx.number, ctx.Content)
+    ref: ctx.PartRef
   });
   function getCenterMarkGeometriesFromCache(content, contents) {
-    const target = ctx.getReference(content.refId, contents, contentSelectable);
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable);
     if (target) {
       return centerMarkLinesCache.get(target, content, () => {
         const lines = [
@@ -928,26 +928,30 @@ function getModel(ctx) {
     },
     getGeometries: getCenterMarkGeometriesFromCache,
     canSelectPart: true,
-    propertyPanel(content, update, contents, { acquireContent }) {
+    propertyPanel(content, update) {
       return {
-        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
-          if (isCenterMarkContent(c)) {
-            c.refId = v;
-          }
-        }) }) : [],
-        refIdFrom: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, (p) => update((c) => {
-          if (isCenterMarkContent(c)) {
-            c.refId = p[0][0];
-          }
-        })) }, "canvas") : []
+        ref: [
+          typeof content.ref.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.id, setValue: (v) => update((c) => {
+            if (isCenterMarkContent(c)) {
+              c.ref.id = v;
+            }
+          }) }) : void 0,
+          content.ref.partIndex !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.partIndex, setValue: (v) => update((c) => {
+            if (isCenterMarkContent(c)) {
+              c.ref.partIndex = v;
+            }
+          }) }) : void 0
+        ]
       };
     },
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
-    getRefIds: (content) => typeof content.refId === "number" ? [content.refId] : [],
+    getRefIds: (content) => typeof content.ref === "number" ? [content.ref] : [],
     updateRefId(content, update) {
-      const newRefId = update(content.refId);
-      if (newRefId !== void 0) {
-        content.refId = newRefId;
+      if (content.ref) {
+        const newRefId = update(content.ref.id);
+        if (newRefId !== void 0) {
+          content.ref.id = newRefId;
+        }
       }
     }
   };
@@ -965,18 +969,15 @@ function getCommand(ctx) {
     name: "create center mark",
     icon,
     contentSelectable,
+    selectType: "select part",
     execute({ contents, selected }) {
-      const newContents = [];
-      contents.forEach((content, index) => {
-        var _a, _b;
-        if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
-          newContents.push({
-            type: "center mark",
-            refId: index
-          });
+      contents.push(...selected.map(([index, partIndex]) => ({
+        type: "center mark",
+        ref: {
+          id: index,
+          partIndex
         }
-      });
-      contents.push(...newContents);
+      })));
     }
   };
 }
@@ -1359,8 +1360,6 @@ function getModel(ctx) {
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
-      getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
       getArea: (content) => Math.PI * content.r ** 2
     },
     {
@@ -1447,7 +1446,7 @@ function getModel(ctx) {
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise });
       },
       renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
+        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle });
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth });
       },
       getOperatorRenderPosition(content) {
@@ -1574,8 +1573,6 @@ function getModel(ctx) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getCircleRadian(point, content),
-      getPoint: (content, param) => ctx.getCirclePointAtRadian(content, param),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.r ** 2 * (radian - Math.sin(radian)) / 2;
@@ -2632,9 +2629,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getGeometries(content).lines)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
   };
 }
 function isDiamondContent(content) {
@@ -3004,8 +2999,6 @@ function getModel(ctx) {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
-    getParam: (content, point) => ctx.getEllipseAngle(point, content),
-    getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
     getArea: (content) => Math.PI * content.rx * content.ry
   };
   return [
@@ -3075,7 +3068,7 @@ function getModel(ctx) {
         return target.renderPolyline(points, options);
       },
       renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle + 360 });
+        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle });
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth });
       },
       getOperatorRenderPosition(content) {
@@ -3207,8 +3200,6 @@ function getModel(ctx) {
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
       getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
-      getParam: (content, point) => ctx.getEllipseAngle(point, content),
-      getPoint: (content, param) => ctx.getEllipsePointAtRadian(content, ctx.angleToRadian(param)),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2;
@@ -4693,8 +4684,6 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     getStartPoint: (content) => content.points[0],
     getEndPoint: (content) => content.points[content.points.length - 1],
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolylineGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolylineGeometries(content).lines),
     reverse: (content) => ({
       ...content,
       points: content.points.slice().reverse()
@@ -5001,6 +4990,7 @@ function getModel(ctx) {
     },
     getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
+        const { p1, p2 } = getLinearDimensionPositions(content, contents);
         return {
           editPoints: [
             {
@@ -5017,8 +5007,8 @@ function getModel(ctx) {
               }
             },
             {
-              x: content.p1.x,
-              y: content.p1.y,
+              x: p1.x,
+              y: p1.y,
               cursor: "move",
               update(c, { cursor, start, scale, target }) {
                 if (!isLinearDimensionContent(c)) {
@@ -5031,8 +5021,8 @@ function getModel(ctx) {
               }
             },
             {
-              x: content.p2.x,
-              y: content.p2.y,
+              x: p2.x,
+              y: p2.y,
               cursor: "move",
               update(c, { cursor, start, scale, target }) {
                 if (!isLinearDimensionContent(c)) {
@@ -5767,8 +5757,6 @@ function getModel(ctx) {
       const lines = getNurbsGeometries(content).lines;
       return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
     },
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getNurbsGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getNurbsGeometries(content).lines),
     reverse: (content) => ctx.reverseNurbs(content)
   };
   return [
@@ -7041,9 +7029,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, PolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getPolygonGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getPolygonGeometries(content).lines)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, content.points)
   };
 }
 function isPolygonContent(content) {
@@ -7107,10 +7093,10 @@ function isArcContent(content) {
 // dev/cad-editor/plugins/radial-dimension.plugin.tsx
 function getModel(ctx) {
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent("radial dimension reference"), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
-    refId: ctx.or(ctx.number, ctx.Content)
+    ref: ctx.PartRef
   });
   function getRadialDimensionReferenceGeometriesFromCache(content, contents) {
-    const target = ctx.getReference(content.refId, contents, contentSelectable);
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         var _a, _b;
@@ -7152,7 +7138,7 @@ function getModel(ctx) {
       if (regions && regions.length > 0) {
         children.push(target.renderPolyline(regions[0].points, { strokeWidth: 0, fillColor: strokeColor }));
       }
-      const referenceTarget = ctx.getReference(content.refId, contents, contentSelectable);
+      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable);
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget);
         children.push(target.renderGroup(
@@ -7181,7 +7167,7 @@ function getModel(ctx) {
                 }
                 c.position.x += cursor.x - start.x;
                 c.position.y += cursor.y - start.y;
-                const target = ctx.getReference(c.refId, contents, contentSelectable);
+                const target = ctx.getRefPart(content.ref, contents, contentSelectable);
                 if (!target || ctx.getTwoPointsDistance(target, c.position) > target.r) {
                   return;
                 }
@@ -7193,18 +7179,20 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
+    propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
-          if (isRadialDimensionReferenceContent(c)) {
-            c.refId = v;
-          }
-        }) }) : [],
-        refIdFrom: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (i) => contentSelectable(contents[i[0]]) }, (p) => update((c) => {
-          if (isRadialDimensionReferenceContent(c)) {
-            c.refId = p[0][0];
-          }
-        })) }, "canvas") : [],
+        ref: [
+          typeof content.ref.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.id, setValue: (v) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.ref.id = v;
+            }
+          }) }) : void 0,
+          content.ref.partIndex !== void 0 ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.partIndex, setValue: (v) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.ref.partIndex = v;
+            }
+          }) }) : void 0
+        ],
         position: /* @__PURE__ */ React.createElement(
           ctx.ObjectEditor,
           {
@@ -7255,11 +7243,13 @@ function getModel(ctx) {
       };
     },
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.refId === "number" ? [content.refId] : []],
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.ref === "number" ? [content.ref] : []],
     updateRefId(content, update) {
-      const newRefId = update(content.refId);
-      if (newRefId !== void 0) {
-        content.refId = newRefId;
+      if (content.ref) {
+        const newRefId = update(content.ref.id);
+        if (newRefId !== void 0) {
+          content.ref.id = newRefId;
+        }
       }
       ctx.updateStrokeRefIds(content, update);
     }
@@ -7277,9 +7267,10 @@ function getCommand(ctx) {
   return {
     name: "create radial dimension",
     selectCount: 1,
+    selectType: "select part",
     icon,
     contentSelectable,
-    useCommand({ onEnd, selected, type, strokeStyleId, contents }) {
+    useCommand({ onEnd, selected, type, strokeStyleId }) {
       const [result, setResult] = React.useState();
       const [text, setText] = React.useState();
       let message = "";
@@ -7307,9 +7298,12 @@ function getCommand(ctx) {
             onEnd({
               updateContents: (draft) => {
                 if (selected.length > 0 && type) {
-                  const content = selected[0].content;
+                  const { content, path } = selected[0];
                   if (contentSelectable(content)) {
-                    result.refId = ctx.getContentIndex(content, contents);
+                    result.ref = {
+                      id: path[0],
+                      partIndex: path[1]
+                    };
                   }
                 }
                 draft.push({
@@ -7317,7 +7311,7 @@ function getCommand(ctx) {
                   position: result.position,
                   fontSize: result.fontSize,
                   fontFamily: result.fontFamily,
-                  refId: result.refId,
+                  ref: result.ref,
                   text: result.text,
                   strokeStyleId
                 });
@@ -7331,14 +7325,17 @@ function getCommand(ctx) {
           setInputPosition(viewportPosition || p);
           setCursorPosition(p);
           if (selected.length > 0 && type) {
-            const content = selected[0].content;
+            const { content, path } = selected[0];
             if (contentSelectable(content)) {
               setResult({
                 type: "radial dimension reference",
                 position: p,
                 fontSize: 16,
                 fontFamily: "monospace",
-                refId: selected[0].path[0],
+                ref: {
+                  id: path[0],
+                  partIndex: path[1]
+                },
                 text,
                 strokeStyleId
               });
@@ -7785,8 +7782,6 @@ function getModel(ctx) {
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRectGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRectGeometries(content).lines),
     getArea: (content) => content.width * content.height
   };
 }
@@ -7992,9 +7987,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRegularPolygonGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRegularPolygonGeometriesFromCache(content).lines)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points)
   };
 }
 function isRegularPolygonContent(content) {
@@ -8206,9 +8199,7 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
-    updateRefId: ctx.updateStrokeAndFillRefIds,
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getRingGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getRingGeometriesFromCache(content).lines)
+    updateRefId: ctx.updateStrokeAndFillRefIds
   };
 }
 function isRingContent(content) {
@@ -8553,9 +8544,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getGeometries(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getGeometries(content).lines)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points)
   };
 }
 function isRoundedRectContent(content) {
@@ -8627,7 +8616,7 @@ export {
 function getModel(ctx) {
   const SplineContent = ctx.and(ctx.BaseContent("spline"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
-    fitting: ctx.optional(ctx.boolean)
+    fitting: ctx.optional(ctx.or(ctx.boolean, "closed"))
   });
   const SplineArrowContent = ctx.and(ctx.BaseContent("spline arrow"), ctx.StrokeFields, ctx.SegmentCountFields, {
     points: [ctx.Position],
@@ -8641,7 +8630,10 @@ function getModel(ctx) {
       let lines;
       const splineSegmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
       if (content.points.length > 2) {
-        if (content.fitting) {
+        if (content.fitting === "closed") {
+          lines = ctx.getBezierSplineCurves([...content.points.slice(content.points.length - 3), ...content.points, ...content.points.slice(0, 3)]).map((c) => ({ type: "bezier curve", curve: c }));
+          lines = lines.slice(3, lines.length - 2);
+        } else if (content.fitting) {
           lines = ctx.getBezierSplineCurves(content.points).map((c) => ({ type: "bezier curve", curve: c }));
         } else if (content.points.length === 3) {
           lines = ctx.getQuadraticSplineCurves(content.points).map((c) => ({ type: "quadratic curve", curve: c }));
@@ -8780,9 +8772,9 @@ function getModel(ctx) {
             ))
           }
         ),
-        fitting: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.fitting === true, setValue: (v) => update((c) => {
+        fitting: /* @__PURE__ */ React.createElement(ctx.EnumEditor, { enums: ["true", "false", "closed"], value: content.fitting === "closed" ? "closed" : content.fitting ? "true" : "false", setValue: (v) => update((c) => {
           if (isSplineContent(c)) {
-            c.fitting = v ? true : void 0;
+            c.fitting = v === "closed" ? "closed" : v === "true" ? true : void 0;
           }
         }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
@@ -9128,9 +9120,7 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content).points),
-    getParam: (content, point) => ctx.getLinesParamAtPoint(point, getStarGeometriesFromCache(content).lines),
-    getPoint: (content, param) => ctx.getLinesPointAtParam(param, getStarGeometriesFromCache(content).lines)
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content).points)
   };
 }
 function isStarContent(content) {

@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, getTwoPointsDistance, getPointByLengthAndDirection, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, getAngleInRange, getTwoPointsRadian, radianToAngle, getArcPointAtAngle, getEllipseAngle, getEllipseArcPointAtAngle, getQuadraticCurvePointAtPercent, getQuadraticCurvePercentAtPoint, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, breakGeometryLines, geometryLineToPathCommands, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -148,6 +148,7 @@ export const variableValuesModel = {
 export const containerModel = {
   ...variableValuesModel,
   isContainer: true,
+  canSelectPart: true,
 }
 
 export const arrowModel = {
@@ -216,8 +217,6 @@ export type Model<T> = Partial<FeatureModels> & {
   isPointIn?(content: T, point: Position): boolean
   getStartPoint?(content: T): Position
   getEndPoint?(content: T): Position
-  getParam?(content: T, point: Position): number
-  getPoint?(content: T, param: number): Position
   getChildByPoint?(content: T, point: Position, options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
   getArea?(content: T): number
   reverse?(content: T): T
@@ -1298,57 +1297,6 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
   }
 }
 
-export function getLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (isZero(getPointAndGeometryLineMinimumDistance(point, line), 1e-4)) {
-      if (Array.isArray(line)) {
-        return i + getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
-      }
-      if (line.type === 'arc') {
-        const angle = getAngleInRange(radianToAngle(getTwoPointsRadian(point, line.curve)), line.curve)
-        return i + (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
-      }
-      if (line.type === 'ellipse arc') {
-        const angle = getAngleInRange(getEllipseAngle(point, line.curve), line.curve)
-        return i + (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
-      }
-      if (line.type === 'quadratic curve') {
-        return i + getQuadraticCurvePercentAtPoint(line.curve, point)
-      }
-      if (line.type === 'bezier curve') {
-        return i + getBezierCurvePercentAtPoint(line.curve, point)
-      }
-      if (line.type === 'nurbs curve') {
-        return i + getNurbsCurveParamAtPoint(line.curve, point) / getNurbsMaxParam(line.curve)
-      }
-    }
-  }
-  return 0
-}
-
-export function getLinesPointAtParam(param: number, lines: GeometryLine[]) {
-  const index = Math.floor(param)
-  const line = lines[index]
-  if (Array.isArray(line)) {
-    const distance = (param - index) * getTwoPointsDistance(...line)
-    return getPointByLengthAndDirection(line[0], distance, line[1])
-  }
-  if (line.type === 'arc') {
-    return getArcPointAtAngle(line.curve, (param - index) * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
-  }
-  if (line.type === 'ellipse arc') {
-    return getEllipseArcPointAtAngle(line.curve, (param - index) * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
-  }
-  if (line.type === 'quadratic curve') {
-    return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
-  }
-  if (line.type === 'bezier curve') {
-    return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
-  }
-  return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
-}
-
 export interface PositionRef {
   id: number | BaseContent
   snapIndex: number
@@ -1368,7 +1316,10 @@ export function getRefPosition(positionRef: PositionRef | undefined, contents: r
       const model = getContentModel(ref)
       let p: Position | undefined = model?.getSnapPoints?.(ref, contents)?.[positionRef.snapIndex]
       if (!p && positionRef.param !== undefined) {
-        p = model?.getPoint?.(ref, positionRef.param)
+        const lines = model?.getGeometries?.(ref, contents).lines
+        if (lines) {
+          p = getGeometryLinesPointAtParam(positionRef.param, lines)
+        }
       }
       return p
     }
@@ -1386,7 +1337,11 @@ export const PartRef = {
   partIndex: optional(number),
 }
 
-export function getRefPart(partRef: PartRef | undefined, contents: readonly Nullable<BaseContent>[]) {
+export function getRefPart<T extends BaseContent>(
+  partRef: PartRef | undefined,
+  contents: readonly Nullable<BaseContent>[],
+  filter: (content: BaseContent) => content is T = (c): c is T => true,
+) {
   if (partRef !== undefined) {
     const ref = getReference(partRef.id, contents)
     if (ref) {
@@ -1394,10 +1349,15 @@ export function getRefPart(partRef: PartRef | undefined, contents: readonly Null
       if (partRef.partIndex !== undefined) {
         const line = model?.getGeometries?.(ref, contents)?.lines?.[partRef.partIndex]
         if (line) {
-          return geometryLineToContent(line)
+          const content = geometryLineToContent(line)
+          if (content && filter(content)) {
+            return content
+          }
         }
       }
-      return ref
+      if (filter(ref)) {
+        return ref
+      }
     }
   }
   return
