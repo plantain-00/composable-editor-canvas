@@ -110,19 +110,11 @@ export function getModel(ctx: PluginContext) {
         endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
       }) as EllipseArcContent)
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, contents)
-      const options = {
-        fillColor: getFillColor(fillStyleContent),
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent),
-        clip,
-      }
-      if (strokeStyleContent.dashArray) {
+    render(content, renderCtx) {
+      const { options, target, dashed } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
+      if (dashed) {
         const { points } = getEllipseGeometries(content)
-        return target.renderPolygon(points, { ...options, dashArray: strokeStyleContent.dashArray })
+        return target.renderPolygon(points, options)
       }
       return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { ...options, angle: content.angle })
     },
@@ -287,16 +279,8 @@ export function getModel(ctx: PluginContext) {
         }
         return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))]
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
-        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-        const fillStyleContent = ctx.getFillStyleContent(content, contents)
-        const options = {
-          fillColor: getFillColor(fillStyleContent),
-          strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(fillStyleContent),
-          dashArray: strokeStyleContent.dashArray,
-        }
+      render(content, renderCtx) {
+        const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         const { points } = getEllipseArcGeometries(content)
         return target.renderPolyline(points, options)
       },

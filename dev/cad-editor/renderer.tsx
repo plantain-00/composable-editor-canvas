@@ -216,7 +216,9 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 4, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 2, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   }
@@ -228,7 +230,9 @@ export function Renderer(props: {
       const model = getContentModel(content)
       const ContentRender = model?.render
       if (ContentRender) {
-        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 4, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w + 2, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren2.push(ContentRender(content, { transformStrokeWidth: w => w, ...commonProps, isHoveringOrSelected: true }))
       }
       const RenderIfSelected = model?.renderIfSelected
       if (RenderIfSelected) {

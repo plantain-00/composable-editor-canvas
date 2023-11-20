@@ -36,13 +36,8 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
     mirror(content, line) {
       content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
     },
-    render(content, { target, transformStrokeWidth, getStrokeColor, contents }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const options = {
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-      }
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(content.points, options)
     },
     getGeometries: getGeometries,

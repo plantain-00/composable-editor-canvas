@@ -68,17 +68,8 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
         d.innerRadius += distance / content.outerRadius
       })
     },
-    render(content, { target, getFillColor, getStrokeColor, transformStrokeWidth, getFillPattern, contents, clip }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, contents)
-      const options = {
-        fillColor: getFillColor(fillStyleContent),
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent),
-        dashArray: strokeStyleContent.dashArray,
-        clip,
-      }
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       const { points } = getStarGeometriesFromCache(content)
       return target.renderPolygon(points, options)
     },

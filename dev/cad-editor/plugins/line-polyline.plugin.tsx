@@ -63,13 +63,8 @@ export function getModel(ctx: PluginContext) {
         d.points = p
       }))
     },
-    render(content, { getStrokeColor, target, transformStrokeWidth, contents }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const options = {
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-      }
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(content.points, options)
     },
     getOperatorRenderPosition(content) {
@@ -129,16 +124,9 @@ export function getModel(ctx: PluginContext) {
         const { lines } = getPolylineGeometries(content)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
-      render(content, { target, transformStrokeWidth, getFillColor, getStrokeColor, getFillPattern, contents }) {
-        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-        const fillStyleContent = ctx.getFillStyleContent(content, contents)
-        const options = {
-          fillColor: getFillColor(fillStyleContent),
-          strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(fillStyleContent),
-        }
-        return target.renderPolyline(content.points, { ...options, dashArray: strokeStyleContent.dashArray })
+      render(content, renderCtx) {
+        const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
+        return target.renderPolyline(content.points, options)
       },
       getEditPoints(content) {
         return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolyLineContent) }))

@@ -137,7 +137,8 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         }
       })
     },
-    render(content, { target, transformColor, isAssistence, variableContext, contents }) {
+    render(content, renderCtx) {
+      const { contents, transformColor, variableContext, isAssistence, target } = renderCtx
       const textStyleContent = ctx.getTextStyleContent(content, contents)
       const color = transformColor(textStyleContent.color)
       const text = getText(content, variableContext)
@@ -148,17 +149,17 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       if (!cacheKey) {
         cacheKey = content
       }
-
+      const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx)
       if (hasWidth(content)) {
         const { layoutResult } = getTextLayoutResult(content, textStyleContent, variableContext)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const { x, y, content: text } of layoutResult) {
           const textWidth = ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text)?.width ?? 0
-          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey }))
+          children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey, ...textOptions }))
         }
         return target.renderGroup(children)
       }
-      return target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey })
+      return target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions })
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {

@@ -58,8 +58,20 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
         }
       })
     },
-    render(content, { target }) {
-      return target.renderImage(content.url, content.x, content.y, content.width, content.height)
+    render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
+      const strokeWidth = transformStrokeWidth(0)
+      const fuzzy = isHoveringOrSelected && strokeWidth !== 0
+      const image = target.renderImage(content.url, content.x, content.y, content.width, content.height)
+      if (fuzzy) {
+        return target.renderGroup([
+          target.renderRect(content.x, content.y, content.width, content.height, {
+            strokeWidth,
+            ...ctx.fuzzyStyle,
+          }),
+          image,
+        ])
+      }
+      return image
     },
     renderIfSelected(content, { color, target, strokeWidth }) {
       return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth })

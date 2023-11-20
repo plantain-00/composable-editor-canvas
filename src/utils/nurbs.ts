@@ -249,7 +249,7 @@ export function getNurbsSurfaceVertices(
   const positions = twgl.primitives.createAugmentedTypedArray(3, mesh.points.length)
   const normals = twgl.primitives.createAugmentedTypedArray(3, mesh.normals.length)
   const texcoords = twgl.primitives.createAugmentedTypedArray(2, mesh.uvs.length)
-  const indicesLength = mesh.faces.length % 2 === 1 ? mesh.faces.length + 1: mesh.faces.length
+  const indicesLength = mesh.faces.length % 2 === 1 ? mesh.faces.length + 1 : mesh.faces.length
   const indices = twgl.primitives.createAugmentedTypedArray(3, indicesLength, Uint16Array)
   positions.push(...mesh.points)
   normals.push(...mesh.normals)

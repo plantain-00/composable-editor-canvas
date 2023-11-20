@@ -59,16 +59,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {
       const geometries = getGeometries(content)
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, renderCtx.contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, renderCtx.contents)
-      const options = {
-        ...renderCtx,
-        fillColor: renderCtx.getFillColor(fillStyleContent),
-        fillPattern: renderCtx.getFillPattern(fillStyleContent),
-        strokeColor: renderCtx.getStrokeColor(strokeStyleContent),
-        strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-      }
+      const { options } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return renderCtx.target.renderGroup(geometries.renderingLines.map(line => {
         return renderCtx.target.renderPolyline(line, options)
       }))

@@ -50,18 +50,16 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       content.x += offset.x
       content.y += offset.y
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth, contents, time }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const strokeColor = getStrokeColor(strokeStyleContent)
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
+    render(content, renderCtx) {
+      const { options, contents, time, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { regions, renderingLines } = getGeometriesFromCache(content, contents, time)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
-        children.push(target.renderPolyline(line, { strokeColor, strokeWidth }))
+        children.push(target.renderPolyline(line, options))
       }
       if (regions) {
         for (let i = 0; i < regions.length; i++) {
-          children.push(target.renderPolyline(regions[i].points, { strokeWidth: 0, fillColor: strokeColor }))
+          children.push(target.renderPolygon(regions[i].points, fillOptions))
         }
       }
       return target.renderGroup(children)

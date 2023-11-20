@@ -71,14 +71,9 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
     type: 'equation',
     ...ctx.strokeModel,
     ...ctx.segmentCountModel,
-    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
+    render(content, renderCtx) {
+      const { options, contents, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { points } = getGeometriesFromCache(content, contents)
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const options = {
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-      }
       return target.renderPolyline(points, options)
     },
     getGeometries: getGeometriesFromCache,

@@ -95,16 +95,8 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         commands: ctx.geometryLineToPathCommands(g),
       }))
     },
-    render(content, { target, getStrokeColor, getFillColor, transformStrokeWidth, getFillPattern, contents }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, contents)
-      const options = {
-        fillColor: getFillColor(fillStyleContent),
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-        fillPattern: getFillPattern(fillStyleContent),
-      }
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPathCommands(content.commands, options)
     },
     renderIfSelected(content, { color, target, strokeWidth }) {
