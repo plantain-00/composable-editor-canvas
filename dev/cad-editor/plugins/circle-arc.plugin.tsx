@@ -118,23 +118,16 @@ export function getModel(ctx: PluginContext) {
           endAngle: i === angles.length - 1 ? angles[0] + 360 : angles[i + 1],
         }) as ArcContent)
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip, time }) {
-        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-        const fillStyleContent = ctx.getFillStyleContent(content, contents)
-        const options = {
-          fillColor: getFillColor(fillStyleContent),
-          strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(fillStyleContent),
-        }
-        if (strokeStyleContent.dashArray) {
+      render(content, renderCtx) {
+        const { options, dashed, time, contents, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
+        if (dashed) {
           const { points } = getCircleGeometries(content, contents, time)
-          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray, clip })
+          return target.renderPolyline(points, options)
         }
         const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
         const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
         const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
-        return target.renderCircle(x, y, r, { ...options, clip })
+        return target.renderCircle(x, y, r, options)
       },
       getOperatorRenderPosition(content) {
         return content
@@ -295,18 +288,10 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
-        const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-        const fillStyleContent = ctx.getFillStyleContent(content, contents)
-        const options = {
-          fillColor: getFillColor(fillStyleContent),
-          strokeColor: getStrokeColor(strokeStyleContent),
-          strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-          fillPattern: getFillPattern(fillStyleContent),
-        }
-        if (strokeStyleContent.dashArray) {
-          const { points } = getCircleGeometries(content)
-          return target.renderPolyline(points, { ...options, dashArray: strokeStyleContent.dashArray })
+      render(content, renderCtx) {
+        const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
+        if (dashed) {
+          return target.renderPolyline(getCircleGeometries(content).points, options)
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },

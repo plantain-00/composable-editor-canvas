@@ -153,13 +153,8 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     },
     render(content, renderCtx) {
       const geometries = getGeometries(content)
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, renderCtx.contents)
-      const options = {
-        ...renderCtx,
-        strokeColor: renderCtx.getStrokeColor(strokeStyleContent),
-        strokeWidth: renderCtx.transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        dashArray: strokeStyleContent.dashArray,
-      }
+      const { options, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
+      const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(strokeColor, renderCtx)
       const children = geometries.renderingLines.map(line => renderCtx.target.renderPolyline(line, options))
       content.rows.forEach((row, i) => {
         row.cells?.forEach(cell => {
@@ -187,7 +182,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
           const font = ctx.getTextStyleFont(textStyleContent)
           for (const { x, y, content: text } of textLayout.layoutResult) {
             const textWidth = ctx.getTextSizeFromCache(font, text)?.width ?? 0
-            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey: cell }))
+            children.push(renderCtx.target.renderText(content.x + child.x + x + textWidth / 2, content.y + child.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey: cell, ...textOptions }))
           }
         })
       })

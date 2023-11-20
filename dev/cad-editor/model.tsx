@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -1471,4 +1471,83 @@ export function reverseTransformPositionByViewport(p: Position, viewport: Viewpo
     x: (p.x - viewport.x) / viewport.scale,
     y: (p.y - viewport.y) / viewport.scale,
   }, { x: 0, y: 0 }, -(viewport.rotate || 0))
+}
+
+export const fuzzyStyle = {
+  lineCap: 'round' as const,
+  lineJoin: 'round' as const,
+  strokeOpacity: 0.25
+}
+
+export function getStrokeRenderOptionsFromRenderContext<V, P>(
+  content: StrokeFields & BaseContent,
+  { getStrokeColor, time, transformStrokeWidth, isHoveringOrSelected, target, contents }: RenderContext<V, P>,
+) {
+  const strokeStyleContent = getStrokeStyleContent(content, contents)
+  const strokeWidth = strokeStyleContent.strokeWidth ?? getDefaultStrokeWidth(content)
+  const transformedStrokeWidth = transformStrokeWidth(strokeWidth)
+  const fuzzy = isHoveringOrSelected && transformedStrokeWidth !== strokeWidth
+  const strokeColor = getStrokeColor(strokeStyleContent)
+  const options: Partial<PathOptions<V>> = {
+    strokeColor,
+    strokeWidth: transformedStrokeWidth,
+    ...(fuzzy ? fuzzyStyle : {}),
+  }
+  const fillOptions: Partial<PathOptions<V>> = {
+    strokeColor: fuzzy ? strokeColor : undefined,
+    strokeWidth: fuzzy ? transformStrokeWidth(0) : 0,
+    fillColor: fuzzy ? undefined : strokeColor,
+    ...(fuzzy ? fuzzyStyle : {}),
+  }
+  return {
+    options,
+    time,
+    contents,
+    target,
+    fillOptions,
+    strokeColor,
+  }
+}
+
+export function getStrokeFillRenderOptionsFromRenderContext<V, P>(
+  content: StrokeFields & FillFields & BaseContent,
+  { getStrokeColor, getFillColor, getFillPattern, transformStrokeWidth, isHoveringOrSelected, time, target, contents, clip }: RenderContext<V, P>,
+) {
+  const strokeStyleContent = getStrokeStyleContent(content, contents)
+  const fillStyleContent = getFillStyleContent(content, contents)
+  const strokeWidth = strokeStyleContent.strokeWidth ?? getDefaultStrokeWidth(content)
+  const transformedStrokeWidth = transformStrokeWidth(strokeWidth)
+  const fuzzy = isHoveringOrSelected && transformedStrokeWidth !== strokeWidth
+  const strokeColor = fuzzy && !strokeWidth && fillStyleContent.fillColor !== undefined ? fillStyleContent.fillColor : getStrokeColor(strokeStyleContent)
+  const options: Partial<PathOptions<V>> = {
+    fillColor: getFillColor(fillStyleContent),
+    strokeColor,
+    strokeWidth: transformedStrokeWidth,
+    fillPattern: getFillPattern(fillStyleContent),
+    dashArray: strokeStyleContent.dashArray,
+    clip,
+    ...(fuzzy ? fuzzyStyle : {}),
+  }
+  return {
+    options,
+    time,
+    contents,
+    target,
+    strokeColor,
+    dashed: !!strokeStyleContent.dashArray,
+  }
+}
+
+export function getTextStyleRenderOptionsFromRenderContext<V, P>(
+  strokeColor: number | undefined,
+  { transformStrokeWidth, isHoveringOrSelected }: RenderContext<V, P>,
+) {
+  const strokeWidth = transformStrokeWidth(0)
+  const fuzzy = isHoveringOrSelected && strokeWidth !== 0
+  const options: Partial<PathOptions<V>> = {
+    ...(fuzzy ? fuzzyStyle : {}),
+    strokeColor: fuzzy ? strokeColor : undefined,
+    strokeWidth: fuzzy ? strokeWidth : undefined,
+  }
+  return options
 }

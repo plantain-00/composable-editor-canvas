@@ -81,17 +81,9 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
       const lines = getNurbsGeometries(content).lines
       return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map(r => r.map(t => ctx.geometryLineToContent(t))).flat()
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents }) {
+    render(content, renderCtx) {
       const { points } = getNurbsGeometries(content)
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, contents)
-      const options = {
-        fillColor: getFillColor(fillStyleContent),
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent),
-        dashArray: strokeStyleContent.dashArray,
-      }
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(points, options)
     },
     renderIfSelected(content, { color, target, strokeWidth }) {

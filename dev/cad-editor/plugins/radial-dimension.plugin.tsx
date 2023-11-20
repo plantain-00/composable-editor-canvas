@@ -48,24 +48,23 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       content.position.x += offset.x
       content.position.y += offset.y
     },
-    render(content, { target, getStrokeColor, transformStrokeWidth, contents }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const strokeColor = getStrokeColor(strokeStyleContent)
-      const strokeWidth = transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content))
+    render(content, renderCtx) {
+      const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
-        children.push(target.renderPolyline(line, { strokeColor, strokeWidth, dashArray: strokeStyleContent.dashArray }))
+        children.push(target.renderPolyline(line, options))
       }
       if (regions && regions.length > 0) {
-        children.push(target.renderPolyline(regions[0].points, { strokeWidth: 0, fillColor: strokeColor }))
+        children.push(target.renderPolygon(regions[0].points, fillOptions))
       }
       const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable)
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget)
+        const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(strokeColor, renderCtx)
         children.push(target.renderGroup(
           [
-            target.renderText(textPosition.x, textPosition.y, text, strokeColor, content.fontSize, content.fontFamily),
+            target.renderText(textPosition.x, textPosition.y, text, strokeColor, content.fontSize, content.fontFamily, textOptions),
           ],
           {
             rotation: textRotation,

@@ -37,10 +37,10 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
   const React = ctx.React
   return {
     type: 'center line',
-    render(content, { target, transformStrokeWidth, contents }) {
-      const strokeWidth = transformStrokeWidth(ctx.getDefaultStrokeWidth(content))
+    render(content, renderCtx) {
+      const { options, target, contents } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { renderingLines } = getCenterLineGeometriesFromCache(content, contents)
-      return target.renderGroup(renderingLines.map(line => target.renderPolyline(line, { strokeWidth })))
+      return target.renderGroup(renderingLines.map(line => target.renderPolyline(line, options)))
     },
     getGeometries: getCenterLineGeometriesFromCache,
     propertyPanel(content, update) {

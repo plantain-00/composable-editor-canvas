@@ -76,16 +76,8 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
         d.height += distance
       })
     },
-    render(content, { getFillColor, getStrokeColor, target, transformStrokeWidth, getFillPattern, contents, clip }) {
-      const strokeStyleContent = ctx.getStrokeStyleContent(content, contents)
-      const fillStyleContent = ctx.getFillStyleContent(content, contents)
-      const options = {
-        fillColor: getFillColor(fillStyleContent),
-        strokeColor: getStrokeColor(strokeStyleContent),
-        strokeWidth: transformStrokeWidth(strokeStyleContent.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
-        fillPattern: getFillPattern(fillStyleContent),
-        clip,
-      }
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       const { renderingLines } = getGeometries(content)
       return target.renderPath(renderingLines, options)
     },
