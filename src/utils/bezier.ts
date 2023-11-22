@@ -258,3 +258,48 @@ export function getPartOfBezierCurve({ from: { x: a1, y: b1 }, cp1: { x: a2, y: 
     to: { x: e4, y: f4 },
   }
 }
+
+export function getQuadraticCurveDerivatives({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve): [(t: number) => Position, (t: number) => Position, (t: number) => Position] {
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x = c2 t t + 2 c1 t + a1
+  // y = c4 t t + 2 c3 t + b1
+  return [
+    t => ({
+      x: c2 * t ** 2 + 2 * c1 * t + a1,
+      y: c4 * t ** 2 + 2 * c3 * t + b1,
+    }),
+    t => ({
+      x: 2 * c2 * t + 2 * c1,
+      y: 2 * c4 * t + 2 * c3,
+    }),
+    () => ({
+      x: 2 * c2,
+      y: 2 * c4,
+    }),
+  ]
+}
+
+export function getBezierCurveDerivatives({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve): [(t: number) => Position, (t: number) => Position, (t: number) => Position, (t: number) => Position] {
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x = c1 t t t + c2 t t + c3 t + a1
+  // y = c4 t t t + c5 t t + c6 t + b1
+  return [
+    t => ({
+      x: c1 * t ** 3 + c2 * t ** 2 + c3 * t + a1,
+      y: c4 * t ** 3 + c5 * t ** 2 + c6 * t + b1,
+    }),
+    t => ({
+      x: 3 * c1 * t ** 2 + 2 * c2 * t + c3,
+      y: 3 * c4 * t ** 2 + 2 * c5 * t + c6,
+    }),
+    t => ({
+      x: 6 * c1 * t + 2 * c2,
+      y: 6 * c4 * t + 2 * c5,
+    }),
+    () => ({
+      x: 6 * c1,
+      y: 6 * c4,
+    }),
+  ]
+}

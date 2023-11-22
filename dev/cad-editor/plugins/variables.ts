@@ -8567,6 +8567,10 @@ function getModel(ctx) {
       const lines = getSplineGeometries(content).lines;
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
     },
+    explode(content) {
+      const lines = getSplineGeometries(content).lines;
+      return [{ type: "path", commands: ctx.geometryLineToPathCommands(lines) }];
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
       const { points } = getSplineGeometries(content);

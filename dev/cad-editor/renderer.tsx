@@ -246,7 +246,8 @@ export function Renderer(props: {
     if (content) {
       const ContentRender = getContentModel(content)?.render
       if (ContentRender) {
-        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 1, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 4, ...commonProps, isHoveringOrSelected: true }))
+        assistentContentsChildren.push(ContentRender(content, { transformStrokeWidth: w => w + 2, ...commonProps, isHoveringOrSelected: true }))
       }
     }
   } else if (props.active !== undefined) {

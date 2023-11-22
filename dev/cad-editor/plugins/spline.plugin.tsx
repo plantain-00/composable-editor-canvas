@@ -3,6 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import type { PathContent } from './path.plugin'
 
 export type SplineContent = model.BaseContent<'spline'> & model.StrokeFields & model.FillFields & model.SegmentCountFields & {
   points: core.Position[]
@@ -107,6 +108,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     break(content, intersectionPoints) {
       const lines = getSplineGeometries(content).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
+    },
+    explode(content) {
+      const lines = getSplineGeometries(content).lines
+      return [{ type: 'path', commands: ctx.geometryLineToPathCommands(lines) } as PathContent]
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
