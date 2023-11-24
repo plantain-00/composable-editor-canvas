@@ -41,7 +41,7 @@ export function useHtmlEditor(props: {
   const getCurrentContent = (draft: readonly HtmlBlock[]) => {
     const blockIndex = range ? range.min[0] : location[0]
     const block = draft[blockIndex]
-    const contentIndex = block ? location[1] <= 0 ? 0 : location[1] - 1 ?? block.children.length - 1 : undefined
+    const contentIndex = block ? (location[1] <= 0 ? 0 : location[1] - 1) : undefined
     return {
       currentBlock: block,
       currentContent: contentIndex !== undefined ? block.children[contentIndex] : undefined,
