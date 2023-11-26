@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -42,6 +42,7 @@ export interface StrokeFields {
   strokeWidth?: number
   strokeStyleId?: number | BaseContent
   trueStrokeColor?: boolean
+  strokeOpacity?: number
 }
 
 export const StrokeFields = {
@@ -50,6 +51,7 @@ export const StrokeFields = {
   strokeWidth: optional(minimum(0, number)),
   strokeStyleId: optional(or(number, Content)),
   trueStrokeColor: optional(boolean),
+  strokeOpacity: optional(maximum(1, minimum(0, number))),
 }
 
 export interface FillFields {
@@ -57,8 +59,10 @@ export interface FillFields {
   fillPattern?: Size & {
     lines: Position[][]
     strokeColor?: number
+    strokeOpacity?: number
   }
   fillStyleId?: number | BaseContent
+  fillOpacity?: number
 }
 
 export const FillFields = {
@@ -66,8 +70,10 @@ export const FillFields = {
   fillPattern: optional(and(Size, {
     lines: [[Position]],
     strokeColor: optional(minimum(0, number)),
+    strokeOpacity: optional(maximum(1, minimum(0, number))),
   })),
   fillStyleId: optional(or(number, Content)),
+  fillOpacity: optional(maximum(1, minimum(0, number))),
 }
 
 export interface TextFields extends TextStyle {
@@ -457,6 +463,7 @@ export function getStrokeContentPropertyPanel(
       <BooleanEditor value={content.strokeWidth !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v ? 2 : undefined } })} />,
       content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,
     ],
+    strokeOpacity: <NumberEditor value={content.strokeOpacity ?? 1} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeOpacity = v === 1 ? undefined : v } })} />,
   }
 }
 
@@ -468,7 +475,7 @@ export function getStrokeStyles(contents: readonly Nullable<BaseContent>[]) {
       .map(({ c, i }) => ({
         index: i,
         content: c,
-        label: `${c.strokeWidth ?? 1}px ${c.dashArray?.join(',') ?? 'solid'} ${getColorString(c.strokeColor ?? 0)}`,
+        label: `${c.strokeWidth ?? 1}px ${c.dashArray?.join(',') ?? 'solid'} ${getColorString(c.strokeColor ?? 0)} ${c.strokeOpacity ?? defaultOpacity}`,
       }))
   })
 }
@@ -488,7 +495,7 @@ export function getFillStyles(contents: readonly Nullable<BaseContent>[]) {
         return {
           index: i,
           content: c,
-          label,
+          label: `${label} ${c.fillOpacity ?? defaultOpacity}`,
         }
       })
   })
@@ -605,6 +612,7 @@ export function getFillContentPropertyPanel(
                 <BooleanEditor value={content.fillPattern.strokeColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v ? 0 : undefined } })} />,
                 content.fillPattern.strokeColor !== undefined ? <NumberEditor type='color' value={content.fillPattern.strokeColor} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeColor = v } })} /> : undefined,
               ],
+              strokeOpacity: <NumberEditor value={content.fillPattern.strokeOpacity ?? 1} setValue={(v) => update(c => { if (isFillContent(c) && c.fillPattern) { c.fillPattern.strokeOpacity = v === 1 ? undefined : v } })} />,
               lines: <ArrayEditor
                 {...getArrayEditorProps<Position[], typeof content>(v => v.fillPattern?.lines || [], [{ x: 0, y: 5 }, { x: 5, y: 0 }], (v) => update(c => { if (isFillContent(c) && c.fillPattern) { v(c) } }))}
                 items={content.fillPattern.lines.map((f, i) => <ObjectArrayEditor
@@ -620,6 +628,7 @@ export function getFillContentPropertyPanel(
         )
         : undefined,
     ],
+    fillOpacity: <NumberEditor value={content.fillOpacity ?? 1} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillOpacity = v === 1 ? undefined : v } })} />,
   }
 }
 
@@ -789,6 +798,7 @@ export function getTextStyleContent(content: TextFields, contents: readonly Null
 
 export const defaultSegmentCount = 100
 export const defaultStrokeColor = 0x000000
+export const defaultOpacity = 1
 export const defaultAngleDelta = 5
 
 export const dimensionStyle = {
@@ -1488,9 +1498,11 @@ export function getStrokeRenderOptionsFromRenderContext<V, P>(
   const transformedStrokeWidth = transformStrokeWidth(strokeWidth)
   const fuzzy = isHoveringOrSelected && transformedStrokeWidth !== strokeWidth
   const strokeColor = getStrokeColor(strokeStyleContent)
+  const strokeOpacity = strokeStyleContent.strokeOpacity ?? defaultOpacity
   const options: Partial<PathOptions<V>> = {
     strokeColor,
     strokeWidth: transformedStrokeWidth,
+    strokeOpacity,
     ...(fuzzy ? fuzzyStyle : {}),
   }
   const fillOptions: Partial<PathOptions<V>> = {
@@ -1506,6 +1518,7 @@ export function getStrokeRenderOptionsFromRenderContext<V, P>(
     target,
     fillOptions,
     strokeColor,
+    strokeOpacity,
   }
 }
 
@@ -1519,11 +1532,15 @@ export function getStrokeFillRenderOptionsFromRenderContext<V, P>(
   const transformedStrokeWidth = transformStrokeWidth(strokeWidth)
   const fuzzy = isHoveringOrSelected && transformedStrokeWidth !== strokeWidth
   const strokeColor = fuzzy && !strokeWidth && fillStyleContent.fillColor !== undefined ? fillStyleContent.fillColor : getStrokeColor(strokeStyleContent)
+  const strokeOpacity = strokeStyleContent.strokeOpacity ?? defaultOpacity
+  const fillOpacity = fillStyleContent.fillOpacity ?? defaultOpacity
   const options: Partial<PathOptions<V>> = {
     fillColor: getFillColor(fillStyleContent),
     strokeColor,
     strokeWidth: transformedStrokeWidth,
+    strokeOpacity,
     fillPattern: getFillPattern(fillStyleContent),
+    fillOpacity,
     dashArray: strokeStyleContent.dashArray,
     clip,
     ...(fuzzy ? fuzzyStyle : {}),
@@ -1534,6 +1551,7 @@ export function getStrokeFillRenderOptionsFromRenderContext<V, P>(
     contents,
     target,
     strokeColor,
+    strokeOpacity,
     dashed: !!strokeStyleContent.dashArray,
   }
 }

@@ -199,7 +199,7 @@ export function pointIsOnEllipse({ x, y }: Position, { cx, cy, rx, ry, angle }: 
   const d1 = Math.sin(radian)
   const d2 = Math.cos(radian)
   // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
-  return isZero((d2 * (x - cx) + d1 * (y - cy)) ^ 2 / rx / rx + (-d1 * (x - cx) + d2 * (y - cy)) ^ 2 / ry / ry - 1)
+  return isZero((d2 * (x - cx) + d1 * (y - cy)) ** 2 / rx / rx + (-d1 * (x - cx) + d2 * (y - cy)) ** 2 / ry / ry - 1)
 }
 
 /**
