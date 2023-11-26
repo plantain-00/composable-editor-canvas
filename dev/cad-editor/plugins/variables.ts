@@ -4052,6 +4052,7 @@ function getModel(ctx) {
         strokeColor: content.isCurrent ? transformColor(16711680) : void 0,
         strokeWidth: content.isCurrent ? 1 : 0,
         fillColor: getFillColor(content),
+        fillOpacity: content.fillOpacity,
         fillPattern: getFillPattern(content)
       };
       return target.renderRect(content.x, content.y, content.width, content.height, options);
@@ -6022,6 +6023,7 @@ function getModel(ctx) {
       });
     },
     getGeometries: getPathGeometriesFromCache,
+    canSelectPart: true,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         commands: /* @__PURE__ */ React.createElement(
@@ -9065,7 +9067,8 @@ function getModel(ctx) {
       const options = {
         strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth((_a = content.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(content)),
-        dashArray: content.dashArray
+        dashArray: content.dashArray,
+        strokeOpacity: content.strokeOpacity
       };
       return target.renderGroup([
         target.renderRect(content.x, content.y, content.width, content.height, {

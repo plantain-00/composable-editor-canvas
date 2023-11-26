@@ -216,6 +216,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       })
     },
     getGeometries: getPathGeometriesFromCache,
+    canSelectPart: true,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
         commands: <ctx.ArrayEditor

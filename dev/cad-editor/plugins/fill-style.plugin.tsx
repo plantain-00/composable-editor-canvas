@@ -38,6 +38,7 @@ export function getModel(ctx: PluginContext): model.Model<model.FillStyleContent
         strokeColor: content.isCurrent ? transformColor(0xff0000) : undefined,
         strokeWidth: content.isCurrent ? 1 : 0,
         fillColor: getFillColor(content),
+        fillOpacity: content.fillOpacity,
         fillPattern: getFillPattern(content,)
       }
       return target.renderRect(content.x, content.y, content.width, content.height, options)

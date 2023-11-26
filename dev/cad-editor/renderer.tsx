@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache } from "../../src"
-import { BaseContent, defaultStrokeColor, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
+import { BaseContent, defaultStrokeColor, defaultOpacity, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
   type?: string
@@ -71,6 +71,7 @@ export function Renderer(props: {
       height: fillPattern.height,
       pattern: () => target.renderPath(fillPattern.lines, {
         strokeColor: (fillPattern.strokeColor !== undefined ? transformColor(fillPattern.strokeColor) : undefined) ?? defaultStrokeColor,
+        strokeOpacity: fillPattern.strokeOpacity,
       })
     }))
   }
@@ -82,14 +83,17 @@ export function Renderer(props: {
     strokeColor: number
     dashArray?: number[]
     strokeWidth: number
+    strokeOpacity: number
   }, Position[]>(
     (last) => children.push(target.renderPath(last.target, {
       strokeColor: last.type.strokeColor,
       dashArray: last.type.dashArray,
       strokeWidth: last.type.strokeWidth,
+      strokeOpacity: last.type.strokeOpacity,
     })),
     (a, b) => a.strokeColor === b.strokeColor &&
       a.strokeWidth === b.strokeWidth &&
+      a.strokeOpacity === b.strokeOpacity &&
       isSamePath(a.dashArray, b.dashArray),
     a => a.line,
   )
@@ -120,11 +124,13 @@ export function Renderer(props: {
           const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
           let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
           strokeColor = transformColor(strokeColor)
+          const strokeOpacity = (isStrokeContent(content) ? content.strokeOpacity : undefined) ?? defaultOpacity
           for (const line of renderingLines) {
             merger.push({
               line,
               strokeColor,
               strokeWidth,
+              strokeOpacity,
             })
           }
         } else {

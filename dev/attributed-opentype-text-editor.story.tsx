@@ -2,6 +2,8 @@ import React from "react"
 import { Align, AttributedText, BooleanEditor, EnumEditor, MapCache2, NumberEditor, ObjectEditor, PathCommand, StringEditor, VerticalAlign, aligns, reactSvgRenderTarget, useAttributedTextEditor, useWindowSize, verticalAligns } from "../src"
 import * as opentype from 'opentype.js'
 import { allFonts, opentypeCommandsToPathCommands } from "./opentype/utils"
+// import SanJiKaiShu from './vender/SanJiKaiShu-2.ttf'
+// allFonts[0].url = SanJiKaiShu
 
 export default () => {
   type Attribute = Partial<{ color: number, fontSize: number, backgroundColor: number, underline: boolean, passThrough: boolean, script?: 'sub' | 'sup', circle?: boolean, stackText?: string }>
@@ -37,7 +39,7 @@ export default () => {
   const getScript = (content?: AttributedText<Attribute>) => content?.attributes?.script
   const getCircle = (content?: AttributedText<Attribute>) => content?.attributes?.circle ?? false
   const getStackText = (content?: AttributedText<Attribute>) => content?.attributes?.stackText ?? ''
-  const getLineHeight = (content: AttributedText<Attribute>) => getComputedFontSize(content) * 1.2
+  const getLineHeight = (content: AttributedText<Attribute>) => getComputedFontSize(content) * 1.5
   const getWidth = (content: AttributedText<Attribute>) => {
     if (content.attributes?.stackText) {
       const width = content.insert.split('').reduce((p, c) => p + (getTextLayout(c, getComputedFontSize(content))?.width ?? 0), 0)
@@ -94,7 +96,7 @@ export default () => {
       }
       const pos = {
         x: x - layout.x1,
-        y: layout.y1 + (lineHeight - getLineHeight(content)),
+        y: y + layout.y1 + (lineHeight - getLineHeight(content)),
       }
       const script = getScript(content)
       const stackText = getStackText(content)

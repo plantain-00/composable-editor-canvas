@@ -38,6 +38,7 @@ export function getModel(ctx: PluginContext): model.Model<model.StrokeStyleConte
         strokeColor: getStrokeColor(content),
         strokeWidth: transformStrokeWidth(content.strokeWidth ?? ctx.getDefaultStrokeWidth(content)),
         dashArray: content.dashArray,
+        strokeOpacity: content.strokeOpacity,
       }
       return target.renderGroup([
         target.renderRect(content.x, content.y, content.width, content.height, {

@@ -645,20 +645,17 @@ export function useAttributedTextEditor<T extends object>(props: {
     }
   }
   const getNewLocation = (p: { location: number, fromRight?: boolean }, type: 'min' | 'max' | 'nearest' | 'farthest') => {
+    let readonlyRange: { min: number, max: number, type?: string } | undefined
     if (type === 'farthest' || type === 'nearest') {
       if (p.fromRight) {
-        const readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.min)
-        if (readonlyRange) {
-          return type === 'nearest' ? readonlyRange.min : readonlyRange.max
-        }
+        readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.min)
       } else {
-        const readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.max)
-        if (readonlyRange) {
-          return type === 'nearest' ? readonlyRange.max : readonlyRange.min
-        }
+        readonlyRange = readonlyRanges.find(r => !r.type && p.location === r.max)
       }
     }
-    const readonlyRange = readonlyRanges.find(r => p.location > r.min && p.location < r.max)
+    if (!readonlyRange) {
+      readonlyRange = readonlyRanges.find(r => p.location > r.min && p.location < r.max)
+    }
     if (readonlyRange) {
       if (type === 'farthest') {
         const loc = downLocation.current ?? p.location
