@@ -226,7 +226,7 @@ export function isPolarArrayContent(content: model.BaseContent): content is Pola
 
 export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
-    return !ctx.contentIsReferenced(content, contents)
+    return !content.readonly && ctx.contentIsDeletable(content, contents)
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const React = ctx.React

@@ -28,7 +28,7 @@ export function getCommand(ctx: PluginContext): Command {
       })
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.reverse !== undefined
+      return !content.readonly && ctx.getContentModel(content)?.reverse !== undefined
     },
     icon,
   }

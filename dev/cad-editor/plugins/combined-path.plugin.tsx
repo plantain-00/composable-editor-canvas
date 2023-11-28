@@ -81,7 +81,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
 
 export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
-    return !ctx.contentIsReferenced(content, contents) &&
+    return ctx.contentIsDeletable(content, contents) &&
       (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content))
   }
   const React = ctx.React

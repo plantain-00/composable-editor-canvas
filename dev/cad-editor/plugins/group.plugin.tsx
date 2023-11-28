@@ -25,7 +25,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
 
 export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
-    return !ctx.contentIsReferenced(content, contents)
+    return ctx.contentIsDeletable(content, contents)
   }
   const React = ctx.React
   const icon = (

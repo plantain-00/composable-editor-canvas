@@ -29,7 +29,7 @@ export function getCommand(ctx: PluginContext): Command {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content)
-      return model?.explode !== undefined && !ctx.contentIsReferenced(content, contents)
+      return model?.explode !== undefined && ctx.contentIsDeletable(content, contents)
     },
     hotkey: 'X',
     icon,

@@ -4,7 +4,7 @@ import type * as model from '../model'
 
 export function getCommand(ctx: PluginContext): Command[] {
   function contentSelectable(c: model.BaseContent) {
-    return ctx.isContainerContent(c)
+    return !c.readonly && ctx.isContainerContent(c)
   }
   const React = ctx.React
   const startIcon = (
