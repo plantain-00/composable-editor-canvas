@@ -22,7 +22,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             for (const id of iterateRefContents(index, contents, ctx)) {
               ids.add(id)
             }
-            if (type === 'cut' && !ctx.contentIsReferenced(content, contents)) {
+            if (type === 'cut' && ctx.contentIsDeletable(content, contents)) {
               contents[index] = undefined
             }
           }

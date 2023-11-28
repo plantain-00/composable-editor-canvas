@@ -280,7 +280,7 @@ export function isBlockReferenceContent(content: model.BaseContent): content is 
 
 export function getCommand(ctx: PluginContext): Command[] {
   function contentSelectable(content: model.BaseContent, contents: core.Nullable<model.BaseContent>[]) {
-    return !ctx.contentIsReferenced(content, contents)
+    return ctx.contentIsDeletable(content, contents)
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const React = ctx.React

@@ -192,7 +192,7 @@ export function getCommand(ctx: PluginContext): Command {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content)
-      return model?.break !== undefined && !ctx.contentIsReferenced(content, contents)
+      return model?.break !== undefined && ctx.contentIsDeletable(content, contents)
     },
     hotkey: 'TR',
     icon,

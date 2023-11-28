@@ -599,7 +599,7 @@ function isBlockReferenceContent(content) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !ctx.contentIsReferenced(content, contents);
+    return ctx.contentIsDeletable(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 576 512" }, /* @__PURE__ */ React.createElement("path", { fill: "currentColor", d: "M32 119.4C12.9 108.4 0 87.7 0 64C0 28.7 28.7 0 64 0c23.7 0 44.4 12.9 55.4 32H456.6C467.6 12.9 488.3 0 512 0c35.3 0 64 28.7 64 64c0 23.7-12.9 44.4-32 55.4V392.6c19.1 11.1 32 31.7 32 55.4c0 35.3-28.7 64-64 64c-23.7 0-44.4-12.9-55.4-32H119.4c-11.1 19.1-31.7 32-55.4 32c-35.3 0-64-28.7-64-64c0-23.7 12.9-44.4 32-55.4V119.4zM456.6 96H119.4c-5.6 9.7-13.7 17.8-23.4 23.4V392.6c9.7 5.6 17.8 13.7 23.4 23.4H456.6c5.6-9.7 13.7-17.8 23.4-23.4V119.4c-9.7-5.6-17.8-13.7-23.4-23.4zM128 160c0-17.7 14.3-32 32-32H288c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H160c-17.7 0-32-14.3-32-32V160zM256 320h32c35.3 0 64-28.7 64-64V224h64c17.7 0 32 14.3 32 32v96c0 17.7-14.3 32-32 32H288c-17.7 0-32-14.3-32-32V320z" }));
@@ -750,7 +750,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
-      return (model == null ? void 0 : model.break) !== void 0 && !ctx.contentIsReferenced(content, contents);
+      return (model == null ? void 0 : model.break) !== void 0 && ctx.contentIsDeletable(content, contents);
     },
     hotkey: "BR",
     icon
@@ -799,9 +799,14 @@ function getModel(ctx) {
       return target.renderGroup(renderingLines.map((line) => target.renderPolyline(line, options)));
     },
     getGeometries: getCenterLineGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents, { acquireContent }) {
       return {
         ref1: [
+          /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, (r) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref1 = r[0];
+            }
+          })) }, "select"),
           typeof content.ref1.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref1.id, setValue: (v) => update((c) => {
             if (isCenterLineContent(c)) {
               c.ref1.id = v;
@@ -814,6 +819,11 @@ function getModel(ctx) {
           }) }) : void 0
         ],
         ref2: [
+          /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, (r) => update((c) => {
+            if (isCenterLineContent(c)) {
+              c.ref2 = r[0];
+            }
+          })) }, "select"),
           typeof content.ref2.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref2.id, setValue: (v) => update((c) => {
             if (isCenterLineContent(c)) {
               c.ref2.id = v;
@@ -925,9 +935,14 @@ function getModel(ctx) {
     },
     getGeometries: getCenterMarkGeometriesFromCache,
     canSelectPart: true,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents, { acquireContent }) {
       return {
         ref: [
+          /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, (r) => update((c) => {
+            if (isCenterMarkContent(c)) {
+              c.ref = r[0];
+            }
+          })) }, "select"),
           typeof content.ref.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.id, setValue: (v) => update((c) => {
             if (isCenterMarkContent(c)) {
               c.ref.id = v;
@@ -1509,7 +1524,7 @@ function getModel(ctx) {
       propertyPanel(content, update, contents, { acquirePoint }) {
         return {
           from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
-            if (isCircleContent(c)) {
+            if (isArcContent(c)) {
               c.x = p.x, c.y = p.y;
             }
           })) }, "canvas"),
@@ -1872,7 +1887,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !ctx.contentIsReferenced(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
+    return ctx.contentIsDeletable(content, contents) && (isLineContent(content) || isArcContent(content) || isPolyLineContent(content) || isEllipseArcContent(content));
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "36,93 40,92 43,90 47,88 51,86 55,84 58,81 62,79 65,76 69,73 72,70 75,67 78,64 80,60 83,57 85,54 86,51 88,47 89,44 90,41 90,38 91,36 90,33 90,31 89,28 88,26 87,25 85,23 83,22 81,21 78,20 76,20 73,20 69,20 66,20 63,21 59,22 55,23 52,25 48,27 44,29 40,31 37,34 33,36 30,39 26,42 23,45 20,48 17,51 15,55 12,58 10,61 9,64 36,93", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }));
@@ -2162,7 +2177,7 @@ function getCommand(ctx) {
           for (const id of iterateRefContents(index, contents, ctx)) {
             ids.add(id);
           }
-          if (type === "cut" && !ctx.contentIsReferenced(content, contents)) {
+          if (type === "cut" && ctx.contentIsDeletable(content, contents)) {
             contents[index] = void 0;
           }
         }
@@ -2432,7 +2447,7 @@ function getCommand(ctx) {
       });
     },
     contentSelectable(content, contents) {
-      return !ctx.contentIsReferenced(content, contents);
+      return ctx.contentIsDeletable(content, contents);
     },
     hotkey: "E",
     icon
@@ -2659,7 +2674,7 @@ export {
 `// dev/cad-editor/plugins/edit-container.plugin.tsx
 function getCommand(ctx) {
   function contentSelectable(c) {
-    return ctx.isContainerContent(c);
+    return !c.readonly && ctx.isContainerContent(c);
   }
   const React = ctx.React;
   const startIcon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "42,73 42,74 41,75 41,77 41,78 40,79 39,81 39,82 38,83 37,84 36,85 35,86 34,86 32,87 31,88 30,88 28,88 27,89 26,89 24,89 23,88 21,88 20,88 19,87 17,86 16,86 15,85 14,84 13,83 12,82 12,81 11,79 10,78 10,77 10,75 9,74 9,73 9,71 10,70 10,68 10,67 11,66 12,64 12,63 13,62 14,61 15,60 16,59 17,59 19,58 20,57 21,57 23,57 24,56 25,56 27,56 28,57 30,57 31,57 32,58 34,59 35,59 36,60 37,61 38,62 39,63 39,64 40,66 41,67 41,68 41,70 42,71 42,73", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "12,10 76,10 76,45 12,45", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "70,93 93,52 46,52", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -3894,7 +3909,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
-      return (model == null ? void 0 : model.explode) !== void 0 && !ctx.contentIsReferenced(content, contents);
+      return (model == null ? void 0 : model.explode) !== void 0 && ctx.contentIsDeletable(content, contents);
     },
     hotkey: "X",
     icon
@@ -4319,7 +4334,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !ctx.contentIsReferenced(content, contents);
+    return ctx.contentIsDeletable(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "73", r: "22", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "93,78 97,48 71,34 49,56 63,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "7", y: "8", width: "50", height: "37", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -5403,7 +5418,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content) {
       var _a;
-      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) !== void 0;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.mirror) !== void 0;
     },
     hotkey: "MI",
     icon
@@ -5466,7 +5481,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content) {
       var _a;
-      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) !== void 0;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.move) !== void 0;
     },
     hotkey: "M",
     icon
@@ -6697,7 +6712,7 @@ function isPolarArrayContent(content) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !ctx.contentIsReferenced(content, contents);
+    return !content.readonly && ctx.contentIsDeletable(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "30", cy: "22", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "67", cy: "23", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "82", cy: "53", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "67", cy: "81", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "79", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "13", cy: "50", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -7075,9 +7090,14 @@ function getModel(ctx) {
       });
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         ref: [
+          /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, (r) => update((c) => {
+            if (isRadialDimensionReferenceContent(c)) {
+              c.ref = r[0];
+            }
+          })) }, "select"),
           typeof content.ref.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.ref.id, setValue: (v) => update((c) => {
             if (isRadialDimensionReferenceContent(c)) {
               c.ref.id = v;
@@ -7463,7 +7483,7 @@ function isRectArrayContent(content) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !ctx.contentIsReferenced(content, contents);
+    return ctx.contentIsDeletable(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "3", y: "70", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "70", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "3", y: "35", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "35", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "3", y: "0", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "58", y: "1", width: "40", height: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -7949,7 +7969,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content) {
       var _a;
-      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.reverse) !== void 0;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.reverse) !== void 0;
     },
     icon
   };
@@ -8227,7 +8247,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content) {
       var _a;
-      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) !== void 0;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.rotate) !== void 0;
     },
     hotkey: "RO"
   };
@@ -10520,7 +10540,7 @@ function getCommand(ctx) {
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
-      return (model == null ? void 0 : model.break) !== void 0 && !ctx.contentIsReferenced(content, contents);
+      return (model == null ? void 0 : model.break) !== void 0 && ctx.contentIsDeletable(content, contents);
     },
     hotkey: "TR",
     icon,
@@ -10676,7 +10696,7 @@ function getCommand(ctx) {
     icon,
     contentSelectable(content) {
       var _a;
-      return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.isPointIn) !== void 0;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.isPointIn) !== void 0;
     },
     execute({ contents, selected }) {
       contents.forEach((content, index) => {

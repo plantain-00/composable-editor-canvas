@@ -305,6 +305,7 @@ export const CADEditor = React.forwardRef((props: {
     {
       scale: scaleWithViewport,
       readOnly: readOnly || operations.type === 'operate',
+      contentReadOnly: c => c.readonly,
     }
   )
 
@@ -336,7 +337,6 @@ export const CADEditor = React.forwardRef((props: {
         return
       }
       resetOperation()
-      setSelected()
       if (nextCommand) {
         startOperation({ type: 'command', name: nextCommand }, [])
       }
@@ -866,6 +866,7 @@ export const CADEditor = React.forwardRef((props: {
     const ids: number[] = []
     const zPanel: JSX.Element[] = []
     const visiblePanel: JSX.Element[] = []
+    const readonlyPanel: JSX.Element[] = []
     let areas = 0
     selectedContents.forEach(target => {
       types.add(target.content.type)
@@ -896,10 +897,12 @@ export const CADEditor = React.forwardRef((props: {
           startOperation({ type: 'command', name: 'acquire point' })
         },
         acquireContent: (select, handle) => {
+          const current = selected
           commandResultHandler.current = p => {
             if (is<readonly number[][]>(p, [[number]])) {
-              handle(p)
+              handle(p.map(t => ({ id: t[0], partIndex: t[1] } )))
             }
+            setSelected(...current)
           }
           setSelected()
           selectBeforeOperate(select, { type: 'command', name: 'acquire content' })
@@ -926,6 +929,7 @@ export const CADEditor = React.forwardRef((props: {
         zPanel.push(<NumberEditor value={target.content.z} setValue={(v) => contentsUpdater(c => { c.z = v })} />)
       }
       visiblePanel.push(<BooleanEditor value={target.content.visible !== false} setValue={(v) => contentsUpdater(c => { c.visible = v ? undefined : false })} />)
+      readonlyPanel.push(<BooleanEditor value={target.content.readonly === true} setValue={(v) => contentsUpdater(c => { c.readonly = v ? true : undefined })} />)
       const area = getContentModel(target.content)?.getArea?.(target.content)
       if (area) {
         areas += area
@@ -933,6 +937,7 @@ export const CADEditor = React.forwardRef((props: {
     })
     propertyPanels.z = zPanel
     propertyPanels.visible = visiblePanel
+    propertyPanels.readonly = readonlyPanel
     if (areas) {
       propertyPanels.areas = <NumberEditor value={areas} />
     }

@@ -43,13 +43,15 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
       return target.renderGroup(renderingLines.map(line => target.renderPolyline(line, options)))
     },
     getGeometries: getCenterLineGeometriesFromCache,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents, { acquireContent }) {
       return {
         ref1: [
+          <ctx.Button onClick={() => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, r => update(c => { if (isCenterLineContent(c)) { c.ref1 = r[0] } }))}>select</ctx.Button>,
           typeof content.ref1.id === 'number' ? <ctx.NumberEditor value={content.ref1.id} setValue={(v) => update(c => { if (isCenterLineContent(c)) { c.ref1.id = v } })} /> : undefined,
           content.ref1.partIndex !== undefined ? <ctx.NumberEditor value={content.ref1.partIndex} setValue={(v) => update(c => { if (isCenterLineContent(c)) { c.ref1.partIndex = v } })} /> : undefined,
         ],
         ref2: [
+          <ctx.Button onClick={() => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, r => update(c => { if (isCenterLineContent(c)) { c.ref2 = r[0] } }))}>select</ctx.Button>,
           typeof content.ref2.id === 'number' ? <ctx.NumberEditor value={content.ref2.id} setValue={(v) => update(c => { if (isCenterLineContent(c)) { c.ref2.id = v } })} /> : undefined,
           content.ref2.partIndex !== undefined ? <ctx.NumberEditor value={content.ref2.partIndex} setValue={(v) => update(c => { if (isCenterLineContent(c)) { c.ref2.partIndex = v } })} /> : undefined,
         ],

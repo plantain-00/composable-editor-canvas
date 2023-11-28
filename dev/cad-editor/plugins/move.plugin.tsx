@@ -57,7 +57,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.move !== undefined
+      return !content.readonly && ctx.getContentModel(content)?.move !== undefined
     },
     hotkey: 'M',
     icon,

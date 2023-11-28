@@ -20,7 +20,7 @@ export function getCommand(ctx: PluginContext): Command {
       })
     },
     contentSelectable(content: model.BaseContent, contents: readonly model.BaseContent[]) {
-      return !ctx.contentIsReferenced(content, contents)
+      return ctx.contentIsDeletable(content, contents)
     },
     hotkey: 'E',
     icon,

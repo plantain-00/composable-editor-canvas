@@ -41,9 +41,10 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
     },
     getGeometries: getCenterMarkGeometriesFromCache,
     canSelectPart: true,
-    propertyPanel(content, update) {
+    propertyPanel(content, update, contents, { acquireContent }) {
       return {
         ref: [
+          <ctx.Button onClick={() => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, r => update(c => { if (isCenterMarkContent(c)) { c.ref = r[0] } }))}>select</ctx.Button>,
           typeof content.ref.id === 'number' ? <ctx.NumberEditor value={content.ref.id} setValue={(v) => update(c => { if (isCenterMarkContent(c)) { c.ref.id = v } })} /> : undefined,
           content.ref.partIndex !== undefined ? <ctx.NumberEditor value={content.ref.partIndex} setValue={(v) => update(c => { if (isCenterMarkContent(c)) { c.ref.partIndex = v } })} /> : undefined,
         ],

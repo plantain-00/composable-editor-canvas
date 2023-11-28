@@ -100,7 +100,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.rotate !== undefined
+      return !content.readonly && ctx.getContentModel(content)?.rotate !== undefined
     },
     hotkey: 'RO',
   }

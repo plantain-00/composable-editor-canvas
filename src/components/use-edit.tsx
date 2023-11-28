@@ -18,6 +18,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
   options?: Partial<{
     scale: number
     readOnly: boolean
+    contentReadOnly: (content: T) => boolean | undefined
     getAngleSnap: (angle: number) => number | undefined,
   }>,
 ) {
@@ -46,7 +47,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
     editLastPosition: editPoint?.angleSnapStartPoint ?? startPosition,
     getEditAssistentContents<V>(content: T, createRect: (rect: Region) => V) {
       const assistentContents: V[] = []
-      if (!readOnly) {
+      if (!readOnly && !options?.contentReadOnly?.(content)) {
         const editPoints = getEditPoints?.(content)
         if (editPoints) {
           assistentContents.push(...editPoints.editPoints.map((e) => createRect({
@@ -114,6 +115,7 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       }
       let result: typeof editPoint | undefined
       for (const { content, path } of selectedContents) {
+        if (options?.contentReadOnly?.(content)) continue
         const editPoints = getEditPoints?.(content)
         if (editPoints) {
           const t = editPoints.editPoints.find((e) => getTwoNumbersDistance(e.x, p.x) <= cursorWidth && getTwoNumbersDistance(e.y, p.y) <= cursorWidth)

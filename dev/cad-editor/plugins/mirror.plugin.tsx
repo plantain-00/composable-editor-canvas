@@ -88,7 +88,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable(content) {
-      return ctx.getContentModel(content)?.mirror !== undefined
+      return !content.readonly && ctx.getContentModel(content)?.mirror !== undefined
     },
     hotkey: 'MI',
     icon,

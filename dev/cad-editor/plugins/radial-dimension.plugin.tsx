@@ -101,9 +101,10 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       })
     },
     getGeometries: getRadialDimensionReferenceGeometriesFromCache,
-    propertyPanel(content, update, contents, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         ref: [
+          <ctx.Button onClick={() => acquireContent({ count: 1, part: true, selectable: (v) => contentSelectable(ctx.getContentByIndex(contents, v)) }, r => update(c => { if (isRadialDimensionReferenceContent(c)) { c.ref = r[0] } }))}>select</ctx.Button>,
           typeof content.ref.id === 'number' ? <ctx.NumberEditor value={content.ref.id} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.ref.id = v } })} /> : undefined,
           content.ref.partIndex !== undefined ? <ctx.NumberEditor value={content.ref.partIndex} setValue={(v) => update(c => { if (isRadialDimensionReferenceContent(c)) { c.ref.partIndex = v } })} /> : undefined,
         ],

@@ -13,12 +13,14 @@ export interface BaseContent<T extends string = string> {
   type: T
   z?: number
   visible?: boolean
+  readonly?: boolean
 }
 
 export const BaseContent = (type: Validator = string) => ({
   type,
   z: optional(number),
   visible: optional(boolean),
+  readonly: optional(boolean),
 })
 
 export const Content = (v: unknown, path: Path): ValidationResult => {
@@ -203,7 +205,7 @@ export type Model<T> = Partial<FeatureModels> & {
     options: {
       startTime: (max: number) => void,
       acquirePoint: (handle: (point: Position, target?: SnapTarget) => void) => void,
-      acquireContent: (select: Select, handle: (id: readonly number[][]) => void) => void,
+      acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
       activeChild?: number[]
     },
   ): Record<string, JSX.Element | (JSX.Element | undefined)[]>
@@ -930,6 +932,10 @@ export function contentIsReferenced(content: object, contents: readonly Nullable
     }
   }
   return false
+}
+
+export function contentIsDeletable(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean {
+  return !content.readonly && !contentIsReferenced(content, contents)
 }
 
 export function updateReferencedContents(
