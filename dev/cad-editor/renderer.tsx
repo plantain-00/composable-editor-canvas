@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache } from "../../src"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache, ContentPath } from "../../src"
 import { BaseContent, defaultStrokeColor, defaultOpacity, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
@@ -8,9 +8,9 @@ export function Renderer(props: {
   contents: readonly Nullable<BaseContent>[]
   previewPatches?: Patch[]
   assistentContents?: readonly BaseContent[]
-  selected?: readonly number[][]
+  selected?: readonly ContentPath[]
   othersSelectedContents?: readonly { selection: number[], operator: string }[]
-  hovering?: readonly number[][]
+  hovering?: readonly ContentPath[]
   active?: number
   activeViewportIndex?: number
   x: number

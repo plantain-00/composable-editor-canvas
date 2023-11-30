@@ -131,7 +131,7 @@ export function getCommand(ctx: PluginContext): Command {
     selectCount: 1,
     icon,
     contentSelectable(content: model.BaseContent) {
-      return !content.readonly && ctx.getContentModel(content)?.isPointIn !== undefined
+      return ctx.contentIsClosedPath(content)
     },
     execute({ contents, selected }) {
       contents.forEach((content, index) => {

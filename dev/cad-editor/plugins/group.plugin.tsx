@@ -3,22 +3,55 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 
-export type GroupContent = model.BaseContent<'group'> & model.ContainerFields
+export type GroupContent = model.BaseContent<'group'> & model.ContainerFields & model.ClipFields
 
 export function getModel(ctx: PluginContext): model.Model<GroupContent> {
-  const GroupContent = ctx.and(ctx.BaseContent('group'), ctx.ContainerFields)
+  const GroupContent = ctx.and(ctx.BaseContent('group'), ctx.ContainerFields, ctx.ClipFields)
   return {
     type: 'group',
     ...ctx.containerModel,
-    move: ctx.getContainerMove,
-    rotate: ctx.getContainerRotate,
+    ...ctx.clipModel,
+    move(content, offset) {
+      ctx.getContainerMove(content, offset)
+      if (content.clip) {
+        ctx.getContentModel(content.clip.border)?.move?.(content.clip.border, offset)
+      }
+    },
+    rotate(content, center, angle, contents) {
+      ctx.getContainerRotate(content, center, angle, contents)
+      if (content.clip) {
+        ctx.getContentModel(content.clip.border)?.rotate?.(content.clip.border, center, angle, contents)
+      }
+    },
     explode: ctx.getContainerExplode,
-    mirror: ctx.getContainerMirror,
-    render: ctx.getContainerRender,
-    renderIfSelected: ctx.getContainerRenderIfSelected,
+    mirror(content, line, angle, contents) {
+      ctx.getContainerMirror(content, line, angle, contents)
+      if (content.clip) {
+        ctx.getContentModel(content.clip.border)?.mirror?.(content.clip.border, line, angle, contents)
+      }
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: ctx.getClipContentEditPoints(content, contents),
+        }
+      })
+    },
+    render: (content, renderCtx) => {
+      return ctx.renderClipContent(content, ctx.getContainerRender(content, renderCtx), renderCtx)
+    },
+    renderIfSelected(content, renderCtx) {
+      const result = ctx.getContainerRenderIfSelected(content, renderCtx)
+      return ctx.renderClipContentIfSelected(content, result, renderCtx)
+    },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
-    propertyPanel: (content, update) => ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
+    propertyPanel: (content, update, contents, { acquireContent }) => {
+      return {
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
+        ...ctx.getClipContentPropertyPanel(content, contents, acquireContent, update),
+      }
+    },
     isValid: (c, p) => ctx.validate(c, GroupContent, p),
   }
 }
