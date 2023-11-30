@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, number, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath } from '../../src'
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
@@ -47,7 +47,7 @@ export const CADEditor = React.forwardRef((props: {
 }, ref: React.ForwardedRef<CADEditorRef>) => {
   const debug = new Debug(props.debug)
   const { width, height } = useWindowSize()
-  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message, onSelectBeforeOperateKeyDown } = useSelectBeforeOperate<Select, Operation, number[]>(
+  const { filterSelection, selected, isSelected, addSelection, removeSelection, setSelected, isSelectable, operations, executeOperation, resetOperation, selectBeforeOperate, operate, message, onSelectBeforeOperateKeyDown } = useSelectBeforeOperate<Select, Operation, ContentPath>(
     {},
     (p, s) => {
       if (p?.type === 'command') {
@@ -157,7 +157,7 @@ export const CADEditor = React.forwardRef((props: {
       return
     },
   })
-  const { selected: hovering, setSelected: setHovering } = useSelected<number[]>({ maxCount: 1 })
+  const { selected: hovering, setSelected: setHovering } = useSelected<ContentPath>({ maxCount: 1 })
   const { editingContent, trimPatchPath, getContentByPath, setEditingContentPath, prependPatchPath } = usePartialEdit(state, {
     onEditingContentPathChange(contents) {
       rebuildRTree(contents)
@@ -280,7 +280,7 @@ export const CADEditor = React.forwardRef((props: {
     setScaleOffset(1)
   })
 
-  const selectedContents: { content: BaseContent, path: number[] }[] = []
+  const selectedContents: { content: BaseContent, path: ContentPath }[] = []
   editingContent.forEach((s, i) => {
     if (!s) {
       return
@@ -299,7 +299,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
-  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, readonly number[]>(
+  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, ContentPath>(
     (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
@@ -703,7 +703,7 @@ export const CADEditor = React.forwardRef((props: {
         }
       } else if (!e.shiftKey) {
         if (e.code === 'KeyA') {
-          addSelection(...editingContent.map((_, i) => [i]))
+          addSelection(...editingContent.map((_, i) => [i] as ContentPath))
           e.preventDefault()
         } else if (e.code === 'Digit0') {
           setScale(1)
@@ -740,10 +740,10 @@ export const CADEditor = React.forwardRef((props: {
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
-        const select = {
+        const select: Select = {
           count: command.selectCount,
           part: command.selectType === 'select part',
-          selectable(v: readonly number[]) {
+          selectable(v) {
             const content = getContentByIndex(editingContent, v)
             if (content) {
               return command.contentSelectable?.(content, editingContent) ?? true
@@ -899,7 +899,7 @@ export const CADEditor = React.forwardRef((props: {
         acquireContent: (select, handle) => {
           const current = selected
           commandResultHandler.current = p => {
-            if (is<readonly number[][]>(p, [[number]])) {
+            if (is<ContentPath[]>(p, [ContentPath])) {
               handle(p.map(t => ({ id: t[0], partIndex: t[1] } )))
             }
             setSelected(...current)

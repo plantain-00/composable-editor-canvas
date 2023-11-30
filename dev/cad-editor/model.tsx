@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -137,6 +137,20 @@ export const AngleDeltaFields = {
   angleDelta: optional(exclusiveMinimum(0, number)),
 }
 
+export interface ClipFields {
+  clip?: {
+    border: BaseContent
+    reverse?: boolean
+  }
+}
+
+export const ClipFields = {
+  clip: optional({
+    border: Content,
+    reverse: optional(boolean),
+  }),
+}
+
 export const strokeModel = {
   isStroke: true,
 }
@@ -171,6 +185,10 @@ export const angleDeltaModel = {
   isAngleDelta: true,
 }
 
+export const clipModel = {
+  isClip: true,
+}
+
 type FeatureModels = typeof strokeModel &
   typeof fillModel &
   typeof containerModel &
@@ -178,6 +196,7 @@ type FeatureModels = typeof strokeModel &
   typeof segmentCountModel &
   typeof angleDeltaModel &
   typeof textModel &
+  typeof clipModel &
   typeof variableValuesModel
 
 export type Model<T> = Partial<FeatureModels> & {
@@ -233,7 +252,7 @@ export type Model<T> = Partial<FeatureModels> & {
 export interface Select {
   count?: number
   part?: boolean
-  selectable?: (index: number[]) => boolean
+  selectable?: (index: ContentPath) => boolean
 }
 
 export interface RenderContext<V, T = V> {
@@ -339,7 +358,7 @@ export const fixedInputStyle: React.CSSProperties = {
   left: '190px',
 }
 
-export function getContentByIndex(state: readonly Nullable<BaseContent>[], index: readonly number[]) {
+export function getContentByIndex(state: readonly Nullable<BaseContent>[], index: ContentPath) {
   const content = state[index[0]]
   if (!content) {
     return undefined
@@ -735,6 +754,39 @@ export function getVariableValuesContentPropertyPanel(
   }
 }
 
+export function getClipContentPropertyPanel(
+  content: ClipFields,
+  contents: readonly Nullable<BaseContent<string>>[],
+  acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
+  update: (recipe: (content: BaseContent) => void) => void,
+) {
+  const picker = <Button onClick={() => acquireContent({ count: 1, selectable: (v) => contentIsClosedPath(getContentByIndex(contents, v)) }, r => update(c => {
+    if (isClipContent(c)) {
+      const border = getRefPart(r[0], contents)
+      if (border) {
+        c.clip = {
+          border: border,
+        }
+      }
+    }
+  }))}>select border</Button>
+  let properties: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {}
+  if (content.clip) {
+    properties = {
+      change: picker,
+      border: <Button onClick={() => update(c => { if (isClipContent(c)) { c.clip = undefined } })}>remove</Button>,
+      reverse: <BooleanEditor value={!!content.clip.reverse} setValue={(v) => update(c => { if (isClipContent(c) && c.clip) { c.clip.reverse = v ? true : undefined } })} />
+    }
+  } else {
+    properties = {
+      add: picker,
+    }
+  }
+  return {
+    clip: <ObjectEditor properties={properties} />,
+  }
+}
+
 export function isStrokeContent(content: BaseContent): content is (BaseContent & StrokeFields) {
   return !!getContentModel(content)?.isStroke
 }
@@ -762,6 +814,9 @@ export function isAngleDeltaContent(content: BaseContent): content is (BaseConte
 }
 export function isVariableValuesContent(content: BaseContent): content is (BaseContent & VariableValuesFields) {
   return !!getContentModel(content)?.isVariableValues
+}
+export function isClipContent(content: BaseContent): content is (BaseContent & ClipFields) {
+  return !!getContentModel(content)?.isClip
 }
 
 export function hasFill(content: FillFields) {
@@ -936,6 +991,9 @@ export function contentIsReferenced(content: object, contents: readonly Nullable
 
 export function contentIsDeletable(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean {
   return !content.readonly && !contentIsReferenced(content, contents)
+}
+export function contentIsClosedPath(content: Nullable<BaseContent>) {
+  return !!content && !content.readonly && getContentModel(content)?.isPointIn !== undefined
 }
 
 export function updateReferencedContents(
@@ -1574,4 +1632,80 @@ export function getTextStyleRenderOptionsFromRenderContext<V, P>(
     strokeWidth: fuzzy ? strokeWidth : undefined,
   }
   return options
+}
+
+export function renderClipContent<V, P>(content: ClipFields & BaseContent, target: V, renderCtx: RenderContext<V, P>): V {
+  if (content.clip) {
+    const model = getContentModel(content.clip.border)
+    const render = model?.render
+    if (render) {
+      if (content.clip.reverse) {
+        const borderGeometries = model.getGeometries?.(content.clip.border)
+        if (!borderGeometries?.bounding) return target
+        const contentModel = getContentModel(content)
+        if (!contentModel) return target
+        const geometries = contentModel.getGeometries?.(content)
+        if (!geometries?.bounding) return target
+        return renderCtx.target.renderPath([
+          getPolygonFromTwoPointsFormRegion(mergeBoundings([geometries.bounding, borderGeometries.bounding])),
+          getGeometryLinesPoints(borderGeometries.lines),
+        ], {
+          ...renderCtx,
+          strokeWidth: 0,
+          clip: () => target,
+        })
+      }
+      return render(content.clip.border, {
+        ...renderCtx,
+        transformStrokeWidth: () => 0,
+        clip: () => target,
+      })
+    }
+  }
+  return target
+}
+
+export function renderClipContentIfSelected<V>(content: ClipFields, target: V, renderCtx: RenderIfSelectedContext<V>): V {
+  if (content.clip) {
+    const model = getContentModel(content.clip.border)
+    const render = model?.render
+    if (render) {
+      return renderCtx.target.renderGroup([
+        target,
+        render(content.clip.border, {
+          ...renderCtx,
+          transformColor: c => c,
+          transformStrokeWidth: () => renderCtx.strokeWidth,
+          getStrokeColor: () => renderCtx.color,
+          getFillColor: () => undefined,
+          getFillPattern: () => undefined,
+        }),
+      ])
+    }
+  }
+  return target
+}
+
+export function getClipContentEditPoints(content: ClipFields, contents: readonly Nullable<BaseContent>[]) {
+  if (!content.clip) return []
+  const borderEditPoints = getContentModel(content.clip.border)?.getEditPoints?.(content.clip.border, contents)
+  if (!borderEditPoints) return []
+  return borderEditPoints.editPoints.map(p => ({
+    ...p,
+    update(c, props) {
+      if (!isClipContent(c)) {
+        return
+      }
+      if (!c.clip) return
+      let r: { assistentContents?: BaseContent[] } | void | undefined
+      c.clip.border = produce(c.clip.border, d => {
+        if (!p.update) return
+        r = p.update(d, props)
+      })
+      if (r) {
+        return r
+      }
+      return
+    },
+  } as EditPoint<BaseContent>))
 }

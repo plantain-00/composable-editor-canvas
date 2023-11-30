@@ -4316,19 +4316,55 @@ export {
 `,
 `// dev/cad-editor/plugins/group.plugin.tsx
 function getModel(ctx) {
-  const GroupContent = ctx.and(ctx.BaseContent("group"), ctx.ContainerFields);
+  const GroupContent = ctx.and(ctx.BaseContent("group"), ctx.ContainerFields, ctx.ClipFields);
   return {
     type: "group",
     ...ctx.containerModel,
-    move: ctx.getContainerMove,
-    rotate: ctx.getContainerRotate,
+    ...ctx.clipModel,
+    move(content, offset) {
+      var _a, _b;
+      ctx.getContainerMove(content, offset);
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.clip.border, offset);
+      }
+    },
+    rotate(content, center, angle, contents) {
+      var _a, _b;
+      ctx.getContainerRotate(content, center, angle, contents);
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.clip.border, center, angle, contents);
+      }
+    },
     explode: ctx.getContainerExplode,
-    mirror: ctx.getContainerMirror,
-    render: ctx.getContainerRender,
-    renderIfSelected: ctx.getContainerRenderIfSelected,
+    mirror(content, line, angle, contents) {
+      var _a, _b;
+      ctx.getContainerMirror(content, line, angle, contents);
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.mirror) == null ? void 0 : _b.call(_a, content.clip.border, line, angle, contents);
+      }
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: ctx.getClipContentEditPoints(content, contents)
+        };
+      });
+    },
+    render: (content, renderCtx) => {
+      return ctx.renderClipContent(content, ctx.getContainerRender(content, renderCtx), renderCtx);
+    },
+    renderIfSelected(content, renderCtx) {
+      const result = ctx.getContainerRenderIfSelected(content, renderCtx);
+      return ctx.renderClipContentIfSelected(content, result, renderCtx);
+    },
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries: ctx.getContainerGeometries,
-    propertyPanel: (content, update) => ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
+    propertyPanel: (content, update, contents, { acquireContent }) => {
+      return {
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
+        ...ctx.getClipContentPropertyPanel(content, contents, acquireContent, update)
+      };
+    },
     isValid: (c, p) => ctx.validate(c, GroupContent, p)
   };
 }
@@ -4364,7 +4400,7 @@ export {
 `,
 `// dev/cad-editor/plugins/image.plugin.tsx
 function getModel(ctx) {
-  const ImageContent = ctx.and(ctx.BaseContent("image"), ctx.Image);
+  const ImageContent = ctx.and(ctx.BaseContent("image"), ctx.Image, ctx.ClipFields);
   function getImageGeometries(content) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -4390,11 +4426,16 @@ function getModel(ctx) {
   const React = ctx.React;
   return {
     type: "image",
+    ...ctx.clipModel,
     move(content, offset) {
+      var _a, _b;
       content.x += offset.x;
       content.y += offset.y;
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.clip.border, offset);
+      }
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
@@ -4410,15 +4451,18 @@ function getModel(ctx) {
                 c.y += cursor.y - start.y;
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
               }
-            }
+            },
+            ...ctx.getClipContentEditPoints(content, contents)
           ]
         };
       });
     },
-    render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
+    render(content, renderCtx) {
+      const { target, isHoveringOrSelected, transformStrokeWidth } = renderCtx;
       const strokeWidth = transformStrokeWidth(0);
       const fuzzy = isHoveringOrSelected && strokeWidth !== 0;
-      const image = target.renderImage(content.url, content.x, content.y, content.width, content.height);
+      let image = target.renderImage(content.url, content.x, content.y, content.width, content.height);
+      image = ctx.renderClipContent(content, image, renderCtx);
       if (fuzzy) {
         return target.renderGroup([
           target.renderRect(content.x, content.y, content.width, content.height, {
@@ -4430,14 +4474,16 @@ function getModel(ctx) {
       }
       return image;
     },
-    renderIfSelected(content, { color, target, strokeWidth }) {
-      return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth });
+    renderIfSelected(content, renderCtx) {
+      const { color, target, strokeWidth } = renderCtx;
+      const result = target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth });
+      return ctx.renderClipContentIfSelected(content, result, renderCtx);
     },
     getOperatorRenderPosition(content) {
       return content;
     },
     getGeometries: getImageGeometries,
-    propertyPanel(content, update, _, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
           if (isImageContent(c)) {
@@ -4468,7 +4514,8 @@ function getModel(ctx) {
           if (isImageContent(c)) {
             c.url = v;
           }
-        }) })
+        }) }),
+        ...ctx.getClipContentPropertyPanel(content, contents, acquireContent, update)
       };
     },
     isValid: (c, p) => ctx.validate(c, ImageContent, p)
@@ -6712,7 +6759,7 @@ function isPolarArrayContent(content) {
 }
 function getCommand(ctx) {
   function contentSelectable(content, contents) {
-    return !content.readonly && ctx.contentIsDeletable(content, contents);
+    return ctx.contentIsDeletable(content, contents);
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "30", cy: "22", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "67", cy: "23", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "82", cy: "53", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "67", cy: "81", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "28", cy: "79", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "13", cy: "50", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -10695,8 +10742,7 @@ function getCommand(ctx) {
     selectCount: 1,
     icon,
     contentSelectable(content) {
-      var _a;
-      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.isPointIn) !== void 0;
+      return ctx.contentIsClosedPath(content);
     },
     execute({ contents, selected }) {
       contents.forEach((content, index) => {

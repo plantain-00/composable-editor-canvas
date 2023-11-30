@@ -2,6 +2,7 @@ import { getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, pointInPolyg
 import { GeometryLine, geometryLineInPolygon, geometryLineIntersectWithPolygon } from "./intersection"
 import { getPointAndGeometryLineMinimumDistance } from "./perpendicular"
 import { Nullable } from "./types"
+import { maxItems, minItems, number } from "./validators"
 
 /**
  * @public
@@ -9,7 +10,7 @@ import { Nullable } from "./types"
 export function getContentByClickPosition<T>(
   contents: readonly Nullable<T>[],
   position: Position,
-  contentSelectable: (path: number[]) => boolean,
+  contentSelectable: (path: ContentPath) => boolean,
   getModel: (content: T) => {
     getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
       lines: GeometryLine[]
@@ -23,7 +24,7 @@ export function getContentByClickPosition<T>(
   contentVisible?: (content: T) => boolean,
   indexes = contents.map((_, i) => i),
   delta = 3,
-): number[] | undefined {
+): ContentPath | undefined {
   for (let j = indexes.length - 1; j >= 0; j--) {
     const i = indexes[j]
     const content = contents[i]
@@ -105,10 +106,10 @@ export function getContentsByRegion<T>(
       }[]
     },
   } | undefined,
-  contentSelectable?: (index: number[]) => boolean,
+  contentSelectable?: (index: ContentPath) => boolean,
   contentVisible?: (content: T) => boolean,
 ) {
-  const result: number[][] = []
+  const result: ContentPath[] = []
   contents.forEach((content, i) => {
     if (!content) {
       return
@@ -148,3 +149,7 @@ export function getContentsByRegion<T>(
   })
   return result
 }
+
+export type ContentPath = [number] | [number, number]
+
+export const ContentPath = /* @__PURE__ */ minItems(1, /* @__PURE__ */ maxItems(2, [number])) 

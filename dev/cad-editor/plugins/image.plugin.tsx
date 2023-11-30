@@ -4,10 +4,10 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 
-export type ImageContent = model.BaseContent<'image'> & core.Image
+export type ImageContent = model.BaseContent<'image'> & core.Image & model.ClipFields
 
 export function getModel(ctx: PluginContext): model.Model<ImageContent> {
-  const ImageContent = ctx.and(ctx.BaseContent('image'), ctx.Image)
+  const ImageContent = ctx.and(ctx.BaseContent('image'), ctx.Image, ctx.ClipFields)
   function getImageGeometries(content: Omit<ImageContent, "type">) {
     return ctx.getGeometriesFromCache(content, () => {
       const points = [
@@ -33,11 +33,15 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
   const React = ctx.React
   return {
     type: 'image',
+    ...ctx.clipModel,
     move(content, offset) {
       content.x += offset.x
       content.y += offset.y
+      if (content.clip) {
+        ctx.getContentModel(content.clip.border)?.move?.(content.clip.border, offset)
+      }
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {
           editPoints: [
@@ -54,14 +58,17 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
               },
             },
+            ...ctx.getClipContentEditPoints(content, contents),
           ],
         }
       })
     },
-    render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
+    render(content, renderCtx) {
+      const { target, isHoveringOrSelected, transformStrokeWidth } = renderCtx
       const strokeWidth = transformStrokeWidth(0)
       const fuzzy = isHoveringOrSelected && strokeWidth !== 0
-      const image = target.renderImage(content.url, content.x, content.y, content.width, content.height)
+      let image = target.renderImage(content.url, content.x, content.y, content.width, content.height)
+      image = ctx.renderClipContent(content, image, renderCtx)
       if (fuzzy) {
         return target.renderGroup([
           target.renderRect(content.x, content.y, content.width, content.height, {
@@ -73,14 +80,16 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
       }
       return image
     },
-    renderIfSelected(content, { color, target, strokeWidth }) {
-      return target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth })
+    renderIfSelected(content, renderCtx) {
+      const { color, target, strokeWidth } = renderCtx
+      const result = target.renderRect(content.x, content.y, content.width, content.height, { strokeColor: color, dashArray: [4], strokeWidth })
+      return ctx.renderClipContentIfSelected(content, result, renderCtx)
     },
     getOperatorRenderPosition(content) {
       return content
     },
     getGeometries: getImageGeometries,
-    propertyPanel(content, update, _, { acquirePoint }) {
+    propertyPanel(content, update, contents, { acquirePoint, acquireContent }) {
       return {
         from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isImageContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isImageContent(c)) { c.x = v } })} />,
@@ -88,6 +97,7 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
         width: <ctx.NumberEditor value={content.width} setValue={(v) => update(c => { if (isImageContent(c)) { c.width = v } })} />,
         height: <ctx.NumberEditor value={content.height} setValue={(v) => update(c => { if (isImageContent(c)) { c.height = v } })} />,
         url: <ctx.StringEditor value={content.url} setValue={(v) => update(c => { if (isImageContent(c)) { c.url = v } })} />,
+        ...ctx.getClipContentPropertyPanel(content, contents, acquireContent, update),
       }
     },
     isValid: (c, p) => ctx.validate(c, ImageContent, p),
