@@ -1,26 +1,27 @@
 import { Patch } from "immer"
 import React from "react"
-import { Nullable, Position, prependPatchPath, SelectPath, Size, Transform } from "../../src"
-import { BaseContent, fixedInputStyle, SnapTarget } from "./model"
+import { ContentPath, Nullable, Position, prependPatchPath, SelectPath, Size, Transform } from "../../src"
+import { BaseContent, fixedInputStyle, PartRef, Select, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
   type?: CommandType[]
   useCommand?(props: {
     onEnd: (options?: Partial<{
-      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
+      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
-      result?: unknown
     }>) => void,
     transform: (p: Position) => Position,
     type: string | undefined,
-    selected: { content: BaseContent, path: number[] }[],
+    selected: { content: BaseContent, path: ContentPath }[],
     scale: number,
     strokeStyleId: number | undefined,
     fillStyleId: number | undefined,
     textStyleId: number | undefined,
     contents: readonly Nullable<BaseContent>[],
     backgroundColor: number,
+    acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
+    acquireRegion: (handle: (region: Position[]) => void) => void,
   }): {
     onStart(p: Position, target?: SnapTarget): void
     onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
@@ -70,22 +71,23 @@ export function getCommand(name: string): Command | undefined {
 export function useCommands(
   onEnd: (
     options?: Partial<{
-      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly number[][]) => void,
+      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
       nextCommand?: string,
       repeatedly?: boolean,
-      result?: unknown
     }>
   ) => void,
   transform: (p: Position) => Position,
   inputFixed: boolean | undefined,
   operation: string | undefined,
-  selected: { content: BaseContent, path: number[] }[],
+  selected: { content: BaseContent, path: ContentPath }[],
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
   textStyleId: number | undefined,
   contents: readonly Nullable<BaseContent>[],
   backgroundColor: number,
+  acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
+  acquireRegion: (handle: (region: Position[]) => void) => void,
 ) {
   const commandInputs: JSX.Element[] = []
   const masks: JSX.Element[] = []
@@ -126,6 +128,8 @@ export function useCommands(
         textStyleId,
         contents,
         backgroundColor,
+        acquireContent,
+        acquireRegion,
       })
       if (!type) return
       if (mask) {

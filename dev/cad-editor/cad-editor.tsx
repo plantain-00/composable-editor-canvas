@@ -1,9 +1,9 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, is, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath } from '../../src'
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -51,10 +51,9 @@ export const CADEditor = React.forwardRef((props: {
     {},
     (p, s) => {
       if (p?.type === 'command') {
-        if (p.name === 'acquire content') {
-          commandResultHandler.current?.(s)
-          commandResultHandler.current = undefined
-          setSelected()
+        if (acquireContentHandler.current) {
+          acquireContentHandler.current?.(s)
+          acquireContentHandler.current = undefined
           return true
         }
         const command = getCommand(p.name)
@@ -64,6 +63,7 @@ export const CADEditor = React.forwardRef((props: {
             command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId, width, height, transform })
           })
           setSelected()
+          resetOperation()
           return true
         }
       }
@@ -182,7 +182,9 @@ export const CADEditor = React.forwardRef((props: {
   const [yOffset, setYOffset] = React.useState(0)
   const [scaleOffset, setScaleOffset] = React.useState(1)
   const [time, setTime] = React.useState(0)
-  const commandResultHandler = React.useRef<(r: unknown) => void>()
+  const acquirePointHandler = React.useRef<(r: SnapResult) => void>()
+  const acquireContentHandler = React.useRef<(path: readonly ContentPath[]) => void>()
+  const acquireRegionHandler = React.useRef<(region: Position[]) => void>()
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -299,6 +301,30 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
 
+  const acquirePoint = (handle: (point: Position, target?: model.SnapTarget | undefined) => void) => {
+    acquirePointHandler.current = p => {
+      handle(p.position, p.target)
+    }
+  }
+  const acquireContent = (select: Select, handle: (refs: readonly PartRef[]) => void) => {
+    const current = selected
+    const op = operations.type === 'operate' ? operations.operate : undefined
+    acquireContentHandler.current = p => {
+      handle(p.map(t => ({ id: t[0], partIndex: t[1] })))
+      setSelected(...current)
+      if (op) {
+        operate(op)
+      } else {
+        resetOperation()
+      }
+    }
+    setSelected()
+    selectBeforeOperate(select, { type: 'command', name: '' })
+  }
+  const acquireRegion = (handle: (region: Position[]) => void) => {
+    acquireRegionHandler.current = handle
+  }
+
   const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, ContentPath>(
     (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
@@ -312,7 +338,7 @@ export const CADEditor = React.forwardRef((props: {
   // snap point
   const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset, onSnapOffsetKeyDown } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
-    (operations.type === 'operate' && !getCommand(operations.operate.name)?.pointSnapDisabled) || editPoint !== undefined,
+    (operations.type === 'operate' && !getCommand(operations.operate.name)?.pointSnapDisabled) || editPoint !== undefined || acquirePointHandler.current !== undefined,
     getIntersectionPoints,
     snapTypes,
     getContentModel,
@@ -322,9 +348,7 @@ export const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, onCommandKeyDown, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
-    ({ updateContents, nextCommand, repeatedly, result } = {}) => {
-      commandResultHandler.current?.(result)
-      commandResultHandler.current = undefined
+    ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
@@ -351,6 +375,8 @@ export const CADEditor = React.forwardRef((props: {
     textStyleId,
     editingContent,
     props.backgroundColor,
+    acquireContent,
+    acquireRegion,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
   const reverseTransform = (p: Position) => {
@@ -372,6 +398,11 @@ export const CADEditor = React.forwardRef((props: {
   const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end, e) => {
     if (end) {
       const polygon = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
+      if (acquireRegionHandler.current) {
+        acquireRegionHandler.current(polygon)
+        acquireRegionHandler.current = undefined
+        return
+      }
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
         if (activeViewportIndex !== undefined && activeViewport) {
           const viewport = getViewportByPoints(activeViewport, polygon, activeViewport.rotate)
@@ -552,6 +583,11 @@ export const CADEditor = React.forwardRef((props: {
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = reverseTransform({ x: e.clientX, y: e.clientY })
     const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
+    if (acquirePointHandler.current) {
+      acquirePointHandler.current({ position: p.position, target: p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex, param: p.target.param } : undefined })
+      acquirePointHandler.current = undefined
+      return
+    }
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
       startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex, param: p.target.param } : undefined)
@@ -576,7 +612,7 @@ export const CADEditor = React.forwardRef((props: {
         onStartSelect(e)
       }
     }
-    if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
+    if ((operations.type === 'operate' && operations.operate.name === 'zoom window') || acquireRegionHandler.current) {
       onStartSelect(e)
     }
     setSnapOffset(undefined)
@@ -888,25 +924,8 @@ export const CADEditor = React.forwardRef((props: {
       const propertyPanel = getContentModel(target.content)?.propertyPanel?.(target.content, contentsUpdater, state, {
         startTime,
         activeChild: id === active ? activeChild : undefined,
-        acquirePoint: handle => {
-          commandResultHandler.current = p => {
-            if (is<SnapResult>(p, SnapResult)) {
-              handle(p.position, p.target)
-            }
-          }
-          startOperation({ type: 'command', name: 'acquire point' })
-        },
-        acquireContent: (select, handle) => {
-          const current = selected
-          commandResultHandler.current = p => {
-            if (is<ContentPath[]>(p, [ContentPath])) {
-              handle(p.map(t => ({ id: t[0], partIndex: t[1] } )))
-            }
-            setSelected(...current)
-          }
-          setSelected()
-          selectBeforeOperate(select, { type: 'command', name: 'acquire content' })
-        },
+        acquirePoint,
+        acquireContent,
       })
       if (propertyPanel) {
         Object.entries(propertyPanel).forEach(([field, value]) => {

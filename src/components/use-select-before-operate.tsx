@@ -29,7 +29,6 @@ export function useSelectBeforeOperate<TSelect extends { count?: number, selecta
   const startNextOperation = (s = selected) => {
     if (operations.type === 'select then operate') {
       if (executeOperation(operations.operate, s)) {
-        resetOperation()
         return
       }
       setOperations({ type: 'operate', operate: operations.operate })
