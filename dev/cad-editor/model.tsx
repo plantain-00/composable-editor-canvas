@@ -1411,7 +1411,7 @@ export const PartRef = {
   partIndex: optional(number),
 }
 
-export function getRefPart<T extends BaseContent>(
+export function getRefPart<T extends BaseContent = BaseContent>(
   partRef: PartRef | undefined,
   contents: readonly Nullable<BaseContent>[],
   filter: (content: BaseContent) => content is T = (c): c is T => true,
