@@ -1567,6 +1567,7 @@ export function getStrokeRenderOptionsFromRenderContext<V, P>(
     strokeColor,
     strokeWidth: transformedStrokeWidth,
     strokeOpacity,
+    dashArray: strokeStyleContent.dashArray,
     ...(fuzzy ? fuzzyStyle : {}),
   }
   const fillOptions: Partial<PathOptions<V>> = {

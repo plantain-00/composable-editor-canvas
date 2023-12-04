@@ -6555,6 +6555,131 @@ export {
   isPenContent
 };
 `,
+`// dev/cad-editor/plugins/point.plugin.tsx
+function getModel(ctx) {
+  const PointContent = ctx.and(ctx.BaseContent("point"), ctx.Position);
+  function getPointGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      return {
+        lines: [[content, content]],
+        bounding: ctx.getPointsBounding([content]),
+        renderingLines: []
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "point",
+    move(content, offset) {
+      content.x += offset.x;
+      content.y += offset.y;
+    },
+    rotate(content, center, angle) {
+      const p = ctx.rotatePositionByCenter(content, center, -angle);
+      content.x = p.x;
+      content.y = p.y;
+    },
+    mirror(content, line) {
+      const p = ctx.getSymmetryPoint(content, line);
+      content.x = p.x;
+      content.y = p.y;
+    },
+    render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
+      const strokeWidth = transformStrokeWidth(1);
+      const fuzzy = isHoveringOrSelected && strokeWidth !== 1;
+      const result = target.renderCircle(content.x, content.y, 1, { fillColor: 0 });
+      if (fuzzy) {
+        return target.renderGroup([
+          target.renderCircle(content.x, content.y, strokeWidth, {
+            fillColor: 0,
+            strokeWidth: 0,
+            fillOpacity: ctx.fuzzyStyle.strokeOpacity
+          }),
+          result
+        ]);
+      }
+      return result;
+    },
+    getOperatorRenderPosition(content) {
+      return content;
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        return {
+          editPoints: [
+            {
+              x: content.x,
+              y: content.y,
+              cursor: "move",
+              type: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isPointContent(c)) {
+                  return;
+                }
+                c.x += cursor.x - start.x;
+                c.y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            }
+          ]
+        };
+      });
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => [{ x: content.x, y: content.y, type: "endpoint" }]);
+    },
+    getGeometries: getPointGeometries,
+    propertyPanel(content, update, _, { acquirePoint }) {
+      return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isPointContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isPointContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isPointContent(c)) {
+            c.y = v;
+          }
+        }) })
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, PointContent, p)
+  };
+}
+function isPointContent(content) {
+  return content.type === "point";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "44", cy: "48", r: "4", strokeWidth: "2", vectorEffect: "non-scaling-stroke", fill: "none", stroke: "currentColor" }));
+  return [
+    {
+      name: "create point",
+      icon,
+      useCommand({ onEnd }) {
+        return {
+          onStart: (p) => {
+            onEnd({
+              updateContents: (contents) => contents.push({ x: p.x, y: p.y, type: "point" })
+            });
+          }
+        };
+      },
+      selectCount: 0
+    }
+  ];
+}
+export {
+  getCommand,
+  getModel,
+  isPointContent
+};
+`,
 `// dev/cad-editor/plugins/polar-array.plugin.tsx
 function getModel(ctx) {
   const PolarArrayContent = ctx.and(ctx.BaseContent("polar array"), ctx.ContainerFields, {

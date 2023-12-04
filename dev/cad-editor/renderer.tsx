@@ -72,6 +72,7 @@ export function Renderer(props: {
       pattern: () => target.renderPath(fillPattern.lines, {
         strokeColor: (fillPattern.strokeColor !== undefined ? transformColor(fillPattern.strokeColor) : undefined) ?? defaultStrokeColor,
         strokeOpacity: fillPattern.strokeOpacity,
+        lineCap: 'square'
       })
     }))
   }
