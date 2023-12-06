@@ -324,6 +324,13 @@ export const CADEditor = React.forwardRef((props: {
   const acquireRegion = (handle: (region: Position[]) => void) => {
     acquireRegionHandler.current = handle
   }
+  const transformPosition = (p: Position) => {
+    if (transformViewport) {
+      p = transformViewport(p)
+    }
+    p = core.transformPosition(p, transform)
+    return p
+  }
 
   const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, ContentPath>(
     (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
@@ -347,7 +354,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, onCommandKeyDown, commandInputs, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
+  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, onCommandKeyDown, commandInputs, panels, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -377,6 +384,7 @@ export const CADEditor = React.forwardRef((props: {
     props.backgroundColor,
     acquireContent,
     acquireRegion,
+    transformPosition,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
   const reverseTransform = (p: Position) => {
@@ -384,13 +392,6 @@ export const CADEditor = React.forwardRef((props: {
     if (reverseTransformViewport) {
       p = reverseTransformViewport(p)
     }
-    return p
-  }
-  const transformPosition = (p: Position) => {
-    if (transformViewport) {
-      p = transformViewport(p)
-    }
-    p = core.transformPosition(p, transform)
     return p
   }
 
@@ -1031,6 +1032,7 @@ export const CADEditor = React.forwardRef((props: {
         {commandMasks}
         {!snapOffsetActive && selectionInput}
         {!readOnly && !snapOffsetActive && commandInputs}
+        {panels}
         {!readOnly && snapOffsetInput}
       </div>
       {dragSelectMask}

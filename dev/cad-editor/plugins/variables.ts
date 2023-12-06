@@ -10372,34 +10372,106 @@ function getCommand(ctx) {
   return {
     name: "create text",
     icon,
-    useCommand({ onEnd, type, scale, textStyleId }) {
-      const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
-        type === "create text",
-        (c) => onEnd({
-          updateContents: (contents) => contents.push({
-            type: "text",
-            textStyleId,
-            ...c
-          })
-        }),
-        {
-          scale
-        }
-      );
+    useCommand({ onEnd, type, scale, textStyleId, transformPosition, contents }) {
+      const [start, setStart] = React.useState();
+      const [cursor, setCursor] = React.useState();
+      const [text, setText] = React.useState();
+      const reset = () => {
+        setText(void 0);
+        setStart(void 0);
+        setCursor(void 0);
+      };
       const assistentContents = [];
-      if (text) {
-        assistentContents.push({
-          type: "text",
-          textStyleId,
-          ...text
-        });
+      let panel;
+      if (type) {
+        if (text) {
+          assistentContents.push(text);
+          const p = transformPosition(text);
+          const textStyleContent = ctx.getTextStyleContent(text, contents);
+          const fontSize = textStyleContent.fontSize * scale;
+          if (text.width) {
+            panel = /* @__PURE__ */ React.createElement(
+              ctx.TextEditor,
+              {
+                fontSize,
+                width: text.width * scale,
+                color: textStyleContent.color,
+                fontFamily: textStyleContent.fontFamily,
+                align: textStyleContent.align,
+                lineHeight: textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : void 0,
+                onCancel: reset,
+                x: p.x,
+                y: p.y,
+                value: text.text,
+                setValue: (v) => setText({
+                  ...text,
+                  text: v
+                })
+              }
+            );
+          }
+        } else if (cursor) {
+          if (start) {
+            assistentContents.push({ type: "polygon", points: ctx.getPolygonFromTwoPointsFormRegion(ctx.getTwoPointsFormRegion(start, cursor)), dashArray: [4 / scale] });
+            assistentContents.push({
+              type: "text",
+              text: "abc",
+              textStyleId,
+              color: 0,
+              fontSize: 16 / scale,
+              fontFamily: "monospace",
+              x: Math.min(start.x, cursor.x),
+              y: Math.min(start.y, cursor.y),
+              width: Math.abs(start.x - cursor.x)
+            });
+          } else {
+            assistentContents.push({
+              type: "text",
+              text: "abc",
+              textStyleId,
+              color: 0,
+              fontSize: 16 / scale,
+              fontFamily: "monospace",
+              x: cursor.x,
+              y: cursor.y,
+              width: 100
+            });
+          }
+        }
       }
       return {
-        onStart: onClick,
-        input,
-        onMove,
+        onStart: (p) => {
+          if (!type)
+            return;
+          if (text) {
+            onEnd({ updateContents: (contents2) => contents2.push(text) });
+            reset();
+            return;
+          }
+          if (start) {
+            setText({
+              type: "text",
+              text: "",
+              textStyleId,
+              color: 0,
+              fontSize: 16 / scale,
+              fontFamily: "monospace",
+              x: Math.min(start.x, p.x),
+              y: Math.min(start.y, p.y),
+              width: Math.abs(start.x - p.x)
+            });
+          } else {
+            setStart(p);
+          }
+        },
+        onMove: (p) => {
+          if (!type)
+            return;
+          setCursor(p);
+        },
         assistentContents,
-        reset
+        reset,
+        panel
       };
     },
     selectCount: 0,

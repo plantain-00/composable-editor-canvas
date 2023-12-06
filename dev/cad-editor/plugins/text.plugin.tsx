@@ -3,6 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import type { PolygonContent } from './polygon.plugin'
 
 export type TextContent = model.BaseContent<'text'> & core.Position & model.TextFields & {
   text: string
@@ -228,34 +229,101 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create text',
     icon,
-    useCommand({ onEnd, type, scale, textStyleId }) {
-      const { text, onClick, onMove, input, reset } = ctx.useTextClickCreate(
-        type === 'create text',
-        (c) => onEnd({
-          updateContents: (contents) => contents.push({
-            type: 'text',
-            textStyleId,
-            ...c,
-          } as TextContent)
-        }),
-        {
-          scale,
+    useCommand({ onEnd, type, scale, textStyleId, transformPosition, contents }) {
+      const [start, setStart] = React.useState<core.Position>()
+      const [cursor, setCursor] = React.useState<core.Position>()
+      const [text, setText] = React.useState<TextContent>()
+      const reset = () => {
+        setText(undefined)
+        setStart(undefined)
+        setCursor(undefined)
+      }
+      const assistentContents: (TextContent | PolygonContent)[] = []
+      let panel: JSX.Element | undefined
+      if (type) {
+        if (text) {
+          assistentContents.push(text)
+          const p = transformPosition(text)
+          const textStyleContent = ctx.getTextStyleContent(text, contents)
+          const fontSize = textStyleContent.fontSize * scale
+          if (text.width) {
+            panel = <ctx.TextEditor
+              fontSize={fontSize}
+              width={text.width * scale}
+              color={textStyleContent.color}
+              fontFamily={textStyleContent.fontFamily}
+              align={textStyleContent.align}
+              lineHeight={textStyleContent.lineHeight ? textStyleContent.lineHeight * scale : undefined}
+              onCancel={reset}
+              x={p.x}
+              y={p.y}
+              value={text.text}
+              setValue={v => setText({
+                ...text,
+                text: v
+              })}
+            />
+          }
+        } else if (cursor) {
+          if (start) {
+            assistentContents.push({ type: 'polygon', points: ctx.getPolygonFromTwoPointsFormRegion(ctx.getTwoPointsFormRegion(start, cursor)), dashArray: [4 / scale] })
+            assistentContents.push({
+              type: 'text',
+              text: 'abc',
+              textStyleId,
+              color: 0x000000,
+              fontSize: 16 / scale,
+              fontFamily: 'monospace',
+              x: Math.min(start.x, cursor.x),
+              y: Math.min(start.y, cursor.y),
+              width: Math.abs(start.x - cursor.x),
+            })
+          } else {
+            assistentContents.push({
+              type: 'text',
+              text: 'abc',
+              textStyleId,
+              color: 0x000000,
+              fontSize: 16 / scale,
+              fontFamily: 'monospace',
+              x: cursor.x,
+              y: cursor.y,
+              width: 100,
+            })
+          }
         }
-      )
-      const assistentContents: (TextContent)[] = []
-      if (text) {
-        assistentContents.push({
-          type: 'text',
-          textStyleId,
-          ...text,
-        })
       }
       return {
-        onStart: onClick,
-        input,
-        onMove,
+        onStart: (p) => {
+          if (!type) return
+          if (text) {
+            onEnd({ updateContents: (contents) => contents.push(text) })
+            reset()
+            return
+          }
+          if (start) {
+            setText({
+              type: 'text',
+              text: '',
+              textStyleId,
+              color: 0x000000,
+              fontSize: 16 / scale,
+              fontFamily: 'monospace',
+              x: Math.min(start.x, p.x),
+              y: Math.min(start.y, p.y),
+              width: Math.abs(start.x - p.x),
+            })
+          } else {
+            setStart(p)
+          }
+        },
+        onMove: (p) => {
+          if (!type) return
+          setCursor(p)
+        },
         assistentContents,
         reset,
+        panel,
       }
     },
     selectCount: 0,
