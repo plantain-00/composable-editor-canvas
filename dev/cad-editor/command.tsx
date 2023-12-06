@@ -22,6 +22,7 @@ export interface Command extends CommandType {
     backgroundColor: number,
     acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
     acquireRegion: (handle: (region: Position[]) => void) => void,
+    transformPosition: (p: Position) => Position,
   }): {
     onStart(p: Position, target?: SnapTarget): void
     onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
@@ -31,6 +32,7 @@ export interface Command extends CommandType {
     mask?: JSX.Element
     input?: React.ReactElement<{ children: React.ReactNode[] }>
     subcommand?: JSX.Element
+    panel?: JSX.Element
     updateSelectedContent?(content: Readonly<BaseContent>, contents: readonly Nullable<BaseContent>[], selected: BaseContent[]): {
       assistentContents?: BaseContent[]
       newContents?: BaseContent[]
@@ -88,8 +90,10 @@ export function useCommands(
   backgroundColor: number,
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   acquireRegion: (handle: (region: Position[]) => void) => void,
+  transformPosition: (p: Position) => Position
 ) {
   const commandInputs: JSX.Element[] = []
+  const panels: JSX.Element[] = []
   const masks: JSX.Element[] = []
   const onMoves: ((p: Position, viewportPosition?: Position, target?: SnapTarget) => void)[] = []
   const onMouseDowns: ((p: Position) => void)[] = []
@@ -117,7 +121,7 @@ export function useCommands(
     }
     if (command.useCommand) {
       const type = operation && (operation === command.name || command.type?.some((c) => c.name === operation)) ? operation : undefined
-      const { onStart, mask, updateSelectedContent, assistentContents, input, subcommand, onMove, onMouseDown, onMouseUp, onKeyDown, lastPosition, reset } = command.useCommand({
+      const { onStart, mask, updateSelectedContent, assistentContents, panel, input, subcommand, onMove, onMouseDown, onMouseUp, onKeyDown, lastPosition, reset } = command.useCommand({
         onEnd,
         transform,
         type,
@@ -130,6 +134,7 @@ export function useCommands(
         backgroundColor,
         acquireContent,
         acquireRegion,
+        transformPosition,
       })
       if (!type) return
       if (mask) {
@@ -194,11 +199,15 @@ export function useCommands(
         props.style = fixedInputStyle
         commandInputs.push(React.cloneElement(subcommand, props))
       }
+      if (panel) {
+        panels.push(React.cloneElement(panel, { key: command.name }))
+      }
     }
   })
   return {
     commandMasks: masks,
     commandInputs,
+    panels,
     updateSelectedContents(contents: readonly Nullable<BaseContent>[]) {
       const assistentContents: BaseContent[] = []
       const patches: [Patch[], Patch[]][] = []
