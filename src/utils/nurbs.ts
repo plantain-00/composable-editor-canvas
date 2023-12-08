@@ -353,6 +353,12 @@ export function getTangencyParamToNurbsCurve({ x: a, y: b }: Position, curve: Nu
   return newtonIterate(u0, f1, f2, delta)
 }
 
+export function getNurbsCurveDerivatives(curve: NurbsCurve, t: number): [Position, Position] {
+  const nurbs = toVerbNurbsCurve(curve)
+  const [[x, y], [x1, y1]] = nurbs.derivatives(t)
+  return [{ x, y }, { x: x1, y: y1 }]
+}
+
 export function getPointAndNurbsCurveNearestPointAndDistance(position: Position, curve: NurbsCurve) {
   const nurbs = toVerbNurbsCurve(curve)
   const u = nurbs.closestParam(toVerbPoint(position))

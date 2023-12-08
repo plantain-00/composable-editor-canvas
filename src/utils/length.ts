@@ -1,8 +1,10 @@
-import { getPartOfBezierCurve, getPartOfQuadraticCurve } from "./bezier"
+import { getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePointAtPercent } from "./bezier"
 import { newtonIterate } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, ellipseToEllipseArc, getFormattedEndAngle, getTwoNumberCenter } from "./geometry"
-import { BezierCurve, QuadraticCurve } from "./intersection"
+import { Arc, Circle, Ellipse, EllipseArc, Position, ellipseToEllipseArc, getCirclePointAtRadian, getEllipsePointAtRadian, getFormattedEndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsDistance, getTwoPointsRadian } from "./geometry"
+import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
+import { getNurbsCurveDerivatives, getNurbsCurveLength, getNurbsCurveParamByLength } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
+import { getBezierCurveTangentRadianAtPercent, getCircleTangentRadianAtRadian, getEllipseTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
 export function getCircleLength(circle: Circle) {
   return 2 * Math.PI * circle.r
@@ -125,4 +127,101 @@ export function getBezierCurvePercentByLength(curve: BezierCurve, length: number
   // dz/dt = sqrt(e1 t t t t + e2 t t t + e3 t t + e4 t + e5)
   const f2 = (t: number) => Math.sqrt(e1 * t * t * t * t + e2 * t * t * t + e3 * t * t + e4 * t + e5)
   return newtonIterate(0.5, f1, f2, delta)
+}
+
+export function getGeometryLinesPointAndTangentRadianByLength(lines: GeometryLine[], length: number, lengths?: number[]): { point: Position, radian: number } | undefined {
+  for (const [i, line] of lines.entries()) {
+    if (Array.isArray(line)) {
+      const distance = lengths ? lengths[i] : getTwoPointsDistance(...line)
+      if (length <= distance) {
+        return {
+          point: getPointByLengthAndDirection(line[0], length, line[1]),
+          radian: getTwoPointsRadian(line[1], line[0]),
+        }
+      }
+      length -= distance
+    } else if (line.type === 'arc') {
+      const distance = lengths ? lengths[i] : getArcLength(line.curve)
+      if (length <= distance) {
+        const radian = getArcRadianByLength(line.curve, length)
+        return {
+          point: getCirclePointAtRadian(line.curve, radian),
+          radian: getCircleTangentRadianAtRadian(line.curve, radian),
+        }
+      }
+      length -= distance
+    } else if (line.type === 'ellipse arc') {
+      const distance = lengths ? lengths[i] : getEllipseArcLength(line.curve)
+      if (length <= distance) {
+        const radian = getEllipseArcRadianByLength(line.curve, length)
+        if (radian === undefined) return
+        return {
+          point: getEllipsePointAtRadian(line.curve, radian),
+          radian: getEllipseTangentRadianAtRadian(line.curve, radian),
+        }
+      }
+      length -= distance
+    } else if (line.type === 'quadratic curve') {
+      const distance = lengths ? lengths[i] : getQuadraticCurveLength(line.curve)
+      if (length <= distance) {
+        const percent = getQuadraticCurvePercentByLength(line.curve, length)
+        if (percent === undefined) return
+        return {
+          point: getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, percent),
+          radian: getQuadraticCurveTangentRadianAtPercent(line.curve, percent),
+        }
+      }
+      length -= distance
+    } else if (line.type === 'bezier curve') {
+      const distance = lengths ? lengths[i] : getBezierCurveLength(line.curve)
+      if (length <= distance) {
+        const percent = getBezierCurvePercentByLength(line.curve, length)
+        if (percent === undefined) return
+        return {
+          point: getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, percent),
+          radian: getBezierCurveTangentRadianAtPercent(line.curve, percent)
+        }
+      }
+      length -= distance
+    } else if (line.type === 'nurbs curve') {
+      const distance = lengths ? lengths[i] : getNurbsCurveLength(line.curve)
+      if (length <= distance) {
+        const param = getNurbsCurveParamByLength(line.curve, length)
+        const [point, point1] = getNurbsCurveDerivatives(line.curve, param)
+        return {
+          point,
+          radian: Math.atan2(point1.y, point1.x),
+        }
+      }
+      length -= distance
+    }
+  }
+  return
+}
+
+export function getGeometryLineLength(line: GeometryLine): number {
+  if (Array.isArray(line)) {
+    return getTwoPointsDistance(...line)
+  }
+  if (line.type === 'arc') {
+    return getArcLength(line.curve)
+  }
+  if (line.type === 'ellipse arc') {
+    return getEllipseArcLength(line.curve)
+  }
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurveLength(line.curve)
+  }
+  if (line.type === 'bezier curve') {
+    return getBezierCurveLength(line.curve)
+  }
+  return getNurbsCurveLength(line.curve)
+}
+
+export function getGeometryLinesLength(lines: GeometryLine[]): number {
+  let result = 0
+  for (const line of lines) {
+    result += getGeometryLineLength(line)
+  }
+  return result
 }
