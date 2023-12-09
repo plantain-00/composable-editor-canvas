@@ -1,12 +1,13 @@
 {
   "name": "composable-editor-canvas",
   "description": "A composable editor canvas library.",
+  "type": "module",
   "scripts": {
     "build": "clean-scripts build",
     "start": "clean-scripts start",
     "lint": "clean-scripts lint",
     "math": "types-as-schema -p ./types-as-schema.math.ts",
-    "test": "ava",
+    "test": "NODE_OPTIONS='--loader=tsx' ava",
     "bundle": "webpack --config dev/webpack.bundle.js",
     "release": "clean-release",
     "fix": "clean-scripts fix"
