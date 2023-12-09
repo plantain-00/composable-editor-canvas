@@ -5922,6 +5922,211 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/path-array.plugin.tsx
+function getModel(ctx) {
+  const PathArrayContent = ctx.and(ctx.BaseContent("path array"), ctx.ContainerFields, {
+    path: ctx.PartRef,
+    length: ctx.number,
+    aligned: ctx.optional(ctx.boolean)
+  });
+  const allContentsCache = new ctx.WeakmapCache2();
+  const getAllContentsFromCache = (content, contents) => {
+    const path = ctx.getRefPart(content.path, contents);
+    if (!path)
+      return [];
+    return allContentsCache.get(content, path, () => {
+      var _a, _b, _c, _d;
+      const lines = (_b = (_a = ctx.getContentModel(path)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, path, contents).lines;
+      if (!lines)
+        return [];
+      const boundings = [];
+      for (const child of content.contents) {
+        if (child) {
+          const geometries = (_d = (_c = ctx.getContentModel(child)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, child, contents);
+          if (geometries == null ? void 0 : geometries.bounding) {
+            boundings.push(geometries.bounding);
+          }
+        }
+      }
+      const bounding = ctx.mergeBoundings(boundings);
+      const center = ctx.getTwoPointCenter(bounding.start, bounding.end);
+      const result = [];
+      const lengths = lines.map((line) => ctx.getGeometryLineLength(line));
+      const totalLength = lengths.reduce((p, c) => p + c, 0);
+      for (let length = 0; length <= totalLength; length += content.length) {
+        const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length);
+        if (r) {
+          result.push(...content.contents.map((child) => {
+            var _a2, _b2;
+            if (!child)
+              return;
+            const model = ctx.getContentModel(child);
+            if (!model)
+              return;
+            const bounding2 = (_b2 = (_a2 = model.getGeometries) == null ? void 0 : _a2.call(model, child, contents)) == null ? void 0 : _b2.bounding;
+            if (!bounding2)
+              return;
+            const move = model.move;
+            if (!move)
+              return;
+            return ctx.produce(child, (draft) => {
+              var _a3;
+              move(draft, { x: -center.x + r.point.x, y: -center.y + r.point.y });
+              if (content.aligned) {
+                (_a3 = model.rotate) == null ? void 0 : _a3.call(model, draft, r.point, ctx.radianToAngle(r.radian), contents);
+              }
+            });
+          }));
+        }
+      }
+      return result;
+    });
+  };
+  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, (c) => getAllContentsFromCache(c, contents));
+  const React = ctx.React;
+  return {
+    type: "path array",
+    ...ctx.containerModel,
+    move: ctx.getContainerMove,
+    rotate: ctx.getContainerRotate,
+    explode(content, contents) {
+      return ctx.getContentsExplode(getAllContentsFromCache(content, contents));
+    },
+    break(content, points, contents) {
+      return ctx.getContentsBreak(getAllContentsFromCache(content, contents), points, contents);
+    },
+    render(content, renderCtx) {
+      return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx));
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getContentsSnapPoints(content, contents, (c) => getAllContentsFromCache(c, contents));
+    },
+    getGeometries,
+    propertyPanel(content, update, contents, { acquireContent }) {
+      return {
+        path: [
+          /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquireContent({ count: 1, selectable: (v) => pathContentSelectable(ctx, ctx.getContentByIndex(contents, v), contents) }, (r) => update((c) => {
+            if (isPathArrayContent(c)) {
+              c.path = r[0];
+            }
+          })) }, "select"),
+          typeof content.path.id === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.path.id, setValue: (v) => update((c) => {
+            if (isPathArrayContent(c)) {
+              c.path.id = v;
+            }
+          }) }) : void 0
+        ],
+        length: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.length, setValue: (v) => update((c) => {
+          if (isPathArrayContent(c)) {
+            c.length = v;
+          }
+        }) }),
+        aligned: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.aligned === true, setValue: (v) => update((c) => {
+          if (isPathArrayContent(c)) {
+            c.aligned = v ? true : void 0;
+          }
+        }) }),
+        ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update)
+      };
+    },
+    getRefIds: (content) => typeof content.path === "number" ? [content.path] : [],
+    updateRefId(content, update) {
+      if (content.path) {
+        const newRefId = update(content.path.id);
+        if (newRefId !== void 0) {
+          content.path.id = newRefId;
+        }
+      }
+    },
+    isValid: (c, p) => ctx.validate(c, PathArrayContent, p)
+  };
+}
+function isPathArrayContent(content) {
+  return content.type === "path array";
+}
+function pathContentSelectable(ctx, content, contents) {
+  var _a, _b;
+  if (!content)
+    return false;
+  const geometries = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents);
+  if (!geometries)
+    return false;
+  return geometries.lines.length > 0;
+}
+function getCommand(ctx) {
+  function contentSelectable(content, contents) {
+    return ctx.contentIsDeletable(content, contents);
+  }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "11,89 92,8", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "11", cy: "89", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "36", cy: "64", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "61", cy: "39", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "86", cy: "14", r: "12", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create path array",
+    useCommand({ type, onEnd, acquireContent, selected, contents }) {
+      const target = React.useRef();
+      const path = React.useRef();
+      const reset = () => {
+        target.current = void 0;
+        path.current = void 0;
+      };
+      React.useEffect(() => {
+        if (!type)
+          return;
+        if (!target.current) {
+          target.current = selected.map((s) => s.path);
+          acquireContent(
+            {
+              count: 1,
+              selectable: (v) => {
+                const content = ctx.getContentByIndex(contents, v);
+                if (!content)
+                  return false;
+                return pathContentSelectable(ctx, content, contents);
+              }
+            },
+            (r) => {
+              path.current = r[0];
+            }
+          );
+        } else if (path.current) {
+          const children = target.current.map((c) => contents[c[0]]);
+          const bounding = ctx.getContentsBounding(children);
+          if (bounding) {
+            const length = ctx.getTwoPointsDistance(bounding.start, bounding.end);
+            onEnd({
+              updateContents(contents2) {
+                if (target.current && path.current) {
+                  contents2.push({
+                    type: "path array",
+                    contents: children,
+                    path: path.current,
+                    length
+                  });
+                  for (const c of target.current) {
+                    contents2[c[0]] = void 0;
+                  }
+                }
+              }
+            });
+          }
+          reset();
+        }
+      }, [type]);
+      return {
+        onStart() {
+        },
+        reset
+      };
+    },
+    contentSelectable,
+    icon
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isPathArrayContent
+};
+`,
 `// dev/cad-editor/plugins/path.plugin.tsx
 function getModel(ctx) {
   const PathContent = ctx.and(ctx.BaseContent("path"), ctx.StrokeFields, ctx.FillFields, {

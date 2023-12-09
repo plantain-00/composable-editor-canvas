@@ -1,6 +1,11 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
-module.exports = {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default {
   mode: 'production',
   context: __dirname,
   entry: './story-app',
