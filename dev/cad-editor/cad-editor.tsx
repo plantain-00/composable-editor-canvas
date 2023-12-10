@@ -354,7 +354,7 @@ export const CADEditor = React.forwardRef((props: {
   )
 
   // commands
-  const { commandMasks, updateSelectedContents, startCommand, onCommandDown, onCommandUp, onCommandKeyDown, commandInputs, panels, onCommandMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommands } = useCommands(
+  const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -507,7 +507,7 @@ export const CADEditor = React.forwardRef((props: {
       (rect) => ({ type: 'rect', ...rect, angle: 0, strokeColor: 0x00ff00 } as RectContent),
       (points) => ({ type: 'polyline', points, strokeColor: 0x00ff00 } as LineContent),
     ),
-    ...commandAssistentContents,
+    ...(commandAssistentContents || []),
   ]
 
   const result = updateEditPreview()
@@ -524,7 +524,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   }
 
-  const r = updateSelectedContents(state)
+  const r = commandUpdateSelectedContent(state)
   assistentContents.push(...r.assistentContents)
   for (const [patches, reversePatches] of r.patches) {
     previewPatches.push(...patches)
@@ -591,7 +591,7 @@ export const CADEditor = React.forwardRef((props: {
     }
     // if the operation is command, start it
     if (operations.type === 'operate' && operations.operate.type === 'command') {
-      startCommand(operations.operate.name, p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex, param: p.target.param } : undefined)
+      startCommand?.(p.position, p.target ? { id: getContentIndex(p.target.content, state), snapIndex: p.target.snapIndex, param: p.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
       if (editPoint) {
@@ -623,12 +623,12 @@ export const CADEditor = React.forwardRef((props: {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     } else if (e.buttons === 4) {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
-    } else {
-      onCommandDown(reverseTransform({ x: e.clientX, y: e.clientY }))
+    } else if (onCommandMouseDown) {
+      onCommandMouseDown(reverseTransform({ x: e.clientX, y: e.clientY }))
     }
   })
   const onMouseUp = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    onCommandUp(reverseTransform({ x: e.clientX, y: e.clientY }))
+    onCommandMouseUp?.(reverseTransform({ x: e.clientX, y: e.clientY }))
   })
   const onMouseMove = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     const viewportPosition = { x: e.clientX, y: e.clientY }
@@ -636,9 +636,9 @@ export const CADEditor = React.forwardRef((props: {
     const p = reverseTransform(viewportPosition)
     setCursorPosition(p)
     setPosition({ x: Math.round(p.x), y: Math.round(p.y) })
-    if (operations.type === 'operate' && operations.operate.type === 'command') {
+    if (operations.type === 'operate' && operations.operate.type === 'command' && onCommandMouseMove) {
       const s = getSnapPoint(p, editingContent, getContentsInRange, lastPosition)
-      onCommandMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
+      onCommandMouseMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
       let s: core.SnapResult<BaseContent<string>>
@@ -661,7 +661,7 @@ export const CADEditor = React.forwardRef((props: {
     endDragSelect(e)
   })
   useGlobalKeyDown(e => {
-    onCommandKeyDown(e)
+    onCommandKeyDown?.(e)
     onSelectBeforeOperateKeyDown(e)
     onSnapOffsetKeyDown(e)
     if (metaKeyIfMacElseCtrlKey(e)) {
@@ -763,7 +763,7 @@ export const CADEditor = React.forwardRef((props: {
         setActive(undefined)
         setActiveChild(undefined)
       }
-      resetCommands(true)
+      resetCommand?.(true)
       resetEdit()
       resetDragSelect()
       resetDragRotate()
@@ -773,7 +773,7 @@ export const CADEditor = React.forwardRef((props: {
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected) => {
     setLastOperation(p)
-    resetCommands()
+    resetCommand?.()
     if (p.type === 'command') {
       const command = getCommand(p.name)
       if (command) {
@@ -799,9 +799,9 @@ export const CADEditor = React.forwardRef((props: {
       }
     }
     operate(p)
-    if (position) {
+    if (position && onCommandMouseMove) {
       const s = getSnapPoint(position, editingContent, getContentsInRange)
-      onCommandMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
+      onCommandMouseMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
   }
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
@@ -1029,10 +1029,11 @@ export const CADEditor = React.forwardRef((props: {
           <RotationBar onMouseDown={() => startRotate({ x: 51, y: height - 154 })} />
         </div>
         {position && <span style={{ position: 'absolute', right: 0 }}>{position.x},{position.y}</span>}
-        {commandMasks}
+        {commandMask}
         {!snapOffsetActive && selectionInput}
-        {!readOnly && !snapOffsetActive && commandInputs}
-        {panels}
+        {!readOnly && !snapOffsetActive && commandInput}
+        {!readOnly && !snapOffsetActive && commandButtons}
+        {commandPanel}
         {!readOnly && snapOffsetInput}
       </div>
       {dragSelectMask}

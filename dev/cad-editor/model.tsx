@@ -358,6 +358,12 @@ export const fixedInputStyle: React.CSSProperties = {
   left: '190px',
 }
 
+export const fixedButtomStyle: React.CSSProperties = {
+  position: 'absolute',
+  bottom: '30px',
+  left: '190px',
+}
+
 export function getContentByIndex(state: readonly Nullable<BaseContent>[], index: ContentPath) {
   const content = state[index[0]]
   if (!content) {

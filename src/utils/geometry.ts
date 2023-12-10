@@ -1181,3 +1181,27 @@ export function maxmiumBy<T>(values: T[], by: (value: T) => number) {
   }
   return result
 }
+
+export function getArcByStartEnd(from: Position, r: number, largeArc: boolean, sweep: boolean, to: Position): Arc | undefined {
+  const c = getTwoPointCenter(from, to)
+  const distance = getTwoPointsDistance(from, to) / 2
+  if (isZero(distance)) return
+  if (distance > r) {
+    r = distance
+  }
+  let center: Position
+  if (isZero(distance - r)) {
+    center = c
+  } else {
+    const d = Math.sqrt(r ** 2 - distance ** 2)
+    const radian = getTwoPointsRadian(to, from)
+    center = getPointByLengthAndRadian(c, d, radian + Math.PI / 2 * (largeArc === sweep ? -1 : 1))
+  }
+  const circle: Circle = { x: center.x, y: center.y, r }
+  return {
+    ...circle,
+    startAngle: radianToAngle(getCircleRadian(from, circle)),
+    endAngle: radianToAngle(getCircleRadian(to, circle)),
+    counterclockwise: !sweep,
+  }
+}
