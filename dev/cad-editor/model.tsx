@@ -8,6 +8,7 @@ import type { ArcContent } from './plugins/circle-arc.plugin'
 import type { EllipseArcContent } from './plugins/ellipse.plugin'
 import type { PathContent } from './plugins/path.plugin'
 import type { NurbsContent } from './plugins/nurbs.plugin'
+export { math } from '../expression/math'
 
 export interface BaseContent<T extends string = string> {
   type: T
