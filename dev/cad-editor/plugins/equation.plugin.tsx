@@ -3,7 +3,6 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import { CoordinateAxisContent, isCoordinateAxisContent } from './coordinate-axis.plugin'
-import { math } from '../../expression/math'
 
 export type EquationContent = model.BaseContent<'equation'> & model.StrokeFields & model.SegmentCountFields & {
   axisId: number | model.BaseContent
@@ -80,7 +79,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
     propertyPanel(content, update, contents) {
       return {
         dependentVariable: <ctx.EnumEditor value={content.dependentVariable} enums={['x', 'y']} setValue={(v) => update(c => { if (isEquationContent(c)) { c.dependentVariable = v } })} />,
-        expression: <ctx.ExpressionEditor suggestionSources={math} validate={ctx.validateExpression} value={content.expression} setValue={(v) => update(c => { if (isEquationContent(c)) { c.expression = v } })} />,
+        expression: <ctx.ExpressionEditor suggestionSources={ctx.math} validate={ctx.validateExpression} value={content.expression} setValue={(v) => update(c => { if (isEquationContent(c)) { c.expression = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
         ...ctx.getSegmentCountContentPropertyPanel(content, update),
       }

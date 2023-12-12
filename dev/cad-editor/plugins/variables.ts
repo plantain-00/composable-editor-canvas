@@ -3346,441 +3346,6 @@ function isCoordinateAxisContent(content) {
   return content.type === "coordinate axis";
 }
 
-// dev/expression/math.ts
-var math = [
-  {
-    "name": "Math",
-    "members": [
-      {
-        "name": "E",
-        "comment": "The mathematical constant e. This is Euler's number, the base of natural logarithms."
-      },
-      {
-        "name": "LN10",
-        "comment": "The natural logarithm of 10."
-      },
-      {
-        "name": "LN2",
-        "comment": "The natural logarithm of 2."
-      },
-      {
-        "name": "LOG2E",
-        "comment": "The base-2 logarithm of e."
-      },
-      {
-        "name": "LOG10E",
-        "comment": "The base-10 logarithm of e."
-      },
-      {
-        "name": "PI",
-        "comment": "Pi. This is the ratio of the circumference of a circle to its diameter."
-      },
-      {
-        "name": "SQRT1_2",
-        "comment": "The square root of 0.5, or, equivalently, one divided by the square root of 2."
-      },
-      {
-        "name": "SQRT2",
-        "comment": "The square root of 2."
-      },
-      {
-        "name": "abs",
-        "comment": "Returns the absolute value of a number (the value without regard to whether it is positive or negative).\\r\\nFor example, the absolute value of -5 is the same as the absolute value of 5.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression for which the absolute value is needed.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "acos",
-        "comment": "Returns the arc cosine (or inverse cosine) of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "asin",
-        "comment": "Returns the arcsine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "atan",
-        "comment": "Returns the arctangent of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression for which the arctangent is needed.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "atan2",
-        "comment": "Returns the angle (in radians) from the X axis to a point.",
-        "parameters": [
-          {
-            "name": "y",
-            "comment": "A numeric expression representing the cartesian y-coordinate.",
-            "optional": false
-          },
-          {
-            "name": "x",
-            "comment": "A numeric expression representing the cartesian x-coordinate.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "ceil",
-        "comment": "Returns the smallest integer greater than or equal to its numeric argument.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "cos",
-        "comment": "Returns the cosine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "exp",
-        "comment": "Returns e (the base of natural logarithms) raised to a power.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression representing the power of e.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "floor",
-        "comment": "Returns the greatest integer less than or equal to its numeric argument.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "log",
-        "comment": "Returns the natural logarithm (base e) of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "max",
-        "comment": "Returns the larger of a set of supplied numeric expressions.",
-        "parameters": [
-          {
-            "name": "values",
-            "comment": "Numeric expressions to be evaluated.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "min",
-        "comment": "Returns the smaller of a set of supplied numeric expressions.",
-        "parameters": [
-          {
-            "name": "values",
-            "comment": "Numeric expressions to be evaluated.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "pow",
-        "comment": "Returns the value of a base expression taken to a specified power.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "The base value of the expression.",
-            "optional": false
-          },
-          {
-            "name": "y",
-            "comment": "The exponent value of the expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "random",
-        "comment": "Returns a pseudorandom number between 0 and 1.",
-        "parameters": []
-      },
-      {
-        "name": "round",
-        "comment": "Returns a supplied numeric expression rounded to the nearest integer.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "The value to be rounded to the nearest integer.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "sin",
-        "comment": "Returns the sine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "sqrt",
-        "comment": "Returns the square root of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "tan",
-        "comment": "Returns the tangent of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "clz32",
-        "comment": "Returns the number of leading zero bits in the 32-bit binary representation of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "imul",
-        "comment": "Returns the result of 32-bit multiplication of two numbers.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "First number",
-            "optional": false
-          },
-          {
-            "name": "y",
-            "comment": "Second number",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "sign",
-        "comment": "Returns the sign of the x, indicating whether x is positive, negative or zero.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "The numeric expression to test",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "log10",
-        "comment": "Returns the base 10 logarithm of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "log2",
-        "comment": "Returns the base 2 logarithm of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "log1p",
-        "comment": "Returns the natural logarithm of 1 + x.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "expm1",
-        "comment": "Returns the result of (e^x - 1), which is an implementation-dependent approximation to\\r\\nsubtracting 1 from the exponential function of x (e raised to the power of x, where e\\r\\nis the base of the natural logarithms).",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "cosh",
-        "comment": "Returns the hyperbolic cosine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "sinh",
-        "comment": "Returns the hyperbolic sine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "tanh",
-        "comment": "Returns the hyperbolic tangent of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "acosh",
-        "comment": "Returns the inverse hyperbolic cosine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "asinh",
-        "comment": "Returns the inverse hyperbolic sine of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "atanh",
-        "comment": "Returns the inverse hyperbolic tangent of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression that contains an angle measured in radians.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "hypot",
-        "comment": "Returns the square root of the sum of squares of its arguments.",
-        "parameters": [
-          {
-            "name": "values",
-            "comment": "Values to compute the square root for.\\r\\nIf no arguments are passed, the result is +0.\\r\\nIf there is only one argument, the result is the absolute value.\\r\\nIf any argument is +Infinity or -Infinity, the result is +Infinity.\\r\\nIf any argument is NaN, the result is NaN.\\r\\nIf all arguments are either +0 or \\u22120, the result is +0.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "trunc",
-        "comment": "Returns the integral part of the a numeric expression, x, removing any fractional digits.\\r\\nIf x is already an integer, the result is x.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "fround",
-        "comment": "Returns the nearest single precision float representation of a number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      },
-      {
-        "name": "cbrt",
-        "comment": "Returns an implementation-dependent approximation to the cube root of number.",
-        "parameters": [
-          {
-            "name": "x",
-            "comment": "A numeric expression.",
-            "optional": false
-          }
-        ]
-      }
-    ]
-  }
-];
-
 // dev/cad-editor/plugins/equation.plugin.tsx
 function getModel(ctx) {
   const EquationContent = ctx.and(ctx.BaseContent("equation"), ctx.StrokeFields, ctx.SegmentCountFields, {
@@ -3856,7 +3421,7 @@ function getModel(ctx) {
             c.dependentVariable = v;
           }
         }) }),
-        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: math, validate: ctx.validateExpression, value: content.expression, setValue: (v) => update((c) => {
+        expression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: ctx.math, validate: ctx.validateExpression, value: content.expression, setValue: (v) => update((c) => {
           if (isEquationContent(c)) {
             c.expression = v;
           }
@@ -5920,6 +5485,133 @@ function getCommand(ctx) {
 }
 export {
   getCommand
+};
+`,
+`// dev/cad-editor/plugins/coordinate-axis.plugin.tsx
+function isCoordinateAxisContent(content) {
+  return content.type === "coordinate axis";
+}
+
+// dev/cad-editor/plugins/parametric-equation.plugin.tsx
+function getModel(ctx) {
+  const ParametricEquationContent = ctx.and(ctx.BaseContent("parametric equation"), ctx.StrokeFields, ctx.SegmentCountFields, {
+    axisId: ctx.or(ctx.number, ctx.Content),
+    xExpression: ctx.string,
+    yExpression: ctx.string,
+    min: ctx.number,
+    max: ctx.number
+  });
+  const equationCache = new ctx.WeakmapCache2();
+  function getGeometriesFromCache(content, contents) {
+    const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
+    if (axis) {
+      return equationCache.get(content, axis, () => {
+        var _a;
+        if (content.xExpression && content.yExpression) {
+          try {
+            const xExpression = ctx.parseExpression(ctx.tokenizeExpression(content.xExpression));
+            const yExpression = ctx.parseExpression(ctx.tokenizeExpression(content.yExpression));
+            const points = [];
+            const segmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
+            const step = (content.max - content.min) / segmentCount;
+            for (let t = content.min; t <= content.max; t += step) {
+              const x = ctx.evaluateExpression(xExpression, { Math, t });
+              const y = ctx.evaluateExpression(yExpression, { Math, t });
+              if (typeof x === "number" && !isNaN(x) && typeof y === "number" && !isNaN(y)) {
+                points.push({ x: x + axis.x, y: y * (axis.flipY ? -1 : 1) + axis.y });
+              }
+            }
+            const lines = Array.from(ctx.iteratePolylineLines(points));
+            return {
+              points,
+              lines,
+              bounding: ctx.getPointsBounding(points),
+              renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+            };
+          } catch (e) {
+            console.info(e);
+          }
+        }
+        return { lines: [], points: [], renderingLines: [] };
+      });
+    }
+    return { lines: [], points: [], renderingLines: [] };
+  }
+  const React = ctx.React;
+  return {
+    type: "parametric equation",
+    ...ctx.strokeModel,
+    ...ctx.segmentCountModel,
+    render(content, renderCtx) {
+      const { options, contents, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+      const { points } = getGeometriesFromCache(content, contents);
+      return target.renderPolyline(points, options);
+    },
+    getGeometries: getGeometriesFromCache,
+    propertyPanel(content, update, contents) {
+      return {
+        xExpression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: ctx.math, validate: ctx.validateExpression, value: content.xExpression, setValue: (v) => update((c) => {
+          if (isParametricEquationContent(c)) {
+            c.xExpression = v;
+          }
+        }) }),
+        yExpression: /* @__PURE__ */ React.createElement(ctx.ExpressionEditor, { suggestionSources: ctx.math, validate: ctx.validateExpression, value: content.yExpression, setValue: (v) => update((c) => {
+          if (isParametricEquationContent(c)) {
+            c.yExpression = v;
+          }
+        }) }),
+        min: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.min, setValue: (v) => update((c) => {
+          if (isParametricEquationContent(c)) {
+            c.min = v;
+          }
+        }) }),
+        max: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.max, setValue: (v) => update((c) => {
+          if (isParametricEquationContent(c)) {
+            c.max = v;
+          }
+        }) }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getSegmentCountContentPropertyPanel(content, update)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, ParametricEquationContent, p),
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.axisId === "number" ? [content.axisId] : []],
+    updateRefId(content, update) {
+      const newAxisId = update(content.axisId);
+      if (newAxisId !== void 0) {
+        content.axisId = newAxisId;
+      }
+      ctx.updateStrokeRefIds(content, update);
+    }
+  };
+}
+function isParametricEquationContent(content) {
+  return content.type === "parametric equation";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "7,93 88,93", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "7,12 7,93", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "97,93 68,101 68,85", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "7,3 15,32 1,32", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "76,49 76,47 76,46 76,44 76,43 75,41 75,40 74,38 73,37 73,35 72,34 71,33 70,32 69,31 67,29 66,29 65,28 64,27 62,26 61,26 59,25 58,25 56,24 55,24 53,24 51,24 50,24 48,24 47,24 45,25 44,25 42,26 41,26 39,27 38,28 37,29 36,29 34,31 33,32 32,33 31,34 30,35 30,37 29,38 28,40 28,41 27,43 27,44 27,46 27,47 26,49 27,50 27,52 27,53 27,55 28,56 28,58 29,59 30,61 30,62 31,63 32,65 33,66 34,67 36,68 37,69 38,70 39,71 41,71 42,72 44,73 45,73 47,73 48,74 50,74 51,74 53,74 55,74 56,73 58,73 59,73 61,72 62,71 64,71 65,70 66,69 67,68 69,67 70,66 71,65 72,63 73,62 73,61 74,59 75,58 75,56 76,55 76,53 76,52 76,50 76,49", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create parametric equation",
+    icon,
+    execute({ contents, selected }) {
+      contents.push({
+        type: "parametric equation",
+        axisId: selected[0][0],
+        min: 0,
+        max: Math.PI * 2,
+        xExpression: "25 + 25 * Math.cos(t)",
+        yExpression: "25 + 25 * Math.sin(t)"
+      });
+    },
+    contentSelectable: isCoordinateAxisContent,
+    selectCount: 1
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isParametricEquationContent
 };
 `,
 `// dev/cad-editor/plugins/path-array.plugin.tsx
