@@ -152,4 +152,4 @@ export function getContentsByRegion<T>(
 
 export type ContentPath = [number] | [number, number]
 
-export const ContentPath = /* @__PURE__ */ minItems(1, /* @__PURE__ */ maxItems(2, [number])) 
+export const ContentPath = /* @__PURE__ */ minItems(1, /* @__PURE__ */ maxItems(2, [number]))

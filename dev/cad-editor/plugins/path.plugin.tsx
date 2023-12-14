@@ -317,14 +317,6 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getStartPoint: (content) => {
-      const lines = getPathGeometriesFromCache(content).lines
-      return ctx.getGeometryLineStartAndEnd(lines[0]).start
-    },
-    getEndPoint: (content) => {
-      const lines = getPathGeometriesFromCache(content).lines
-      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
-    },
     reverse: (content) => ({
       ...content,
       commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content).lines.map(n => ctx.reverseGeometryLine(n)).reverse()),

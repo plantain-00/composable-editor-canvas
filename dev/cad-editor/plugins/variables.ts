@@ -1543,8 +1543,6 @@ function getModel(ctx) {
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
-      getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.r ** 2 * (radian - Math.sin(radian)) / 2;
@@ -3199,8 +3197,6 @@ function getModel(ctx) {
       isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
-      getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle);
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2;
@@ -4296,8 +4292,6 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, LineContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getStartPoint: (content) => content.points[0],
-    getEndPoint: (content) => content.points[content.points.length - 1],
     reverse: (content) => ({
       ...content,
       points: content.points.slice().reverse()
@@ -5344,14 +5338,6 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getStartPoint: (content) => {
-      const lines = getNurbsGeometries(content).lines;
-      return ctx.getGeometryLineStartAndEnd(lines[0]).start;
-    },
-    getEndPoint: (content) => {
-      const lines = getNurbsGeometries(content).lines;
-      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
-    },
     reverse: (content) => ctx.reverseNurbs(content)
   };
   return [
@@ -6288,14 +6274,6 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getStartPoint: (content) => {
-      const lines = getPathGeometriesFromCache(content).lines;
-      return ctx.getGeometryLineStartAndEnd(lines[0]).start;
-    },
-    getEndPoint: (content) => {
-      const lines = getPathGeometriesFromCache(content).lines;
-      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end;
-    },
     reverse: (content) => ({
       ...content,
       commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content).lines.map((n) => ctx.reverseGeometryLine(n)).reverse())
@@ -10681,6 +10659,7 @@ function getCommand(ctx) {
           setCurrents([]);
         },
         onKeyDown(e) {
+          var _a2, _b2;
           if (e.code === "KeyZ" && ctx.metaKeyIfMacElseCtrlKey(e)) {
             if (e.shiftKey) {
               redo(e);
@@ -10697,9 +10676,12 @@ function getCommand(ctx) {
               if (parentModel == null ? void 0 : parentModel.break) {
                 let points = [];
                 for (const child of children) {
-                  const model = ctx.getContentModel(child);
-                  if ((model == null ? void 0 : model.getStartPoint) && model.getEndPoint) {
-                    points.push(model.getStartPoint(child), model.getEndPoint(child));
+                  const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+                  if (geometries) {
+                    const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines);
+                    if (!ctx.isSamePoint(start, end)) {
+                      points.push(start, end);
+                    }
                   }
                 }
                 points = ctx.deduplicatePosition(points);

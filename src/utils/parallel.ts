@@ -1,9 +1,10 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { getGeometryLineStartAndEnd } from "./break"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, isZero, minimumBy, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
+import { isGeometryLinesClosed, getGeometryLineStartAndEnd, getGeometryLineParamAtPoint } from "./break"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, isZero, minimumBy, minimumsBy, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve, getTwoGeneralFormLinesIntersectionPoint, getTwoGeometryLinesIntersectionPoint } from "./intersection"
+import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
-import { getPerpendicular, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
+import { getPerpendicular, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
@@ -199,11 +200,38 @@ export function getPointSideOfGeometryLine(point: Position, line: GeometryLine):
   return getPointSideOfNurbsCurve(point, line.curve)
 }
 
+/**
+ * 0: same direction
+ * 1: left side
+ * -1: right side
+ */
+export function getRadianSideOfRadian(from: number, to: number) {
+  let radian = to - from
+  if (radian > Math.PI) {
+    radian -= Math.PI * 2
+  } else if (radian < -Math.PI) {
+    radian += Math.PI * 2
+  }
+  return isZero(radian) ? 0 : radian > 0 ? -1 : 1
+}
+
 export function getLinesOffsetDirection(point: Position, lines: GeometryLine[]) {
-  const min = minimumBy(lines.map(line => ({
-    distance: getPointAndGeometryLineMinimumDistance(point, line),
+  const mins = minimumsBy(lines.map(line => ({
+    ...getPointAndGeometryLineNearestPointAndDistance(point, line),
     line,
   })), v => v.distance)
+  let min = mins[0]
+  if (mins.length > 1) {
+    min = minimumBy(mins.map(m => {
+      const param = getGeometryLineParamAtPoint(m.point, m.line)
+      const length = isZero(param) ? 0.1 : getGeometryLineLength(m.line) - 0.1
+      const p = getGeometryLinesPointAndTangentRadianByLength([m.line], length)
+      return {
+        ...m,
+        distance: p ? getTwoPointsDistance(p.point, point) : m.distance,
+      }
+    }), v => v.distance)
+  }
   return pointSideToIndex(getPointSideOfGeometryLine(point, min.line))
 }
 
@@ -252,9 +280,7 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
   if (isZero(distance)) {
     return [lines]
   }
-  const first = getGeometryLineStartAndEnd(lines[0]).start
-  const last = getGeometryLineStartAndEnd(lines[lines.length - 1]).end
-  const closed = isSamePoint(first, last) && lines.length > 1
+  const closed = isGeometryLinesClosed(lines) && lines.length > 1
   const index = getLinesOffsetDirection(point, lines)
   const parallels = lines.map(line => getParallelGeometryLineByDistance(line, distance, index))
   if (parallels.length === 1) {

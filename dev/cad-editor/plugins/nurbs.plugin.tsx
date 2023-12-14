@@ -138,14 +138,6 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    getStartPoint: (content) => {
-      const lines = getNurbsGeometries(content).lines
-      return ctx.getGeometryLineStartAndEnd(lines[0]).start
-    },
-    getEndPoint: (content) => {
-      const lines = getNurbsGeometries(content).lines
-      return ctx.getGeometryLineStartAndEnd(lines[lines.length - 1]).end
-    },
     reverse: (content) => ctx.reverseNurbs(content),
   }
   return [

@@ -374,8 +374,6 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
-      getStartPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getEllipseArcPointAtAngle(content, content.endAngle),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2

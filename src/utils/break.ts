@@ -1,8 +1,9 @@
 import { getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
-import { getAngleInRange, getArcPointAtAngle, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getPointByLengthAndDirection, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
+import { AngleRange, getAngleInRange, getArcPointAtAngle, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, getPointByLengthAndDirection, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, largerThan, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
 import { GeometryLine } from "./intersection"
-import { getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
+import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
+import { getArcTangentRadianAtRadian, getBezierCurveTangentRadianAtPercent, getEllipseTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
 /**
  * @public
@@ -111,6 +112,18 @@ export function getGeometryLineStartAndEnd(line: GeometryLine) {
     start: getEllipseArcPointAtAngle(line.curve, line.curve.startAngle),
     end: getEllipseArcPointAtAngle(line.curve, line.curve.endAngle),
   }
+}
+
+export function getGeometryLinesStartAndEnd(lines: GeometryLine[]) {
+  return {
+    start: getGeometryLineStartAndEnd(lines[0]).start,
+    end: getGeometryLineStartAndEnd(lines[lines.length - 1]).end,
+  }
+}
+
+export function isGeometryLinesClosed(lines: GeometryLine[]) {
+  const { start, end } = getGeometryLinesStartAndEnd(lines)
+  return isSamePoint(start, end)
 }
 
 export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Position[]): GeometryLine[][] {
@@ -309,10 +322,10 @@ export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
     return getPointByLengthAndDirection(line[0], distance, line[1])
   }
   if (line.type === 'arc') {
-    return getArcPointAtAngle(line.curve, param * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
+    return getArcPointAtAngle(line.curve, getAngleAtParam(param, line.curve))
   }
   if (line.type === 'ellipse arc') {
-    return getEllipseArcPointAtAngle(line.curve, param * (line.curve.endAngle - line.curve.startAngle) + line.curve.startAngle)
+    return getEllipseArcPointAtAngle(line.curve, getAngleAtParam(param, line.curve))
   }
   if (line.type === 'quadratic curve') {
     return getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param)
@@ -323,9 +336,102 @@ export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
   return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
 }
 
+export function getGeometryLinePointAndTangentRadianAtParam(param: number, line: GeometryLine): { point: Position, radian: number } {
+  if (Array.isArray(line)) {
+    const distance = param * getTwoPointsDistance(...line)
+    return {
+      point: getPointByLengthAndDirection(line[0], distance, line[1]),
+      radian: getTwoPointsRadian(line[1], line[0]),
+    }
+  }
+  if (line.type === 'arc') {
+    const radian = angleToRadian(getAngleAtParam(param, line.curve))
+    return {
+      point: getCirclePointAtRadian(line.curve, radian),
+      radian: getArcTangentRadianAtRadian(line.curve, radian),
+    }
+  }
+  if (line.type === 'ellipse arc') {
+    const radian = angleToRadian(getAngleAtParam(param, line.curve))
+    return {
+      point: getEllipsePointAtRadian(line.curve, radian),
+      radian: getEllipseTangentRadianAtRadian(line.curve, radian),
+    }
+  }
+  if (line.type === 'quadratic curve') {
+    return {
+      point: getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param),
+      radian: getQuadraticCurveTangentRadianAtPercent(line.curve, param),
+    }
+  }
+  if (line.type === 'bezier curve') {
+    return {
+      point: getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param),
+      radian: getBezierCurveTangentRadianAtPercent(line.curve, param)
+    }
+  }
+  const [point, point1] = getNurbsCurveDerivatives(line.curve, param * getNurbsMaxParam(line.curve))
+  return {
+    point,
+    radian: Math.atan2(point1.y, point1.x),
+  }
+}
+
 export function getGeometryLinesPointAtParam(param: number, lines: GeometryLine[]) {
   const index = Math.floor(param)
   const line = lines[index]
   if (!line) return
   return getGeometryLinePointAtParam(param - index, line)
+}
+
+function getAngleAtParam(param: number, range: AngleRange) {
+  return param * (range.endAngle - range.startAngle) + range.startAngle
+}
+
+export function getPartOfGeometryLine(param1: number, param2: number, line: GeometryLine, closed = false): GeometryLine {
+  if (Array.isArray(line)) {
+    return [
+      getGeometryLinePointAtParam(param1, line),
+      getGeometryLinePointAtParam(param2, line),
+    ]
+  }
+  if (line.type === 'arc') {
+    return {
+      ...line,
+      curve: {
+        ...line.curve,
+        startAngle: getAngleAtParam(param1, line.curve),
+        endAngle: getAngleAtParam(param2, line.curve),
+        counterclockwise: !closed && largerThan(param1, param2) ? !line.curve.counterclockwise : line.curve.counterclockwise,
+      },
+    }
+  }
+  if (line.type === 'ellipse arc') {
+    return {
+      ...line,
+      curve: {
+        ...line.curve,
+        startAngle: getAngleAtParam(param1, line.curve),
+        endAngle: getAngleAtParam(param2, line.curve),
+        counterclockwise: !closed && largerThan(param1, param2) ? !line.curve.counterclockwise : line.curve.counterclockwise,
+      },
+    }
+  }
+  if (line.type === 'quadratic curve') {
+    return {
+      ...line,
+      curve: getPartOfQuadraticCurve(line.curve, param1, param2),
+    }
+  }
+  if (line.type === 'bezier curve') {
+    return {
+      ...line,
+      curve: getPartOfBezierCurve(line.curve, param1, param2),
+    }
+  }
+  const maxParam = getNurbsMaxParam(line.curve)
+  return {
+    ...line,
+    curve: getPartOfNurbsCurve(line.curve, param1 * maxParam, param2 * maxParam)
+  }
 }

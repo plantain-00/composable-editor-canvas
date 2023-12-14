@@ -26,3 +26,31 @@ export class WeaksetCache<T extends object> {
     return this.count
   }
 }
+
+export class WeakValuesChangedCache<TKey extends object, TValue> {
+  private cache: { keys: WeakSet<TKey>, value: TValue } | undefined
+
+  public get(keys: TKey[], func: () => TValue) {
+    if (this.cache === undefined) {
+      this.cache = {
+        keys: new WeakSet(keys),
+        value: func(),
+      }
+      return this.cache.value
+    }
+    for (const key of keys) {
+      if (!this.cache.keys.has(key)) {
+        this.cache = {
+          keys: new WeakSet(keys),
+          value: func(),
+        }
+        return this.cache.value
+      }
+    }
+    return this.cache.value
+  }
+
+  public clear() {
+    this.cache = undefined
+  }
+}
