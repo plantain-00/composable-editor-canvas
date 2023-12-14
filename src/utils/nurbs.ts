@@ -270,6 +270,13 @@ export interface NurbsCurve {
   weights?: number[]
 }
 
+export const NurbsCurve: Record<string, Validator> = {
+  points: [Position],
+  degree: number,
+  knots: [number],
+  weights: /* @__PURE__ */ optional([number]),
+}
+
 function fromVerbNurbsCurve(curve: verb.geom.NurbsCurve): NurbsCurve {
   return {
     points: curve.controlPoints().map(p => fromVerbPoint(p)),

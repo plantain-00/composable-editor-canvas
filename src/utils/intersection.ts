@@ -1,8 +1,11 @@
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { isArray } from "./is-array"
+import { isRecord } from "./is-record"
 import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurvePointAtParam, getNurbsMaxParam, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
+import { Path, ValidationResult, tuple, validate } from "./validators"
 
 /**
  * @public
@@ -56,6 +59,17 @@ export type GeometryLine = [Position, Position]
   | { type: 'quadratic curve', curve: QuadraticCurve }
   | { type: 'bezier curve', curve: BezierCurve }
   | { type: 'nurbs curve', curve: NurbsCurve }
+
+export const GeometryLine = (v: unknown, path: Path): ValidationResult => {
+  if (isArray(v)) return validate(v, tuple(Position, Position), path)
+  if (!isRecord(v)) return { path, expect: 'object' }
+  if (v.type === 'arc') return validate(v, { type: 'arc', curve: Arc }, path)
+  if (v.type === 'ellipse arc') return validate(v, { type: 'ellipse arc', curve: EllipseArc }, path)
+  if (v.type === 'quadratic curve') return validate(v, { type: 'quadratic curve', curve: QuadraticCurve }, path)
+  if (v.type === 'bezier curve') return validate(v, { type: 'bezier curve', curve: BezierCurve }, path)
+  if (v.type === 'nurbs curve') return validate(v, { type: 'nurbs curve', curve: NurbsCurve }, path)
+  return { path: [...path, 'type'], expect: 'or', args: ['arc', 'ellipse arc', 'quadratic curve', 'bezier curve', 'nurbs curve'] }
+}
 
 /**
  * @public
@@ -647,6 +661,12 @@ export interface QuadraticCurve {
   to: Position
 }
 
+export const QuadraticCurve = {
+  from: Position,
+  cp: Position,
+  to: Position,
+}
+
 export function getLineQuadraticCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
@@ -790,6 +810,13 @@ export interface BezierCurve {
   cp1: Position
   cp2: Position
   to: Position
+}
+
+export const BezierCurve = {
+  from: Position,
+  cp1: Position,
+  cp2: Position,
+  to: Position,
 }
 
 export function getLineBezierCurveIntersectionPoints(

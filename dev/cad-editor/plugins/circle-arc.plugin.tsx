@@ -393,8 +393,6 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds: ctx.getStrokeAndFillRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
-      getStartPoint: (content) => ctx.getArcPointAtAngle(content, content.startAngle),
-      getEndPoint: (content) => ctx.getArcPointAtAngle(content, content.endAngle),
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.r ** 2 * (radian - Math.sin(radian)) / 2

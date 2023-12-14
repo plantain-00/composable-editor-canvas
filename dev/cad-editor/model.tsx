@@ -243,8 +243,6 @@ export type Model<T> = Partial<FeatureModels> & {
   isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position): boolean
-  getStartPoint?(content: T): Position
-  getEndPoint?(content: T): Position
   getChildByPoint?(content: T, point: Position, options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
   getArea?(content: T): number
   reverse?(content: T): T

@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
@@ -238,6 +238,10 @@ export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from
 
 export function getCircleTangentRadianAtRadian(circle: Circle, radian: number) {
   return radian + Math.PI / 2
+}
+
+export function getArcTangentRadianAtRadian(arc: Arc, radian: number) {
+  return radian + Math.PI / 2 * (arc.counterclockwise ? -1 : 1)
 }
 
 export function getEllipseTangentRadianAtRadian(ellipse: Ellipse, t: number) {

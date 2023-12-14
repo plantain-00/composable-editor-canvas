@@ -42,6 +42,14 @@ export function largerThan(value1: number, value2: number, delta = 0.00000001) {
   return value1 > value2 && !isZero(value1 - value2, delta)
 }
 
+export function largerOrEqual(value1: number, value2: number, delta = 0.00000001) {
+  return value1 > value2 || isZero(value1 - value2, delta)
+}
+
+export function LessOrEqual(value1: number, value2: number, delta = 0.00000001) {
+  return value1 < value2 || isZero(value1 - value2, delta)
+}
+
 export function sqrt3(value: number) {
   if (value < 0) {
     return -(Math.pow(-value, 1 / 3))
@@ -136,18 +144,18 @@ export function multipleDirection(direction: Position, scalar: number): Position
 
 export function getAngleInRange(angle: number, range: AngleRange) {
   if (range.counterclockwise) {
-    while (angle < range.endAngle && angle <= range.startAngle - 360) {
+    while (lessThan(angle, range.endAngle) && LessOrEqual(angle, range.startAngle - 360)) {
       angle += 360
     }
-    while (angle > range.startAngle) {
+    while (largerThan(angle, range.startAngle)) {
       angle -= 360
     }
     return angle
   }
-  while (angle > range.endAngle && angle >= range.startAngle + 360) {
+  while (largerThan(angle, range.endAngle) && largerOrEqual(angle, range.startAngle + 360)) {
     angle -= 360
   }
-  while (angle < range.startAngle) {
+  while (lessThan(angle, range.startAngle)) {
     angle += 360
   }
   return angle
@@ -157,14 +165,14 @@ export function angleInRange(angle: number, range: AngleRange) {
   angle = getAngleInRange(angle, range)
   if (range.counterclockwise) {
     if (range.endAngle > range.startAngle) {
-      return angle >= range.endAngle - 360
+      return largerOrEqual(angle, range.endAngle - 360)
     }
-    return angle >= range.endAngle
+    return largerOrEqual(angle, range.endAngle)
   }
   if (range.endAngle < range.startAngle) {
-    return angle <= range.endAngle + 360
+    return LessOrEqual(angle, range.endAngle + 360)
   }
-  return angle <= range.endAngle
+  return LessOrEqual(angle, range.endAngle)
 }
 
 /**
@@ -818,6 +826,14 @@ export function equals(a: number | undefined, b: number | undefined) {
   return isZero(a - b)
 }
 
+export function isSameNumber(a: number, b: number, delta = 0.00000001) {
+  return isZero(a - b, delta)
+}
+
+export function isAngleRangeClosed(angleRange: AngleRange) {
+  return isZero((angleRange.endAngle - angleRange.startAngle) % 360)
+}
+
 /**
  * @public
  */
@@ -1109,7 +1125,6 @@ export const PathCommand = (v: unknown, path: Path): ValidationResult => {
   return { path: [...path, 'type'], expect: 'or', args: ['move', 'line', 'arc', 'ellipseArc', 'bezierCurve', 'quadraticCurve', 'close'] }
 }
 
-
 /**
  * @public
  */
@@ -1164,7 +1179,7 @@ export function minimumBy<T>(values: T[], by: (value: T) => number) {
   let result = values[0]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (by(value) < by(result)) {
+    if (lessThan(by(value), by(result))) {
       result = value
     }
   }
@@ -1175,8 +1190,34 @@ export function maxmiumBy<T>(values: T[], by: (value: T) => number) {
   let result = values[0]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (by(value) > by(result)) {
+    if (largerThan(by(value), by(result))) {
       result = value
+    }
+  }
+  return result
+}
+
+export function minimumsBy<T>(values: T[], by: (value: T) => number) {
+  let result = [values[0]]
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i]
+    if (isZero(by(value) - by(result[0]))) {
+      result.push(value)
+    } else if (by(value) < by(result[0])) {
+      result = [value]
+    }
+  }
+  return result
+}
+
+export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
+  let result = [values[0]]
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i]
+    if (isZero(by(value) - by(result[0]))) {
+      result.push(value)
+    } else if (by(value) > by(result[0])) {
+      result = [value]
     }
   }
   return result

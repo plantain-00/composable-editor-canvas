@@ -160,9 +160,9 @@ export function getPerpendicularPointToBezierCurve(point: Position, curve: Bezie
   return us.filter(u => u >= 0 && u <= 1).map(u => getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, u))
 }
 
-export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position) {
+export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position, extend = false) {
   const perpendicularPoint = getPerpendicularPoint(position, twoPointLineToGeneralFormLine(point1, point2))
-  if (pointIsOnLineSegment(perpendicularPoint, point1, point2)) {
+  if (extend || pointIsOnLineSegment(perpendicularPoint, point1, point2)) {
     return {
       point: perpendicularPoint,
       distance: getTwoPointsDistance(position, perpendicularPoint),
@@ -190,9 +190,9 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve)
 }
 
-export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc) {
+export function getPointAndArcNearestPointAndDistance(position: Position, arc: Arc, extend = false) {
   const { point, distance, radian } = getPerpendicularPointToCircle(position, arc)
-  if (angleInRange(radianToAngle(radian), arc)) {
+  if (extend || angleInRange(radianToAngle(radian), arc)) {
     return { point, distance }
   }
   const point3 = getArcPointAtAngle(arc, arc.startAngle)
@@ -200,9 +200,9 @@ export function getPointAndArcNearestPointAndDistance(position: Position, arc: A
   return minimumBy([{ point: point3, distance: getTwoPointsDistance(position, point3) }, { point: point4, distance: getTwoPointsDistance(position, point4) }], v => v.distance)
 }
 
-export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc) {
+export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc, extend = false) {
   const radian = getPerpendicularPointRadianToEllipse(position, ellipseArc)
-  if (radian !== undefined && angleInRange(radianToAngle(radian), ellipseArc)) {
+  if (radian !== undefined && (extend || angleInRange(radianToAngle(radian), ellipseArc))) {
     const point = getEllipsePointAtRadian(ellipseArc, radian)
     return {
       point,
@@ -250,27 +250,27 @@ export function getPointAndBezierCurveNearestPointAndDistance(position: Position
   return minimumBy(results, v => v.distance)
 }
 
-export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine) {
+export function getPointAndGeometryLineMinimumDistance(p: Position, line: GeometryLine, extend = false) {
   if (Array.isArray(line)) {
-    return getPointAndLineSegmentMinimumDistance(p, ...line)
+    return getPointAndLineSegmentMinimumDistance(p, ...line, extend)
   }
   if (line.type === 'arc') {
-    return getPointAndArcMinimumDistance(p, line.curve)
+    return getPointAndArcMinimumDistance(p, line.curve, extend)
   }
   if (line.type === 'ellipse arc') {
-    return getPointAndGeometryLineNearestPointAndDistance(p, line).distance
+    return getPointAndEllipseArcNearestPointAndDistance(p, line.curve, extend).distance
   }
   if (line.type === 'quadratic curve') {
-    return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve).distance
+    return getPointAndQuadraticCurveNearestPointAndDistance(p, line.curve, extend).distance
   }
   if (line.type === 'bezier curve') {
-    return getPointAndBezierCurveNearestPointAndDistance(p, line.curve).distance
+    return getPointAndBezierCurveNearestPointAndDistance(p, line.curve, extend).distance
   }
   return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve).distance
 }
 
-export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position) {
-  const { distance } = getPointAndLineSegmentNearestPointAndDistance(position, point1, point2)
+export function getPointAndLineSegmentMinimumDistance(position: Position, point1: Position, point2: Position, extend = false) {
+  const { distance } = getPointAndLineSegmentNearestPointAndDistance(position, point1, point2, extend)
   return distance
 }
 
@@ -283,7 +283,7 @@ export function getPointAndPolygonMinimumDistance(position: Position, polygon: P
   return Math.min(...polygonLine.map((r) => getPointAndLineSegmentMinimumDistance(position, ...r)))
 }
 
-export function getPointAndArcMinimumDistance(position: Position, arc: Arc) {
-  const { distance } = getPointAndArcNearestPointAndDistance(position, arc)
+export function getPointAndArcMinimumDistance(position: Position, arc: Arc, extend = false) {
+  const { distance } = getPointAndArcNearestPointAndDistance(position, arc, extend)
   return distance
 }

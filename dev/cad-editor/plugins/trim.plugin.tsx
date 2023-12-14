@@ -162,9 +162,12 @@ export function getCommand(ctx: PluginContext): Command {
               if (parentModel?.break) {
                 let points: core.Position[] = []
                 for (const child of children) {
-                  const model = ctx.getContentModel(child)
-                  if (model?.getStartPoint && model.getEndPoint) {
-                    points.push(model.getStartPoint(child), model.getEndPoint(child))
+                  const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
+                  if (geometries) {
+                    const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines)
+                    if (!ctx.isSamePoint(start, end)) {
+                      points.push(start, end)
+                    }
                   }
                 }
                 points = ctx.deduplicatePosition(points)
