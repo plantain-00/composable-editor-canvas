@@ -1,6 +1,6 @@
 import { Patch } from "immer"
 import React from "react"
-import { ContentPath, Nullable, Position, prependPatchPath, SelectPath, Size, Transform } from "../../src"
+import { ContentPath, Nullable, Position, prependPatchPath, SelectPath, Size, Transform, TwoPointsFormRegion } from "../../src"
 import { BaseContent, fixedButtomStyle, fixedInputStyle, PartRef, Select, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
@@ -40,6 +40,7 @@ interface CommandProps {
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   acquireRegion: (handle: (region: Position[]) => void) => void,
   transformPosition: (p: Position) => Position,
+  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[]
 }
 
 interface CommandResult {
@@ -95,7 +96,8 @@ export function useCommands(
   backgroundColor: number,
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   acquireRegion: (handle: (region: Position[]) => void) => void,
-  transformPosition: (p: Position) => Position
+  transformPosition: (p: Position) => Position,
+  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[],
 ) {
   let commandResult: CommandResult | undefined
   Object.values(commandCenter).forEach((command) => {
@@ -115,6 +117,7 @@ export function useCommands(
         acquireContent,
         acquireRegion,
         transformPosition,
+        getContentsInRange,
       })
       if (type) {
         commandResult = r

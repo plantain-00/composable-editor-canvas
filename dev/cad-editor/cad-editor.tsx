@@ -353,6 +353,13 @@ export const CADEditor = React.forwardRef((props: {
     5 / scaleWithViewport,
   )
 
+  const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
+    if (!rtree) {
+      return []
+    }
+    return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
+  }
+
   // commands
   const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
     ({ updateContents, nextCommand, repeatedly } = {}) => {
@@ -385,6 +392,7 @@ export const CADEditor = React.forwardRef((props: {
     acquireContent,
     acquireRegion,
     transformPosition,
+    getContentsInRange,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
   const reverseTransform = (p: Position) => {
@@ -811,12 +819,6 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
   const [rtree, setRTree] = React.useState<ReturnType<typeof RTree>>()
-  const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
-    if (!rtree) {
-      return []
-    }
-    return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
-  }
   debug.mark('before search')
   const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
   const searchResult = new Set(getContentsInRange(bounding))
