@@ -1,5 +1,5 @@
 import test from 'ava'
-import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5, isZero } from '../src'
+import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5, isSameNumber, isZero } from '../src'
 
 test('calculate2', (t) => {
   function calculate(b: number, c: number) {
@@ -25,7 +25,7 @@ test('calculate4', (t) => {
   function calculate(b: number, c: number, d: number, x0: number) {
     const e = -(x0 ** 4 + b * x0 ** 3 + c * x0 ** 2 + d * x0)
     const sx = calculateEquation4(1, b, c, d, e)
-    t.true(sx.some(x => isZero(x - x0)))
+    t.true(sx.some(x => isSameNumber(x, x0)))
     for (const x of sx) {
       t.true(isZero(x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e, 0.000001))
     }

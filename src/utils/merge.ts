@@ -1,5 +1,5 @@
 import { getBezierCurveDerivatives, getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { Arc, EllipseArc, Position, equals, getTwoPointCenter, isSamePoint, isZero, pointIsOnLine } from "./geometry"
+import { Arc, EllipseArc, Position, isSameNumber, getTwoPointCenter, isSamePoint, isZero, pointIsOnLine, equals } from "./geometry"
 import { BezierCurve, QuadraticCurve } from "./intersection"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
@@ -9,9 +9,9 @@ export function mergeLineSegment(line1: [Position, Position], line2: [Position, 
 }
 
 export function mergeArc(curve1: Arc, curve2: Arc): Arc | undefined {
-  if (!equals(curve1.x, curve2.x)) return
-  if (!equals(curve1.y, curve2.y)) return
-  if (!equals(curve1.r, curve2.r)) return
+  if (!isSameNumber(curve1.x, curve2.x)) return
+  if (!isSameNumber(curve1.y, curve2.y)) return
+  if (!isSameNumber(curve1.r, curve2.r)) return
   if (curve1.counterclockwise !== curve2.counterclockwise) return
   if (!isZero(Math.abs(curve1.endAngle - curve2.startAngle) % 360)) return
   return {
@@ -21,10 +21,10 @@ export function mergeArc(curve1: Arc, curve2: Arc): Arc | undefined {
 }
 
 export function mergeEllipseArc(curve1: EllipseArc, curve2: EllipseArc): EllipseArc | undefined {
-  if (!equals(curve1.cx, curve2.cx)) return
-  if (!equals(curve1.cy, curve2.cy)) return
-  if (!equals(curve1.rx, curve2.rx)) return
-  if (!equals(curve1.ry, curve2.ry)) return
+  if (!isSameNumber(curve1.cx, curve2.cx)) return
+  if (!isSameNumber(curve1.cy, curve2.cy)) return
+  if (!isSameNumber(curve1.rx, curve2.rx)) return
+  if (!isSameNumber(curve1.ry, curve2.ry)) return
   if (curve1.counterclockwise !== curve2.counterclockwise) return
   if (!equals(curve1.angle, curve2.angle)) return
   if (!isZero(Math.abs(curve1.endAngle - curve2.startAngle) % 360)) return
@@ -135,5 +135,5 @@ export function mergeBezierCurvesToBezierSpline(curves: BezierCurve[]): Position
 }
 
 export function isSameDerivative(a: Position, b: Position) {
-  return isZero(a.x * b.y - a.y * b.x)
+  return isSameNumber(a.x * b.y, a.y * b.x)
 }

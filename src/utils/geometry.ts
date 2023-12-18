@@ -9,6 +9,9 @@ export function getPointByLengthAndDirection(
 ) {
   let dx = directionPoint.x - startPoint.x
   let dy = directionPoint.y - startPoint.y
+  if (isZero(length)) {
+    return startPoint
+  }
   if (length < 0) {
     length = -length
     dx = -dx
@@ -27,27 +30,29 @@ export function getPointByLengthAndDirection(
   }
 }
 
+export const defaultDelta = 0.00000001
+
 /**
  * @public
  */
-export function isZero(value: number, delta = 0.00000001) {
+export function isZero(value: number, delta = defaultDelta) {
   return Math.abs(value) < delta
 }
 
-export function lessThan(value1: number, value2: number, delta = 0.00000001) {
-  return value1 < value2 && !isZero(value1 - value2, delta)
+export function lessThan(value1: number, value2: number, delta = defaultDelta) {
+  return value1 < value2 && !isSameNumber(value1, value2, delta)
 }
 
-export function largerThan(value1: number, value2: number, delta = 0.00000001) {
-  return value1 > value2 && !isZero(value1 - value2, delta)
+export function largerThan(value1: number, value2: number, delta = defaultDelta) {
+  return value1 > value2 && !isSameNumber(value1, value2, delta)
 }
 
-export function largerOrEqual(value1: number, value2: number, delta = 0.00000001) {
-  return value1 > value2 || isZero(value1 - value2, delta)
+export function largerOrEqual(value1: number, value2: number, delta = defaultDelta) {
+  return value1 > value2 || isSameNumber(value1, value2, delta)
 }
 
-export function LessOrEqual(value1: number, value2: number, delta = 0.00000001) {
-  return value1 < value2 || isZero(value1 - value2, delta)
+export function lessOrEqual(value1: number, value2: number, delta = defaultDelta) {
+  return value1 < value2 || isSameNumber(value1, value2, delta)
 }
 
 export function sqrt3(value: number) {
@@ -75,7 +80,7 @@ export function getPointByLengthAndDirectionSafely(
  * @public
  */
 export function isSamePoint(p1: Position, p2: Position) {
-  return equals(p1.x, p2.x) && equals(p1.y, p2.y)
+  return isSameNumber(p1.x, p2.x) && isSameNumber(p1.y, p2.y)
 }
 
 export function deepEquals<T>(a: T, b: T): boolean {
@@ -107,7 +112,7 @@ export function deepEquals<T>(a: T, b: T): boolean {
   if (typeof a === 'number') {
     if (typeof b !== 'number') return false
     if (isNaN(a) && isNaN(b)) return true
-    return equals(a, b)
+    return isSameNumber(a, b)
   }
 
   return false
@@ -144,7 +149,7 @@ export function multipleDirection(direction: Position, scalar: number): Position
 
 export function getAngleInRange(angle: number, range: AngleRange) {
   if (range.counterclockwise) {
-    while (lessThan(angle, range.endAngle) && LessOrEqual(angle, range.startAngle - 360)) {
+    while (lessThan(angle, range.endAngle) && lessOrEqual(angle, range.startAngle - 360)) {
       angle += 360
     }
     while (largerThan(angle, range.startAngle)) {
@@ -164,25 +169,25 @@ export function getAngleInRange(angle: number, range: AngleRange) {
 export function angleInRange(angle: number, range: AngleRange) {
   angle = getAngleInRange(angle, range)
   if (range.counterclockwise) {
-    if (range.endAngle > range.startAngle) {
+    if (largerThan(range.endAngle, range.startAngle)) {
       return largerOrEqual(angle, range.endAngle - 360)
     }
     return largerOrEqual(angle, range.endAngle)
   }
-  if (range.endAngle < range.startAngle) {
-    return LessOrEqual(angle, range.endAngle + 360)
+  if (lessThan(range.endAngle, range.startAngle)) {
+    return lessOrEqual(angle, range.endAngle + 360)
   }
-  return LessOrEqual(angle, range.endAngle)
+  return lessOrEqual(angle, range.endAngle)
 }
 
 /**
  * @public
  */
 export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
-  if (!equals(point1.x, point2.x) && isBetween(p.x, point1.x, point2.x)) {
+  if (!isSameNumber(point1.x, point2.x) && isBetween(p.x, point1.x, point2.x)) {
     return true
   }
-  if (!equals(point1.y, point2.y) && isBetween(p.y, point1.y, point2.y)) {
+  if (!isSameNumber(point1.y, point2.y) && isBetween(p.y, point1.y, point2.y)) {
     return true
   }
   return false
@@ -194,7 +199,7 @@ export function pointIsOnArc(p: Position, arc: Arc) {
 }
 
 export function pointIsOnCircle(p: Position, circle: Circle) {
-  return isZero(getTwoPointsDistance(p, circle) - circle.r)
+  return isSameNumber(getTwoPointsDistance(p, circle), circle.r)
 }
 
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
@@ -207,7 +212,7 @@ export function pointIsOnEllipse({ x, y }: Position, { cx, cy, rx, ry, angle }: 
   const d1 = Math.sin(radian)
   const d2 = Math.cos(radian)
   // (d2(x - cx) + d1(y - cy))^2/rx/rx + (-d1(x - cx) + d2(y - cy))^2/ry/ry = 1
-  return isZero((d2 * (x - cx) + d1 * (y - cy)) ** 2 / rx / rx + (-d1 * (x - cx) + d2 * (y - cy)) ** 2 / ry / ry - 1)
+  return isSameNumber((d2 * (x - cx) + d1 * (y - cy)) ** 2 / rx / rx + (-d1 * (x - cx) + d2 * (y - cy)) ** 2 / ry / ry, 1)
 }
 
 /**
@@ -274,7 +279,7 @@ export function getTwoNumberCenter(p1: number, p2: number) {
  * @public
  */
 export function isBetween(target: number, a: number, b: number) {
-  return target <= Math.max(a, b) && target >= Math.min(a, b)
+  return lessOrEqual(target, Math.max(a, b)) && largerOrEqual(target, Math.min(a, b))
 }
 
 /**
@@ -388,7 +393,7 @@ export function getRegion(p1: Position, p2: Position): Region {
  * @public
  */
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion) {
-  return point.x >= region.start.x && point.y >= region.start.y && point.x <= region.end.x && point.y <= region.end.y
+  return largerOrEqual(point.x, region.start.x) && largerOrEqual(point.y, region.start.y) && lessOrEqual(point.x, region.end.x) && lessOrEqual(point.y, region.end.y)
 }
 
 export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
@@ -823,10 +828,10 @@ export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean)
 export function equals(a: number | undefined, b: number | undefined) {
   if (a === undefined && b === undefined) return true
   if (a === undefined || b === undefined) return false
-  return isZero(a - b)
+  return isSameNumber(a, b)
 }
 
-export function isSameNumber(a: number, b: number, delta = 0.00000001) {
+export function isSameNumber(a: number, b: number, delta = defaultDelta) {
   return isZero(a - b, delta)
 }
 
@@ -869,10 +874,10 @@ export function getTwoPointsRadian(to: Position, from: Position = { x: 0, y: 0 }
  * @public
  */
 export function normalizeAngleInRange(angle: number, range: AngleRange) {
-  while (angle > range.endAngle) {
+  while (largerThan(angle, range.endAngle)) {
     angle -= 360
   }
-  while (angle < range.startAngle) {
+  while (lessThan(angle, range.startAngle)) {
     angle += 360
   }
   return angle
@@ -882,9 +887,9 @@ export function normalizeAngleInRange(angle: number, range: AngleRange) {
  * @public
  */
 export function normalizeAngleRange(content: AngleRange) {
-  if (content.endAngle < content.startAngle) {
+  if (lessThan(content.endAngle, content.startAngle)) {
     content.endAngle += 360
-  } else if (content.endAngle - content.startAngle > 360) {
+  } else if (largerThan(content.endAngle - content.startAngle, 360)) {
     content.endAngle -= 360
   }
 }
@@ -954,26 +959,26 @@ export function getEllipsePointAtRadian(content: Ellipse, radian: number) {
 export function getFormattedEndAngle(range: AngleRange) {
   let endAngle: number
   if (range.counterclockwise) {
-    endAngle = range.startAngle < range.endAngle ? range.endAngle - 360 : range.endAngle
+    endAngle = lessThan(range.startAngle, range.endAngle) ? range.endAngle - 360 : range.endAngle
   } else {
-    endAngle = range.startAngle > range.endAngle ? range.endAngle + 360 : range.endAngle
+    endAngle = largerThan(range.startAngle, range.endAngle) ? range.endAngle + 360 : range.endAngle
   }
   return endAngle
 }
 
 export function getLargeArc(range: AngleRange) {
   const endAngle = getFormattedEndAngle(range)
-  return Math.abs(endAngle - range.startAngle) > 180
+  return largerThan(Math.abs(endAngle - range.startAngle), 180)
 }
 
 function getAngleRange(range: AngleRange, angleDelta: number) {
   const endAngle = getFormattedEndAngle(range)
   const angles: number[] = []
   for (let i = range.startAngle; ;) {
-    if (equals(i, endAngle)) {
+    if (isSameNumber(i, endAngle)) {
       break
     }
-    if (range.counterclockwise ? i < endAngle : i > endAngle) {
+    if (range.counterclockwise ? lessThan(i, endAngle) : largerThan(i, endAngle)) {
       break
     }
     angles.push(i)
@@ -983,7 +988,7 @@ function getAngleRange(range: AngleRange, angleDelta: number) {
       i += angleDelta
     }
   }
-  if (angles.length === 0 || !equals(angles[angles.length - 1], endAngle)) {
+  if (angles.length === 0 || !isSameNumber(angles[angles.length - 1], endAngle)) {
     angles.push(endAngle)
   }
   return angles
@@ -1201,9 +1206,9 @@ export function minimumsBy<T>(values: T[], by: (value: T) => number) {
   let result = [values[0]]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (isZero(by(value) - by(result[0]))) {
+    if (isSameNumber(by(value), by(result[0]))) {
       result.push(value)
-    } else if (by(value) < by(result[0])) {
+    } else if (lessThan(by(value), by(result[0]))) {
       result = [value]
     }
   }
@@ -1214,9 +1219,9 @@ export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
   let result = [values[0]]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (isZero(by(value) - by(result[0]))) {
+    if (isSameNumber(by(value), by(result[0]))) {
       result.push(value)
-    } else if (by(value) > by(result[0])) {
+    } else if (largerThan(by(value), by(result[0]))) {
       result = [value]
     }
   }
@@ -1231,7 +1236,7 @@ export function getArcByStartEnd(from: Position, r: number, largeArc: boolean, s
     r = distance
   }
   let center: Position
-  if (isZero(distance - r)) {
+  if (isSameNumber(distance, r)) {
     center = c
   } else {
     const d = Math.sqrt(r ** 2 - distance ** 2)

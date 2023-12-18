@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isZero, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isZero, largerOrEqual, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { isArray } from "./is-array"
 import { isRecord } from "./is-record"
 import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurvePointAtParam, getNurbsMaxParam, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
@@ -246,7 +246,7 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
   // bb - 4ac = 4 a q q(m - l l)
   const f = m - l ** 2
   // bb - 4ac = 4aqqf
-  if (f < 0 && !isZero(f)) {
+  if (lessThan(f, 0)) {
     return []
   }
   // u = -b/2/a = 2 l d p/2/a = l d p/a = l p/d
@@ -344,7 +344,7 @@ export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x:
   // (bb - 4ac)/4/d/d = d d r r + e e r r + -s s = h r r -  s s
   const t = r * r * h - s * s
   // bb - 4ac = 4 d d t
-  if (t < 0 && !isZero(t, delta)) {
+  if (lessThan(t, 0, delta)) {
     return []
   }
   // u = -b/2/a = -2 e s/2/h = -e s/h
@@ -433,14 +433,14 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
 }
 
 function lineIntersectWithLine(a: Position, b: Position, c: Position, d: Position) {
-  if (!(Math.min(a.x, b.x) <= Math.max(c.x, d.x) && Math.min(c.y, d.y) <= Math.max(a.y, b.y) && Math.min(c.x, d.x) <= Math.max(a.x, b.x) && Math.min(a.y, b.y) <= Math.max(c.y, d.y))) {
+  if (!(lessOrEqual(Math.min(a.x, b.x), Math.max(c.x, d.x)) && lessOrEqual(Math.min(c.y, d.y), Math.max(a.y, b.y)) && lessOrEqual(Math.min(c.x, d.x), Math.max(a.x, b.x)) && lessOrEqual(Math.min(a.y, b.y), Math.max(c.y, d.y)))) {
     return false
   }
   const u = (c.x - a.x) * (b.y - a.y) - (b.x - a.x) * (c.y - a.y)
   const v = (d.x - a.x) * (b.y - a.y) - (b.x - a.x) * (d.y - a.y)
   const w = (a.x - c.x) * (d.y - c.y) - (d.x - c.x) * (a.y - c.y)
   const z = (b.x - c.x) * (d.y - c.y) - (d.x - c.x) * (b.y - c.y)
-  return u * v <= 0 && w * z <= 0
+  return lessOrEqual(u * v, 0) && lessOrEqual(w * z, 0)
 }
 
 export function lineIntersectWithTwoPointsFormRegion(p1: Position, p2: Position, region: TwoPointsFormRegion) {
@@ -486,7 +486,7 @@ export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x
   // (bb - 4ac)/4/i1/i2/e1/e1 = -(d1 d1 + d2 d2)^2 f1 f1 + a = a - f1 f1
   const t = a - f1 * f1
   // bb - 4ac = 4e1 e1 i1 i2 t
-  if (t < 0 && !isZero(t)) {
+  if (lessThan(t, 0)) {
     return []
   }
   // u = -b/2/a = -2 f1 (d2 k2 + d1 k1)/2/a
@@ -541,7 +541,7 @@ export function getLineSegmentEllipseArcIntersectionPoints(start: Position, end:
 }
 
 export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { rx, ry, cx, cy, angle }: Ellipse) {
-  if (isZero(rx - ry)) {
+  if (isSameNumber(rx, ry)) {
     return getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }, { x: cx, y: cy, r: rx })
   }
   const radian = angleToRadian(angle)
@@ -597,10 +597,10 @@ export function getArcEllipseArcIntersectionPoints(arc: Arc, ellipseArc: Ellipse
 }
 
 export function getTwoEllipseIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { rx: rx2, ry: ry2, cx: cx2, cy: cy2, angle: angle2 }: Ellipse) {
-  if (isZero(rx1 - ry1)) {
+  if (isSameNumber(rx1, ry1)) {
     return getCircleEllipseIntersectionPoints({ x: cx1, y: cy1, r: rx1 }, { rx: rx2, ry: ry2, cx: cx2, cy: cy2, angle: angle2 })
   }
-  if (isZero(rx2 - ry2)) {
+  if (isSameNumber(rx2, ry2)) {
     return getCircleEllipseIntersectionPoints({ x: cx2, y: cy2, r: rx2 }, { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 })
   }
   const radian1 = angleToRadian(angle1), radian2 = angleToRadian(angle2)
@@ -683,7 +683,7 @@ export function getLineQuadraticCurveIntersectionPoints(
   // replace x, y, group t: (-c4 e1 + c2 e2) t t + (-2 c3 e1 + 2 c1 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -714,7 +714,7 @@ export function getCircleQuadraticCurveIntersectionPoints(
     a1 * a1 + b1 * b1 + -r1 * r1 + -2 * a1 * x1 + x1 * x1 + -2 * b1 * y1 + y1 * y1,
   )
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -751,7 +751,7 @@ export function getEllipseQuadraticCurveIntersectionPoints(
     (d2 * d5 + d1 * d6) ** 2 * d3 + (d1 * d5 + - d2 * d6) ** 2 * d4 + -1
   )
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -797,7 +797,7 @@ export function getTwoQuadraticCurveIntersectionPoints(
     e1 + -e3 * f4 + f4 * f4
   )
   if (!extend) {
-    vs = vs.filter(v => v >= 0 && v <= 1)
+    vs = vs.filter(v => largerOrEqual(v, 0) && lessOrEqual(v, 1))
   }
   return vs.map(v => ({
     x: d2 * v * v + 2 * d1 * v + a4,
@@ -836,7 +836,7 @@ export function getLineBezierCurveIntersectionPoints(
   // replace x, y, group t: (-d1 e1 + c1 e2) t t t + (-d2 e1 + c2 e2) t t + (-d3 e1 + c3 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -867,7 +867,7 @@ export function getCircleBezierCurveIntersectionPoints(
   const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
   let ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -911,7 +911,7 @@ export function getEllipseBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -964,7 +964,7 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -1029,7 +1029,7 @@ export function getTwoBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => t >= 0 && t <= 1)
+    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,

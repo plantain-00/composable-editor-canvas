@@ -1,4 +1,4 @@
-import { Position, polygonToPolyline, isSamePoint, GeneralFormLine, twoPointLineToGeneralFormLine, getParallelLinesByDistance, getTwoPointsRadian, arcToPolyline, getPointByLengthAndDirection, equals } from "./geometry"
+import { Position, polygonToPolyline, isSamePoint, GeneralFormLine, twoPointLineToGeneralFormLine, getParallelLinesByDistance, getTwoPointsRadian, arcToPolyline, getPointByLengthAndDirection, isSameNumber, largerThan, lessThan } from "./geometry"
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { getPerpendicular } from "./perpendicular"
 import { radianToAngle } from "./radian"
@@ -80,17 +80,17 @@ export function getPolylineTriangles(
     const b = points[i]
     const c = points[nextIndex + 1]
     let radian = getTwoPointsRadian(c, b) - getTwoPointsRadian(b, a)
-    if (radian < -Math.PI) {
+    if (lessThan(radian, -Math.PI)) {
       radian += Math.PI * 2
-    } else if (radian > Math.PI) {
+    } else if (largerThan(radian, Math.PI)) {
       radian -= Math.PI * 2
     }
 
-    if (!equals(radian, 0) && !equals(radian, Math.PI) && !equals(radian, -Math.PI)) {
+    if (!isSameNumber(radian, 0) && !isSameNumber(radian, Math.PI) && !isSameNumber(radian, -Math.PI)) {
       let lineJoin = lineJoinWithLimit
       if (radianLimit !== undefined) {
         let a = Math.abs(radian)
-        if (a > Math.PI / 2) {
+        if (largerThan(a, Math.PI / 2)) {
           a = Math.PI - a
         }
         if (a < radianLimit) {
@@ -99,7 +99,7 @@ export function getPolylineTriangles(
       }
 
       if (lineJoin === 'bevel' || lineJoin === 'round') {
-        if (radian > 0 && radian < Math.PI) {
+        if (largerThan(radian, 0) && lessThan(radian, Math.PI)) {
           const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
           const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], getPerpendicular(points[i], lines[previousIndex]))
           const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[1], getPerpendicular(points[i], lines[nextIndex]))

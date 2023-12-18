@@ -1,4 +1,4 @@
-import { equals, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
+import { isSameNumber, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
 
 /**
  * @public
@@ -48,7 +48,7 @@ export function zoomToFit(
   center: Position,
   paddingScale = 0.8,
 ) {
-  if (bounding && !equals(bounding.start.x, bounding.end.x) && !equals(bounding.start.y, bounding.end.y)) {
+  if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
     const scale = Math.min(width / Math.abs(bounding.end.x - bounding.start.x), height / Math.abs(bounding.end.y - bounding.start.y)) * paddingScale
     return {
       scale,
@@ -67,7 +67,7 @@ export function zoomToFitPoints(
   rotate?: number,
 ) {
   const bounding = getPointsBoundingUnsafe(points)
-  if (bounding && !equals(bounding.start.x, bounding.end.x) && !equals(bounding.start.y, bounding.end.y)) {
+  if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
     let boundingWidth: number
     let boundingHeight: number
     if (rotate) {

@@ -1,4 +1,4 @@
-import { getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
+import { getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, largerThan, pointInPolygon, Position, TwoPointsFormRegion } from "./geometry"
 import { GeometryLine, geometryLineInPolygon, geometryLineIntersectWithPolygon } from "./intersection"
 import { getPointAndGeometryLineMinimumDistance } from "./perpendicular"
 import { Nullable } from "./types"
@@ -87,7 +87,7 @@ export function getContentsByClickTwoPositions<T>(
   contentVisible?: (content: T) => boolean,
 ) {
   const region = getTwoPointsFormRegion(startPosition, endPosition)
-  const partial = startPosition.x > endPosition.x
+  const partial = largerThan(startPosition.x, endPosition.x)
   return getContentsByRegion(contents, getPolygonFromTwoPointsFormRegion(region), partial, false, getModel, contentSelectable, contentVisible)
 }
 
