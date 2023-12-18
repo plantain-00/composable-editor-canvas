@@ -1,4 +1,4 @@
-import { isZero, largerThan, sqrt3 } from "./geometry"
+import { isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./geometry"
 
 /**
  * a x + b = 0
@@ -22,7 +22,7 @@ export function calculateEquation2(a: number, b: number, c: number, delta?: numb
     c /= a
   }
   const f = b ** 2 - 4 * c
-  if (f < 0 && !isZero(f, delta)) {
+  if (lessThan(f, 0, delta)) {
     return []
   }
   if (isZero(f, delta)) {
@@ -217,7 +217,7 @@ export function calculateEquation5(params: number[], x0: number, delta = 1e-5, m
     }
   }
   const remains = calculateEquation5(newParams, x0, delta, maxIteratorCount)
-  if (remains.some(r => isZero(r - x, delta))) {
+  if (remains.some(r => isSameNumber(r, x, delta))) {
     return remains
   }
   return [x, ...remains]

@@ -259,7 +259,7 @@ export function getModel(ctx: PluginContext) {
         const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleRadian(p, content)), content))
         angles.sort((a, b) => a - b)
         const result: ArcContent[] = []
-        if (!ctx.equals(angles[0], content.startAngle)) {
+        if (!ctx.isSameNumber(angles[0], content.startAngle)) {
           result.push({
             ...content,
             type: 'arc',
@@ -269,7 +269,7 @@ export function getModel(ctx: PluginContext) {
         }
         angles.forEach((a, i) => {
           if (i === angles.length - 1) {
-            if (!ctx.equals(a, content.endAngle)) {
+            if (!ctx.isSameNumber(a, content.endAngle)) {
               result.push({
                 ...content,
                 type: 'arc',

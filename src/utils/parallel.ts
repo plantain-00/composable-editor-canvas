@@ -1,6 +1,6 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd, getGeometryLineParamAtPoint } from "./break"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, isZero, minimumBy, minimumsBy, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, isZero, minimumBy, minimumsBy, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve, getTwoGeneralFormLinesIntersectionPoint, getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
@@ -121,7 +121,7 @@ export function getParallelBezierCurvesByDistance<T extends BezierCurve>(curve: 
  */
 export function getPointSideOfCircle(point: Position, circle: Circle): number {
   const distance = getTwoPointsDistance(point, circle)
-  if (isZero(distance - circle.r)) return 0
+  if (isSameNumber(distance, circle.r)) return 0
   return distance > circle.r ? 1 : -1
 }
 
@@ -144,7 +144,7 @@ export function getPointSideOfEllipse(point: Position, { rx, ry, cx, cy, angle }
   const a1 = Math.sin(radian), a2 = Math.cos(radian)
   // (a2(x - cx) + a1(y - cy))^2/rx/rx + (-a1(x - cx) + a2(y - cy))^2/ry/ry = 1
   const d = (a2 * (point.x - cx) + a1 * (point.y - cy)) ** 2 / rx / rx + (-a1 * (point.x - cx) + a2 * (point.y - cy)) ** 2 / ry / ry
-  if (isZero(d - 1)) return 0
+  if (isSameNumber(d, 1)) return 0
   return d > 1 ? 1 : -1
 }
 

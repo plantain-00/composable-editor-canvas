@@ -1381,7 +1381,7 @@ function getModel(ctx) {
         const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.radianToAngle(ctx.getCircleRadian(p, content)), content));
         angles.sort((a, b) => a - b);
         const result = [];
-        if (!ctx.equals(angles[0], content.startAngle)) {
+        if (!ctx.isSameNumber(angles[0], content.startAngle)) {
           result.push({
             ...content,
             type: "arc",
@@ -1391,7 +1391,7 @@ function getModel(ctx) {
         }
         angles.forEach((a, i) => {
           if (i === angles.length - 1) {
-            if (!ctx.equals(a, content.endAngle)) {
+            if (!ctx.isSameNumber(a, content.endAngle)) {
               result.push({
                 ...content,
                 type: "arc",
@@ -3026,7 +3026,7 @@ function getModel(ctx) {
         const angles = points.map((p) => ctx.normalizeAngleInRange(ctx.getEllipseAngle(p, content), content));
         angles.sort((a, b) => a - b);
         const result = [];
-        if (!ctx.equals(angles[0], content.startAngle)) {
+        if (!ctx.isSameNumber(angles[0], content.startAngle)) {
           result.push({
             ...content,
             type: "ellipse arc",
@@ -3036,7 +3036,7 @@ function getModel(ctx) {
         }
         angles.forEach((a, i) => {
           if (i === angles.length - 1) {
-            if (!ctx.equals(a, content.endAngle)) {
+            if (!ctx.isSameNumber(a, content.endAngle)) {
               result.push({
                 ...content,
                 type: "ellipse arc",

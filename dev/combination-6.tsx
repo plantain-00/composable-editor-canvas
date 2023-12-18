@@ -1,6 +1,6 @@
 import React from "react"
 import { produce } from "immer"
-import { Button, CanvasDraw, Position, getDirectionByRadian, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize } from "../src";
+import { Button, CanvasDraw, Position, getDirectionByRadian, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize, lessThan } from "../src";
 
 export function Combination6() {
   const { width, height } = useWindowSize()
@@ -224,7 +224,7 @@ function getLaunchSpeed(target: Position & { speed: Position }, position: Positi
   const r0 = launchSpeed ** 2
   const a = dx ** 2 + dy ** 2
   const b = 4 * r0 * dx ** 2 - 4 * c ** 2 + 4 * r0 * dy ** 2
-  if (b < 0) {
+  if (lessThan(b, 0)) {
     return []
   }
   const f = -c * dy

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Patch, enablePatches, produceWithPatches } from 'immer'
-import { bindMultipleRefs, equals, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, solveEquations, Transform, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
+import { bindMultipleRefs, isSameNumber, getAngleSnapPosition, getPointAndLineSegmentMinimumDistance, getTwoNumbersDistance, getTwoPointsDistance, isSamePath, metaKeyIfMacElseCtrlKey, Nullable, ObjectEditor, Position, reverseTransformPosition, scaleByCursorPosition, solveEquations, Transform, useEdit, useEvent, useGlobalKeyDown, useLineClickCreate, usePatchBasedUndoRedo, useWheelScroll, useWheelZoom, useWindowSize } from "../../src";
 import { BaseContent, CircleContent, contentIndexCache, contentIsReferenced, EquationData, getContentModel, isDeviceContent, isJunctionContent, JunctionContent, LineContent, ContentUpdater, modelCenter, registerModel, updateReferencedContents } from "./model";
 import { powerModel } from "./plugins/power";
 import { resistanceModel } from './plugins/resistance';
@@ -232,7 +232,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
         }
         return undefined
       })
-      if (equals(lastPosition.x, p.x)) {
+      if (isSameNumber(lastPosition.x, p.x)) {
         for (const content of state) {
           if (content && isJunctionContent(content) && getTwoNumbersDistance(p.y, content.position.y) <= 5) {
             const r = {
@@ -247,7 +247,7 @@ export const CircuitGraphEditor = React.forwardRef((props: {
             return r
           }
         }
-      } else if (equals(lastPosition.y, p.y)) {
+      } else if (isSameNumber(lastPosition.y, p.y)) {
         for (const content of state) {
           if (content && isJunctionContent(content) && getTwoNumbersDistance(p.x, content.position.x) <= 5) {
             const r = {

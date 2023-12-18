@@ -1,5 +1,5 @@
 import test from 'ava'
-import { toQuadraticCurves, toBezierCurves, equals, interpolate3, interpolate4, interpolateNurbs, interpolateNurbs2, Vec2 } from '../src'
+import { toQuadraticCurves, toBezierCurves, isSameNumber, interpolate3, interpolate4, interpolateNurbs, interpolateNurbs2, Vec2 } from '../src'
 
 test('interpolateNurbs2', (t) => {
   const tvalues = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -54,22 +54,22 @@ test('toBezierCurves', (t) => {
   const count = 32
   let p = [1, 2, 3, 4]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
   }
 
   p = [1, 2, 3, 4, 5]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
   }
 
   p = [1, 2, 3, 4, 5, 6]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
   }
 
   p = [1, 2, 3, 4, 5, 7]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 3, p)))
   }
 })
 
@@ -88,21 +88,21 @@ test('toQuadraticCurves', (t) => {
   const count = 32
   let p = [1, 2, 3]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
   }
 
   p = [1, 2, 3, 4]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
   }
 
   p = [1, 2, 3, 4, 5]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
   }
 
   p = [1, 2, 3, 4, 5, 6]
   for (let i = 0; i < count; i++) {
-    t.true(equals(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
+    t.true(isSameNumber(interpolate(i / count, p), interpolateNurbs(i / count, 2, p)))
   }
 })

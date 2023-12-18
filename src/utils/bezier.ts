@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation3 } from "./equation-calculater"
-import { Position, getTwoPointCenter, isZero } from "./geometry"
+import { lessOrEqual, Position, getTwoPointCenter, isSameNumber, largerOrEqual } from "./geometry"
 import { BezierCurve, QuadraticCurve } from "./intersection"
 import { toBezierCurves } from "./nurbs"
 import { Vec3 } from "./types"
@@ -56,7 +56,7 @@ export function pointIsOnQuadraticCurve(point: Position, { from: { x: a1, y: b1 
   // x = c2 t t + 2 c1 t + a1
   // y = c4 t t + 2 c3 t + b1
   return calculateEquation2(c2, 2 * c1, a1 - point.x)
-    .filter(t => t >= 0 && t <= 1 && isZero(c4 * t * t + 2 * c3 * t + b1 - point.y)).length > 0
+    .filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1) && isSameNumber(c4 * t * t + 2 * c3 * t + b1, point.y)).length > 0
 }
 
 export function pointIsOnBezierCurve(point: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve) {
@@ -65,7 +65,7 @@ export function pointIsOnBezierCurve(point: Position, { from: { x: a1, y: b1 }, 
   // px = c1 t t t + c2 t t + c3 t + a1
   // py = c4 t t t + c5 t t + c6 t + b1
   return calculateEquation3(c1, c2, c3, a1 - point.x)
-    .filter(t => t >= 0 && t <= 1 && isZero(c4 * t * t * t + c5 * t * t + c6 * t + b1 - point.y)).length > 0
+    .filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1) && isSameNumber(c4 * t * t * t + c5 * t * t + c6 * t + b1, point.y)).length > 0
 }
 
 export function getBezierCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, point: Position) {
@@ -74,7 +74,7 @@ export function getBezierCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp1: { x:
   // px = c1 t t t + c2 t t + c3 t + a1
   // py = c4 t t t + c5 t t + c6 t + b1
   return calculateEquation3(c1, c2, c3, a1 - point.x)
-    .filter(t => isZero(c4 * t * t * t + c5 * t * t + c6 * t + b1 - point.y))[0]
+    .filter(t => isSameNumber(c4 * t * t * t + c5 * t * t + c6 * t + b1, point.y))[0]
 }
 
 export function getBezierCurvePointAtPercent(p1: Position, p2: Position, p3: Position, p4: Position, percent: number) {

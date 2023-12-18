@@ -5,7 +5,7 @@ import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
-import { arcToPolyline, Bounding, circleToArc, dashedPolylineToLines, equals, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { arcToPolyline, Bounding, circleToArc, dashedPolylineToLines, isSameNumber, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
@@ -1016,20 +1016,20 @@ function getLinearGradientGraphic(linearGradient: LinearGradient, points: Positi
         distances.push(-distance)
       }
     }
-    const pOffset = equals(foot.x, start.x) ? (foot.y - start.y) / offset.y : (foot.x - start.x) / offset.x
+    const pOffset = isSameNumber(foot.x, start.x) ? (foot.y - start.y) / offset.y : (foot.x - start.x) / offset.x
     if (pOffset < minOffset) {
       minOffset = pOffset
     } else if (pOffset > maxOffset) {
       maxOffset = pOffset
     }
   })
-  if (!equals(minOffset, stops[0].offset)) {
+  if (!isSameNumber(minOffset, stops[0].offset)) {
     stops.unshift({
       offset: minOffset,
       color: stops[0].color,
     })
   }
-  if (!equals(maxOffset, stops[stops.length - 1].offset)) {
+  if (!isSameNumber(maxOffset, stops[stops.length - 1].offset)) {
     stops.push({
       offset: maxOffset,
       color: stops[stops.length - 1].color,
