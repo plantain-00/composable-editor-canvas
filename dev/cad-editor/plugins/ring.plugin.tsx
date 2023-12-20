@@ -21,19 +21,15 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       const points1 = ctx.arcToPolyline(arc1, angleDelta)
       const points2 = ctx.arcToPolyline(arc2, angleDelta)
       const points = [...points1, ...points2]
-      const lines1 = [{ type: 'arc' as const, curve: arc1 }]
-      const lines2 = [{ type: 'arc' as const, curve: arc2 }]
+      const lines = [{ type: 'arc' as const, curve: arc1 }, { type: 'arc' as const, curve: arc2 }]
       return {
-        lines: [...lines1, ...lines2],
+        lines,
         bounding: ctx.getPointsBounding(points),
         regions: ctx.hasFill(content) ? [
           {
-            lines: lines1,
+            lines,
             points: points1,
-          },
-          {
-            lines: lines2,
-            points: points2,
+            holes: [points2],
           },
         ] : undefined,
         renderingLines: [
@@ -57,7 +53,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       const { renderingLines, regions } = getRingGeometriesFromCache(content)
       if (regions) {
-        return target.renderPath([regions[0].points, regions[1].points], options)
+        return target.renderPath([regions[0].points, ...(regions[0].holes || [])], options)
       }
       return target.renderGroup(renderingLines.map(r => target.renderPolyline(r, options)))
     },

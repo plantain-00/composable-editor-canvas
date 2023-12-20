@@ -4008,21 +4008,25 @@ export {
 `// dev/cad-editor/plugins/hatch.plugin.tsx
 function getModel(ctx) {
   const HatchContent = ctx.and(ctx.BaseContent("hatch"), ctx.FillFields, {
-    border: [ctx.GeometryLine]
+    border: [ctx.GeometryLine],
+    holes: ctx.optional([[ctx.GeometryLine]])
   });
   const geometriesCache = new ctx.WeakmapCache();
   function getHatchGeometries(content) {
     return geometriesCache.get(content, () => {
       const points = ctx.getGeometryLinesPoints(content.border);
+      const holes = (content.holes || []).map((h) => ctx.getGeometryLinesPoints(h));
       return {
         lines: [],
-        points,
+        border: points,
+        holes,
         bounding: ctx.getPointsBounding(points),
         renderingLines: [],
         regions: [
           {
             lines: content.border,
-            points
+            points,
+            holes
           }
         ]
       };
@@ -4033,8 +4037,8 @@ function getModel(ctx) {
     ...ctx.fillModel,
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx);
-      const { points } = getHatchGeometries(content);
-      return target.renderPolygon(points, options);
+      const { border, holes } = getHatchGeometries(content);
+      return target.renderPath([border, ...holes], options);
     },
     getGeometries: getHatchGeometries,
     propertyPanel(content, update, contents) {
@@ -4073,15 +4077,28 @@ function getCommand(ctx) {
           onMove(p) {
             if (contents.length === 0)
               return;
-            const bounding = ctx.editingContentsBoundingCache.get(contents, () => {
+            const bounding = ctx.contentsBoundingCache.get(contents, () => {
               const points = ctx.getContentsPoints(contents, contents);
               return ctx.getPointsBoundingUnsafe(points);
             });
-            const border = ctx.getHatchByPosition(p, bounding, getContentsInRange, contents);
+            const getGeometriesInRange = (region) => {
+              return getContentsInRange(region).map((c) => {
+                var _a, _b;
+                const geometries = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c, contents);
+                if (!geometries)
+                  return void 0;
+                return {
+                  lines: geometries.lines
+                };
+              });
+            };
+            const border = ctx.getHatchByPosition(p, bounding, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
             if (border) {
+              const holes = ctx.getHatchHoles(border, ctx.getGeometryLinesPoints, getGeometriesInRange);
               setHatch({
                 type: "hatch",
-                border
+                border,
+                holes
               });
             } else {
               setHatch(void 0);
@@ -8182,19 +8199,15 @@ function getModel(ctx) {
       const points1 = ctx.arcToPolyline(arc1, angleDelta);
       const points2 = ctx.arcToPolyline(arc2, angleDelta);
       const points = [...points1, ...points2];
-      const lines1 = [{ type: "arc", curve: arc1 }];
-      const lines2 = [{ type: "arc", curve: arc2 }];
+      const lines = [{ type: "arc", curve: arc1 }, { type: "arc", curve: arc2 }];
       return {
-        lines: [...lines1, ...lines2],
+        lines,
         bounding: ctx.getPointsBounding(points),
         regions: ctx.hasFill(content) ? [
           {
-            lines: lines1,
-            points: points1
-          },
-          {
-            lines: lines2,
-            points: points2
+            lines,
+            points: points1,
+            holes: [points2]
           }
         ] : void 0,
         renderingLines: [
@@ -8218,7 +8231,7 @@ function getModel(ctx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
       const { renderingLines, regions } = getRingGeometriesFromCache(content);
       if (regions) {
-        return target.renderPath([regions[0].points, regions[1].points], options);
+        return target.renderPath([regions[0].points, ...regions[0].holes || []], options);
       }
       return target.renderGroup(renderingLines.map((r) => target.renderPolyline(r, options)));
     },

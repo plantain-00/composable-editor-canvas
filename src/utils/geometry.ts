@@ -904,11 +904,11 @@ export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
     const yi = polygon[i].y
     const xj = polygon[j].x
     const yj = polygon[j].y
-    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+    if ((largerThan(yi, y) !== largerThan(yj, y)) && lessThan(x, (xj - xi) * (y - yi) / (yj - yi) + xi)) {
       inside = !inside
     }
   }
-  return inside;
+  return inside
 }
 
 export function* iteratePolylineLines(points: Position[]) {

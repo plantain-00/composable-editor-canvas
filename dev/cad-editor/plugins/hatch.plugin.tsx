@@ -5,25 +5,30 @@ import type * as model from '../model'
 
 export type HatchContent = model.BaseContent<'hatch'> & model.FillFields & {
   border: core.GeometryLine[]
+  holes?: core.GeometryLine[][]
 }
 
 export function getModel(ctx: PluginContext): model.Model<HatchContent> {
   const HatchContent = ctx.and(ctx.BaseContent('hatch'), ctx.FillFields, {
-    border: [ctx.GeometryLine]
+    border: [ctx.GeometryLine],
+    holes: ctx.optional([[ctx.GeometryLine]]),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ border: core.Position[], holes: core.Position[][] }>>()
   function getHatchGeometries(content: Omit<HatchContent, "type">) {
     return geometriesCache.get(content, () => {
       const points = ctx.getGeometryLinesPoints(content.border)
+      const holes = (content.holes || []).map(h => ctx.getGeometryLinesPoints(h))
       return {
         lines: [],
-        points,
+        border: points,
+        holes,
         bounding: ctx.getPointsBounding(points),
         renderingLines: [],
         regions: [
           {
             lines: content.border,
             points,
+            holes,
           },
         ],
       }
@@ -34,8 +39,8 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     ...ctx.fillModel,
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { points } = getHatchGeometries(content)
-      return target.renderPolygon(points, options)
+      const { border, holes } = getHatchGeometries(content)
+      return target.renderPath([border, ...holes], options)
     },
     getGeometries: getHatchGeometries,
     propertyPanel(content, update, contents) {
@@ -84,15 +89,26 @@ export function getCommand(ctx: PluginContext): Command[] {
           },
           onMove(p) {
             if (contents.length === 0) return
-            const bounding = ctx.editingContentsBoundingCache.get(contents, () => {
+            const bounding = ctx.contentsBoundingCache.get(contents, () => {
               const points = ctx.getContentsPoints(contents, contents)
               return ctx.getPointsBoundingUnsafe(points)
             })
-            const border = ctx.getHatchByPosition(p, bounding, getContentsInRange, contents)
+            const getGeometriesInRange = (region: core.TwoPointsFormRegion): (core.HatchGeometries | undefined)[] => {
+              return getContentsInRange(region).map(c => {
+                const geometries = ctx.getContentModel(c)?.getGeometries?.(c, contents)
+                if (!geometries) return undefined
+                return {
+                  lines: geometries.lines,
+                }
+              })
+            }
+            const border = ctx.getHatchByPosition(p, bounding, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange)
             if (border) {
+              const holes = ctx.getHatchHoles(border, ctx.getGeometryLinesPoints, getGeometriesInRange)
               setHatch({
                 type: 'hatch',
                 border,
+                holes,
               })
             } else {
               setHatch(undefined)
