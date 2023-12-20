@@ -16,6 +16,7 @@ export function getContentByClickPosition<T>(
       lines: GeometryLine[]
       regions?: {
         points: Position[]
+        holes?: Position[][]
       }[]
     },
     canSelectPart?: boolean,
@@ -51,7 +52,11 @@ export function getContentByClickPosition<T>(
       }
       if (regions) {
         for (let j = 0; j < regions.length; j++) {
-          if (pointInPolygon(position, regions[j].points)) {
+          const region = regions[j]
+          if (region.holes && region.holes.some(h => pointInPolygon(position, h))) {
+            continue
+          }
+          if (pointInPolygon(position, region.points)) {
             if (part && model.canSelectPart && contentSelectable([i, j])) {
               return [i, j + lines.length]
             }

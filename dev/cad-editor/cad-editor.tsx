@@ -3,7 +3,7 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getSortedContents, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -474,7 +474,7 @@ export const CADEditor = React.forwardRef((props: {
         setActiveViewportIndex(activeIndex)
         return
       }
-      const indexes = getSortedContents(editingContent).indexes
+      const indexes = getContentsInRange({ start: point, end: point }).map(c => getContentIndex(c, editingContent))
       const index = getContentByClickPosition(editingContent, point, () => true, getContentModel, false, contentVisible, indexes)
       if (index !== undefined) {
         const content = editingContent[index[0]]
@@ -661,7 +661,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       onEditMove(s.position, selectedContents, s.target)
       // hover by position
-      const indexes = getSortedContents(editingContent).indexes
+      const indexes = getContentsInRange({ start: p, end: p }).map(c => getContentIndex(c, editingContent))
       setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes, 3 / scaleWithViewport))
     }
   })

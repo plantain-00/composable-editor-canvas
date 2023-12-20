@@ -1,6 +1,6 @@
 import { getBezierCurveDerivatives, getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { Arc, EllipseArc, Position, isSameNumber, getTwoPointCenter, isSamePoint, isZero, pointIsOnLine, equals } from "./geometry"
-import { BezierCurve, QuadraticCurve } from "./intersection"
+import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
   if (!isSamePoint(line1[1], line2[0])) return
@@ -136,4 +136,32 @@ export function mergeBezierCurvesToBezierSpline(curves: BezierCurve[]): Position
 
 export function isSameDerivative(a: Position, b: Position) {
   return isSameNumber(a.x * b.y, a.y * b.x)
+}
+
+export function mergeGeometryLine(line1: GeometryLine, line2: GeometryLine): GeometryLine | undefined {
+  if (Array.isArray(line1) && Array.isArray(line2)) {
+    return mergeLineSegment(line1, line2)
+  }
+  if (Array.isArray(line1) || Array.isArray(line2)) return
+  if (line1.type === 'arc' && line2.type === 'arc') {
+    const curve = mergeArc(line1.curve, line2.curve)
+    if (!curve) return
+    return { type: 'arc', curve }
+  }
+  if (line1.type === 'ellipse arc' && line2.type === 'ellipse arc') {
+    const curve = mergeEllipseArc(line1.curve, line2.curve)
+    if (!curve) return
+    return { type: 'ellipse arc', curve }
+  }
+  if (line1.type === 'quadratic curve' && line2.type === 'quadratic curve') {
+    const curve = mergeQuadraticCurve(line1.curve, line2.curve)
+    if (!curve) return
+    return { type: 'quadratic curve', curve }
+  }
+  if (line1.type === 'bezier curve' && line2.type === 'bezier curve') {
+    const curve = mergeBezierCurve(line1.curve, line2.curve)
+    if (!curve) return
+    return { type: 'bezier curve', curve }
+  }
+  return
 }

@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getTwoGeometryLinesIntersectionPoint, getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, reverseGeometryLine, getRadianSideOfRadian, getPartOfGeometryLine, pointIsOnGeometryLine, getGeometryLineStartAndEnd, isGeometryLinesClosed, pointInPolygon, largerThan, minimumsBy, maxmiumBy, getPointsBoundingUnsafe } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -301,6 +301,10 @@ export type Geometries<T extends object = object> = T & {
      * Used for (1)select region by box
      */
     lines: GeometryLine[]
+    /**
+     * Used for (1)select region by click
+     */
+    holes?: Position[][]
   }[]
   /**
    * Used for (1)line rendering
@@ -1742,116 +1746,11 @@ export function getClipContentEditPoints(content: ClipFields, contents: readonly
   } as EditPoint<BaseContent>))
 }
 
-export function getHatchByPosition(
-  position: Position,
-  bounding: TwoPointsFormRegion,
-  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[],
-  contents: readonly Nullable<BaseContent>[],
-) {
-  const directionLine: [Position, Position] = [position, { x: bounding.end.x, y: position.y }]
-  const intersections: { line: GeometryLine, point: Position }[] = []
-  const editingContent = getContentsInRange(bounding)
-  for (const content of editingContent) {
-    if (!content) continue
-    const geometries = getContentModel(content)?.getGeometries?.(content, contents)
-    if (geometries) {
-      for (const line of geometries.lines) {
-        const points = getTwoGeometryLinesIntersectionPoint(line, directionLine)
-        intersections.push(...points.map(point => ({ line, point })))
-      }
-    }
-  }
-  if (intersections.length == 0) return
-  intersections.sort((a, b) => a.point.x - b.point.x)
-  for (const r of intersections) {
-    const param = getGeometryLineParamAtPoint(r.point, r.line)
-    const radian = getGeometryLinePointAndTangentRadianAtParam(param, r.line).radian
-    if (getRadianSideOfRadian(0, radian) === 1) {
-      r.line = reverseGeometryLine(r.line)
-    }
-    const closed = isGeometryLinesClosed([r.line])
-    let s = getRightSideGeometryLine(r.point, r.line, closed, getContentsInRange, contents)
-    const result: GeometryLine[] = []
-    let i = 0
-    for (; ;) {
-      if (i++ >= 10) {
-        console.info(position, result)
-        break
-      }
-      if (!s) break
-      if (
-        !isSamePoint(getGeometryLineStartAndEnd(s.line).start, r.point) &&
-        s.next &&
-        pointIsOnGeometryLine(r.point, s.line)
-      ) {
-        result.push(getPartOfGeometryLine(0, getGeometryLineParamAtPoint(r.point, s.line), s.line, closed))
-        break
-      }
-      result.push(s.line)
-      if (s.next) {
-        s = getRightSideGeometryLine(s.next.point, s.next.line, closed, getContentsInRange, contents)
-      } else {
-        break
-      }
-    }
-    if (result.length > 0 && isGeometryLinesClosed(result) && pointInPolygon(position, getGeometryLinesPoints(result))) {
-      return result
-    }
-  }
-  return
-}
-
-export const editingContentsBoundingCache = new WeakmapCache<readonly Nullable<BaseContent>[], TwoPointsFormRegion>()
+export const contentsBoundingCache = new WeakmapCache<readonly Nullable<BaseContent>[], TwoPointsFormRegion>()
 const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion>()
 
-function getRightSideGeometryLine(
-  startPoint: Position,
-  startLine: GeometryLine,
-  closed: boolean,
-  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[],
-  contents: readonly Nullable<BaseContent>[],
-): { line: GeometryLine, next?: { line: GeometryLine, point: Position } } | undefined {
-  const startParam = getGeometryLineParamAtPoint(startPoint, startLine)
-  const region = geometryLineBoundingCache.get(startLine, () => {
-    return getPointsBoundingUnsafe(getGeometryLinesPoints([startLine]))
+export function getGeometryLineBounding(line: GeometryLine) {
+  return geometryLineBoundingCache.get(line, () => {
+    return getPointsBoundingUnsafe(getGeometryLinesPoints([line]))
   })
-  const editingContent = getContentsInRange(region)
-  const intersections: { line: GeometryLine, point: Position, param: number, originalParam: number }[] = []
-  for (const content of editingContent) {
-    if (!content) continue
-    const geometries = getContentModel(content)?.getGeometries?.(content, contents)
-    if (!geometries) continue
-    for (const line of geometries.lines) {
-      const points = getTwoGeometryLinesIntersectionPoint(line, startLine)
-      for (const point of points) {
-        const param = getGeometryLineParamAtPoint(point, startLine)
-        intersections.push({ line, param: largerThan(param, startParam) ? param : param + 1, point, originalParam: param })
-      }
-    }
-  }
-  if (intersections.length === 0 && closed) {
-    return {
-      line: startLine,
-    }
-  }
-  if (intersections.length < 2) return
-  const minimums = minimumsBy(intersections, s => s.param)
-  let r = minimums[0]
-  if (minimums.length > 1) {
-    r = maxmiumBy(intersections, s => s.originalParam)
-  }
-  const endParam = getGeometryLineParamAtPoint(r.point, startLine)
-  const startRadian = getGeometryLinePointAndTangentRadianAtParam(endParam, startLine).radian
-  const radian = getGeometryLinePointAndTangentRadianAtParam(getGeometryLineParamAtPoint(r.point, r.line), r.line).radian
-  if (getRadianSideOfRadian(startRadian, radian) === 1) {
-    r.line = reverseGeometryLine(r.line)
-  }
-  const line = getPartOfGeometryLine(startParam, endParam, startLine, closed)
-  return {
-    line,
-    next: {
-      line: r.line,
-      point: r.point,
-    },
-  }
 }
