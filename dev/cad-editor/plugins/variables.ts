@@ -4009,13 +4009,19 @@ export {
 function getModel(ctx) {
   const HatchContent = ctx.and(ctx.BaseContent("hatch"), ctx.FillFields, {
     border: [ctx.GeometryLine],
-    holes: ctx.optional([[ctx.GeometryLine]])
+    holes: ctx.optional([[ctx.GeometryLine]]),
+    ref: ctx.optional({
+      point: ctx.Position,
+      end: ctx.Position,
+      ids: [ctx.or(ctx.number, ctx.Content)]
+    })
   });
+  const refGeometriesCache = new ctx.WeakmapValuesCache();
   const geometriesCache = new ctx.WeakmapCache();
-  function getHatchGeometries(content) {
-    return geometriesCache.get(content, () => {
-      const points = ctx.getGeometryLinesPoints(content.border);
-      const holes = (content.holes || []).map((h) => ctx.getGeometryLinesPoints(h));
+  function getHatchGeometries(content, contents) {
+    const getDefault = (hatch) => geometriesCache.get(hatch, () => {
+      const points = ctx.getGeometryLinesPoints(hatch.border);
+      const holes = (hatch.holes || []).map((h) => ctx.getGeometryLinesPoints(h));
       return {
         lines: [],
         border: points,
@@ -4024,20 +4030,48 @@ function getModel(ctx) {
         renderingLines: [],
         regions: [
           {
-            lines: content.border,
+            lines: hatch.border,
             points,
             holes
           }
         ]
       };
     });
+    if (content.ref && content.ref.ids.length > 0) {
+      const refContents = content.ref.ids.map((id) => ctx.getReference(id, contents)).filter((d) => !!d);
+      if (refContents.length > 0) {
+        const p = content.ref.point;
+        const end = content.ref.end;
+        return refGeometriesCache.get(content, refContents, () => {
+          const getGeometriesInRange = () => refContents.map((c) => ctx.getContentHatchGeometries(c, contents));
+          const border = ctx.getHatchByPosition(p, end, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
+          if (border) {
+            const holes = ctx.getHatchHoles(border.lines, ctx.getGeometryLinesPoints, getGeometriesInRange);
+            return getDefault({
+              border: border.lines,
+              holes: holes == null ? void 0 : holes.holes
+            });
+          }
+          return getDefault(content);
+        });
+      }
+    }
+    return getDefault(content);
   }
   return {
     type: "hatch",
     ...ctx.fillModel,
+    move(content, offset) {
+      if (content.ref) {
+        content.ref.point.x += offset.x;
+        content.ref.point.y += offset.y;
+        content.ref.end.x += offset.x;
+        content.ref.end.y += offset.y;
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx);
-      const { border, holes } = getHatchGeometries(content);
+      const { border, holes } = getHatchGeometries(content, renderCtx.contents);
       return target.renderPath([border, ...holes], options);
     },
     getGeometries: getHatchGeometries,
@@ -4046,7 +4080,25 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
-    isValid: (c, p) => ctx.validate(c, HatchContent, p)
+    isValid: (c, p) => ctx.validate(c, HatchContent, p),
+    getRefIds: (content) => {
+      var _a;
+      return [
+        ...ctx.getFillRefIds(content),
+        ...(((_a = content.ref) == null ? void 0 : _a.ids) || []).filter((d) => typeof d === "number")
+      ];
+    },
+    updateRefId(content, update) {
+      if (content.ref) {
+        for (const [i, id] of content.ref.ids.entries()) {
+          const newRefId = update(id);
+          if (newRefId !== void 0) {
+            content.ref.ids[i] = newRefId;
+          }
+        }
+      }
+      ctx.updateFillRefIds(content, update);
+    }
   };
 }
 function isHatchContent(content) {
@@ -4081,24 +4133,20 @@ function getCommand(ctx) {
               const points = ctx.getContentsPoints(contents, contents);
               return ctx.getPointsBoundingUnsafe(points);
             });
-            const getGeometriesInRange = (region) => {
-              return getContentsInRange(region).map((c) => {
-                var _a, _b;
-                const geometries = (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c, contents);
-                if (!geometries)
-                  return void 0;
-                return {
-                  lines: geometries.lines
-                };
-              });
-            };
-            const border = ctx.getHatchByPosition(p, bounding, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
+            const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
+            const end = { x: bounding.end.x, y: p.y };
+            const border = ctx.getHatchByPosition(p, end, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
             if (border) {
-              const holes = ctx.getHatchHoles(border, ctx.getGeometryLinesPoints, getGeometriesInRange);
+              const holes = ctx.getHatchHoles(border.lines, ctx.getGeometryLinesPoints, getGeometriesInRange);
               setHatch({
                 type: "hatch",
-                border,
-                holes
+                border: border.lines,
+                holes: holes == null ? void 0 : holes.holes,
+                ref: {
+                  point: p,
+                  end,
+                  ids: [...border.ids, ...(holes == null ? void 0 : holes.ids) || []]
+                }
               });
             } else {
               setHatch(void 0);

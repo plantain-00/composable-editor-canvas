@@ -5,6 +5,17 @@ export const Cursor = React.forwardRef((
   ref: React.ForwardedRef<HTMLInputElement>,
 ) => {
   const [focused, setFocused] = React.useState(false)
+  const [active, setActive] = React.useState(false)
+  const timeout = React.useRef<NodeJS.Timeout>()
+  React.useEffect(() => {
+    setActive(true)
+    if (timeout.current) {
+      clearTimeout(timeout.current)
+    }
+    timeout.current = setTimeout(() => {
+      setActive(false)
+    }, 500)
+  }, [props.style?.left, props.style?.top])
   return (
     <>
       <input
@@ -40,7 +51,7 @@ export const Cursor = React.forwardRef((
         display: !focused || props.readOnly ? 'none' : 'inline-block',
         position: 'absolute',
         width: '1px',
-        animation: 'blink 1s infinite',
+        animation: active ? undefined : 'blink 1s infinite',
         borderLeft: '1px solid black',
         userSelect: 'none',
         ...props.style,
