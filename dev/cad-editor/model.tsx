@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe, HatchGeometries } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -1240,10 +1240,10 @@ export function updateStrokeRefIds(content: StrokeFields, update: (id: number | 
     }
   }
 }
-function getFillRefIds(content: FillFields) {
+export function getFillRefIds(content: FillFields) {
   return typeof content.fillStyleId === 'number' ? [content.fillStyleId] : []
 }
-function updateFillRefIds(content: FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+export function updateFillRefIds(content: FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
   if (content.fillStyleId !== undefined) {
     const newRefId = update(content.fillStyleId)
     if (newRefId !== undefined) {
@@ -1753,4 +1753,14 @@ export function getGeometryLineBounding(line: GeometryLine) {
   return geometryLineBoundingCache.get(line, () => {
     return getPointsBoundingUnsafe(getGeometryLinesPoints([line]))
   })
+}
+
+export function getContentHatchGeometries(content: BaseContent, contents: readonly Nullable<BaseContent>[]): HatchGeometries | undefined {
+  const geometries = getContentModel(content)?.getGeometries?.(content, contents)
+  if (!geometries) return undefined
+  if (geometries.lines.length > 30) return undefined
+  return {
+    lines: geometries.lines,
+    id: getContentIndex(content, contents),
+  }
 }
