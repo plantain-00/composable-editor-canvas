@@ -63,8 +63,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
     ...ctx.fillModel,
     ...ctx.angleDeltaModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     offset(content, point, distance) {
       if (!distance) {

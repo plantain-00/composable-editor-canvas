@@ -90,8 +90,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     type: 'text',
     ...ctx.textModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {

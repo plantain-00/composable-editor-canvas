@@ -34,10 +34,8 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.p1.x += offset.x;
-      content.p1.y += offset.y;
-      content.p2.x += offset.x;
-      content.p2.y += offset.y;
+      ctx.movePoint(content.p1, offset);
+      ctx.movePoint(content.p2, offset);
     },
     rotate(content, center, angle) {
       content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle);
@@ -405,8 +403,7 @@ function getModel(ctx) {
     type: "block reference",
     ...ctx.variableValuesModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     rotate(content, center, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
@@ -1168,8 +1165,7 @@ function getModel(ctx) {
       ...ctx.strokeModel,
       ...ctx.fillModel,
       move(content, offset) {
-        content.x += offset.x;
-        content.y += offset.y;
+        ctx.movePoint(content, offset);
       },
       rotate(content, center, angle) {
         const p = ctx.rotatePositionByCenter(content, center, -angle);
@@ -1349,8 +1345,7 @@ function getModel(ctx) {
       ...ctx.fillModel,
       ...ctx.angleDeltaModel,
       move(content, offset) {
-        content.x += offset.x;
-        content.y += offset.y;
+        ctx.movePoint(content, offset);
       },
       rotate(content, center, angle) {
         const p = ctx.rotatePositionByCenter(content, center, -angle);
@@ -2059,8 +2054,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, renderCtx) {
       const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -2534,8 +2528,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     explode(content) {
       const { lines } = getGeometries(content);
@@ -2827,8 +2820,7 @@ function getModel(ctx) {
     ...ctx.fillModel,
     ...ctx.angleDeltaModel,
     move(content, offset) {
-      content.cx += offset.x;
-      content.cy += offset.y;
+      ctx.moveEllipse(content, offset);
     },
     rotate(content, center, angle) {
       var _a;
@@ -3666,8 +3658,7 @@ function getModel(ctx) {
     type: "fill style",
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, { target, getFillColor, transformColor, getFillPattern }) {
       const options = {
@@ -4063,10 +4054,18 @@ function getModel(ctx) {
     ...ctx.fillModel,
     move(content, offset) {
       if (content.ref) {
-        content.ref.point.x += offset.x;
-        content.ref.point.y += offset.y;
-        content.ref.end.x += offset.x;
-        content.ref.end.y += offset.y;
+        ctx.movePoint(content.ref.point, offset);
+        ctx.movePoint(content.ref.end, offset);
+      }
+      for (const line of content.border) {
+        ctx.moveGeometryLine(line, offset);
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.moveGeometryLine(line, offset);
+          }
+        }
       }
     },
     render(content, renderCtx) {
@@ -4197,8 +4196,7 @@ function getModel(ctx) {
     ...ctx.clipModel,
     move(content, offset) {
       var _a, _b;
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
       if (content.clip) {
         (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.clip.border, offset);
       }
@@ -4362,8 +4360,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x;
-        point.y += offset.y;
+        ctx.movePoint(point, offset);
       }
     },
     rotate(content, center, angle) {
@@ -4715,12 +4712,9 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.p1.x += offset.x;
-      content.p1.y += offset.y;
-      content.p2.x += offset.x;
-      content.p2.y += offset.y;
-      content.position.x += offset.x;
-      content.position.y += offset.y;
+      ctx.movePoint(content.p1, offset);
+      ctx.movePoint(content.p2, offset);
+      ctx.movePoint(content.position, offset);
     },
     render(content, renderCtx) {
       const { options, fillOptions, contents, target, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -5362,8 +5356,7 @@ function getModel(ctx) {
     ...ctx.segmentCountModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x;
-        point.y += offset.y;
+        ctx.movePoint(point, offset);
       }
     },
     rotate(content, center, angle) {
@@ -5996,20 +5989,15 @@ function getModel(ctx) {
     move(content, offset) {
       for (const command of content.commands) {
         if (command.type !== "close") {
-          command.to.x += offset.x;
-          command.to.y += offset.y;
+          ctx.movePoint(command.to, offset);
         }
         if (command.type === "arc") {
-          command.from.x += offset.x;
-          command.from.y += offset.y;
+          ctx.movePoint(command.from, offset);
         } else if (command.type === "bezierCurve") {
-          command.cp1.x += offset.x;
-          command.cp1.y += offset.y;
-          command.cp2.x += offset.x;
-          command.cp2.y += offset.y;
+          ctx.movePoint(command.cp1, offset);
+          ctx.movePoint(command.cp2, offset);
         } else if (command.type === "quadraticCurve") {
-          command.cp.x += offset.x;
-          command.cp.y += offset.y;
+          ctx.movePoint(command.cp, offset);
         }
       }
     },
@@ -6528,8 +6516,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x;
-        point.y += offset.y;
+        ctx.movePoint(point, offset);
       }
     },
     rotate(content, center, angle) {
@@ -6607,8 +6594,7 @@ function getModel(ctx) {
   return {
     type: "point",
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     rotate(content, center, angle) {
       const p = ctx.rotatePositionByCenter(content, center, -angle);
@@ -6775,8 +6761,7 @@ function getModel(ctx) {
     ...ctx.containerModel,
     move(content, offset) {
       ctx.getContainerMove(content, offset);
-      content.center.x += offset.x;
-      content.center.y += offset.y;
+      ctx.movePoint(content.center, offset);
     },
     rotate(content, center, angle, contents) {
       content.center = ctx.rotatePositionByCenter(content.center, center, -angle);
@@ -7090,8 +7075,7 @@ function getModel(ctx) {
     ...ctx.fillModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x;
-        point.y += offset.y;
+        ctx.movePoint(point, offset);
       }
     },
     rotate(content, center, angle) {
@@ -7289,8 +7273,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.position.x += offset.x;
-      content.position.y += offset.y;
+      ctx.movePoint(content.position, offset);
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -7809,8 +7792,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     rotate(content, center, angle) {
       const p = ctx.rotatePositionByCenter(content, center, -angle);
@@ -8045,8 +8027,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     offset(content, point, distance) {
       var _a;
@@ -8272,8 +8253,7 @@ function getModel(ctx) {
     ...ctx.fillModel,
     ...ctx.angleDeltaModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
@@ -8563,8 +8543,7 @@ function getModel(ctx) {
     ...ctx.fillModel,
     ...ctx.angleDeltaModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     offset(content, point, distance) {
       var _a;
@@ -8825,8 +8804,7 @@ function getModel(ctx) {
     ...ctx.segmentCountModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x;
-        point.y += offset.y;
+        ctx.movePoint(point, offset);
       }
     },
     rotate(content, center, angle) {
@@ -9127,8 +9105,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     offset(content, point, distance) {
       var _a;
@@ -9329,8 +9306,7 @@ function getModel(ctx) {
     type: "stroke style",
     ...ctx.strokeModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, transformColor }) {
       var _a;
@@ -9581,8 +9557,7 @@ function getModel(ctx) {
     type: "table",
     ...ctx.strokeModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, renderCtx) {
       const geometries = getGeometries(content);
@@ -10027,8 +10002,7 @@ function getModel(ctx) {
     type: "text style",
     ...ctx.textModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, { target, transformColor }) {
       const { width, height, text } = getGeometriesFromCache(content);
@@ -10227,8 +10201,7 @@ function getModel(ctx) {
     type: "text",
     ...ctx.textModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -10556,8 +10529,7 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     render(content, renderCtx) {
       const { options, contents, time, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -10902,8 +10874,7 @@ function getModel(ctx) {
     move(content, offset) {
       var _a, _b;
       (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.border, offset);
-      content.x += offset.x;
-      content.y += offset.y;
+      ctx.movePoint(content, offset);
     },
     rotate(content, center, angle, contents) {
       var _a, _b;

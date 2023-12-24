@@ -37,8 +37,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     ...ctx.fillModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x
-        point.y += offset.y
+        ctx.movePoint(point, offset)
       }
     },
     rotate(content, center, angle) {

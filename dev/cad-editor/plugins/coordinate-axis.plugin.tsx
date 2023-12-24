@@ -63,8 +63,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     render(content, renderCtx) {
       const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

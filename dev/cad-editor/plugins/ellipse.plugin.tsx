@@ -76,8 +76,7 @@ export function getModel(ctx: PluginContext) {
     ...ctx.fillModel,
     ...ctx.angleDeltaModel,
     move(content, offset) {
-      content.cx += offset.x
-      content.cy += offset.y
+      ctx.moveEllipse(content, offset)
     },
     rotate(content, center, angle) {
       const p = ctx.rotatePositionByCenter(ctx.getEllipseCenter(content), center, -angle)

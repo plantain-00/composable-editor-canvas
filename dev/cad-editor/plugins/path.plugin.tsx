@@ -37,20 +37,15 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     move(content, offset) {
       for (const command of content.commands) {
         if (command.type !== 'close') {
-          command.to.x += offset.x
-          command.to.y += offset.y
+          ctx.movePoint(command.to, offset)
         }
         if (command.type === 'arc') {
-          command.from.x += offset.x
-          command.from.y += offset.y
+          ctx.movePoint(command.from, offset)
         } else if (command.type === 'bezierCurve') {
-          command.cp1.x += offset.x
-          command.cp1.y += offset.y
-          command.cp2.x += offset.x
-          command.cp2.y += offset.y
+          ctx.movePoint(command.cp1, offset)
+          ctx.movePoint(command.cp2, offset)
         } else if (command.type === 'quadraticCurve') {
-          command.cp.x += offset.x
-          command.cp.y += offset.y
+          ctx.movePoint(command.cp, offset)
         }
       }
     },

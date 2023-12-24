@@ -1,3 +1,4 @@
+import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isZero, largerOrEqual, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { isArray } from "./is-array"
@@ -764,10 +765,11 @@ export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: Ellips
 }
 
 export function getTwoQuadraticCurveIntersectionPoints(
-  { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
+  curve1: QuadraticCurve,
   { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } }: QuadraticCurve,
   extend = false,
 ) {
+  const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 u u + 2 c1 u + a1
   // y = c4 u u + 2 c3 u + b1
@@ -799,10 +801,17 @@ export function getTwoQuadraticCurveIntersectionPoints(
   if (!extend) {
     vs = vs.filter(v => largerOrEqual(v, 0) && lessOrEqual(v, 1))
   }
-  return vs.map(v => ({
+  let result = vs.map(v => ({
     x: d2 * v * v + 2 * d1 * v + a4,
     y: d4 * v * v + 2 * d3 * v + b4,
   }))
+  if (!extend) {
+    result = result.filter(p => {
+      const u = getQuadraticCurvePercentAtPoint(curve1, p)
+      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
+    })
+  }
+  return result
 }
 
 export interface BezierCurve {
@@ -924,11 +933,12 @@ export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseAr
 }
 
 export function getQuadraticCurveBezierCurveIntersectionPoints(
-  { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } }: QuadraticCurve,
+  curve1: QuadraticCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
   extend = false,
 ) {
+  const { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } } = curve1
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
@@ -966,18 +976,26 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
   if (!extend) {
     ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
-  return ts.map(t => ({
+  let result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
+  if (!extend) {
+    result = result.filter(p => {
+      const u = getQuadraticCurvePercentAtPoint(curve1, p)
+      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
+    })
+  }
+  return result
 }
 
 export function getTwoBezierCurveIntersectionPoints(
-  { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } }: BezierCurve,
+  curve1: BezierCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta = 1e-5,
   extend = false,
 ) {
+  const { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } } = curve1
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
@@ -1031,8 +1049,15 @@ export function getTwoBezierCurveIntersectionPoints(
   if (!extend) {
     ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
   }
-  return ts.map(t => ({
+  let result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
+  if (!extend) {
+    result = result.filter(p => {
+      const u = getBezierCurvePercentAtPoint(curve1, p)
+      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
+    })
+  }
+  return result
 }

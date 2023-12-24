@@ -95,8 +95,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     ...ctx.segmentCountModel,
     move(content, offset) {
       for (const point of content.points) {
-        point.x += offset.x
-        point.y += offset.y
+        ctx.movePoint(point, offset)
       }
     },
     rotate(content, center, angle) {

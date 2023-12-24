@@ -43,8 +43,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     rotate(content, center, angle) {
       const p = ctx.rotatePositionByCenter(content, center, -angle)
