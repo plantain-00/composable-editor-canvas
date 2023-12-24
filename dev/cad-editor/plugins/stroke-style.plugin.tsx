@@ -30,8 +30,7 @@ export function getModel(ctx: PluginContext): model.Model<model.StrokeStyleConte
     type: 'stroke style',
     ...ctx.strokeModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     render(content, { target, getStrokeColor, transformStrokeWidth, transformColor }) {
       const options = {

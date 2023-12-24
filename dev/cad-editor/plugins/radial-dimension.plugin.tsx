@@ -45,8 +45,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.position.x += offset.x
-      content.position.y += offset.y
+      ctx.movePoint(content.position, offset)
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

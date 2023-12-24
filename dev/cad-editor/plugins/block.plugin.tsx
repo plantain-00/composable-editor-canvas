@@ -128,8 +128,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     type: 'block reference',
     ...ctx.variableValuesModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     rotate(content, center, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)

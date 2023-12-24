@@ -70,10 +70,18 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     ...ctx.fillModel,
     move(content, offset) {
       if (content.ref) {
-        content.ref.point.x += offset.x
-        content.ref.point.y += offset.y
-        content.ref.end.x += offset.x
-        content.ref.end.y += offset.y
+        ctx.movePoint(content.ref.point, offset)
+        ctx.movePoint(content.ref.end, offset)
+      }
+      for (const line of content.border) {
+        ctx.moveGeometryLine(line, offset)
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.moveGeometryLine(line, offset)
+          }
+        }
       }
     },
     render(content, renderCtx) {

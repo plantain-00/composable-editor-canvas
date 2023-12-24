@@ -61,6 +61,43 @@ test('getQuadraticCurveBezierCurveIntersectionPoints', (t) => {
 
 test('getTwoBezierCurveIntersectionPoints', (t) => {
   t.snapshot(getTwoBezierCurveIntersectionPoints({ from: { x: 1512, y: 496 }, cp1: { x: 1503, y: 559 }, cp2: { x: 1604, y: 483 }, to: { x: 1632, y: 574 } }, { from: { x: 1498, y: 488 }, cp1: { x: 1547, y: 584 }, cp2: { x: 1637, y: 465 }, to: { x: 1620, y: 586 } }))
+  t.snapshot(getTwoBezierCurveIntersectionPoints(
+    {
+      "from": {
+        "x": 1004.4942900665154,
+        "y": -832.66819655683
+      },
+      "cp1": {
+        "x": 1106.0791721671899,
+        "y": -762.4564860174203
+      },
+      "cp2": {
+        "x": 1361.2338884289577,
+        "y": -891.4513703497585
+      },
+      "to": {
+        "x": 1168.4503250311775,
+        "y": -378.30688542331404
+      }
+    }, {
+    "from": {
+      "x": 899.1203467548669,
+      "y": -1265.6782875336849
+    },
+    "cp1": {
+      "x": 643.9656304930988,
+      "y": -899.956527558484
+    },
+    "cp2": {
+      "x": 1216.6462158806225,
+      "y": -1061.5545145242704
+    },
+    "to": {
+      "x": 1032.367809691568,
+      "y": -491.7089815396553
+    }
+  },
+  ))
 })
 
 test('getTangencyPointToBezierCurve', (t) => {

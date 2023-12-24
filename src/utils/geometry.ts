@@ -31,6 +31,7 @@ export function getPointByLengthAndDirection(
 }
 
 export const defaultDelta = 0.00000001
+export const defaultEquationDelta = 0.001
 
 /**
  * @public

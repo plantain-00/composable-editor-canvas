@@ -39,8 +39,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     explode(content) {
       const { lines } = getGeometries(content)

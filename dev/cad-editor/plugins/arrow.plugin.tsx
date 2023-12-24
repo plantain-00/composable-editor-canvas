@@ -44,10 +44,8 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.p1.x += offset.x
-      content.p1.y += offset.y
-      content.p2.x += offset.x
-      content.p2.y += offset.y
+      ctx.movePoint(content.p1, offset)
+      ctx.movePoint(content.p2, offset)
     },
     rotate(content, center, angle) {
       content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle)

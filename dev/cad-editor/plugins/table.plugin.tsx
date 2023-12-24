@@ -148,8 +148,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     type: 'table',
     ...ctx.strokeModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     render(content, renderCtx) {
       const geometries = getGeometries(content)

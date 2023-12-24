@@ -33,8 +33,7 @@ export function getModel(ctx: PluginContext): model.Model<model.TextStyleContent
     type: 'text style',
     ...ctx.textModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     render(content, { target, transformColor }) {
       const { width, height, text } = getGeometriesFromCache(content)

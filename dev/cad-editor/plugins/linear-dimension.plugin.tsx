@@ -48,12 +48,9 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.p1.x += offset.x
-      content.p1.y += offset.y
-      content.p2.x += offset.x
-      content.p2.y += offset.y
-      content.position.x += offset.x
-      content.position.y += offset.y
+      ctx.movePoint(content.p1, offset)
+      ctx.movePoint(content.p2, offset)
+      ctx.movePoint(content.position, offset)
     },
     render(content, renderCtx) {
       const { options, fillOptions, contents, target, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

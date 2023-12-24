@@ -47,8 +47,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     render(content, renderCtx) {
       const { options, contents, time, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

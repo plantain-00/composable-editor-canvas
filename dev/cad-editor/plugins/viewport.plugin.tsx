@@ -25,8 +25,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
     ...ctx.arrowModel,
     move(content, offset) {
       ctx.getContentModel(content.border)?.move?.(content.border, offset)
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     rotate(content, center, angle, contents) {
       ctx.getContentModel(content.border)?.rotate?.(content.border, center, angle, contents)

@@ -52,8 +52,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     ...ctx.strokeModel,
     ...ctx.fillModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
     },
     offset(content, point, distance) {
       if (!distance) {

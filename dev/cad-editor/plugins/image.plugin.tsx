@@ -35,8 +35,7 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
     type: 'image',
     ...ctx.clipModel,
     move(content, offset) {
-      content.x += offset.x
-      content.y += offset.y
+      ctx.movePoint(content, offset)
       if (content.clip) {
         ctx.getContentModel(content.clip.border)?.move?.(content.clip.border, offset)
       }
