@@ -1,6 +1,6 @@
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isZero, largerOrEqual, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { Arc, Circle, delta2, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isZero, largerOrEqual, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { isArray } from "./is-array"
 import { isRecord } from "./is-record"
 import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurvePointAtParam, getNurbsMaxParam, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
@@ -83,7 +83,7 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
   return undefined
 }
 
-export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = 1e-5) {
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = delta2) {
   if (Array.isArray(line1)) {
     if (Array.isArray(line2)) {
       const point = extend
@@ -860,7 +860,7 @@ export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end
 export function getCircleBezierCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  delta = 1e-5,
+  delta?: number,
   extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
@@ -891,7 +891,7 @@ export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve
 export function getEllipseBezierCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  delta = 1e-5,
+  delta?: number,
   extend = false,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
@@ -935,7 +935,7 @@ export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseAr
 export function getQuadraticCurveBezierCurveIntersectionPoints(
   curve1: QuadraticCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  delta = 1e-5,
+  delta?: number,
   extend = false,
 ) {
   const { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } } = curve1
@@ -992,7 +992,7 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
 export function getTwoBezierCurveIntersectionPoints(
   curve1: BezierCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  delta = 1e-5,
+  delta?: number,
   extend = false,
 ) {
   const { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } } = curve1

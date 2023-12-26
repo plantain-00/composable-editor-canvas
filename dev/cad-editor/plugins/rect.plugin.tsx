@@ -46,9 +46,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       ctx.movePoint(content, offset)
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter(content, center, -angle)
-      content.x = p.x
-      content.y = p.y
+      ctx.rotatePoint(content, center, angle)
       content.angle += angle
     },
     explode(content) {
@@ -60,9 +58,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       return ctx.breakPolyline(lines, intersectionPoints)
     },
     mirror(content, line, angle) {
-      const p = ctx.getSymmetryPoint(content, line)
-      content.x = p.x
-      content.y = p.y
+      ctx.mirrorPoint(content, line)
       content.angle = 2 * angle - content.angle
     },
     offset(content, point, distance) {

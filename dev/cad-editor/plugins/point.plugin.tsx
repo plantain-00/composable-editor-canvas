@@ -24,14 +24,10 @@ export function getModel(ctx: PluginContext): model.Model<PointContent> {
       ctx.movePoint(content, offset)
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter(content, center, -angle)
-      content.x = p.x
-      content.y = p.y
+      ctx.rotatePoint(content, center, angle)
     },
     mirror(content, line) {
-      const p = ctx.getSymmetryPoint(content, line)
-      content.x = p.x
-      content.y = p.y
+      ctx.mirrorPoint(content, line)
     },
     render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
       const strokeWidth = transformStrokeWidth(1)

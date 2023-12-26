@@ -1,6 +1,6 @@
 import * as verb from 'verb-nurbs-web'
 import * as twgl from 'twgl.js'
-import { Arc, EllipseArc, Position, getPointSideOfLine, getTwoPointsDistance, isZero, iteratePolylineLines, pointAndDirectionToGeneralFormLine, pointIsOnEllipseArc } from "./geometry"
+import { Arc, EllipseArc, Position, delta2, delta3, getPointSideOfLine, getTwoPointsDistance, isZero, iteratePolylineLines, pointAndDirectionToGeneralFormLine, pointIsOnEllipseArc } from "./geometry"
 import { Validator, integer, minimum, number, optional } from "./validators"
 import { angleToRadian } from './radian'
 import { BezierCurve, QuadraticCurve } from './intersection'
@@ -300,7 +300,7 @@ function toVerbPoint(point: Position) {
 
 export function pointIsOnNurbsCurve(point: Position, curve: NurbsCurve) {
   const p = toVerbNurbsCurve(curve).closestPoint(toVerbPoint(point))
-  return isZero(getTwoPointsDistance(point, fromVerbPoint(p)), 1e-4)
+  return isZero(getTwoPointsDistance(point, fromVerbPoint(p)), delta3)
 }
 
 export function getNurbsMaxParam(curve: NurbsCurve) {
@@ -324,7 +324,7 @@ export function getNurbsCurvePoints(curve: NurbsCurve, segmentCount: number) {
   return points
 }
 
-export function getPerpendicularParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = 1e-5) {
+export function getPerpendicularParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = delta2) {
   const nurbs = toVerbNurbsCurve(curve)
   const f1 = (t: number) => {
     const [[x, y], [x1, y1]] = nurbs.derivatives(t)
@@ -342,7 +342,7 @@ export function getPerpendicularParamToNurbsCurve({ x: a, y: b }: Position, curv
   return newtonIterate(u0, f1, f2, delta)
 }
 
-export function getTangencyParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = 1e-5) {
+export function getTangencyParamToNurbsCurve({ x: a, y: b }: Position, curve: NurbsCurve, near?: Position, delta = delta2) {
   const nurbs = toVerbNurbsCurve(curve)
   const f1 = (t: number) => {
     const [[x, y], [x1, y1]] = nurbs.derivatives(t)

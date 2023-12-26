@@ -89,14 +89,10 @@ export function getModel(ctx: PluginContext) {
         ctx.movePoint(content, offset)
       },
       rotate(content, center, angle) {
-        const p = ctx.rotatePositionByCenter(content, center, -angle)
-        content.x = p.x
-        content.y = p.y
+        ctx.rotatePoint(content, center, angle)
       },
       mirror(content, line) {
-        const p = ctx.getSymmetryPoint(content, line)
-        content.x = p.x
-        content.y = p.y
+        ctx.mirrorPoint(content, line)
       },
       offset(content, point, distance) {
         if (!distance) {
@@ -229,20 +225,10 @@ export function getModel(ctx: PluginContext) {
         ctx.movePoint(content, offset)
       },
       rotate(content, center, angle) {
-        const p = ctx.rotatePositionByCenter(content, center, -angle)
-        content.x = p.x
-        content.y = p.y
-        content.startAngle += angle
-        content.endAngle += angle
+        ctx.rotateArc(content, center, angle)
       },
       mirror(content, line, angle) {
-        const p = ctx.getSymmetryPoint(content, line)
-        content.x = p.x
-        content.y = p.y
-        const startAngle = 2 * angle - content.endAngle
-        const endAngle = 2 * angle - content.startAngle
-        content.startAngle = startAngle
-        content.endAngle = endAngle
+        ctx.mirrorArc(content, line, angle)
       },
       offset(content, point, distance) {
         if (!distance) {

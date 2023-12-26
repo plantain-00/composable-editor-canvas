@@ -84,6 +84,38 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
     },
+    rotate(content, center, angle) {
+      if (content.ref) {
+        ctx.rotatePoint(content.ref.point, center, angle)
+        ctx.rotatePoint(content.ref.end, center, angle)
+      }
+      for (const line of content.border) {
+        ctx.rotateGeometryLine(line, center, angle)
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.rotateGeometryLine(line, center, angle)
+          }
+        }
+      }
+    },
+    mirror(content, line, angle) {
+      if (content.ref) {
+        ctx.mirrorPoint(content.ref.point, line)
+        ctx.mirrorPoint(content.ref.end, line)
+      }
+      for (const b of content.border) {
+        ctx.mirrorGeometryLine(b, line, angle)
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const h of hole) {
+            ctx.mirrorGeometryLine(h, line, angle)
+          }
+        }
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx)
       const { border, holes } = getHatchGeometries(content, renderCtx.contents)

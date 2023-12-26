@@ -38,12 +38,12 @@ function getModel(ctx) {
       ctx.movePoint(content.p2, offset);
     },
     rotate(content, center, angle) {
-      content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle);
-      content.p2 = ctx.rotatePositionByCenter(content.p2, center, -angle);
+      ctx.rotatePoint(content.p1, center, angle);
+      ctx.rotatePoint(content.p2, center, angle);
     },
     mirror(content, line) {
-      content.p1 = ctx.getSymmetryPoint(content.p1, line);
-      content.p2 = ctx.getSymmetryPoint(content.p2, line);
+      ctx.mirrorPoint(content.p1, line);
+      ctx.mirrorPoint(content.p2, line);
     },
     render(content, renderCtx) {
       const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -408,7 +408,7 @@ function getModel(ctx) {
     rotate(content, center, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
-        const p = ctx.rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle);
+        const p = ctx.rotatePoint({ x: content.x + block.base.x, y: content.y + block.base.y }, center, angle);
         content.x = p.x - block.base.x;
         content.y = p.y - block.base.y;
         content.angle += angle;
@@ -434,7 +434,7 @@ function getModel(ctx) {
     mirror(content, line, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
-        const p = ctx.getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line);
+        const p = ctx.mirrorPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line);
         content.x = p.x - block.base.x;
         content.y = p.y - block.base.y;
         content.angle = 2 * angle - content.angle;
@@ -1168,14 +1168,10 @@ function getModel(ctx) {
         ctx.movePoint(content, offset);
       },
       rotate(content, center, angle) {
-        const p = ctx.rotatePositionByCenter(content, center, -angle);
-        content.x = p.x;
-        content.y = p.y;
+        ctx.rotatePoint(content, center, angle);
       },
       mirror(content, line) {
-        const p = ctx.getSymmetryPoint(content, line);
-        content.x = p.x;
-        content.y = p.y;
+        ctx.mirrorPoint(content, line);
       },
       offset(content, point, distance) {
         if (!distance) {
@@ -1348,20 +1344,10 @@ function getModel(ctx) {
         ctx.movePoint(content, offset);
       },
       rotate(content, center, angle) {
-        const p = ctx.rotatePositionByCenter(content, center, -angle);
-        content.x = p.x;
-        content.y = p.y;
-        content.startAngle += angle;
-        content.endAngle += angle;
+        ctx.rotateArc(content, center, angle);
       },
       mirror(content, line, angle) {
-        const p = ctx.getSymmetryPoint(content, line);
-        content.x = p.x;
-        content.y = p.y;
-        const startAngle = 2 * angle - content.endAngle;
-        const endAngle = 2 * angle - content.startAngle;
-        content.startAngle = startAngle;
-        content.endAngle = endAngle;
+        ctx.mirrorArc(content, line, angle);
       },
       offset(content, point, distance) {
         if (!distance) {
@@ -2823,18 +2809,10 @@ function getModel(ctx) {
       ctx.moveEllipse(content, offset);
     },
     rotate(content, center, angle) {
-      var _a;
-      const p = ctx.rotatePositionByCenter(ctx.getEllipseCenter(content), center, -angle);
-      content.cx = p.x;
-      content.cy = p.y;
-      content.angle = ((_a = content.angle) != null ? _a : 0) + angle;
+      ctx.rotateEllipse(content, center, angle);
     },
     mirror(content, line, angle) {
-      var _a;
-      const p = ctx.getSymmetryPoint(ctx.getEllipseCenter(content), line);
-      content.cx = p.x;
-      content.cy = p.y;
-      content.angle = 2 * angle - ((_a = content.angle) != null ? _a : 0);
+      ctx.mirrorEllipse(content, line, angle);
     },
     offset(content, point, distance) {
       if (!distance) {
@@ -4068,6 +4046,38 @@ function getModel(ctx) {
         }
       }
     },
+    rotate(content, center, angle) {
+      if (content.ref) {
+        ctx.rotatePoint(content.ref.point, center, angle);
+        ctx.rotatePoint(content.ref.end, center, angle);
+      }
+      for (const line of content.border) {
+        ctx.rotateGeometryLine(line, center, angle);
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.rotateGeometryLine(line, center, angle);
+          }
+        }
+      }
+    },
+    mirror(content, line, angle) {
+      if (content.ref) {
+        ctx.mirrorPoint(content.ref.point, line);
+        ctx.mirrorPoint(content.ref.end, line);
+      }
+      for (const b of content.border) {
+        ctx.mirrorGeometryLine(b, line, angle);
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const h of hole) {
+            ctx.mirrorGeometryLine(h, line, angle);
+          }
+        }
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx);
       const { border, holes } = getHatchGeometries(content, renderCtx.contents);
@@ -4364,10 +4374,14 @@ function getModel(ctx) {
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
+      }
     },
     break(content, intersectionPoints) {
       const { lines } = getPolylineGeometries(content);
@@ -5360,10 +5374,14 @@ function getModel(ctx) {
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
+      }
     },
     break(content, intersectionPoints) {
       const lines = getNurbsGeometries(content).lines;
@@ -6004,30 +6022,30 @@ function getModel(ctx) {
     rotate(content, center, angle) {
       for (const command of content.commands) {
         if (command.type !== "close") {
-          command.to = ctx.rotatePositionByCenter(command.to, center, -angle);
+          ctx.rotatePoint(command.to, center, angle);
         }
         if (command.type === "arc") {
-          command.from = ctx.rotatePositionByCenter(command.from, center, -angle);
+          ctx.rotatePoint(command.from, center, angle);
         } else if (command.type === "bezierCurve") {
-          command.cp1 = ctx.rotatePositionByCenter(command.cp1, center, -angle);
-          command.cp2 = ctx.rotatePositionByCenter(command.cp2, center, -angle);
+          ctx.rotatePoint(command.cp1, center, angle);
+          ctx.rotatePoint(command.cp2, center, angle);
         } else if (command.type === "quadraticCurve") {
-          command.cp = ctx.rotatePositionByCenter(command.cp, center, -angle);
+          ctx.rotatePoint(command.cp, center, angle);
         }
       }
     },
     mirror(content, line) {
       for (const command of content.commands) {
         if (command.type !== "close") {
-          command.to = ctx.getSymmetryPoint(command.to, line);
+          ctx.mirrorPoint(command.to, line);
         }
         if (command.type === "arc") {
-          command.from = ctx.getSymmetryPoint(command.from, line);
+          ctx.mirrorPoint(command.from, line);
         } else if (command.type === "bezierCurve") {
-          command.cp1 = ctx.getSymmetryPoint(command.cp1, line);
-          command.cp2 = ctx.getSymmetryPoint(command.cp2, line);
+          ctx.mirrorPoint(command.cp1, line);
+          ctx.mirrorPoint(command.cp2, line);
         } else if (command.type === "quadraticCurve") {
-          command.cp = ctx.getSymmetryPoint(command.cp, line);
+          ctx.mirrorPoint(command.cp, line);
         }
       }
     },
@@ -6520,10 +6538,14 @@ function getModel(ctx) {
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
+      }
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -6597,14 +6619,10 @@ function getModel(ctx) {
       ctx.movePoint(content, offset);
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter(content, center, -angle);
-      content.x = p.x;
-      content.y = p.y;
+      ctx.rotatePoint(content, center, angle);
     },
     mirror(content, line) {
-      const p = ctx.getSymmetryPoint(content, line);
-      content.x = p.x;
-      content.y = p.y;
+      ctx.mirrorPoint(content, line);
     },
     render(content, { target, isHoveringOrSelected, transformStrokeWidth }) {
       const strokeWidth = transformStrokeWidth(1);
@@ -6764,7 +6782,7 @@ function getModel(ctx) {
       ctx.movePoint(content.center, offset);
     },
     rotate(content, center, angle, contents) {
-      content.center = ctx.rotatePositionByCenter(content.center, center, -angle);
+      ctx.rotatePoint(content.center, center, angle);
       content.contents.forEach((c) => {
         var _a, _b;
         if (!c)
@@ -7079,10 +7097,14 @@ function getModel(ctx) {
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
+      }
     },
     explode(content) {
       const { lines } = getPolygonGeometries(content);
@@ -7795,9 +7817,7 @@ function getModel(ctx) {
       ctx.movePoint(content, offset);
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter(content, center, -angle);
-      content.x = p.x;
-      content.y = p.y;
+      ctx.rotatePoint(content, center, angle);
       content.angle += angle;
     },
     explode(content) {
@@ -7809,9 +7829,7 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     mirror(content, line, angle) {
-      const p = ctx.getSymmetryPoint(content, line);
-      content.x = p.x;
-      content.y = p.y;
+      ctx.mirrorPoint(content, line);
       content.angle = 2 * angle - content.angle;
     },
     offset(content, point, distance) {
@@ -8808,10 +8826,14 @@ function getModel(ctx) {
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle));
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line));
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
+      }
     },
     break(content, intersectionPoints) {
       const lines = getSplineGeometries(content).lines;

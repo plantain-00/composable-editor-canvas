@@ -133,7 +133,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     rotate(content, center, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
-        const p = ctx.rotatePositionByCenter({ x: content.x + block.base.x, y: content.y + block.base.y }, center, -angle)
+        const p = ctx.rotatePoint({ x: content.x + block.base.x, y: content.y + block.base.y }, center, angle)
         content.x = p.x - block.base.x
         content.y = p.y - block.base.y
         content.angle += angle
@@ -159,7 +159,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     mirror(content, line, angle, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
-        const p = ctx.getSymmetryPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
+        const p = ctx.mirrorPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line)
         content.x = p.x - block.base.x
         content.y = p.y - block.base.y
         content.angle = 2 * angle - content.angle
