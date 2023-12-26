@@ -1,6 +1,6 @@
 import { getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePointAtPercent } from "./bezier"
 import { newtonIterate } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, lessOrEqual, Position, ellipseToEllipseArc, getCirclePointAtRadian, getEllipsePointAtRadian, getFormattedEndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsDistance, getTwoPointsRadian } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, lessOrEqual, Position, ellipseToEllipseArc, getCirclePointAtRadian, getEllipsePointAtRadian, getFormattedEndAngle, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsDistance, getTwoPointsRadian, delta2, delta3 } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
 import { getNurbsCurveDerivatives, getNurbsCurveLength, getNurbsCurveParamByLength } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -76,7 +76,7 @@ export function cotesIntegral(a: number, b: number, f: (t: number) => number, co
   return (b - a) * (7 * f(a) + 32 * f(a + h) + 12 * f(a + 2 * h) + 32 * f(a + 3 * h) + 7 * f(b)) / 90
 }
 
-export function rombergIntegral(a: number, b: number, f: (t: number) => number, delta = 1e-2): number {
+export function rombergIntegral(a: number, b: number, f: (t: number) => number, delta = delta3): number {
   let p: number | undefined
   for (let count = 1; ; count *= 2) {
     const c = cotesIntegral(a, b, f, count)
@@ -95,11 +95,11 @@ export function getArcRadianByLength(arc: Arc, length: number): number {
   return angleToRadian(arc.startAngle) + length / arc.r * (arc.counterclockwise ? -1 : 1)
 }
 
-export function getEllipseRadianByLength(ellipse: Ellipse, length: number, delta = 1e-5) {
+export function getEllipseRadianByLength(ellipse: Ellipse, length: number, delta = delta2) {
   return getEllipseArcRadianByLength(ellipseToEllipseArc(ellipse), length, delta)
 }
 
-export function getEllipseArcRadianByLength(ellipseArc: EllipseArc, length: number, delta = 1e-5) {
+export function getEllipseArcRadianByLength(ellipseArc: EllipseArc, length: number, delta = delta2) {
   const f1 = (t: number) => getEllipseArcLength({ ...ellipseArc, endAngle: radianToAngle(t) }) - length
   const e1 = ellipseArc.rx ** 2, e2 = ellipseArc.ry ** 2
   // dz/dt = sqrt(e1 sin(t) sin(t) + e2 cos(t) cos(t))
@@ -108,7 +108,7 @@ export function getEllipseArcRadianByLength(ellipseArc: EllipseArc, length: numb
   return newtonIterate(t0, f1, f2, delta)
 }
 
-export function getQuadraticCurvePercentByLength(curve: QuadraticCurve, length: number, delta = 1e-5) {
+export function getQuadraticCurvePercentByLength(curve: QuadraticCurve, length: number, delta = delta2) {
   const f1 = (t: number) => getQuadraticCurveLength(getPartOfQuadraticCurve(curve, 0, t)) - length
   const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
@@ -118,7 +118,7 @@ export function getQuadraticCurvePercentByLength(curve: QuadraticCurve, length: 
   return newtonIterate(0.5, f1, f2, delta)
 }
 
-export function getBezierCurvePercentByLength(curve: BezierCurve, length: number, delta = 1e-5) {
+export function getBezierCurvePercentByLength(curve: BezierCurve, length: number, delta = delta2) {
   const f1 = (t: number) => getBezierCurveLength(getPartOfBezierCurve(curve, 0, t)) - length
   const { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } } = curve
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)

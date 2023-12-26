@@ -1,4 +1,4 @@
-import { isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./geometry"
+import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./geometry"
 
 /**
  * a x + b = 0
@@ -188,7 +188,7 @@ export function calculateEquation4(a: number, b: number, c: number, d: number, e
  * p[0] * x^5 + p[1] x^4 + p[2] x^3 + p[3] x^2 + p[4] x + p[5] = 0
  * p[0] * x^6 + p[1] x^5 + p[2] x^4 + p[3] x^3 + p[4] x^2 + p[5] x + p[6] = 0
  */
-export function calculateEquation5(params: number[], x0: number, delta = 1e-5, maxIteratorCount?: number): number[] {
+export function calculateEquation5(params: number[], x0: number, delta = delta2, maxIteratorCount?: number): number[] {
   if (params.length <= 5) {
     return calculateEquation4(params[params.length - 5] || 0, params[params.length - 4] || 0, params[params.length - 3] || 0, params[params.length - 2] || 0, params[params.length - 1] || 0, delta)
   }

@@ -30,29 +30,30 @@ export function getPointByLengthAndDirection(
   }
 }
 
-export const defaultDelta = 0.00000001
-export const defaultEquationDelta = 0.001
+export const delta1 = 0.00000001
+export const delta2 = 0.00001
+export const delta3 = 0.001
 
 /**
  * @public
  */
-export function isZero(value: number, delta = defaultDelta) {
+export function isZero(value: number, delta = delta1) {
   return Math.abs(value) < delta
 }
 
-export function lessThan(value1: number, value2: number, delta = defaultDelta) {
+export function lessThan(value1: number, value2: number, delta?: number) {
   return value1 < value2 && !isSameNumber(value1, value2, delta)
 }
 
-export function largerThan(value1: number, value2: number, delta = defaultDelta) {
+export function largerThan(value1: number, value2: number, delta?: number) {
   return value1 > value2 && !isSameNumber(value1, value2, delta)
 }
 
-export function largerOrEqual(value1: number, value2: number, delta = defaultDelta) {
+export function largerOrEqual(value1: number, value2: number, delta?: number) {
   return value1 > value2 || isSameNumber(value1, value2, delta)
 }
 
-export function lessOrEqual(value1: number, value2: number, delta = defaultDelta) {
+export function lessOrEqual(value1: number, value2: number, delta?: number) {
   return value1 < value2 || isSameNumber(value1, value2, delta)
 }
 
@@ -832,7 +833,7 @@ export function equals(a: number | undefined, b: number | undefined) {
   return isSameNumber(a, b)
 }
 
-export function isSameNumber(a: number, b: number, delta = defaultDelta) {
+export function isSameNumber(a: number, b: number, delta?: number) {
   return isZero(a - b, delta)
 }
 

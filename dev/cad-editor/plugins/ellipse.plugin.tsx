@@ -79,16 +79,10 @@ export function getModel(ctx: PluginContext) {
       ctx.moveEllipse(content, offset)
     },
     rotate(content, center, angle) {
-      const p = ctx.rotatePositionByCenter(ctx.getEllipseCenter(content), center, -angle)
-      content.cx = p.x
-      content.cy = p.y
-      content.angle = (content.angle ?? 0) + angle
+      ctx.rotateEllipse(content, center, angle)
     },
     mirror(content, line, angle) {
-      const p = ctx.getSymmetryPoint(ctx.getEllipseCenter(content), line)
-      content.cx = p.x
-      content.cy = p.y
-      content.angle = 2 * angle - (content.angle ?? 0)
+      ctx.mirrorEllipse(content, line, angle)
     },
     offset(content, point, distance) {
       if (!distance) {

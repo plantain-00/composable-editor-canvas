@@ -1,6 +1,6 @@
 import { getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
 import { calculateEquation3, calculateEquation5, newtonIterate } from "./equation-calculater"
-import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine, minimumBy, largerOrEqual, lessOrEqual } from "./geometry"
+import { Position, Circle, getTwoPointsRadian, getPointSideOfLine, getCirclePointAtRadian, getTwoPointsDistance, Ellipse, getEllipseRadian, Arc, pointIsOnLineSegment, twoPointLineToGeneralFormLine, EllipseArc, angleInRange, getArcPointAtAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getPolygonLine, GeneralFormLine, minimumBy, largerOrEqual, lessOrEqual, delta2 } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -78,7 +78,7 @@ export function getPerpendicularPointToCircle(position: Position, circle: Circle
   }
 }
 
-export function getPerpendicularPointRadianToEllipse(position: Position, ellipse: Ellipse, near = position, delta = 1e-5) {
+export function getPerpendicularPointRadianToEllipse(position: Position, ellipse: Ellipse, near = position, delta = delta2) {
   const { rx, ry, cx, cy, angle } = ellipse
   const r0 = getEllipseRadian(near, ellipse)
   const radian = angleToRadian(angle)
@@ -97,7 +97,7 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   return newtonIterate(r0, r => f1(Math.cos(r), Math.sin(r)), r => f2(Math.cos(r), Math.sin(r)), delta)
 }
 
-export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
+export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = delta2) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 u u + 2 c1 u + a1
   // y = c4 u u + 2 c3 u + b1
@@ -121,12 +121,12 @@ export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Positi
   return us
 }
 
-export function getPerpendicularPointToQuadraticCurve(point: Position, curve: QuadraticCurve, delta = 1e-5) {
+export function getPerpendicularPointToQuadraticCurve(point: Position, curve: QuadraticCurve, delta = delta2) {
   const us = getPerpendicularPercentToQuadraticCurve(point, curve, delta)
   return us.filter(u => largerOrEqual(u, 0) && lessOrEqual(u, 1)).map(u => getQuadraticCurvePointAtPercent(curve.from, curve.cp, curve.to, u))
 }
 
-export function getPerpendicularPercentToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = 1e-5) {
+export function getPerpendicularPercentToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = delta2) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
@@ -155,7 +155,7 @@ export function getPerpendicularPercentToBezierCurve({ x: a0, y: b0 }: Position,
   return ts
 }
 
-export function getPerpendicularPointToBezierCurve(point: Position, curve: BezierCurve, delta = 1e-5) {
+export function getPerpendicularPointToBezierCurve(point: Position, curve: BezierCurve, delta = delta2) {
   const us = getPerpendicularPercentToBezierCurve(point, curve, delta)
   return us.filter(u => largerOrEqual(u, 0) && lessOrEqual(u, 1)).map(u => getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, u))
 }

@@ -48,12 +48,12 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       ctx.movePoint(content.p2, offset)
     },
     rotate(content, center, angle) {
-      content.p1 = ctx.rotatePositionByCenter(content.p1, center, -angle)
-      content.p2 = ctx.rotatePositionByCenter(content.p2, center, -angle)
+      ctx.rotatePoint(content.p1, center, angle)
+      ctx.rotatePoint(content.p2, center, angle)
     },
     mirror(content, line) {
-      content.p1 = ctx.getSymmetryPoint(content.p1, line)
-      content.p2 = ctx.getSymmetryPoint(content.p2, line)
+      ctx.mirrorPoint(content.p1, line)
+      ctx.mirrorPoint(content.p2, line)
     },
     render(content, renderCtx) {
       const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

@@ -52,30 +52,30 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     rotate(content, center, angle) {
       for (const command of content.commands) {
         if (command.type !== 'close') {
-          command.to = ctx.rotatePositionByCenter(command.to, center, -angle)
+          ctx.rotatePoint(command.to, center, angle)
         }
         if (command.type === 'arc') {
-          command.from = ctx.rotatePositionByCenter(command.from, center, -angle)
+          ctx.rotatePoint(command.from, center, angle)
         } else if (command.type === 'bezierCurve') {
-          command.cp1 = ctx.rotatePositionByCenter(command.cp1, center, -angle)
-          command.cp2 = ctx.rotatePositionByCenter(command.cp2, center, -angle)
+          ctx.rotatePoint(command.cp1, center, angle)
+          ctx.rotatePoint(command.cp2, center, angle)
         } else if (command.type === 'quadraticCurve') {
-          command.cp = ctx.rotatePositionByCenter(command.cp, center, -angle)
+          ctx.rotatePoint(command.cp, center, angle)
         }
       }
     },
     mirror(content, line) {
       for (const command of content.commands) {
         if (command.type !== 'close') {
-          command.to = ctx.getSymmetryPoint(command.to, line)
+          ctx.mirrorPoint(command.to, line)
         }
         if (command.type === 'arc') {
-          command.from = ctx.getSymmetryPoint(command.from, line)
+          ctx.mirrorPoint(command.from, line)
         } else if (command.type === 'bezierCurve') {
-          command.cp1 = ctx.getSymmetryPoint(command.cp1, line)
-          command.cp2 = ctx.getSymmetryPoint(command.cp2, line)
+          ctx.mirrorPoint(command.cp1, line)
+          ctx.mirrorPoint(command.cp2, line)
         } else if (command.type === 'quadraticCurve') {
-          command.cp = ctx.getSymmetryPoint(command.cp, line)
+          ctx.mirrorPoint(command.cp, line)
         }
       }
     },

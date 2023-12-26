@@ -99,10 +99,14 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       }
     },
     rotate(content, center, angle) {
-      content.points = content.points.map((p) => ctx.rotatePositionByCenter(p, center, -angle))
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle)
+      }
     },
     mirror(content, line) {
-      content.points = content.points.map((p) => ctx.getSymmetryPoint(p, line))
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line)
+      }
     },
     break(content, intersectionPoints) {
       const lines = getSplineGeometries(content).lines

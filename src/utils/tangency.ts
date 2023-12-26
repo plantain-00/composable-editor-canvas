@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2 } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
@@ -100,7 +100,7 @@ export function getTangencyPointToCircle({ x: x1, y: y1 }: Position, { x: x2, y:
   ]
 }
 
-export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, rx, ry, angle }: Ellipse, delta = 1e-5): Position[] {
+export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, rx, ry, angle }: Ellipse, delta = delta2): Position[] {
   const radian = angleToRadian(angle)
   const d1 = Math.sin(radian), d2 = Math.cos(radian)
   const h1 = cx - x1, h2 = cy - y1
@@ -182,7 +182,7 @@ export function getTangencyPointToEllipse({ x: x1, y: y1 }: Position, { cx, cy, 
   })
 }
 
-export function getTangencyPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = 1e-5) {
+export function getTangencyPointToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = delta2) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 u u + 2 c1 u + a1
   // y = c4 u u + 2 c3 u + b1
@@ -208,7 +208,7 @@ export function getTangencyPointToQuadraticCurve({ x: a0, y: b0 }: Position, { f
   }))
 }
 
-export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = 1e-5) {
+export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, delta = delta2) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
