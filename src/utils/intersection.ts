@@ -322,7 +322,7 @@ export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
 /**
  * @public
  */
-export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle, delta?: number) {
+export function getLineCircleIntersectionPoints({ x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position, { x: x1, y: y1, r }: Circle, delta = delta2) {
   // (x - x1)^2 + (y - y1)^2 = r r
   // let u = x - x1, v = y - y1
   // F1: u^2 + v^2 - r r = 0
