@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2 } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
@@ -37,6 +37,31 @@ export function getCirclesTangentTo2Circles(circle1: Circle, circle2: Circle, ra
   for (const r1 of circles1) {
     for (const r2 of circles2) {
       result.push(...getTwoCircleIntersectionPoints({ ...circle1, r: r1 }, { ...circle2, r: r2 }))
+    }
+  }
+  return result
+}
+
+export function getLinesTangentTo2Circles(circle1: Circle, circle2: Circle) {
+  const result: [Position, Position][] = []
+  const d1 = circle2.r - circle1.r
+  const d3 = getTwoPointsDistance(circle1, circle2)
+  if (lessThan(Math.abs(d1), d3)) {
+    const radian = getTwoPointsRadian(circle2, circle1)
+    const a1 = Math.asin(d1 / d3) + Math.PI / 2
+    const a2 = radian - a1
+    const a3 = radian + a1
+    result.push(
+      [getCirclePointAtRadian(circle1, a2), getCirclePointAtRadian(circle2, a2)],
+      [getCirclePointAtRadian(circle1, a3), getCirclePointAtRadian(circle2, a3)],
+    )
+    const d2 = circle1.r + circle2.r
+    if (lessThan(d2, d3)) {
+      const a4 = Math.asin(d2 / d3)
+      result.push(
+        [getCirclePointAtRadian(circle1, radian + a4 - Math.PI / 2), getCirclePointAtRadian(circle2, radian + a4 + Math.PI / 2)],
+        [getCirclePointAtRadian(circle1, radian - a4 + Math.PI / 2), getCirclePointAtRadian(circle2, radian - a4 - Math.PI / 2)],
+      )
     }
   }
   return result

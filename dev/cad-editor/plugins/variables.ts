@@ -2359,6 +2359,73 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isCircleContent(content) {
+  return content.type === "circle";
+}
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/create-tangent-tangent-line.plugin.tsx
+function getCommand(ctx) {
+  function getTangentTangentLines(content1, content2) {
+    const content1IsCircle = isCircleContent(content1) || isArcContent(content1);
+    const content2IsCircle = isCircleContent(content2) || isArcContent(content2);
+    if (content1IsCircle && content2IsCircle) {
+      return ctx.getLinesTangentTo2Circles(content1, content2);
+    }
+    return [];
+  }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "78", cy: "80", r: "18", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "29", cy: "29", r: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "92,70 51,13", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create tangent tangent line",
+    useCommand({ onEnd, type, selected, scale }) {
+      const [candidates, setCandidates] = React.useState();
+      const [result, setResult] = React.useState();
+      const assistentContents = (candidates || []).map((c) => ({
+        points: c,
+        type: "line",
+        dashArray: c === result ? void 0 : [4 / scale]
+      }));
+      React.useEffect(() => {
+        if (type && !candidates) {
+          setCandidates(getTangentTangentLines(selected[0].content, selected[1].content));
+        }
+      }, [type, selected]);
+      const reset = () => {
+        setCandidates(void 0);
+        setResult(void 0);
+      };
+      return {
+        onStart() {
+          if (result) {
+            onEnd({
+              updateContents: (contents) => {
+                contents.push({ type: "line", points: result });
+              }
+            });
+            reset();
+          }
+        },
+        onMove(p) {
+          setResult(candidates == null ? void 0 : candidates.find((c) => ctx.getPointAndLineSegmentMinimumDistance(p, ...c) < 5));
+        },
+        assistentContents,
+        reset
+      };
+    },
+    selectCount: 2,
+    contentSelectable: (c) => isCircleContent(c) || isArcContent(c),
+    selectType: "select part",
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function isLineContent(content) {
   return content.type === "line";
