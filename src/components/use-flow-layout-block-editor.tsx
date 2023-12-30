@@ -325,6 +325,7 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
   onBlur?: () => void
   keepSelectionOnBlur?: boolean
   processInput?(e: React.KeyboardEvent<HTMLInputElement>): boolean
+  onComposing?(e: React.KeyboardEvent<HTMLInputElement>): void
 }) {
   const [location, setLocation] = React.useState<[number, number]>([0, 0])
   const [blockLocation, contentLocation] = location
@@ -386,10 +387,10 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
       draft.splice(blockIndex + 1, maxBlockIndex - blockIndex)
     }
   }
-  const inputInlinePosition = (draft: Draft<V>[], items: readonly T[], loc: [number, number]) => {
-    draft[loc[0]].children.splice(loc[1], 0, ...castDraft(items))
+  const inputInlinePosition = (draft: Draft<V>[], items: readonly T[], loc: [number, number], deleteCount = 0) => {
+    draft[loc[0]].children.splice(loc[1] - deleteCount, deleteCount, ...castDraft(items))
   }
-  const inputInline = (items: readonly T[]) => {
+  const inputInline = (items: readonly T[], deleteCount = 0) => {
     if (props.readOnly) return
     if (range) {
       const [blockIndex, contentIndex] = range.min
@@ -400,9 +401,9 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
       })
       return
     }
-    setLocation([blockLocation, contentLocation + items.length])
+    setLocation([blockLocation, contentLocation + items.length - deleteCount])
     props.setState(draft => {
-      inputInlinePosition(draft, items, location)
+      inputInlinePosition(draft, items, location, deleteCount)
     })
   }
   const backspace = () => {
@@ -676,9 +677,11 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
     callback?: () => void,
   ) => {
     if (e.nativeEvent.isComposing) {
+      props.onComposing?.(e)
       return
     }
     if (e.keyCode === 229) {
+      props.onComposing?.(e)
       return
     }
     if (props.processInput?.(e)) {

@@ -2,7 +2,7 @@ import type { Draft } from 'immer';
 import { produce } from 'immer'
 import * as React from "react"
 import { renderToStaticMarkup } from "react-dom/server";
-import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick } from "."
+import { compareLocations, FlowLayoutBlock, FlowLayoutBlockStyle, getWordByDoubleClick, useTextComposing } from "."
 import { equals, getColorString, Merger, Position, Reducer, Region, Size } from "../utils"
 import { Cursor } from "./cursor";
 import { Scrollbar } from "./scrollbar"
@@ -33,10 +33,16 @@ export function useHtmlEditor(props: {
   const layoutResults = React.useRef<HtmlLayoutResult>()
   const [lineEnd, setLineEnd] = React.useState(false)
   const [currentStyle, setCurrentStyle] = React.useState<{ index: [number, number], style: Partial<HtmlTextStyle> }>()
+  const { onComposing, getCompositionCountThenEnd } = useTextComposing()
 
   const { range, inputContent, inputInline, getCopiedContents, scrollRef,
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref: cursorRef, setLocation, location, contentHeight, setContentHeight, blockLocation,
-    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation(props)
+    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation({
+      ...props,
+      onComposing(e) {
+        onComposing(e, inputText)
+      },
+    })
 
   const getCurrentContent = (draft: readonly HtmlBlock[]) => {
     const blockIndex = range ? range.min[0] : location[0]
@@ -65,7 +71,7 @@ export function useHtmlEditor(props: {
     }
     return
   }
-  const inputText = (text: string | (string | HtmlTextInline)[]) => {
+  const inputText = (text: string | (string | HtmlTextInline)[], deleteCount?: number) => {
     if (props.readOnly) return
     const result: HtmlTextInline[] = []
     for (const t of text) {
@@ -80,7 +86,7 @@ export function useHtmlEditor(props: {
         result.push({ ...currentContent, ...t })
       }
     }
-    inputInline(result)
+    inputInline(result, deleteCount)
   }
   const arrowUp = (shift = false) => {
     if (!shift && range) {
@@ -436,7 +442,7 @@ export function useHtmlEditor(props: {
           ref={cursorRef}
           onKeyDown={onKeyDown}
           onCompositionEnd={e => {
-            inputText(e.data)
+            inputText(e.data, getCompositionCountThenEnd())
             if (cursorRef.current) {
               cursorRef.current.value = ''
             }

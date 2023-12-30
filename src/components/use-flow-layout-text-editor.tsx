@@ -30,6 +30,7 @@ export function useFlowLayoutTextEditor(props: {
   const font = `${props.fontSize}px ${props.fontFamily}`
   const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
   const getComposition = (index: number) => getTextComposition(index, props.state, getTextWidth, c => c)
+  const { onComposing, getCompositionCountThenEnd } = useTextComposing()
   const { inputContent, getCopiedContents, ref, layoutResult, cursor, location, setLocation, isSelected, renderEditor, actualHeight, setSelectionStart, positionToLocation, getPosition } = useFlowLayoutEditor({
     state: props.state,
     width: props.width,
@@ -80,7 +81,7 @@ export function useFlowLayoutTextEditor(props: {
     align: props.align,
     verticalAlign: props.verticalAlign,
     onCompositionEnd(e) {
-      inputText(e.data)
+      inputText(e.data, undefined, getCompositionCountThenEnd())
       if (ref.current) {
         ref.current.value = ''
       }
@@ -91,15 +92,18 @@ export function useFlowLayoutTextEditor(props: {
       if (newSelectionStart !== undefined) setSelectionStart(newSelectionStart)
       if (newLocation !== undefined) setLocation(newLocation)
     },
+    onComposing(e) {
+      onComposing(e, inputText)
+    },
   })
 
-  const inputText = (text: string | string[], textLocation = text.length) => {
+  const inputText = (text: string | string[], textLocation = text.length, deleteCount?: number) => {
     if (props.readOnly) return
     const result: string[] = []
     for (const t of text) {
       result.push(t)
     }
-    inputContent(result, textLocation)
+    inputContent(result, textLocation, deleteCount)
   }
 
   const paste = () => {
@@ -141,6 +145,29 @@ export function useFlowLayoutTextEditor(props: {
       const result = renderProps.target.renderResult(children, props.width, actualHeight)
       return renderEditor(result)
     },
+  }
+}
+
+export function useTextComposing() {
+  const compositionCount = React.useRef(0)
+  return {
+    getCompositionCountThenEnd() {
+      const result = compositionCount.current
+      compositionCount.current = 0
+      return result
+    },
+    onComposing(e: React.KeyboardEvent<HTMLInputElement>, inputText: (text: string) => void) {
+      for (const key of ['Key', 'Digit']) {
+        if (e.code.startsWith(key)) {
+          const text = e.code.slice(key.length)[0].toLocaleLowerCase()
+          if (text) {
+            compositionCount.current += text.length
+            inputText(text)
+            return
+          }
+        }
+      }
+    }
   }
 }
 
