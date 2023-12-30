@@ -35,6 +35,7 @@ export function useFlowLayoutEditor<T>(props: {
   onDoubleClick?: React.MouseEventHandler<HTMLDivElement>
   keepSelectionOnBlur?: boolean
   autoFocus?: boolean
+  onComposing?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
   const [location, setLocation] = React.useState(0)
   const [selectionStart, setSelectionStart] = React.useState<number>()
@@ -42,7 +43,7 @@ export function useFlowLayoutEditor<T>(props: {
   const [contentHeight, setContentHeight] = React.useState(0)
   const [lineEnd, setLineEnd] = React.useState(false)
 
-  const inputContent = (newContents: T[], contentLocation = newContents.length) => {
+  const inputContent = (newContents: T[], contentLocation = newContents.length, deleteCount = 0) => {
     if (props.readOnly) return
     if (range) {
       setLocation(range.min + contentLocation)
@@ -52,9 +53,9 @@ export function useFlowLayoutEditor<T>(props: {
       })
       return
     }
-    setLocation(location + contentLocation)
+    setLocation(location + contentLocation - deleteCount)
     props.setState(draft => {
-      draft.splice(location, 0, ...newContents)
+      draft.splice(location - deleteCount, deleteCount, ...newContents)
     })
   }
   const backspace = () => {
@@ -171,9 +172,11 @@ export function useFlowLayoutEditor<T>(props: {
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
+      props.onComposing?.(e)
       return
     }
     if (e.keyCode === 229) {
+      props.onComposing?.(e)
       return
     }
     if (props.processInput?.(e)) {

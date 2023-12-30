@@ -7,7 +7,7 @@ import { useEvent } from "./use-event"
 import { useGlobalMouseUp } from "./use-global-mouseup"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useWheelScroll } from "./use-wheel-scroll"
-import { getTextComposition, getWordByDoubleClick, isWordCharactor } from "./use-flow-layout-text-editor"
+import { getTextComposition, getWordByDoubleClick, isWordCharactor, useTextComposing } from "./use-flow-layout-text-editor"
 
 export function useAttributedTextEditor<T extends object>(props: {
   state: AttributedText<T>[]
@@ -34,8 +34,9 @@ export function useAttributedTextEditor<T extends object>(props: {
   const [contentHeight, setContentHeight] = React.useState(0)
   const [currentAttributes, setCurrentAttributes] = React.useState<{ index: number, attributes: T }>()
   const [lineEnd, setLineEnd] = React.useState(false)
+  const { onComposing, getCompositionCountThenEnd } = useTextComposing()
 
-  const inputText = (text: string) => {
+  const inputText = (text: string, deleteCount?: number) => {
     if (props.readOnly) return
     let middleState: AttributedText<T>[]
     let newLocation: number
@@ -49,6 +50,9 @@ export function useAttributedTextEditor<T extends object>(props: {
           index: range.min
         }
       }
+    } else if (deleteCount) {
+      newLocation = location - deleteCount
+      middleState = deleteContentsInRange({ min: location - deleteCount, max: location })
     } else {
       newLocation = location
       middleState = props.state
@@ -474,9 +478,11 @@ export function useAttributedTextEditor<T extends object>(props: {
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
+      onComposing(e, inputText)
       return
     }
     if (e.keyCode === 229) {
+      onComposing(e, inputText)
       return
     }
     if (props.processInput?.(e)) {
@@ -780,7 +786,7 @@ export function useAttributedTextEditor<T extends object>(props: {
           ref={ref}
           onKeyDown={onKeyDown}
           onCompositionEnd={e => {
-            inputText(e.data)
+            inputText(e.data, getCompositionCountThenEnd())
             if (ref.current) {
               ref.current.value = ''
             }
