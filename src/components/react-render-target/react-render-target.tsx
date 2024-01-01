@@ -9,6 +9,7 @@ import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezie
 import { getGeometryLineStartAndEnd } from "../../utils/break"
 import { calculateEquation2 } from "../../utils/equation-calculater"
 import { getNurbsPoints } from "../../utils/nurbs"
+import { LineCap, LineJoin } from "../../utils/triangles"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
@@ -177,9 +178,9 @@ export interface PathStrokeOptions<T> {
  * @public
  */
 export interface PathLineStyleOptions {
-  lineJoin: 'round' | 'bevel' | 'miter'
+  lineJoin: LineJoin
   miterLimit: number
-  lineCap?: 'butt' | 'round' | 'square'
+  lineCap?: LineCap
 }
 
 /**

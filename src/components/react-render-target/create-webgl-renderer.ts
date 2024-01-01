@@ -13,7 +13,7 @@ import type { Align, VerticalAlign } from '../../utils/flow-layout'
 import { Lazy } from '../../utils/lazy'
 import { getTwoGeneralFormLinesIntersectionPoint } from '../../utils/intersection'
 import { getPerpendicular, getPerpendicularPoint } from '../../utils/perpendicular'
-import { combineStripTriangleColors, combineStripTriangles, defaultMiterLimit, getPolylineTriangles, triangleStripToTriangles } from '../../utils/triangles'
+import { LineCapWithClosed, LineJoinWithLimit, combineStripTriangleColors, combineStripTriangles, defaultLineCap, defaultLineJoin, defaultMiterLimit, getPolylineTriangles, triangleStripToTriangles } from '../../utils/triangles'
 
 /**
  * @public
@@ -641,8 +641,8 @@ export function getPathGraphics(
   }>,
 ): Graphic[] {
   let strokeWidth = options?.strokeWidth ?? 1
-  const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? 'butt')
-  const lineJoin = options?.lineJoin ?? 'miter'
+  const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? defaultLineCap)
+  const lineJoin = options?.lineJoin ?? defaultLineJoin
   const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
   const strokeColor = colorNumberToRec(options?.strokeColor ?? 0, options?.strokeOpacity)
   const graphics: Graphic[] = []
@@ -657,7 +657,7 @@ export function getPathGraphics(
       }).flat()
     }
 
-    if (strokeWidthScale !== 0 && (strokeWidth === 1 || strokeWidth * strokeWidthScale === 1)) {
+    if (strokeWidthScale !== 0 && (isSameNumber(strokeWidth, 1) || isSameNumber(strokeWidth * strokeWidthScale, 1))) {
       graphics.push({
         type: 'lines',
         points: combinedLinesCache.get(points, lineCapWithClosed, () => {
@@ -978,10 +978,10 @@ export interface FillStyle {
 }
 
 const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics, canvas: HTMLCanvasElement } | undefined>()
-const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
-const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, true | 'butt' | 'round' | 'square', 'round' | 'bevel' | number, number[]>()
-const polylineLinesCache = new WeakmapMapCache<Position[], true | 'butt' | 'round' | 'square', number[]>()
-const combinedLinesCache = new WeakmapMapCache<Position[][], true | 'butt' | 'round' | 'square', number[]>()
+const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, LineCapWithClosed, LineJoinWithLimit, number[]>()
+const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, LineCapWithClosed, LineJoinWithLimit, number[]>()
+const polylineLinesCache = new WeakmapMapCache<Position[], LineCapWithClosed, number[]>()
+const combinedLinesCache = new WeakmapMapCache<Position[][], LineCapWithClosed, number[]>()
 
 export function setCanvasLineDash(ctx: CanvasRenderingContext2D, options?: Partial<{ dashArray: number[], dashOffset: number }>) {
   if (options?.dashArray) {

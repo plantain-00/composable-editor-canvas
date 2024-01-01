@@ -1,6 +1,6 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
-import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache, ContentPath } from "../../src"
+import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache, ContentPath, defaultLineJoin, defaultMiterLimit, defaultLineCap, LineJoin, LineCap } from "../../src"
 import { BaseContent, defaultStrokeColor, defaultOpacity, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
 
 export function Renderer(props: {
@@ -85,16 +85,25 @@ export function Renderer(props: {
     dashArray?: number[]
     strokeWidth: number
     strokeOpacity: number
+    lineJoin?: LineJoin
+    miterLimit?: number
+    lineCap?: LineCap
   }, Position[]>(
     (last) => children.push(target.renderPath(last.target, {
       strokeColor: last.type.strokeColor,
       dashArray: last.type.dashArray,
       strokeWidth: last.type.strokeWidth,
       strokeOpacity: last.type.strokeOpacity,
+      lineJoin: last.type.lineJoin,
+      miterLimit: last.type.miterLimit,
+      lineCap: last.type.lineCap,
     })),
     (a, b) => a.strokeColor === b.strokeColor &&
       a.strokeWidth === b.strokeWidth &&
       a.strokeOpacity === b.strokeOpacity &&
+      a.lineJoin === b.lineJoin &&
+      a.miterLimit === b.miterLimit &&
+      a.lineCap === b.lineCap &&
       isSamePath(a.dashArray, b.dashArray),
     a => a.line,
   )
@@ -126,12 +135,18 @@ export function Renderer(props: {
           let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
           strokeColor = transformColor(strokeColor)
           const strokeOpacity = (isStrokeContent(content) ? content.strokeOpacity : undefined) ?? defaultOpacity
+          const lineJoin = (isStrokeContent(content) ? content.lineJoin : undefined) ?? defaultLineJoin
+          const miterLimit = (isStrokeContent(content) ? content.miterLimit : undefined) ?? defaultMiterLimit
+          const lineCap = (isStrokeContent(content) ? content.lineCap : undefined) ?? defaultLineCap
           for (const line of renderingLines) {
             merger.push({
               line,
               strokeColor,
               strokeWidth,
               strokeOpacity,
+              lineJoin,
+              miterLimit,
+              lineCap,
             })
           }
         } else {

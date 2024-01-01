@@ -5,7 +5,7 @@ import { getImageFromCache } from "./image-loader"
 import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, RenderTransform, getEllipseArcByStartEnd, renderPartStyledPolyline } from "./react-render-target"
 import { getColorString } from "../../utils/color"
 import { angleToRadian } from "../../utils/radian"
-import { defaultMiterLimit } from "../../utils/triangles"
+import { defaultLineCap, defaultLineJoin, defaultMiterLimit } from "../../utils/triangles"
 import { Position } from "../../utils/geometry"
 
 /**
@@ -300,8 +300,8 @@ function renderStroke(
     ctx.lineWidth = strokeWidth
     ctx.strokeStyle = getColorString(options?.strokeColor ?? 0, options?.strokeOpacity)
     ctx.miterLimit = options?.miterLimit ?? defaultMiterLimit
-    ctx.lineJoin = options?.lineJoin ?? 'miter'
-    ctx.lineCap = options?.lineCap ?? 'butt'
+    ctx.lineJoin = options?.lineJoin ?? defaultLineJoin
+    ctx.lineCap = options?.lineCap ?? defaultLineCap
     renderPatternOrGradient(ctx, strokeWidthScale, rerender, options)
     ctx.stroke()
   }

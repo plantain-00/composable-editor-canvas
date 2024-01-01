@@ -6,8 +6,8 @@ import { radianToAngle } from "./radian"
 export function getPolylineTriangles(
   points: Position[],
   width: number,
-  lineCapWithClosed: true | 'butt' | 'round' | 'square' = 'butt',
-  lineJoinWithLimit: 'round' | 'bevel' | number = defaultMiterLimit,
+  lineCapWithClosed: LineCapWithClosed = defaultLineCap,
+  lineJoinWithLimit: LineJoinWithLimit = defaultMiterLimit,
 ) {
   const radius = width / 2
   if (lineCapWithClosed === true) {
@@ -99,37 +99,25 @@ export function getPolylineTriangles(
       }
 
       if (lineJoin === 'bevel' || lineJoin === 'round') {
-        if (largerThan(radian, 0) && lessThan(radian, Math.PI)) {
-          const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
-          const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], getPerpendicular(points[i], lines[previousIndex]))
-          const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[1], getPerpendicular(points[i], lines[nextIndex]))
-          if (p && p1 && p2) {
-            let ps: Position[]
-            if (lineJoin === 'bevel') {
-              ps = [p1, p2]
-            } else {
-              const startAngle = radianToAngle(getTwoPointsRadian(p1, b))
-              const endAngle = radianToAngle(getTwoPointsRadian(p2, b))
-              ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle }, 5)
-            }
-            for (const s of ps) {
-              result.push(p.x, p.y, s.x, s.y)
-            }
+        const sweep = largerThan(radian, 0) && lessThan(radian, Math.PI)
+        const index1 = sweep ? 0 : 1
+        const index2 = sweep ? 1 : 0
+        const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[index1], nextParallelLines[index1])
+        const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[index2], getPerpendicular(points[i], lines[previousIndex]))
+        const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[index2], getPerpendicular(points[i], lines[nextIndex]))
+        if (p && p1 && p2) {
+          let ps: Position[]
+          if (lineJoin === 'bevel') {
+            ps = [p1, p2]
+          } else {
+            const startAngle = radianToAngle(getTwoPointsRadian(p1, b))
+            const endAngle = radianToAngle(getTwoPointsRadian(p2, b))
+            ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle, counterclockwise: !sweep }, 5)
           }
-        } else {
-          const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
-          const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], getPerpendicular(points[i], lines[previousIndex]))
-          const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[0], getPerpendicular(points[i], lines[nextIndex]))
-          if (p && p1 && p2) {
-            let ps: Position[]
-            if (lineJoin === 'bevel') {
-              ps = [p1, p2]
+          for (const s of ps) {
+            if (sweep) {
+              result.push(p.x, p.y, s.x, s.y)
             } else {
-              const startAngle = radianToAngle(getTwoPointsRadian(p1, b))
-              const endAngle = radianToAngle(getTwoPointsRadian(p2, b))
-              ps = arcToPolyline({ x: b.x, y: b.y, r: radius, startAngle, endAngle, counterclockwise: true }, 5)
-            }
-            for (const s of ps) {
               result.push(s.x, s.y, p.x, p.y)
             }
           }
@@ -199,4 +187,11 @@ export function combineStripTriangleColors(colors: number[][]) {
   return result
 }
 
+export type LineJoin = 'round' | 'bevel' | 'miter'
+export type LineCap = 'butt' | 'round' | 'square'
+export type LineCapWithClosed = true | LineCap
+export type LineJoinWithLimit = 'round' | 'bevel' | number
+
 export const defaultMiterLimit = 10
+export const defaultLineJoin = 'miter'
+export const defaultLineCap = 'butt'
