@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe, HatchGeometries } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -46,6 +46,9 @@ export interface StrokeFields {
   strokeStyleId?: number | BaseContent
   trueStrokeColor?: boolean
   strokeOpacity?: number
+  lineJoin?: LineJoin
+  miterLimit?: number
+  lineCap?: LineCap
 }
 
 export const StrokeFields = {
@@ -55,6 +58,9 @@ export const StrokeFields = {
   strokeStyleId: optional(or(number, Content)),
   trueStrokeColor: optional(boolean),
   strokeOpacity: optional(maximum(1, minimum(0, number))),
+  lineJoin: optional(or('round', 'bevel', 'miter')),
+  miterLimit: optional(number),
+  lineCap: optional(or('butt', 'round', 'square')),
 }
 
 export interface FillFields {
@@ -494,6 +500,18 @@ export function getStrokeContentPropertyPanel(
       content.strokeWidth !== undefined ? <NumberEditor value={content.strokeWidth} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeWidth = v } })} /> : undefined,
     ],
     strokeOpacity: <NumberEditor value={content.strokeOpacity ?? 1} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.strokeOpacity = v === 1 ? undefined : v } })} />,
+    lineJoin: [
+      <BooleanEditor value={content.lineJoin !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.lineJoin = v ? defaultLineJoin : undefined } })} />,
+      content.lineJoin !== undefined ? <EnumEditor enums={['round', 'bevel', 'miter']} value={content.lineJoin} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.lineJoin = v } })} /> : undefined,
+    ],
+    miterLimit: [
+      <BooleanEditor value={content.miterLimit !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.miterLimit = v ? defaultMiterLimit : undefined } })} />,
+      content.miterLimit !== undefined ? <NumberEditor value={content.miterLimit} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.miterLimit = v } })} /> : undefined,
+    ],
+    lineCap: [
+      <BooleanEditor value={content.lineCap !== undefined} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.lineCap = v ? defaultLineCap : undefined } })} />,
+      content.lineCap !== undefined ? <EnumEditor enums={['butt', 'round', 'square']} value={content.lineCap} setValue={(v) => update(c => { if (isStrokeContent(c)) { c.lineCap = v } })} /> : undefined,
+    ],
   }
 }
 
@@ -1577,6 +1595,9 @@ export function getStrokeRenderOptionsFromRenderContext<V, P>(
     strokeWidth: transformedStrokeWidth,
     strokeOpacity,
     dashArray: strokeStyleContent.dashArray,
+    lineJoin: strokeStyleContent.lineJoin,
+    miterLimit: strokeStyleContent.miterLimit,
+    lineCap: strokeStyleContent.lineCap,
     ...(fuzzy ? fuzzyStyle : {}),
   }
   const fillOptions: Partial<PathOptions<V>> = {
@@ -1616,6 +1637,9 @@ export function getStrokeFillRenderOptionsFromRenderContext<V, P>(
     fillPattern: getFillPattern(fillStyleContent),
     fillOpacity,
     dashArray: strokeStyleContent.dashArray,
+    lineJoin: strokeStyleContent.lineJoin,
+    miterLimit: strokeStyleContent.miterLimit,
+    lineCap: strokeStyleContent.lineCap,
     clip,
     ...(fuzzy ? fuzzyStyle : {}),
   }

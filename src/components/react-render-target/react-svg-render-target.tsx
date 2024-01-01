@@ -7,7 +7,7 @@ import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTar
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
 import { getPerpendicularPoint } from "../../utils/perpendicular"
-import { defaultMiterLimit } from "../../utils/triangles"
+import { defaultLineCap, defaultLineJoin, defaultMiterLimit } from "../../utils/triangles"
 
 /**
  * @public
@@ -555,8 +555,8 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, opt
     strokeDasharray: getStrokeDasharray(scale, strokeWidthScale, options),
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
-    strokeLinejoin: options?.lineJoin ?? 'miter',
-    strokeLinecap: options?.lineCap ?? 'butt',
+    strokeLinejoin: options?.lineJoin ?? defaultLineJoin,
+    strokeLinecap: options?.lineCap ?? defaultLineCap,
     fillOpacity: options?.fillOpacity,
     strokeOpacity: options?.strokeOpacity,
   }
