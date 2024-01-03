@@ -3650,7 +3650,7 @@ function getCommand(ctx) {
                 }
               } : void 0,
               contents
-            })(index, 1, 1));
+            })(index, 1, false));
             let jsx = "";
             for (let j = 0; j < svg.length; j++) {
               const c = svg[j];
@@ -6675,7 +6675,8 @@ function getModel(ctx) {
       return {
         lines: [[content, content]],
         bounding: ctx.getPointsBounding([content]),
-        renderingLines: []
+        renderingLines: [],
+        regions: []
       };
     });
   }

@@ -35,7 +35,28 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     @vertex
     fn vertex_main(@location(0) position: vec2f) -> @builtin(position) vec4f
     {
-      return vec4f((uniforms.matrix * vec3(position.xy, 1)).xy, 0, 1);
+      return vec4f((uniforms.matrix * vec3(position, 1)).xy, 0, 1);
+    }
+    
+    @fragment
+    fn fragment_main() -> @location(0) vec4f
+    {
+      return uniforms.color;
+    }`
+  }))
+  const scaledShaderModule = new Lazy(() => device.createShaderModule({
+    code: `struct Uniforms {
+      color: vec4f,
+      matrix: mat3x3f,
+      scale: f32,
+    };
+    @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+    
+    @vertex
+    fn vertex_main(@location(0) position: vec2f, @location(1) base: vec2f) -> @builtin(position) vec4f
+    {
+      let p = (position - base) * uniforms.scale + base;
+      return vec4f((uniforms.matrix * vec3(p, 1)).xy, 0, 1);
     }
     
     @fragment
@@ -297,7 +318,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     fn vertex_main(@location(0) position: vec2f, @location(1) color: vec4f) -> VertexOutput
     {
       var vsOut: VertexOutput;
-      vsOut.position = vec4f((uniforms.matrix * vec3(position.xy, 1)).xy, 0, 1);
+      vsOut.position = vec4f((uniforms.matrix * vec3(position, 1)).xy, 0, 1);
       vsOut.color = color;
       return vsOut;
     }
@@ -329,6 +350,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
 
   type State = 'normal' | 'mask' | 'masked'
   const bufferCache = new WeakmapCache<number[], GPUBuffer>()
+  const scaledBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
   const gradientBufferCache = new WeakmapCache2<number[], number[], GPUBuffer>()
   const basicPipelineCache = new WeakmapMap2Cache<GPUShaderModule, LineOrTriangleGraphic['type'], State, GPURenderPipeline>()
   const canvasTextureCache = new WeakmapCache<ImageData | ImageBitmap, GPUTexture>()
@@ -470,7 +492,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     passEncoder.end();
     return createRenderPass(commandEncoder, targetTexture)
   }
-  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false, opacity?: number, targetTexture?: GPUTexture) => {
+  const drawGraphic = (graphic: Graphic, matrix: Matrix, passEncoder: GPURenderPassEncoder, commandEncoder: GPUCommandEncoder, inPattern = false, opacity?: number, targetTexture?: GPUTexture, scale?: number) => {
     const op = mergeOpacities(graphic.opacity, opacity)
     const color = mergeOpacityToColor(graphic.pattern ? defaultVec4Color : graphic.color, op)
     if (graphic.pattern) {
@@ -532,7 +554,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         passEncoder = drawPattern(graphic.pattern, matrix, { xMin: graphic.x, yMin: graphic.y, xMax: graphic.x + width, yMax: graphic.y + height }, commandEncoder, op, targetTexture)
       }
     } else {
-      const shaderModule = graphic.colors ? gradientShaderModule.instance : basicShaderModule.instance
+      const shaderModule = graphic.colors ? gradientShaderModule.instance : graphic.basePoints && scale ? scaledShaderModule.instance : basicShaderModule.instance
       const pipeline = basicPipelineCache.get(shaderModule, graphic.type, state, () => {
         const bufferLayout: GPUVertexBufferLayout = graphic.colors ? {
           attributes: [
@@ -540,6 +562,13 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
             { shaderLocation: 1, offset: 8, format: "float32x4" },
           ],
           arrayStride: 24,
+          stepMode: 'vertex'
+        } : graphic.basePoints && scale ? {
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: 'float32x2' },
+            { shaderLocation: 1, offset: 8, format: 'float32x2' },
+          ],
+          arrayStride: 16,
           stepMode: 'vertex'
         } : {
           attributes: [
@@ -550,7 +579,11 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         }
         return createRenderPipeline(shaderModule, state, graphic.type, bufferLayout)
       })
-      setPipelineAndResources(passEncoder, pipeline, [{ buffer: createUniformsBuffer(device, [{ type: 'vec4', value: color || defaultVec4Color }, { type: 'mat3x3', value: matrix }]) }])
+      const input: MemoryLayoutInput[] = [{ type: 'vec4', value: color || defaultVec4Color }, { type: 'mat3x3', value: matrix }]
+      if (graphic.basePoints && scale) {
+        input.push({ type: 'number', value: 1 / scale })
+      }
+      setPipelineAndResources(passEncoder, pipeline, [{ buffer: createUniformsBuffer(device, input) }])
       if (graphic.colors) {
         const colors = graphic.colors
         passEncoder.setVertexBuffer(0, gradientBufferCache.get(graphic.points, colors, () => {
@@ -563,7 +596,19 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
           return buffer
         }));
-      } else {
+      } else if (graphic.basePoints && scale) {
+        const basePoints = graphic.basePoints
+        passEncoder.setVertexBuffer(0, scaledBufferCache.get(graphic.points, basePoints, () => {
+          const result = mergeVertexData([{ data: graphic.points, num: 2 }, { data: basePoints, num: 2 }])
+          const vertices = new Float32Array(result)
+          const buffer = device.createBuffer({
+            size: vertices.byteLength,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+          })
+          device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
+          return buffer
+        }));
+       } else {
         passEncoder.setVertexBuffer(0, bufferCache.get(graphic.points, () => {
           const vertices = new Float32Array(graphic.points)
           const buffer = device.createBuffer({
@@ -602,7 +647,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
     let passEncoder = createRenderPass(commandEncoder, undefined, backgroundColor)
     for (const graphic of graphics) {
       const matrix = graphic.matrix ? m3.multiply(worldMatrix, graphic.matrix) : worldMatrix
-      passEncoder = drawGraphic(graphic, matrix, passEncoder, commandEncoder)
+      passEncoder = drawGraphic(graphic, matrix, passEncoder, commandEncoder, undefined, undefined, undefined, scale)
     }
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);

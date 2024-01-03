@@ -22,7 +22,7 @@ export const reactWebgpuRenderTarget: ReactRenderTarget<WebgpuDraw> = {
         transform={options?.transform}
         backgroundColor={options?.backgroundColor}
         debug={options?.debug}
-        strokeWidthScale={options?.strokeWidthScale}
+        strokeWidthFixed={options?.strokeWidthFixed}
       />
     )
   },
@@ -40,17 +40,17 @@ function Canvas(props: {
   transform?: RenderTransform
   backgroundColor?: number
   debug?: boolean
-  strokeWidthScale?: number
+  strokeWidthFixed?: boolean
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   const render = React.useRef<(
-    graphics: ((strokeWidthScale: number, rerender: () => void) => Graphic[])[],
+    graphics: ((strokeWidthFixed: boolean, rerender: () => void) => Graphic[])[],
     backgroundColor: Vec4,
     x: number,
     y: number,
     scale: number,
-    strokeWidthScale: number,
+    strokeWidthFixed: boolean,
     rotate?: number
   ) => void>()
   React.useEffect(() => {
@@ -68,9 +68,9 @@ function Canvas(props: {
         return
       }
       const rerender = () => setImageLoadStatus(c => c + 1)
-      render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale, rotate) => {
+      render.current = (graphics, backgroundColor, x, y, scale, strokeWidthFixed, rotate) => {
         const now = performance.now()
-        renderer(graphics.map(g => g(strokeWidthScale, rerender)).flat(), backgroundColor, x, y, scale, rotate)
+        renderer(graphics.map(g => g(strokeWidthFixed, rerender)).flat(), backgroundColor, x, y, scale, rotate)
         if (props.debug) {
           console.info(Math.round(performance.now() - now))
         }
@@ -85,8 +85,8 @@ function Canvas(props: {
       const y = props.transform?.y ?? 0
       const scale = props.transform?.scale ?? 1
       const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
-      const strokeWidthScale = props.strokeWidthScale ?? 1
-      render.current(props.graphics, color, x, y, scale, strokeWidthScale, props.transform?.rotate)
+      const strokeWidthFixed = props.strokeWidthFixed ?? false
+      render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.transform?.rotate)
     }
   }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus])
   return (

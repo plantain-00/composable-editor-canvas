@@ -11,8 +11,7 @@ import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'
 import type { Align, VerticalAlign } from '../../utils/flow-layout'
 import { Lazy } from '../../utils/lazy'
-import { getTwoGeneralFormLinesIntersectionPoint } from '../../utils/intersection'
-import { getPerpendicular, getPerpendicularPoint } from '../../utils/perpendicular'
+import { getPerpendicularPoint } from '../../utils/perpendicular'
 import { LineCapWithClosed, LineJoinWithLimit, combineStripTriangleColors, combineStripTriangles, defaultLineCap, defaultLineJoin, defaultMiterLimit, getPolylineTriangles, triangleStripToTriangles } from '../../utils/triangles'
 
 /**
@@ -23,6 +22,7 @@ export interface LineOrTriangleGraphic {
   points: number[]
   color?: Vec4
   colors?: number[]
+  basePoints?: number[]
 }
 
 /**
@@ -71,11 +71,27 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   const basicProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     uniform float flipY;
     void main() {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
+      gl_Position = vec4((matrix * vec3(position, 1)).xy * vec2(1, flipY), 0, 1);
+    }
+    `, `
+    precision mediump float;
+    uniform vec4 color;
+    void main() {
+      gl_FragColor = color;
+    }`]));
+  const scaledProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
+    attribute vec2 position;
+    attribute vec2 base;
+    uniform mat3 matrix;
+    uniform float flipY;
+    uniform float scale;
+    void main() {
+      vec2 p = (position - base) * scale + base;
+      gl_Position = vec4((matrix * vec3(p, 1)).xy * vec2(1, flipY), 0, 1);
     }
     `, `
     precision mediump float;
@@ -84,13 +100,13 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = color;
     }`]));
   const coloredTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
-      texcoord = position.xy;
+      gl_Position = vec4((matrix * vec3(position, 1)).xy, 0, 1);
+      texcoord = position;
     }
     `, `
     precision mediump float;
@@ -111,14 +127,14 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = color;
     }`]));
   const textureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     uniform float flipY;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
-      texcoord = position.xy;
+      gl_Position = vec4((matrix * vec3(position, 1)).xy * vec2(1, flipY), 0, 1);
+      texcoord = position;
     }
     `, `
     precision mediump float;
@@ -135,14 +151,14 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = texture2D(texture, texcoord) * vec4(1, 1, 1, opacity);
     }`]));
   const colorMatrixTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     uniform float flipY;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
-      texcoord = position.xy;
+      gl_Position = vec4((matrix * vec3(position, 1)).xy * vec2(1, flipY), 0, 1);
+      texcoord = position;
     }
     `, `
     precision mediump float;
@@ -164,14 +180,14 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 			gl_FragColor.a = colorMatrix[15] * c.r + colorMatrix[16] * c.g + colorMatrix[17] * c.b + colorMatrix[18] * c.a + colorMatrix[19];
     }`]));
   const blurTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     uniform float flipY;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
-      texcoord = position.xy;
+      gl_Position = vec4((matrix * vec3(position, 1)).xy * vec2(1, flipY), 0, 1);
+      texcoord = position;
     }
     `, `
     precision mediump float;
@@ -204,13 +220,13 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 			gl_FragColor += texture2D(texture, texcoord + vec2( 7.0*px.x,  7.0*px.y))*0.0044299121055113265;
     }`]));
   const colorMaskedTextureProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     uniform mat3 matrix;
     varying vec2 texcoord;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy, 0, 1);
-      texcoord = position.xy;
+      gl_Position = vec4((matrix * vec3(position, 1)).xy, 0, 1);
+      texcoord = position;
     }
     `, `
     precision mediump float;
@@ -232,14 +248,14 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       gl_FragColor = color2;
     }`]));
   const gradientProgramInfo = new Lazy(() => twgl.createProgramInfo(gl, [`
-    attribute vec4 position;
+    attribute vec2 position;
     attribute vec4 color;
     uniform mat3 matrix;
     uniform float flipY;
     varying vec4 v_color;
 
     void main () {
-      gl_Position = vec4((matrix * vec3(position.xy, 1)).xy * vec2(1, flipY), 0, 1);
+      gl_Position = vec4((matrix * vec3(position, 1)).xy * vec2(1, flipY), 0, 1);
       v_color = color;
     }
     `, `
@@ -330,7 +346,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
     gl.disable(gl.STENCIL_TEST);
   }
-  const drawGraphic = (line: Graphic, matrix: Matrix, opacity?: number) => {
+  const drawGraphic = (line: Graphic, matrix: Matrix, opacity?: number, scale?: number) => {
     const op = mergeOpacities(line.opacity, opacity)
     const color = mergeOpacityToColor(line.color, op)
     if (line.type === 'texture') {
@@ -403,7 +419,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
       }
     } else {
       const drawObject: twgl.DrawObject = {
-        programInfo: line.colors ? gradientProgramInfo.instance : basicProgramInfo.instance,
+        programInfo: line.colors ? gradientProgramInfo.instance : line.basePoints && scale ? scaledProgramInfo.instance : basicProgramInfo.instance,
         bufferInfo: bufferInfoCache.get(line.points, () => {
           const arrays: twgl.Arrays = {
             position: {
@@ -417,12 +433,19 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
               data: line.colors
             }
           }
+          if (line.basePoints && scale) {
+            arrays.base = {
+              numComponents: 2,
+              data: line.basePoints
+            }
+          }
           return twgl.createBufferInfoFromArrays(gl, arrays)
         }),
         uniforms: {
           color,
           matrix,
           flipY: 1,
+          scale: scale ? 1 / scale : undefined,
         },
         type: line.type === 'triangles' ? gl.TRIANGLES
           : line.type === 'line strip' ? gl.LINE_STRIP
@@ -448,7 +471,7 @@ export function createWebglRenderer(canvas: HTMLCanvasElement) {
 
     for (const graphic of graphics) {
       const matrix = graphic.matrix ? m3.multiply(worldMatrix, graphic.matrix) : worldMatrix
-      drawGraphic(graphic, matrix)
+      drawGraphic(graphic, matrix, undefined, scale)
     }
     flushDraw()
   }
@@ -635,12 +658,12 @@ export const defaultVec4Color: Vec4 = [0, 0, 0, 1]
 
 export function getPathGraphics(
   points: Position[][],
-  strokeWidthScale: number,
+  strokeWidthFixed: boolean,
   options?: Partial<StrokeStyle & PathLineStyleOptions & FillStyle & {
     closed: boolean
   }>,
 ): Graphic[] {
-  let strokeWidth = options?.strokeWidth ?? 1
+  const strokeWidth = options?.strokeWidth ?? 1
   const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? defaultLineCap)
   const lineJoin = options?.lineJoin ?? defaultLineJoin
   const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
@@ -657,7 +680,7 @@ export function getPathGraphics(
       }).flat()
     }
 
-    if (strokeWidthScale !== 0 && (isSameNumber(strokeWidth, 1) || isSameNumber(strokeWidth * strokeWidthScale, 1))) {
+    if (strokeWidthFixed && isSameNumber(strokeWidth, 1)) {
       graphics.push({
         type: 'lines',
         points: combinedLinesCache.get(points, lineCapWithClosed, () => {
@@ -677,13 +700,20 @@ export function getPathGraphics(
         color: strokeColor,
       })
     } else {
-      strokeWidth *= (strokeWidthScale || 1)
-      const trianglePoints = combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
-        return points.map(p => {
-          return polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
-            return triangleStripToTriangles(getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit))
+      const triangles = combinedTrianglesCache.get(points, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
+        const results: { points: number[], base: number[] } = { points: [], base: [] }
+        for (const p of points) {
+          const triangles = polylineTrianglesCache.get(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit, () => {
+            const r = getPolylineTriangles(p, strokeWidth, lineCapWithClosed, lineJoinWithLimit)
+            return {
+              points: triangleStripToTriangles(r.points),
+              base: triangleStripToTriangles(r.base)
+            }
           })
-        }).flat()
+          results.points.push(...triangles.points)
+          results.base.push(...triangles.base)
+        }
+        return results
       })
       let pattern: PatternGraphic | undefined
       let color = strokeColor
@@ -693,21 +723,22 @@ export function getPathGraphics(
       } else if (options?.strokeLinearGradient) {
         pattern = {
           graphics: [
-            getLinearGradientGraphic(options.strokeLinearGradient, numberArrayToPoints(trianglePoints))
+            getLinearGradientGraphic(options.strokeLinearGradient, numberArrayToPoints(triangles.points))
           ],
         }
         color = [0, 0, 0, 0]
       } else if (options?.strokeRadialGradient) {
         pattern = {
           graphics: [
-            getRadialGradientGraphic(options.strokeRadialGradient, numberArrayToPoints(trianglePoints))
+            getRadialGradientGraphic(options.strokeRadialGradient, numberArrayToPoints(triangles.points))
           ],
         }
         color = [0, 0, 0, 0]
       }
       graphics.push({
         type: 'triangles',
-        points: trianglePoints,
+        points: triangles.points,
+        basePoints: strokeWidthFixed ? triangles.base : undefined,
         color,
         pattern,
       })
@@ -978,8 +1009,8 @@ export interface FillStyle {
 }
 
 const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics, canvas: HTMLCanvasElement } | undefined>()
-const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, LineCapWithClosed, LineJoinWithLimit, number[]>()
-const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, LineCapWithClosed, LineJoinWithLimit, number[]>()
+const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, LineCapWithClosed, LineJoinWithLimit, { points: number[], base: number[] }>()
+const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, LineCapWithClosed, LineJoinWithLimit, { points: number[], base: number[] }>()
 const polylineLinesCache = new WeakmapMapCache<Position[], LineCapWithClosed, number[]>()
 const combinedLinesCache = new WeakmapMapCache<Position[][], LineCapWithClosed, number[]>()
 
@@ -1041,13 +1072,11 @@ function getLinearGradientGraphic(linearGradient: LinearGradient, points: Positi
   const fillColors: number[] = []
   stops.forEach(s => {
     const p = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset }
-    const p1 = getTwoGeneralFormLinesIntersectionPoint(line1, getPerpendicular(p, line1))
-    const p2 = getTwoGeneralFormLinesIntersectionPoint(line2, getPerpendicular(p, line2))
+    const p1 = getPerpendicularPoint(p, line1)
+    const p2 = getPerpendicularPoint(p, line2)
     const color = colorNumberToRec(s.color, s.opacity)
-    if (p1 && p2) {
-      fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
-      fillColors.push(...color, ...color)
-    }
+    fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
+    fillColors.push(...color, ...color)
   })
   return {
     type: 'triangle strip',
