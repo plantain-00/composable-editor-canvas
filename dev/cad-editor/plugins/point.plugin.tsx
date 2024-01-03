@@ -14,6 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<PointContent> {
         lines: [[content, content]],
         bounding: ctx.getPointsBounding([content]),
         renderingLines: [],
+        regions: [],
       }
     })
   }

@@ -4,7 +4,7 @@ import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipse
 import { BezierCurve, GeometryLine, QuadraticCurve, getTwoGeneralFormLinesIntersectionPoint, getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
-import { getPerpendicular, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
+import { getPerpendicularLine, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
@@ -66,20 +66,18 @@ export function getParallelQuadraticCurvesByDistance<T extends QuadraticCurve>(c
   const line2 = twoPointLineToGeneralFormLine(curve.cp, curve.to)
   const parallelLines1 = getParallelLinesByDistance(line1, distance)
   const parallelLines2 = getParallelLinesByDistance(line2, distance)
-  const from = getPerpendicular(curve.from, line1)
-  const to = getPerpendicular(curve.to, line2)
   return [
     {
       ...curve,
-      from: getTwoGeneralFormLinesIntersectionPoint(from, parallelLines1[0]),
+      from: getPerpendicularPoint(curve.from, parallelLines1[0]),
       cp: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[0], parallelLines2[0]),
-      to: getTwoGeneralFormLinesIntersectionPoint(to, parallelLines2[0]),
+      to: getPerpendicularPoint(curve.to, parallelLines2[0]),
     },
     {
       ...curve,
-      from: getTwoGeneralFormLinesIntersectionPoint(from, parallelLines1[1]),
+      from: getPerpendicularPoint(curve.from, parallelLines1[1]),
       cp: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[1], parallelLines2[1]),
-      to: getTwoGeneralFormLinesIntersectionPoint(to, parallelLines2[1]),
+      to: getPerpendicularPoint(curve.to, parallelLines2[1]),
     },
   ]
 }
@@ -94,22 +92,20 @@ export function getParallelBezierCurvesByDistance<T extends BezierCurve>(curve: 
   const parallelLines1 = getParallelLinesByDistance(line1, distance)
   const parallelLines2 = getParallelLinesByDistance(line2, distance)
   const parallelLines3 = getParallelLinesByDistance(line3, distance)
-  const from = getPerpendicular(curve.from, line1)
-  const to = getPerpendicular(curve.to, line3)
   return [
     {
       ...curve,
-      from: getTwoGeneralFormLinesIntersectionPoint(from, parallelLines1[0]),
+      from: getPerpendicularPoint(curve.from, parallelLines1[0]),
       cp1: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[0], parallelLines2[0]),
       cp2: getTwoGeneralFormLinesIntersectionPoint(parallelLines2[0], parallelLines3[0]),
-      to: getTwoGeneralFormLinesIntersectionPoint(to, parallelLines3[0]),
+      to: getPerpendicularPoint(curve.to, parallelLines3[0]),
     },
     {
       ...curve,
-      from: getTwoGeneralFormLinesIntersectionPoint(from, parallelLines1[1]),
+      from: getPerpendicularPoint(curve.from, parallelLines1[1]),
       cp1: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[1], parallelLines2[1]),
       cp2: getTwoGeneralFormLinesIntersectionPoint(parallelLines2[1], parallelLines3[1]),
-      to: getTwoGeneralFormLinesIntersectionPoint(to, parallelLines3[1]),
+      to: getPerpendicularPoint(curve.to, parallelLines3[1]),
     },
   ]
 }
@@ -375,7 +371,7 @@ export function getParallelPolylineByDistance(lines: [Position, Position][], ind
       if (closed) {
         pline1 = parallelLines[parallelLines.length - 1]
       } else {
-        pline1 = getPerpendicular(first, pline2)
+        pline1 = getPerpendicularLine(first, pline2)
       }
     } else if (i === parallelLines.length) {
       pline1 = parallelLines[parallelLines.length - 1]
@@ -383,7 +379,7 @@ export function getParallelPolylineByDistance(lines: [Position, Position][], ind
       if (closed) {
         pline2 = parallelLines[0]
       } else {
-        pline2 = getPerpendicular(last, pline1)
+        pline2 = getPerpendicularLine(last, pline1)
       }
     } else {
       pline1 = parallelLines[i - 1]

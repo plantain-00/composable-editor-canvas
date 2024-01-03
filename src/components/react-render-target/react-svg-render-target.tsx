@@ -22,7 +22,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const viewportHeight = height / scale
     const viewportX = (width - viewportWidth) / 2 - x / scale
     const viewportY = (height - viewportHeight) / 2 - y / scale
-    const strokeWidthScale = options?.strokeWidthScale || 1
+    const strokeWidthFixed = options?.strokeWidthFixed ?? false
     const rotate = options?.transform?.rotate ?? 0
     return (
       <svg
@@ -39,7 +39,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
-        <g style={{ rotate: `${rotate}rad` }}>{children.map((child, i) => child(i, scale, strokeWidthScale))}</g>
+        <g style={{ rotate: `${rotate}rad` }}>{children.map((child, i) => child(i, scale, strokeWidthFixed))}</g>
       </svg>
     )
   },
@@ -60,20 +60,20 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     if (options?.matrix) {
       transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
-    return (key, scale, strokeWidthScale) => (
+    return (key, scale, strokeWidthFixed) => (
       <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
-        {children.map((child, i) => child(i, scale, strokeWidthScale))}
+        {children.map((child, i) => child(i, scale, strokeWidthFixed))}
       </g>
     )
   },
   renderRect(x, y, width, height, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(x + width / 2, y + height / 2, options)}
@@ -88,19 +88,19 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const skippedLines = options?.skippedLines
     if (skippedLines && skippedLines.length > 0) {
       const d = points.map((p, i) => i === 0 || skippedLines.includes(i - 1) ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' ')
-      return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+      return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
         <path
           d={d}
-          {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+          {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
           fill={fill}
           stroke={stroke}
         />
       ), options)
     }
     const pointsText = points.map((p) => `${p.x},${p.y}`).join(' ')
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => React.createElement(options?.closed ? 'polygon' : 'polyline', {
       points: pointsText,
-      ...getCommonLineAttributes(scale, strokeWidthScale, options),
+      ...getCommonLineAttributes(scale, strokeWidthFixed, options),
       fill,
       stroke,
     }), options)
@@ -109,25 +109,25 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     return this.renderPolyline(points, { ...options, closed: true })
   },
   renderCircle(cx, cy, r, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <circle
         cx={cx}
         cy={cy}
         r={r}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderEllipse(cx, cy, rx, ry, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <ellipse
         cx={cx}
         cy={cy}
         rx={rx}
         ry={ry}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -139,10 +139,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path
         d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
       />
@@ -153,10 +153,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const end = ellipsePolarToCartesian(cx, cy, rx, ry, startAngle)
     const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path
         d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
         transform={getRotateTransform(cx, cy, options)}
@@ -210,17 +210,17 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
         d += ' Z'
       }
     }
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path
         d={d}
-        {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+        {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
       />
     ), options)
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => (
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <text
         x={x}
         y={y}
@@ -234,7 +234,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           fontFamily,
           strokeWidth: options?.strokeWidth,
           stroke,
-          strokeDasharray: getStrokeDasharray(scale, strokeWidthScale, options),
+          strokeDasharray: getStrokeDasharray(scale, strokeWidthFixed, options),
           strokeDashoffset: options?.dashOffset,
           fillOpacity: options?.fillOpacity,
           strokeOpacity: options?.strokeOpacity,
@@ -266,7 +266,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const ds = lines.map((points) => points.map((p, i) => i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`).join(' '))
     const clipHoles = options?.clip && ds.length > 1
     const holes = clipHoles ? ds.slice(1).map((d, i) => <path key={i} d={d} fill='black' />) : undefined
-    return renderPattern((fill, stroke, scale, strokeWidthScale) => {
+    return renderPattern((fill, stroke, scale, strokeWidthFixed) => {
       let d: string
       if (clipHoles) {
         d = ds[0]
@@ -279,7 +279,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
       return (
         <path
           d={d}
-          {...getCommonLineAttributes(scale, strokeWidthScale, options)}
+          {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
           fill={fill}
           stroke={stroke}
           fillRule='evenodd'
@@ -292,7 +292,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
 /**
  * @public
  */
-export type SvgDraw = (key: React.Key, scale: number, strokeWidthScale: number) => JSX.Element
+export type SvgDraw = (key: React.Key, scale: number, strokeWidthFixed: boolean) => JSX.Element
 
 function renderFilters(
   children: (filter: string | undefined) => JSX.Element,
@@ -390,12 +390,12 @@ function renderFilters(
 }
 
 function renderPattern(
-  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthScale: number) => JSX.Element,
+  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthFixed: boolean) => JSX.Element,
   options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
   noDefaultStrokeColor?: boolean,
   holes?: JSX.Element[],
 ) {
-  return (key: React.Key, scale: number, strokeWidthScale: number) => {
+  return (key: React.Key, scale: number, strokeWidthFixed: boolean) => {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let stroke = options?.strokeColor !== undefined ? getColorString(options.strokeColor) : noDefaultStrokeColor ? undefined : getColorString(0)
     let fillDef: JSX.Element | undefined
@@ -410,7 +410,7 @@ function renderPattern(
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
-          {options.strokePattern.pattern()(id, scale, strokeWidthScale)}
+          {options.strokePattern.pattern()(id, scale, strokeWidthFixed)}
         </pattern>
       )
       stroke = `url(#${id})`
@@ -457,7 +457,7 @@ function renderPattern(
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
-          {options.fillPattern.pattern()(id, scale, strokeWidthScale)}
+          {options.fillPattern.pattern()(id, scale, strokeWidthFixed)}
         </pattern>
       )
       fill = `url(#${id})`
@@ -496,15 +496,15 @@ function renderPattern(
     }
 
     let target: JSX.Element
-    const path = children(fill, stroke, scale, strokeWidthScale)
+    const path = children(fill, stroke, scale, strokeWidthFixed)
     if (options?.clip) {
       const id = getDomId(options.clip)
-      const clipContent = options.clip()(id, scale, strokeWidthScale)
+      const clipContent = options.clip()(id, scale, strokeWidthFixed)
       if (holes) {
         fillDef = (
           <>
             <mask id={id}>
-              {children('white', stroke, scale, strokeWidthScale)}
+              {children('white', stroke, scale, strokeWidthFixed)}
               {holes}
             </mask>
             {path}
@@ -548,11 +548,11 @@ function getDomId(target: object) {
   return domIdCache.get(target, () => Math.random().toString())
 }
 
-function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
+function getCommonLineAttributes<T>(scale: number, strokeWidthFixed: boolean, options?: Partial<PathOptions<T>>) {
   return {
     strokeWidth: options?.strokeWidth ?? 1,
-    vectorEffect: strokeWidthScale === 1 ? undefined : 'non-scaling-stroke' as const,
-    strokeDasharray: getStrokeDasharray(scale, strokeWidthScale, options),
+    vectorEffect: strokeWidthFixed ? 'non-scaling-stroke' as const : undefined,
+    strokeDasharray: getStrokeDasharray(scale, strokeWidthFixed, options),
     strokeDashoffset: options?.dashOffset,
     strokeMiterlimit: options?.miterLimit ?? defaultMiterLimit,
     strokeLinejoin: options?.lineJoin ?? defaultLineJoin,
@@ -562,9 +562,9 @@ function getCommonLineAttributes<T>(scale: number, strokeWidthScale: number, opt
   }
 }
 
-function getStrokeDasharray<T>(scale: number, strokeWidthScale: number, options?: Partial<PathOptions<T>>) {
+function getStrokeDasharray<T>(scale: number, strokeWidthFixed: boolean, options?: Partial<PathOptions<T>>) {
   if (options?.dashArray && options.dashArray.length > 0) {
-    return options.dashArray.map(d => d * (strokeWidthScale === 1 ? 1 : scale)).join(' ')
+    return options.dashArray.map(d => d * (strokeWidthFixed ? scale : 1)).join(' ')
   }
   return
 }

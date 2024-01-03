@@ -1788,3 +1788,12 @@ export function getContentHatchGeometries(content: BaseContent, contents: readon
     id: getContentIndex(content, contents),
   }
 }
+
+export function boundingToRTreeBounding(bounding: TwoPointsFormRegion) {
+  return {
+    x: bounding.start.x - 1,
+    y: bounding.start.y - 1,
+    w: bounding.end.x - bounding.start.x + 2,
+    h: bounding.end.y - bounding.start.y + 2,
+  }
+}

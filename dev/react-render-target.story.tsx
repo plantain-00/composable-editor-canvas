@@ -95,7 +95,9 @@ export default () => {
     target.renderPath([[{ x: 185, y: 250 }, { x: 225, y: 390 }, { x: 225, y: 250 }], [{ x: 205, y: 270 }, { x: 205, y: 310 }, { x: 215, y: 310 }, { x: 215, y: 270 }]], { strokePattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) }, strokeWidth: 5 }),
     target.renderPath([[{ x: 5, y: 400 }, { x: 45, y: 540 }, { x: 45, y: 400 }], [{ x: 25, y: 420 }, { x: 25, y: 460 }, { x: 35, y: 460 }, { x: 35, y: 420 }]], { strokeLinearGradient: { start: { x: 5, y: 400 }, end: { x: 45, y: 540 }, stops: [{ offset: 0.2, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 0.8, color: 0x00ff00 }] }, strokeWidth: 5 }),
     target.renderPath([[{ x: 50, y: 400 }, { x: 90, y: 540 }, { x: 90, y: 400 }], [{ x: 70, y: 420 }, { x: 70, y: 460 }, { x: 80, y: 460 }, { x: 80, y: 420 }]], { strokeRadialGradient: { start: { x: 70, y: 470, r: 10 }, end: { x: 70, y: 470, r: 70 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 5 }),
-  ], 230, 570)
+    target.renderPath([[{ x: 110, y: 400 }, { x: 110, y: 470 }, { x: 110, y: 540 }]], { strokeColor: 0xff0000, strokeWidth: 10 }),
+    target.renderPath([[{ x: 130, y: 400 }, { x: 130, y: 540 }, { x: 130, y: 470 }]], { strokeColor: 0xff0000, strokeWidth: 10 }),
+  ], 230, 640)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 75, 65, { crossOrigin: '' }),

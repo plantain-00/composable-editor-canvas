@@ -3,7 +3,7 @@ import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarg
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
-import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef } from './model'
+import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef, boundingToRTreeBounding } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
 import { registerRenderer, MemoizedRenderer } from './renderer'
 import RTree from 'rtree'
@@ -133,23 +133,13 @@ export const CADEditor = React.forwardRef((props: {
       for (const content of newContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, newState)
         if (geometries?.bounding) {
-          rtree?.insert({
-            x: geometries.bounding.start.x,
-            y: geometries.bounding.start.y,
-            w: geometries.bounding.end.x - geometries.bounding.start.x,
-            h: geometries.bounding.end.y - geometries.bounding.start.y,
-          }, content)
+          rtree?.insert(boundingToRTreeBounding(geometries.bounding), content)
         }
       }
       for (const content of removedContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, oldState)
         if (geometries?.bounding) {
-          rtree?.remove({
-            x: geometries.bounding.start.x,
-            y: geometries.bounding.start.y,
-            w: geometries.bounding.end.x - geometries.bounding.start.x,
-            h: geometries.bounding.end.y - geometries.bounding.start.y,
-          }, content)
+          rtree?.remove(boundingToRTreeBounding(geometries.bounding), content)
         }
       }
       setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
@@ -832,12 +822,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       const geometries = getContentModel(content)?.getGeometries?.(content, contents)
       if (geometries?.bounding) {
-        newRTree.insert({
-          x: geometries.bounding.start.x,
-          y: geometries.bounding.start.y,
-          w: geometries.bounding.end.x - geometries.bounding.start.x,
-          h: geometries.bounding.end.y - geometries.bounding.start.y,
-        }, content)
+        newRTree.insert(boundingToRTreeBounding(geometries.bounding), content)
       }
     }
     setRTree(newRTree)

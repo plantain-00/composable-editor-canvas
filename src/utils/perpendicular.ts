@@ -5,7 +5,7 @@ import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 
-export function getPerpendicular(point: Position, line: GeneralFormLine) {
+export function getPerpendicularLine(point: Position, line: GeneralFormLine): GeneralFormLine {
   return {
     a: -line.b,
     b: line.a,
@@ -13,9 +13,9 @@ export function getPerpendicular(point: Position, line: GeneralFormLine) {
   }
 }
 
-export function getPerpendicularToGeometryLine(point: Position, line: GeometryLine): GeneralFormLine | undefined {
+export function getPerpendicularLineToGeometryLine(point: Position, line: GeometryLine): GeneralFormLine | undefined {
   if (Array.isArray(line)) {
-    return getPerpendicular(point, twoPointLineToGeneralFormLine(...line))
+    return getPerpendicularLine(point, twoPointLineToGeneralFormLine(...line))
   }
   let p: Position | undefined
   if (line.type === 'arc') {
@@ -48,10 +48,18 @@ export function getPerpendicularToGeometryLine(point: Position, line: GeometryLi
 }
 
 export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine): Position {
+  // F1: ax + by + c = 0
+  // (y - y0)/(x - x0)(-a/b) = -1
+  // F2: ay - ay0 - bx + bx0 = 0
+  // F1*a: aax + aby + ac = 0
+  // F2*b: aby - aby0 - bbx + bbx0 = 0
+  // aax + ac + aby0 + bbx - bbx0 = 0
+  // (aa + bb)x = bbx0 - ac - aby0
   const d = a ** 2
   const e = b ** 2
   const f = d + e
   const g = -a * b
+  // fx = ex0 - ac + gy0
   return {
     x: (e * p.x + g * p.y - a * c) / f,
     y: (g * p.x + d * p.y - b * c) / f,

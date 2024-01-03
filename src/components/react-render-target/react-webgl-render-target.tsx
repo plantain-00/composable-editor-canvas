@@ -22,7 +22,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
         transform={options?.transform}
         backgroundColor={options?.backgroundColor}
         debug={options?.debug}
-        strokeWidthScale={options?.strokeWidthScale}
+        strokeWidthFixed={options?.strokeWidthFixed}
       />
     )
   },
@@ -32,8 +32,8 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     }
   },
   renderGroup(children, options) {
-    return (strokeWidthScale, rerender, matrix, opacity) => {
-      return getGroupGraphics(children.map(c => c(strokeWidthScale, rerender)).flat(), matrix, options, opacity)
+    return (strokeWidthFixed, rerender, matrix, opacity) => {
+      return getGroupGraphics(children.map(c => c(strokeWidthFixed, rerender)).flat(), matrix, options, opacity)
     }
   },
   renderRect(x, y, width, height, options) {
@@ -104,11 +104,11 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     return this.renderGroup(path.map(p => this.renderPath(p, options)))
   },
   renderText(x, y, text, fill, fontSize, fontFamily, options) {
-    return (strokeWidthScale, rerender) => {
+    return (strokeWidthFixed, rerender) => {
       let fillPatternGraphics: PatternGraphic | number | undefined
       if (fill !== undefined && typeof fill !== 'number') {
         fillPatternGraphics = {
-          graphics: fill.pattern()(strokeWidthScale, rerender),
+          graphics: fill.pattern()(strokeWidthFixed, rerender),
           width: fill.width,
           height: fill.height,
         }
@@ -118,7 +118,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
       let strokePatternGraphics: PatternGraphic | undefined
       if (options?.strokePattern !== undefined) {
         strokePatternGraphics = {
-          graphics: options.strokePattern.pattern()(strokeWidthScale, rerender),
+          graphics: options.strokePattern.pattern()(strokeWidthFixed, rerender),
           width: options.strokePattern.width,
           height: options.strokePattern.height,
         }
@@ -137,16 +137,16 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
     }
   },
   renderPath(points, options) {
-    return (strokeWidthScale, rerender) => {
+    return (strokeWidthFixed, rerender) => {
       let fillPatternGraphics: PatternGraphic | undefined
       if (options?.clip !== undefined) {
         fillPatternGraphics = {
-          graphics: options.clip()(strokeWidthScale, rerender),
+          graphics: options.clip()(strokeWidthFixed, rerender),
         }
       }
       if (options?.fillPattern !== undefined) {
         fillPatternGraphics = {
-          graphics: options.fillPattern.pattern()(strokeWidthScale, rerender),
+          graphics: options.fillPattern.pattern()(strokeWidthFixed, rerender),
           width: options.fillPattern.width,
           height: options.fillPattern.height,
         }
@@ -154,12 +154,12 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
       let strokePatternGraphics: PatternGraphic | undefined
       if (options?.strokePattern !== undefined) {
         strokePatternGraphics = {
-          graphics: options.strokePattern.pattern()(strokeWidthScale, rerender),
+          graphics: options.strokePattern.pattern()(strokeWidthFixed, rerender),
           width: options.strokePattern.width,
           height: options.strokePattern.height,
         }
       }
-      return getPathGraphics(points, strokeWidthScale, {
+      return getPathGraphics(points, strokeWidthFixed, {
         ...options,
         fillPattern: fillPatternGraphics,
         strokePattern: strokePatternGraphics,
@@ -171,7 +171,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
 /**
  * @public
  */
-export type WebglDraw = (strokeWidthScale: number, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[]
+export type WebglDraw = (strokeWidthFixed: boolean, rerender: () => void, matrix?: Matrix, opacity?: number) => Graphic[]
 
 function Canvas(props: {
   width: number,
@@ -183,17 +183,17 @@ function Canvas(props: {
   transform?: RenderTransform
   backgroundColor?: number
   debug?: boolean
-  strokeWidthScale?: number
+  strokeWidthFixed?: boolean
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   const render = React.useRef<(
-    graphics: ((strokeWidthScale: number, rerender: () => void) => Graphic[])[],
+    graphics: ((strokeWidthFixed: boolean, rerender: () => void) => Graphic[])[],
     backgroundColor: Vec4,
     x: number,
     y: number,
     scale: number,
-    strokeWidthScale: number,
+    strokeWidthFixed: boolean,
     rotate?: number
   ) => void>()
   React.useEffect(() => {
@@ -212,9 +212,9 @@ function Canvas(props: {
     }
 
     const rerender = () => setImageLoadStatus(c => c + 1)
-    render.current = (graphics, backgroundColor, x, y, scale, strokeWidthScale, rotate) => {
+    render.current = (graphics, backgroundColor, x, y, scale, strokeWidthFixed, rotate) => {
       const now = performance.now()
-      renderer(graphics.map(g => g(strokeWidthScale, rerender)).flat(), backgroundColor, x, y, scale, rotate)
+      renderer(graphics.map(g => g(strokeWidthFixed, rerender)).flat(), backgroundColor, x, y, scale, rotate)
       if (props.debug) {
         console.info(Math.round(performance.now() - now))
       }
@@ -227,8 +227,8 @@ function Canvas(props: {
       const y = props.transform?.y ?? 0
       const scale = props.transform?.scale ?? 1
       const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
-      const strokeWidthScale = props.strokeWidthScale ?? 1
-      render.current(props.graphics, color, x, y, scale, strokeWidthScale, props.transform?.rotate)
+      const strokeWidthFixed = props.strokeWidthFixed ?? false
+      render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.transform?.rotate)
     }
   }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus])
   return (

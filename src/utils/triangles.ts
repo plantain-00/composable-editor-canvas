@@ -1,6 +1,6 @@
 import { Position, polygonToPolyline, isSamePoint, GeneralFormLine, twoPointLineToGeneralFormLine, getParallelLinesByDistance, getTwoPointsRadian, arcToPolyline, getPointByLengthAndDirection, isSameNumber, largerThan, lessThan } from "./geometry"
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
-import { getPerpendicular } from "./perpendicular"
+import { getPerpendicularPoint } from "./perpendicular"
 import { radianToAngle } from "./radian"
 
 export function getPolylineTriangles(
@@ -27,6 +27,7 @@ export function getPolylineTriangles(
   const radianLimit = typeof lineJoinWithLimit === 'number' ? Math.asin(1 / lineJoinWithLimit) * 2 : undefined
 
   const result: number[] = []
+  const base: number[] = []
   for (let i = 0; i < points.length; i++) {
     if (lineCapWithClosed !== true) {
       if (i === 0) {
@@ -36,17 +37,16 @@ export function getPolylineTriangles(
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle - 90, endAngle: angle + 90 }, 5)
           for (const s of ps) {
             result.push(s.x, s.y, p.x, p.y)
+            base.push(p.x, p.y, p.x, p.y)
           }
         }
         if (lineCapWithClosed === 'square') {
           p = getPointByLengthAndDirection(p, -radius, points[1])
         }
-        const line2 = getPerpendicular(p, lines[i])
         for (const line1 of parallelLines[i]) {
-          const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
-          if (point2) {
-            result.push(point2.x, point2.y)
-          }
+          const point2 = getPerpendicularPoint(p, line1)
+          result.push(point2.x, point2.y)
+          base.push(p.x, p.y)
         }
         continue
       }
@@ -55,18 +55,17 @@ export function getPolylineTriangles(
         if (lineCapWithClosed === 'square') {
           p = getPointByLengthAndDirection(p, -radius, points[i - 1])
         }
-        const line2 = getPerpendicular(p, lines[i - 1])
         for (const line1 of parallelLines[i - 1]) {
-          const point2 = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
-          if (point2) {
-            result.push(point2.x, point2.y)
-          }
+          const point2 = getPerpendicularPoint(p, line1)
+          result.push(point2.x, point2.y)
+          base.push(p.x, p.y)
         }
         if (lineCapWithClosed === 'round') {
           const angle = radianToAngle(getTwoPointsRadian(p, points[i - 1]))
           const ps = arcToPolyline({ x: p.x, y: p.y, r: radius, startAngle: angle + 90, endAngle: angle - 90, counterclockwise: true }, 5)
           for (const s of ps) {
             result.push(p.x, p.y, s.x, s.y)
+            base.push(p.x, p.y, p.x, p.y)
           }
         }
         continue
@@ -86,7 +85,12 @@ export function getPolylineTriangles(
       radian -= Math.PI * 2
     }
 
-    if (!isSameNumber(radian, 0) && !isSameNumber(radian, Math.PI) && !isSameNumber(radian, -Math.PI)) {
+    if (isSameNumber(radian, Math.PI) || isSameNumber(radian, -Math.PI)) {
+      const p1 = getPerpendicularPoint(points[i], previousParallelLines[0])
+      const p2 = getPerpendicularPoint(points[i], nextParallelLines[0])
+      result.push(p1.x, p1.y, p2.x, p2.y)
+      base.push(b.x, b.y, b.x, b.y)
+    } else if (!isSameNumber(radian, 0)) {
       let lineJoin = lineJoinWithLimit
       if (radianLimit !== undefined) {
         let a = Math.abs(radian)
@@ -103,9 +107,9 @@ export function getPolylineTriangles(
         const index1 = sweep ? 0 : 1
         const index2 = sweep ? 1 : 0
         const p = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[index1], nextParallelLines[index1])
-        const p1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[index2], getPerpendicular(points[i], lines[previousIndex]))
-        const p2 = getTwoGeneralFormLinesIntersectionPoint(nextParallelLines[index2], getPerpendicular(points[i], lines[nextIndex]))
-        if (p && p1 && p2) {
+        const p1 = getPerpendicularPoint(points[i], previousParallelLines[index2])
+        const p2 = getPerpendicularPoint(points[i], nextParallelLines[index2])
+        if (p) {
           let ps: Position[]
           if (lineJoin === 'bevel') {
             ps = [p1, p2]
@@ -120,21 +124,24 @@ export function getPolylineTriangles(
             } else {
               result.push(s.x, s.y, p.x, p.y)
             }
+            base.push(b.x, b.y, b.x, b.y)
           }
         }
       } else {
         const point1 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[0], nextParallelLines[0])
         if (point1) {
           result.push(point1.x, point1.y)
+          base.push(b.x, b.y)
           const point2 = getTwoGeneralFormLinesIntersectionPoint(previousParallelLines[1], nextParallelLines[1])
           if (point2) {
             result.push(point2.x, point2.y)
+            base.push(b.x, b.y)
           }
         }
       }
     }
   }
-  return result
+  return { points: result, base }
 }
 
 export function combineStripTriangles(triangles: number[][]) {

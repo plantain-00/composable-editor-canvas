@@ -4,7 +4,7 @@ import { Matrix } from "../../utils/matrix"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 import { GeometryLine, getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
-import { getPerpendicular, getPerpendicularPoint } from "../../utils/perpendicular"
+import { getPerpendicularLine, getPerpendicularPoint } from "../../utils/perpendicular"
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 import { getGeometryLineStartAndEnd } from "../../utils/break"
 import { calculateEquation2 } from "../../utils/equation-calculater"
@@ -22,9 +22,9 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
         style: React.CSSProperties
       }>,
       transform: RenderTransform
-      backgroundColor: number,
+      backgroundColor: number
       debug: boolean
-      strokeWidthScale: number
+      strokeWidthFixed: boolean
     }>
   ): V
   renderEmpty(): T
@@ -478,8 +478,8 @@ export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[]
 export function getArcControlPoint(arc: Arc) {
   const start = getCirclePointAtRadian(arc, angleToRadian(arc.startAngle))
   const end = getCirclePointAtRadian(arc, angleToRadian(arc.endAngle))
-  const line1 = getPerpendicular(start, twoPointLineToGeneralFormLine(arc, start))
-  const line2 = getPerpendicular(end, twoPointLineToGeneralFormLine(arc, end))
+  const line1 = getPerpendicularLine(start, twoPointLineToGeneralFormLine(arc, start))
+  const line2 = getPerpendicularLine(end, twoPointLineToGeneralFormLine(arc, end))
   return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }
 
