@@ -3,7 +3,7 @@ import { AngleRange, getAngleInRange, getArcPointAtAngle, getCirclePointAtRadian
 import { GeometryLine } from "./intersection"
 import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
-import { getArcTangentRadianAtRadian, getBezierCurveTangentRadianAtPercent, getEllipseTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
+import { getArcTangentRadianAtRadian, getBezierCurveTangentRadianAtPercent, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
 /**
  * @public
@@ -355,7 +355,7 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
     const radian = angleToRadian(getAngleAtParam(param, line.curve))
     return {
       point: getEllipsePointAtRadian(line.curve, radian),
-      radian: getEllipseTangentRadianAtRadian(line.curve, radian),
+      radian: getEllipseArcTangentRadianAtRadian(line.curve, radian),
     }
   }
   if (line.type === 'quadratic curve') {

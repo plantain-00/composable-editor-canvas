@@ -1,15 +1,14 @@
 import * as React from "react"
-import { Arc, arcToPolyline, Circle, Ellipse, EllipseArc, ellipseArcToPolyline, getCirclePointAtRadian, getEllipseAngle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine, getLargeArc } from "../../utils/geometry"
+import { Arc, arcToPolyline, Circle, Ellipse, EllipseArc, getCirclePointAtRadian, getEllipseAngle, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsRadian, isSamePoint, isZero, PathCommand, pointInPolygon, Position, Region, Size, twoPointLineToGeneralFormLine, getLargeArc } from "../../utils/geometry"
 import { Matrix } from "../../utils/matrix"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 import { GeometryLine, getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
 import { getPerpendicularLine, getPerpendicularPoint } from "../../utils/perpendicular"
-import { getBezierCurvePoints, getQuadraticCurvePoints } from "../../utils/bezier"
 import { getGeometryLineStartAndEnd } from "../../utils/break"
 import { calculateEquation2 } from "../../utils/equation-calculater"
-import { getNurbsPoints } from "../../utils/nurbs"
 import { LineCap, LineJoin } from "../../utils/triangles"
+import { getGeometryLinesPoints } from "../../utils/hatch"
 
 export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   type: string
@@ -301,29 +300,6 @@ export function getPathCommandsPoints(pathCommands: PathCommand[]) {
     result.push(getGeometryLinesPoints(line))
   }
   return result
-}
-
-export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100, angleDelta = 5) {
-  const points: Position[] = []
-  for (const n of lines) {
-    if (Array.isArray(n)) {
-      if (points.length === 0) {
-        points.push(n[0])
-      }
-      points.push(n[1])
-    } else if (n.type === 'arc') {
-      points.push(...arcToPolyline(n.curve, angleDelta))
-    } else if (n.type === 'ellipse arc') {
-      points.push(...ellipseArcToPolyline(n.curve, angleDelta))
-    } else if (n.type === 'quadratic curve') {
-      points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, segmentCount))
-    } else if (n.type === 'bezier curve') {
-      points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, segmentCount))
-    } else if (n.type === 'nurbs curve') {
-      points.push(...getNurbsPoints(n.curve.degree, n.curve.points, n.curve.knots, n.curve.weights, segmentCount))
-    }
-  }
-  return points
 }
 
 export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): GeometryLine[][] {

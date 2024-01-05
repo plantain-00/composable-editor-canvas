@@ -1,4 +1,4 @@
-import { Position, polygonToPolyline, isSamePoint, GeneralFormLine, twoPointLineToGeneralFormLine, getParallelLinesByDistance, getTwoPointsRadian, arcToPolyline, getPointByLengthAndDirection, isSameNumber, largerThan, lessThan } from "./geometry"
+import { Position, polygonToPolyline, isSamePoint, GeneralFormLine, twoPointLineToGeneralFormLine, getParallelLinesByDistance, getTwoPointsRadian, arcToPolyline, getPointByLengthAndDirection, isSameNumber, largerThan, lessThan, normalizeRadian } from "./geometry"
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { getPerpendicularPoint } from "./perpendicular"
 import { radianToAngle } from "./radian"
@@ -79,11 +79,7 @@ export function getPolylineTriangles(
     const b = points[i]
     const c = points[nextIndex + 1]
     let radian = getTwoPointsRadian(c, b) - getTwoPointsRadian(b, a)
-    if (lessThan(radian, -Math.PI)) {
-      radian += Math.PI * 2
-    } else if (largerThan(radian, Math.PI)) {
-      radian -= Math.PI * 2
-    }
+    radian = normalizeRadian(radian)
 
     if (isSameNumber(radian, Math.PI) || isSameNumber(radian, -Math.PI)) {
       const p1 = getPerpendicularPoint(points[i], previousParallelLines[0])

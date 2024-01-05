@@ -885,6 +885,16 @@ export function normalizeAngleInRange(angle: number, range: AngleRange) {
   return angle
 }
 
+export function normalizeRadian(angle: number) {
+  while (largerThan(angle, Math.PI)) {
+    angle -= Math.PI * 2
+  }
+  while (lessThan(angle, -Math.PI)) {
+    angle += Math.PI * 2
+  }
+  return angle
+}
+
 /**
  * @public
  */
