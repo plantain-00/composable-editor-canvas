@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
@@ -262,11 +262,11 @@ export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from
 }
 
 export function getCircleTangentRadianAtRadian(circle: Circle, radian: number) {
-  return radian + Math.PI / 2
+  return normalizeRadian(radian + Math.PI / 2)
 }
 
 export function getArcTangentRadianAtRadian(arc: Arc, radian: number) {
-  return radian + Math.PI / 2 * (arc.counterclockwise ? -1 : 1)
+  return normalizeRadian(radian + Math.PI / 2 * (arc.counterclockwise ? -1 : 1))
 }
 
 export function getEllipseTangentRadianAtRadian(ellipse: Ellipse, t: number) {
@@ -279,6 +279,10 @@ export function getEllipseTangentRadianAtRadian(ellipse: Ellipse, t: number) {
   // y' = cos(t) d2 ry - d1 rx sin(t)
   const d3 = Math.cos(t) * ry, d4 = Math.sin(t) * rx
   return Math.atan2(d3 * d2 - d1 * d4, -d3 * d1 - d2 * d4)
+}
+
+export function getEllipseArcTangentRadianAtRadian(arc: EllipseArc, radian: number) {
+  return normalizeRadian(getEllipseTangentRadianAtRadian(arc, radian) + Math.PI / 2 * (arc.counterclockwise ? -1 : 1))
 }
 
 export function getQuadraticCurveTangentRadianAtPercent({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, u: number) {

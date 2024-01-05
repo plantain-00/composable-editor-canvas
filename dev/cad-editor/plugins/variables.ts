@@ -4080,9 +4080,9 @@ function getModel(ctx) {
         const end = content.ref.end;
         return refGeometriesCache.get(content, refContents, () => {
           const getGeometriesInRange = () => refContents.map((c) => ctx.getContentHatchGeometries(c, contents));
-          const border = ctx.getHatchByPosition(p, end, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
+          const border = ctx.getHatchByPosition(p, end, getGeometriesInRange);
           if (border) {
-            const holes = ctx.getHatchHoles(border.lines, ctx.getGeometryLinesPoints, getGeometriesInRange);
+            const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
             return getDefault({
               border: border.lines,
               holes: holes == null ? void 0 : holes.holes
@@ -4211,9 +4211,9 @@ function getCommand(ctx) {
             });
             const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
             const end = { x: bounding.end.x, y: p.y };
-            const border = ctx.getHatchByPosition(p, end, ctx.getGeometryLinesPoints, ctx.getGeometryLineBounding, getGeometriesInRange);
+            const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBounding(line)));
             if (border) {
-              const holes = ctx.getHatchHoles(border.lines, ctx.getGeometryLinesPoints, getGeometriesInRange);
+              const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
               setHatch({
                 type: "hatch",
                 border: border.lines,

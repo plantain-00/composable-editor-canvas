@@ -1,20 +1,22 @@
+import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
 import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed, pointIsOnGeometryLine } from "./break"
-import { Position, TwoPointsFormRegion, deepEquals, getPointsBoundingUnsafe, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, largerThan, maxmiumBy, minimumBy, minimumsBy, pointInPolygon } from "./geometry"
+import { printGeometryLine, printParam, printPoint } from "./debug"
+import { Position, TwoPointsFormRegion, arcToPolyline, deepEquals, ellipseArcToPolyline, getPointsBoundingUnsafe, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, largerThan, maxmiumBy, minimumBy, minimumsBy, pointInPolygon } from "./geometry"
 import { GeometryLine, getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { mergeGeometryLine } from "./merge"
+import { getNurbsPoints } from "./nurbs"
 import { getRadianSideOfRadian } from "./parallel"
 import { reverseGeometryLine } from "./reverse"
 
 export function getHatchByPosition(
   position: Position,
   end: Position,
-  getGeometryLinesPoints: (lines: GeometryLine[]) => Position[],
-  getGeometryLineBounding: (line: GeometryLine) => TwoPointsFormRegion,
-  getGeometriesInRange: (region: TwoPointsFormRegion) => (HatchGeometries | undefined)[],
+  getGeometriesInGeometryLineRange: (line: GeometryLine) => (HatchGeometries | undefined)[],
+  debug?: boolean,
 ) {
   const directionLine: [Position, Position] = [position, end]
   const intersections: HatchIntersection[] = []
-  const geometries = getGeometriesInRange(getGeometryLineBounding(directionLine))
+  const geometries = getGeometriesInGeometryLineRange(directionLine)
   for (const geometry of geometries) {
     if (!geometry) continue
     for (const line of geometry.lines) {
@@ -25,7 +27,7 @@ export function getHatchByPosition(
   if (intersections.length == 0) return
   intersections.sort((a, b) => a.point.x - b.point.x)
   for (const intersection of intersections) {
-    const result = getRightSideGeometryLines(intersection, 0, line => getGeometriesInRange(getGeometryLineBounding(line)))
+    const result = getRightSideGeometryLines(intersection, 0, getGeometriesInGeometryLineRange, debug)
     if (result.lines.length > 0 && pointInPolygon(position, getGeometryLinesPoints(result.lines))) {
       return result
     }
@@ -37,14 +39,14 @@ function getRightSideGeometryLines(
   start: HatchIntersection,
   startRadian: number,
   getGeometriesInGeometryLineRange: (line: GeometryLine) => (HatchGeometries | undefined)[],
+  debug?: boolean,
 ): { lines: GeometryLine[], ids: number[] } {
-  const param = getGeometryLineParamAtPoint(start.point, start.line)
-  const radian = getGeometryLinePointAndTangentRadianAtParam(param, start.line).radian
-  if (getRadianSideOfRadian(startRadian, radian) === 1) {
-    start.line = reverseGeometryLine(start.line)
+  if (debug) {
+    console.info(`Line ${printGeometryLine(start.line)}`)
   }
+  reverseGeometryLineIfDirectionIsWrong(startRadian, start)
   const closed = isGeometryLinesClosed([start.line])
-  let s = getRightSideGeometryLine(start, closed, getGeometriesInGeometryLineRange(start.line))
+  let s = getRightSideGeometryLine(start, closed, getGeometriesInGeometryLineRange(start.line), debug)
   const result: GeometryLine[] = []
   const ids = new Set<number>()
   let i = 0
@@ -67,7 +69,7 @@ function getRightSideGeometryLines(
     result.push(s.line)
     ids.add(s.id)
     if (s.next) {
-      s = getRightSideGeometryLine(s.next, closed, getGeometriesInGeometryLineRange(s.next.line))
+      s = getRightSideGeometryLine(s.next, closed, getGeometriesInGeometryLineRange(s.next.line), debug)
     } else {
       break
     }
@@ -89,8 +91,8 @@ function getRightSideGeometryLines(
 
 export function getHatchHoles(
   border: GeometryLine[],
-  getGeometryLinesPoints: (lines: GeometryLine[]) => Position[],
   getGeometriesInRange: (region: TwoPointsFormRegion) => (HatchGeometries | undefined)[],
+  debug?: boolean,
 ) {
   const points = getGeometryLinesPoints(border)
   const geometries = getGeometriesInRange(getPointsBoundingUnsafe(points))
@@ -122,7 +124,7 @@ export function getHatchHoles(
     if (intersections.length == 0) continue
     const intersection = minimumBy(intersections, s => s.distance)
     const startRadian = getTwoPointsRadian(directionLine[1], directionLine[0])
-    const result = getRightSideGeometryLines(intersection, startRadian, () => holes)
+    const result = getRightSideGeometryLines(intersection, startRadian, () => holes, debug)
     mergedHoles.push(result.lines)
     for (const id of result.ids) {
       ids.add(id)
@@ -149,9 +151,13 @@ function getRightSideGeometryLine(
   start: HatchIntersection,
   closed: boolean,
   geometries: (HatchGeometries | undefined)[],
+  debug?: boolean,
 ): { line: GeometryLine, id: number, next?: HatchIntersection } | undefined {
   const startParam = getGeometryLineParamAtPoint(start.point, start.line)
   if (startParam === undefined) return
+  if (debug) {
+    console.info(`Target ${printGeometryLine(start.line)} at ${printParam(startParam)} ${printPoint(start.point)}`)
+  }
   const intersections: (HatchIntersection & { param: number, originalParam: number })[] = []
   for (const geometry of geometries) {
     if (!geometry) continue
@@ -177,11 +183,14 @@ function getRightSideGeometryLine(
   }
   const endParam = getGeometryLineParamAtPoint(r.point, start.line)
   const startRadian = getGeometryLinePointAndTangentRadianAtParam(endParam, start.line).radian
-  const radian = getGeometryLinePointAndTangentRadianAtParam(getGeometryLineParamAtPoint(r.point, r.line), r.line).radian
-  if (getRadianSideOfRadian(startRadian, radian) === 1) {
-    r.line = reverseGeometryLine(r.line)
-  }
+  reverseGeometryLineIfDirectionIsWrong(startRadian, r)
   const line = getPartOfGeometryLine(startParam, endParam, start.line, closed)
+  if (debug) {
+    console.info(`Result ${printParam(startParam)}->${printParam(endParam)} ${printGeometryLine(line)}`)
+  }
+  if (debug) {
+    console.info(`Line ${printGeometryLine(r.line)}`)
+  }
   return {
     line,
     id: start.id,
@@ -191,4 +200,39 @@ function getRightSideGeometryLine(
       id: r.id,
     },
   }
+}
+
+function reverseGeometryLineIfDirectionIsWrong(startRadian: number, r: HatchIntersection) {
+  const param = getGeometryLineParamAtPoint(r.point, r.line)
+  if (isSameNumber(param, 1)) {
+    r.line = reverseGeometryLine(r.line)
+    return
+  }
+  const radian = getGeometryLinePointAndTangentRadianAtParam(param, r.line).radian
+  if (getRadianSideOfRadian(startRadian, radian) === 1) {
+    r.line = reverseGeometryLine(r.line)
+  }
+}
+
+export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100, angleDelta = 5) {
+  const points: Position[] = []
+  for (const n of lines) {
+    if (Array.isArray(n)) {
+      if (points.length === 0) {
+        points.push(n[0])
+      }
+      points.push(n[1])
+    } else if (n.type === 'arc') {
+      points.push(...arcToPolyline(n.curve, angleDelta))
+    } else if (n.type === 'ellipse arc') {
+      points.push(...ellipseArcToPolyline(n.curve, angleDelta))
+    } else if (n.type === 'quadratic curve') {
+      points.push(...getQuadraticCurvePoints(n.curve.from, n.curve.cp, n.curve.to, segmentCount))
+    } else if (n.type === 'bezier curve') {
+      points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, segmentCount))
+    } else if (n.type === 'nurbs curve') {
+      points.push(...getNurbsPoints(n.curve.degree, n.curve.points, n.curve.knots, n.curve.weights, segmentCount))
+    }
+  }
+  return points
 }

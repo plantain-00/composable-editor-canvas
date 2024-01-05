@@ -1,6 +1,6 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd, getGeometryLineParamAtPoint } from "./break"
-import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, isZero, minimumBy, minimumsBy, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
+import { Arc, Circle, Ellipse, EllipseArc, GeneralFormLine, Position, getEllipseAngle, getParallelLineSegmentsByDistance, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, isZero, minimumBy, minimumsBy, normalizeRadian, pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./geometry"
 import { BezierCurve, GeometryLine, QuadraticCurve, getTwoGeneralFormLinesIntersectionPoint, getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
@@ -203,11 +203,7 @@ export function getPointSideOfGeometryLine(point: Position, line: GeometryLine):
  */
 export function getRadianSideOfRadian(from: number, to: number) {
   let radian = to - from
-  if (radian > Math.PI) {
-    radian -= Math.PI * 2
-  } else if (radian < -Math.PI) {
-    radian += Math.PI * 2
-  }
+  radian = normalizeRadian(radian)
   return isZero(radian) ? 0 : radian > 0 ? -1 : 1
 }
 
