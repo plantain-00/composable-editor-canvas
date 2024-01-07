@@ -1,7 +1,7 @@
 import { getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
-import { AngleRange, getAngleInRange, getArcPointAtAngle, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, getPointByLengthAndDirection, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, largerThan, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
+import { AngleRange, getAngleInRange, getArcPointAtAngle, getArcStartAndEnd, getCirclePointAtRadian, getCircleRadian, getEllipseAngle, getEllipseArcPointAtAngle, getEllipseArcStartAndEnd, getEllipsePointAtRadian, getPointByLengthAndDirection, getTwoPointsDistance, getTwoPointsRadian, isSamePoint, largerThan, pointIsOnArc, pointIsOnCircle, pointIsOnEllipse, pointIsOnEllipseArc, pointIsOnLine, pointIsOnLineSegment, Position } from "./geometry"
 import { GeometryLine } from "./intersection"
-import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
+import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, pointIsOnNurbsCurve } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getArcTangentRadianAtRadian, getBezierCurveTangentRadianAtPercent, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 
@@ -97,21 +97,12 @@ export function getGeometryLineStartAndEnd(line: GeometryLine) {
     }
   }
   if (line.type === 'arc') {
-    return {
-      start: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.startAngle)),
-      end: getCirclePointAtRadian(line.curve, angleToRadian(line.curve.endAngle)),
-    }
+    return getArcStartAndEnd(line.curve)
   }
   if (line.type === 'nurbs curve') {
-    return {
-      start: getNurbsCurvePointAtParam(line.curve, 0),
-      end: getNurbsCurvePointAtParam(line.curve, getNurbsMaxParam(line.curve)),
-    }
+    return getNurbsCurveStartAndEnd(line.curve)
   }
-  return {
-    start: getEllipseArcPointAtAngle(line.curve, line.curve.startAngle),
-    end: getEllipseArcPointAtAngle(line.curve, line.curve.endAngle),
-  }
+  return getEllipseArcStartAndEnd(line.curve)
 }
 
 export function getGeometryLinesStartAndEnd(lines: GeometryLine[]) {

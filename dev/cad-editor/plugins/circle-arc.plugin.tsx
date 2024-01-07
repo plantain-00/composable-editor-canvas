@@ -23,12 +23,7 @@ export function getModel(ctx: PluginContext) {
   const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], quadrantPoints: core.Position[] }>>()
   const arcGeometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
   function getCircleGeometries(content: Omit<CircleContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
-    const quadrantPoints = [
-      { x: content.x - content.r, y: content.y },
-      { x: content.x, y: content.y - content.r },
-      { x: content.x + content.r, y: content.y },
-      { x: content.x, y: content.y + content.r },
-    ]
+    const quadrantPoints = ctx.getCircleQuadrantPoints(content)
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
@@ -60,7 +55,7 @@ export function getModel(ctx: PluginContext) {
           x: content.x + content.r * Math.cos(middleAngle),
           y: content.y + content.r * Math.sin(middleAngle),
         },
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
       if (ctx.hasFill(content)) {

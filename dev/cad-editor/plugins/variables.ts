@@ -1101,12 +1101,7 @@ function getModel(ctx) {
   const geometriesCache = new ctx.WeakmapCache();
   const arcGeometriesCache = new ctx.WeakmapCache();
   function getCircleGeometries(content, _, time) {
-    const quadrantPoints = [
-      { x: content.x - content.r, y: content.y },
-      { x: content.x, y: content.y - content.r },
-      { x: content.x + content.r, y: content.y },
-      { x: content.x, y: content.y + content.r }
-    ];
+    const quadrantPoints = ctx.getCircleQuadrantPoints(content);
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x);
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y);
@@ -1139,7 +1134,7 @@ function getModel(ctx) {
           x: content.x + content.r * Math.cos(middleAngle),
           y: content.y + content.r * Math.sin(middleAngle)
         },
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
       if (ctx.hasFill(content)) {
@@ -2825,7 +2820,7 @@ function getModel(ctx) {
         right,
         top,
         bottom,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getEllipseBounding(content),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -2855,7 +2850,7 @@ function getModel(ctx) {
         start: ctx.getEllipsePointAtRadian(content, startRadian),
         end: ctx.getEllipsePointAtRadian(content, endRadian),
         middle: ctx.getEllipsePointAtRadian(content, middleRadian),
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getEllipseArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -4062,7 +4057,7 @@ function getModel(ctx) {
         lines: [],
         border: points,
         holes,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(hatch.border),
         renderingLines: [],
         regions: [
           {
@@ -5418,7 +5413,7 @@ function getModel(ctx) {
       return {
         lines,
         points,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -6055,7 +6050,7 @@ function getModel(ctx) {
       const points = ctx.getGeometryLinesPoints(lines);
       return {
         lines,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -8313,11 +8308,10 @@ function getModel(ctx) {
       const arc2 = ctx.circleToArc({ ...content, r: content.innerRadius });
       const points1 = ctx.arcToPolyline(arc1, angleDelta);
       const points2 = ctx.arcToPolyline(arc2, angleDelta);
-      const points = [...points1, ...points2];
       const lines = [{ type: "arc", curve: arc1 }, { type: "arc", curve: arc2 }];
       return {
         lines,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getCircleBounding({ ...content, r: content.outerRadius }),
         regions: ctx.hasFill(content) ? [
           {
             lines,
@@ -8589,17 +8583,18 @@ function getModel(ctx) {
       ];
       const points = ctx.getRoundedRectPoints(content, content.radius, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolygonLines(points));
+      const geometryLines = [
+        { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
+        [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
+        { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
+        [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
+        { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
+        [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
+        { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
+        [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }]
+      ];
       return {
-        lines: [
-          { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
-          [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
-          { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
-          [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
-          { type: "arc", curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
-          [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
-          { type: "arc", curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
-          [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }]
-        ],
+        lines: geometryLines,
         points: rectPoints,
         arcPoints: [
           { x: rectPoints[0].x + content.radius, y: rectPoints[0].y },
@@ -8611,7 +8606,7 @@ function getModel(ctx) {
           { x: rectPoints[3].x + content.radius, y: rectPoints[3].y },
           { x: rectPoints[3].x, y: rectPoints[3].y - content.radius }
         ],
-        bounding: ctx.getPointsBounding(rectPoints),
+        bounding: ctx.getGeometryLinesBounding(geometryLines),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -8843,7 +8838,7 @@ function getModel(ctx) {
       return {
         lines,
         points,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {

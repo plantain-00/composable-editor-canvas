@@ -29,7 +29,7 @@ export function getModel(ctx: PluginContext) {
         }],
         points,
         center, left, right, top, bottom,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getEllipseBounding(content),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
@@ -58,7 +58,7 @@ export function getModel(ctx: PluginContext) {
         start: ctx.getEllipsePointAtRadian(content, startRadian),
         end: ctx.getEllipsePointAtRadian(content, endRadian),
         middle: ctx.getEllipsePointAtRadian(content, middleRadian),
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getEllipseArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {

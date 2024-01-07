@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, largerOrEqual, lessOrEqual, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc, isValidPercent } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { angleToRadian } from "./radian"
 
@@ -227,7 +227,7 @@ export function getTangencyPointToQuadraticCurve({ x: a0, y: b0 }: Position, { f
     a4 * c3 - b4 * c1,
     delta,
   )
-  return us.filter(u => largerOrEqual(u, 0) && lessOrEqual(u, 1)).map(u => ({
+  return us.filter(u => isValidPercent(u)).map(u => ({
     x: c2 * u * u + 2 * c1 * u + a1,
     y: c4 * u * u + 2 * c3 * u + b1,
   }))
@@ -255,7 +255,7 @@ export function getTangencyPointToBezierCurve({ x: a0, y: b0 }: Position, { from
     c6 * d2 - c3 * d1,
     delta,
   )
-  return ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1)).map(t => ({
+  return ts.filter(t => isValidPercent(t)).map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))

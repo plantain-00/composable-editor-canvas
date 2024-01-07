@@ -48,7 +48,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       return {
         lines,
         points,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
