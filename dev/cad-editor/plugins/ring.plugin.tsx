@@ -20,11 +20,10 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       const arc2 = ctx.circleToArc({ ...content, r: content.innerRadius })
       const points1 = ctx.arcToPolyline(arc1, angleDelta)
       const points2 = ctx.arcToPolyline(arc2, angleDelta)
-      const points = [...points1, ...points2]
       const lines = [{ type: 'arc' as const, curve: arc1 }, { type: 'arc' as const, curve: arc2 }]
       return {
         lines,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getCircleBounding({ ...content, r: content.outerRadius }),
         regions: ctx.hasFill(content) ? [
           {
             lines,

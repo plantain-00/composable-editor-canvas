@@ -57,6 +57,10 @@ export function lessOrEqual(value1: number, value2: number, delta?: number) {
   return value1 < value2 || isSameNumber(value1, value2, delta)
 }
 
+export function isValidPercent(t: number) {
+  return largerOrEqual(t, 0) && lessOrEqual(t, 1)
+}
+
 export function sqrt3(value: number) {
   if (value < 0) {
     return -(Math.pow(-value, 1 / 3))
@@ -947,6 +951,13 @@ export function arcToPolyline(content: Arc, angleDelta: number) {
   return getAngleRange(content, angleDelta).map(i => getArcPointAtAngle(content, i))
 }
 
+export function getArcStartAndEnd(arc: Arc) {
+  return {
+    start: getArcPointAtAngle(arc, arc.startAngle),
+    end: getArcPointAtAngle(arc, arc.endAngle),
+  }
+}
+
 export function getArcPointAtAngle(content: Circle, angle: number) {
   return getCirclePointAtRadian(content, angleToRadian(angle))
 }
@@ -1037,6 +1048,13 @@ export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
 
 export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {
   return getEllipsePointAtRadian(content, angleToRadian(angle))
+}
+
+export function getEllipseArcStartAndEnd(arc: EllipseArc) {
+  return {
+    start: getEllipseArcPointAtAngle(arc, arc.startAngle),
+    end: getEllipseArcPointAtAngle(arc, arc.endAngle),
+  }
 }
 
 export function circleToArc(circle: Circle): Arc {

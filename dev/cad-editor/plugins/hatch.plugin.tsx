@@ -33,7 +33,7 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         lines: [],
         border: points,
         holes,
-        bounding: ctx.getPointsBounding(points),
+        bounding: ctx.getGeometryLinesBounding(hatch.border),
         renderingLines: [],
         regions: [
           {

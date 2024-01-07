@@ -315,6 +315,13 @@ export function getNurbsCurvePointAtParam(curve: NurbsCurve, param: number) {
   return fromVerbPoint(toVerbNurbsCurve(curve).point(param))
 }
 
+export function getNurbsCurveStartAndEnd(curve: NurbsCurve) {
+  return {
+    start: getNurbsCurvePointAtParam(curve, 0),
+    end: getNurbsCurvePointAtParam(curve, getNurbsMaxParam(curve)),
+  }
+}
+
 export function getNurbsCurvePoints(curve: NurbsCurve, segmentCount: number) {
   const nurbs = toVerbNurbsCurve(curve)
   const points: Position[] = []

@@ -23,17 +23,18 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       ]
       const points = ctx.getRoundedRectPoints(content, content.radius, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolygonLines(points))
+      const geometryLines: core.GeometryLine[] = [
+        { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
+        [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
+        { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
+        [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
+        { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
+        [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
+        { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
+        [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }],
+      ]
       return {
-        lines: [
-          { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 180, endAngle: 270 } },
-          [{ x: content.x - content.width / 2 + content.radius, y: content.y - content.height / 2 }, { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 }],
-          { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y - content.height / 2 + content.radius, r: content.radius, startAngle: 270, endAngle: 360 } },
-          [{ x: content.x + content.width / 2, y: content.y - content.height / 2 + content.radius }, { x: content.x + content.width / 2, y: content.y + content.height / 2 - content.radius }],
-          { type: 'arc', curve: { x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 0, endAngle: 90 } },
-          [{ x: content.x + content.width / 2 - content.radius, y: content.y + content.height / 2 }, { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 }],
-          { type: 'arc', curve: { x: content.x - content.width / 2 + content.radius, y: content.y + content.height / 2 - content.radius, r: content.radius, startAngle: 80, endAngle: 180 } },
-          [{ x: content.x - content.width / 2, y: content.y + content.height / 2 - content.radius }, { x: content.x - content.width / 2, y: content.y - content.height / 2 + content.radius }],
-        ],
+        lines: geometryLines,
         points: rectPoints,
         arcPoints: [
           { x: rectPoints[0].x + content.radius, y: rectPoints[0].y },
@@ -45,7 +46,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
           { x: rectPoints[3].x + content.radius, y: rectPoints[3].y },
           { x: rectPoints[3].x, y: rectPoints[3].y - content.radius },
         ],
-        bounding: ctx.getPointsBounding(rectPoints),
+        bounding: ctx.getGeometryLinesBounding(geometryLines),
         renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
         regions: ctx.hasFill(content) ? [
           {

@@ -1,9 +1,9 @@
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { Arc, Circle, delta2, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcPointAtAngle, getEllipseArcPointAtAngle, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isZero, largerOrEqual, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { Arc, Circle, delta2, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcStartAndEnd, getEllipseArcStartAndEnd, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
 import { isArray } from "./is-array"
 import { isRecord } from "./is-record"
-import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurvePointAtParam, getNurbsMaxParam, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
+import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurveStartAndEnd, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
 import { Path, ValidationResult, tuple, validate } from "./validators"
@@ -36,22 +36,20 @@ export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
   if (Array.isArray(line)) {
     return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
   }
-  let start: Position
-  let end: Position
+  let points: { start: Position, end: Position }
   if (line.type === 'arc') {
-    start = getArcPointAtAngle(line.curve, line.curve.startAngle)
-    end = getArcPointAtAngle(line.curve, line.curve.endAngle)
+    points = getArcStartAndEnd(line.curve)
   } else if (line.type === 'ellipse arc') {
-    start = getEllipseArcPointAtAngle(line.curve, line.curve.startAngle)
-    end = getEllipseArcPointAtAngle(line.curve, line.curve.endAngle)
+    points = getEllipseArcStartAndEnd(line.curve)
   } else if (line.type === 'nurbs curve') {
-    start = getNurbsCurvePointAtParam(line.curve, 0)
-    end = getNurbsCurvePointAtParam(line.curve, getNurbsMaxParam(line.curve))
+    points = getNurbsCurveStartAndEnd(line.curve)
   } else {
-    start = line.curve.from
-    end = line.curve.to
+    points = {
+      start: line.curve.from,
+      end: line.curve.to,
+    }
   }
-  return pointInPolygon(start, polygon) && pointInPolygon(end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
+  return pointInPolygon(points.start, polygon) && pointInPolygon(points.end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
 }
 
 export type GeometryLine = [Position, Position]
@@ -684,7 +682,7 @@ export function getLineQuadraticCurveIntersectionPoints(
   // replace x, y, group t: (-c4 e1 + c2 e2) t t + (-2 c3 e1 + 2 c1 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -715,7 +713,7 @@ export function getCircleQuadraticCurveIntersectionPoints(
     a1 * a1 + b1 * b1 + -r1 * r1 + -2 * a1 * x1 + x1 * x1 + -2 * b1 * y1 + y1 * y1,
   )
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -752,7 +750,7 @@ export function getEllipseQuadraticCurveIntersectionPoints(
     (d2 * d5 + d1 * d6) ** 2 * d3 + (d1 * d5 + - d2 * d6) ** 2 * d4 + -1
   )
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
@@ -799,17 +797,14 @@ export function getTwoQuadraticCurveIntersectionPoints(
     e1 + -e3 * f4 + f4 * f4
   )
   if (!extend) {
-    vs = vs.filter(v => largerOrEqual(v, 0) && lessOrEqual(v, 1))
+    vs = vs.filter(v => isValidPercent(v))
   }
   let result = vs.map(v => ({
     x: d2 * v * v + 2 * d1 * v + a4,
     y: d4 * v * v + 2 * d3 * v + b4,
   }))
   if (!extend) {
-    result = result.filter(p => {
-      const u = getQuadraticCurvePercentAtPoint(curve1, p)
-      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
-    })
+    result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p)))
   }
   return result
 }
@@ -845,7 +840,7 @@ export function getLineBezierCurveIntersectionPoints(
   // replace x, y, group t: (-d1 e1 + c1 e2) t t t + (-d2 e1 + c2 e2) t t + (-d3 e1 + c3 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -876,7 +871,7 @@ export function getCircleBezierCurveIntersectionPoints(
   const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
   let ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -920,7 +915,7 @@ export function getEllipseBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
@@ -974,17 +969,14 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   let result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
   if (!extend) {
-    result = result.filter(p => {
-      const u = getQuadraticCurvePercentAtPoint(curve1, p)
-      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
-    })
+    result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p)))
   }
   return result
 }
@@ -1047,17 +1039,14 @@ export function getTwoBezierCurveIntersectionPoints(
     ], 0.5, delta,
   )
   if (!extend) {
-    ts = ts.filter(t => largerOrEqual(t, 0) && lessOrEqual(t, 1))
+    ts = ts.filter(t => isValidPercent(t))
   }
   let result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
   if (!extend) {
-    result = result.filter(p => {
-      const u = getBezierCurvePercentAtPoint(curve1, p)
-      return largerOrEqual(u, 0) && lessOrEqual(u, 1)
-    })
+    result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p)))
   }
   return result
 }
