@@ -1,8 +1,8 @@
 import test from 'ava'
-import { getHatchByPosition } from '../src'
+import { HatchGeometries, getHatchByPosition } from '../src'
 
 test('getHatchByPosition', (t) => {
-  t.snapshot(getHatchByPosition({ x: 1506, y: -1002 }, { x: 4827.926789679547, y: -1002 }, () => [
+  const lines1: HatchGeometries[] = [
     {
       id: 51,
       lines: [
@@ -114,7 +114,6 @@ test('getHatchByPosition', (t) => {
         {
           "type": "ellipse arc",
           "curve": {
-            "type": "ellipse",
             "cx": 1399.8553625758855,
             "cy": -882.9926913475381,
             "rx": 73.20201149711428,
@@ -126,5 +125,7 @@ test('getHatchByPosition', (t) => {
         }
       ]
     }
-  ]))
+  ]
+  t.snapshot(getHatchByPosition({ x: 1506, y: -1002 }, { x: 4827.926789679547, y: -1002 }, () => lines1))
+  t.snapshot(getHatchByPosition({ x: 1400, y: -892 }, { x: 4827.926789679547, y: -892 }, () => lines1))
 })

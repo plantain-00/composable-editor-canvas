@@ -876,6 +876,15 @@ export function getTwoPointsRadian(to: Position, from: Position = { x: 0, y: 0 }
   return Math.atan2(to.y - from.y, to.x - from.x)
 }
 
+export function getGeneralFormLineRadian({ a, b }: GeneralFormLine) {
+  // a x1 + b y1 + c = 0
+  // a x2 + b y2 + c = 0
+  // a(x2 - x1) + b(y2 - y1) = 0
+  // y2 - y1 = a
+  // x2 - x1 = -b
+  return Math.atan2(a, -b)
+}
+
 /**
  * @public
  */

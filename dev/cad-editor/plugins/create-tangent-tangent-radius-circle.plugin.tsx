@@ -7,19 +7,24 @@ import { CircleContent, isArcContent, isCircleContent } from './circle-arc.plugi
 
 export function getCommand(ctx: PluginContext): Command {
   function getTangentTangentRadiusCircles(content1: model.BaseContent, content2: model.BaseContent, radius: number) {
-    const result: core.Circle[] = []
-    const content1IsCircle = isCircleContent(content1) || isArcContent(content1)
-    const content2IsCircle = isCircleContent(content2) || isArcContent(content2)
-    if (content1IsCircle && content2IsCircle) {
-      result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({ ...c, r: radius })))
-    } else if (content1IsCircle && isLineContent(content2)) {
-      result.push(...ctx.getCirclesTangentToLineAndCircle(content2.points[0], content2.points[1], content1, radius).map((c) => ({ ...c, r: radius })))
-    } else if (content2IsCircle && isLineContent(content1)) {
-      result.push(...ctx.getCirclesTangentToLineAndCircle(content1.points[0], content1.points[1], content2, radius).map((c) => ({ ...c, r: radius })))
-    } else if (isLineContent(content1) && isLineContent(content2)) {
-      result.push(...ctx.getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => ({ ...c, r: radius })))
+    const result: core.Position[] = []
+    if (isCircleContent(content1) || isArcContent(content1)) {
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius))
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        result.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius))
+      }
+    } else if (isLineContent(content1)) {
+      const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        result.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius))
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        result.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius))
+      }
     }
-    return result
+    return result.map((c) => ({ ...c, r: radius }))
   }
   const React = ctx.React
   const icon = (

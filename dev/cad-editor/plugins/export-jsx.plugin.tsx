@@ -43,7 +43,7 @@ export function getCommand(ctx: PluginContext): Command {
             let jsx = ''
             for (let j = 0; j < svg.length; j++) {
               const c = svg[j]
-              if (c === '-') {
+              if (c === '-' && ctx.isLetter(svg[j + 1])) {
                 jsx += svg[j + 1].toUpperCase()
                 j++
               } else {

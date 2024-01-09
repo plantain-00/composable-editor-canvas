@@ -13,7 +13,7 @@ export function getCommand(ctx: PluginContext): Command {
     }
     const circles: { center: core.Position, foot1: core.Position, foot2: core.Position }[] = []
     if (isLineContent(content1) && isLineContent(content2)) {
-      circles.push(...ctx.getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentTo2Lines(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
         foot2: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
@@ -25,13 +25,13 @@ export function getCommand(ctx: PluginContext): Command {
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
       })))
     } else if (isLineContent(content1) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(content1.points[0], content1.points[1], content2, radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), content2, radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
       })))
     } else if (isLineContent(content2) && (isCircleContent(content1) || isArcContent(content1))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(content2.points[0], content2.points[1], content1, radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), content1, radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
