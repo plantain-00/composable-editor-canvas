@@ -1,7 +1,7 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
 import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed, pointIsOnGeometryLine } from "./break"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { Position, TwoPointsFormRegion, arcToPolyline, deepEquals, ellipseArcToPolyline, getPointsBoundingUnsafe, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, largerThan, maxmiumBy, minimumBy, minimumsBy, pointInPolygon } from "./geometry"
+import { Position, TwoPointsFormRegion, arcToPolyline, deepEquals, ellipseArcToPolyline, getPointsBoundingUnsafe, getTwoPointsDistance, getTwoPointsRadian, isSameNumber, isSamePoint, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy, pointInPolygon } from "./geometry"
 import { GeometryLine, getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { mergeGeometryLine } from "./merge"
 import { getNurbsPoints } from "./nurbs"
@@ -182,12 +182,12 @@ function getRightSideGeometryLine(
     r = maxmiumBy(intersections, s => s.originalParam)
   }
   const endParam = getGeometryLineParamAtPoint(r.point, start.line)
-  const startRadian = getGeometryLinePointAndTangentRadianAtParam(endParam, start.line).radian
-  reverseGeometryLineIfDirectionIsWrong(startRadian, r)
   const line = getPartOfGeometryLine(startParam, endParam, start.line, closed)
   if (debug) {
     console.info(`Result ${printParam(startParam)}->${printParam(endParam)} ${printGeometryLine(line)}`)
   }
+  const startRadian = getGeometryLinePointAndTangentRadianAtParam(endParam, start.line).radian
+  reverseGeometryLineIfDirectionIsWrong(startRadian, r)
   if (debug) {
     console.info(`Line ${printGeometryLine(r.line)}`)
   }
@@ -204,6 +204,9 @@ function getRightSideGeometryLine(
 
 function reverseGeometryLineIfDirectionIsWrong(startRadian: number, r: HatchIntersection) {
   const param = getGeometryLineParamAtPoint(r.point, r.line)
+  if (isZero(param)) {
+    return
+  }
   if (isSameNumber(param, 1)) {
     r.line = reverseGeometryLine(r.line)
     return

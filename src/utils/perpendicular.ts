@@ -48,22 +48,29 @@ export function getPerpendicularLineToGeometryLine(point: Position, line: Geomet
 }
 
 export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine): Position {
-  // F1: ax + by + c = 0
+  // F1: a x + b y + c = 0
   // (y - y0)/(x - x0)(-a/b) = -1
-  // F2: ay - ay0 - bx + bx0 = 0
-  // F1*a: aax + aby + ac = 0
-  // F2*b: aby - aby0 - bbx + bbx0 = 0
-  // aax + ac + aby0 + bbx - bbx0 = 0
-  // (aa + bb)x = bbx0 - ac - aby0
+  // F2: a y - a y0 - b x + b x0 = 0
+  // F1*a: a a x + a b y + a c = 0
+  // F2*b: a b y - a b y0 - b b x + b bx 0 = 0
+  // a a x + a c + a b y0 + b b x - b b x0 = 0
+  // (a a + b b)x = b b x0 - a c - a b y0
   const d = a ** 2
   const e = b ** 2
   const f = d + e
   const g = -a * b
-  // fx = ex0 - ac + gy0
+  // f x = e x0 - a c + g y0
   return {
     x: (e * p.x + g * p.y - a * c) / f,
     y: (g * p.x + d * p.y - b * c) / f,
   }
+}
+
+export function getPerpendicularDistance({ x, y }: Position, { a, b, c }: GeneralFormLine): number {
+  // parallel line: a x + b y + c - d sqrt(a a + b b) = 0
+  // a x + b y + c + d sqrt(a a + b b) = 0
+  // d = abs(a x + b y + c)/sqrt(a a + b b)
+  return Math.abs(a * x + b * y + c) / Math.sqrt(a ** 2 + b ** 2)
 }
 
 export function getPerpendicularPointToCircle(position: Position, circle: Circle, near = position) {

@@ -53,6 +53,12 @@ export function useAttributedTextEditor<T extends object>(props: {
     } else if (deleteCount) {
       newLocation = location - deleteCount
       middleState = deleteContentsInRange({ min: location - deleteCount, max: location })
+      if (cursorContent.attributes && !props.getReadonlyType?.(cursorContent.attributes)) {
+        attributes = {
+          attributes: cursorContent.attributes,
+          index: newLocation
+        }
+      }
     } else {
       newLocation = location
       middleState = props.state

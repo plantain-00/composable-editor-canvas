@@ -1,4 +1,4 @@
-import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndRadian, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsRadian, getTextStyleFont } from "../../utils"
+import { TextStyle, formatNumber, getPerpendicularPoint, getPointByLengthAndRadian, getPointByLengthAndDirection, getPointsBounding, getTwoNumbersDistance, getTwoPointCenter, getTwoPointsDistance, iteratePolygonLines, iteratePolylineLines, Position, rotatePosition, rotatePositionByCenter, Size, twoPointLineToGeneralFormLine, and, optional, string, boolean, getTwoPointsRadian, getTextStyleFont, getPerpendicularDistance } from "../../utils"
 
 /**
  * @public
@@ -30,8 +30,7 @@ export function getLinearDimensionGeometries(
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
-    const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
-    const distance = getTwoPointsDistance(content.position, footPoint)
+    const distance = getPerpendicularDistance(content.position, twoPointLineToGeneralFormLine(left, right))
     const r = getTwoPointsRadian(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {

@@ -2438,18 +2438,23 @@ function isArcContent(content) {
 function getCommand(ctx) {
   function getTangentTangentRadiusCircles(content1, content2, radius) {
     const result = [];
-    const content1IsCircle = isCircleContent(content1) || isArcContent(content1);
-    const content2IsCircle = isCircleContent(content2) || isArcContent(content2);
-    if (content1IsCircle && content2IsCircle) {
-      result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({ ...c, r: radius })));
-    } else if (content1IsCircle && isLineContent(content2)) {
-      result.push(...ctx.getCirclesTangentToLineAndCircle(content2.points[0], content2.points[1], content1, radius).map((c) => ({ ...c, r: radius })));
-    } else if (content2IsCircle && isLineContent(content1)) {
-      result.push(...ctx.getCirclesTangentToLineAndCircle(content1.points[0], content1.points[1], content2, radius).map((c) => ({ ...c, r: radius })));
-    } else if (isLineContent(content1) && isLineContent(content2)) {
-      result.push(...ctx.getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => ({ ...c, r: radius })));
+    if (isCircleContent(content1) || isArcContent(content1)) {
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius));
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        result.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius));
+      }
+    } else if (isLineContent(content1)) {
+      const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        result.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius));
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        result.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius));
+      }
     }
-    return result;
+    return result.map((c) => ({ ...c, r: radius }));
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "10,87 89,87", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "17", cy: "40", r: "16", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "60", cy: "57", r: "30", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
@@ -2510,6 +2515,99 @@ function getCommand(ctx) {
     },
     selectCount: 2,
     contentSelectable: (c) => isCircleContent(c) || isArcContent(c) || isLineContent(c),
+    selectType: "select part",
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
+}
+
+// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isCircleContent(content) {
+  return content.type === "circle";
+}
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/create-tangent-tangent-tangent-circle.plugin.tsx
+function getCommand(ctx) {
+  function getTangentTangentTangentCircles(content1, content2, content3) {
+    const result = [];
+    if (isLineContent(content1)) {
+      const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
+      if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (isLineContent(content3)) {
+          const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          result.push(...ctx.getCirclesTangentTo3Lines(line1, line2, line3));
+        } else if (isCircleContent(content3) || isArcContent(content3)) {
+          result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line2, content3));
+        }
+      } else if (isCircleContent(content2) || isArcContent(content2)) {
+        if (isLineContent(content3)) {
+          const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line3, content2));
+        }
+      }
+    } else if (isCircleContent(content1) || isArcContent(content1)) {
+      if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (isLineContent(content3)) {
+          const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          result.push(...ctx.getCirclesTangentToLineLineCircle(line2, line3, content1));
+        }
+      }
+    }
+    return result;
+  }
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "0,8 100,8", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "99,19 60,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,22 44,98", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "50", cy: "42", r: "34", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create tangent tangent tangent circle",
+    useCommand({ onEnd, type, selected, scale }) {
+      const [candidates, setCandidates] = React.useState();
+      const [result, setResult] = React.useState();
+      const assistentContents = (candidates || []).map((c) => ({
+        ...c,
+        type: "circle",
+        dashArray: c === result ? void 0 : [4 / scale]
+      }));
+      const reset = () => {
+        setCandidates(void 0);
+        setResult(void 0);
+      };
+      React.useEffect(() => {
+        if (type && !candidates) {
+          setCandidates(getTangentTangentTangentCircles(selected[0].content, selected[1].content, selected[2].content));
+        }
+      }, [type, selected]);
+      return {
+        onStart() {
+          if (result) {
+            onEnd({
+              updateContents: (contents) => {
+                contents.push({ type: "circle", ...result });
+              }
+            });
+            setCandidates([]);
+          }
+        },
+        onMove(p) {
+          setResult(candidates == null ? void 0 : candidates.find((c) => ctx.getTwoNumbersDistance(ctx.getTwoPointsDistance(c, p), c.r) < 5));
+        },
+        assistentContents,
+        reset
+      };
+    },
+    selectCount: 3,
+    contentSelectable: (c) => isLineContent(c) || isCircleContent(c) || isArcContent(c),
     selectType: "select part",
     icon
   };
@@ -3649,7 +3747,7 @@ function getCommand(ctx) {
             let jsx = "";
             for (let j = 0; j < svg.length; j++) {
               const c = svg[j];
-              if (c === "-") {
+              if (c === "-" && ctx.isLetter(svg[j + 1])) {
                 jsx += svg[j + 1].toUpperCase();
                 j++;
               } else {
@@ -3846,7 +3944,7 @@ function getCommand(ctx) {
     }
     const circles = [];
     if (isLineContent(content1) && isLineContent(content2)) {
-      circles.push(...ctx.getCirclesTangentTo2Lines(content1.points[0], content1.points[1], content2.points[0], content2.points[1], radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentTo2Lines(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
         foot2: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]))
@@ -3858,13 +3956,13 @@ function getCommand(ctx) {
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
       })));
     } else if (isLineContent(content1) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(content1.points[0], content1.points[1], content2, radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), content2, radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
       })));
     } else if (isLineContent(content2) && (isCircleContent(content1) || isArcContent(content1))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(content2.points[0], content2.points[1], content1, radius).map((c) => ({
+      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), content1, radius).map((c) => ({
         center: c,
         foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
         foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0]

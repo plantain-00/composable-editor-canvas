@@ -1,12 +1,13 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, twoPointLineToGeneralFormLine, Arc, lessThan, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc, isValidPercent } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, Arc, lessThan, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc, isValidPercent, getTwoNumberCenter, pointAndDirectionToGeneralFormLine, GeneralFormLine, getTwoPointCenter, getGeneralFormLineRadian, generalFormLineToTwoPointLine } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
+import { getPerpendicularDistance } from "./perpendicular"
 import { angleToRadian } from "./radian"
 
-export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, radius: number) {
+export function getCirclesTangentTo2Lines(line1: GeneralFormLine, line2: GeneralFormLine, radius: number) {
   const result: Position[] = []
-  const lines1 = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p1Start, p1End), radius)
-  const lines2 = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p2Start, p2End), radius)
+  const lines1 = getParallelLinesByDistance(line1, radius)
+  const lines2 = getParallelLinesByDistance(line2, radius)
   for (const line1 of lines1) {
     for (const line2 of lines2) {
       const point = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
@@ -18,9 +19,9 @@ export function getCirclesTangentTo2Lines(p1Start: Position, p1End: Position, p2
   return result
 }
 
-export function getCirclesTangentToLineAndCircle(p1Start: Position, p1End: Position, circle: Circle, radius: number) {
+export function getCirclesTangentToLineAndCircle(line: GeneralFormLine, circle: Circle, radius: number) {
   const result: Position[] = []
-  const lines = getParallelLinesByDistance(twoPointLineToGeneralFormLine(p1Start, p1End), radius)
+  const lines = getParallelLinesByDistance(line, radius)
   const circles = [circle.r + radius, Math.abs(circle.r - radius)]
   for (const line of lines) {
     for (const r of circles) {
@@ -62,6 +63,106 @@ export function getLinesTangentTo2Circles(circle1: Circle, circle2: Circle) {
         [getCirclePointAtRadian(circle1, radian + a4 - Math.PI / 2), getCirclePointAtRadian(circle2, radian + a4 + Math.PI / 2)],
         [getCirclePointAtRadian(circle1, radian - a4 + Math.PI / 2), getCirclePointAtRadian(circle2, radian - a4 - Math.PI / 2)],
       )
+    }
+  }
+  return result
+}
+
+export function getTwoLinesCenterLines(line1: GeneralFormLine, line2: GeneralFormLine): GeneralFormLine[] {
+  const radian1 = getGeneralFormLineRadian(line1)
+  const radian2 = getGeneralFormLineRadian(line2)
+  const p = getTwoGeneralFormLinesIntersectionPoint(line1, line2)
+  if (!p) {
+    const p1 = generalFormLineToTwoPointLine(line1)[0]
+    const p2 = generalFormLineToTwoPointLine(line2)[0]
+    return [pointAndDirectionToGeneralFormLine(getTwoPointCenter(p1, p2), radian1)]
+  }
+  const radian = getTwoNumberCenter(radian1, radian2)
+  return [radian, radian + Math.PI / 2].map(r => pointAndDirectionToGeneralFormLine(p, r))
+}
+
+export function getCirclesTangentTo3Lines(line1: GeneralFormLine, line2: GeneralFormLine, line3: GeneralFormLine): Circle[] {
+  const result: Circle[] = []
+  const lines1 = getTwoLinesCenterLines(line1, line2)
+  const lines2 = getTwoLinesCenterLines(line1, line3)
+  for (const a of lines1) {
+    for (const b of lines2) {
+      const p = getTwoGeneralFormLinesIntersectionPoint(a, b)
+      if (p) {
+        result.push({
+          ...p,
+          r: getPerpendicularDistance(p, line1),
+        })
+      }
+    }
+  }
+  return result
+}
+
+export function getCirclesTangentToLineLineCircle(line1: GeneralFormLine, line2: GeneralFormLine, { x: x1, y: y1, r }: Circle): Circle[] {
+  const result: Circle[] = []
+  const lines = getTwoLinesCenterLines(line1, line2)
+  const { a: a1, b: b1, c: c1 } = line1
+  const d = a1 ** 2 + b1 ** 2, d2 = Math.sqrt(d)
+  // perpendicular distance: d1 = abs(a1 x + b1 y + c1)/d
+  // ^2: d1 d1 = (a1/d2 x + b1/d2 y + c1/d2)^2
+  const a3 = a1 / d2, b3 = b1 / d2, c3 = c1 / d2
+  // d1 d1 = (a3 x + b3 y + c3)^2
+  // let u = x - x1, v = y - y1
+  // replace x with u + x1, y with v + y1: d1 d1 = (a3(u + x1) + b3(v + y1) + c3)^2
+  // d1 d1 = (a3 u + b3 v + a3 x1 + b3 y1 + c3)^2
+  const d3 = a3 * x1 + b3 * y1 + c3
+  // d1 d1 = (a3 u + b3 v + d3)^2
+  // d1 d2 = a3 a3 u u + 2 a3 b3 u v + 2 a3 d3 u + b3 b3 v v + 2 b3 d3 v + d3 d3
+  const e1 = a3 * a3, e2 = b3 * b3, e3 = 2 * a3 * b3, e4 = 2 * a3 * d3, e5 = 2 * b3 * d3, e6 = d3 * d3
+  // d1 d2 = e1 u u + e3 u v + e4 u + e2 v v + e5 v + e6
+  const f1 = 1 - e1, f2 = 1 - e2
+  // (x - x1)^2 + (y - y1)^2 = (d1 + r)^2
+  // replace x with u + x1, y with v + y1: u^2 + v^2 = r r + 2 r d1 + d1 d1
+  // replace d1 d1: u^2 + v^2 = r r + 2 r d1 + (e1 u u + e3 u v + e4 u + e2 v v + e5 v + e6)
+  // u^2 + v^2 - r r - (e1 u u + e3 u v + e4 u + e2 v v + e5 v + e6) = 2 r d1
+  // (1 - e1) u u - e3 u v - e4 u + (1 - e2) v v - e5 v - r r - e6 = 2 r d1
+  // f1 u u - e3 u v - e4 u + f2 v v - e5 v - f3 = 2 r d1
+  //^2: (f1 u u - e3 u v - e4 u + f2 v v - e5 v - f3)^2 = 4 r r d1 d1
+  // replace d1 d1, r r: (f1 u u - e3 u v - e4 u + f2 v v - e5 v - f3)^2 - 4 f4 (e1 u u + e3 u v + e4 u + e2 v v + e5 v + e6) = 0
+  const f4 = r * r, f3 = f4 + e6
+  for (const { a: a2, b: b2, c: c2 } of lines) {
+    // a2 x + b2 y + c2 = 0
+    // replace x with u + x1, y with v + y1: a2(u + x1) + b2(v + y1) + c2 = 0
+    // a2 u + b2 v + a2 x1 + b2 y1 + c2 = 0
+    const f5 = a2 * x1 + b2 * y1 + c2
+    // a2 u + b2 v + f5 = 0
+    if (isZero(b2)) {
+      const u = -f5 / a2
+      // group by v: (f2 v v + (-e3 u + -e5) v + f1 u u + -e4 u + -f3)^2 - 4 e2 f4 v v + (-4 e3 f4 u + -4 e5 f4) v + -4 e1 f4 u u + -4 e4 f4 u + -4 e6 f4 = 0
+      const g1 = -e3 * u + -e5, g2 = f1 * u * u + -e4 * u + -f3, g3 = 4 * e2 * f4, g4 = -4 * e3 * f4 * u + -4 * e5 * f4, g5 = -4 * e1 * f4 * u * u + -4 * e4 * f4 * u + -4 * e6 * f4
+      // (f2 v v + g1 v + g2)^2 - g3 v v + g4 v + g5 = 0
+      // expand, group by v: f2 f2 v v v v + 2 f2 g1 v v v + (g1 g1 + 2 f2 g2 + -g3) v v + (2 g1 g2 + g4) v + g2 g2 + g5 = 0
+      const vs = calculateEquation4(f2 * f2, 2 * f2 * g1, g1 * g1 + 2 * f2 * g2 + -g3, 2 * g1 * g2 + g4, g2 * g2 + g5)
+      result.push(...vs.map(v => ({
+        x: u + x1,
+        y: v + y1,
+        r: Math.abs(a3 * u + b3 * v + d3),
+      })))
+    } else {
+      // v = -a2/b2 u - f5/b2
+      const g1 = -a2 / b2, g2 = f5 / b2
+      // v = g1 u - g2
+      // replace v: (f1 u u - e3 u (g1 u - g2) - e4 u + f2 (g1 u - g2) (g1 u - g2) - e5 (g1 u - g2) - f3)^2 - 4 f4 (e1 u u + e3 u (g1 u - g2) + e4 u + e2 (g1 u - g2) (g1 u - g2) + e5 (g1 u - g2) + e6) = 0
+      // ((-e3 g1 + f2 g1 g1 + f1) u u + (e3 g2 + -e4 + -2 f2 g1 g2 + -e5 g1) u + f2 g2 g2 + e5 g2 + -f3)^2 + (-4 e2 f4 g1 g1 + -4 e3 f4 g1 + -4 e1 f4) u u + (8 e2 f4 g1 g2 + -4 e5 f4 g1 + 4 e3 f4 g2 + -4 e4 f4) u + -4 e2 f4 g2 g2 + 4 e5 f4 g2 + -4 e6 f4 = 0
+      const g3 = -e3 * g1 + f2 * g1 * g1 + f1, g4 = e3 * g2 + -e4 + -2 * f2 * g1 * g2 + -e5 * g1, g5 = f2 * g2 * g2 + e5 * g2 + -f3
+      const g6 = -4 * e2 * f4 * g1 * g1 + -4 * e3 * f4 * g1 + -4 * e1 * f4, g7 = 8 * e2 * f4 * g1 * g2 + -4 * e5 * f4 * g1 + 4 * e3 * f4 * g2 + -4 * e4 * f4, g8 = -4 * e2 * f4 * g2 * g2 + 4 * e5 * f4 * g2 + -4 * e6 * f4
+      // (g3 u u + g4 u + g5)^2 + g6 u u + g7 u + g8 = 0
+      // expand, group by u: g3 g3 u u u u + 2 g3 g4 u u u + (g4 g4 + 2 g3 g5 + g6) u u + (2 g4 g5 + g7) u + g5 g5 + g8 = 0
+      const us = calculateEquation4(g3 * g3, 2 * g3 * g4, g4 * g4 + 2 * g3 * g5 + g6, 2 * g4 * g5 + g7, g5 * g5 + g8)
+      result.push(...us.map(u => {
+        const v = g1 * u - g2
+        return {
+          x: u + x1,
+          y: v + y1,
+          r: Math.abs(a3 * u + b3 * v + d3),
+        }
+      }))
     }
   }
   return result
