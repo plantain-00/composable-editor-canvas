@@ -2554,6 +2554,8 @@ function getCommand(ctx) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line3, content2));
+        } else if (isCircleContent(content3) || isArcContent(content3)) {
+          result.push(...ctx.getCirclesTangentToLineCircleCircle(line1, content2, content3));
         }
       }
     } else if (isCircleContent(content1) || isArcContent(content1)) {
@@ -2562,6 +2564,15 @@ function getCommand(ctx) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
           result.push(...ctx.getCirclesTangentToLineLineCircle(line2, line3, content1));
+        } else if (isCircleContent(content3) || isArcContent(content3)) {
+          result.push(...ctx.getCirclesTangentToLineCircleCircle(line2, content1, content3));
+        }
+      } else if (isCircleContent(content2) || isArcContent(content2)) {
+        if (isLineContent(content3)) {
+          const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          result.push(...ctx.getCirclesTangentToLineCircleCircle(line3, content1, content2));
+        } else if (isCircleContent(content3) || isArcContent(content3)) {
+          result.push(...ctx.getCirclesTangentTo3Circles(content1, content2, content3));
         }
       }
     }

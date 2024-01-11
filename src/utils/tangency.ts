@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation4 } from "./equation-calculater"
-import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, Arc, lessThan, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc, isValidPercent, getTwoNumberCenter, pointAndDirectionToGeneralFormLine, GeneralFormLine, getTwoPointCenter, getGeneralFormLineRadian, generalFormLineToTwoPointLine } from "./geometry"
+import { Position, Circle, isZero, Ellipse, getParallelLinesByDistance, Arc, lessThan, delta2, getTwoPointsDistance, getTwoPointsRadian, getCirclePointAtRadian, normalizeRadian, EllipseArc, isValidPercent, getTwoNumberCenter, pointAndDirectionToGeneralFormLine, GeneralFormLine, getTwoPointCenter, getGeneralFormLineRadian, generalFormLineToTwoPointLine, largerThan } from "./geometry"
 import { BezierCurve, QuadraticCurve, getGeneralFormLineCircleIntersectionPoints, getTwoCircleIntersectionPoints, getTwoGeneralFormLinesIntersectionPoint } from "./intersection"
 import { getPerpendicularDistance } from "./perpendicular"
 import { angleToRadian } from "./radian"
@@ -163,6 +163,193 @@ export function getCirclesTangentToLineLineCircle(line1: GeneralFormLine, line2:
           r: Math.abs(a3 * u + b3 * v + d3),
         }
       }))
+    }
+  }
+  return result
+}
+
+export function getCirclesTangentToLineCircleCircle({ a: a1, b: b1, c: c1 }: GeneralFormLine, { x: x2, y: y2, r: r02 }: Circle, { x: x3, y: y3, r: r03 }: Circle): Circle[] {
+  const result: Circle[] = []
+  const d = a1 ** 2 + b1 ** 2, d2 = Math.sqrt(d)
+  // perpendicular distance: r = abs(a1 x + b1 y + c1)/d = abs(a1/d2 x + b1/d2 y + c1/d2)
+  const a3 = a1 / d2, b3 = b1 / d2, c3 = c1 / d2
+  // let r1 = 1,-1, r2 = r02,-r02, r3 = r03,-r03
+  // r1(a3 x + b3 y + c3) = r
+  // (x - x2)^2 + (y - y2)^2 = (r + r2)^2
+  // (x - x3)^2 + (y - y3)^2 = (r + r3)^2
+  // let u = x - x2, v = y - y2, w = r + r2
+  // r1(a3 u + b3 v + a3 x2 + b3 y2 + c3) = w - r2
+  const e1 = x2 - x3, e2 = y2 - y3, e4 = a3 * x2 + b3 * y2 + c3
+  // r1(a3 u + b3 v + e4) + r2 = w
+  // F2: u^2 + v^2 - w^2 = 0
+  for (const r1 of [1, -1]) {
+    const f1 = r1 * a3, f2 = r1 * b3, g3 = 1 - f1 * f1, g4 = 1 - f2 * f2
+    for (const r2 of [r02, -r02]) {
+      const f3 = r1 * e4 + r2
+      // w = f1 u + f2 v + f3
+      // F2 replace w: (1 - f1 f1) u u - 2 f1 f2 v u - 2 f1 f3 u + (1 - f2 f2) v v + -2 f2 f3 v + -f3 f3 = 0
+      // F1: g3 u u - 2 f1 f2 v u - 2 f1 f3 u + g4 v v + -2 f2 f3 v + -f3 f3 = 0
+      for (const r3 of [r03, -r03]) {
+        const e3 = r2 - r3
+        // (u + e1)^2 + (v + e2)^2 - (w - e3)^2 = 0
+        // -F2: e1 e1 + e2 e2 + -e3 e3 + 2 e1 u + 2 e2 v + 2 e3 w = 0
+        const e5 = (e1 * e1 + e2 * e2 - e3 * e3) / 2
+        // e1 u + e2 v + e3 w + e5 = 0
+        // replace w: (e3 f1 + e1) u + (e3 f2 + e2) v + e3 f3 + e5 = 0
+        const f4 = e3 * f1 + e1, f5 = e3 * f2 + e2, f6 = e3 * f3 + e5
+        // f4 u + f5 v + f6 = 0
+        if (isZero(f5)) {
+          const u = -f6 / f4
+          // F1 group by v: g4 v v + (-2 f1 f2 u + -2 f2 f3) v + -2 f1 f3 u + -f3 f3 + g3 u u = 0
+          const vs = calculateEquation2(g4, -2 * f1 * f2 * u + -2 * f2 * f3, -2 * f1 * f3 * u + -1 * f3 * f3 + g3 * u * u)
+          for (const v of vs) {
+            const w = f1 * u + f2 * v + f3
+            const r = w - r2
+            if (largerThan(r, 0)) {
+              result.push({
+                x: u + x2,
+                y: v + y2,
+                r,
+              })
+            }
+          }
+          continue
+        }
+        // v = -f4/f5 u - f6/f5
+        const g1 = -f4 / f5, g2 = - f6 / f5
+        // v = g1 u + g2
+        // F1 replace v: (-2 f1 f2 g1 + g1 g1 g4 + g3) u u + (-2 f2 f3 g1 + -2 f1 f2 g2 + 2 g1 g2 g4 + -2 f1 f3) u + -2 f2 f3 g2 + -f3 f3 + g2 g2 g4 = 0
+        const us = calculateEquation2(
+          -2 * f1 * f2 * g1 + g1 * g1 * g4 + g3,
+          -2 * f2 * f3 * g1 + -2 * f1 * f2 * g2 + 2 * g1 * g2 * g4 + -2 * f1 * f3,
+          -2 * f2 * f3 * g2 + -1 * f3 * f3 + g2 * g2 * g4,
+        )
+        for (const u of us) {
+          const v = g1 * u + g2
+          const w = f1 * u + f2 * v + f3
+          const r = w - r2
+          if (largerThan(r, 0)) {
+            result.push({
+              x: u + x2,
+              y: v + y2,
+              r,
+            })
+          }
+        }
+      }
+    }
+  }
+  return result
+}
+
+export function getCirclesTangentTo3Circles({ x: x1, y: y1, r: r01 }: Circle, { x: x2, y: y2, r: r02 }: Circle, { x: x3, y: y3, r: r03 }: Circle): Circle[] {
+  const result: Circle[] = []
+  // let r1 = r01,-r01, r2 = r02,-r02, r3 = r03,-r03
+  // (x - x1)^2 + (y - y1)^2 = (r + r1)^2
+  // (x - x2)^2 + (y - y2)^2 = (r + r2)^2
+  // (x - x3)^2 + (y - y3)^2 = (r + r3)^2
+  // let u = x - x1, v = y - y1, w = r + r1
+  const a1 = x1 - x2, a2 = x1 - x3, a3 = y1 - y2, a4 = y1 - y3
+  for (const r1 of [r01, -r01]) {
+    for (const r2 of [r02, -r02]) {
+      for (const r3 of [r03, -r03]) {
+        const a5 = r2 - r1, a6 = r3 - r1
+        // F1: u^2 + v^2 - w^2 = 0
+        // F2: (u + a1)^2 + (v + a3)^2 - (w + a5)^2 = 0
+        // F3: (u + a2)^2 + (v + a4)^2 - (w + a6)^2 = 0
+        // F2-F1: 2 a1 u + 2 a3 v + -2 a5 w + a1 a1 + a3 a3 + -a5 a5 = 0
+        // F3-F1: 2 a2 u + 2 a4 v + -2 a6 w + a2 a2 + a4 a4 + -a6 a6 = 0
+        const b1 = (a1 * a1 + a3 * a3 + -a5 * a5) / 2, b2 = (a2 * a2 + a4 * a4 + -a6 * a6) / 2
+        // F4: a1 u + a3 v - a5 w + b1 = 0
+        // F5: a2 u + a4 v - a6 w + b2 = 0
+        if (isZero(a3)) {
+          if (isZero(a4)) {
+            // F4*a6-F5*a5: (-a2 a5 + a1 a6) u + a6 b1 + -a5 b2 = 0
+            const u = (a6 * b1 - a5 * b2) / (a2 * a5 - a1 * a6)
+            const w = isZero(a5) ? (a2 * u + b2) / a6 : (a1 * u + b1) / a5
+            const r = w - r1
+            if (largerThan(r, 0)) {
+              const d1 = w * w - u * u
+              if (isZero(d1)) {
+                result.push({ x: u + x1, y: y1, r })
+              } else if (largerThan(d1, 0)) {
+                const v = Math.sqrt(d1)
+                result.push({ x: u + x1, y: v + y1, r }, { x: u + x1, y: -v + y1, r })
+              }
+            }
+            continue
+          }
+          // a5 w = a1 u + b1
+          // a4 v = a6 w - a2 u - b2
+          // ^2: a4 a4 v v = (a6 w - a2 u - b2)^2
+          // F1*a4 a4, replace a4 a4 v v: (a2 a2 + a4 a4) u u - 2 a2 a6 w u + 2 a2 b2 u + (a6 a6 - a4 a4) w w  + -2 a6 b2 w + b2 b2 = 0
+          const c1 = a2 * a2 + a4 * a4, c2 = a6 * a6 - a4 * a4
+          // c1 u u - 2 a2 a6 w u + 2 a2 b2 u + c2 w w  + -2 a6 b2 w + b2 b2 = 0
+          // *a5 a5, replace a5 w: (-2 a1 a2 a5 a6 + a5 a5 c1 + a1 a1 c2) u u + (-2 a2 a5 a6 b1 + 2 a2 a5 a5 b2 + -2 a1 a5 a6 b2 + 2 a1 b1 c2) u + -2 a5 a6 b1 b2 + a5 a5 b2 b2 + b1 b1 c2 = 0
+          const us = calculateEquation2(
+            -2 * a1 * a2 * a5 * a6 + a5 * a5 * c1 + a1 * a1 * c2,
+            -2 * a2 * a5 * a6 * b1 + 2 * a2 * a5 * a5 * b2 + -2 * a1 * a5 * a6 * b2 + 2 * a1 * b1 * c2,
+            -2 * a5 * a6 * b1 * b2 + a5 * a5 * b2 * b2 + b1 * b1 * c2,
+          )
+          for (const u of us) {
+            const w = isZero(a5) ? (a2 * u + b2) / a6 : (a1 * u + b1) / a5
+            const r = w - r1
+            if (largerThan(r, 0)) {
+              const v = (a6 * w - a2 * u - b2) / a4
+              result.push({
+                x: u + x1,
+                y: v + y1,
+                r,
+              })
+            }
+          }
+          continue
+        }
+        // F4*a4-F5*a3: (-a2 a3 + a1 a4) u + (-a4 a5 + a3 a6) w + a4 b1 + -a3 b2 = 0
+        const b3 = -a2 * a3 + a1 * a4, b4 = -a4 * a5 + a3 * a6, b5 = a4 * b1 + -a3 * b2
+        // b3 u + b4 w + b5 = 0
+        // b4 w = -b3 u - b5
+        // a3 v = a5 w - a1 u - b1
+        // ^2: a3 a3 v v = (a5 w - a1 u - b1)^2
+        // F1*a3 a3, replace a3 a3 v v: (a1 a1 + a3 a3) u u + -2 a1 a5 w u + 2 a1 b1 u + (-a3 a3 + a5 a5) w w + -2 a5 b1 w + b1 b1 = 0
+        const c1 = a1 * a1 + a3 * a3, c2 = -a3 * a3 + a5 * a5
+        // c1 u u - 2 a1 a5 w u + 2 a1 b1 u + c2 w w + -2 a5 b1 w + b1 b1 = 0
+        if (isZero(b4)) {
+          const u = -b5 / b3
+          // group by w: c2 w w + (-2 a1 a5 u + -2 a5 b1) w + 2 a1 b1 u + b1 b1 + c1 u u = 0
+          const ws = calculateEquation2(c2, -2 * a1 * a5 * u + -2 * a5 * b1, 2 * a1 * b1 * u + b1 * b1 + c1 * u * u)
+          for (const w of ws) {
+            const r = w - r1
+            if (largerThan(r, 0)) {
+              const v = (a5 * w - a1 * u - b1) / a3
+              result.push({
+                x: u + x1,
+                y: v + y1,
+                r,
+              })
+            }
+          }
+          continue
+        }
+        // *b4 b4, replace b4 w: (2 a1 a5 b3 b4 + b4 b4 c1 + b3 b3 c2) u u + (2 a5 b1 b3 b4 + 2 a1 b1 b4 b4 + 2 a1 a5 b4 b5 + 2 b3 b5 c2) u + b1 b1 b4 b4 + 2 a5 b1 b4 b5 + b5 b5 c2 = 0
+        const us = calculateEquation2(
+          2 * a1 * a5 * b3 * b4 + b4 * b4 * c1 + b3 * b3 * c2,
+          2 * a5 * b1 * b3 * b4 + 2 * a1 * b1 * b4 * b4 + 2 * a1 * a5 * b4 * b5 + 2 * b3 * b5 * c2,
+          b1 * b1 * b4 * b4 + 2 * a5 * b1 * b4 * b5 + b5 * b5 * c2,
+        )
+        for (const u of us) {
+          const w = (-b3 * u - b5) / b4
+          const r = w - r1
+          if (largerThan(r, 0)) {
+            const v = (a5 * w - a1 * u - b1) / a3
+            result.push({
+              x: u + x1,
+              y: v + y1,
+              r,
+            })
+          }
+        }
+      }
     }
   }
   return result
