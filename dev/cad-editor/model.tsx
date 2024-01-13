@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, getPointsBoundingUnsafe, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -1773,9 +1773,9 @@ export function getClipContentEditPoints(content: ClipFields, contents: readonly
 export const contentsBoundingCache = new WeakmapCache<readonly Nullable<BaseContent>[], TwoPointsFormRegion>()
 const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion>()
 
-export function getGeometryLineBounding(line: GeometryLine) {
+export function getGeometryLineBoundingFromCache(line: GeometryLine) {
   return geometryLineBoundingCache.get(line, () => {
-    return getPointsBoundingUnsafe(getGeometryLinesPoints([line]))
+    return getGeometryLineBounding(line)
   })
 }
 

@@ -9,21 +9,7 @@
   },
   "author": "York Yao",
   "license": "MIT",
-  "dependencies": {
-    "equation-calculater": "^1.9.0",
-    "equation-renderer": "1",
-    "expression-engine": "1",
-    "react-composable-json-editor": "^1.9.0",
-    "react-render-target": "^1.9.0",
-    "use-drag-move": "1",
-    "use-drag-resize": "1",
-    "use-drag-rotate": "1",
-    "use-drag-select": "1",
-    "use-patch-based-undo-redo": "^1.9.0",
-    "use-undo-redo": "^1.9.0",
-    "use-wheel-scroll": "1",
-    "use-wheel-zoom": "1"
-  },
+  "dependencies": {},
   "bugs": {
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },

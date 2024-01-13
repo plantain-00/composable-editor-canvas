@@ -1,4 +1,8 @@
-import { isSameNumber, getPointsBoundingUnsafe, getTwoNumberCenter, getTwoPointCenter, Position, rotatePosition, Size, TwoPointsFormRegion } from "../../utils/geometry"
+import { isSameNumber, getTwoNumberCenter } from "../../utils/math"
+import { Position, rotatePosition } from "../../utils/position"
+import { getPointsBoundingUnsafe } from "../../utils/bounding"
+import { Size, TwoPointsFormRegion } from "../../utils/region"
+import { getTwoPointCenter } from "../../utils/position"
 
 /**
  * @public

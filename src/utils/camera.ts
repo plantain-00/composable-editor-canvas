@@ -1,4 +1,4 @@
-import { rotatePositionByCenter } from "./geometry"
+import { rotatePositionByCenter } from "./position"
 
 export function updateCamera(x: number, y: number, z: number, rotateX: number, rotateY: number) {
   return {

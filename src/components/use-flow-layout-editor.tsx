@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Align, VerticalAlign, flowLayout, getFlowLayoutLocation } from "../utils/flow-layout"
-import { equals, Position } from "../utils/geometry"
+import { equals } from "../utils/math"
+import { Position } from "../utils/position"
 import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
 import { useEvent } from "./use-event"

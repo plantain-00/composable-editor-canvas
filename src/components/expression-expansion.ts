@@ -1,6 +1,8 @@
-import { Expression2, SpreadElement2, priorizedBinaryOperators } from "expression-engine";
-import { Factor, FactorVariable, cloneExpression, composeExpression, divideFactors, expressionHasVariable, factorToExpression, getReverseOperator, isLetter, isNumber, optimizeExpression, powerFactor } from "../components";
-import { factorial } from "./factorial";
+import { Expression2 } from "expression-engine";
+import { factorial } from "../utils/factorial";
+import { Factor, FactorVariable, divideFactors, factorToExpression, powerFactor } from "./equation-solver/factorization";
+import { expressionHasVariable, getReverseOperator, optimizeExpression } from "./equation-solver/model";
+import { cloneExpression, composeExpression } from "./equation-solver/solver";
 
 export function expandExpression(e: Expression2): Expression2 {
   if (e.type === 'BinaryExpression') {
@@ -240,77 +242,6 @@ function compareFactorVariable(a: string | FactorVariable, b: string | FactorVar
     return a.localeCompare(b)
   }
   return 0
-}
-
-export function printMathStyleExpression(e: Expression2) {
-  const print = (expression: Expression2 | SpreadElement2<Expression2>, priority = Number.MAX_SAFE_INTEGER): string => {
-    if (expression.type === 'NumericLiteral') {
-      return expression.value.toString()
-    }
-    if (expression.type === 'Identifier') {
-      return expression.name
-    }
-    if (expression.type === 'UnaryExpression') {
-      const argument = print(expression.argument, -1)
-      return `(${expression.operator + argument})`
-    }
-    if (expression.type === 'BinaryExpression') {
-      const index = priorizedBinaryOperators.findIndex(p => p.includes(expression.operator))
-      const rightIndex = expression.operator === '+' || expression.operator === '*' ? index : index - 0.1
-      const operator = expression.operator === '*' ? ' ' : expression.operator === '**' ? '^' : ' ' + expression.operator + ' '
-      const left = print(expression.left, index)
-      const right = print(expression.right, rightIndex)
-      const result = left === '-1' && operator == ' ' ? '-' + right : left + operator + right
-      if (index > priority) {
-        return `(${result})`
-      }
-      return result
-    }
-    if (expression.type === 'CallExpression') {
-      return print(expression.callee) + '(' + expression.arguments.map((a) => print(a)).join(', ') + ')'
-    }
-    return ''
-  };
-  return print(e)
-}
-
-const mathFunctions = ['sin', 'cos', 'tan']
-
-export function mathStyleExpressionToExpression(e: string) {
-  let result = ''
-  for (let i = 0; i < e.length; i++) {
-    if (e[i] === ' ' && e[i - 1] === ' ') continue
-    result += e[i]
-  }
-  e = result
-  result = ''
-  for (let i = 0; i < e.length; i++) {
-    const c = e[i]
-    if (c === ' ' && i > 0 && i < e.length - 1) {
-      if ((isLetter(e[i - 1]) || isNumber(e[i - 1]) || e[i - 1] === ')') && (isLetter(e[i + 1]) || isNumber(e[i + 1]) || e[i + 1] === '(')) {
-        result += '*'
-        continue
-      }
-    }
-    if (c === '^') {
-      result += '**'
-      continue
-    }
-    if (c === '(' && i > 0 && mathFunctions.every(m => !result.endsWith(m))) {
-      if (isLetter(e[i - 1]) || isNumber(e[i - 1]) || e[i - 1] === ')') {
-        result += '*('
-        continue
-      }
-    }
-    if (c === ')' && i < e.length - 1) {
-      if (isLetter(e[i + 1]) || isNumber(e[i + 1])) {
-        result += ')*'
-        continue
-      }
-    }
-    result += c
-  }
-  return result
 }
 
 interface GroupedFactors {

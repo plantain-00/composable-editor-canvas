@@ -4,6 +4,7 @@ import { ReactRenderTarget } from "./react-render-target/react-render-target"
 import { useFlowLayoutEditor } from "./use-flow-layout-editor"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { Align, VerticalAlign } from "../utils/flow-layout"
+import { isWordCharactor } from "../utils/text"
 
 /**
  * @public
@@ -234,22 +235,4 @@ export function getTextComposition<T>(
     width,
     index: state.length,
   }
-}
-
-/**
- * @public
- */
-export function isWordCharactor(c: string) {
-  if (c === '.') return true
-  if (isLetter(c)) return true
-  if (isNumber(c)) return true
-  return false
-}
-
-export function isLetter(c: string) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
-export function isNumber(c: string) {
-  return c >= '0' && c <= '9'
 }

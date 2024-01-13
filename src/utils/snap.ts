@@ -1,5 +1,5 @@
-import { getTwoPointsRadian, Position, rotatePositionByCenter } from "./geometry"
-import { radianToAngle } from "./radian"
+import { Position, rotatePositionByCenter } from "./position"
+import { getTwoPointsRadian, radianToAngle } from "./radian"
 
 export function getAngleSnapPosition(
   startPosition: Position | undefined,

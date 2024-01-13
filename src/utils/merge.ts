@@ -1,6 +1,14 @@
 import { getBezierCurveDerivatives, getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { Arc, EllipseArc, Position, isSameNumber, getTwoPointCenter, isSamePoint, isZero, pointIsOnLine, equals } from "./geometry"
-import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
+import { isSameNumber, isZero, equals } from "./math"
+import { Position } from "./position"
+import { getTwoPointCenter } from "./position"
+import { isSamePoint } from "./position"
+import { pointIsOnLine } from "./line"
+import { EllipseArc } from "./ellipse"
+import { Arc } from "./circle"
+import { GeometryLine } from "./intersection"
+import { QuadraticCurve } from "./bezier"
+import { BezierCurve } from "./bezier"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
   if (!isSamePoint(line1[1], line2[0])) return

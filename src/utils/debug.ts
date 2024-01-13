@@ -1,5 +1,10 @@
-import { Arc, EllipseArc, Position, getEllipseCenter } from "./geometry"
-import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
+import { Position } from "./position"
+import { getEllipseCenter } from "./ellipse"
+import { EllipseArc } from "./ellipse"
+import { Arc } from "./circle"
+import { GeometryLine } from "./intersection"
+import { QuadraticCurve } from "./bezier"
+import { BezierCurve } from "./bezier"
 import { NurbsCurve } from "./nurbs"
 
 /**

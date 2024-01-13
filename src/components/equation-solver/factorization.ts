@@ -1,5 +1,5 @@
 import { Expression2 } from "expression-engine"
-import { printMathStyleExpression } from "../../utils/expression-expansion"
+import { printMathStyleExpression } from "../../utils/expression"
 
 export interface Factor {
   constant?: number

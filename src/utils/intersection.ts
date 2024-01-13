@@ -1,6 +1,23 @@
+import { BezierCurve } from "./bezier"
+import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { Arc, Circle, delta2, Ellipse, EllipseArc, GeneralFormLine, generalFormLineToTwoPointLine, getArcStartAndEnd, getEllipseArcStartAndEnd, getPolygonFromTwoPointsFormRegion, getPolygonLine, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan, pointInPolygon, pointIsOnArc, pointIsOnEllipseArc, pointIsOnLineSegment, Position, twoPointLineToGeneralFormLine, TwoPointsFormRegion } from "./geometry"
+import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
+import { Position } from "./position"
+import { getPolygonFromTwoPointsFormRegion } from "./region"
+import { TwoPointsFormRegion } from "./region"
+import { getPolygonLine } from "./line"
+import { pointInPolygon } from "./line"
+import { GeneralFormLine } from "./line"
+import { generalFormLineToTwoPointLine, twoPointLineToGeneralFormLine } from "./line"
+import { pointIsOnLineSegment } from "./line"
+import { getEllipseArcStartAndEnd } from "./ellipse"
+import { getArcStartAndEnd } from "./circle"
+import { EllipseArc } from "./ellipse"
+import { Arc, Circle } from "./circle"
+import { Ellipse } from "./ellipse"
+import { pointIsOnEllipseArc } from "./ellipse"
+import { pointIsOnArc } from "./circle"
 import { isArray } from "./is-array"
 import { isRecord } from "./is-record"
 import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurveStartAndEnd, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
@@ -202,6 +219,10 @@ export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position,
 export function getTwoGeneralFormLinesIntersectionPoint(p1: GeneralFormLine, p2: GeneralFormLine) {
   const { a: a1, b: b1, c: c1 } = p1
   const { a: a2, b: b2, c: c2 } = p2
+  // F1: a1 x + b1 y + c1 = 0
+  // F2: a2 x + b2 y + c2 = 0
+  // F1*a2-F2*a1: (a2 b1 - a1 b2) y + a2 c1 - a1 c2 = 0
+  // F2*b1-F1*b2: (a2 b1 - a1 b2) x - b2 c1 + b1 c2 = 0
   const d = a2 * b1 - a1 * b2
   if (isZero(d)) {
     return undefined
@@ -654,18 +675,6 @@ export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, elli
   return getEllipseArcEllipseIntersectionPoints(ellipseArc1, ellipseArc2).filter((p) => pointIsOnEllipseArc(p, ellipseArc2))
 }
 
-export interface QuadraticCurve {
-  from: Position
-  cp: Position
-  to: Position
-}
-
-export const QuadraticCurve = {
-  from: Position,
-  cp: Position,
-  to: Position,
-}
-
 export function getLineQuadraticCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
@@ -807,20 +816,6 @@ export function getTwoQuadraticCurveIntersectionPoints(
     result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p)))
   }
   return result
-}
-
-export interface BezierCurve {
-  from: Position
-  cp1: Position
-  cp2: Position
-  to: Position
-}
-
-export const BezierCurve = {
-  from: Position,
-  cp1: Position,
-  cp2: Position,
-  to: Position,
 }
 
 export function getLineBezierCurveIntersectionPoints(

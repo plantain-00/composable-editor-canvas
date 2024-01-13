@@ -1,8 +1,35 @@
 import { calculateEquation2, calculateEquation3 } from "./equation-calculater"
-import { Position, getTwoPointCenter, isSameNumber, delta3, isValidPercent } from "./geometry"
-import { BezierCurve, QuadraticCurve } from "./intersection"
+import { isSameNumber, delta3, isValidPercent } from "./math"
+import { Position } from "./position"
+import { getTwoPointCenter } from "./position"
 import { toBezierCurves } from "./nurbs"
 import { Vec3 } from "./types"
+
+export interface BezierCurve {
+  from: Position
+  cp1: Position
+  cp2: Position
+  to: Position
+}
+
+export const BezierCurve = {
+  from: Position,
+  cp1: Position,
+  cp2: Position,
+  to: Position,
+}
+
+export interface QuadraticCurve {
+  from: Position
+  cp: Position
+  to: Position
+}
+
+export const QuadraticCurve = {
+  from: Position,
+  cp: Position,
+  to: Position,
+}
 
 export function interpolate2(n1: number, n2: number, percent: number) {
   return n1 + (n2 - n1) * percent

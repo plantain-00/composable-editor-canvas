@@ -1,4 +1,4 @@
-import { Position } from "./geometry"
+import { Position } from "./position"
 import { or } from "./validators"
 
 /**

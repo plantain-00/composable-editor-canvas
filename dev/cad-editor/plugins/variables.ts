@@ -4315,7 +4315,7 @@ function getCommand(ctx) {
             });
             const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
             const end = { x: bounding.end.x, y: p.y };
-            const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBounding(line)));
+            const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
             if (border) {
               const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
               setHatch({
