@@ -5,7 +5,18 @@ import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
 import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
-import { arcToPolyline, Bounding, circleToArc, dashedPolylineToLines, isSameNumber, getParallelLinesByDistance, getPointSideOfLine, getTwoPointsDistance, isZero, polygonToPolyline, Position, Size, twoPointLineToGeneralFormLine } from '../../utils/geometry'
+import { isSameNumber, isZero } from '../../utils/math'
+import { Position } from "../../utils/position"
+import { Size } from "../../utils/region"
+import { Bounding } from "../../utils/bounding"
+import { getTwoPointsDistance } from "../../utils/position"
+import { polygonToPolyline } from "../../utils/line"
+import { getParallelLinesByDistance } from "../../utils/line"
+import { dashedPolylineToLines } from "../../utils/line"
+import { twoPointLineToGeneralFormLine } from "../../utils/line"
+import { getPointSideOfLine } from "../../utils/line"
+import { circleToArc } from "../../utils/circle"
+import { arcToPolyline } from "../../utils/circle"
 import { WeakmapCache, WeakmapMap3Cache, WeakmapMapCache } from '../../utils/weakmap-cache'
 import { Vec2, Vec4 } from '../../utils/types'
 import { angleToRadian } from '../../utils/radian'

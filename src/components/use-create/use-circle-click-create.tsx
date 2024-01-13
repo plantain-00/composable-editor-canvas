@@ -1,5 +1,9 @@
 import * as React from "react"
-import { Circle, getPointByLengthAndDirection, getThreePointsCircle, getTwoPointsDistance, Position } from "../../utils/geometry"
+import { Position } from "../../utils/position"
+import { getTwoPointsDistance } from "../../utils/position"
+import { getPointByLengthAndDirection } from "../../utils/position"
+import { Circle } from "../../utils/circle"
+import { getThreePointsCircle } from "../../utils/circle"
 import { getAngleSnapPosition } from "../../utils/snap"
 import { useCursorInput } from "../use-cursor-input"
 

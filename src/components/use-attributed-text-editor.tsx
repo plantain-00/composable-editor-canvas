@@ -1,13 +1,15 @@
 import * as React from "react"
 import { Align, VerticalAlign, flowLayout, getFlowLayoutLocation } from "../utils/flow-layout"
-import { equals, Position } from "../utils/geometry"
+import { equals } from "../utils/math"
+import { Position } from "../utils/position"
 import { Cursor } from "./cursor"
 import { Scrollbar } from "./scrollbar"
 import { useEvent } from "./use-event"
 import { useGlobalMouseUp } from "./use-global-mouseup"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useWheelScroll } from "./use-wheel-scroll"
-import { getTextComposition, getWordByDoubleClick, isWordCharactor, useTextComposing } from "./use-flow-layout-text-editor"
+import { getTextComposition, getWordByDoubleClick, useTextComposing } from "./use-flow-layout-text-editor"
+import { isWordCharactor } from "../utils/text"
 
 export function useAttributedTextEditor<T extends object>(props: {
   state: AttributedText<T>[]

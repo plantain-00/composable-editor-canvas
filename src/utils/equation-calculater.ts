@@ -1,4 +1,4 @@
-import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./geometry"
+import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./math"
 
 /**
  * a x + b = 0

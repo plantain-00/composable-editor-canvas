@@ -1,5 +1,5 @@
 import { Expression2 as Expression, priorizedBinaryOperators } from "expression-engine"
-import { Size } from "../utils/geometry"
+import { Size } from "../utils/region"
 import { getTextSizeFromCache } from "../utils/text"
 import { ReactRenderTarget } from "./react-render-target/react-render-target"
 

@@ -1,8 +1,75 @@
 import { calculateEquation2 } from "./equation-calculater"
-import { Arc, Circle, Ellipse, EllipseArc, Position, TwoPointsFormRegion, angleInRange, getArcStartAndEnd, getEllipseArcStartAndEnd, getEllipsePointAtRadian, getPointsBoundingUnsafe, isValidPercent, isZero, mergeBoundings, pointIsOnArc } from "./geometry"
-import { BezierCurve, GeometryLine, QuadraticCurve } from "./intersection"
+import { isValidPercent, isZero } from "./math"
+import { Position } from "./position"
+import { TwoPointsFormRegion } from "./region"
+import { angleInRange } from "./angle"
+import { getEllipseArcStartAndEnd } from "./ellipse"
+import { getEllipsePointAtRadian } from "./ellipse"
+import { getArcStartAndEnd } from "./circle"
+import { EllipseArc } from "./ellipse"
+import { Arc, Circle } from "./circle"
+import { Ellipse } from "./ellipse"
+import { pointIsOnArc } from "./circle"
+import { GeometryLine } from "./intersection"
+import { QuadraticCurve } from "./bezier"
+import { BezierCurve } from "./bezier"
 import { getNurbsPoints } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
+import { number } from "./validators"
+
+export interface Bounding {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
+export const Bounding = {
+  xMin: number,
+  xMax: number,
+  yMin: number,
+  yMax: number,
+}
+
+export function getPointsBounding(points: Position[]): TwoPointsFormRegion | undefined {
+  if (points.length === 0) {
+    return;
+  }
+  return getPointsBoundingUnsafe(points);
+}
+
+export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+  return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
+}
+
+export function getPointsBoundingUnsafe(points: Position[]): TwoPointsFormRegion {
+  const result = {
+    start: {
+      x: points[0].x,
+      y: points[0].y,
+    },
+    end: {
+      x: points[0].x,
+      y: points[0].y,
+    },
+  };
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i];
+    if (p.x < result.start.x) {
+      result.start.x = p.x;
+    }
+    if (p.y < result.start.y) {
+      result.start.y = p.y;
+    }
+    if (p.x > result.end.x) {
+      result.end.x = p.x;
+    }
+    if (p.y > result.end.y) {
+      result.end.y = p.y;
+    }
+  }
+  return result;
+}
 
 export function getCircleQuadrantPoints(circle: Circle): (Position & { radian: number })[] {
   return [

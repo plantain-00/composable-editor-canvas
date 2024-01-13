@@ -1,5 +1,6 @@
 import React from "react"
-import { Position, Size, TwoPointsFormRegion, rotatePosition } from "../utils/geometry";
+import { Position, rotatePosition } from "../utils/position";
+import { Size, TwoPointsFormRegion } from "../utils/region";
 
 export function useMinimap(props: Size & {
   viewport: Size & {

@@ -1,4 +1,5 @@
-import { getPointByLengthAndDirection, Position, rotatePositionByCenter } from "./geometry"
+import { Position, rotatePositionByCenter } from "./position"
+import { getPointByLengthAndDirection } from "./position"
 import { angleToRadian } from "./radian"
 
 export function getArrow(from: Position, to: Position, arrowSize: number, arrowAngle: number, strokeWidth = 1) {

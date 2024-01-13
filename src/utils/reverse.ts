@@ -1,5 +1,9 @@
-import { Arc, EllipseArc, Position } from "./geometry";
-import { QuadraticCurve, BezierCurve, GeometryLine } from "./intersection";
+import { Position } from "./position";
+import { EllipseArc } from "./ellipse";
+import { Arc } from "./circle";
+import { GeometryLine } from "./intersection";
+import { QuadraticCurve } from "./bezier";
+import { BezierCurve } from "./bezier";
 import { Nurbs, reverseNurbsCurve } from "./nurbs";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {

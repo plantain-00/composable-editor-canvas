@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Position } from "../utils/geometry"
+import { Position } from "../utils/position"
 import { useLocalStorageState } from "./use-local-storage-state"
 
 /**

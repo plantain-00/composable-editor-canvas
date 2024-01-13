@@ -6,7 +6,7 @@ import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Patte
 import { getColorString } from "../../utils/color"
 import { angleToRadian } from "../../utils/radian"
 import { defaultLineCap, defaultLineJoin, defaultMiterLimit } from "../../utils/triangles"
-import { Position } from "../../utils/geometry"
+import { Position } from "../../utils/position"
 
 /**
  * @public

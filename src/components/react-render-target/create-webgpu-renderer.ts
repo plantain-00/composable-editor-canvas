@@ -6,7 +6,7 @@ import { MemoryLayoutInput, createMemoryLayoutArray } from "../../utils/memory-l
 import { Vec4 } from "../../utils/types";
 import { MapCache2, WeakmapCache, WeakmapCache2, WeakmapMap2Cache } from "../../utils/weakmap-cache";
 import { Graphic, LineOrTriangleGraphic, PatternGraphic, defaultVec4Color, getNumArrayPointsBounding, getTextureGraphicMatrix, getWorldMatrix, forEachPatternGraphicRepeatedGraphic, FilterGraphic } from "./create-webgl-renderer";
-import { Bounding } from "../../utils/geometry";
+import { Bounding } from "../../utils/bounding";
 
 export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return

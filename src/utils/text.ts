@@ -1,4 +1,6 @@
-import { Size } from "./geometry"
+import { Position } from "./position"
+import { Region, Size } from "./region"
+import { number, string, and } from "./validators"
 import { MapCache2 } from "./weakmap-cache"
 
 /**
@@ -19,16 +21,54 @@ export function getTextSize(font: string, text: string) {
 }
 
 const textSizeMap = new MapCache2<string, string, Size | undefined>()
-/**
- * @public
- */
+
 export function getTextSizeFromCache(font: string, text: string) {
   return textSizeMap.get(font, text, () => getTextSize(font, text))
 }
 
-/**
- * @public
- */
-export function formatNumber(n: number, precision = 100) {
-  return Math.round(n * precision) / precision
+export interface TextStyle {
+  fontSize: number
+  fontFamily: string
+}
+
+export const TextStyle = {
+  fontSize: number,
+  fontFamily: string,
+}
+
+export function getTextStyleFont(textStyleFont: TextStyle) {
+  return `${textStyleFont.fontSize}px ${textStyleFont.fontFamily}`
+}
+
+export type Text = Position & TextStyle & {
+  text: string
+  color: number
+}
+
+export const Text = /* @__PURE__ */ and(Position, TextStyle, {
+  text: string,
+  color: number,
+})
+
+export type Image = Region & {
+  url: string
+}
+
+export const Image = /* @__PURE__ */ and(Region, {
+  url: string,
+})
+
+export function isWordCharactor(c: string) {
+  if (c === '.') return true
+  if (isLetter(c)) return true
+  if (isNumber(c)) return true
+  return false
+}
+
+export function isLetter(c: string) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+export function isNumber(c: string) {
+  return c >= '0' && c <= '9'
 }

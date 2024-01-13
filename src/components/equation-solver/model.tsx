@@ -1,5 +1,5 @@
 import { BinaryOperator, Expression2 as Expression, SpreadElement2, printExpression } from "expression-engine"
-import { isZero } from "../../utils/geometry"
+import { isZero } from "../../utils/math"
 import { Equation } from "../equation-renderer"
 import { divide, expressionToFactors, extractFactors, factorsToExpression, factorToExpression, optimizeFactors } from "./factorization"
 

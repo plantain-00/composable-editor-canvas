@@ -1,6 +1,7 @@
 import * as React from "react"
 import { getResizeCursor, ResizeDirection } from "../utils/cursor"
-import { Position, Region } from "../utils/geometry"
+import { Position } from "../utils/position"
+import { Region } from "../utils/region"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
 import { angleToRadian } from "../utils/radian"

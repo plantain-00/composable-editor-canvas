@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Position } from "../utils/geometry"
+import { Position } from "../utils/position"
 import { getAngleSnapPosition } from "../utils/snap"
 import { DragMask } from "./drag-mask"
 import { angleToRadian } from "../utils/radian"

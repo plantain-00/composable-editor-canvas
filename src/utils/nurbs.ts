@@ -1,9 +1,18 @@
 import * as verb from 'verb-nurbs-web'
 import * as twgl from 'twgl.js'
-import { Arc, EllipseArc, Position, delta2, delta3, getPointSideOfLine, getTwoPointsDistance, isZero, iteratePolylineLines, pointAndDirectionToGeneralFormLine, pointIsOnEllipseArc } from "./geometry"
+import { delta2, delta3, isZero } from "./math"
+import { Position } from "./position"
+import { getTwoPointsDistance } from "./position"
+import { iteratePolylineLines } from "./line"
+import { pointAndDirectionToGeneralFormLine } from "./line"
+import { getPointSideOfLine } from "./line"
+import { EllipseArc } from "./ellipse"
+import { Arc } from "./circle"
+import { pointIsOnEllipseArc } from "./ellipse"
 import { Validator, integer, minimum, number, optional } from "./validators"
 import { angleToRadian } from './radian'
-import { BezierCurve, QuadraticCurve } from './intersection'
+import { QuadraticCurve } from "./bezier"
+import { BezierCurve } from "./bezier"
 import { newtonIterate } from './equation-calculater'
 import { getParallelPolylineByDistance } from './parallel'
 import { Vec2, Vec3 } from './types'

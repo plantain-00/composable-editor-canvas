@@ -1,0 +1,361 @@
+import { getPointByLengthAndRadian } from "./position";
+import { angleToRadian, getTwoPointsRadian } from "./radian";
+import { deduplicate, largerThan, lessOrEqual, lessThan } from "./math";
+import { isSamePoint } from "./position";
+import { getTwoPointsDistance } from "./position";
+import { getPointByLengthAndDirection } from "./position";
+import { isZero } from "./math";
+import { isSameNumber, isBetween } from "./math";
+import { Position } from "./position";
+import { rotatePositionByCenter } from "./position";
+import { and, boolean, number, optional } from "./validators";
+
+export interface GeneralFormLine {
+  a: number
+  b: number
+  c: number
+}
+
+export interface Ray extends Position {
+  angle: number
+  bidirectional?: boolean
+}
+
+export const Ray = /* @__PURE__ */ and(Position, {
+  angle: number,
+  bidirectional: /* @__PURE__ */ optional(boolean),
+})
+
+export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
+  if (!isSameNumber(point1.x, point2.x) && isBetween(p.x, point1.x, point2.x)) {
+    return true
+  }
+  if (!isSameNumber(point1.y, point2.y) && isBetween(p.y, point1.y, point2.y)) {
+    return true
+  }
+  return false
+}
+
+export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
+  const { a, b, c } = twoPointLineToGeneralFormLine(point1, point2)
+  return isZero(a * p.x + b * p.y + c)
+}
+
+/**
+ * 0: point on line
+ * >0: point on left side of line
+ * <0: point on right side of line
+ */
+export function getPointSideOfLine(point: Position, line: GeneralFormLine): number {
+  return line.a * point.x + line.b * point.y + line.c
+}
+
+export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine {
+  const dx = point2.x - point1.x
+  const dy = point2.y - point1.y
+  return {
+    a: dy,
+    b: -dx,
+    c: -point1.x * dy + point1.y * dx,
+  }
+}
+
+export function pointAndDirectionToGeneralFormLine(point: Position, radian: number): GeneralFormLine {
+  // a x + b y + c = 0
+  // -a/b = sin(radian)/cos(radian)
+  const dx = Math.cos(radian)
+  const dy = Math.sin(radian)
+  return {
+    a: dy,
+    b: -dx,
+    c: -point.x * dy + point.y * dx,
+  }
+}
+
+export function generalFormLineToTwoPointLine({ a, b, c }: GeneralFormLine): [Position, Position] {
+  if (isZero(a)) {
+    return [
+      {
+        x: 0,
+        y: -c / b
+      },
+      {
+        x: 1,
+        y: -c / b
+      },
+    ]
+  }
+  if (isZero(b)) {
+    return [
+      {
+        x: -c / a,
+        y: 0
+      },
+      {
+        x: -c / a,
+        y: 1
+      },
+    ]
+  }
+  return [
+    {
+      x: 0,
+      y: -c / b
+    },
+    {
+      x: -c / a,
+      y: 0
+    },
+  ]
+}
+
+export function dashedPolylineToLines(
+  points: Position[],
+  dashArray?: number[],
+  skippedLines?: number[],
+  dashOffset = 0
+) {
+  if (!dashArray || dashArray.length === 0) {
+    return [points]
+  }
+  const result: Position[][] = []
+  let last: Position[] = []
+  const g = {
+    moveTo(x: number, y: number) {
+      if (last.length > 1) {
+        result.push(last)
+      }
+      last = [{ x, y }]
+    },
+    lineTo(x: number, y: number) {
+      if (last.length === 0) {
+        last.push({ x: 0, y: 0 })
+      }
+      last.push({ x, y })
+    },
+  }
+  drawDashedPolyline(g, points, dashArray, skippedLines, dashOffset)
+  if (last.length > 1) {
+    result.push(last)
+  }
+  return result
+}
+
+export function drawDashedPolyline(
+  g: { moveTo: (x: number, y: number) => void; lineTo: (x: number, y: number) => void },
+  points: Position[],
+  dashArray: number[],
+  skippedLines?: number[],
+  dashOffset = 0
+) {
+  if (dashArray.length % 2 === 1) {
+    dashArray = [...dashArray, ...dashArray]
+  }
+  if (dashArray.reduce((p, c) => p + c) <= 0) return
+  points.forEach((p, i) => {
+    if (i === 0 || skippedLines?.includes(i - 1)) {
+      g.moveTo(p.x, p.y)
+    } else {
+      dashOffset = drawDashedLine(g, points[i - 1], p, dashArray, dashOffset)
+    }
+  })
+}
+
+export function drawDashedLine(
+  g: { moveTo: (x: number, y: number) => void; lineTo: (x: number, y: number) => void },
+  p1: Position,
+  p2: Position,
+  dashArray: number[],
+  dashOffset = 0
+) {
+  if (dashArray.length % 2 === 1) {
+    dashArray = [...dashArray, ...dashArray]
+  }
+  const dashTotalLength = dashArray.reduce((p, c) => p + c)
+  if (dashTotalLength <= 0) return dashOffset
+  let distance = getTwoPointsDistance(p1, p2)
+  const newDashOffset = (dashOffset + distance) % dashTotalLength
+  let p = p1
+  while (distance > 0) {
+    for (let i = 0; i < dashArray.length; i++) {
+      let dashLength = dashArray[i]
+      if (dashOffset > 0) {
+        if (dashLength <= dashOffset) {
+          dashOffset -= dashLength
+          continue
+        }
+        dashLength -= dashOffset
+        dashOffset = 0
+      }
+      const operate = i % 2 === 0 ? 'lineTo' : 'moveTo'
+      if (dashLength >= distance) {
+        g[operate](p2.x, p2.y)
+        return newDashOffset
+      }
+      const end = getPointByLengthAndDirection(p, dashLength, p2)
+      g[operate](end.x, end.y)
+      distance -= dashLength
+      p = end
+    }
+  }
+  return newDashOffset
+}
+
+export function getParallelLinesByDistance(line: GeneralFormLine, distance: number): [GeneralFormLine, GeneralFormLine] {
+  if (isZero(distance)) {
+    return [line, line]
+  }
+  const d = distance * Math.sqrt(line.a ** 2 + line.b ** 2)
+  return [
+    {
+      ...line,
+      c: line.c + d, // on right side of line
+    },
+    {
+      ...line,
+      c: line.c - d, // on left side of line
+    },
+  ]
+}
+
+export function getParallelLineSegmentsByDistance(line: [Position, Position], distance: number): [[Position, Position], [Position, Position]] {
+  if (isZero(distance)) {
+    return [line, line]
+  }
+  const radian = getTwoPointsRadian(line[1], line[0])
+  const leftRadian = radian - Math.PI / 2
+  const rightRadian = radian + Math.PI / 2
+  return [
+    [
+      getPointByLengthAndRadian(line[0], distance, rightRadian),
+      getPointByLengthAndRadian(line[1], distance, rightRadian)
+    ],
+    [
+      getPointByLengthAndRadian(line[0], distance, leftRadian),
+      getPointByLengthAndRadian(line[1], distance, leftRadian)
+    ],
+  ]
+}
+
+export function getGeneralFormLineRadian({ a, b }: GeneralFormLine) {
+  // a x1 + b y1 + c = 0
+  // a x2 + b y2 + c = 0
+  // a(x2 - x1) + b(y2 - y1) = 0
+  // y2 - y1 = a
+  // x2 - x1 = -b
+  return Math.atan2(a, -b)
+}
+
+export function getSymmetryPoint(p: Position, { a, b, c }: GeneralFormLine) {
+  const d = a ** 2
+  const e = b ** 2
+  const f = d + e
+  const g = -2 * a * b
+  const h = e - d
+  return {
+    x: (h * p.x + g * p.y - 2 * a * c) / f,
+    y: (g * p.x - h * p.y - 2 * b * c) / f,
+  }
+}
+
+export function pointInPolygon({ x, y }: Position, polygon: Position[]) {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x
+    const yi = polygon[i].y
+    const xj = polygon[j].x
+    const yj = polygon[j].y
+    if ((largerThan(yi, y) !== largerThan(yj, y)) && lessThan(x, (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+export function* iteratePolylineLines(points: Position[]) {
+  for (let i = 1; i < points.length; i++) {
+    yield [points[i - 1], points[i]] as [Position, Position]
+  }
+}
+
+export function* iteratePolygonLines(points: Position[]) {
+  yield* iteratePolylineLines(polygonToPolyline(points))
+}
+
+export function polygonToPolyline(points: Position[]) {
+  if (isSamePoint(points[points.length - 1], points[0])) {
+    return points
+  }
+  return [...points, points[0]]
+}
+
+export function getPolygonArea(points: Position[]) {
+  let result = 0
+  for (let i = 0; i < points.length; i++) {
+    const next = i === points.length - 1 ? 0 : i + 1
+    result += points[i].x * points[next].y - points[next].x * points[i].y
+  }
+  return Math.abs(result) / 2
+}
+
+export function* getPolygonLine(polygon: Position[]): Generator<[Position, Position], void, unknown> {
+  for (let i = 0; i < polygon.length; i++) {
+    yield [polygon[i], polygon[i + 1 < polygon.length ? i + 1 : 0]]
+  }
+}
+
+export function getPolygonPoints(point: Position, center: Position, sides: number, toEdge?: boolean) {
+  if (toEdge) {
+    const length = getTwoPointsDistance(point, center) / Math.cos(Math.PI / sides)
+    point = rotatePositionByCenter(point, center, 180 / sides)
+    point = getPointByLengthAndDirection(center, length, point)
+  }
+  const points = [point]
+  for (let i = 1; i < sides; i++) {
+    points.push(rotatePositionByCenter(point, center, 360 / sides * i))
+  }
+  return points
+}
+
+export function getRayPointAtDistance({ x: x1, y: y1, angle }: Ray, distance: number): Position {
+  const r = angleToRadian(angle)
+  return {
+    x: x1 + distance * Math.cos(r),
+    y: y1 + distance * Math.sin(r),
+  }
+}
+
+export function rayToLineSegment(ray: Ray, polygon: Position[]): [Position, Position] | undefined {
+  let distances: number[] = []
+  for (const line of getPolygonLine(polygon)) {
+    const d = getRayLineSegmentIntersectionDistance(ray, line)
+    if (d !== undefined) {
+      distances.push(d)
+    }
+  }
+  distances = deduplicate(distances, isSameNumber)
+  if (distances.length === 0) return
+  if (distances.length === 1) {
+    if (pointInPolygon(ray, polygon)) {
+      return [ray, getRayPointAtDistance(ray, distances[0])]
+    }
+    return
+  }
+  distances.sort((a, b) => a - b)
+  return [getRayPointAtDistance(ray, distances[0]), getRayPointAtDistance(ray, distances[distances.length - 1])]
+}
+
+export function getRayLineSegmentIntersectionDistance({ x: x1, y: y1, angle, bidirectional }: Ray, line: [Position, Position]): number | undefined {
+  const r = angleToRadian(angle), e1 = Math.cos(r), e2 = Math.sin(r)
+  // x = x1 + d e1
+  // y = y1 + d e2
+  const { a, b, c } = twoPointLineToGeneralFormLine(...line)
+  // a x + b y + c = 0
+  // replace x,y: (a e1 + b e2) d + a x1 + b y1 + c = 0
+  const e3 = a * e1 + b * e2
+  if (isZero(e3)) return
+  const d = -(a * x1 + b * y1 + c) / e3
+  if (!bidirectional && lessOrEqual(d, 0)) return
+  if (!pointIsOnLineSegment({ x: x1 + d * e1, y: y1 + d * e2 }, ...line)) return
+  return d
+}
