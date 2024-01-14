@@ -950,50 +950,6 @@ export function getImageGraphic(
   }
 }
 
-export function getGroupGraphics(
-  children: Graphic[],
-  matrix?: Matrix,
-  options?: Partial<{
-    translate: Position
-    base: Position
-    angle: number
-    rotation: number
-    matrix: Matrix
-    opacity: number
-  }>,
-  opacity = 1,
-) {
-  if (options) {
-    if (!matrix) {
-      matrix = m3.identity()
-    }
-    if (options.translate) {
-      matrix = m3.multiply(matrix, m3.translation(options.translate.x, options.translate.y))
-    }
-    if (options.base && (options.angle || options.rotation)) {
-      matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
-      if (options.angle) {
-        matrix = m3.multiply(matrix, m3.rotation(-angleToRadian(options.angle)))
-      } else if (options.rotation) {
-        matrix = m3.multiply(matrix, m3.rotation(-options.rotation))
-      }
-      matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
-    }
-    if (options.matrix) {
-      matrix = m3.multiply(matrix, options.matrix)
-    }
-
-    if (options.opacity !== undefined) {
-      opacity = opacity * options.opacity
-    }
-  }
-  return children.map(h => ({
-    ...h,
-    matrix: h.matrix ? (matrix ? m3.multiply(matrix, h.matrix) : h.matrix) : matrix,
-    opacity: h.opacity !== undefined ? opacity * h.opacity : opacity,
-  }))
-}
-
 /**
  * @public
  */

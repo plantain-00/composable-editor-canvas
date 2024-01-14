@@ -1,4 +1,4 @@
-import { build } from 'esbuild'
+import { build, BuildOptions } from 'esbuild'
 import { promisify } from 'util'
 import { readFile, writeFile } from 'fs'
 import { rollup } from 'rollup'
@@ -30,10 +30,13 @@ export default {
   build: [
     'rimraf packages/composable-editor-canvas/browser/',
     {
-      js: async () => {
-        await Promise.all(packages.map(bundleJs))
-        return { name: 'bundle js' }
-      },
+      js: [
+        async () => {
+          await Promise.all(packages.map(bundleJs))
+          return { name: 'bundle js' }
+        },
+        `eslint --no-eslintrc --parser-options ecmaVersion:latest --parser-options sourceType:module --plugin unused-imports --rule 'unused-imports/no-unused-imports:error' ${packages.map(p => `packages/${p.name}/index.js`).join(' ')} --fix`,
+      ],
       type: [
         'tsc -p src/tsconfig.browser.json',
         async () => {
@@ -74,10 +77,30 @@ async function bundleJs(d: typeof packages[number]) {
   const outfile = `packages/${d.name}/index.js`
   const depdendencies = new Set<string>()
   const possibleDepdendencies = packages.map(p => p.name).filter(n => n !== d.name)
-  await build({
-    entryPoints: [d.entry],
+  const option: BuildOptions = {
     bundle: true,
     outfile,
+    format: 'esm',
+    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine', 'verb-nurbs-web'],
+  }
+  await build({
+    entryPoints: [d.entry],
+    ...option,
+    plugins: possibleDepdendencies.length > 0 ? [{
+      name: 'alias to external',
+      setup(build) {
+        possibleDepdendencies.forEach(d => {
+          build.onResolve({ filter: new RegExp('/' + d) }, () => {
+            return { path: d, external: true }
+          })
+        })
+      },
+    }] : [],
+  })
+  await build({
+    entryPoints: [outfile],
+    ...option,
+    allowOverwrite: true,
     plugins: possibleDepdendencies.length > 0 ? [{
       name: 'alias to external',
       setup(build) {
@@ -89,8 +112,6 @@ async function bundleJs(d: typeof packages[number]) {
         })
       },
     }] : [],
-    format: 'esm',
-    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine', 'verb-nurbs-web'],
   })
   if (depdendencies.size > 0) {
     const packageJsonPath = `./packages/${d.name}/package.json`

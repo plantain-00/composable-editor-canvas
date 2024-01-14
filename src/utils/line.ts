@@ -9,6 +9,8 @@ import { isSameNumber, isBetween } from "./math";
 import { Position } from "./position";
 import { rotatePositionByCenter } from "./position";
 import { and, boolean, number, optional } from "./validators";
+import { RenderTransform, Transform, reverseTransformPosition } from "./transform";
+import { Matrix, m3 } from "./matrix";
 
 export interface GeneralFormLine {
   a: number
@@ -358,4 +360,26 @@ export function getRayLineSegmentIntersectionDistance({ x: x1, y: y1, angle, bid
   if (!bidirectional && lessOrEqual(d, 0)) return
   if (!pointIsOnLineSegment({ x: x1 + d * e1, y: y1 + d * e2 }, ...line)) return
   return d
+}
+
+export function getRayTransformedLineSegment(ray: Ray, width: number, height: number, transform?: RenderTransform, parentMatrix?: Matrix) {
+  let points = [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: height }, { x: 0, y: height }]
+  if (transform) {
+    const t: Transform = {
+      ...transform,
+      center: {
+        x: width / 2,
+        y: height / 2,
+      }
+    }
+    points = points.map(p => reverseTransformPosition(p, t))
+  }
+  if (parentMatrix) {
+    const inverse = m3.inverse(parentMatrix)
+    points = points.map(p => {
+      const v = m3.multiplyVec3(inverse, [p.x, p.y, 1])
+      return { x: v[0], y: v[1] }
+    })
+  }
+  return rayToLineSegment(ray, points)
 }

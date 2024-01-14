@@ -1,5 +1,6 @@
 import * as React from "react"
-import { ReactRenderTarget, RenderTransform } from "./react-render-target"
+import { ReactRenderTarget } from "./react-render-target"
+import { RenderTransform } from "../../utils/transform"
 import { Graphic } from "./create-webgl-renderer"
 import { colorNumberToRec } from "../../utils/color"
 import { Vec4 } from "../../utils/types"
@@ -45,13 +46,15 @@ function Canvas(props: {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
   const render = React.useRef<(
-    graphics: ((strokeWidthFixed: boolean, rerender: () => void) => Graphic[])[],
+    graphics: ((strokeWidthFixed: boolean, rerender: () => void, width: number, height: number, transform?: RenderTransform) => Graphic[])[],
     backgroundColor: Vec4,
     x: number,
     y: number,
     scale: number,
     strokeWidthFixed: boolean,
-    rotate?: number
+    width: number,
+    height: number,
+    transform?: RenderTransform,
   ) => void>()
   React.useEffect(() => {
     if (ref.current) {
@@ -68,9 +71,9 @@ function Canvas(props: {
         return
       }
       const rerender = () => setImageLoadStatus(c => c + 1)
-      render.current = (graphics, backgroundColor, x, y, scale, strokeWidthFixed, rotate) => {
+      render.current = (graphics, backgroundColor, x, y, scale, strokeWidthFixed, width, height, transform) => {
         const now = performance.now()
-        renderer(graphics.map(g => g(strokeWidthFixed, rerender)).flat(), backgroundColor, x, y, scale, rotate)
+        renderer(graphics.map(g => g(strokeWidthFixed, rerender, width, height, transform)).flat(), backgroundColor, x, y, scale, transform?.rotate)
         if (props.debug) {
           console.info(Math.round(performance.now() - now))
         }
@@ -86,9 +89,9 @@ function Canvas(props: {
       const scale = props.transform?.scale ?? 1
       const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
       const strokeWidthFixed = props.strokeWidthFixed ?? false
-      render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.transform?.rotate)
+      render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.width, props.height, props.transform)
     }
-  }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus])
+  }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus, props.width, props.height])
   return (
     <canvas
       ref={ref}

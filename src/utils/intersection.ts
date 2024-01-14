@@ -7,23 +7,18 @@ import { Position } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
 import { getPolygonLine } from "./line"
-import { pointInPolygon } from "./line"
 import { GeneralFormLine } from "./line"
 import { generalFormLineToTwoPointLine, twoPointLineToGeneralFormLine } from "./line"
 import { pointIsOnLineSegment } from "./line"
-import { getEllipseArcStartAndEnd } from "./ellipse"
-import { getArcStartAndEnd } from "./circle"
 import { EllipseArc } from "./ellipse"
 import { Arc, Circle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { pointIsOnEllipseArc } from "./ellipse"
 import { pointIsOnArc } from "./circle"
-import { isArray } from "./is-array"
-import { isRecord } from "./is-record"
-import { NurbsCurve, getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getNurbsCurveStartAndEnd, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
+import { getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
-import { Path, ValidationResult, tuple, validate } from "./validators"
+import { GeometryLine } from "./geometry-line"
 
 /**
  * @public
@@ -47,44 +42,6 @@ export function* iterateIntersectionPoints<T>(
       }
     }
   }
-}
-
-export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
-  if (Array.isArray(line)) {
-    return pointInPolygon(line[0], polygon) && pointInPolygon(line[1], polygon)
-  }
-  let points: { start: Position, end: Position }
-  if (line.type === 'arc') {
-    points = getArcStartAndEnd(line.curve)
-  } else if (line.type === 'ellipse arc') {
-    points = getEllipseArcStartAndEnd(line.curve)
-  } else if (line.type === 'nurbs curve') {
-    points = getNurbsCurveStartAndEnd(line.curve)
-  } else {
-    points = {
-      start: line.curve.from,
-      end: line.curve.to,
-    }
-  }
-  return pointInPolygon(points.start, polygon) && pointInPolygon(points.end, polygon) && !geometryLineIntersectWithPolygon(line, polygon)
-}
-
-export type GeometryLine = [Position, Position]
-  | { type: 'arc', curve: Arc }
-  | { type: 'ellipse arc', curve: EllipseArc }
-  | { type: 'quadratic curve', curve: QuadraticCurve }
-  | { type: 'bezier curve', curve: BezierCurve }
-  | { type: 'nurbs curve', curve: NurbsCurve }
-
-export const GeometryLine = (v: unknown, path: Path): ValidationResult => {
-  if (isArray(v)) return validate(v, tuple(Position, Position), path)
-  if (!isRecord(v)) return { path, expect: 'object' }
-  if (v.type === 'arc') return validate(v, { type: 'arc', curve: Arc }, path)
-  if (v.type === 'ellipse arc') return validate(v, { type: 'ellipse arc', curve: EllipseArc }, path)
-  if (v.type === 'quadratic curve') return validate(v, { type: 'quadratic curve', curve: QuadraticCurve }, path)
-  if (v.type === 'bezier curve') return validate(v, { type: 'bezier curve', curve: BezierCurve }, path)
-  if (v.type === 'nurbs curve') return validate(v, { type: 'nurbs curve', curve: NurbsCurve }, path)
-  return { path: [...path, 'type'], expect: 'or', args: ['arc', 'ellipse arc', 'quadratic curve', 'bezier curve', 'nurbs curve'] }
 }
 
 /**

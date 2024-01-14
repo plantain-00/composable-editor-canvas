@@ -1,7 +1,7 @@
 import { Position } from "./position";
 import { EllipseArc } from "./ellipse";
 import { Arc } from "./circle";
-import { GeometryLine } from "./intersection";
+import { GeometryLine } from "./geometry-line";
 import { QuadraticCurve } from "./bezier";
 import { BezierCurve } from "./bezier";
 import { Nurbs, reverseNurbsCurve } from "./nurbs";

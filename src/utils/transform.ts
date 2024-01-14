@@ -1,8 +1,8 @@
-import { isSameNumber, getTwoNumberCenter } from "../../utils/math"
-import { Position, rotatePosition } from "../../utils/position"
-import { getPointsBoundingUnsafe } from "../../utils/bounding"
-import { Size, TwoPointsFormRegion } from "../../utils/region"
-import { getTwoPointCenter } from "../../utils/position"
+import { isSameNumber, getTwoNumberCenter } from "./math"
+import { Position, rotatePosition } from "./position"
+import { getPointsBoundingUnsafe } from "./bounding"
+import { Size, TwoPointsFormRegion } from "./region"
+import { getTwoPointCenter } from "./position"
 
 /**
  * @public
@@ -104,4 +104,11 @@ export function scaleByCursorPosition({ width, height }: Size, scale: number, cu
     setX: (x: number) => cursor.x - width / 2 - (cursor.x - width / 2 - x) * scale,
     setY: (y: number) => cursor.y - height / 2 - (cursor.y - height / 2 - y) * scale,
   }
+}
+
+export interface RenderTransform {
+  x: number
+  y: number
+  scale: number
+  rotate?: number
 }

@@ -6,9 +6,11 @@ import { getLargeArc } from "../../utils/angle"
 import { getParallelLinesByDistance } from "../../utils/line"
 import { twoPointLineToGeneralFormLine } from "../../utils/line"
 import { getPointSideOfLine } from "../../utils/line"
-import { m3 } from "../../utils/matrix"
+import { Matrix, getRenderOptionsMatrix, m3, multiplyMatrix } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
+import { getRayTransformedLineSegment } from "../../utils/line"
+import { RenderTransform } from "../../utils/transform"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
 import { getPerpendicularPoint } from "../../utils/perpendicular"
@@ -44,7 +46,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           backgroundColor: options?.backgroundColor !== undefined ? getColorString(options.backgroundColor) : undefined,
         }}
       >
-        <g style={{ rotate: `${rotate}rad` }}>{children.map((child, i) => child(i, scale, strokeWidthFixed))}</g>
+        <g style={{ rotate: `${rotate}rad` }}>{children.map((child, i) => child(i, scale, strokeWidthFixed, width, height, options?.transform))}</g>
       </svg>
     )
   },
@@ -65,11 +67,15 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     if (options?.matrix) {
       transform.push(`matrix(${m3.getTransform(options.matrix).join(' ')})`)
     }
-    return (key, scale, strokeWidthFixed) => (
-      <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
-        {children.map((child, i) => child(i, scale, strokeWidthFixed))}
-      </g>
-    )
+
+    return (key, scale, strokeWidthFixed, width, height, globalTransform, matrix) => {
+      const parentMatrix = multiplyMatrix(matrix, getRenderOptionsMatrix(options))
+      return (
+        <g transform={transform.join(' ')} key={key} opacity={options?.opacity}>
+          {children.map((child, i) => child(i, scale, strokeWidthFixed, width, height, globalTransform, parentMatrix))}
+        </g>
+      )
+    }
   },
   renderRect(x, y, width, height, options) {
     return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
@@ -292,12 +298,29 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
       )
     }, options, undefined, holes)
   },
+  renderRay(x, y, angle, options) {
+    return renderPattern((fill, stroke, scale, strokeWidthFixed, width, height, transform, matrix) => {
+      const line = getRayTransformedLineSegment({ x, y, angle, bidirectional: options?.bidirectional }, width, height, transform, matrix)
+      if (!line) return <></>
+      return (
+        <line
+          x1={line[0].x}
+          y1={line[0].y}
+          x2={line[1].x}
+          y2={line[1].y}
+          {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
+          fill={fill}
+          stroke={stroke}
+        />
+      )
+    }, options)
+  },
 }
 
 /**
  * @public
  */
-export type SvgDraw = (key: React.Key, scale: number, strokeWidthFixed: boolean) => JSX.Element
+export type SvgDraw = (key: React.Key, scale: number, strokeWidthFixed: boolean, width: number, height: number, transform?: RenderTransform, matrix?: Matrix) => JSX.Element
 
 function renderFilters(
   children: (filter: string | undefined) => JSX.Element,
@@ -395,12 +418,12 @@ function renderFilters(
 }
 
 function renderPattern(
-  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthFixed: boolean) => JSX.Element,
+  children: (fill: string, stroke: string | undefined, scale: number, strokeWidthFixed: boolean, width: number, height: number, transform?: RenderTransform, matrix?: Matrix) => JSX.Element,
   options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
   noDefaultStrokeColor?: boolean,
   holes?: JSX.Element[],
 ) {
-  return (key: React.Key, scale: number, strokeWidthFixed: boolean) => {
+  return (key: React.Key, scale: number, strokeWidthFixed: boolean, width: number, height: number, transform?: RenderTransform, matrix?: Matrix) => {
     let fill = options?.fillColor !== undefined ? getColorString(options.fillColor) : 'none'
     let stroke = options?.strokeColor !== undefined ? getColorString(options.strokeColor) : noDefaultStrokeColor ? undefined : getColorString(0)
     let fillDef: JSX.Element | undefined
@@ -415,7 +438,7 @@ function renderPattern(
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
-          {options.strokePattern.pattern()(id, scale, strokeWidthFixed)}
+          {options.strokePattern.pattern()(id, scale, strokeWidthFixed, width, height, transform, matrix)}
         </pattern>
       )
       stroke = `url(#${id})`
@@ -462,7 +485,7 @@ function renderPattern(
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
-          {options.fillPattern.pattern()(id, scale, strokeWidthFixed)}
+          {options.fillPattern.pattern()(id, scale, strokeWidthFixed, width, height, transform, matrix)}
         </pattern>
       )
       fill = `url(#${id})`
@@ -501,15 +524,15 @@ function renderPattern(
     }
 
     let target: JSX.Element
-    const path = children(fill, stroke, scale, strokeWidthFixed)
+    const path = children(fill, stroke, scale, strokeWidthFixed, width, height, transform, matrix)
     if (options?.clip) {
       const id = getDomId(options.clip)
-      const clipContent = options.clip()(id, scale, strokeWidthFixed)
+      const clipContent = options.clip()(id, scale, strokeWidthFixed, width, height, transform, matrix)
       if (holes) {
         fillDef = (
           <>
             <mask id={id}>
-              {children('white', stroke, scale, strokeWidthFixed)}
+              {children('white', stroke, scale, strokeWidthFixed, width, height, transform, matrix)}
               {holes}
             </mask>
             {path}
