@@ -1,48 +1,114 @@
-import { Position, Size } from "./geometry"
+import { isSameNumber, getTwoNumberCenter } from "./math"
+import { Position, rotatePosition } from "./position"
+import { getPointsBoundingUnsafe } from "./bounding"
+import { Size, TwoPointsFormRegion } from "./region"
+import { getTwoPointCenter } from "./position"
 
-export function transformPosition(
-  { x, y }: Position,
-  transform?: Partial<Transform>,
-) {
-  const positionX = (transform?.targetSize?.width ?? 0) / 2 - ((transform?.containerSize?.width ?? 0) / 2 - x + (transform?.x ?? 0)) / (transform?.scale ?? 1)
-  const positionY = (transform?.targetSize?.height ?? 0) / 2 - ((transform?.containerSize?.height ?? 0) / 2 - y + (transform?.y ?? 0)) / (transform?.scale ?? 1)
-  return {
-    x: positionX,
-    y: positionY,
-  }
-}
-
-export function reverseTransformX(
-  x: number,
-  transform?: Partial<Transform>,
-) {
-  return (transform?.containerSize?.width ?? 0) / 2 - ((transform?.targetSize?.width ?? 0) / 2 - x) * (transform?.scale ?? 1) + (transform?.x ?? 0)
-}
-
-export function reverseTransformY(
-  y: number,
-  transform?: Partial<Transform>,
-) {
-  return (transform?.containerSize?.height ?? 0) / 2 - ((transform?.targetSize?.height ?? 0) / 2 - y) * (transform?.scale ?? 1) + (transform?.y ?? 0)
-}
-
+/**
+ * @public
+ */
 export interface Transform extends Position {
-  containerSize: Size
-  targetSize: Size
-  scale: number
-}
-
-export interface Transform2 extends Position {
   center: Position
   scale: number
+  rotate?: number
 }
 
-export function reverseTransformPosition(position: Position, transform?: Transform2) {
+/**
+ * @public
+ */
+export function reverseTransformPosition(position: Position, transform: Transform | undefined) {
   if (!transform) {
     return position
   }
-  return {
-    x: (position.x - transform.center.x) / transform.scale + transform.center.x - transform.x / transform.scale,
-    y: (position.y - transform.center.y) / transform.scale + transform.center.y - transform.y / transform.scale,
+  position = {
+    x: (position.x - transform.center.x - transform.x) / transform.scale + transform.center.x,
+    y: (position.y - transform.center.y - transform.y) / transform.scale + transform.center.y,
   }
+  if (transform.rotate) {
+    position = rotatePosition(position, { x: 0, y: 0 }, -transform.rotate)
+  }
+  return position
+}
+
+export function transformPosition(position: Position, transform: Transform | undefined) {
+  if (!transform) {
+    return position
+  }
+  if (transform.rotate) {
+    position = rotatePosition(position, { x: 0, y: 0 }, transform.rotate)
+  }
+  return {
+    x: (position.x - transform.center.x) * transform.scale + transform.center.x + transform.x,
+    y: (position.y - transform.center.y) * transform.scale + transform.center.y + transform.y,
+  }
+}
+
+/**
+ * @public
+ */
+export function zoomToFit(
+  bounding: TwoPointsFormRegion | undefined,
+  { width, height }: Size,
+  center: Position,
+  paddingScale = 0.8,
+) {
+  if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
+    const scale = Math.min(width / Math.abs(bounding.end.x - bounding.start.x), height / Math.abs(bounding.end.y - bounding.start.y)) * paddingScale
+    return {
+      scale,
+      x: (center.x - getTwoNumberCenter(bounding.start.x, bounding.end.x)) * scale,
+      y: (center.y - getTwoNumberCenter(bounding.start.y, bounding.end.y)) * scale,
+    }
+  }
+  return
+}
+
+export function zoomToFitPoints(
+  points: Position[],
+  { width, height }: Size,
+  center: Position,
+  paddingScale = 0.8,
+  rotate?: number,
+) {
+  const bounding = getPointsBoundingUnsafe(points)
+  if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
+    let boundingWidth: number
+    let boundingHeight: number
+    if (rotate) {
+      const region = getPointsBoundingUnsafe(points.map(p => rotatePosition(p, { x: 0, y: 0 }, rotate)))
+      boundingWidth = Math.abs(region.end.x - region.start.x)
+      boundingHeight = Math.abs(region.end.y - region.start.y)
+    } else {
+      boundingWidth = Math.abs(bounding.end.x - bounding.start.x)
+      boundingHeight = Math.abs(bounding.end.y - bounding.start.y)
+    }
+    const scale = Math.min(width / boundingWidth, height / boundingHeight) * paddingScale
+    let boundingCenter = getTwoPointCenter(bounding.start, bounding.end)
+    if (rotate) {
+      boundingCenter = rotatePosition(boundingCenter, { x: 0, y: 0 }, rotate)
+    }
+    return {
+      scale,
+      x: (center.x - boundingCenter.x) * scale,
+      y: (center.y - boundingCenter.y) * scale,
+    }
+  }
+  return
+}
+
+/**
+ * @public
+ */
+export function scaleByCursorPosition({ width, height }: Size, scale: number, cursor: Position) {
+  return {
+    setX: (x: number) => cursor.x - width / 2 - (cursor.x - width / 2 - x) * scale,
+    setY: (y: number) => cursor.y - height / 2 - (cursor.y - height / 2 - y) * scale,
+  }
+}
+
+export interface RenderTransform {
+  x: number
+  y: number
+  scale: number
+  rotate?: number
 }

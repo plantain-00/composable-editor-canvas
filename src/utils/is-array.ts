@@ -1,4 +1,6 @@
 /**
  * @public
  */
-export const isArray: <T>(arg: unknown) => arg is readonly T[] = Array.isArray
+export function isArray<T>(arg: unknown): arg is readonly T[] {
+  return Array.isArray(arg)
+}

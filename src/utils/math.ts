@@ -153,3 +153,9 @@ export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
   }
   return result
 }
+
+export function multiplyOpacity(a?: number, b?: number) {
+  if (a === undefined) return b
+  if (b === undefined) return a
+  return a * b
+}

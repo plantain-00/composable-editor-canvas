@@ -10,6 +10,9 @@ import { getTwoPointsDistance } from "./position";
 import { angleInRange } from "./angle";
 import { angleToRadian, radianToAngle } from "./radian"
 import { and, minimum, number } from "./validators";
+import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection";
+import { twoPointLineToGeneralFormLine } from "./line";
+import { getPerpendicularLine } from "./perpendicular";
 
 export function pointIsOnArc(p: Position, arc: Arc) {
   const radian = getCircleRadian(p, arc)
@@ -103,4 +106,12 @@ export function getArcByStartEnd(from: Position, r: number, largeArc: boolean, s
     endAngle: radianToAngle(getCircleRadian(to, circle)),
     counterclockwise: !sweep,
   }
+}
+
+export function getArcControlPoint(arc: Arc) {
+  const start = getCirclePointAtRadian(arc, angleToRadian(arc.startAngle))
+  const end = getCirclePointAtRadian(arc, angleToRadian(arc.endAngle))
+  const line1 = getPerpendicularLine(start, twoPointLineToGeneralFormLine(arc, start))
+  const line2 = getPerpendicularLine(end, twoPointLineToGeneralFormLine(arc, end))
+  return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }

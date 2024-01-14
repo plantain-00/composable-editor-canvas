@@ -1,6 +1,6 @@
 {
   "name": "use-drag-rotate",
-  "version": "1.8.9",
+  "version": "1.10.0",
   "description": "A react drag rotate hook.",
   "main": "index.js",
   "repository": {

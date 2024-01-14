@@ -27,7 +27,7 @@ export default () => {
         onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
         onMouseMove={(e) => onMove({ x: e.clientX, y: e.clientY })}
       >
-        {[...contents, preview].map((content, i) => content && reactSvgRenderTarget.renderPathCommands(content, { strokeColor: 0x00ff00 })(i, 1, false))}
+        {[...contents, preview].map((content, i) => content && reactSvgRenderTarget.renderPathCommands(content, { strokeColor: 0x00ff00 })(i, 1, false, 800, 600))}
       </svg>
       {(['line', 'arc', 'bezierCurve', 'quadraticCurve', 'close'] as const).map(m => <button key={m} style={{ position: 'relative' }} onClick={() => setInputType(m)}>{m}</button>)}
       {input}

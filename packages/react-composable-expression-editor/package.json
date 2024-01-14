@@ -1,6 +1,6 @@
 {
   "name": "react-composable-expression-editor",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "A react expression editor.",
   "main": "index.js",
   "repository": {
@@ -10,11 +10,11 @@
   "author": "York Yao",
   "license": "MIT",
   "dependencies": {
-    "react-render-target": "^1.9.0",
-    "react-composable-json-editor": "^1.9.0",
-    "use-undo-redo": "^1.9.0",
-    "use-wheel-scroll": "1",
-    "use-drag-move": "1"
+    "react-render-target": "^1.10.0",
+    "react-composable-json-editor": "^1.10.0",
+    "use-undo-redo": "^1.10.0",
+    "use-wheel-scroll": "^1.10.0",
+    "use-drag-move": "^1.10.0"
   },
   "peerDependencies": {
     "react": "18"

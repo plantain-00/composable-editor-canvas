@@ -6,7 +6,7 @@ import { isSamePoint } from "./position"
 import { pointIsOnLine } from "./line"
 import { EllipseArc } from "./ellipse"
 import { Arc } from "./circle"
-import { GeometryLine } from "./intersection"
+import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 

@@ -4,7 +4,7 @@ import { getSymmetryPoint } from "./line"
 import { getEllipseCenter } from "./ellipse"
 import { Arc } from "./circle"
 import { Ellipse } from "./ellipse"
-import { GeometryLine } from "./intersection"
+import { GeometryLine } from "./geometry-line"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x

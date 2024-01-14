@@ -44,4 +44,7 @@ export const codeRenderTarget: ReactRenderTarget<string, string> = {
   renderPath(lines, options) {
     return `target.renderPath(${JSON.stringify(lines)}, ${JSON.stringify(options)})`
   },
+  renderRay(x, y, angle, options) {
+    return `target.renderRay(${x}, ${y}, ${angle}, ${JSON.stringify(options)})`
+  },
 }

@@ -1,3 +1,4 @@
+import { arcToPolyline } from "./circle";
 import { getTwoNumbersDistance, largerOrEqual, lessOrEqual } from "./math";
 import { getPointAndPolygonMaximumDistance } from "./position";
 import { Position } from "./position";
@@ -60,4 +61,37 @@ export function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
 
 export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion) {
   return getPointAndPolygonMaximumDistance(position, getPolygonFromTwoPointsFormRegion(region));
+}
+
+export function getRoundedRectPoints(content: Region, radius: number, angleDelta: number): Position[] {
+  return [
+    ...arcToPolyline({
+      x: content.x + content.width / 2 - radius,
+      y: content.y - content.height / 2 + radius,
+      r: radius,
+      startAngle: -90,
+      endAngle: 0,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x + content.width / 2 - radius,
+      y: content.y + content.height / 2 - radius,
+      r: radius,
+      startAngle: 0,
+      endAngle: 90,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x - content.width / 2 + radius,
+      y: content.y + content.height / 2 - radius,
+      r: radius,
+      startAngle: 90,
+      endAngle: 180,
+    }, angleDelta),
+    ...arcToPolyline({
+      x: content.x - content.width / 2 + radius,
+      y: content.y - content.height / 2 + radius,
+      r: radius,
+      startAngle: 180,
+      endAngle: 270,
+    }, angleDelta),
+  ]
 }

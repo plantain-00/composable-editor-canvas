@@ -8,6 +8,8 @@ import { Position } from "./position";
 import { angleInRange } from "./angle";
 import { angleToRadian, radianToAngle } from "./radian";
 import { number, minimum, optional, and } from "./validators";
+import { calculateEquation2 } from "./equation-calculater";
+import { getPointSideOfLine, twoPointLineToGeneralFormLine } from "./line";
 
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
   const angle = getEllipseAngle(p, ellipseArc)
@@ -44,8 +46,8 @@ export interface Ellipse {
 export const Ellipse = {
   cx: number,
   cy: number,
-  rx: minimum(0, number),
-  ry: minimum(0, number),
+  rx: /* @__PURE__ */ minimum(0, number),
+  ry: /* @__PURE__ */ minimum(0, number),
   angle: /* @__PURE__ */ optional(number),
 }
 
@@ -110,5 +112,58 @@ export function ellipseToEllipseArc(ellipse: Ellipse): EllipseArc {
     ...ellipse,
     startAngle: 0,
     endAngle: 360,
+  }
+}
+
+export function getEllipseArcByStartEnd(
+  from: Position,
+  rx: number,
+  ry: number,
+  angle: number,
+  largeArc: boolean,
+  sweep: boolean,
+  to: Position
+): EllipseArc | undefined {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian), d3 = 1 / rx / rx, d4 = 1 / ry / ry
+  const f1 = from.x, f2 = from.y, f3 = to.x, f4 = to.y
+  // (d2(f1 - cx) + d1(f2 - cy))^2 d3 + (-d1(f1 - cx) + d2(f2 - cy))^2 d4 - 1 = 0
+  // let u = f1 - cx, v = f2 - cy
+  // (d2 u + d1 v)^2 d3 + (-d1 u + d2 v)^2 d4 - 1 = 0
+  // group u,v F1: (d2 d2 d3 + d1 d1 d4) u u + 2 d1 d2(d3 - d4) v u + (d1 d1 d3 + d2 d2 d4) v v + -1 = 0
+  // (d2(f3 - cx) + d1(f4 - cy))^2 d3 + (-d1(f3 - cx) + d2(f4 - cy))^2 d4 - 1 = 0
+  const e1 = f3 - f1, e2 = f4 - f2
+  // (d2(e1 + u) + d1(e2 + v))^2 d3 + (-d1(e1 + u) + d2(e2 + v))^2 d4 - 1 = 0
+  // - F1: group u,v: 2((d2 d2 d3 + d1 d1 d4) e1 + (d3 - d4) d1 d2 e2) u + 2((d3 - d4)d1 d2 e1 + (d1 d1 d3 + d2 d2 d4) e2) v + (d2 d2 d3 + d1 d1 d4) e1 e1 + 2 d1 d2 (d3 - d4) e1 e2 + (d1 d1 d3 + 2 d2 d4) e2 e2 = 0
+  const g1 = d2 * d2 * d3 + d1 * d1 * d4, g2 = d1 * d1 * d3 + d2 * d2 * d4, g3 = d3 - d4
+  // F2: g1 u u + 2 d1 d2 g3 v u + g2 v v + -1 = 0
+  // 2(g1 e1 + g3 d1 d2 e2) u + 2(g3 d1 d2 e1 + g2 e2) v + g1 e1 e1 + 2 d1 d2 g3 e1 e2 + g2 e2 e2 = 0
+  const h2 = 2 * (g3 * d1 * d2 * e1 + g2 * e2), h1 = 2 * (g1 * e1 + g3 * d1 * d2 * e2) / h2, h3 = (g1 * e1 * e1 + 2 * d1 * d2 * g3 * e1 * e2 + g2 * e2 * e2) / h2
+  // v = -(h1 u + h3)
+  // replace F2 with v: (g1 + -2 d1 d2 g3 h1 + g2 h1 h1) u u + (-2 d1 d2 g3 h3 + 2 g2 h1 h3) u + g2 h3 h3 + -1 = 0
+  const us = calculateEquation2(g1 - 2 * d1 * d2 * g3 * h1 + g2 * h1 * h1, -2 * d1 * d2 * g3 * h3 + 2 * g2 * h1 * h3, g2 * h3 * h3 - 1)
+  if (us.length === 0) return
+  const centers = us.map(u => ({
+    x: f1 - u,
+    y: f2 + h1 * u + h3,
+  }))
+  let index: number
+  if (centers.length === 1) {
+    index = 0
+  } else {
+    const firstSide = getPointSideOfLine(centers[0], twoPointLineToGeneralFormLine(from, to))
+    if (firstSide > 0) {
+      index = largeArc === sweep ? 0 : 1
+    } else {
+      index = largeArc !== sweep ? 0 : 1
+    }
+  }
+  const center = centers[index]
+  const ellipse: Ellipse = { cx: center.x, cy: center.y, rx, ry, angle }
+  return {
+    ...ellipse,
+    startAngle: getEllipseAngle(from, ellipse),
+    endAngle: getEllipseAngle(to, ellipse),
+    counterclockwise: !sweep,
   }
 }
