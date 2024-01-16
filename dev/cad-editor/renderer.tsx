@@ -128,8 +128,8 @@ export function Renderer(props: {
         return
       }
       if (target.type !== 'svg' && model.getGeometries) {
-        const { renderingLines, regions } = model.getGeometries(content, props.contents)
-        if (renderingLines && !regions) {
+        const { renderingLines, regions, bounding } = model.getGeometries(content, props.contents)
+        if (renderingLines && bounding && !regions) {
           const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
           let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
           strokeColor = transformColor(strokeColor)

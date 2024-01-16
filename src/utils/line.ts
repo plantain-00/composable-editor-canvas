@@ -39,8 +39,19 @@ export function pointIsOnLineSegment(p: Position, point1: Position, point2: Posi
 }
 
 export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
-  const { a, b, c } = twoPointLineToGeneralFormLine(point1, point2)
+  return pointIsOnGeneralFormLine(p, twoPointLineToGeneralFormLine(point1, point2))
+}
+
+export function pointIsOnGeneralFormLine(p: Position, { a, b, c }: GeneralFormLine) {
   return isZero(a * p.x + b * p.y + c)
+}
+
+export function pointIsOnRay(p: Position, ray: Ray) {
+  const radian = angleToRadian(ray.angle)
+  if (ray.bidirectional) {
+    return pointIsOnGeneralFormLine(p, pointAndDirectionToGeneralFormLine(p, radian))
+  }
+  return isSamePoint(p, ray) || isSameNumber(radian, getTwoPointsRadian(p, ray))
 }
 
 /**
@@ -239,6 +250,23 @@ export function getParallelLineSegmentsByDistance(line: [Position, Position], di
   ]
 }
 
+export function getParallelRaysByDistance(ray: Ray, distance: number): [Ray, Ray] {
+  if (isZero(distance)) {
+    return [ray, ray]
+  }
+  const radian = angleToRadian(ray.angle)
+  return [
+    {
+      ...ray,
+      ...getPointByLengthAndRadian(ray, distance, radian + Math.PI / 2),
+    },
+    {
+      ...ray,
+      ...getPointByLengthAndRadian(ray, distance, radian - Math.PI / 2),
+    },
+  ]
+}
+
 export function getGeneralFormLineRadian({ a, b }: GeneralFormLine) {
   // a x1 + b y1 + c = 0
   // a x2 + b y2 + c = 0
@@ -382,4 +410,17 @@ export function getRayTransformedLineSegment(ray: Ray, width: number, height: nu
     })
   }
   return rayToLineSegment(ray, points)
+}
+
+export function getRayStartAndEnd(ray: Ray): { start?: Position, end?: Position } {
+  return {
+    start: ray.bidirectional ? undefined : ray,
+    end: undefined,
+  }
+}
+
+export function getRayParamAtPoint(ray: Ray, point: Position) {
+  const d = getTwoPointsDistance(ray, point)
+  if (isZero(d)) return 0
+  return d * (isSameNumber(angleToRadian(ray.angle), getTwoPointsRadian(point, ray)) ? 1 : -1)
 }

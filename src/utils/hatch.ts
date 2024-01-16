@@ -1,5 +1,6 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed, pointIsOnGeometryLine } from "./break"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getPartOfGeometryLine, pointIsOnGeometryLine } from "./geometry-line"
+import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
 import { deepEquals, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
@@ -66,8 +67,10 @@ function getRightSideGeometryLines(
       break
     }
     if (!s) break
+    const lineStart = getGeometryLineStartAndEnd(s.line).start
     if (
-      !isSamePoint(getGeometryLineStartAndEnd(s.line).start, start.point) &&
+      lineStart &&
+      !isSamePoint(lineStart, start.point) &&
       s.next &&
       pointIsOnGeometryLine(start.point, s.line)
     ) {
@@ -111,7 +114,7 @@ export function getHatchHoles(
     if (!geometry) continue
     for (const line of geometry.lines) {
       const start = getGeometryLineStartAndEnd(line).start
-      if (pointInPolygon(start, points) && border.every(n => !pointIsOnGeometryLine(start, n))) {
+      if (start && pointInPolygon(start, points) && border.every(n => !pointIsOnGeometryLine(start, n))) {
         holes.push({ lines: [line], start, id: geometry.id })
       }
     }

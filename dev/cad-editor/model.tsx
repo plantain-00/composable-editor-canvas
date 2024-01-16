@@ -8,6 +8,7 @@ import type { ArcContent } from './plugins/circle-arc.plugin'
 import type { EllipseArcContent } from './plugins/ellipse.plugin'
 import type { PathContent } from './plugins/path.plugin'
 import type { NurbsContent } from './plugins/nurbs.plugin'
+import type { RayContent } from './plugins/ray.plugin'
 export { math } from '../expression/math'
 
 export interface BaseContent<T extends string = string> {
@@ -403,6 +404,9 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
   }
   if (line.type === 'bezier curve') {
     return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'bezierCurve', cp1: line.curve.cp1, cp2: line.curve.cp2, to: line.curve.to }] } as PathContent
+  }
+  if (line.type === 'ray') {
+    return { type: 'ray', ...line.line } as RayContent
   }
   return { type: 'nurbs', ...line.curve } as NurbsContent
 }
@@ -1771,9 +1775,10 @@ export function getClipContentEditPoints(content: ClipFields, contents: readonly
 }
 
 export const contentsBoundingCache = new WeakmapCache<readonly Nullable<BaseContent>[], TwoPointsFormRegion>()
-const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion>()
+const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion | undefined>()
 
 export function getGeometryLineBoundingFromCache(line: GeometryLine) {
+  if (!Array.isArray(line) && line.type === 'ray') return
   return geometryLineBoundingCache.get(line, () => {
     return getGeometryLineBounding(line)
   })

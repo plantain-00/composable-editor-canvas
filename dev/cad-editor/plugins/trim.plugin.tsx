@@ -165,7 +165,7 @@ export function getCommand(ctx: PluginContext): Command {
                   const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
                   if (geometries) {
                     const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines)
-                    if (!ctx.isSamePoint(start, end)) {
+                    if (start && end && !ctx.isSamePoint(start, end)) {
                       points.push(start, end)
                     }
                   }

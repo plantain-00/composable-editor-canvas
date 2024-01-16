@@ -4313,7 +4313,7 @@ function getCommand(ctx) {
               const points = ctx.getContentsPoints(contents, contents);
               return ctx.getPointsBoundingUnsafe(points);
             });
-            const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
+            const getGeometriesInRange = (region) => region ? getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents)) : [];
             const end = { x: bounding.end.x, y: p.y };
             const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
             if (border) {
@@ -4709,7 +4709,7 @@ function isPolyLineContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "10,87 87,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "10", cy: "87", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("circle", { cx: "87", cy: "9", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("polyline", { points: "10,87 87,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "12,86 38,24 62,64 88,13", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
   return [
     {
@@ -5972,7 +5972,7 @@ function getModel(ctx) {
       const bounding = ctx.mergeBoundings(boundings);
       const center = ctx.getTwoPointCenter(bounding.start, bounding.end);
       const result = [];
-      const lengths = lines.map((line) => ctx.getGeometryLineLength(line));
+      const lengths = lines.map((line) => ctx.getGeometryLineLength(line) || 0);
       const totalLength = lengths.reduce((p, c) => p + c, 0);
       for (let length = 0; length <= totalLength; length += content.length) {
         const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length);
@@ -7699,6 +7699,138 @@ export {
   getCommand,
   getModel,
   isRadialDimensionReferenceContent
+};
+`,
+`// dev/cad-editor/plugins/ray.plugin.tsx
+function getModel(ctx) {
+  const RayContent = ctx.and(ctx.BaseContent("ray"), ctx.StrokeFields, ctx.Ray);
+  const React = ctx.React;
+  function getRayGeometries(content) {
+    return ctx.getGeometriesFromCache(content, () => {
+      return {
+        lines: [{ type: "ray", line: content }],
+        renderingLines: []
+      };
+    });
+  }
+  const rayModel = {
+    type: "ray",
+    ...ctx.strokeModel,
+    move(content, offset) {
+      ctx.movePoint(content, offset);
+    },
+    rotate(content, center, angle) {
+      ctx.rotatePoint(content, center, angle);
+      content.angle += angle;
+    },
+    mirror(content, line, angle) {
+      ctx.mirrorPoint(content, line);
+      content.angle = 2 * angle - content.angle;
+    },
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+      return target.renderRay(content.x, content.y, content.angle, { ...options, bidirectional: content.bidirectional });
+    },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => ({
+        editPoints: [{
+          x: content.x,
+          y: content.y,
+          cursor: "move",
+          type: "move",
+          update(c, { cursor, start, scale }) {
+            if (!isRayContent(c)) {
+              return;
+            }
+            c.x += cursor.x - start.x;
+            c.y += cursor.y - start.y;
+            return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+          }
+        }]
+      }));
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        return [{ x: content.x, y: content.y, type: "endpoint" }];
+      });
+    },
+    getGeometries: getRayGeometries,
+    propertyPanel(content, update, contents, { acquirePoint }) {
+      return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isRayContent(c)) {
+            c.x = p.x, c.y = p.y;
+          }
+        })) }, "canvas"),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isRayContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isRayContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+          if (isRayContent(c)) {
+            c.angle = v;
+          }
+        }) }),
+        bidirectional: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.bidirectional || false, setValue: (v) => update((c) => {
+          if (isRayContent(c)) {
+            c.bidirectional = v;
+          }
+        }) }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, RayContent, p),
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds
+  };
+  return rayModel;
+}
+function isRayContent(content) {
+  return content.type === "ray";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "10", cy: "87", r: "12", strokeWidth: "0", vectorEffect: "non-scaling-stroke", fill: "currentColor", stroke: "#000000" }), /* @__PURE__ */ React.createElement("polyline", { points: "10,87 87,9", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create ray",
+    useCommand({ onEnd, type, strokeStyleId }) {
+      const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+        type === "create ray",
+        (c) => onEnd({
+          updateContents: (contents) => contents.push({ type: "ray", x: c[0].x, y: c[0].y, angle: ctx.radianToAngle(ctx.getTwoPointsRadian(c[1], c[0])), strokeStyleId })
+        }),
+        { once: true }
+      );
+      const assistentContents = [];
+      if (line && line.length > 1) {
+        const start = line[line.length - 2];
+        const end = line[line.length - 1];
+        const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start));
+        assistentContents.push({ type: "ray", x: start.x, y: start.y, angle, strokeStyleId });
+      }
+      return {
+        onStart: onClick,
+        input,
+        onMove,
+        assistentContents,
+        lastPosition,
+        reset
+      };
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isRayContent
 };
 `,
 `// dev/cad-editor/plugins/rect-array.plugin.tsx
@@ -11002,7 +11134,7 @@ function getCommand(ctx) {
                   const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
                   if (geometries) {
                     const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines);
-                    if (!ctx.isSamePoint(start, end)) {
+                    if (start && end && !ctx.isSamePoint(start, end)) {
                       points.push(start, end);
                     }
                   }

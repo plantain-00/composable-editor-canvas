@@ -6,7 +6,7 @@ import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } f
 import { Position } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
-import { getPolygonLine } from "./line"
+import { getPolygonLine, getRayPointAtDistance, pointAndDirectionToGeneralFormLine, pointIsOnRay } from "./line"
 import { GeneralFormLine } from "./line"
 import { generalFormLineToTwoPointLine, twoPointLineToGeneralFormLine } from "./line"
 import { pointIsOnLineSegment } from "./line"
@@ -90,6 +90,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
     }
+    if (line2.type === 'ray') {
+      const point = getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(...line1), pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
+      if (point && (extend || (pointIsOnLineSegment(point, ...line1) && pointIsOnRay(point, line2.line)))) {
+        return [point]
+      }
+      return []
+    }
     return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
   if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
@@ -118,6 +125,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
     }
+    if (line2.type === 'ray') {
+      let points = getLineCircleIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, delta)
+      if (!extend) {
+        points = points.filter(p => pointIsOnArc(p, line1.curve) && pointIsOnRay(p, line2.line))
+      }
+      return points
+    }
     return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
@@ -140,6 +154,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
     }
+    if (line2.type === 'ray') {
+      let points = getLineEllipseIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve)
+      if (!extend) {
+        points = points.filter(p => pointIsOnEllipseArc(p, line1.curve) && pointIsOnRay(p, line2.line))
+      }
+      return points
+    }
     return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
@@ -150,6 +171,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     if (line2.type === 'bezier curve') {
       return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
     }
+    if (line2.type === 'ray') {
+      let points = getLineQuadraticCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend)
+      if (!extend) {
+        points = points.filter(p => pointIsOnRay(p, line2.line))
+      }
+      return points
+    }
     return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
@@ -157,9 +185,27 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     if (line2.type === 'bezier curve') {
       return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
     }
+    if (line2.type === 'ray') {
+      let points = getLineBezierCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend)
+      if (!extend) {
+        points = points.filter(p => pointIsOnRay(p, line2.line))
+      }
+      return points
+    }
     return getBezierCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line1.type === 'ray') {
+    if (line2.type === 'ray') {
+      const point = getTwoGeneralFormLinesIntersectionPoint(pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle)), pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
+      if (point && (extend || (pointIsOnRay(point, line1.line) && pointIsOnRay(point, line2.line)))) {
+        return [point]
+      }
+      return []
+    }
+    return []
+  }
+  if (line2.type === 'ray') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
   return getTwoNurbsCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
@@ -402,6 +448,11 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
       }
     } else if (g.type === 'nurbs curve') {
       if (getLineSegmentNurbsCurveIntersectionPoints(...line, g.curve).length > 0) {
+        return true
+      }
+    } else if (g.type === 'ray') {
+      const p = getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(...line), pointAndDirectionToGeneralFormLine(g.line, angleToRadian(g.line.angle)))
+      if (p && pointIsOnRay(p, g.line) && pointIsOnLineSegment(p, ...line)) {
         return true
       }
     }

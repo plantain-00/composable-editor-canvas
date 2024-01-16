@@ -6,6 +6,7 @@ import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { NurbsCurve } from "./nurbs"
+import { Ray } from "./line"
 
 /**
  * @public
@@ -65,6 +66,10 @@ export function printNurbsCurve(curve: NurbsCurve) {
   return curve.points.map(p => printPoint(p)).join('->')
 }
 
+export function printRay(ray: Ray) {
+  return `${printPoint(ray)}${ray.bidirectional ? '<' : ''}->${Math.round(ray.angle)}`
+}
+
 export function printGeometryLine(line: GeometryLine) {
   if (Array.isArray(line)) {
     return printLine(line)
@@ -80,6 +85,9 @@ export function printGeometryLine(line: GeometryLine) {
   }
   if (line.type === 'bezier curve') {
     return printBezierCurve(line.curve)
+  }
+  if (line.type === 'ray') {
+    return printRay(line.line)
   }
   return printNurbsCurve(line.curve)
 }

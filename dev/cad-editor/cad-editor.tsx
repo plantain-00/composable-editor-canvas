@@ -133,13 +133,17 @@ export const CADEditor = React.forwardRef((props: {
       for (const content of newContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, newState)
         if (geometries?.bounding) {
-          rtree?.insert(boundingToRTreeBounding(geometries.bounding), content)
+          rtree?.rtree.insert(boundingToRTreeBounding(geometries.bounding), content)
+        } else {
+          rtree?.boundlessContents.add(content)
         }
       }
       for (const content of removedContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, oldState)
         if (geometries?.bounding) {
-          rtree?.remove(boundingToRTreeBounding(geometries.bounding), content)
+          rtree?.rtree.remove(boundingToRTreeBounding(geometries.bounding), content)
+        } else {
+          rtree?.boundlessContents.delete(content)
         }
       }
       setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
@@ -347,7 +351,10 @@ export const CADEditor = React.forwardRef((props: {
     if (!rtree) {
       return []
     }
-    return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
+    return [
+      ...rtree.rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y }),
+      ...rtree.boundlessContents,
+    ]
   }
 
   // commands
@@ -808,7 +815,7 @@ export const CADEditor = React.forwardRef((props: {
       e.preventDefault()
     }
   })
-  const [rtree, setRTree] = React.useState<ReturnType<typeof RTree>>()
+  const [rtree, setRTree] = React.useState<{ rtree: ReturnType<typeof RTree>, boundlessContents: Set<BaseContent> }>()
   debug.mark('before search')
   const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
   const searchResult = new Set(getContentsInRange(bounding))
@@ -816,6 +823,7 @@ export const CADEditor = React.forwardRef((props: {
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
     const newRTree = RTree()
+    const boundlessContents = new Set<BaseContent>()
     for (const content of contents) {
       if (!content) {
         continue
@@ -823,9 +831,11 @@ export const CADEditor = React.forwardRef((props: {
       const geometries = getContentModel(content)?.getGeometries?.(content, contents)
       if (geometries?.bounding) {
         newRTree.insert(boundingToRTreeBounding(geometries.bounding), content)
+      } else {
+        boundlessContents.add(content)
       }
     }
-    setRTree(newRTree)
+    setRTree({ rtree: newRTree, boundlessContents })
   }
 
   const operatorVisible = props.onApplyPatchesFromSelf !== undefined

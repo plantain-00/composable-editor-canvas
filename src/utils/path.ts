@@ -1,5 +1,5 @@
 import { getLargeArc } from "./angle";
-import { getGeometryLineStartAndEnd } from "./break";
+import { getGeometryLineStartAndEnd } from "./geometry-line";
 import { getArcControlPoint } from "./circle";
 import { getEllipseArcByStartEnd } from "./ellipse";
 import { GeometryLine } from "./geometry-line";
@@ -285,6 +285,7 @@ export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[]
   let last: Position | undefined
   for (const n of lines) {
     const { start, end } = getGeometryLineStartAndEnd(n)
+    if (!start || !end) continue
     if (!last || !isSamePoint(last, start)) {
       result.push({ type: 'move', to: start })
     }
