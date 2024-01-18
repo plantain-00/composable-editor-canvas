@@ -38,7 +38,12 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
   return getPointsBoundingUnsafe(points);
 }
 
-export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+export function mergeBoundingsUnsafe(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+  return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
+}
+
+export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion | undefined {
+  if (boundings.length === 0) return
   return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
 }
 
@@ -205,5 +210,5 @@ export function getGeometryLineBounding(line: GeometryLine, segmentCount = 100):
   if (line.type === 'ray') {
     return
   }
-  return getPointsBoundingUnsafe(getNurbsPoints(line.curve.degree, line.curve.points, line.curve.knots, line.curve.weights, segmentCount))
+  return getPointsBounding(getNurbsPoints(line.curve.degree, line.curve.points, line.curve.knots, line.curve.weights, segmentCount))
 }

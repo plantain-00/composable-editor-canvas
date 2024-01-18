@@ -211,7 +211,7 @@ export function getPointSideOfGeometryLine(point: Position, line: GeometryLine):
     return getPointSideOfBezierCurve(point, line.curve)
   }
   if (line.type === 'ray') {
-    return getPointSideOfLine(point, pointAndDirectionToGeneralFormLine(point, angleToRadian(line.line.angle)))
+    return getPointSideOfLine(point, pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle)))
   }
   return getPointSideOfNurbsCurve(point, line.curve)
 }

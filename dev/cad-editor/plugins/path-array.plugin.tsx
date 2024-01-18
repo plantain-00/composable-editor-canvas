@@ -32,7 +32,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
           }
         }
       }
-      const bounding = ctx.mergeBoundings(boundings)
+      const bounding = ctx.mergeBoundingsUnsafe(boundings)
       const center = ctx.getTwoPointCenter(bounding.start, bounding.end)
 
       const result: core.Nullable<model.BaseContent>[] = []

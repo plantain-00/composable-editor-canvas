@@ -6,7 +6,7 @@ import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } f
 import { Position } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
-import { getPolygonLine, getRayPointAtDistance, pointAndDirectionToGeneralFormLine, pointIsOnRay } from "./line"
+import { getPolygonLine, getRayPointAtDistance, pointAndDirectionToGeneralFormLine, pointIsOnRay, rayToLineSegment } from "./line"
 import { GeneralFormLine } from "./line"
 import { generalFormLineToTwoPointLine, twoPointLineToGeneralFormLine } from "./line"
 import { pointIsOnLineSegment } from "./line"
@@ -19,6 +19,7 @@ import { getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectio
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
 import { GeometryLine } from "./geometry-line"
+import { getGeometryLineBounding } from "./bounding"
 
 /**
  * @public
@@ -202,6 +203,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
         return [point]
       }
       return []
+    }
+    const bounding = getGeometryLineBounding(line2)
+    if (bounding) {
+      const line = rayToLineSegment(line1.line, getPolygonFromTwoPointsFormRegion(bounding))
+      if (line) {
+        return getLineSegmentNurbsCurveIntersectionPoints(...line, line2.curve)
+      }
     }
     return []
   }

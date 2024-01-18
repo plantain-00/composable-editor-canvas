@@ -3,15 +3,16 @@ import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
 import { getAngleInRange } from "./angle"
-import { pointIsOnLine } from "./line"
+import { getRayParamAtPoint, getRayPointAtDistance, pointIsOnLine } from "./line"
 import { pointIsOnLineSegment } from "./line"
 import { getCircleRadian } from "./circle"
 import { getEllipseAngle } from "./ellipse"
-import { GeometryLine } from "./geometry-line"
+import { GeometryLine, getPartOfGeometryLine } from "./geometry-line"
 import { getNurbsCurveParamAtPoint, getNurbsMaxParam, getPartOfNurbsCurve } from "./nurbs"
 import { radianToAngle } from "./radian"
 import { getGeometryLineStartAndEnd } from "./geometry-line"
 import { pointIsOnGeometryLine } from "./geometry-line"
+import { reverseRay } from "./reverse"
 
 /**
  * @public
@@ -202,6 +203,44 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
             })
             if (i !== params.length - 1) save()
           }
+        },
+      }
+    } else if (line.type === 'ray') {
+      data = {
+        breakLine(points) {
+          const params = points.map(p => getRayParamAtPoint(line.line, p))
+          if (!line.line.bidirectional) {
+            params.push(0)
+          }
+          params.sort((a, b) => a - b)
+          if (line.line.bidirectional) {
+            const point = getRayPointAtDistance(line.line, params[0])
+            current.push({
+              type: 'ray',
+              line: reverseRay({
+                ...line.line,
+                x: point.x,
+                y: point.y,
+                bidirectional: false,
+              })
+            })
+            save()
+          }
+          for (let i = 1; i < params.length; i++) {
+            current.push(getPartOfGeometryLine(params[i - 1], params[i], line))
+            save()
+          }
+          const point = getRayPointAtDistance(line.line, params[params.length - 1])
+          current.push({
+            type: 'ray',
+            line: {
+              ...line.line,
+              x: point.x,
+              y: point.y,
+              bidirectional: false,
+            }
+          })
+          save()
         },
       }
     }

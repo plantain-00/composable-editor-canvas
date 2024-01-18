@@ -70,7 +70,7 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
   return { ...geometryLine, curve: reverseNurbsCurve(geometryLine.curve) }
 }
 
-function reverseRay(ray: Ray): Ray {
+export function reverseRay(ray: Ray): Ray {
   return {
     ...ray,
     angle: normalizeAngle(ray.angle + 180),

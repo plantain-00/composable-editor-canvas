@@ -31,6 +31,16 @@ export function getModel(ctx: PluginContext) {
       ctx.mirrorPoint(content, line)
       content.angle = 2 * angle - content.angle
     },
+    break(content, intersectionPoints) {
+      return ctx.breakGeometryLines(getRayGeometries(content).lines, intersectionPoints).flat().map(n => ctx.geometryLineToContent(n))
+    },
+    offset(content, point, distance) {
+      if (!distance) {
+        distance = ctx.getPointAndRayNearestPointAndDistance(point, content).distance
+      }
+      const index = ctx.pointSideToIndex(ctx.getPointSideOfGeometryLine(point, { type: 'ray', line: content }))
+      return ctx.getParallelRaysByDistance(content, distance)[index]
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderRay(content.x, content.y, content.angle, { ...options, bidirectional: content.bidirectional })
@@ -72,6 +82,7 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, RayContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
+    reverse: content => ({ ...content, ...ctx.reverseRay(content) }),
   }
   return rayModel
 }

@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     count: ctx.number,
     angle: ctx.optional(ctx.number),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
     return geometriesCache.get(content, () => {
       const angle = -(content.angle ?? 0)
@@ -53,6 +53,10 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     ...ctx.fillModel,
     move(content, offset) {
       ctx.movePoint(content, offset)
+    },
+    break(content, intersectionPoints) {
+      const { lines } = getStarGeometriesFromCache(content)
+      return ctx.breakPolyline(lines, intersectionPoints)
     },
     offset(content, point, distance) {
       if (!distance) {

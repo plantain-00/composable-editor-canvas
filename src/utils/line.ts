@@ -250,7 +250,7 @@ export function getParallelLineSegmentsByDistance(line: [Position, Position], di
   ]
 }
 
-export function getParallelRaysByDistance(ray: Ray, distance: number): [Ray, Ray] {
+export function getParallelRaysByDistance<T extends Ray>(ray: T, distance: number): [T, T] {
   if (isZero(distance)) {
     return [ray, ray]
   }

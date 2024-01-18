@@ -391,7 +391,7 @@ function getModel(ctx) {
         });
         return {
           lines,
-          bounding: ctx.mergeBoundings(boundings),
+          bounding: ctx.mergeBoundingsUnsafe(boundings),
           renderingLines,
           regions
         };
@@ -5969,7 +5969,7 @@ function getModel(ctx) {
           }
         }
       }
-      const bounding = ctx.mergeBoundings(boundings);
+      const bounding = ctx.mergeBoundingsUnsafe(boundings);
       const center = ctx.getTwoPointCenter(bounding.start, bounding.end);
       const result = [];
       const lengths = lines.map((line) => ctx.getGeometryLineLength(line) || 0);
@@ -7727,6 +7727,16 @@ function getModel(ctx) {
       ctx.mirrorPoint(content, line);
       content.angle = 2 * angle - content.angle;
     },
+    break(content, intersectionPoints) {
+      return ctx.breakGeometryLines(getRayGeometries(content).lines, intersectionPoints).flat().map((n) => ctx.geometryLineToContent(n));
+    },
+    offset(content, point, distance) {
+      if (!distance) {
+        distance = ctx.getPointAndRayNearestPointAndDistance(point, content).distance;
+      }
+      const index = ctx.pointSideToIndex(ctx.getPointSideOfGeometryLine(point, { type: "ray", line: content }));
+      return ctx.getParallelRaysByDistance(content, distance)[index];
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
       return target.renderRay(content.x, content.y, content.angle, { ...options, bidirectional: content.bidirectional });
@@ -7787,7 +7797,8 @@ function getModel(ctx) {
     },
     isValid: (c, p) => ctx.validate(c, RayContent, p),
     getRefIds: ctx.getStrokeRefIds,
-    updateRefId: ctx.updateStrokeRefIds
+    updateRefId: ctx.updateStrokeRefIds,
+    reverse: (content) => ({ ...content, ...ctx.reverseRay(content) })
   };
   return rayModel;
 }
@@ -9432,6 +9443,10 @@ function getModel(ctx) {
     ...ctx.fillModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    break(content, intersectionPoints) {
+      const { lines } = getStarGeometriesFromCache(content);
+      return ctx.breakPolyline(lines, intersectionPoints);
     },
     offset(content, point, distance) {
       var _a;
@@ -11134,8 +11149,14 @@ function getCommand(ctx) {
                   const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
                   if (geometries) {
                     const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines);
-                    if (start && end && !ctx.isSamePoint(start, end)) {
-                      points.push(start, end);
+                    if (start && end) {
+                      if (!ctx.isSamePoint(start, end)) {
+                        points.push(start, end);
+                      }
+                    } else if (start) {
+                      points.push(start);
+                    } else if (end) {
+                      points.push(end);
                     }
                   }
                 }

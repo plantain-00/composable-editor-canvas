@@ -9,7 +9,7 @@ import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePoint
 import { Position, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange } from "./angle";
-import { largerThan } from "./math";
+import { largerThan, lessOrEqual, lessThan } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 
@@ -226,11 +226,19 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
 }
 
 export function getGeometryLinesPointAtParam(param: number, lines: GeometryLine[]) {
-  const index = Math.floor(param)
-  const line = lines[index]
-  if (!line) return
-  return getGeometryLinePointAtParam(param - index, line)
+  for (const line of lines) {
+    if (!Array.isArray(line) && line.type === 'ray') {
+      return getGeometryLinePointAtParam(param, line)
+    }
+    if (lessThan(param, 0)) return
+    if (lessOrEqual(param, 1)) {
+      return getGeometryLinePointAtParam(param, line)
+    }
+    param--
+  }
+  return
 }
+
 function getAngleAtParam(param: number, range: AngleRange) {
   return param * (range.endAngle - range.startAngle) + range.startAngle
 }
