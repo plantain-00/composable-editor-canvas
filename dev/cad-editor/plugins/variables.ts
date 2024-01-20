@@ -4313,7 +4313,7 @@ function getCommand(ctx) {
               const points = ctx.getContentsPoints(contents, contents);
               return ctx.getPointsBoundingUnsafe(points);
             });
-            const getGeometriesInRange = (region) => region ? getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents)) : [];
+            const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
             const end = { x: bounding.end.x, y: p.y };
             const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
             if (border) {
@@ -7790,6 +7790,11 @@ function getModel(ctx) {
         bidirectional: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.bidirectional || false, setValue: (v) => update((c) => {
           if (isRayContent(c)) {
             c.bidirectional = v;
+          }
+        }) }),
+        reversed: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.reversed || false, setValue: (v) => update((c) => {
+          if (isRayContent(c)) {
+            c.reversed = v;
           }
         }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents)

@@ -347,10 +347,11 @@ export const CADEditor = React.forwardRef((props: {
     5 / scaleWithViewport,
   )
 
-  const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
+  const getContentsInRange = (region?: TwoPointsFormRegion): readonly Nullable<BaseContent>[] => {
     if (!rtree) {
       return []
     }
+    if (!region) return state
     return [
       ...rtree.rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y }),
       ...rtree.boundlessContents,
@@ -471,7 +472,7 @@ export const CADEditor = React.forwardRef((props: {
         setActiveViewportIndex(activeIndex)
         return
       }
-      const indexes = getContentsInRange({ start: point, end: point }).map(c => getContentIndex(c, editingContent))
+      const indexes = getContentsInRange({ start: point, end: point }).filter((c): c is BaseContent => !!c).map(c => getContentIndex(c, editingContent))
       const index = getContentByClickPosition(editingContent, point, () => true, getContentModel, false, contentVisible, indexes)
       if (index !== undefined) {
         const content = editingContent[index[0]]
@@ -658,7 +659,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       onEditMove(s.position, selectedContents, s.target)
       // hover by position
-      const indexes = getContentsInRange({ start: p, end: p }).map(c => getContentIndex(c, editingContent))
+      const indexes = getContentsInRange({ start: p, end: p }).filter((c): c is BaseContent => !!c).map(c => getContentIndex(c, editingContent))
       setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes, 3 / scaleWithViewport))
     }
   })

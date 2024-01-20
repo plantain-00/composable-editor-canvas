@@ -71,6 +71,12 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
 }
 
 export function reverseRay(ray: Ray): Ray {
+  if (!ray.bidirectional) {
+    return {
+      ...ray,
+      reversed: !ray.reversed,
+    }
+  }
   return {
     ...ray,
     angle: normalizeAngle(ray.angle + 180),

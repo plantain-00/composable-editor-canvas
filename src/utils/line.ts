@@ -21,11 +21,13 @@ export interface GeneralFormLine {
 export interface Ray extends Position {
   angle: number
   bidirectional?: boolean
+  reversed?: boolean
 }
 
 export const Ray = /* @__PURE__ */ and(Position, {
   angle: number,
   bidirectional: /* @__PURE__ */ optional(boolean),
+  reversed: /* @__PURE__ */ optional(boolean),
 })
 
 export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
@@ -347,7 +349,10 @@ export function getPolygonPoints(point: Position, center: Position, sides: numbe
   return points
 }
 
-export function getRayPointAtDistance({ x: x1, y: y1, angle }: Ray, distance: number): Position {
+export function getRayPointAtDistance({ x: x1, y: y1, angle, reversed }: Ray, distance: number): Position {
+  if (reversed) {
+    distance = -distance
+  }
   const r = angleToRadian(angle)
   return {
     x: x1 + distance * Math.cos(r),
@@ -414,13 +419,13 @@ export function getRayTransformedLineSegment(ray: Ray, width: number, height: nu
 
 export function getRayStartAndEnd(ray: Ray): { start?: Position, end?: Position } {
   return {
-    start: ray.bidirectional ? undefined : ray,
-    end: undefined,
+    start: ray.bidirectional || ray.reversed ? undefined : ray,
+    end: !ray.bidirectional && ray.reversed ? ray : undefined,
   }
 }
 
 export function getRayParamAtPoint(ray: Ray, point: Position) {
   const d = getTwoPointsDistance(ray, point)
   if (isZero(d)) return 0
-  return d * (isSameNumber(angleToRadian(ray.angle), getTwoPointsRadian(point, ray)) ? 1 : -1)
+  return d * (isSameNumber(angleToRadian(ray.angle), getTwoPointsRadian(point, ray)) ? 1 : -1) * (ray.reversed ? -1 : 1)
 }

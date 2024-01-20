@@ -76,6 +76,7 @@ export function getModel(ctx: PluginContext) {
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRayContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRayContent(c)) { c.angle = v } })} />,
         bidirectional: <ctx.BooleanEditor value={content.bidirectional || false} setValue={(v) => update(c => { if (isRayContent(c)) { c.bidirectional = v } })} />,
+        reversed: <ctx.BooleanEditor value={content.reversed || false} setValue={(v) => update(c => { if (isRayContent(c)) { c.reversed = v } })} />,
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
       }
     },

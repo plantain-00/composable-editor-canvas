@@ -67,7 +67,7 @@ export function printNurbsCurve(curve: NurbsCurve) {
 }
 
 export function printRay(ray: Ray) {
-  return `${printPoint(ray)}${ray.bidirectional ? '<' : ''}->${Math.round(ray.angle)}`
+  return `${printPoint(ray)}${ray.bidirectional ? '<->' : ray.reversed ? '<-' : '->'}${Math.round(ray.angle)}`
 }
 
 export function printGeometryLine(line: GeometryLine) {

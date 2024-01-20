@@ -181,7 +181,7 @@ export function usePointSnap<T>(
     getSnapPoint(
       p: Position,
       contents: readonly Nullable<T>[],
-      getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
+      getContentsInRange?: (region: TwoPointsFormRegion) => readonly Nullable<T>[],
       lastPosition?: Position,
       transformSnapPosition?: (p: Position) => Position
     ): SnapResult<T> {

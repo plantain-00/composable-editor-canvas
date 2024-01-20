@@ -1784,7 +1784,8 @@ export function getGeometryLineBoundingFromCache(line: GeometryLine) {
   })
 }
 
-export function getContentHatchGeometries(content: BaseContent, contents: readonly Nullable<BaseContent>[]): HatchGeometries | undefined {
+export function getContentHatchGeometries(content: Nullable<BaseContent>, contents: readonly Nullable<BaseContent>[]): HatchGeometries | undefined {
+  if (!content) return undefined
   const geometries = getContentModel(content)?.getGeometries?.(content, contents)
   if (!geometries) return undefined
   if (geometries.lines.length > 30) return undefined

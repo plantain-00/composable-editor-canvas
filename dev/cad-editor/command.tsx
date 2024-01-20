@@ -40,7 +40,7 @@ interface CommandProps {
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   acquireRegion: (handle: (region: Position[]) => void) => void,
   transformPosition: (p: Position) => Position,
-  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[]
+  getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[]
 }
 
 interface CommandResult {
@@ -97,7 +97,7 @@ export function useCommands(
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   acquireRegion: (handle: (region: Position[]) => void) => void,
   transformPosition: (p: Position) => Position,
-  getContentsInRange: (region: TwoPointsFormRegion) => BaseContent[],
+  getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[],
 ) {
   let commandResult: CommandResult | undefined
   Object.values(commandCenter).forEach((command) => {

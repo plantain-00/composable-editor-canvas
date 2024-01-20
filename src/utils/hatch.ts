@@ -178,7 +178,7 @@ function getRightSideGeometryLine(
       const points = getTwoGeometryLinesIntersectionPoint(line, start.line)
       for (const point of points) {
         const param = getGeometryLineParamAtPoint(point, start.line)
-        intersections.push({ line, param: largerThan(param, startParam) ? param : param + 1, point, originalParam: param, id: geometry.id })
+        intersections.push({ line, param: largerThan(param, startParam) ? param : param + ((!Array.isArray(start.line) && start.line.type === 'ray') ? Infinity : 1), point, originalParam: param, id: geometry.id })
       }
     }
   }
