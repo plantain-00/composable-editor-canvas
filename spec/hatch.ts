@@ -175,7 +175,7 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines2, true))
+  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines2))
 
   const lines3: HatchGeometries[] = [
     {
@@ -223,5 +223,72 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines3, true))
+  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines3))
+  t.snapshot(getHatchByPosition({ x: 1411, y: -858 }, { x: 4827.926789679547, y: -858 }, () => lines1))
+
+  const lines4: HatchGeometries[] = [
+    {
+      id: 59,
+      lines: [
+        {
+          "type": "ellipse arc",
+          "curve": {
+            "cx": 1370.7273710925747,
+            "cy": -1134.5660224346493,
+            "rx": 60.335450901039835,
+            "ry": 99.30401857424064,
+            "angle": -73.99771614853803,
+            "startAngle": 0,
+            "endAngle": 360
+          }
+        }
+      ]
+    },
+    {
+      id: 60,
+      lines: [
+        [
+          {
+            "x": 1374.8399900996874,
+            "y": -1268.153510021977
+          },
+          {
+            "x": 1451.983740535535,
+            "y": -1242.4830352082136
+          }
+        ],
+        [
+          {
+            "x": 1451.983740535535,
+            "y": -1242.4830352082136
+          },
+          {
+            "x": 1426.6652452755125,
+            "y": -1166.3970378154747
+          }
+        ],
+        [
+          {
+            "x": 1426.6652452755125,
+            "y": -1166.3970378154747
+          },
+          {
+            "x": 1349.521494839665,
+            "y": -1192.067512629238
+          }
+        ],
+        [
+          {
+            "x": 1349.521494839665,
+            "y": -1192.067512629238
+          },
+          {
+            "x": 1374.8399900996874,
+            "y": -1268.153510021977
+          }
+        ]
+      ]
+    }
+  ]
+  t.snapshot(getHatchByPosition({ x: 1400, y: -1217 }, { x: 2000, y: -1217 }, () => lines4))
 })

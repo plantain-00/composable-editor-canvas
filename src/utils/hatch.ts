@@ -57,7 +57,7 @@ function getRightSideGeometryLines(
   }
   reverseGeometryLineIfDirectionIsWrong(startRadian, start)
   const closed = isGeometryLinesClosed([start.line])
-  let s = getRightSideGeometryLine(start, closed, getGeometriesInGeometryLineRange(start.line), debug)
+  let s = getRightSideGeometryLine(start, getGeometriesInGeometryLineRange(start.line), debug)
   const result: GeometryLine[] = []
   const ids = new Set<number>()
   let i = 0
@@ -82,7 +82,7 @@ function getRightSideGeometryLines(
     result.push(s.line)
     ids.add(s.id)
     if (s.next) {
-      s = getRightSideGeometryLine(s.next, closed, getGeometriesInGeometryLineRange(s.next.line), debug)
+      s = getRightSideGeometryLine(s.next, getGeometriesInGeometryLineRange(s.next.line), debug)
     } else {
       break
     }
@@ -162,10 +162,10 @@ interface HatchIntersection {
 
 function getRightSideGeometryLine(
   start: HatchIntersection,
-  closed: boolean,
   geometries: (HatchGeometries | undefined)[],
   debug?: boolean,
 ): { line: GeometryLine, id: number, next?: HatchIntersection } | undefined {
+  const closed = isGeometryLinesClosed([start.line])
   const startParam = getGeometryLineParamAtPoint(start.point, start.line)
   if (startParam === undefined) return
   if (debug) {

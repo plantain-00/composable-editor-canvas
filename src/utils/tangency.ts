@@ -585,7 +585,7 @@ export function getEllipseTangentRadianAtRadian(ellipse: Ellipse, t: number) {
 }
 
 export function getEllipseArcTangentRadianAtRadian(arc: EllipseArc, radian: number) {
-  return normalizeRadian(getEllipseTangentRadianAtRadian(arc, radian) + Math.PI / 2 * (arc.counterclockwise ? -1 : 1))
+  return normalizeRadian(getEllipseTangentRadianAtRadian(arc, radian) + (arc.counterclockwise ? Math.PI : 0))
 }
 
 export function getQuadraticCurveTangentRadianAtPercent({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, u: number) {

@@ -51,7 +51,7 @@ export function printArc(arc: Arc) {
 }
 
 export function printEllipseArc(arc: EllipseArc) {
-  return `${printPoint(getEllipseCenter(arc))} R${Math.round(arc.rx)},${Math.round(arc.ry)} A${Math.round(arc.startAngle)}${arc.counterclockwise ? '<-' : '->'}${Math.round(arc.endAngle)}`
+  return `${printPoint(getEllipseCenter(arc))} R${Math.round(arc.rx)},${Math.round(arc.ry)} A${Math.round(arc.startAngle + (arc.angle || 0))}${arc.counterclockwise ? '<-' : '->'}${Math.round(arc.endAngle + (arc.angle || 0))}`
 }
 
 export function printQuadraticCurve(curve: QuadraticCurve) {
