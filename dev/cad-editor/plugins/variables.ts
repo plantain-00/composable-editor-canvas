@@ -699,6 +699,7 @@ function getCommand(ctx) {
     name: "break",
     execute({ contents, selected }) {
       const newContents = [];
+      const indexes = [];
       contents.forEach((content, index) => {
         var _a, _b, _c, _d;
         if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
@@ -715,11 +716,14 @@ function getCommand(ctx) {
             const result = (_d = (_c = ctx.getContentModel(content)) == null ? void 0 : _c.break) == null ? void 0 : _d.call(_c, content, intersectionPoints, contents);
             if (result) {
               newContents.push(...result);
-              contents[index] = void 0;
+              indexes.push(index);
             }
           }
         }
       });
+      for (const index of indexes) {
+        contents[index] = void 0;
+      }
       contents.push(...newContents);
     },
     contentSelectable(content, contents) {
@@ -1385,6 +1389,12 @@ function getModel(ctx) {
           }
         });
         return result.length > 1 ? result : void 0;
+      },
+      join(content, target) {
+        if (isArcContent(target)) {
+          return ctx.mergeArc(content, target);
+        }
+        return;
       },
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
@@ -3202,6 +3212,12 @@ function getModel(ctx) {
         }
         return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))];
       },
+      join(content, target) {
+        if (isEllipseArcContent(target)) {
+          return ctx.mergeEllipseArc(content, target);
+        }
+        return;
+      },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         const { points } = getEllipseArcGeometries(content);
@@ -4512,6 +4528,63 @@ export {
   isImageContent
 };
 `,
+`// dev/cad-editor/plugins/join.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "0,49 100,49", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,49 76,32 76,64", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "54,49 27,32 28,65", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" }));
+  return {
+    name: "join",
+    execute({ contents, selected }) {
+      var _a, _b;
+      const source = new Set(contents.filter((content, index) => {
+        var _a2, _b2;
+        return !!content && ctx.isSelected([index], selected) && ((_b2 = (_a2 = this.contentSelectable) == null ? void 0 : _a2.call(this, content, contents)) != null ? _b2 : true);
+      }));
+      const removedContents = /* @__PURE__ */ new Set();
+      const newContents = /* @__PURE__ */ new Set();
+      while (source.size > 1) {
+        const [current, ...rest] = source;
+        const count = source.size;
+        for (const r of rest) {
+          const result = (_b = (_a = ctx.getContentModel(current)) == null ? void 0 : _a.join) == null ? void 0 : _b.call(_a, current, r);
+          if (result) {
+            removedContents.add(r);
+            source.delete(r);
+            newContents.delete(r);
+            removedContents.add(current);
+            source.delete(current);
+            newContents.delete(current);
+            source.add(result);
+            newContents.add(result);
+            break;
+          }
+        }
+        if (count === source.size) {
+          source.delete(current);
+          continue;
+        }
+      }
+      for (const content of removedContents) {
+        const id = ctx.getContentIndex(content, contents);
+        if (id >= 0) {
+          contents[id] = void 0;
+        }
+      }
+      for (const content of newContents) {
+        contents.push(content);
+      }
+    },
+    contentSelectable(content, contents) {
+      const model = ctx.getContentModel(content);
+      return (model == null ? void 0 : model.join) !== void 0 && ctx.contentIsDeletable(content, contents);
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function getModel(ctx) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or("line", "polyline")), ctx.StrokeFields, ctx.FillFields, {
@@ -4568,6 +4641,22 @@ function getModel(ctx) {
       return ctx.trimOffsetResult(points, point, closed).map((p) => ctx.produce(content, (d) => {
         d.points = p;
       }));
+    },
+    join(content, target) {
+      if (isLineContent(target) || isPolyLineContent(target)) {
+        const lines = [
+          ...getPolylineGeometries(content).lines.map((n) => ({ type: "line", points: [...n] })),
+          ...getPolylineGeometries(target).lines.map((n) => ({ type: "line", points: [...n] }))
+        ];
+        ctx.mergePolylines(lines);
+        if (lines.length === 1) {
+          return {
+            ...content,
+            points: lines[0].points
+          };
+        }
+      }
+      return;
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -5768,6 +5857,9 @@ function getCommand(ctx) {
           if (!isNaN(offset2) && offset2 >= 0) {
             setOffset(offset2);
             clearText();
+          } else if (text.toUpperCase() === "T") {
+            setOffset(0);
+            clearText();
           }
         }
       } : void 0);
@@ -5775,6 +5867,7 @@ function getCommand(ctx) {
         onStart(p) {
           resetInput();
           onEnd({
+            nextCommand: "offset",
             updateContents: (contents, selected) => {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c));
               for (const content of target) {
@@ -5809,6 +5902,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable,
+    selectCount: 1,
     icon
   };
 }

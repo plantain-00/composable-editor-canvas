@@ -272,6 +272,12 @@ export function getModel(ctx: PluginContext) {
         }
         return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))]
       },
+      join(content, target) {
+        if (isEllipseArcContent(target)) {
+          return ctx.mergeEllipseArc(content, target)
+        }
+        return
+      },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         const { points } = getEllipseArcGeometries(content)

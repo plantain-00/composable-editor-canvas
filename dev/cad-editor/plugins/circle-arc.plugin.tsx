@@ -267,6 +267,12 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
+      join(content, target) {
+        if (isArcContent(target)) {
+          return ctx.mergeArc(content, target)
+        }
+        return
+      },
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         if (dashed) {

@@ -22,12 +22,14 @@ export interface Command extends CommandType {
   pointSnapDisabled?: boolean
 }
 
+interface CommandEndOptions {
+  updateContents: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
+  nextCommand: string,
+  repeatedly: boolean,
+}
+
 interface CommandProps {
-  onEnd: (options?: Partial<{
-    updateContents?: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
-    nextCommand?: string,
-    repeatedly?: boolean,
-  }>) => void,
+  onEnd: (options?: Partial<CommandEndOptions>) => void,
   transform: (p: Position) => Position,
   type: string | undefined,
   selected: { content: BaseContent, path: ContentPath }[],
@@ -78,11 +80,7 @@ export function getCommand(name: string): Command | undefined {
 
 export function useCommands(
   onEnd: (
-    options?: Partial<{
-      updateContents?: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
-      nextCommand?: string,
-      repeatedly?: boolean,
-    }>
+    options?: Partial<CommandEndOptions>
   ) => void,
   transform: (p: Position) => Position,
   inputFixed: boolean | undefined,

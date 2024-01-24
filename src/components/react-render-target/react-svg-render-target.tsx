@@ -1,6 +1,6 @@
 import * as React from "react"
 import { getColorString } from "../../utils/color"
-import { isZero } from "../../utils/math"
+import { isZero, largerOrEqual } from "../../utils/math"
 import { Position } from "../../utils/position"
 import { getLargeArc } from "../../utils/angle"
 import { getParallelLinesByDistance } from "../../utils/line"
@@ -146,6 +146,15 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     ), options)
   },
   renderArc(cx, cy, r, startAngle, endAngle, options) {
+    if (options?.counterclockwise) {
+      if (largerOrEqual(startAngle - endAngle, 360)) {
+        return this.renderCircle(cx, cy, r, options)
+      }
+    } else {
+      if (largerOrEqual(endAngle - startAngle, 360)) {
+        return this.renderCircle(cx, cy, r, options)
+      }
+    }
     const start = polarToCartesian(cx, cy, r, endAngle)
     const end = polarToCartesian(cx, cy, r, startAngle)
     const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"
@@ -160,6 +169,15 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     ), options)
   },
   renderEllipseArc(cx, cy, rx, ry, startAngle, endAngle, options) {
+    if (options?.counterclockwise) {
+      if (largerOrEqual(startAngle - endAngle, 360)) {
+        return this.renderEllipse(cx, cy, rx, ry, options)
+      }
+    } else {
+      if (largerOrEqual(endAngle - startAngle, 360)) {
+        return this.renderEllipse(cx, cy, rx, ry, options)
+      }
+    }
     const start = ellipsePolarToCartesian(cx, cy, rx, ry, endAngle)
     const end = ellipsePolarToCartesian(cx, cy, rx, ry, startAngle)
     const largeArcFlag = getLargeArc({ startAngle, endAngle, counterclockwise: options?.counterclockwise }) ? "1" : "0"

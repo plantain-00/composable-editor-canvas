@@ -66,6 +66,22 @@ export function getModel(ctx: PluginContext) {
         d.points = p
       }))
     },
+    join(content, target) {
+      if (isLineContent(target) || isPolyLineContent(target)) {
+        const lines = [
+          ...getPolylineGeometries(content).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+          ...getPolylineGeometries(target).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+        ]
+        ctx.mergePolylines(lines)
+        if (lines.length === 1) {
+          return {
+            ...content,
+            points: lines[0].points,
+          } as LineContent
+        }
+      }
+      return
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(content.points, options)

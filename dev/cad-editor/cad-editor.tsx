@@ -360,21 +360,22 @@ export const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
-    ({ updateContents, nextCommand, repeatedly } = {}) => {
+    async ({ updateContents, nextCommand, repeatedly } = {}) => {
+      let newStates = state
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
         })
-        applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
+        newStates = await applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
       } else if (previewPatches.length > 0) {
-        applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
+        newStates = await applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       }
       if (repeatedly) {
         return
       }
       resetOperation()
       if (nextCommand) {
-        startOperation({ type: 'command', name: nextCommand }, [])
+        startOperation({ type: 'command', name: nextCommand }, [], getContentByPath(newStates))
       }
     },
     (p) => getSnapPoint(reverseTransform(p), editingContent, getContentsInRange, lastPosition).position,
@@ -777,7 +778,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
-  const startOperation = (p: Operation, s = selected) => {
+  const startOperation = (p: Operation, s = selected, c = editingContent) => {
     setLastOperation(p)
     resetCommand?.()
     if (p.type === 'command') {
@@ -787,9 +788,9 @@ export const CADEditor = React.forwardRef((props: {
           count: command.selectCount,
           part: command.selectType === 'select part',
           selectable(v) {
-            const content = getContentByIndex(editingContent, v)
+            const content = getContentByIndex(c, v)
             if (content) {
-              return command.contentSelectable?.(content, editingContent) ?? true
+              return command.contentSelectable?.(content, c) ?? true
             }
             return false
           },
@@ -806,7 +807,7 @@ export const CADEditor = React.forwardRef((props: {
     }
     operate(p)
     if (position && onCommandMouseMove) {
-      const s = getSnapPoint(position, editingContent, getContentsInRange)
+      const s = getSnapPoint(position, c, getContentsInRange)
       onCommandMouseMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
   }
