@@ -1,6 +1,6 @@
 {
   "name": "use-wheel-zoom",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "A react wheel zoom hook.",
   "main": "index.js",
   "repository": {
