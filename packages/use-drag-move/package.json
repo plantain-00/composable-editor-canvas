@@ -1,6 +1,6 @@
 {
   "name": "use-drag-move",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "A react drag move hook.",
   "main": "index.js",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "equation-solver",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "A equation solver.",
   "main": "index.js",
   "repository": {
