@@ -32,11 +32,11 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
           }
         }
       }
-      const bounding = ctx.mergeBoundings(boundings)
+      const bounding = ctx.mergeBoundingsUnsafe(boundings)
       const center = ctx.getTwoPointCenter(bounding.start, bounding.end)
 
       const result: core.Nullable<model.BaseContent>[] = []
-      const lengths = lines.map(line => ctx.getGeometryLineLength(line))
+      const lengths = lines.map(line => ctx.getGeometryLineLength(line) || 0)
       const totalLength = lengths.reduce((p, c) => p + c, 0)
       for (let length = 0; length <= totalLength; length += content.length) {
         const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length)

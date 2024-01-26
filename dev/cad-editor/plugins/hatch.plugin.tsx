@@ -187,7 +187,7 @@ export function getCommand(ctx: PluginContext): Command[] {
               const points = ctx.getContentsPoints(contents, contents)
               return ctx.getPointsBoundingUnsafe(points)
             })
-            const getGeometriesInRange = (region: core.TwoPointsFormRegion) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
+            const getGeometriesInRange = (region: core.TwoPointsFormRegion | undefined) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
             const end = { x: bounding.end.x, y: p.y }
             const border = ctx.getHatchByPosition(p, end, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
             if (border) {

@@ -6,6 +6,7 @@ import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { NurbsCurve } from "./nurbs"
+import { Ray } from "./line"
 
 /**
  * @public
@@ -50,7 +51,7 @@ export function printArc(arc: Arc) {
 }
 
 export function printEllipseArc(arc: EllipseArc) {
-  return `${printPoint(getEllipseCenter(arc))} R${Math.round(arc.rx)},${Math.round(arc.ry)} A${Math.round(arc.startAngle)}${arc.counterclockwise ? '<-' : '->'}${Math.round(arc.endAngle)}`
+  return `${printPoint(getEllipseCenter(arc))} R${Math.round(arc.rx)},${Math.round(arc.ry)} A${Math.round(arc.startAngle + (arc.angle || 0))}${arc.counterclockwise ? '<-' : '->'}${Math.round(arc.endAngle + (arc.angle || 0))}`
 }
 
 export function printQuadraticCurve(curve: QuadraticCurve) {
@@ -63,6 +64,10 @@ export function printBezierCurve(curve: BezierCurve) {
 
 export function printNurbsCurve(curve: NurbsCurve) {
   return curve.points.map(p => printPoint(p)).join('->')
+}
+
+export function printRay(ray: Ray) {
+  return `${printPoint(ray)}${ray.bidirectional ? '<->' : ray.reversed ? '<-' : '->'}${Math.round(ray.angle)}`
 }
 
 export function printGeometryLine(line: GeometryLine) {
@@ -80,6 +85,9 @@ export function printGeometryLine(line: GeometryLine) {
   }
   if (line.type === 'bezier curve') {
     return printBezierCurve(line.curve)
+  }
+  if (line.type === 'ray') {
+    return printRay(line.line)
   }
   return printNurbsCurve(line.curve)
 }

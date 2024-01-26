@@ -1,12 +1,13 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { isGeometryLinesClosed, getGeometryLineStartAndEnd, getGeometryLineParamAtPoint } from "./break"
+import { getGeometryLineParamAtPoint } from "./geometry-line"
+import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
 import { isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
 import { getTwoPointsRadian } from "./radian"
 import { normalizeRadian } from "./angle"
-import { GeneralFormLine } from "./line"
+import { GeneralFormLine, getParallelRaysByDistance } from "./line"
 import { getParallelLineSegmentsByDistance, getParallelLinesByDistance } from "./line"
 import { pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./line"
 import { getPointSideOfLine } from "./line"
@@ -209,6 +210,9 @@ export function getPointSideOfGeometryLine(point: Position, line: GeometryLine):
   if (line.type === 'bezier curve') {
     return getPointSideOfBezierCurve(point, line.curve)
   }
+  if (line.type === 'ray') {
+    return getPointSideOfLine(point, pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle)))
+  }
   return getPointSideOfNurbsCurve(point, line.curve)
 }
 
@@ -232,7 +236,13 @@ export function getLinesOffsetDirection(point: Position, lines: GeometryLine[]) 
   if (mins.length > 1) {
     min = minimumBy(mins.map(m => {
       const param = getGeometryLineParamAtPoint(m.point, m.line)
-      const length = isZero(param) ? 0.1 : getGeometryLineLength(m.line) - 0.1
+      let length = 0.1
+      if (!isZero(param)) {
+        const len = getGeometryLineLength(m.line)
+        if (len !== undefined) {
+          length = len - 0.1
+        }
+      }
       const p = getGeometryLinesPointAndTangentRadianByLength([m.line], length)
       return {
         ...m,
@@ -273,6 +283,12 @@ export function getParallelGeometryLineByDistance(line: GeometryLine, distance: 
     return {
       type: line.type,
       curve: getParallelBezierCurvesByDistance(line.curve, distance)[index],
+    }
+  }
+  if (line.type === 'ray') {
+    return {
+      type: line.type,
+      line: getParallelRaysByDistance(line.line, distance)[index],
     }
   }
   return {

@@ -1,6 +1,18 @@
 import * as React from "react"
-import { Circle, getPerpendicularPoint, getTwoNumbersDistance, getTwoPointsDistance, Nullable, pointIsInRegion, pointIsOnLineSegment, Position, Region, twoPointLineToGeneralFormLine, TwoPointsFormRegion, GeometryLine, getPointAndGeometryLineNearestPointAndDistance, getPerpendicularPointToCircle, angleInRange, radianToAngle, getTangencyPointToCircle, getTwoPointsRadian, getTangencyPointToEllipse, getEllipseRadian, getPerpendicularPointRadianToEllipse, getEllipsePointAtRadian, getPerpendicularPointToQuadraticCurve, getTangencyPointToQuadraticCurve, getPerpendicularPointToBezierCurve, getTangencyPointToBezierCurve, getPerpendicularParamToNurbsCurve, getNurbsCurvePointAtParam, getTangencyParamToNurbsCurve, getGeometryLinesParamAtPoint } from "../utils"
 import { getAngleSnapPosition } from "../utils/snap"
+import { Position, getTwoPointsDistance } from "../utils/position"
+import { Nullable } from "../utils/types"
+import { GeometryLine, getGeometryLinesParamAtPoint } from "../utils/geometry-line"
+import { Region, TwoPointsFormRegion, pointIsInRegion } from "../utils/region"
+import { Circle } from "../utils/circle"
+import { getTwoNumbersDistance } from "../utils/math"
+import { pointAndDirectionToGeneralFormLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "../utils/line"
+import { getPerpendicularPoint, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToCircle, getPerpendicularPointToQuadraticCurve, getPointAndGeometryLineNearestPointAndDistance } from "../utils/perpendicular"
+import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getTangencyParamToNurbsCurve } from "../utils/nurbs"
+import { angleInRange } from "../utils/angle"
+import { angleToRadian, getTwoPointsRadian, radianToAngle } from "../utils/radian"
+import { getEllipsePointAtRadian, getEllipseRadian } from "../utils/ellipse"
+import { getTangencyPointToBezierCurve, getTangencyPointToCircle, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve } from "../utils/tangency"
 
 /**
  * @public
@@ -169,7 +181,7 @@ export function usePointSnap<T>(
     getSnapPoint(
       p: Position,
       contents: readonly Nullable<T>[],
-      getContentsInRange?: (region: TwoPointsFormRegion) => readonly T[],
+      getContentsInRange?: (region: TwoPointsFormRegion) => readonly Nullable<T>[],
       lastPosition?: Position,
       transformSnapPosition?: (p: Position) => Position
     ): SnapResult<T> {
@@ -239,7 +251,7 @@ export function usePointSnap<T>(
             if (model.getGeometries) {
               const { bounding, lines } = model.getGeometries(content, contents)
               if (
-                bounding &&
+                !bounding ||
                 pointIsInRegion(
                   p,
                   {
@@ -319,6 +331,18 @@ export function usePointSnap<T>(
                         return transformResult(transformSnapPosition, {
                           ...getOffsetSnapPoint(point),
                           ...getSnapTarget(model, content, point, contents),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'ray') {
+                    const perpendicularPoint = getPerpendicularPoint(lastPosition, pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle)))
+                    if (pointIsOnRay(perpendicularPoint, line.line)) {
+                      const distance = getTwoPointsDistance(p, perpendicularPoint)
+                      if (distance <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...perpendicularPoint, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(perpendicularPoint),
+                          ...getSnapTarget(model, content, perpendicularPoint, contents),
                         })
                       }
                     }
@@ -430,7 +454,7 @@ export function usePointSnap<T>(
             if (model.getGeometries) {
               const { bounding, lines } = model.getGeometries(content, contents)
               if (
-                bounding &&
+                !bounding ||
                 pointIsInRegion(
                   p,
                   {

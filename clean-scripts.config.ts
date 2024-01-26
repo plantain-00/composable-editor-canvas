@@ -36,6 +36,10 @@ export default {
           return { name: 'bundle js' }
         },
         `eslint --no-eslintrc --parser-options ecmaVersion:latest --parser-options sourceType:module --plugin unused-imports --rule 'unused-imports/no-unused-imports:error' ${packages.map(p => `packages/${p.name}/index.js`).join(' ')} --fix`,
+        async () => {
+          await savePackageSizes()
+          return { name: 'save package sizes' }
+        },
       ],
       type: [
         'tsc -p src/tsconfig.browser.json',
@@ -137,4 +141,12 @@ async function bundleType(d: typeof packages[number]) {
   const outfile = `packages/${d.name}/index.d.ts`
   await bundle.write({ file: outfile, format: "es" })
   await bundle.close()
+}
+
+async function savePackageSizes() {
+  const sizes = await Promise.all(packages.map(async d => {
+    const buffer = await readFileAsync(`packages/${d.name}/index.js`)
+    return d.name + ': ' + buffer.length.toPrecision(3) + '\n'
+  }))
+  await writeFileAsync('package-size.txt', sizes.join(''))
 }

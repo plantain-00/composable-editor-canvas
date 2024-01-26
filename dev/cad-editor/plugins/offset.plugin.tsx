@@ -41,6 +41,9 @@ export function getCommand(ctx: PluginContext): Command {
           if (!isNaN(offset) && offset >= 0) {
             setOffset(offset)
             clearText()
+          } else if (text.toUpperCase() === 'T') {
+            setOffset(0)
+            clearText()
           }
         }
       } : undefined)
@@ -48,6 +51,7 @@ export function getCommand(ctx: PluginContext): Command {
         onStart(p) {
           resetInput()
           onEnd({
+            nextCommand: 'offset',
             updateContents: (contents, selected) => {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c))
               for (const content of target) {
@@ -82,6 +86,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     contentSelectable,
+    selectCount: 1,
     icon,
   }
 }

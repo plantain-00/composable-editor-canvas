@@ -11,7 +11,9 @@ export default () => {
     target.renderArc(70, 70, 100, 0, 120, { dashArray: [4] }),
     target.renderArc(170, 170, 30, 0, 120, { counterclockwise: true }),
     target.renderArc(170, 170, 20, 120, 0, { counterclockwise: true }),
-  ], 230, 220)
+    target.renderArc(120, 200, 15, 0, 360,),
+    target.renderArc(120, 200, 10, 360, 0, { counterclockwise: true }),
+  ], 230, 280)
 
   const renderCircles = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderCircle(70, 100, 30, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -53,7 +55,9 @@ export default () => {
     target.renderEllipseArc(170, 160, 30, 15, 0, 120, { counterclockwise: true }),
     target.renderEllipseArc(170, 160, 30, 25, 120, 20, { counterclockwise: true }),
     target.renderEllipseArc(110, 100, 80, 40, 0, 120, { strokeColor: 0x00ff00, angle: 30 }),
-  ], 230, 250)
+    target.renderEllipseArc(120, 200, 30, 15, 0, 360,),
+    target.renderEllipseArc(120, 200, 20, 10, 360, 0, { counterclockwise: true }),
+  ], 230, 310)
 
   const renderEllipses = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipse(70, 60, 40, 20, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),

@@ -38,7 +38,12 @@ export function getPointsBounding(points: Position[]): TwoPointsFormRegion | und
   return getPointsBoundingUnsafe(points);
 }
 
-export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+export function mergeBoundingsUnsafe(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion {
+  return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
+}
+
+export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion | undefined {
+  if (boundings.length === 0) return
   return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
 }
 
@@ -176,11 +181,17 @@ export function getBezierCurveBounding({ from: { x: a1, y: b1 }, cp1: { x: a2, y
   return getPointsBoundingUnsafe(points)
 }
 
-export function getGeometryLinesBounding(lines: GeometryLine[], segmentCount = 100): TwoPointsFormRegion {
-  return mergeBoundings(lines.map(line => getGeometryLineBounding(line, segmentCount)))
+export function getGeometryLinesBounding(lines: GeometryLine[], segmentCount = 100): TwoPointsFormRegion | undefined {
+  const boundings: TwoPointsFormRegion[] = []
+  for (const line of lines) {
+    const bounding = getGeometryLineBounding(line, segmentCount)
+    if (!bounding) return
+    boundings.push(bounding)
+  }
+  return mergeBoundings(boundings)
 }
 
-export function getGeometryLineBounding(line: GeometryLine, segmentCount = 100): TwoPointsFormRegion {
+export function getGeometryLineBounding(line: GeometryLine, segmentCount = 100): TwoPointsFormRegion | undefined {
   if (Array.isArray(line)) {
     return getPointsBoundingUnsafe(line)
   }
@@ -196,5 +207,8 @@ export function getGeometryLineBounding(line: GeometryLine, segmentCount = 100):
   if (line.type === 'bezier curve') {
     return getBezierCurveBounding(line.curve)
   }
-  return getPointsBoundingUnsafe(getNurbsPoints(line.curve.degree, line.curve.points, line.curve.knots, line.curve.weights, segmentCount))
+  if (line.type === 'ray') {
+    return
+  }
+  return getPointsBounding(getNurbsPoints(line.curve.degree, line.curve.points, line.curve.knots, line.curve.weights, segmentCount))
 }

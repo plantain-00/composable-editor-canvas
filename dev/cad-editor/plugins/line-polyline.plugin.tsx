@@ -66,6 +66,22 @@ export function getModel(ctx: PluginContext) {
         d.points = p
       }))
     },
+    join(content, target) {
+      if (isLineContent(target) || isPolyLineContent(target)) {
+        const lines = [
+          ...getPolylineGeometries(content).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+          ...getPolylineGeometries(target).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+        ]
+        ctx.mergePolylines(lines)
+        if (lines.length === 1) {
+          return {
+            ...content,
+            points: lines[0].points,
+          } as LineContent
+        }
+      }
+      return
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(content.points, options)
@@ -168,6 +184,8 @@ export function getCommand(ctx: PluginContext): Command[] {
   const React = ctx.React
   const icon1 = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <circle cx="10" cy="87" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
+      <circle cx="87" cy="9" r="12" strokeWidth="0" vectorEffect="non-scaling-stroke" fill="currentColor" stroke="#000000"></circle>
       <polyline points="10,87 87,9" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
     </svg>
   )

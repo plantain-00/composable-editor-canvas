@@ -1,13 +1,14 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundings, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
 import type { EllipseArcContent } from './plugins/ellipse.plugin'
 import type { PathContent } from './plugins/path.plugin'
 import type { NurbsContent } from './plugins/nurbs.plugin'
+import type { RayContent } from './plugins/ray.plugin'
 export { math } from '../expression/math'
 
 export interface BaseContent<T extends string = string> {
@@ -214,6 +215,7 @@ export type Model<T> = Partial<FeatureModels> & {
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   offset?(content: T, point: Position, distance: number): BaseContent | BaseContent[] | void
+  join?(content: T, target: BaseContent): BaseContent | void
   render?<V, P>(content: T, ctx: RenderContext<V, P>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
@@ -403,6 +405,9 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
   }
   if (line.type === 'bezier curve') {
     return { type: 'path', commands: [{ type: 'move', to: line.curve.from }, { type: 'bezierCurve', cp1: line.curve.cp1, cp2: line.curve.cp2, to: line.curve.to }] } as PathContent
+  }
+  if (line.type === 'ray') {
+    return { type: 'ray', ...line.line } as RayContent
   }
   return { type: 'nurbs', ...line.curve } as NurbsContent
 }
@@ -1707,7 +1712,7 @@ export function renderClipContent<V, P>(content: ClipFields & BaseContent, targe
         const geometries = contentModel.getGeometries?.(content)
         if (!geometries?.bounding) return target
         return renderCtx.target.renderPath([
-          getPolygonFromTwoPointsFormRegion(mergeBoundings([geometries.bounding, borderGeometries.bounding])),
+          getPolygonFromTwoPointsFormRegion(mergeBoundingsUnsafe([geometries.bounding, borderGeometries.bounding])),
           getGeometryLinesPoints(borderGeometries.lines),
         ], {
           ...renderCtx,
@@ -1771,15 +1776,17 @@ export function getClipContentEditPoints(content: ClipFields, contents: readonly
 }
 
 export const contentsBoundingCache = new WeakmapCache<readonly Nullable<BaseContent>[], TwoPointsFormRegion>()
-const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion>()
+const geometryLineBoundingCache = new WeakmapCache<GeometryLine, TwoPointsFormRegion | undefined>()
 
 export function getGeometryLineBoundingFromCache(line: GeometryLine) {
+  if (!Array.isArray(line) && line.type === 'ray') return
   return geometryLineBoundingCache.get(line, () => {
     return getGeometryLineBounding(line)
   })
 }
 
-export function getContentHatchGeometries(content: BaseContent, contents: readonly Nullable<BaseContent>[]): HatchGeometries | undefined {
+export function getContentHatchGeometries(content: Nullable<BaseContent>, contents: readonly Nullable<BaseContent>[]): HatchGeometries | undefined {
+  if (!content) return undefined
   const geometries = getContentModel(content)?.getGeometries?.(content, contents)
   if (!geometries) return undefined
   if (geometries.lines.length > 30) return undefined

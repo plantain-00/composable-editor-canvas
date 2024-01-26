@@ -133,13 +133,17 @@ export const CADEditor = React.forwardRef((props: {
       for (const content of newContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, newState)
         if (geometries?.bounding) {
-          rtree?.insert(boundingToRTreeBounding(geometries.bounding), content)
+          rtree?.rtree.insert(boundingToRTreeBounding(geometries.bounding), content)
+        } else {
+          rtree?.boundlessContents.add(content)
         }
       }
       for (const content of removedContents) {
         const geometries = getContentModel(content)?.getGeometries?.(content, oldState)
         if (geometries?.bounding) {
-          rtree?.remove(boundingToRTreeBounding(geometries.bounding), content)
+          rtree?.rtree.remove(boundingToRTreeBounding(geometries.bounding), content)
+        } else {
+          rtree?.boundlessContents.delete(content)
         }
       }
       setMinimapTransform(zoomContentsToFit(minimapWidth, minimapHeight, newState, newState, 1))
@@ -343,30 +347,35 @@ export const CADEditor = React.forwardRef((props: {
     5 / scaleWithViewport,
   )
 
-  const getContentsInRange = (region: TwoPointsFormRegion): BaseContent[] => {
+  const getContentsInRange = (region?: TwoPointsFormRegion): readonly Nullable<BaseContent>[] => {
     if (!rtree) {
       return []
     }
-    return rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y })
+    if (!region) return state
+    return [
+      ...rtree.rtree.search({ x: region.start.x, y: region.start.y, w: region.end.x - region.start.x, h: region.end.y - region.start.y }),
+      ...rtree.boundlessContents,
+    ]
   }
 
   // commands
   const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
-    ({ updateContents, nextCommand, repeatedly } = {}) => {
+    async ({ updateContents, nextCommand, repeatedly } = {}) => {
+      let newStates = state
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
           updateContents(draft, selected)
         })
-        applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
+        newStates = await applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
       } else if (previewPatches.length > 0) {
-        applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
+        newStates = await applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       }
       if (repeatedly) {
         return
       }
       resetOperation()
       if (nextCommand) {
-        startOperation({ type: 'command', name: nextCommand }, [])
+        startOperation({ type: 'command', name: nextCommand }, [], getContentByPath(newStates))
       }
     },
     (p) => getSnapPoint(reverseTransform(p), editingContent, getContentsInRange, lastPosition).position,
@@ -464,7 +473,7 @@ export const CADEditor = React.forwardRef((props: {
         setActiveViewportIndex(activeIndex)
         return
       }
-      const indexes = getContentsInRange({ start: point, end: point }).map(c => getContentIndex(c, editingContent))
+      const indexes = getContentsInRange({ start: point, end: point }).filter((c): c is BaseContent => !!c).map(c => getContentIndex(c, editingContent))
       const index = getContentByClickPosition(editingContent, point, () => true, getContentModel, false, contentVisible, indexes)
       if (index !== undefined) {
         const content = editingContent[index[0]]
@@ -651,7 +660,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       onEditMove(s.position, selectedContents, s.target)
       // hover by position
-      const indexes = getContentsInRange({ start: p, end: p }).map(c => getContentIndex(c, editingContent))
+      const indexes = getContentsInRange({ start: p, end: p }).filter((c): c is BaseContent => !!c).map(c => getContentIndex(c, editingContent))
       setHovering(getContentByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, operations.select.part, contentVisible, indexes, 3 / scaleWithViewport))
     }
   })
@@ -769,7 +778,7 @@ export const CADEditor = React.forwardRef((props: {
     }
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
-  const startOperation = (p: Operation, s = selected) => {
+  const startOperation = (p: Operation, s = selected, c = editingContent) => {
     setLastOperation(p)
     resetCommand?.()
     if (p.type === 'command') {
@@ -779,9 +788,9 @@ export const CADEditor = React.forwardRef((props: {
           count: command.selectCount,
           part: command.selectType === 'select part',
           selectable(v) {
-            const content = getContentByIndex(editingContent, v)
+            const content = getContentByIndex(c, v)
             if (content) {
-              return command.contentSelectable?.(content, editingContent) ?? true
+              return command.contentSelectable?.(content, c) ?? true
             }
             return false
           },
@@ -798,7 +807,7 @@ export const CADEditor = React.forwardRef((props: {
     }
     operate(p)
     if (position && onCommandMouseMove) {
-      const s = getSnapPoint(position, editingContent, getContentsInRange)
+      const s = getSnapPoint(position, c, getContentsInRange)
       onCommandMouseMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
   }
@@ -808,7 +817,7 @@ export const CADEditor = React.forwardRef((props: {
       e.preventDefault()
     }
   })
-  const [rtree, setRTree] = React.useState<ReturnType<typeof RTree>>()
+  const [rtree, setRTree] = React.useState<{ rtree: ReturnType<typeof RTree>, boundlessContents: Set<BaseContent> }>()
   debug.mark('before search')
   const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
   const searchResult = new Set(getContentsInRange(bounding))
@@ -816,6 +825,7 @@ export const CADEditor = React.forwardRef((props: {
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
     const newRTree = RTree()
+    const boundlessContents = new Set<BaseContent>()
     for (const content of contents) {
       if (!content) {
         continue
@@ -823,9 +833,11 @@ export const CADEditor = React.forwardRef((props: {
       const geometries = getContentModel(content)?.getGeometries?.(content, contents)
       if (geometries?.bounding) {
         newRTree.insert(boundingToRTreeBounding(geometries.bounding), content)
+      } else {
+        boundlessContents.add(content)
       }
     }
-    setRTree(newRTree)
+    setRTree({ rtree: newRTree, boundlessContents })
   }
 
   const operatorVisible = props.onApplyPatchesFromSelf !== undefined

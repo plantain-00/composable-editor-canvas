@@ -13,12 +13,22 @@ export function normalizeAngleInRange(angle: number, range: AngleRange) {
   return angle
 }
 
-export function normalizeRadian(angle: number) {
-  while (largerThan(angle, Math.PI)) {
-    angle -= Math.PI * 2
+export function normalizeRadian(radian: number) {
+  while (largerThan(radian, Math.PI)) {
+    radian -= Math.PI * 2
   }
-  while (lessThan(angle, -Math.PI)) {
-    angle += Math.PI * 2
+  while (lessThan(radian, -Math.PI)) {
+    radian += Math.PI * 2
+  }
+  return radian
+}
+
+export function normalizeAngle(angle: number) {
+  while (largerThan(angle, 180)) {
+    angle -= 360
+  }
+  while (lessThan(angle, -180)) {
+    angle += 360
   }
   return angle
 }

@@ -116,7 +116,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         })
         return {
           lines,
-          bounding: ctx.mergeBoundings(boundings),
+          bounding: ctx.mergeBoundingsUnsafe(boundings),
           renderingLines,
           regions,
         }

@@ -1,5 +1,6 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed, pointIsOnGeometryLine } from "./break"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getPartOfGeometryLine, pointIsOnGeometryLine } from "./geometry-line"
+import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
 import { deepEquals, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
@@ -56,7 +57,7 @@ function getRightSideGeometryLines(
   }
   reverseGeometryLineIfDirectionIsWrong(startRadian, start)
   const closed = isGeometryLinesClosed([start.line])
-  let s = getRightSideGeometryLine(start, closed, getGeometriesInGeometryLineRange(start.line), debug)
+  let s = getRightSideGeometryLine(start, getGeometriesInGeometryLineRange(start.line), debug)
   const result: GeometryLine[] = []
   const ids = new Set<number>()
   let i = 0
@@ -66,8 +67,10 @@ function getRightSideGeometryLines(
       break
     }
     if (!s) break
+    const lineStart = getGeometryLineStartAndEnd(s.line).start
     if (
-      !isSamePoint(getGeometryLineStartAndEnd(s.line).start, start.point) &&
+      lineStart &&
+      !isSamePoint(lineStart, start.point) &&
       s.next &&
       pointIsOnGeometryLine(start.point, s.line)
     ) {
@@ -79,7 +82,7 @@ function getRightSideGeometryLines(
     result.push(s.line)
     ids.add(s.id)
     if (s.next) {
-      s = getRightSideGeometryLine(s.next, closed, getGeometriesInGeometryLineRange(s.next.line), debug)
+      s = getRightSideGeometryLine(s.next, getGeometriesInGeometryLineRange(s.next.line), debug)
     } else {
       break
     }
@@ -111,7 +114,7 @@ export function getHatchHoles(
     if (!geometry) continue
     for (const line of geometry.lines) {
       const start = getGeometryLineStartAndEnd(line).start
-      if (pointInPolygon(start, points) && border.every(n => !pointIsOnGeometryLine(start, n))) {
+      if (start && pointInPolygon(start, points) && border.every(n => !pointIsOnGeometryLine(start, n))) {
         holes.push({ lines: [line], start, id: geometry.id })
       }
     }
@@ -159,10 +162,10 @@ interface HatchIntersection {
 
 function getRightSideGeometryLine(
   start: HatchIntersection,
-  closed: boolean,
   geometries: (HatchGeometries | undefined)[],
   debug?: boolean,
 ): { line: GeometryLine, id: number, next?: HatchIntersection } | undefined {
+  const closed = isGeometryLinesClosed([start.line])
   const startParam = getGeometryLineParamAtPoint(start.point, start.line)
   if (startParam === undefined) return
   if (debug) {
@@ -175,7 +178,7 @@ function getRightSideGeometryLine(
       const points = getTwoGeometryLinesIntersectionPoint(line, start.line)
       for (const point of points) {
         const param = getGeometryLineParamAtPoint(point, start.line)
-        intersections.push({ line, param: largerThan(param, startParam) ? param : param + 1, point, originalParam: param, id: geometry.id })
+        intersections.push({ line, param: largerThan(param, startParam) ? param : param + ((!Array.isArray(start.line) && start.line.type === 'ray') ? Infinity : 1), point, originalParam: param, id: geometry.id })
       }
     }
   }

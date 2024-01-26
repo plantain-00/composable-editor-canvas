@@ -212,7 +212,7 @@ export function getGeometryLinesPointAndTangentRadianByLength(lines: GeometryLin
   return
 }
 
-export function getGeometryLineLength(line: GeometryLine): number {
+export function getGeometryLineLength(line: GeometryLine): number | undefined {
   if (Array.isArray(line)) {
     return getTwoPointsDistance(...line)
   }
@@ -228,13 +228,18 @@ export function getGeometryLineLength(line: GeometryLine): number {
   if (line.type === 'bezier curve') {
     return getBezierCurveLength(line.curve)
   }
+  if (line.type === 'ray') {
+    return
+  }
   return getNurbsCurveLength(line.curve)
 }
 
-export function getGeometryLinesLength(lines: GeometryLine[]): number {
+export function getGeometryLinesLength(lines: GeometryLine[]): number | undefined {
   let result = 0
   for (const line of lines) {
-    result += getGeometryLineLength(line)
+    const length = getGeometryLineLength(line)
+    if (length === undefined) return
+    result += length
   }
   return result
 }

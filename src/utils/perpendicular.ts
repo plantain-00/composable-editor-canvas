@@ -7,7 +7,7 @@ import { TwoPointsFormRegion } from "./region"
 import { getTwoPointsDistance } from "./position"
 import { getTwoPointsRadian } from "./radian"
 import { angleInRange } from "./angle"
-import { getPolygonLine } from "./line"
+import { Ray, getPolygonLine, pointAndDirectionToGeneralFormLine, pointIsOnRay } from "./line"
 import { GeneralFormLine } from "./line"
 import { twoPointLineToGeneralFormLine } from "./line"
 import { getPointSideOfLine } from "./line"
@@ -206,6 +206,17 @@ export function getPointAndLineSegmentNearestPointAndDistance(position: Position
   return minimumBy([{ point: point1, distance: getTwoPointsDistance(position, point1) }, { point: point2, distance: getTwoPointsDistance(position, point2) }], v => v.distance)
 }
 
+export function getPointAndRayNearestPointAndDistance(position: Position, ray: Ray, extend = false) {
+  const perpendicularPoint = getPerpendicularPoint(position, pointAndDirectionToGeneralFormLine(ray, angleToRadian(ray.angle)))
+  if (extend || ray.bidirectional || pointIsOnRay(perpendicularPoint, ray)) {
+    return {
+      point: perpendicularPoint,
+      distance: getTwoPointsDistance(position, perpendicularPoint),
+    }
+  }
+  return { point: ray, distance: getTwoPointsDistance(position, ray) }
+}
+
 export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
     return getPointAndLineSegmentNearestPointAndDistance(p, ...line)
@@ -221,6 +232,9 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   }
   if (line.type === 'bezier curve') {
     return getPointAndBezierCurveNearestPointAndDistance(p, line.curve)
+  }
+  if (line.type === 'ray') {
+    return getPointAndRayNearestPointAndDistance(p, line.line)
   }
   return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve)
 }
@@ -298,6 +312,9 @@ export function getPointAndGeometryLineMinimumDistance(p: Position, line: Geomet
   }
   if (line.type === 'bezier curve') {
     return getPointAndBezierCurveNearestPointAndDistance(p, line.curve, extend).distance
+  }
+  if (line.type === 'ray') {
+    return getPointAndRayNearestPointAndDistance(p, line.line, extend).distance
   }
   return getPointAndNurbsCurveNearestPointAndDistance(p, line.curve).distance
 }

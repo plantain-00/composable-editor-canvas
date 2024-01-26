@@ -5,6 +5,8 @@ import { GeometryLine } from "./geometry-line";
 import { QuadraticCurve } from "./bezier";
 import { BezierCurve } from "./bezier";
 import { Nurbs, reverseNurbsCurve } from "./nurbs";
+import { Ray } from "./line";
+import { normalizeAngle } from "./angle";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {
   return [line[1], line[0]]
@@ -62,7 +64,23 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
   if (geometryLine.type === 'bezier curve') {
     return { ...geometryLine, curve: reverseBezierCurve(geometryLine.curve) }
   }
+  if (geometryLine.type === 'ray') {
+    return { ...geometryLine, line: reverseRay(geometryLine.line) }
+  }
   return { ...geometryLine, curve: reverseNurbsCurve(geometryLine.curve) }
+}
+
+export function reverseRay(ray: Ray): Ray {
+  if (!ray.bidirectional) {
+    return {
+      ...ray,
+      reversed: !ray.reversed,
+    }
+  }
+  return {
+    ...ray,
+    angle: normalizeAngle(ray.angle + 180),
+  }
 }
 
 function knotsReverse(knots: number[]): number[] {

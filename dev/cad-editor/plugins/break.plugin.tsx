@@ -14,6 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'break',
     execute({ contents, selected }) {
       const newContents: model.BaseContent<string>[] = []
+      const indexes: number[] = []
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           let intersectionPoints: core.Position[] = []
@@ -29,11 +30,14 @@ export function getCommand(ctx: PluginContext): Command {
             const result = ctx.getContentModel(content)?.break?.(content, intersectionPoints, contents)
             if (result) {
               newContents.push(...result)
-              contents[index] = undefined
+              indexes.push(index)
             }
           }
         }
       })
+      for (const index of indexes) {
+        contents[index] = undefined
+      }
       contents.push(...newContents)
     },
     contentSelectable(content, contents) {
