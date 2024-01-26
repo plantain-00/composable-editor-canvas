@@ -15,7 +15,7 @@ export function Combination4() {
   React.useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`https://storage.yorkyao.com/${key}`)
+        const res = await fetch(`https://storage.yorkyao.one/${key}`)
         const json: Nullable<BaseContent>[] = await res.json()
         setInitialState(json)
       } catch {
@@ -26,7 +26,7 @@ export function Combination4() {
 
   const ws = React.useRef<WebSocket>()
   React.useEffect(() => {
-    ws.current = new WebSocket(`wss://storage.yorkyao.com/ws/composable-editor-canvas?key=${key}`)
+    ws.current = new WebSocket(`wss://storage.yorkyao.one/ws/composable-editor-canvas?key=${key}`)
     setWsHeartbeat(ws.current, '{"method":"ping"}')
     return () => ws.current?.close()
   }, [])

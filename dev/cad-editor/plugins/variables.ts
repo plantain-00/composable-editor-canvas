@@ -2468,7 +2468,8 @@ function getCommand(ctx) {
   }
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "10,87 89,87", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "17", cy: "40", r: "16", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "60", cy: "57", r: "30", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
-  return {
+  const contentSelectable = (c) => isCircleContent(c) || isArcContent(c) || isLineContent(c);
+  const command = {
     name: "create tangent tangent radius circle",
     useCommand({ onEnd, type, selected, scale }) {
       const [candidates, setCandidates] = React.useState([]);
@@ -2524,10 +2525,132 @@ function getCommand(ctx) {
       };
     },
     selectCount: 2,
-    contentSelectable: (c) => isCircleContent(c) || isArcContent(c) || isLineContent(c),
+    contentSelectable,
     selectType: "select part",
     icon
   };
+  return [
+    command,
+    {
+      ...command,
+      name: "create tangent tangent radius circle 2",
+      useCommand({ onEnd, type, scale, contentVisible, contents, getContentsInRange }) {
+        const [first, setFirst] = React.useState();
+        const [second, setSecond] = React.useState();
+        const [hovering, setHovering] = React.useState();
+        const [result, setResult] = React.useState();
+        let message = "";
+        if (type) {
+          if (!first) {
+            message = "select first circle, arc or line";
+          } else if (!second) {
+            message = "select second circle, arc or line";
+          } else {
+            message = "input radius";
+          }
+        }
+        const assistentContents = [];
+        if (result) {
+          assistentContents.push({ ...result, type: "circle", dashArray: [4 / scale] });
+        }
+        const selected = [];
+        if (first) {
+          selected.push(first.path);
+        }
+        if (second) {
+          selected.push(second.path);
+        }
+        const getCandidate = (radius) => {
+          if (!first || !second)
+            return;
+          const candidates = getTangentTangentRadiusCircles(first.content, second.content, radius);
+          const candidate = ctx.minimumBy(candidates.map((c) => ({
+            content: c,
+            distance: ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point)
+          })), (c) => c.distance);
+          return candidate == null ? void 0 : candidate.content;
+        };
+        const { input, setInputPosition, setCursorPosition, clearText, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
+          if (e.key === "Enter") {
+            const radius = +text;
+            if (!isNaN(radius) && first && second) {
+              const candidate = getCandidate(radius);
+              if (!candidate)
+                return;
+              onEnd({
+                updateContents: (contents2) => {
+                  contents2.push({ type: "circle", ...candidate });
+                }
+              });
+              reset();
+            }
+          }
+        } : void 0);
+        const reset = () => {
+          setFirst(void 0);
+          setSecond(void 0);
+          setHovering(void 0);
+          setResult(void 0);
+          clearText();
+          resetInput();
+        };
+        const selectContent = (p) => {
+          const indexes = getContentsInRange({ start: p, end: p }).filter((c) => !!c).map((c) => ctx.getContentIndex(c, contents));
+          const contentPath = ctx.getContentByClickPosition(contents, p, (c) => {
+            const content = ctx.getContentByIndex(contents, c);
+            return !!content && contentSelectable(content);
+          }, ctx.getContentModel, true, contentVisible, indexes, 3 / scale);
+          if (contentPath) {
+            const content = ctx.getContentByIndex(contents, contentPath);
+            if (content) {
+              return { content, point: p, path: contentPath };
+            }
+          }
+          return;
+        };
+        return {
+          onStart(p) {
+            if (!first) {
+              setFirst(hovering);
+              setHovering(void 0);
+              return;
+            } else if (!second) {
+              setSecond(hovering);
+              setHovering(void 0);
+              return;
+            }
+            setCursorPosition(p);
+            if (result) {
+              onEnd({
+                updateContents: (contents2) => {
+                  contents2.push({ type: "circle", ...result });
+                }
+              });
+              reset();
+            }
+          },
+          input,
+          onMove(p, viewportPosition) {
+            setCursorPosition(p);
+            setInputPosition(viewportPosition || p);
+            if (!first) {
+              setHovering(selectContent(p));
+              return;
+            } else if (!second) {
+              setHovering(selectContent(p));
+              return;
+            }
+            setResult(getCandidate(ctx.getTwoPointsDistance(second.point, p)));
+          },
+          assistentContents,
+          selected,
+          hovering: hovering ? [hovering.path] : void 0,
+          reset
+        };
+      },
+      selectCount: 0
+    }
+  ];
 }
 export {
   getCommand

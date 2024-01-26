@@ -42,7 +42,7 @@ export function Combination3() {
     (async () => {
       let json: HtmlBlock[]
       try {
-        const res = await fetch(`https://storage.yorkyao.com/${key}`)
+        const res = await fetch(`https://storage.yorkyao.one/${key}`)
         json = await res.json()
       } catch {
         json = []
@@ -61,7 +61,7 @@ export function Combination3() {
 
   const ws = React.useRef<WebSocket>()
   React.useEffect(() => {
-    ws.current = new WebSocket(`wss://storage.yorkyao.com/ws/composable-editor-canvas?key=${key}`)
+    ws.current = new WebSocket(`wss://storage.yorkyao.one/ws/composable-editor-canvas?key=${key}`)
     setWsHeartbeat(ws.current, '{"method":"ping"}')
     return () => ws.current?.close()
   }, [])
