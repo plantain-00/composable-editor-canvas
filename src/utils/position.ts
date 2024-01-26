@@ -82,7 +82,11 @@ export function getPointAndPolygonMaximumDistance(position: Position, polygon: P
 }
 
 export function getTwoPointsDistance(point1: Position, point2: Position = { x: 0, y: 0 }) {
-  return Math.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2)
+  return Math.sqrt(getTwoPointsDistanceSquare(point1, point2))
+}
+
+export function getTwoPointsDistanceSquare(point1: Position, point2: Position = { x: 0, y: 0 }) {
+  return (point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2
 }
 
 export function getTwoPointCenter(p1: Position, p2: Position) {

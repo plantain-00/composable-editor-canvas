@@ -357,9 +357,21 @@ export const CADEditor = React.forwardRef((props: {
       ...rtree.boundlessContents,
     ]
   }
+  const [rtree, setRTree] = React.useState<{ rtree: ReturnType<typeof RTree>, boundlessContents: Set<BaseContent> }>()
+  debug.mark('before search')
+  const reverseTransform = (p: Position) => {
+    p = reverseTransformPosition(p, transform)
+    if (reverseTransformViewport) {
+      p = reverseTransformViewport(p)
+    }
+    return p
+  }
+  const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
+  const searchResult = new Set(getContentsInRange(bounding))
+  const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
   // commands
-  const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
+  const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, commandSelected, commandHovering, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
     async ({ updateContents, nextCommand, repeatedly } = {}) => {
       let newStates = state
       if (updateContents) {
@@ -392,15 +404,9 @@ export const CADEditor = React.forwardRef((props: {
     acquireRegion,
     transformPosition,
     getContentsInRange,
+    contentVisible,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
-  const reverseTransform = (p: Position) => {
-    p = reverseTransformPosition(p, transform)
-    if (reverseTransformViewport) {
-      p = reverseTransformViewport(p)
-    }
-    return p
-  }
 
   // select by region
   const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end, e) => {
@@ -817,11 +823,6 @@ export const CADEditor = React.forwardRef((props: {
       e.preventDefault()
     }
   })
-  const [rtree, setRTree] = React.useState<{ rtree: ReturnType<typeof RTree>, boundlessContents: Set<BaseContent> }>()
-  debug.mark('before search')
-  const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
-  const searchResult = new Set(getContentsInRange(bounding))
-  const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
     const newRTree = RTree()
@@ -991,6 +992,8 @@ export const CADEditor = React.forwardRef((props: {
           selected={selected}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
+          assistentSelected={commandSelected}
+          assistentHovering={commandHovering}
           active={active}
           activeViewportIndex={activeViewportIndex}
           onClick={onClick}

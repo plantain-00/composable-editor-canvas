@@ -43,6 +43,7 @@ interface CommandProps {
   acquireRegion: (handle: (region: Position[]) => void) => void,
   transformPosition: (p: Position) => Position,
   getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[]
+  contentVisible: (c: BaseContent) => boolean
 }
 
 interface CommandResult {
@@ -61,6 +62,8 @@ interface CommandResult {
     patches?: [Patch[], Patch[]]
   }
   assistentContents?: BaseContent[]
+  selected?: ContentPath[]
+  hovering?:ContentPath[]
   lastPosition?: Position
   reset?(saveCurrent?: boolean): void
 }
@@ -96,6 +99,7 @@ export function useCommands(
   acquireRegion: (handle: (region: Position[]) => void) => void,
   transformPosition: (p: Position) => Position,
   getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[],
+  contentVisible: (c: BaseContent) => boolean,
 ) {
   let commandResult: CommandResult | undefined
   Object.values(commandCenter).forEach((command) => {
@@ -116,6 +120,7 @@ export function useCommands(
         acquireRegion,
         transformPosition,
         getContentsInRange,
+        contentVisible,
       })
       if (type) {
         commandResult = r
@@ -163,6 +168,8 @@ export function useCommands(
       }
     },
     commandAssistentContents: commandResult?.assistentContents,
+    commandSelected: commandResult?.selected,
+    commandHovering: commandResult?.hovering,
     startCommand: commandResult?.onStart,
     onCommandMouseMove: commandResult?.onMove,
     onCommandMouseDown: commandResult?.onMouseDown,

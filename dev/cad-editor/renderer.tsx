@@ -10,7 +10,9 @@ export function Renderer(props: {
   assistentContents?: readonly BaseContent[]
   selected?: readonly ContentPath[]
   othersSelectedContents?: readonly { selection: number[], operator: string }[]
+  assistentSelected?: readonly ContentPath[]
   hovering?: readonly ContentPath[]
+  assistentHovering?: readonly ContentPath[]
   active?: number
   activeViewportIndex?: number
   x: number
@@ -232,7 +234,7 @@ export function Renderer(props: {
     }
   }
 
-  for (const index of (props.hovering || [])) {
+  for (const index of [...(props.hovering || []), ...(props.assistentHovering || [])]) {
     const content = getContentByIndex(previewContents, index)
     if (content) {
       const ContentRender = getContentModel(content)?.render
@@ -244,7 +246,7 @@ export function Renderer(props: {
     }
   }
 
-  for (const index of (props.selected || [])) {
+  for (const index of [...(props.selected || []), ...(props.assistentSelected || [])]) {
     const content = getContentByIndex(previewContents, index)
     if (content) {
       const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
