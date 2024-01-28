@@ -371,7 +371,7 @@ export const CADEditor = React.forwardRef((props: {
   const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
   // commands
-  const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, commandSelected, commandHovering, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
+  const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, onCommandKeyUp, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, commandSelected, commandHovering, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
     async ({ updateContents, nextCommand, repeatedly } = {}) => {
       let newStates = state
       if (updateContents) {
@@ -595,6 +595,7 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    e.preventDefault()
     const viewportPosition = reverseTransform({ x: e.clientX, y: e.clientY })
     const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
     if (acquirePointHandler.current) {
@@ -632,6 +633,7 @@ export const CADEditor = React.forwardRef((props: {
     setSnapOffset(undefined)
   })
   const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    e.preventDefault()
     if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     } else if (e.buttons === 4) {
@@ -782,6 +784,9 @@ export const CADEditor = React.forwardRef((props: {
       resetDragRotate()
       resetDragMove()
     }
+  })
+  core.useGlobalKeyUp(e => {
+    onCommandKeyUp?.(e)
   })
   const [lastOperation, setLastOperation] = React.useState<Operation>()
   const startOperation = (p: Operation, s = selected, c = editingContent) => {

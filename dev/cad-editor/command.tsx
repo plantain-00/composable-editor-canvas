@@ -52,6 +52,7 @@ interface CommandResult {
   onMouseDown?: (p: Position) => void
   onMouseUp?: (p: Position) => void
   onKeyDown?: (e: KeyboardEvent) => void
+  onKeyUp?: (e: KeyboardEvent) => void
   mask?: JSX.Element
   input?: React.ReactElement<{ children: React.ReactNode[] }>
   subcommand?: JSX.Element
@@ -175,6 +176,7 @@ export function useCommands(
     onCommandMouseDown: commandResult?.onMouseDown,
     onCommandMouseUp: commandResult?.onMouseUp,
     onCommandKeyDown: commandResult?.onKeyDown,
+    onCommandKeyUp: commandResult?.onKeyUp,
     getCommandByHotkey: (key: string) => commandHotkeys[key.toUpperCase()],
     commandLastPosition: commandResult?.lastPosition,
     resetCommand: commandResult?.reset,

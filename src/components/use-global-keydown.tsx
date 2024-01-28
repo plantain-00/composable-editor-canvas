@@ -11,3 +11,12 @@ export function useGlobalKeyDown(handler: (e: KeyboardEvent) => void) {
     }
   }, [handler])
 }
+
+export function useGlobalKeyUp(handler: (e: KeyboardEvent) => void) {
+  React.useEffect(() => {
+    window.addEventListener('keyup', handler, { passive: false })
+    return () => {
+      window.removeEventListener('keyup', handler)
+    }
+  }, [handler])
+}

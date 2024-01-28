@@ -82,6 +82,14 @@ export function getModel(ctx: PluginContext) {
       }
       return
     },
+    extend(content, point) {
+      const { lines } = getPolylineGeometries(content)
+      if (ctx.pointIsOnRay(point, { ...lines[0][0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(lines[0][0], lines[0][1])) })) {
+        content.points[0] = point
+      } else {
+        content.points[content.points.length - 1] = point
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(content.points, options)
