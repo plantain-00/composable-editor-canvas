@@ -33,6 +33,7 @@ interface CommandProps {
   transform: (p: Position) => Position,
   type: string | undefined,
   selected: { content: BaseContent, path: ContentPath }[],
+  setSelected: (...value: readonly Nullable<ContentPath>[]) => void
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
@@ -101,6 +102,7 @@ export function useCommands(
   transformPosition: (p: Position) => Position,
   getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[],
   contentVisible: (c: BaseContent) => boolean,
+  setSelected: (...value: readonly Nullable<ContentPath>[]) => void,
 ) {
   let commandResult: CommandResult | undefined
   Object.values(commandCenter).forEach((command) => {
@@ -111,6 +113,7 @@ export function useCommands(
         transform,
         type,
         selected,
+        setSelected,
         scale,
         strokeStyleId,
         fillStyleId,

@@ -273,6 +273,18 @@ export function getModel(ctx: PluginContext) {
         }
         return
       },
+      extend(content, point) {
+        const angle = ctx.radianToAngle(ctx.getCircleRadian(point, content))
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle })
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle })
+        const angle1 = Math.abs(endAngle - content.startAngle)
+        const angle2 = Math.abs(content.endAngle - startAngle)
+        if (angle1 < angle2) {
+          content.endAngle = endAngle
+        } else {
+          content.startAngle = startAngle
+        }
+      },
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         if (dashed) {

@@ -1396,6 +1396,18 @@ function getModel(ctx) {
         }
         return;
       },
+      extend(content, point) {
+        const angle = ctx.radianToAngle(ctx.getCircleRadian(point, content));
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle });
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle });
+        const angle1 = Math.abs(endAngle - content.startAngle);
+        const angle2 = Math.abs(content.endAngle - startAngle);
+        if (angle1 < angle2) {
+          content.endAngle = endAngle;
+        } else {
+          content.startAngle = startAngle;
+        }
+      },
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         if (dashed) {
@@ -3341,6 +3353,18 @@ function getModel(ctx) {
         }
         return;
       },
+      extend(content, point) {
+        const angle = ctx.getEllipseAngle(point, content);
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle });
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle });
+        const angle1 = Math.abs(endAngle - content.startAngle);
+        const angle2 = Math.abs(content.endAngle - startAngle);
+        if (angle1 < angle2) {
+          content.endAngle = endAngle;
+        } else {
+          content.startAngle = startAngle;
+        }
+      },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         const { points } = getEllipseArcGeometries(content);
@@ -3924,7 +3948,7 @@ function getCommand(ctx) {
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "-0,0 101,0", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "56,-0 43,57", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "43,57 35,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
   return {
     name: "extend",
-    useCommand({ onEnd, selected, contents, backgroundColor }) {
+    useCommand({ onEnd, selected, contents, backgroundColor, setSelected }) {
       var _a;
       const [hovering, setHovering] = React.useState();
       const [trimHovering, setTrimHovering] = React.useState();
@@ -3932,7 +3956,6 @@ function getCommand(ctx) {
       const reset = () => {
         setHovering(void 0);
         setTrimHovering(void 0);
-        setShift(false);
       };
       const assistentContents = [];
       if (hovering) {
@@ -3987,8 +4010,14 @@ function getCommand(ctx) {
                     updateContents: (contents2) => {
                       contents2[index] = void 0;
                       contents2.push(...newContents);
-                    }
+                    },
+                    repeatedly: true
                   });
+                  const newSelected = selected.map((s) => s.path);
+                  for (let i = 0; i < newContents.length; i++) {
+                    newSelected.push([contents.length + i]);
+                  }
+                  setSelected(...newSelected);
                 }
               }
             }

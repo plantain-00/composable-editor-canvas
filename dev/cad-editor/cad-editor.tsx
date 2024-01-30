@@ -405,6 +405,7 @@ export const CADEditor = React.forwardRef((props: {
     transformPosition,
     getContentsInRange,
     contentVisible,
+    setSelected,
   )
   const lastPosition = editLastPosition ?? commandLastPosition
 

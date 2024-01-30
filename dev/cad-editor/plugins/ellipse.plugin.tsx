@@ -278,6 +278,18 @@ export function getModel(ctx: PluginContext) {
         }
         return
       },
+      extend(content, point) {
+        const angle = ctx.getEllipseAngle(point, content)
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle })
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle })
+        const angle1 = Math.abs(endAngle - content.startAngle)
+        const angle2 = Math.abs(content.endAngle - startAngle)
+        if (angle1 < angle2) {
+          content.endAngle = endAngle
+        } else {
+          content.startAngle = startAngle
+        }
+      },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         const { points } = getEllipseArcGeometries(content)

@@ -14,14 +14,13 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'extend',
-    useCommand({ onEnd, selected, contents, backgroundColor }) {
+    useCommand({ onEnd, selected, contents, backgroundColor, setSelected }) {
       const [hovering, setHovering] = React.useState<{ content: model.BaseContent, point: core.Position, path: core.ContentPath }>()
       const [trimHovering, setTrimHovering] = React.useState<{ content: model.BaseContent, path: core.ContentPath }>()
       const [shift, setShift] = React.useState(false)
       const reset = () => {
         setHovering(undefined)
         setTrimHovering(undefined)
-        setShift(false)
       }
       const assistentContents: (model.BaseContent & model.StrokeFields)[] = []
       if (hovering) {
@@ -75,7 +74,13 @@ export function getCommand(ctx: PluginContext): Command {
                       contents[index] = undefined
                       contents.push(...newContents)
                     },
+                    repeatedly: true,
                   })
+                  const newSelected = selected.map(s => s.path)
+                  for (let i = 0; i < newContents.length; i++) {
+                    newSelected.push([contents.length + i])
+                  }
+                  setSelected(...newSelected)
                 }
               }
             }
