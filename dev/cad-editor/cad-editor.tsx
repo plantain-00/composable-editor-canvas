@@ -2,6 +2,7 @@ import React from 'react'
 import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath } from '../../src'
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createRoot } from 'react-dom/client'
 import { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
 import { BaseContent, Content, fixedInputStyle, getContentByIndex, getContentIndex, getContentModel, getDefaultViewport, getIntersectionPoints, getViewportByPoints, isViewportContent, registerModel, updateReferencedContents, ViewportContent, zoomContentsToFit, SnapResult, Select, PartRef, boundingToRTreeBounding } from './model'
 import { Command, CommandType, getCommand, registerCommand, useCommands } from './command'
@@ -60,7 +61,7 @@ export const CADEditor = React.forwardRef((props: {
         if (command?.execute) {
           setState((draft) => {
             draft = getContentByPath(draft)
-            command.execute?.({ contents: draft, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId, width, height, transform })
+            command.execute?.({ contents: draft, state, selected: s, setEditingContentPath, type: p.name, strokeStyleId, fillStyleId, textStyleId, width, height, transform })
           })
           setSelected()
           resetOperation()
@@ -1083,7 +1084,7 @@ export function usePlugins() {
 
 async function registerPlugins() {
   const plugins: { getModel?: (ctx: PluginContext) => model.Model<BaseContent> | model.Model<BaseContent>[], getCommand?: (ctx: PluginContext) => Command | Command[] }[] = await Promise.all(pluginScripts.map(p => import(/* webpackIgnore: true */'data:text/javascript;charset=utf-8,' + encodeURIComponent(p))))
-  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup, parseExpression, tokenizeExpression, evaluateExpression }
+  const ctx: PluginContext = { ...core, ...model, React, produce, produceWithPatches, renderToStaticMarkup, createRoot, parseExpression, tokenizeExpression, evaluateExpression }
   const commandTypes: CommandType[] = []
   for (const plugin of plugins) {
     if (plugin.getModel) {

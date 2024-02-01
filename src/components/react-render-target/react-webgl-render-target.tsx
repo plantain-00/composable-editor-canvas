@@ -24,7 +24,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
   type: 'webgl',
   renderResult(children, width, height, options) {
     return (
-      <Canvas
+      <WebglDrawCanvas
         width={width}
         height={height}
         attributes={options?.attributes}
@@ -197,7 +197,7 @@ export const reactWebglRenderTarget: ReactRenderTarget<WebglDraw> = {
  */
 export type WebglDraw = (strokeWidthFixed: boolean, rerender: () => void, width: number, height: number, transform?: RenderTransform, matrix?: Matrix, opacity?: number) => Graphic[]
 
-function Canvas(props: {
+function WebglDrawCanvas(props: {
   width: number,
   height: number,
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
@@ -208,6 +208,7 @@ function Canvas(props: {
   backgroundColor?: number
   debug?: boolean
   strokeWidthFixed?: boolean
+  onRender?: () => void
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
@@ -255,8 +256,9 @@ function Canvas(props: {
       const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
       const strokeWidthFixed = props.strokeWidthFixed ?? false
       render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.width, props.height, props.transform)
+      props.onRender?.()
     }
-  }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus, props.width, props.height])
+  }, [props.graphics, props.backgroundColor, render.current, props.transform, imageLoadStatus, props.width, props.height, props.onRender])
   return (
     <canvas
       ref={ref}

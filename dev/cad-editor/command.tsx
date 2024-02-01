@@ -8,6 +8,7 @@ export interface Command extends CommandType {
   useCommand?(props: CommandProps): CommandResult
   execute?(props: {
     contents: Nullable<BaseContent>[],
+    state: readonly Nullable<BaseContent>[]
     selected: readonly number[][],
     setEditingContentPath: (path: SelectPath | undefined) => void
     type: string | undefined,

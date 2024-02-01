@@ -3942,6 +3942,67 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/export-png.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "51,0 51,60", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,60 83,28", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,60 21,31", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "11,84 91,84", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "export png",
+    execute({ state, selected }) {
+      const draws = [];
+      const targets = [];
+      state.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected)) {
+          const model = ctx.getContentModel(content);
+          if (model == null ? void 0 : model.render) {
+            targets.push(content);
+            draws.push(model.render(content, {
+              target: ctx.reactCanvasRenderTarget,
+              transformColor: (c) => c,
+              transformStrokeWidth: (w) => w,
+              getFillColor: (c) => c.fillColor,
+              getStrokeColor: (c) => {
+                var _a;
+                return (_a = c.strokeColor) != null ? _a : ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor;
+              },
+              getFillPattern: (c) => c.fillPattern ? {
+                width: c.fillPattern.width,
+                height: c.fillPattern.height,
+                pattern: () => {
+                  var _a, _b, _c, _d;
+                  return ctx.reactCanvasRenderTarget.renderPath((_b = (_a = c.fillPattern) == null ? void 0 : _a.lines) != null ? _b : [], {
+                    strokeColor: (_d = (_c = c.fillPattern) == null ? void 0 : _c.strokeColor) != null ? _d : ctx.defaultStrokeColor
+                  });
+                }
+              } : void 0,
+              contents: state
+            }));
+          }
+        }
+      });
+      const width = window.innerWidth, height = window.innerHeight;
+      const transform = ctx.zoomContentsToFit(width, height, targets, state, 0.8);
+      if (!transform)
+        return;
+      const container = document.createElement("div");
+      ctx.createRoot(container).render(/* @__PURE__ */ React.createElement(ctx.CanvasDrawCanvas, { width, height, draws, transform, onRender: () => {
+        const child = container.children.item(0);
+        if (child && child instanceof HTMLCanvasElement) {
+          child.toBlob((blob) => {
+            if (blob) {
+              navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+            }
+          });
+        }
+      } }));
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/extend.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
