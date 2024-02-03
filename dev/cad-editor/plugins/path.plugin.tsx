@@ -19,7 +19,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       return {
         lines,
         bounding: ctx.getGeometryLinesBounding(lines),
-        renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
             lines,

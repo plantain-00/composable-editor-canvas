@@ -7,13 +7,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
   function getViewportGeometriesFromCache(content: Omit<model.ViewportContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]): model.Geometries {
     const geometries = ctx.getContentModel(content.border)?.getGeometries?.(content.border, contents)
     if (geometries) {
-      return {
-        ...geometries,
-        regions: [{
-          points: [],
-          lines: [],
-        }],
-      }
+      return geometries
     }
     return { lines: [], renderingLines: [] }
   }
@@ -38,7 +32,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
       if (render) {
         return render(content.border, {
           ...renderCtx,
-          clip: renderCtx.isHoveringOrSelected ? undefined : () => {
+          clip: renderCtx.isHoveringOrSelected || content.hidden ? undefined : () => {
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents
             // type-coverage:ignore-next-line
             const children = renderCache.get(sortedContents, renderCtx.target.type, () => {
@@ -96,6 +90,9 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.y = v } })} />,
         scale: <ctx.NumberEditor value={content.scale} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.scale = v } })} />,
+        rotate: <ctx.NumberEditor value={content.rotate || 0} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.rotate = v } })} />,
+        locked: <ctx.BooleanEditor value={content.locked || false} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.locked = v } })} />,
+        hidden: <ctx.BooleanEditor value={content.hidden || false} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.hidden = v } })} />,
       }
       if (border) {
         result.border = <ctx.ObjectEditor properties={border} />

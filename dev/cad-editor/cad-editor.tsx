@@ -171,6 +171,8 @@ export const CADEditor = React.forwardRef((props: {
   const activeContentBounding = activeContent ? getContentModel(activeContent)?.getGeometries?.(activeContent, editingContent).bounding : undefined
   const activeViewportContent = activeViewportIndex !== undefined ? editingContent[activeViewportIndex] : undefined
   const activeViewport = activeViewportContent && isViewportContent(activeViewportContent) ? activeViewportContent : undefined
+  const unlockedActiveViewport = activeViewport && !activeViewport.locked ? activeViewport : undefined
+  const unlockedActiveViewportIndex = activeViewportIndex !== undefined && unlockedActiveViewport ? activeViewportIndex : undefined
   const reverseTransformViewport = activeViewport ? (p: Position) => model.reverseTransformPositionByViewport(p, activeViewport) : undefined
   const transformViewport = activeViewport ? (p: Position) => model.transformPositionByViewport(p, activeViewport) : undefined
   const [xOffset, setXOffset] = React.useState(0)
@@ -184,17 +186,17 @@ export const CADEditor = React.forwardRef((props: {
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
     localStorageYKey: props.id + '-y',
-    setXOffset: activeViewport ? (offset) => setXOffset(x => x + offset) : undefined,
-    setYOffset: activeViewport ? (offset) => setYOffset(y => y + offset) : undefined,
+    setXOffset: unlockedActiveViewport ? (offset) => setXOffset(x => x + offset) : undefined,
+    setYOffset: unlockedActiveViewport ? (offset) => setYOffset(y => y + offset) : undefined,
   })
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     min: 0.001,
     localStorageKey: props.id + '-scale',
-    setScaleOffset: activeViewport ? (scaleOffset, cursor) => {
+    setScaleOffset: unlockedActiveViewport ? (scaleOffset, cursor) => {
       setScaleOffset(f => f * scaleOffset)
       cursor = reverseTransformPosition(cursor, transform)
-      setXOffset(f => (cursor.x - activeViewport.x) * scale * (1 - scaleOffset) + f * scaleOffset)
-      setYOffset(f => (cursor.y - activeViewport.y) * scale * (1 - scaleOffset) + f * scaleOffset)
+      setXOffset(f => (cursor.x - unlockedActiveViewport.x) * scale * (1 - scaleOffset) + f * scaleOffset)
+      setYOffset(f => (cursor.y - unlockedActiveViewport.y) * scale * (1 - scaleOffset) + f * scaleOffset)
     } : undefined,
     onChange(oldScale, newScale, cursor) {
       const result = scaleByCursorPosition({ width, height }, newScale / oldScale, cursor)
@@ -229,7 +231,7 @@ export const CADEditor = React.forwardRef((props: {
   )
   const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
-    if (activeViewportIndex !== undefined) {
+    if (unlockedActiveViewportIndex !== undefined) {
       applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       return
     }
@@ -250,9 +252,9 @@ export const CADEditor = React.forwardRef((props: {
     },
     rotate: activeViewport ? rotate : currentRotate ?? rotate,
   }
-  if (activeViewportIndex !== undefined) {
+  if (unlockedActiveViewportIndex !== undefined) {
     const [, patches, reversePatches] = produceWithPatches(editingContent, draft => {
-      const content = draft[activeViewportIndex]
+      const content = draft[unlockedActiveViewportIndex]
       if (content && isViewportContent(content)) {
         const p = core.rotatePosition(offset, { x: 0, y: 0 }, -rotate)
         content.x += (p.x + xOffset) / scale

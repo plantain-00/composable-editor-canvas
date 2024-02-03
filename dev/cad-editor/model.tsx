@@ -608,12 +608,16 @@ export type ViewportContent = BaseContent<'viewport'> & Position & StrokeFields 
   border: BaseContent
   scale: number
   rotate?: number
+  locked?: boolean
+  hidden?: boolean
 }
 
 export const ViewportContent = and(BaseContent('viewport'), Position, StrokeFields, {
   border: Content,
   scale: number,
   rotate: optional(number),
+  locked: optional(boolean),
+  hidden: optional(boolean),
 })
 
 export function isViewportContent(content: BaseContent): content is ViewportContent {

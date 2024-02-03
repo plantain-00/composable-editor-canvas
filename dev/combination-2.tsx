@@ -194,10 +194,10 @@ export function Combination2() {
           }
           return null
         })}
-        {(['move canvas', 'zoom window'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
-        <button onClick={() => addMockData()} style={{ position: 'relative' }}>add mock data</button>
-        {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative' }}>undo</button>}
-        {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative' }}>redo</button>}
+        {(['move canvas', 'zoom window'] as const).map((p) => <button onClick={() => editorRef.current?.startOperation({ type: 'non command', name: p })} key={p} style={{ position: 'relative', top: '-10px', borderColor: operation === p ? 'red' : undefined }}>{p}</button>)}
+        <button onClick={() => addMockData()} style={{ position: 'relative', top: '-10px' }}>add mock data</button>
+        {!readOnly && <button disabled={!canUndo} onClick={() => editorRef.current?.undo()} style={{ position: 'relative', top: '-10px' }}>undo</button>}
+        {!readOnly && <button disabled={!canRedo} onClick={() => editorRef.current?.redo()} style={{ position: 'relative', top: '-10px' }}>redo</button>}
         {!readOnly && <label>
           <input type='checkbox' checked={panelVisible} onChange={() => setPanelVisible(!panelVisible)} />
           panel

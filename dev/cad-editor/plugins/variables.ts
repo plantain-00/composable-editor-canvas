@@ -6634,7 +6634,7 @@ function getModel(ctx) {
       return {
         lines,
         bounding: ctx.getGeometryLinesBounding(lines),
-        renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
             lines,
@@ -11681,13 +11681,7 @@ function getModel(ctx) {
     var _a, _b;
     const geometries = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content.border, contents);
     if (geometries) {
-      return {
-        ...geometries,
-        regions: [{
-          points: [],
-          lines: []
-        }]
-      };
+      return geometries;
     }
     return { lines: [], renderingLines: [] };
   }
@@ -11716,7 +11710,7 @@ function getModel(ctx) {
       if (render) {
         return render(content.border, {
           ...renderCtx,
-          clip: renderCtx.isHoveringOrSelected ? void 0 : () => {
+          clip: renderCtx.isHoveringOrSelected || content.hidden ? void 0 : () => {
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents;
             const children = renderCache.get(sortedContents, renderCtx.target.type, () => {
               const children2 = [];
@@ -11792,6 +11786,21 @@ function getModel(ctx) {
         scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.scale, setValue: (v) => update((c) => {
           if (ctx.isViewportContent(c)) {
             c.scale = v;
+          }
+        }) }),
+        rotate: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rotate || 0, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.rotate = v;
+          }
+        }) }),
+        locked: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.locked || false, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.locked = v;
+          }
+        }) }),
+        hidden: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.hidden || false, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.hidden = v;
           }
         }) })
       };
