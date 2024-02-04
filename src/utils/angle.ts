@@ -41,6 +41,16 @@ export function normalizeAngleRange(content: AngleRange) {
   }
 }
 
+export function getFormattedStartAngle(range: AngleRange) {
+  let startAngle: number
+  if (range.counterclockwise) {
+    startAngle = lessThan(range.startAngle, range.endAngle) ? range.startAngle + 360 : range.startAngle
+  } else {
+    startAngle = largerThan(range.startAngle, range.endAngle) ? range.startAngle - 360 : range.startAngle
+  }
+  return startAngle
+}
+
 export function getFormattedEndAngle(range: AngleRange) {
   let endAngle: number
   if (range.counterclockwise) {

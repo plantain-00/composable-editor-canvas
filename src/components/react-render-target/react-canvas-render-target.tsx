@@ -18,7 +18,7 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
   type: 'canvas',
   renderResult(children, width, height, options) {
     return (
-      <Canvas
+      <CanvasDrawCanvas
         width={width}
         height={height}
         attributes={options?.attributes}
@@ -435,7 +435,7 @@ function renderPatternOrGradient(
  */
 export type CanvasDraw = (ctx: CanvasRenderingContext2D, scale: number, rerender: () => void, width: number, height: number, transform?: RenderTransform, matrix?: Matrix) => void
 
-function Canvas(props: {
+export function CanvasDrawCanvas(props: {
   width: number,
   height: number,
   attributes?: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
@@ -446,6 +446,7 @@ function Canvas(props: {
   backgroundColor?: number
   debug?: boolean
   strokeWidthFixed?: boolean
+  onRender?: () => void
 }) {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const [imageLoadStatus, setImageLoadStatus] = React.useState(0)
@@ -483,9 +484,10 @@ function Canvas(props: {
         if (props.debug) {
           console.info(Date.now() - now)
         }
+        props.onRender?.()
       }
     }
-  }, [props.draws, ref.current, props.transform, props.backgroundColor, imageLoadStatus, props.width, props.height])
+  }, [props.draws, ref.current, props.transform, props.backgroundColor, imageLoadStatus, props.width, props.height, props.onRender])
   return (
     <canvas
       ref={ref}

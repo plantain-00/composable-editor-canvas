@@ -608,7 +608,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
           device.queue.writeBuffer(buffer, 0, vertices, 0, vertices.length)
           return buffer
         }));
-       } else {
+      } else {
         passEncoder.setVertexBuffer(0, bufferCache.get(graphic.points, () => {
           const vertices = new Float32Array(graphic.points)
           const buffer = device.createBuffer({

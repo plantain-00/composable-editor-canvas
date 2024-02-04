@@ -1396,6 +1396,18 @@ function getModel(ctx) {
         }
         return;
       },
+      extend(content, point) {
+        const angle = ctx.radianToAngle(ctx.getCircleRadian(point, content));
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle });
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle });
+        const angle1 = Math.abs(endAngle - content.startAngle);
+        const angle2 = Math.abs(content.endAngle - startAngle);
+        if (angle1 < angle2) {
+          content.endAngle = endAngle;
+        } else {
+          content.startAngle = startAngle;
+        }
+      },
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         if (dashed) {
@@ -3341,6 +3353,18 @@ function getModel(ctx) {
         }
         return;
       },
+      extend(content, point) {
+        const angle = ctx.getEllipseAngle(point, content);
+        const endAngle = ctx.getFormattedEndAngle({ startAngle: content.startAngle, endAngle: angle });
+        const startAngle = ctx.getFormattedStartAngle({ startAngle: angle, endAngle: content.endAngle });
+        const angle1 = Math.abs(endAngle - content.startAngle);
+        const angle2 = Math.abs(content.endAngle - startAngle);
+        if (angle1 < angle2) {
+          content.endAngle = endAngle;
+        } else {
+          content.startAngle = startAngle;
+        }
+      },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         const { points } = getEllipseArcGeometries(content);
@@ -3910,6 +3934,231 @@ function getCommand(ctx) {
         }
       });
       navigator.clipboard.writeText(result.join("\\n"));
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/cad-editor/plugins/export-png.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "51,0 51,60", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,60 83,28", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "51,60 21,31", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "11,84 91,84", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "export png",
+    execute({ state, selected }) {
+      const draws = [];
+      const targets = [];
+      state.forEach((content, index) => {
+        if (content && ctx.isSelected([index], selected)) {
+          const model = ctx.getContentModel(content);
+          if (model == null ? void 0 : model.render) {
+            targets.push(content);
+            draws.push(model.render(content, {
+              target: ctx.reactCanvasRenderTarget,
+              transformColor: (c) => c,
+              transformStrokeWidth: (w) => w,
+              getFillColor: (c) => c.fillColor,
+              getStrokeColor: (c) => {
+                var _a;
+                return (_a = c.strokeColor) != null ? _a : ctx.hasFill(c) ? void 0 : ctx.defaultStrokeColor;
+              },
+              getFillPattern: (c) => c.fillPattern ? {
+                width: c.fillPattern.width,
+                height: c.fillPattern.height,
+                pattern: () => {
+                  var _a, _b, _c, _d;
+                  return ctx.reactCanvasRenderTarget.renderPath((_b = (_a = c.fillPattern) == null ? void 0 : _a.lines) != null ? _b : [], {
+                    strokeColor: (_d = (_c = c.fillPattern) == null ? void 0 : _c.strokeColor) != null ? _d : ctx.defaultStrokeColor
+                  });
+                }
+              } : void 0,
+              contents: state
+            }));
+          }
+        }
+      });
+      const width = window.innerWidth, height = window.innerHeight;
+      const transform = ctx.zoomContentsToFit(width, height, targets, state, 0.8);
+      if (!transform)
+        return;
+      const container = document.createElement("div");
+      ctx.createRoot(container).render(/* @__PURE__ */ React.createElement(ctx.CanvasDrawCanvas, { width, height, draws, transform, onRender: () => {
+        const child = container.children.item(0);
+        if (child && child instanceof HTMLCanvasElement) {
+          child.toBlob((blob) => {
+            if (blob) {
+              navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+            }
+          });
+        }
+      } }));
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/cad-editor/plugins/extend.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "-0,0 101,0", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "56,-0 43,57", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "43,57 35,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "extend",
+    useCommand({ onEnd, selected, contents, backgroundColor, setSelected }) {
+      var _a;
+      const [hovering, setHovering] = React.useState();
+      const [trimHovering, setTrimHovering] = React.useState();
+      const [shift, setShift] = React.useState(false);
+      const reset = () => {
+        setHovering(void 0);
+        setTrimHovering(void 0);
+      };
+      const assistentContents = [];
+      if (hovering) {
+        assistentContents.push(hovering.content);
+      } else if (trimHovering) {
+        if (ctx.isStrokeContent(trimHovering.content)) {
+          assistentContents.push({
+            ...trimHovering.content,
+            strokeWidth: ((_a = trimHovering.content.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(trimHovering.content)) + 2,
+            strokeColor: backgroundColor,
+            trueStrokeColor: true
+          });
+        }
+      }
+      return {
+        onStart() {
+          var _a2, _b, _c, _d, _e;
+          if (hovering) {
+            onEnd({
+              updateContents(contents2) {
+                var _a3, _b2;
+                const content = ctx.getContentByIndex(contents2, hovering.path);
+                if (content) {
+                  (_b2 = (_a3 = ctx.getContentModel(content)) == null ? void 0 : _a3.extend) == null ? void 0 : _b2.call(_a3, content, hovering.point);
+                }
+              },
+              repeatedly: true
+            });
+          } else if (trimHovering) {
+            const content = ctx.getContentByIndex(contents, trimHovering.path);
+            if (content) {
+              const points = [];
+              const lines = (_c = (_b = (_a2 = ctx.getContentModel(trimHovering.content)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b.call(_a2, trimHovering.content, contents)) == null ? void 0 : _c.lines;
+              if (lines) {
+                const { start, end } = ctx.getGeometryLinesStartAndEnd(lines);
+                if (start && end) {
+                  if (!ctx.isSamePoint(start, end)) {
+                    points.push(start, end);
+                  }
+                } else if (start) {
+                  points.push(start);
+                } else if (end) {
+                  points.push(end);
+                }
+              }
+              if (points.length > 0) {
+                const r = (_e = (_d = ctx.getContentModel(content)) == null ? void 0 : _d.break) == null ? void 0 : _e.call(_d, content, points, contents);
+                if (r) {
+                  const index = ctx.getContentIndex(content, contents);
+                  const newContents = r.filter((c) => !ctx.deepEquals(trimHovering.content, c));
+                  onEnd({
+                    updateContents: (contents2) => {
+                      contents2[index] = void 0;
+                      contents2.push(...newContents);
+                    },
+                    repeatedly: true
+                  });
+                  const newSelected = selected.map((s) => s.path);
+                  for (let i = 0; i < newContents.length; i++) {
+                    newSelected.push([contents.length + i]);
+                  }
+                  setSelected(...newSelected);
+                }
+              }
+            }
+          }
+          reset();
+        },
+        onMove(p) {
+          var _a2, _b, _c, _d, _e, _f, _g, _h;
+          for (const s of selected) {
+            const lines = (_c = (_b = (_a2 = ctx.getContentModel(s.content)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b.call(_a2, s.content, contents)) == null ? void 0 : _c.lines;
+            if (lines == null ? void 0 : lines.some((line) => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5)) {
+              let points = [];
+              for (const c of selected) {
+                if (c !== s) {
+                  const lines2 = (_f = (_e = (_d = ctx.getContentModel(c.content)) == null ? void 0 : _d.getGeometries) == null ? void 0 : _e.call(_d, c.content, contents)) == null ? void 0 : _f.lines;
+                  if (lines2) {
+                    for (let i = 0; i < lines.length; i++) {
+                      const extend = i === 0 || i === lines.length - 1;
+                      for (const line of lines2) {
+                        if (shift) {
+                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line));
+                        } else {
+                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter((p2) => lines.every((n) => !ctx.pointIsOnGeometryLine(p2, n))));
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              points = ctx.deduplicatePosition(points);
+              if (shift) {
+                let parts = [s.content];
+                if (points.length > 0) {
+                  parts = ((_h = (_g = ctx.getContentModel(s.content)) == null ? void 0 : _g.break) == null ? void 0 : _h.call(_g, s.content, points, contents)) || [s.content];
+                }
+                const content = parts.length === 1 ? parts[0] : parts.find((f) => {
+                  var _a3, _b2, _c2;
+                  return (_c2 = (_b2 = (_a3 = ctx.getContentModel(f)) == null ? void 0 : _a3.getGeometries) == null ? void 0 : _b2.call(_a3, f, contents)) == null ? void 0 : _c2.lines.some((n) => ctx.getPointAndGeometryLineMinimumDistance(p, n) < 5);
+                });
+                if (content) {
+                  setTrimHovering({
+                    ...s,
+                    content
+                  });
+                  return;
+                }
+              } else if (points.length > 0) {
+                const point = points.length === 1 ? points[0] : ctx.minimumBy(points.map((point2) => ({
+                  point: point2,
+                  distance: ctx.getTwoPointsDistanceSquare(p, point2)
+                })), (n) => n.distance).point;
+                setHovering({
+                  ...s,
+                  point,
+                  content: ctx.produce(s.content, (draft) => {
+                    var _a3, _b2;
+                    (_b2 = (_a3 = ctx.getContentModel(s.content)) == null ? void 0 : _a3.extend) == null ? void 0 : _b2.call(_a3, draft, point);
+                  })
+                });
+                return;
+              }
+            }
+          }
+          setHovering(void 0);
+          setTrimHovering(void 0);
+        },
+        onKeyDown(e) {
+          setShift(e.shiftKey);
+        },
+        onKeyUp(e) {
+          setShift(e.shiftKey);
+        },
+        reset,
+        assistentContents,
+        hovering: hovering ? [hovering.path] : trimHovering ? [trimHovering.path] : void 0
+      };
+    },
+    contentSelectable(content) {
+      var _a;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.extend) !== void 0;
     },
     icon
   };
@@ -4780,6 +5029,14 @@ function getModel(ctx) {
         }
       }
       return;
+    },
+    extend(content, point) {
+      const { lines } = getPolylineGeometries(content);
+      if (ctx.pointIsOnRay(point, { ...lines[0][0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(lines[0][0], lines[0][1])) })) {
+        content.points[0] = point;
+      } else {
+        content.points[content.points.length - 1] = point;
+      }
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -6377,7 +6634,7 @@ function getModel(ctx) {
       return {
         lines,
         bounding: ctx.getGeometryLinesBounding(lines),
-        renderingLines: ctx.dashedPolylineToLines(ctx.polygonToPolyline(points), content.dashArray),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
           {
             lines,
@@ -11424,13 +11681,7 @@ function getModel(ctx) {
     var _a, _b;
     const geometries = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content.border, contents);
     if (geometries) {
-      return {
-        ...geometries,
-        regions: [{
-          points: [],
-          lines: []
-        }]
-      };
+      return geometries;
     }
     return { lines: [], renderingLines: [] };
   }
@@ -11459,7 +11710,7 @@ function getModel(ctx) {
       if (render) {
         return render(content.border, {
           ...renderCtx,
-          clip: renderCtx.isHoveringOrSelected ? void 0 : () => {
+          clip: renderCtx.isHoveringOrSelected || content.hidden ? void 0 : () => {
             const sortedContents = ctx.getSortedContents(renderCtx.contents).contents;
             const children = renderCache.get(sortedContents, renderCtx.target.type, () => {
               const children2 = [];
@@ -11535,6 +11786,21 @@ function getModel(ctx) {
         scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.scale, setValue: (v) => update((c) => {
           if (ctx.isViewportContent(c)) {
             c.scale = v;
+          }
+        }) }),
+        rotate: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.rotate || 0, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.rotate = v;
+          }
+        }) }),
+        locked: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.locked || false, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.locked = v;
+          }
+        }) }),
+        hidden: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.hidden || false, setValue: (v) => update((c) => {
+          if (ctx.isViewportContent(c)) {
+            c.hidden = v;
           }
         }) })
       };

@@ -36,8 +36,10 @@ export function* iterateIntersectionPoints<T>(
   const model2 = getModel(content2)
   if (model1 && model2) {
     if (model1.getGeometries && model2.getGeometries) {
-      for (const line1 of model1.getGeometries(content1, contents).lines) {
-        for (const line2 of model2.getGeometries(content2, contents).lines) {
+      const lines1 = model1.getGeometries(content1, contents).lines
+      const lines2 = model2.getGeometries(content2, contents).lines
+      for (const line1 of lines1) {
+        for (const line2 of lines2) {
           yield* getTwoGeometryLinesIntersectionPoint(line1, line2)
         }
       }

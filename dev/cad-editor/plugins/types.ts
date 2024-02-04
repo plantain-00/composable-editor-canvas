@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { renderToStaticMarkup } from 'react-dom/server'
+import type { createRoot } from 'react-dom/client'
 import type { produce, produceWithPatches } from 'immer'
 import type { parseExpression, tokenizeExpression, evaluateExpression } from 'expression-engine'
 import type * as core from '../../../src'
@@ -10,6 +11,7 @@ export type PluginContext = typeof core & typeof model & {
   produce: typeof produce
   produceWithPatches: typeof produceWithPatches
   renderToStaticMarkup: typeof renderToStaticMarkup
+  createRoot: typeof createRoot
   parseExpression: typeof parseExpression
   tokenizeExpression: typeof tokenizeExpression
   evaluateExpression: typeof evaluateExpression

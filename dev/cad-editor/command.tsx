@@ -8,6 +8,7 @@ export interface Command extends CommandType {
   useCommand?(props: CommandProps): CommandResult
   execute?(props: {
     contents: Nullable<BaseContent>[],
+    state: readonly Nullable<BaseContent>[]
     selected: readonly number[][],
     setEditingContentPath: (path: SelectPath | undefined) => void
     type: string | undefined,
@@ -33,6 +34,7 @@ interface CommandProps {
   transform: (p: Position) => Position,
   type: string | undefined,
   selected: { content: BaseContent, path: ContentPath }[],
+  setSelected: (...value: readonly Nullable<ContentPath>[]) => void
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
@@ -52,6 +54,7 @@ interface CommandResult {
   onMouseDown?: (p: Position) => void
   onMouseUp?: (p: Position) => void
   onKeyDown?: (e: KeyboardEvent) => void
+  onKeyUp?: (e: KeyboardEvent) => void
   mask?: JSX.Element
   input?: React.ReactElement<{ children: React.ReactNode[] }>
   subcommand?: JSX.Element
@@ -100,6 +103,7 @@ export function useCommands(
   transformPosition: (p: Position) => Position,
   getContentsInRange: (region?: TwoPointsFormRegion) => readonly Nullable<BaseContent>[],
   contentVisible: (c: BaseContent) => boolean,
+  setSelected: (...value: readonly Nullable<ContentPath>[]) => void,
 ) {
   let commandResult: CommandResult | undefined
   Object.values(commandCenter).forEach((command) => {
@@ -110,6 +114,7 @@ export function useCommands(
         transform,
         type,
         selected,
+        setSelected,
         scale,
         strokeStyleId,
         fillStyleId,
@@ -175,6 +180,7 @@ export function useCommands(
     onCommandMouseDown: commandResult?.onMouseDown,
     onCommandMouseUp: commandResult?.onMouseUp,
     onCommandKeyDown: commandResult?.onKeyDown,
+    onCommandKeyUp: commandResult?.onKeyUp,
     getCommandByHotkey: (key: string) => commandHotkeys[key.toUpperCase()],
     commandLastPosition: commandResult?.lastPosition,
     resetCommand: commandResult?.reset,

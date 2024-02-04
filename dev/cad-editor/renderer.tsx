@@ -1,7 +1,7 @@
 import { applyPatches, Patch } from "immer"
 import React from "react"
 import { Debug, getColorString, isSelected, Nullable, Pattern, ReactRenderTarget, Merger, useValueChanged, WeakmapCache, Position, isSamePath, WeakmapMapCache, ContentPath, defaultLineJoin, defaultMiterLimit, defaultLineCap, LineJoin, LineCap } from "../../src"
-import { BaseContent, defaultStrokeColor, defaultOpacity, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields } from "./model"
+import { BaseContent, defaultStrokeColor, defaultOpacity, FillFields, getContentByIndex, getContentModel, getDefaultStrokeWidth, getSortedContents, getViewportMatrix, hasFill, isStrokeContent, isViewportContent, StrokeFields, isClipContent } from "./model"
 
 export function Renderer(props: {
   type?: string
@@ -131,7 +131,7 @@ export function Renderer(props: {
       }
       if (target.type !== 'svg' && model.getGeometries) {
         const { renderingLines, regions, bounding } = model.getGeometries(content, props.contents)
-        if (renderingLines && bounding && !regions) {
+        if (renderingLines && bounding && !regions && (!isClipContent(content) || !content.clip) && (!isViewportContent(content) || content.hidden)) {
           const strokeWidth = (isStrokeContent(content) ? content.strokeWidth : undefined) ?? getDefaultStrokeWidth(content)
           let strokeColor = (isStrokeContent(content) ? content.strokeColor : undefined) ?? defaultStrokeColor
           strokeColor = transformColor(strokeColor)

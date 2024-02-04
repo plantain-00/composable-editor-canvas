@@ -216,6 +216,7 @@ export type Model<T> = Partial<FeatureModels> & {
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
   offset?(content: T, point: Position, distance: number): BaseContent | BaseContent[] | void
   join?(content: T, target: BaseContent): BaseContent | void
+  extend?(content: T, point: Position): void
   render?<V, P>(content: T, ctx: RenderContext<V, P>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
@@ -607,12 +608,16 @@ export type ViewportContent = BaseContent<'viewport'> & Position & StrokeFields 
   border: BaseContent
   scale: number
   rotate?: number
+  locked?: boolean
+  hidden?: boolean
 }
 
 export const ViewportContent = and(BaseContent('viewport'), Position, StrokeFields, {
   border: Content,
   scale: number,
   rotate: optional(number),
+  locked: optional(boolean),
+  hidden: optional(boolean),
 })
 
 export function isViewportContent(content: BaseContent): content is ViewportContent {
