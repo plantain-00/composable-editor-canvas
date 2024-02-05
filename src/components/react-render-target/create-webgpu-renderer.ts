@@ -404,6 +404,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       multisample: {
         count: sampleCount,
       },
+      label: state,
       layout: 'auto',
     })
   }
@@ -435,7 +436,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       storeOp: 'store',
       view: sampleTexture.instance.createView(),
       resolveTarget: targetTexture.createView()
-    }]
+    }],
+    label: 'normal'
   })
   const createMaskRenderPass = (commandEncoder: GPUCommandEncoder) => {
     const renderPass = commandEncoder.beginRenderPass({
@@ -445,7 +447,8 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
         stencilClearValue: 0,
         stencilLoadOp: 'clear',
         stencilStoreOp: 'store',
-      }
+      },
+      label: 'mask'
     })
     renderPass.setStencilReference(1)
     return renderPass
@@ -455,14 +458,15 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       colorAttachments: [{
         view: sampleTexture.instance.createView(),
         resolveTarget: targetTexture.createView(),
-        loadOp: 'load',
+        loadOp: reference === 0 ? 'clear' : 'load',
         storeOp: 'store',
       }],
       depthStencilAttachment: {
         view: stencilTexture.instance.createView(),
         stencilLoadOp: 'load',
         stencilStoreOp: 'store',
-      }
+      },
+      label: 'masked'
     })
     renderPass.setStencilReference(reference)
     return renderPass
@@ -499,7 +503,7 @@ export async function createWebgpuRenderer(canvas: HTMLCanvasElement) {
       passEncoder.end()
       passEncoder = createMaskRenderPass(commandEncoder)
     }
-    const state = graphic.pattern ? 'mask' : inPattern ? 'masked' : 'normal'
+    const state = graphic.pattern ? 'mask' : inPattern && passEncoder.label === 'masked' ? 'masked' : 'normal'
 
     if (graphic.type === 'texture') {
       const { textureMatrix, width, height } = getTextureGraphicMatrix(matrix, graphic)

@@ -155,6 +155,7 @@ export default () => {
       target.renderRect(30, 100, 80, 80, {
         clip: () => target.renderGroup([
           target.renderCircle(90, 50, 20, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
+          target.renderCircle(30, 50, 20),
         ], { translate: { x: 10, y: 90 } })
       }),
     ], 230, 510)

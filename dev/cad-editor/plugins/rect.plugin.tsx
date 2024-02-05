@@ -49,6 +49,11 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       ctx.rotatePoint(content, center, angle)
       content.angle += angle
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      content.width *= scale
+      content.height *= scale
+    },
     explode(content) {
       const { lines } = getRectGeometries(content)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
