@@ -1169,6 +1169,9 @@ function getModel(ctx) {
       rotate(content, center, angle) {
         ctx.rotatePoint(content, center, angle);
       },
+      scale(content, center, scale) {
+        ctx.scaleCircle(content, center, scale);
+      },
       mirror(content, line) {
         ctx.mirrorPoint(content, line);
       },
@@ -1344,6 +1347,9 @@ function getModel(ctx) {
       },
       rotate(content, center, angle) {
         ctx.rotateArc(content, center, angle);
+      },
+      scale(content, center, scale) {
+        ctx.scaleCircle(content, center, scale);
       },
       mirror(content, line, angle) {
         ctx.mirrorArc(content, line, angle);
@@ -8614,6 +8620,11 @@ function getModel(ctx) {
       ctx.rotatePoint(content, center, angle);
       content.angle += angle;
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.width *= scale;
+      content.height *= scale;
+    },
     explode(content) {
       const { lines } = getRectGeometries(content);
       return lines.map((line) => ({ type: "line", points: line }));
@@ -9531,6 +9542,109 @@ export {
   getCommand,
   getModel,
   isRoundedRectContent
+};
+`,
+`// dev/cad-editor/plugins/scale.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polygon", { points: "12,11 91,11 91,90 12,90", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "40", y: "37", width: "42", height: "42", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "scale",
+    useCommand({ onEnd, scale, type, selected, contents }) {
+      const [data, setData] = React.useState();
+      const [cursor, setCursor] = React.useState();
+      let message = "";
+      if (type) {
+        message = data ? "specify scale" : "specify center point";
+      }
+      const { input, setInputPosition, resetInput, setCursorPosition } = ctx.useCursorInput(message, type ? (e, text) => {
+        if (e.key === "Enter" && data) {
+          const value = +text;
+          if (!isNaN(value) && value > 0) {
+            onEnd({
+              updateContents(contents2, selected2) {
+                contents2.forEach((content, index) => {
+                  var _a, _b;
+                  if (content && ctx.isSelected([index], selected2)) {
+                    (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content, data.center, value);
+                  }
+                });
+              }
+            });
+            reset();
+          }
+        }
+      } : void 0);
+      const reset = () => {
+        setData(void 0);
+        setCursor(void 0);
+        resetInput();
+      };
+      return {
+        onStart(s) {
+          var _a, _b, _c;
+          if (!type)
+            return;
+          if (!data) {
+            const boundings = [];
+            for (const c of selected) {
+              const bounding2 = (_c = (_b = (_a = ctx.getContentModel(c.content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c.content, contents)) == null ? void 0 : _c.bounding;
+              if (bounding2) {
+                boundings.push(bounding2);
+              }
+            }
+            const bounding = ctx.mergeBoundings(boundings);
+            if (bounding) {
+              setData({ center: s, size: Math.max(bounding.end.x - bounding.start.x, bounding.end.y - bounding.start.y) });
+            }
+          } else {
+            onEnd();
+          }
+        },
+        onMove(p, c) {
+          if (!type)
+            return;
+          setInputPosition(c || p);
+          setCursorPosition(c || p);
+          if (data) {
+            setCursor(p);
+          }
+        },
+        reset,
+        input,
+        updateSelectedContent(content, contents2, selected2) {
+          if (data && cursor) {
+            const scale2 = ctx.getTwoPointsDistance(cursor, data.center) / data.size;
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
+              var _a, _b;
+              (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, draft, data.center, scale2);
+            });
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents2, selected2);
+            return {
+              patches,
+              assistentContents
+            };
+          }
+          return {};
+        },
+        assistentContents: data && cursor ? [
+          {
+            type: "line",
+            dashArray: [4 / scale],
+            points: [data.center, cursor]
+          }
+        ] : void 0
+      };
+    },
+    contentSelectable(content) {
+      var _a;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) !== void 0;
+    },
+    icon
+  };
+}
+export {
+  getCommand
 };
 `,
 `// dev/cad-editor/plugins/spline.plugin.tsx

@@ -86,6 +86,9 @@ export function getModel(ctx: PluginContext) {
       rotate(content, center, angle) {
         ctx.rotatePoint(content, center, angle)
       },
+      scale(content, center, scale) {
+        ctx.scaleCircle(content, center, scale)
+      },
       mirror(content, line) {
         ctx.mirrorPoint(content, line)
       },
@@ -221,6 +224,9 @@ export function getModel(ctx: PluginContext) {
       },
       rotate(content, center, angle) {
         ctx.rotateArc(content, center, angle)
+      },
+      scale(content, center, scale) {
+        ctx.scaleCircle(content, center, scale)
       },
       mirror(content, line, angle) {
         ctx.mirrorArc(content, line, angle)

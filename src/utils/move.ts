@@ -2,7 +2,7 @@ import { Position, rotatePositionByCenter } from "./position"
 import { GeneralFormLine } from "./line"
 import { getSymmetryPoint } from "./line"
 import { getEllipseCenter } from "./ellipse"
-import { Arc } from "./circle"
+import { Arc, Circle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { GeometryLine } from "./geometry-line"
 
@@ -126,6 +126,47 @@ export function mirrorGeometryLine(content: GeometryLine, line: GeneralFormLine,
   } else if (content.type === 'nurbs curve') {
     for (const point of content.curve.points) {
       mirrorPoint(point, line)
+    }
+  }
+}
+
+export function scalePoint(point: Position, center: Position, scale: number) {
+  point.x = (point.x - center.x) * scale + center.x
+  point.y = (point.y - center.y) * scale + center.y
+}
+
+export function scaleCircle(circle: Circle, center: Position, scale: number) {
+  scalePoint(circle, center, scale)
+  circle.r *= scale
+}
+
+export function scaleEllipse(ellipse: Ellipse, center: Position, scale: number) {
+  ellipse.cx = (ellipse.cx - center.x) * scale + center.x
+  ellipse.cy = (ellipse.cy - center.y) * scale + center.y
+  ellipse.rx *= scale
+  ellipse.ry *= scale
+}
+
+export function scaleGeometryLine(line: GeometryLine, center: Position, scale: number) {
+  if (Array.isArray(line)) {
+    scalePoint(line[0], center, scale)
+    scalePoint(line[1], center, scale)
+  } else if (line.type === 'arc') {
+    scaleCircle(line.curve, center, scale)
+  } else if (line.type === 'ellipse arc') {
+    scaleEllipse(line.curve, center, scale)
+  } else if (line.type === 'quadratic curve') {
+    scalePoint(line.curve.from, center, scale)
+    scalePoint(line.curve.cp, center, scale)
+    scalePoint(line.curve.to, center, scale)
+  } else if (line.type === 'bezier curve') {
+    scalePoint(line.curve.from, center, scale)
+    scalePoint(line.curve.cp1, center, scale)
+    scalePoint(line.curve.cp2, center, scale)
+    scalePoint(line.curve.to, center, scale)
+  } else if (line.type === 'nurbs curve') {
+    for (const point of line.curve.points) {
+      scalePoint(point, center, scale)
     }
   }
 }
