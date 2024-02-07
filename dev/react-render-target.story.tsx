@@ -66,7 +66,8 @@ export default () => {
     target.renderEllipse(110, 60, 100, 50, { strokeWidth: 5 }),
     target.renderEllipse(110, 60, 110, 55, { dashArray: [4] }),
     target.renderEllipse(110, 140, 80, 40, { strokeColor: 0x0000ff, angle: 30 }),
-  ], 230, 200)
+    target.renderEllipse(110, 30, 10, 20, { angle: 60, fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
+  ], 230, 230)
 
   const renderRects = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderRect(10, 10, 50, 30, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),

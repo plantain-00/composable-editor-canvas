@@ -3,7 +3,7 @@ import type { PathCommand } from "../../utils/path"
 import { Position } from "../../utils/position"
 import { Size } from "../../utils/region"
 import { Circle } from "../../utils/circle"
-import { Matrix } from "../../utils/matrix"
+import { Matrix, RotationOptions } from "../../utils/matrix"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 import { LineCap, LineJoin } from "../../utils/triangles"
 import { RenderTransform } from "../../utils/transform"
@@ -27,11 +27,9 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   renderEmpty(): T
   renderGroup(
     children: T[],
-    options?: Partial<{
+    options?: Partial<RotationOptions & {
       translate: Position
       base: Position
-      angle: number
-      rotation: number
       matrix: Matrix
       opacity: number
     }>,
@@ -41,10 +39,7 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
     y: number,
     width: number,
     height: number,
-    options?: Partial<PathOptions<T> & {
-      angle: number
-      rotation: number
-    }>,
+    options?: Partial<PathOptions<T> & RotationOptions>,
   ): T
   renderPolyline(
     points: Position[],
@@ -71,10 +66,7 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
     cy: number,
     rx: number,
     ry: number,
-    options?: Partial<PathOptions<T> & {
-      angle: number
-      rotation: number
-    }>,
+    options?: Partial<PathOptions<T> & RotationOptions>,
   ): T
   renderArc(
     cx: number,
@@ -93,9 +85,7 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
     ry: number,
     startAngle: number,
     endAngle: number,
-    options?: Partial<PathOptions<T> & {
-      angle: number
-      rotation: number
+    options?: Partial<PathOptions<T> & RotationOptions & {
       counterclockwise: boolean
     }>,
   ): T
