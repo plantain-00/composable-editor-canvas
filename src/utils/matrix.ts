@@ -131,12 +131,15 @@ export const m3 = {
 
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number]
 
+export interface RotationOptions {
+  angle: number
+  rotation: number
+}
+
 export function getRenderOptionsMatrix(
-  options?: Partial<{
+  options?: Partial<RotationOptions & {
     translate: Position
     base: Position
-    angle: number
-    rotation: number
     matrix: Matrix
   }>,
 ) {

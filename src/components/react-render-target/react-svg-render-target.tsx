@@ -6,7 +6,7 @@ import { getLargeArc } from "../../utils/angle"
 import { getParallelLinesByDistance } from "../../utils/line"
 import { twoPointLineToGeneralFormLine } from "../../utils/line"
 import { getPointSideOfLine } from "../../utils/line"
-import { Matrix, getRenderOptionsMatrix, m3, multiplyMatrix } from "../../utils/matrix"
+import { Matrix, RotationOptions, getRenderOptionsMatrix, m3, multiplyMatrix } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { getRayTransformedLineSegment } from "../../utils/line"
@@ -437,7 +437,7 @@ function renderFilters(
 
 function renderPattern(
   children: (fill: string, stroke: string | undefined, scale: number, strokeWidthFixed: boolean, width: number, height: number, transform?: RenderTransform, matrix?: Matrix) => JSX.Element,
-  options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw>>,
+  options?: Partial<PathFillOptions<SvgDraw> & PathStrokeOptions<SvgDraw> & RotationOptions>,
   noDefaultStrokeColor?: boolean,
   holes?: JSX.Element[],
 ) {
@@ -453,6 +453,7 @@ function renderPattern(
         <pattern
           id={id}
           patternUnits="userSpaceOnUse"
+          patternTransform={getReverseRotateTransform(options)}
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
@@ -499,7 +500,7 @@ function renderPattern(
         <pattern
           id={id}
           patternUnits="userSpaceOnUse"
-          // patternTransform={options.fillPattern.rotate ? `rotate(${options.fillPattern.rotate})` : undefined}
+          patternTransform={getReverseRotateTransform(options)}
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
@@ -633,22 +634,32 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
   }
 }
 
-/**
- * @public
- */
+function getRotationOptionsAngle(options?: Partial<RotationOptions>) {
+  if (options?.angle) {
+    return options.angle
+  }
+  if (options?.rotation) {
+    return radianToAngle(options.rotation)
+  }
+  return undefined
+}
+
 export function getRotateTransform(
   x: number,
   y: number,
-  options?: Partial<{
-    angle: number
-    rotation: number
-  }>,
+  options?: Partial<RotationOptions>,
 ) {
-  if (options?.angle) {
-    return `rotate(${options.angle},${x},${y})`
+  const angle = getRotationOptionsAngle(options)
+  if (angle) {
+    return `rotate(${angle},${x},${y})`
   }
-  if (options?.rotation) {
-    return `rotate(${radianToAngle(options.rotation)},${x},${y})`
+  return undefined
+}
+
+function getReverseRotateTransform(options?: Partial<RotationOptions>) {
+  const angle = getRotationOptionsAngle(options)
+  if (angle) {
+    return `rotate(${-angle})`
   }
   return undefined
 }
