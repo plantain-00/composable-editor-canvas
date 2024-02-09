@@ -66,6 +66,12 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      content.width *= scale
+      content.height *= scale
+      content.radius *= scale
+    },
     offset(content, point, distance) {
       if (!distance) {
         distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))

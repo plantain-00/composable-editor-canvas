@@ -24,6 +24,9 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
     rotate(content, center, angle, contents) {
       ctx.getContentModel(content.border)?.rotate?.(content.border, center, angle, contents)
     },
+    scale(content, center, scale) {
+      ctx.getContentModel(content.border)?.scale?.(content.border, center, scale)
+    },
     mirror(content, line, angle, contents) {
       ctx.getContentModel(content.border)?.mirror?.(content.border, line, angle, contents)
     },

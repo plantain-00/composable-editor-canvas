@@ -103,6 +103,11 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         ctx.rotatePoint(point, center, angle)
       }
     },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale)
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line)
@@ -171,6 +176,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       ...ctx.segmentCountModel,
       move: splineModel.move,
       rotate: splineModel.rotate,
+      scale: splineModel.scale,
       mirror: splineModel.mirror,
       render(content, renderCtx) {
         const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

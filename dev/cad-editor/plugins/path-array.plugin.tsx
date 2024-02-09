@@ -68,6 +68,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
     ...ctx.containerModel,
     move: ctx.getContainerMove,
     rotate: ctx.getContainerRotate,
+    scale: ctx.getContainerScale,
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents))
     },

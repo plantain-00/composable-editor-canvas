@@ -41,6 +41,10 @@ function getModel(ctx) {
       ctx.rotatePoint(content.p1, center, angle);
       ctx.rotatePoint(content.p2, center, angle);
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content.p1, center, scale);
+      ctx.scalePoint(content.p2, center, scale);
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content.p1, line);
       ctx.mirrorPoint(content.p2, line);
@@ -1910,6 +1914,7 @@ function getModel(ctx) {
     ...ctx.fillModel,
     move: ctx.getContainerMove,
     rotate: ctx.getContainerRotate,
+    scale: ctx.getContainerScale,
     explode: ctx.getContainerExplode,
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {
@@ -2838,6 +2843,11 @@ function getModel(ctx) {
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.width *= scale;
+      content.height *= scale;
+    },
     explode(content) {
       const { lines } = getGeometries(content);
       return lines.map((line) => ({ type: "line", points: line }));
@@ -3133,6 +3143,9 @@ function getModel(ctx) {
     rotate(content, center, angle) {
       ctx.rotateEllipse(content, center, angle);
     },
+    scale(content, center, scale) {
+      ctx.scaleEllipse(content, center, scale);
+    },
     mirror(content, line, angle) {
       ctx.mirrorEllipse(content, line, angle);
     },
@@ -3310,6 +3323,7 @@ function getModel(ctx) {
       ...ctx.angleDeltaModel,
       move: ellipseModel.move,
       rotate: ellipseModel.rotate,
+      scale: ellipseModel.scale,
       mirror: ellipseModel.mirror,
       break(content, points) {
         if (points.length === 0) {
@@ -4203,6 +4217,9 @@ function getModel(ctx) {
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+    },
     render(content, { target, getFillColor, transformColor, getFillPattern }) {
       const options = {
         strokeColor: content.isCurrent ? transformColor(16711680) : void 0,
@@ -4476,6 +4493,13 @@ function getModel(ctx) {
         (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.clip.border, center, angle, contents);
       }
     },
+    scale(content, center, scale) {
+      var _a, _b;
+      ctx.getContainerScale(content, center, scale);
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale);
+      }
+    },
     explode: ctx.getContainerExplode,
     mirror(content, line, angle, contents) {
       var _a, _b;
@@ -4627,6 +4651,22 @@ function getModel(ctx) {
         }
       }
     },
+    scale(content, center, scale) {
+      if (content.ref) {
+        ctx.scalePoint(content.ref.point, center, scale);
+        ctx.scalePoint(content.ref.end, center, scale);
+      }
+      for (const line of content.border) {
+        ctx.scaleGeometryLine(line, center, scale);
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.scaleGeometryLine(line, center, scale);
+          }
+        }
+      }
+    },
     mirror(content, line, angle) {
       if (content.ref) {
         ctx.mirrorPoint(content.ref.point, line);
@@ -4774,6 +4814,13 @@ function getModel(ctx) {
       ctx.movePoint(content, offset);
       if (content.clip) {
         (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.clip.border, offset);
+      }
+    },
+    scale(content, center, scale) {
+      var _a, _b;
+      ctx.scalePoint(content, center, scale);
+      if (content.clip) {
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale);
       }
     },
     getEditPoints(content, contents) {
@@ -4998,6 +5045,11 @@ function getModel(ctx) {
     rotate(content, center, angle) {
       for (const point of content.points) {
         ctx.rotatePoint(point, center, angle);
+      }
+    },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale);
       }
     },
     mirror(content, line) {
@@ -5375,6 +5427,11 @@ function getModel(ctx) {
       ctx.movePoint(content.p1, offset);
       ctx.movePoint(content.p2, offset);
       ctx.movePoint(content.position, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content.p1, center, scale);
+      ctx.scalePoint(content.p2, center, scale);
+      ctx.scalePoint(content.position, center, scale);
     },
     render(content, renderCtx) {
       const { options, fillOptions, contents, target, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -6490,6 +6547,7 @@ function getModel(ctx) {
     ...ctx.containerModel,
     move: ctx.getContainerMove,
     rotate: ctx.getContainerRotate,
+    scale: ctx.getContainerScale,
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents));
     },
@@ -6682,6 +6740,21 @@ function getModel(ctx) {
           ctx.rotatePoint(command.cp2, center, angle);
         } else if (command.type === "quadraticCurve") {
           ctx.rotatePoint(command.cp, center, angle);
+        }
+      }
+    },
+    scale(content, center, scale) {
+      for (const command of content.commands) {
+        if (command.type !== "close") {
+          ctx.scalePoint(command.to, center, scale);
+        }
+        if (command.type === "arc") {
+          ctx.scalePoint(command.from, center, scale);
+        } else if (command.type === "bezierCurve") {
+          ctx.scalePoint(command.cp1, center, scale);
+          ctx.scalePoint(command.cp2, center, scale);
+        } else if (command.type === "quadraticCurve") {
+          ctx.scalePoint(command.cp, center, scale);
         }
       }
     },
@@ -7193,6 +7266,11 @@ function getModel(ctx) {
         ctx.rotatePoint(point, center, angle);
       }
     },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale);
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line);
@@ -7272,6 +7350,9 @@ function getModel(ctx) {
     },
     rotate(content, center, angle) {
       ctx.rotatePoint(content, center, angle);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
     },
     mirror(content, line) {
       ctx.mirrorPoint(content, line);
@@ -7440,6 +7521,15 @@ function getModel(ctx) {
         if (!c)
           return;
         (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, c, center, angle, contents);
+      });
+    },
+    scale(content, center, angle) {
+      ctx.scalePoint(content.center, center, angle);
+      content.contents.forEach((c) => {
+        var _a, _b;
+        if (!c)
+          return;
+        (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, c, center, angle);
       });
     },
     explode(content, contents) {
@@ -7753,6 +7843,11 @@ function getModel(ctx) {
         ctx.rotatePoint(point, center, angle);
       }
     },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale);
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line);
@@ -7948,6 +8043,9 @@ function getModel(ctx) {
     ...ctx.arrowModel,
     move(content, offset) {
       ctx.movePoint(content.position, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content.position, center, scale);
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -8203,6 +8301,9 @@ function getModel(ctx) {
       ctx.rotatePoint(content, center, angle);
       content.angle += angle;
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+    },
     mirror(content, line, angle) {
       ctx.mirrorPoint(content, line);
       content.angle = 2 * angle - content.angle;
@@ -8384,6 +8485,11 @@ function getModel(ctx) {
         (_b = m.rotate) == null ? void 0 : _b.call(m, c, center, angle, contents);
         (_c = m.move) == null ? void 0 : _c.call(m, c, { x: -x, y: -y });
       });
+    },
+    scale(content, center, scale) {
+      ctx.getContainerScale(content, center, scale);
+      content.rowSpacing *= scale;
+      content.columnSpacing *= scale;
     },
     explode(content) {
       return ctx.getContentsExplode(getAllContentsFromCache(content));
@@ -8852,6 +8958,10 @@ function getModel(ctx) {
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.radius *= scale;
+    },
     offset(content, point, distance) {
       var _a;
       if (!distance) {
@@ -9076,6 +9186,9 @@ function getModel(ctx) {
     ...ctx.angleDeltaModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
@@ -9367,6 +9480,12 @@ function getModel(ctx) {
     ...ctx.angleDeltaModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.width *= scale;
+      content.height *= scale;
+      content.radius *= scale;
     },
     offset(content, point, distance) {
       var _a;
@@ -9738,6 +9857,11 @@ function getModel(ctx) {
         ctx.rotatePoint(point, center, angle);
       }
     },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale);
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line);
@@ -9832,6 +9956,7 @@ function getModel(ctx) {
       ...ctx.segmentCountModel,
       move: splineModel.move,
       rotate: splineModel.rotate,
+      scale: splineModel.scale,
       mirror: splineModel.mirror,
       render(content, renderCtx) {
         const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -10036,6 +10161,11 @@ function getModel(ctx) {
     ...ctx.fillModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.innerRadius *= scale;
+      content.outerRadius *= scale;
     },
     break(content, intersectionPoints) {
       const { lines } = getStarGeometriesFromCache(content);
@@ -10492,6 +10622,13 @@ function getModel(ctx) {
     ...ctx.strokeModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      for (const row of content.rows) {
+        row.height *= scale;
+      }
+      content.widths = content.widths.map((w) => w * scale);
     },
     render(content, renderCtx) {
       const geometries = getGeometries(content);
@@ -11136,6 +11273,13 @@ function getModel(ctx) {
     ...ctx.textModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
+    },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale);
+      content.fontSize *= scale;
+      if (content.width) {
+        content.width *= scale;
+      }
     },
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => {
@@ -11813,6 +11957,10 @@ function getModel(ctx) {
     rotate(content, center, angle, contents) {
       var _a, _b;
       (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.border, center, angle, contents);
+    },
+    scale(content, center, scale) {
+      var _a, _b;
+      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.border, center, scale);
     },
     mirror(content, line, angle, contents) {
       var _a, _b;

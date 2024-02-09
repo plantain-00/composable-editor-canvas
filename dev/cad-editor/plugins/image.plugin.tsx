@@ -40,6 +40,12 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
         ctx.getContentModel(content.clip.border)?.move?.(content.clip.border, offset)
       }
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      if (content.clip) {
+        ctx.getContentModel(content.clip.border)?.scale?.(content.clip.border, center, scale)
+      }
+    },
     getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
         return {

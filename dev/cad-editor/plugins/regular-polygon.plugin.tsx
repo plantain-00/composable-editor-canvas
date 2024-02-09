@@ -47,6 +47,10 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      content.radius *= scale
+    },
     offset(content, point, distance) {
       if (!distance) {
         distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))

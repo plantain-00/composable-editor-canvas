@@ -55,6 +55,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     ...ctx.fillModel,
     move: ctx.getContainerMove,
     rotate: ctx.getContainerRotate,
+    scale: ctx.getContainerScale,
     explode: ctx.getContainerExplode,
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {

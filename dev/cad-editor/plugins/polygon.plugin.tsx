@@ -45,6 +45,11 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         ctx.rotatePoint(point, center, angle)
       }
     },
+    scale(content, center, scale) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, scale)
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line)

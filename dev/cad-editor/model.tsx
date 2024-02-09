@@ -1217,6 +1217,14 @@ export function getContainerRotate(content: ContainerFields, center: Position, a
     getContentModel(c)?.rotate?.(c, center, angle, contents)
   })
 }
+export function getContainerScale(content: ContainerFields, center: Position, scale: number) {
+  content.contents.forEach((c) => {
+    if (!c) {
+      return
+    }
+    getContentModel(c)?.scale?.(c, center, scale)
+  })
+}
 export function getContainerExplode(content: ContainerFields) {
   return getContentsExplode(content.contents)
 }

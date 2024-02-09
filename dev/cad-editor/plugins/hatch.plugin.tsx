@@ -100,6 +100,22 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
     },
+    scale(content, center, scale) {
+      if (content.ref) {
+        ctx.scalePoint(content.ref.point, center, scale)
+        ctx.scalePoint(content.ref.end, center, scale)
+      }
+      for (const line of content.border) {
+        ctx.scaleGeometryLine(line, center, scale)
+      }
+      if (content.holes) {
+        for (const hole of content.holes) {
+          for (const line of hole) {
+            ctx.scaleGeometryLine(line, center, scale)
+          }
+        }
+      }
+    },
     mirror(content, line, angle) {
       if (content.ref) {
         ctx.mirrorPoint(content.ref.point, line)

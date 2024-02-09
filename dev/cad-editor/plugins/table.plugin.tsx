@@ -150,6 +150,13 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      for (const row of content.rows) {
+        row.height *= scale
+      }
+      content.widths = content.widths.map(w => w * scale)
+    },
     render(content, renderCtx) {
       const geometries = getGeometries(content)
       const { options, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
