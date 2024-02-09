@@ -41,6 +41,11 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+      content.width *= scale
+      content.height *= scale
+    },
     explode(content) {
       const { lines } = getGeometries(content)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))

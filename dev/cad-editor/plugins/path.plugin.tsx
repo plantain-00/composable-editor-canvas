@@ -64,6 +64,21 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
+    scale(content, center, scale) {
+      for (const command of content.commands) {
+        if (command.type !== 'close') {
+          ctx.scalePoint(command.to, center, scale)
+        }
+        if (command.type === 'arc') {
+          ctx.scalePoint(command.from, center, scale)
+        } else if (command.type === 'bezierCurve') {
+          ctx.scalePoint(command.cp1, center, scale)
+          ctx.scalePoint(command.cp2, center, scale)
+        } else if (command.type === 'quadraticCurve') {
+          ctx.scalePoint(command.cp, center, scale)
+        }
+      }
+    },
     mirror(content, line) {
       for (const command of content.commands) {
         if (command.type !== 'close') {

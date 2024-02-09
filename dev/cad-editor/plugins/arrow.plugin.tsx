@@ -51,6 +51,10 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       ctx.rotatePoint(content.p1, center, angle)
       ctx.rotatePoint(content.p2, center, angle)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content.p1, center, scale)
+      ctx.scalePoint(content.p2, center, scale)
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content.p1, line)
       ctx.mirrorPoint(content.p2, line)

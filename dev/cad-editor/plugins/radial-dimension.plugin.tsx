@@ -47,6 +47,9 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     move(content, offset) {
       ctx.movePoint(content.position, offset)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content.position, center, scale)
+    },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)

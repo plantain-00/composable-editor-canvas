@@ -27,6 +27,9 @@ export function getModel(ctx: PluginContext): model.Model<PointContent> {
     rotate(content, center, angle) {
       ctx.rotatePoint(content, center, angle)
     },
+    scale(content, center, scale) {
+      ctx.scalePoint(content, center, scale)
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content, line)
     },
