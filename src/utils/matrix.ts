@@ -1,5 +1,5 @@
 import { Position } from "./position";
-import { angleToRadian } from "./radian";
+import { angleToRadian, radianToAngle } from "./radian";
 import { Vec3 } from "./types";
 
 /**
@@ -136,8 +136,35 @@ export interface RotationOptions {
   rotation: number
 }
 
+export interface ScaleOptions {
+  scale: number | Position
+}
+
+export function getRotationOptionsAngle(options?: Partial<RotationOptions>, radian = false) {
+  if (options?.angle) {
+    return radian ? angleToRadian(options.angle) : options.angle
+  }
+  if (options?.rotation) {
+    return radian ? options.rotation : radianToAngle(options.rotation)
+  }
+  return undefined
+}
+
+export function getScaleOptionsScale(options?: Partial<ScaleOptions>) {
+  if (options?.scale) {
+    if (typeof options.scale === 'number') {
+      return {
+        x: options.scale,
+        y: options.scale,
+      }
+    }
+    return options.scale
+  }
+  return undefined
+}
+
 export function getRenderOptionsMatrix(
-  options?: Partial<RotationOptions & {
+  options?: Partial<RotationOptions & ScaleOptions & {
     translate: Position
     base: Position
     matrix: Matrix
@@ -148,14 +175,19 @@ export function getRenderOptionsMatrix(
   if (options.translate) {
     matrix = m3.multiply(matrix, m3.translation(options.translate.x, options.translate.y))
   }
-  if (options.base && (options.angle || options.rotation)) {
-    matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
-    if (options.angle) {
-      matrix = m3.multiply(matrix, m3.rotation(-angleToRadian(options.angle)))
-    } else if (options.rotation) {
-      matrix = m3.multiply(matrix, m3.rotation(-options.rotation))
+  if (options.base) {
+    const radian = getRotationOptionsAngle(options, true)
+    if (radian) {
+      matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
+      matrix = m3.multiply(matrix, m3.rotation(-radian))
+      matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
     }
-    matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
+    const scales = getScaleOptionsScale(options)
+    if (scales) {
+      matrix = m3.multiply(matrix, m3.translation(options.base.x, options.base.y))
+      matrix = m3.multiply(matrix, m3.scaling(scales.x, scales.y))
+      matrix = m3.multiply(matrix, m3.translation(-options.base.x, -options.base.y))
+    }
   }
   if (options.matrix) {
     matrix = m3.multiply(matrix, options.matrix)

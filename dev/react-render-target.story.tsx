@@ -102,7 +102,7 @@ export default () => {
     target.renderPath([[{ x: 50, y: 400 }, { x: 90, y: 540 }, { x: 90, y: 400 }], [{ x: 70, y: 420 }, { x: 70, y: 460 }, { x: 80, y: 460 }, { x: 80, y: 420 }]], { strokeRadialGradient: { start: { x: 70, y: 470, r: 10 }, end: { x: 70, y: 470, r: 70 }, stops: [{ offset: 0, color: 0xff0000 }, { offset: 0.5, color: 0xffff00 }, { offset: 1, color: 0x00ff00 }] }, strokeWidth: 5 }),
     target.renderPath([[{ x: 110, y: 400 }, { x: 110, y: 470 }, { x: 110, y: 540 }]], { strokeColor: 0xff0000, strokeWidth: 10 }),
     target.renderPath([[{ x: 130, y: 400 }, { x: 130, y: 540 }, { x: 130, y: 470 }]], { strokeColor: 0xff0000, strokeWidth: 10 }),
-  ], 230, 640)
+  ], 230, 620)
 
   const renderImages = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderImage('https://farm9.staticflickr.com/8873/18598400202_3af67ef38f_z_d.jpg', 0, 0, 75, 65, { crossOrigin: '' }),
@@ -145,7 +145,7 @@ export default () => {
       target.renderCircle(50, 50, 20),
       target.renderCircle(50, 50, 35),
       target.renderText(0, 40, 'abc', 0xff0000, 30, 'monospace'),
-      target.renderGroup([ target.renderCircle(50, 50, 15), ], { translate: { x: 20, y: 20 } })
+      target.renderGroup([target.renderCircle(50, 50, 15),], { translate: { x: 20, y: 20 } })
     ]
     return target.renderResult([
       target.renderGroup(items, { opacity: 0.2, translate: { x: 10, y: 0 } }),
@@ -159,7 +159,8 @@ export default () => {
           target.renderCircle(30, 50, 20),
         ], { translate: { x: 10, y: 90 } })
       }),
-    ], 230, 510)
+      target.renderGroup(items, { translate: { x: 110, y: 200 }, base: { x: 50, y: 50 }, scale: { x: 0.6, y: 0.3 } }),
+    ], 230, 550)
   }
 
   const renderRay = <T,>(target: ReactRenderTarget<T>) => target.renderResult([

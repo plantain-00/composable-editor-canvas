@@ -10,6 +10,7 @@ export type BlockContent = model.BaseContent<'block'> & model.ContainerFields & 
 export type BlockReferenceContent = model.BaseContent<'block reference'> & core.Position & model.VariableValuesFields & {
   refId: number | model.BaseContent
   angle: number
+  scale?: number
 }
 
 export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model.Model<BlockReferenceContent>)[] {
@@ -20,6 +21,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
   const BlockReferenceContent = ctx.and(ctx.BaseContent('block reference'), ctx.Position, ctx.VariableValuesFields, {
     refId: ctx.or(ctx.number, ctx.Content),
     angle: ctx.number,
+    scale: ctx.optional(ctx.number),
   })
   const blockModel: model.Model<BlockContent> = {
     type: 'block',
@@ -81,7 +83,12 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       return undefined
     }
     return ctx.produce(target, (draft) => {
-      model.rotate?.(draft, block.base, content.angle, contents)
+      if (content.angle) {
+        model.rotate?.(draft, block.base, content.angle, contents)
+      }
+      if (content.scale) {
+        model.scale?.(draft, block.base, content.scale, contents)
+      }
       model.move?.(draft, content)
     })
   }
@@ -139,6 +146,16 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         content.angle += angle
       }
     },
+    scale(content, center, scale, contents) {
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
+      if (block) {
+        const p = { x: content.x + block.base.x, y: content.y + block.base.y }
+        ctx.scalePoint(p, center, scale)
+        content.x = p.x - block.base.x
+        content.y = p.y - block.base.y
+        content.scale = (content.scale || 1) * scale
+      }
+    },
     explode(content, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
@@ -169,7 +186,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
         const children = ctx.renderContainerChildren({ ...block, variableValues: content.variableValues }, renderCtx)
-        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle })
+        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle, scale: content.scale })
       }
       return renderCtx.target.renderEmpty()
     },
@@ -177,7 +194,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
         const children = ctx.renderContainerIfSelected(block, renderCtx)
-        return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle })
+        return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle, scale: content.scale })
       }
       return renderCtx.target.renderEmpty()
     },
@@ -250,6 +267,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.angle = v } })} />,
+        scale: <ctx.NumberEditor value={content.scale ?? 1} setValue={(v) => update(c => { if (isBlockReferenceContent(c)) { c.scale = v } })} />,
         ...ctx.getVariableValuesContentPropertyPanel(content, variableNames, update),
       }
     },

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Matrix, getRenderOptionsMatrix, m3, multiplyMatrix } from "../../utils/matrix"
+import { Matrix, getRenderOptionsMatrix, getRotationOptionsAngle, getScaleOptionsScale, m3, multiplyMatrix } from "../../utils/matrix"
 import { setCanvasLineDash } from "./create-webgl-renderer"
 import { getImageFromCache } from "./image-loader"
 import { Filter, PathFillOptions, PathLineStyleOptions, PathStrokeOptions, Pattern, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
@@ -45,15 +45,19 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       if (options?.translate) {
         ctx.translate(options.translate.x, options.translate.y)
       }
-      if (options?.angle && options?.base !== undefined) {
-        ctx.translate(options.base.x, options?.base.y)
-        ctx.rotate(angleToRadian(options.angle))
-        ctx.translate(-options.base.x, - options.base.y)
-      }
-      if (options?.rotation && options?.base !== undefined) {
-        ctx.translate(options.base.x, options?.base.y)
-        ctx.rotate(options.rotation)
-        ctx.translate(-options.base.x, - options.base.y)
+      if (options?.base !== undefined) {
+        const radian = getRotationOptionsAngle(options, true)
+        if (radian) {
+          ctx.translate(options.base.x, options.base.y)
+          ctx.rotate(radian)
+          ctx.translate(-options.base.x, - options.base.y)
+        }
+        const scales = getScaleOptionsScale(options)
+        if (scales) {
+          ctx.translate(options.base.x, options.base.y)
+          ctx.scale(scales.x, scales.y)
+          ctx.translate(-options.base.x, - options.base.y)
+        }
       }
       if (options?.matrix) {
         ctx.setTransform(ctx.getTransform().multiply(m3.getTransformInit(options.matrix)))

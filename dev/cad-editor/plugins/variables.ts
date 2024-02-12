@@ -285,7 +285,8 @@ function getModel(ctx) {
   });
   const BlockReferenceContent = ctx.and(ctx.BaseContent("block reference"), ctx.Position, ctx.VariableValuesFields, {
     refId: ctx.or(ctx.number, ctx.Content),
-    angle: ctx.number
+    angle: ctx.number,
+    scale: ctx.optional(ctx.number)
   });
   const blockModel = {
     type: "block",
@@ -357,9 +358,14 @@ function getModel(ctx) {
       return void 0;
     }
     return ctx.produce(target, (draft) => {
-      var _a, _b;
-      (_a = model.rotate) == null ? void 0 : _a.call(model, draft, block.base, content.angle, contents);
-      (_b = model.move) == null ? void 0 : _b.call(model, draft, content);
+      var _a, _b, _c;
+      if (content.angle) {
+        (_a = model.rotate) == null ? void 0 : _a.call(model, draft, block.base, content.angle, contents);
+      }
+      if (content.scale) {
+        (_b = model.scale) == null ? void 0 : _b.call(model, draft, block.base, content.scale, contents);
+      }
+      (_c = model.move) == null ? void 0 : _c.call(model, draft, content);
     });
   }
   function getBlockReferenceGeometries(content, contents) {
@@ -418,6 +424,16 @@ function getModel(ctx) {
         content.angle += angle;
       }
     },
+    scale(content, center, scale, contents) {
+      const block = ctx.getReference(content.refId, contents, isBlockContent);
+      if (block) {
+        const p = { x: content.x + block.base.x, y: content.y + block.base.y };
+        ctx.scalePoint(p, center, scale);
+        content.x = p.x - block.base.x;
+        content.y = p.y - block.base.y;
+        content.scale = (content.scale || 1) * scale;
+      }
+    },
     explode(content, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
@@ -448,7 +464,7 @@ function getModel(ctx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
         const children = ctx.renderContainerChildren({ ...block, variableValues: content.variableValues }, renderCtx);
-        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle });
+        return renderCtx.target.renderGroup(children, { translate: content, base: block.base, angle: content.angle, scale: content.scale });
       }
       return renderCtx.target.renderEmpty();
     },
@@ -456,7 +472,7 @@ function getModel(ctx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
         const children = ctx.renderContainerIfSelected(block, renderCtx);
-        return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle });
+        return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle, scale: content.scale });
       }
       return renderCtx.target.renderEmpty();
     },
@@ -519,6 +535,7 @@ function getModel(ctx) {
     },
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      var _a;
       let variableNames = [];
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
@@ -548,6 +565,11 @@ function getModel(ctx) {
         angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
           if (isBlockReferenceContent(c)) {
             c.angle = v;
+          }
+        }) }),
+        scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_a = content.scale) != null ? _a : 1, setValue: (v) => update((c) => {
+          if (isBlockReferenceContent(c)) {
+            c.scale = v;
           }
         }) }),
         ...ctx.getVariableValuesContentPropertyPanel(content, variableNames, update)
@@ -4493,11 +4515,11 @@ function getModel(ctx) {
         (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.clip.border, center, angle, contents);
       }
     },
-    scale(content, center, scale) {
+    scale(content, center, scale, contents) {
       var _a, _b;
-      ctx.getContainerScale(content, center, scale);
+      ctx.getContainerScale(content, center, scale, contents);
       if (content.clip) {
-        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale);
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale, contents);
       }
     },
     explode: ctx.getContainerExplode,
@@ -4816,11 +4838,11 @@ function getModel(ctx) {
         (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.move) == null ? void 0 : _b.call(_a, content.clip.border, offset);
       }
     },
-    scale(content, center, scale) {
+    scale(content, center, scale, contents) {
       var _a, _b;
       ctx.scalePoint(content, center, scale);
       if (content.clip) {
-        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale);
+        (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, scale, contents);
       }
     },
     getEditPoints(content, contents) {
@@ -7523,13 +7545,13 @@ function getModel(ctx) {
         (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, c, center, angle, contents);
       });
     },
-    scale(content, center, angle) {
+    scale(content, center, angle, contents) {
       ctx.scalePoint(content.center, center, angle);
       content.contents.forEach((c) => {
         var _a, _b;
         if (!c)
           return;
-        (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, c, center, angle);
+        (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, c, center, angle, contents);
       });
     },
     explode(content, contents) {
@@ -8486,8 +8508,8 @@ function getModel(ctx) {
         (_c = m.move) == null ? void 0 : _c.call(m, c, { x: -x, y: -y });
       });
     },
-    scale(content, center, scale) {
-      ctx.getContainerScale(content, center, scale);
+    scale(content, center, scale, contents) {
+      ctx.getContainerScale(content, center, scale, contents);
       content.rowSpacing *= scale;
       content.columnSpacing *= scale;
     },
@@ -9685,7 +9707,7 @@ function getCommand(ctx) {
                 contents2.forEach((content, index) => {
                   var _a, _b;
                   if (content && ctx.isSelected([index], selected2)) {
-                    (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content, data.center, value);
+                    (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content, data.center, value, contents2);
                   }
                 });
               }
@@ -9718,6 +9740,7 @@ function getCommand(ctx) {
             }
           } else {
             onEnd();
+            reset();
           }
         },
         onMove(p, c) {
@@ -9736,7 +9759,7 @@ function getCommand(ctx) {
             const scale2 = ctx.getTwoPointsDistance(cursor, data.center) / data.size;
             const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
               var _a, _b;
-              (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, draft, data.center, scale2);
+              (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, draft, data.center, scale2, contents2);
             });
             const assistentContents = ctx.updateReferencedContents(content, newContent, contents2, selected2);
             return {
@@ -11958,9 +11981,9 @@ function getModel(ctx) {
       var _a, _b;
       (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, content.border, center, angle, contents);
     },
-    scale(content, center, scale) {
+    scale(content, center, scale, contents) {
       var _a, _b;
-      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.border, center, scale);
+      (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.border, center, scale, contents);
     },
     mirror(content, line, angle, contents) {
       var _a, _b;

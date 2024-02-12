@@ -6,12 +6,12 @@ import { getLargeArc } from "../../utils/angle"
 import { getParallelLinesByDistance } from "../../utils/line"
 import { twoPointLineToGeneralFormLine } from "../../utils/line"
 import { getPointSideOfLine } from "../../utils/line"
-import { Matrix, RotationOptions, getRenderOptionsMatrix, m3, multiplyMatrix } from "../../utils/matrix"
+import { Matrix, RotationOptions, ScaleOptions, getRenderOptionsMatrix, getRotationOptionsAngle, getScaleOptionsScale, m3, multiplyMatrix } from "../../utils/matrix"
 import { WeakmapCache } from "../../utils/weakmap-cache"
 import { Filter, PathFillOptions, PathOptions, PathStrokeOptions, ReactRenderTarget, renderPartStyledPolyline } from "./react-render-target"
 import { getRayTransformedLineSegment } from "../../utils/line"
 import { RenderTransform } from "../../utils/transform"
-import { angleToRadian, radianToAngle } from "../../utils/radian"
+import { angleToRadian } from "../../utils/radian"
 import { getTwoGeneralFormLinesIntersectionPoint } from "../../utils/intersection"
 import { getPerpendicularPoint } from "../../utils/perpendicular"
 import { defaultLineCap, defaultLineJoin, defaultMiterLimit } from "../../utils/triangles"
@@ -62,6 +62,10 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
       const rotateTransform = getRotateTransform(options.base.x, options.base.y, options)
       if (rotateTransform) {
         transform.push(rotateTransform)
+      }
+      const scaleTransform = getScaleTransform(options.base.x, options.base.y, options)
+      if (scaleTransform) {
+        transform.push(scaleTransform)
       }
     }
     if (options?.matrix) {
@@ -634,12 +638,10 @@ export function ellipsePolarToCartesian(cx: number, cy: number, rx: number, ry: 
   }
 }
 
-function getRotationOptionsAngle(options?: Partial<RotationOptions>) {
-  if (options?.angle) {
-    return options.angle
-  }
-  if (options?.rotation) {
-    return radianToAngle(options.rotation)
+export function getScaleTransform(x: number, y: number, options?: Partial<ScaleOptions>) {
+  const scale = getScaleOptionsScale(options)
+  if (scale) {
+    return `translate(${x},${y}) scale(${scale.x},${scale.y}) translate(${-x},${-y})`
   }
   return undefined
 }

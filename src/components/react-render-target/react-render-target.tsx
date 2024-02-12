@@ -3,7 +3,7 @@ import type { PathCommand } from "../../utils/path"
 import { Position } from "../../utils/position"
 import { Size } from "../../utils/region"
 import { Circle } from "../../utils/circle"
-import { Matrix, RotationOptions } from "../../utils/matrix"
+import { Matrix, RotationOptions, ScaleOptions } from "../../utils/matrix"
 import type { Align, VerticalAlign } from "../../utils/flow-layout"
 import { LineCap, LineJoin } from "../../utils/triangles"
 import { RenderTransform } from "../../utils/transform"
@@ -27,7 +27,7 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
   renderEmpty(): T
   renderGroup(
     children: T[],
-    options?: Partial<RotationOptions & {
+    options?: Partial<RotationOptions & ScaleOptions & {
       translate: Position
       base: Position
       matrix: Matrix
