@@ -27,7 +27,7 @@ export function getCommand(ctx: PluginContext): Command {
               updateContents(contents, selected) {
                 contents.forEach((content, index) => {
                   if (content && ctx.isSelected([index], selected)) {
-                    ctx.getContentModel(content)?.scale?.(content, data.center, value)
+                    ctx.getContentModel(content)?.scale?.(content, data.center, value, contents)
                   }
                 })
               },
@@ -58,6 +58,7 @@ export function getCommand(ctx: PluginContext): Command {
             }
           } else {
             onEnd()
+            reset()
           }
         },
         onMove(p, c) {
@@ -74,7 +75,7 @@ export function getCommand(ctx: PluginContext): Command {
           if (data && cursor) {
             const scale = ctx.getTwoPointsDistance(cursor, data.center) / data.size
             const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
-              ctx.getContentModel(content)?.scale?.(draft, data.center, scale)
+              ctx.getContentModel(content)?.scale?.(draft, data.center, scale, contents)
             })
             const assistentContents = ctx.updateReferencedContents(content, newContent, contents, selected)
             return {

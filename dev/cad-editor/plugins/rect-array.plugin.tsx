@@ -60,8 +60,8 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
         m.move?.(c, { x: -x, y: -y })
       })
     },
-    scale(content, center, scale) {
-      ctx.getContainerScale(content, center, scale)
+    scale(content, center, scale, contents) {
+      ctx.getContainerScale(content, center, scale, contents)
       content.rowSpacing *= scale
       content.columnSpacing *= scale
     },
