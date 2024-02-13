@@ -47,8 +47,8 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)

@@ -52,10 +52,10 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       ctx.movePoint(content.p2, offset)
       ctx.movePoint(content.position, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content.p1, center, scale)
-      ctx.scalePoint(content.p2, center, scale)
-      ctx.scalePoint(content.position, center, scale)
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content.p1, center, sx, sy)
+      ctx.scalePoint(content.p2, center, sx, sy)
+      ctx.scalePoint(content.position, center, sx, sy)
     },
     render(content, renderCtx) {
       const { options, fillOptions, contents, target, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)

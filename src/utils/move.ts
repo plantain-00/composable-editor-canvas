@@ -1,10 +1,13 @@
 import { Position, rotatePositionByCenter } from "./position"
 import { GeneralFormLine } from "./line"
 import { getSymmetryPoint } from "./line"
-import { getEllipseCenter } from "./ellipse"
-import { Arc, Circle } from "./circle"
+import { EllipseArc, arcToEllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipseCenter } from "./ellipse"
+import { Arc } from "./circle"
 import { Ellipse } from "./ellipse"
 import { GeometryLine } from "./geometry-line"
+import { angleToRadian, radianToAngle } from "./radian"
+import { equals, isZero } from "./math"
+import { calculateEquation2 } from "./equation-calculater"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x
@@ -130,43 +133,114 @@ export function mirrorGeometryLine(content: GeometryLine, line: GeneralFormLine,
   }
 }
 
-export function scalePoint(point: Position, center: Position, scale: number) {
-  point.x = (point.x - center.x) * scale + center.x
-  point.y = (point.y - center.y) * scale + center.y
+export function scalePoint(point: Position, center: Position, sx: number, sy = sx) {
+  point.x = (point.x - center.x) * sx + center.x
+  point.y = (point.y - center.y) * sy + center.y
 }
 
-export function scaleCircle(circle: Circle, center: Position, scale: number) {
-  scalePoint(circle, center, scale)
-  circle.r *= scale
+export function scaleEllipse(ellipse: Ellipse, center: Position, sx: number, sy = sx) {
+  ellipse.cx = (ellipse.cx - center.x) * sx + center.x
+  ellipse.cy = (ellipse.cy - center.y) * sy + center.y
+  if (equals(sx, sy)) {
+    ellipse.rx *= sx
+    ellipse.ry *= sy
+    return
+  }
+  const radian = angleToRadian(ellipse.angle)
+  const d1 = Math.sin(radian)
+  if (isZero(d1)) {
+    ellipse.rx *= sx
+    ellipse.ry *= sy
+    return
+  }
+  const d2 = Math.cos(radian)
+  if (isZero(d2)) {
+    ellipse.rx *= sy
+    ellipse.ry *= sx
+    return
+  }
+  // (d2 x + d1 y)^2/rx/rx + (-d1 x + d2 y)^2/ry/ry = 1
+  // let u = x sx, v = y sy
+  // replace x,y with u,v: (d2 u/sx + d1 v/sy)^2/rx/rx + (-d1 u/sx + d2 v/sy)^2/ry/ry = 1
+  const g1 = d2 / sx / ellipse.rx, g2 = d1 / sy / ellipse.rx, g3 = -d1 / sx / ellipse.ry, g4 = d2 / sy / ellipse.ry
+  // (g1 u + g2 v)^2 + (g3 u + g4 v)^2 = 1
+  // expand, group by u,v: (g1 g1 + g3 g3) u u + (2 g1 g2 + 2 g3 g4) v u + (g2 g2 + g4 g4) v v - 1 = 0
+  const g5 = g1 * g1 + g3 * g3, g6 = g1 * g2 + g3 * g4, g7 = g2 * g2 + g4 * g4
+  // F0: g5 u u + 2 g6 v u + g7 v v - 1 = 0
+  // let f1 = Math.sin(t), f2 = Math.cos(t)
+  // (f2 u + f1 v)^2/ru/ru + (-f1 u + f2 v)^2/rv/rv = 1
+  // let m = 1/ru/ru, n = 1/rv/rv
+  // (f2 u + f1 v)^2 m + (-f1 u + f2 v)^2 n = 1
+  // expand, group by u, v: (f2 f2 m + f1 f1 n) u u + (2 f1 f2 m + -2 f1 f2 n) v u + (f1 f1 m + f2 f2 n) v v - 1 = 0
+  // F1: f2 f2 m + f1 f1 n = g5
+  // F2: f1 f2 m - f1 f2 n = g6
+  // F3: f1 f1 m + f2 f2 n = g7
+  // F1*f2*f2-F3*f1*f1: m = (g5 f2 f2 - g7 f1 f1) / (f2 f2 f2 f2 - f1 f1 f1 f1)
+  // F3*f2*f2-F1*f1*f1: n = (g7 f2 f2 - g5 f1 f1) / (f2 f2 f2 f2 - f1 f1 f1 f1)
+  // f2 f2 f2 f2 - f1 f1 f1 f1 = (f2 f2 + f1 f1)(f2 f2 - f1 f1) = f2 f2 - f1 f1
+  // m = (g5 f2 f2 - g7 f1 f1) / (f2 f2 - f1 f1)
+  // n = (g7 f2 f2 - g5 f1 f1) / (f2 f2 - f1 f1)
+  // F2*(f2 f2 - f1 f1) replace m,n: f1 f2 (g5 f2 f2 - g7 f1 f1) - f1 f2 (g7 f2 f2 - g5 f1 f1) - g6(f2 f2 - f1 f1) = 0
+  // (g5 - g7) f2 f1 f1 f1 + g6 f1 f1 + (g5 - g7) f2 f2 f2 f1 + -f2 f2 g6 = 0
+  // (g5 - g7) f2 f1 + g6 f1 f1 - f2 f2 g6 = 0
+  // /f2/f2: (g5 - g7) f1/f2 + g6 f1 f1/f2/f2 - g6 = 0
+  // let f3 = f1/f2
+  // g6 f3 f3 + (g5 - g7) f3 - g6 = 0
+  const t = Math.atan(calculateEquation2(g6, g5 - g7, -g6)[0])
+  ellipse.angle = radianToAngle(t)
+  const f1 = Math.sin(t), f2 = Math.cos(t)
+  // ru = sqrt((f2 f2 - f1 f1) / (g5 f2 f2 - g7 f1 f1))
+  // rv = sqrt((f2 f2 - f1 f1) / (g7 f2 f2 - g5 f1 f1))
+  ellipse.rx = Math.sqrt((f2 * f2 - f1 * f1) / (g5 * f2 * f2 - g7 * f1 * f1))
+  ellipse.ry = Math.sqrt((f2 * f2 - f1 * f1) / (g7 * f2 * f2 - g5 * f1 * f1))
 }
 
-export function scaleEllipse(ellipse: Ellipse, center: Position, scale: number) {
-  ellipse.cx = (ellipse.cx - center.x) * scale + center.x
-  ellipse.cy = (ellipse.cy - center.y) * scale + center.y
-  ellipse.rx *= scale
-  ellipse.ry *= scale
+export function scaleEllipseArc(ellipse: EllipseArc, center: Position, sx: number, sy = sx) {
+  const start = getEllipseArcPointAtAngle(ellipse, ellipse.startAngle)
+  const end = getEllipseArcPointAtAngle(ellipse, ellipse.endAngle)
+  scalePoint(start, center, sx, sy)
+  scalePoint(end, center, sx, sy)
+  scaleEllipse(ellipse, center, sx, sy)
+  ellipse.startAngle = getEllipseAngle(start, ellipse)
+  ellipse.endAngle = getEllipseAngle(end, ellipse)
 }
 
-export function scaleGeometryLine(line: GeometryLine, center: Position, scale: number) {
+export function scaleGeometryLine(line: GeometryLine, center: Position, sx: number, sy = sx): GeometryLine | void {
   if (Array.isArray(line)) {
-    scalePoint(line[0], center, scale)
-    scalePoint(line[1], center, scale)
+    scalePoint(line[0], center, sx, sy)
+    scalePoint(line[1], center, sx, sy)
   } else if (line.type === 'arc') {
-    scaleCircle(line.curve, center, scale)
+    if (sx === sy) {
+      scalePoint(line.curve, center, sx)
+      line.curve.r *= sx
+    } else {
+      const ellipse = arcToEllipseArc(line.curve)
+      scaleEllipseArc(ellipse, center, sx, sy)
+      return { type: 'ellipse arc', curve: ellipse }
+    }
   } else if (line.type === 'ellipse arc') {
-    scaleEllipse(line.curve, center, scale)
+    scaleEllipseArc(line.curve, center, sx, sy)
   } else if (line.type === 'quadratic curve') {
-    scalePoint(line.curve.from, center, scale)
-    scalePoint(line.curve.cp, center, scale)
-    scalePoint(line.curve.to, center, scale)
+    scalePoint(line.curve.from, center, sx, sy)
+    scalePoint(line.curve.cp, center, sx, sy)
+    scalePoint(line.curve.to, center, sx, sy)
   } else if (line.type === 'bezier curve') {
-    scalePoint(line.curve.from, center, scale)
-    scalePoint(line.curve.cp1, center, scale)
-    scalePoint(line.curve.cp2, center, scale)
-    scalePoint(line.curve.to, center, scale)
+    scalePoint(line.curve.from, center, sx, sy)
+    scalePoint(line.curve.cp1, center, sx, sy)
+    scalePoint(line.curve.cp2, center, sx, sy)
+    scalePoint(line.curve.to, center, sx, sy)
   } else if (line.type === 'nurbs curve') {
     for (const point of line.curve.points) {
-      scalePoint(point, center, scale)
+      scalePoint(point, center, sx, sy)
+    }
+  }
+}
+
+export function scaleGeometryLines(lines: GeometryLine[], center: Position, sx: number, sy = sx) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = scaleGeometryLine(lines[i], center, sx, sy)
+    if (line) {
+      lines[i] = line
     }
   }
 }

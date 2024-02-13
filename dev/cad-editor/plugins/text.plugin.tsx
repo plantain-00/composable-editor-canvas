@@ -92,11 +92,11 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
-      content.fontSize *= scale
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
+      content.fontSize *= sy
       if (content.width) {
-        content.width *= scale
+        content.width *= sx
       }
     },
     getEditPoints(content) {

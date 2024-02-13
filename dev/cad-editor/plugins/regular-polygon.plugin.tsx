@@ -47,9 +47,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
-      content.radius *= scale
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
+      content.radius *= sx
     },
     offset(content, point, distance) {
       if (!distance) {

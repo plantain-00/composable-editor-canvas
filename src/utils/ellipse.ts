@@ -10,6 +10,7 @@ import { angleToRadian, radianToAngle } from "./radian";
 import { number, minimum, optional, and } from "./validators";
 import { calculateEquation2 } from "./equation-calculater";
 import { getPointSideOfLine, twoPointLineToGeneralFormLine } from "./line";
+import { Arc } from "./circle";
 
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
   const angle = getEllipseAngle(p, ellipseArc)
@@ -112,6 +113,16 @@ export function ellipseToEllipseArc(ellipse: Ellipse): EllipseArc {
     ...ellipse,
     startAngle: 0,
     endAngle: 360,
+  }
+}
+
+export function arcToEllipseArc(arc: Arc): EllipseArc {
+  return {
+    ...arc,
+    cx: arc.x,
+    cy: arc.y,
+    rx: arc.r,
+    ry: arc.r,
   }
 }
 

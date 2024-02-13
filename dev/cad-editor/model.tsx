@@ -211,7 +211,7 @@ export type Model<T> = Partial<FeatureModels> & {
   type: string
   move?(content: Omit<T, 'type'>, offset: Position): void
   rotate?(content: Omit<T, 'type'>, center: Position, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  scale?(content: Omit<T, 'type'>, center: Position, scale: number, contents: readonly Nullable<BaseContent>[]): void
+  scale?(content: Omit<T, 'type'>, center: Position, sx: number, sy: number, contents: readonly Nullable<BaseContent>[]): void | BaseContent
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
@@ -1217,13 +1217,17 @@ export function getContainerRotate(content: ContainerFields, center: Position, a
     getContentModel(c)?.rotate?.(c, center, angle, contents)
   })
 }
-export function getContainerScale(content: ContainerFields, center: Position, scale: number, contents: readonly Nullable<BaseContent>[]) {
-  content.contents.forEach((c) => {
+export function getContainerScale(content: ContainerFields, center: Position, sx: number, sy: number, contents: readonly Nullable<BaseContent>[]) {
+  for (let i = 0; i < content.contents.length; i++) {
+    const c = content.contents[i]
     if (!c) {
       return
     }
-    getContentModel(c)?.scale?.(c, center, scale, contents)
-  })
+    const result = getContentModel(c)?.scale?.(c, center, sx, sy, contents)
+    if (result) {
+      content.contents[i] = result
+    }
+  }
 }
 export function getContainerExplode(content: ContainerFields) {
   return getContentsExplode(content.contents)

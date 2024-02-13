@@ -100,19 +100,15 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
     },
-    scale(content, center, scale) {
+    scale(content, center, sx, sy) {
       if (content.ref) {
-        ctx.scalePoint(content.ref.point, center, scale)
-        ctx.scalePoint(content.ref.end, center, scale)
+        ctx.scalePoint(content.ref.point, center, sx, sy)
+        ctx.scalePoint(content.ref.end, center, sx, sy)
       }
-      for (const line of content.border) {
-        ctx.scaleGeometryLine(line, center, scale)
-      }
+      ctx.scaleGeometryLines(content.border, center, sx, sy)
       if (content.holes) {
         for (const hole of content.holes) {
-          for (const line of hole) {
-            ctx.scaleGeometryLine(line, center, scale)
-          }
+          ctx.scaleGeometryLines(hole, center, sx, sy)
         }
       }
     },
