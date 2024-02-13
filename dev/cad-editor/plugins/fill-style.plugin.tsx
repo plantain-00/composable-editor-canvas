@@ -32,8 +32,8 @@ export function getModel(ctx: PluginContext): model.Model<model.FillStyleContent
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
     },
     render(content, { target, getFillColor, transformColor, getFillPattern }) {
       const options = {

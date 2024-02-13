@@ -103,9 +103,9 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         ctx.rotatePoint(point, center, angle)
       }
     },
-    scale(content, center, scale) {
+    scale(content, center, sx, sy) {
       for (const point of content.points) {
-        ctx.scalePoint(point, center, scale)
+        ctx.scalePoint(point, center, sx, sy)
       }
     },
     mirror(content, line) {

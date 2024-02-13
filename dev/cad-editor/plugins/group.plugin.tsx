@@ -23,10 +23,10 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         ctx.getContentModel(content.clip.border)?.rotate?.(content.clip.border, center, angle, contents)
       }
     },
-    scale(content, center, scale, contents) {
-      ctx.getContainerScale(content, center, scale, contents)
+    scale(content, center, sx, sy, contents) {
+      ctx.getContainerScale(content, center, sx, sy, contents)
       if (content.clip) {
-        ctx.getContentModel(content.clip.border)?.scale?.(content.clip.border, center, scale, contents)
+        return ctx.getContentModel(content.clip.border)?.scale?.(content.clip.border, center, sx, sy, contents)
       }
     },
     explode: ctx.getContainerExplode,

@@ -150,12 +150,12 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
       for (const row of content.rows) {
-        row.height *= scale
+        row.height *= sy
       }
-      content.widths = content.widths.map(w => w * scale)
+      content.widths = content.widths.map(w => w * sx)
     },
     render(content, renderCtx) {
       const geometries = getGeometries(content)

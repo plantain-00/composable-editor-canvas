@@ -49,10 +49,10 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       ctx.rotatePoint(content, center, angle)
       content.angle += angle
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
-      content.width *= scale
-      content.height *= scale
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
+      content.width *= sx
+      content.height *= sy
     },
     explode(content) {
       const { lines } = getRectGeometries(content)

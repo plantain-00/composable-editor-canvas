@@ -5,6 +5,7 @@ import type * as model from '../model'
 import { LineContent } from './line-polyline.plugin'
 import type { PolygonContent } from './polygon.plugin'
 import type { TextContent } from './text.plugin'
+import type { EllipseArcContent, EllipseContent } from './ellipse.plugin'
 
 export type CircleContent = model.BaseContent<'circle'> & model.StrokeFields & model.FillFields & core.Circle & {
   xExpression?: string
@@ -86,8 +87,22 @@ export function getModel(ctx: PluginContext) {
       rotate(content, center, angle) {
         ctx.rotatePoint(content, center, angle)
       },
-      scale(content, center, scale) {
-        ctx.scaleCircle(content, center, scale)
+      scale(content, center, sx, sy) {
+        if (sx !== sy) {
+          const ellipse: EllipseContent = {
+            ...content,
+            type: 'ellipse',
+            cx: content.x,
+            cy: content.y,
+            rx: content.r,
+            ry: content.r,
+          }
+          ctx.scaleEllipse(ellipse, center, sx, sy)
+          return ellipse
+        }
+        ctx.scalePoint(content, center, sx, sy)
+        content.r *= sx
+        return
       },
       mirror(content, line) {
         ctx.mirrorPoint(content, line)
@@ -225,8 +240,22 @@ export function getModel(ctx: PluginContext) {
       rotate(content, center, angle) {
         ctx.rotateArc(content, center, angle)
       },
-      scale(content, center, scale) {
-        ctx.scaleCircle(content, center, scale)
+      scale(content, center, sx, sy) {
+        if (sx !== sy) {
+          const ellipse: EllipseArcContent = {
+            ...content,
+            type: 'ellipse arc',
+            cx: content.x,
+            cy: content.y,
+            rx: content.r,
+            ry: content.r,
+          }
+          ctx.scaleEllipseArc(ellipse, center, sx, sy)
+          return ellipse
+        }
+        ctx.scalePoint(content, center, sx, sy)
+        content.r *= sx
+        return
       },
       mirror(content, line, angle) {
         ctx.mirrorArc(content, line, angle)

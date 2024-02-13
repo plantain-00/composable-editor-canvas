@@ -54,10 +54,10 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, scale) {
-      ctx.scalePoint(content, center, scale)
-      content.innerRadius *= scale
-      content.outerRadius *= scale
+    scale(content, center, sx, sy) {
+      ctx.scalePoint(content, center, sx, sy)
+      content.innerRadius *= sx
+      content.outerRadius *= sy
     },
     break(content, intersectionPoints) {
       const { lines } = getStarGeometriesFromCache(content)

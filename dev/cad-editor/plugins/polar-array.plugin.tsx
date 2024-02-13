@@ -75,12 +75,9 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
         ctx.getContentModel(c)?.rotate?.(c, center, angle, contents)
       })
     },
-    scale(content, center, angle, contents) {
-      ctx.scalePoint(content.center, center, angle)
-      content.contents.forEach((c) => {
-        if (!c) return
-        ctx.getContentModel(c)?.scale?.(c, center, angle, contents)
-      })
+    scale(content, center, sx, sy, contents) {
+      ctx.scalePoint(content.center, center, sx, sy)
+      ctx.getContainerScale(content, center, sx, sy, contents)
     },
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents))

@@ -87,7 +87,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         model.rotate?.(draft, block.base, content.angle, contents)
       }
       if (content.scale) {
-        model.scale?.(draft, block.base, content.scale, contents)
+        model.scale?.(draft, block.base, content.scale, content.scale, contents)
       }
       model.move?.(draft, content)
     })
@@ -146,14 +146,14 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
         content.angle += angle
       }
     },
-    scale(content, center, scale, contents) {
+    scale(content, center, sx, sy, contents) {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
         const p = { x: content.x + block.base.x, y: content.y + block.base.y }
-        ctx.scalePoint(p, center, scale)
+        ctx.scalePoint(p, center, sx, sy)
         content.x = p.x - block.base.x
         content.y = p.y - block.base.y
-        content.scale = (content.scale || 1) * scale
+        content.scale = (content.scale || 1) * sx
       }
     },
     explode(content, contents) {
