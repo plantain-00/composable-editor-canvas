@@ -286,7 +286,7 @@ function getModel(ctx) {
   const BlockReferenceContent = ctx.and(ctx.BaseContent("block reference"), ctx.Position, ctx.VariableValuesFields, {
     refId: ctx.or(ctx.number, ctx.Content),
     angle: ctx.number,
-    scale: ctx.optional(ctx.number)
+    scale: ctx.optional(ctx.or(ctx.number, ctx.Position))
   });
   const blockModel = {
     type: "block",
@@ -362,8 +362,9 @@ function getModel(ctx) {
       if (content.angle) {
         (_a = model.rotate) == null ? void 0 : _a.call(model, draft, block.base, content.angle, contents);
       }
-      if (content.scale) {
-        (_b = model.scale) == null ? void 0 : _b.call(model, draft, block.base, content.scale, content.scale, contents);
+      const scale = ctx.getScaleOptionsScale(content);
+      if (scale) {
+        (_b = model.scale) == null ? void 0 : _b.call(model, draft, block.base, scale.x, scale.y, contents);
       }
       (_c = model.move) == null ? void 0 : _c.call(model, draft, content);
     });
@@ -425,13 +426,18 @@ function getModel(ctx) {
       }
     },
     scale(content, center, sx, sy, contents) {
+      var _a, _b;
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const p = { x: content.x + block.base.x, y: content.y + block.base.y };
         ctx.scalePoint(p, center, sx, sy);
         content.x = p.x - block.base.x;
         content.y = p.y - block.base.y;
-        content.scale = (content.scale || 1) * sx;
+        const scale = ctx.getScaleOptionsScale(content);
+        content.scale = {
+          x: ((_a = scale == null ? void 0 : scale.x) != null ? _a : 1) * sx,
+          y: ((_b = scale == null ? void 0 : scale.y) != null ? _b : 1) * sy
+        };
       }
     },
     explode(content, contents) {
@@ -452,12 +458,18 @@ function getModel(ctx) {
       return [];
     },
     mirror(content, line, angle, contents) {
+      var _a, _b;
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         const p = ctx.mirrorPoint({ x: content.x + block.base.x, y: content.y + block.base.y }, line);
         content.x = p.x - block.base.x;
         content.y = p.y - block.base.y;
         content.angle = 2 * angle - content.angle;
+        const scale = ctx.getScaleOptionsScale(content);
+        content.scale = {
+          x: (_a = scale == null ? void 0 : scale.x) != null ? _a : 1,
+          y: -((_b = scale == null ? void 0 : scale.y) != null ? _b : 1)
+        };
       }
     },
     render(content, renderCtx) {
@@ -535,12 +547,13 @@ function getModel(ctx) {
     },
     getGeometries: getBlockReferenceGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
-      var _a;
+      var _a, _b;
       let variableNames = [];
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
         variableNames = ctx.getContainerVariableNames(block);
       }
+      const scale = ctx.getScaleOptionsScale(content);
       return {
         refId: typeof content.refId === "number" ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.refId, setValue: (v) => update((c) => {
           if (isBlockReferenceContent(c)) {
@@ -567,9 +580,16 @@ function getModel(ctx) {
             c.angle = v;
           }
         }) }),
-        scale: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_a = content.scale) != null ? _a : 1, setValue: (v) => update((c) => {
+        sx: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_a = scale == null ? void 0 : scale.x) != null ? _a : 1, setValue: (v) => update((c) => {
+          var _a2;
           if (isBlockReferenceContent(c)) {
-            c.scale = v;
+            c.scale = { x: v, y: (_a2 = scale == null ? void 0 : scale.y) != null ? _a2 : v };
+          }
+        }) }),
+        sy: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: (_b = scale == null ? void 0 : scale.y) != null ? _b : 1, setValue: (v) => update((c) => {
+          var _a2;
+          if (isBlockReferenceContent(c)) {
+            c.scale = { x: (_a2 = scale == null ? void 0 : scale.x) != null ? _a2 : v, y: v };
           }
         }) }),
         ...ctx.getVariableValuesContentPropertyPanel(content, variableNames, update)
@@ -4867,6 +4887,8 @@ function getModel(ctx) {
     scale(content, center, sx, sy, contents) {
       var _a, _b;
       ctx.scalePoint(content, center, sx, sy);
+      content.width *= sx;
+      content.height *= sy;
       if (content.clip) {
         return (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, sx, sy, contents);
       }
@@ -8770,9 +8792,18 @@ function getModel(ctx) {
       content.angle += angle;
     },
     scale(content, center, sx, sy) {
+      if (content.angle) {
+        const points = ctx.produce(getRectGeometries(content).points, (draft) => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy);
+          }
+        });
+        return { ...content, points, type: "polygon" };
+      }
       ctx.scalePoint(content, center, sx, sy);
       content.width *= sx;
       content.height *= sy;
+      return;
     },
     explode(content) {
       const { lines } = getRectGeometries(content);
@@ -9002,8 +9033,17 @@ function getModel(ctx) {
       ctx.movePoint(content, offset);
     },
     scale(content, center, sx, sy) {
+      if (sx !== sy) {
+        const points = ctx.produce(getRegularPolygonGeometriesFromCache(content).points, (draft) => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy);
+          }
+        });
+        return { ...content, points, type: "polygon" };
+      }
       ctx.scalePoint(content, center, sx, sy);
       content.radius *= sx;
+      return;
     },
     offset(content, point, distance) {
       var _a;
@@ -9232,6 +9272,8 @@ function getModel(ctx) {
     },
     scale(content, center, sx, sy) {
       ctx.scalePoint(content, center, sx, sy);
+      content.innerRadius *= sx;
+      content.outerRadius *= sx;
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
@@ -10214,9 +10256,18 @@ function getModel(ctx) {
       ctx.movePoint(content, offset);
     },
     scale(content, center, sx, sy) {
+      if (sx !== sy) {
+        const points = ctx.produce(getStarGeometriesFromCache(content).points, (draft) => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy);
+          }
+        });
+        return { ...content, points, type: "polygon" };
+      }
       ctx.scalePoint(content, center, sx, sy);
       content.innerRadius *= sx;
       content.outerRadius *= sy;
+      return;
     },
     break(content, intersectionPoints) {
       const { lines } = getStarGeometriesFromCache(content);

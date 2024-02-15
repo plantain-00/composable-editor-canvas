@@ -599,7 +599,9 @@ export const CADEditor = React.forwardRef((props: {
   }
 
   const onClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    e.preventDefault()
+    if (e.shiftKey) {
+      e.preventDefault()
+    }
     const viewportPosition = reverseTransform({ x: e.clientX, y: e.clientY })
     const p = getSnapPoint(viewportPosition, editingContent, getContentsInRange, lastPosition)
     if (acquirePointHandler.current) {
@@ -637,7 +639,9 @@ export const CADEditor = React.forwardRef((props: {
     setSnapOffset(undefined)
   })
   const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
-    e.preventDefault()
+    if (e.shiftKey) {
+      e.preventDefault()
+    }
     if (operations.type === 'operate' && operations.operate.name === 'move canvas') {
       onStartMoveCanvas({ x: e.clientX, y: e.clientY })
     } else if (e.buttons === 4) {

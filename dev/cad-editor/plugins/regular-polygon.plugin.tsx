@@ -2,6 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
+import type { PolygonContent } from './polygon.plugin'
 
 export type RegularPolygonContent = model.BaseContent<'regular polygon'> & model.StrokeFields & model.FillFields & core.Position & {
   radius: number
@@ -48,8 +49,17 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       ctx.movePoint(content, offset)
     },
     scale(content, center, sx, sy) {
+      if (sx !== sy) {
+        const points = ctx.produce(getRegularPolygonGeometriesFromCache(content).points, draft => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy)
+          }
+        })
+        return { ...content, points, type: 'polygon', } as PolygonContent
+      }
       ctx.scalePoint(content, center, sx, sy)
       content.radius *= sx
+      return
     },
     offset(content, point, distance) {
       if (!distance) {

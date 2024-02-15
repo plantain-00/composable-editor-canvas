@@ -2,6 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
+import type { PolygonContent } from './polygon.plugin'
 
 export type StarContent = model.BaseContent<'star'> & model.StrokeFields & model.FillFields & core.Position & {
   outerRadius: number
@@ -55,9 +56,18 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       ctx.movePoint(content, offset)
     },
     scale(content, center, sx, sy) {
+      if (sx !== sy) {
+        const points = ctx.produce(getStarGeometriesFromCache(content).points, draft => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy)
+          }
+        })
+        return { ...content, points, type: 'polygon', } as PolygonContent
+      }
       ctx.scalePoint(content, center, sx, sy)
       content.innerRadius *= sx
       content.outerRadius *= sy
+      return
     },
     break(content, intersectionPoints) {
       const { lines } = getStarGeometriesFromCache(content)
