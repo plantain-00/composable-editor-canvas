@@ -3,6 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import type { PolygonContent } from './polygon.plugin'
 
 export type RectContent = model.BaseContent<'rect'> & model.StrokeFields & model.FillFields & core.Region & {
   angle: number
@@ -50,9 +51,18 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.angle += angle
     },
     scale(content, center, sx, sy) {
+      if (content.angle) {
+        const points = ctx.produce(getRectGeometries(content).points, draft => {
+          for (const p of draft) {
+            ctx.scalePoint(p, center, sx, sy)
+          }
+        })
+        return { ...content, points, type: 'polygon', } as PolygonContent
+      }
       ctx.scalePoint(content, center, sx, sy)
       content.width *= sx
       content.height *= sy
+      return
     },
     explode(content) {
       const { lines } = getRectGeometries(content)

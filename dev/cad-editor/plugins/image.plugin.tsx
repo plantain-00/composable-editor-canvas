@@ -42,6 +42,8 @@ export function getModel(ctx: PluginContext): model.Model<ImageContent> {
     },
     scale(content, center, sx, sy, contents) {
       ctx.scalePoint(content, center, sx, sy)
+      content.width *= sx
+      content.height *= sy
       if (content.clip) {
         return ctx.getContentModel(content.clip.border)?.scale?.(content.clip.border, center, sx, sy, contents)
       }

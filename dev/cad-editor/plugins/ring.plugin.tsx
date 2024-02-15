@@ -49,6 +49,8 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     },
     scale(content, center, sx, sy) {
       ctx.scalePoint(content, center, sx, sy)
+      content.innerRadius *= sx
+      content.outerRadius *= sx
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
