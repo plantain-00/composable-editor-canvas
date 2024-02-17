@@ -85,12 +85,6 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
         ctx.translate(-(x + width / 2), -(y + height / 2))
       }
       ctx.rect(x, y, width, height)
-      const strokeWidth = (options?.strokeWidth ?? 1) / scale
-      if (strokeWidth) {
-        ctx.lineWidth = strokeWidth
-        ctx.strokeStyle = getColorString(options?.strokeColor ?? 0)
-        ctx.strokeRect(x, y, width, height)
-      }
       renderStroke(ctx, scale, rerender, globalWidth, globalHeight, transform, matrix, options)
       renderFill(ctx, scale, rerender, globalWidth, globalHeight, transform, matrix, options)
       ctx.restore()
