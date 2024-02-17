@@ -88,7 +88,7 @@ export function getModel(ctx: PluginContext) {
         ctx.rotatePoint(content, center, angle)
       },
       scale(content, center, sx, sy) {
-        if (sx !== sy) {
+        if (sx !== sy && !ctx.isZero(sx + sy)) {
           const ellipse: EllipseContent = {
             ...content,
             type: 'ellipse',
@@ -101,7 +101,7 @@ export function getModel(ctx: PluginContext) {
           return ellipse
         }
         ctx.scalePoint(content, center, sx, sy)
-        content.r *= sx
+        content.r *= Math.abs(sx)
         return
       },
       mirror(content, line) {
@@ -241,7 +241,7 @@ export function getModel(ctx: PluginContext) {
         ctx.rotateArc(content, center, angle)
       },
       scale(content, center, sx, sy) {
-        if (sx !== sy) {
+        if (sx !== sy && !ctx.isZero(sx + sy)) {
           const ellipse: EllipseArcContent = {
             ...content,
             type: 'ellipse arc',
@@ -254,7 +254,7 @@ export function getModel(ctx: PluginContext) {
           return ellipse
         }
         ctx.scalePoint(content, center, sx, sy)
-        content.r *= sx
+        content.r *= Math.abs(sx)
         return
       },
       mirror(content, line, angle) {

@@ -9,6 +9,8 @@ export type TextContent = model.BaseContent<'text'> & core.Position & model.Text
   text: string
   width?: number
   textVariableName?: string
+  angle?: number
+  scale?: number | core.Position
 }
 
 export function getModel(ctx: PluginContext): model.Model<TextContent> {
@@ -16,6 +18,8 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     text: ctx.string,
     width: ctx.optional(ctx.number),
     textVariableName: ctx.optional(ctx.string),
+    angle: ctx.optional(ctx.number),
+    scale: ctx.optional(ctx.or(ctx.number, ctx.Position)),
   })
   const textLayoutResultCache = new ctx.WeakmapCache2<object, object, ReturnType<typeof ctx.flowLayout<string>>>()
   function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, c: model.TextFields, variableContext?: Record<string, unknown>) {
@@ -71,6 +75,17 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           { x: content.x, y: content.y },
         ]
       }
+      const scale = ctx.getScaleOptionsScale(content)
+      if (scale) {
+        for (const p of points) {
+          ctx.scalePoint(p, content, scale.x, scale.y)
+        }
+      }
+      if (content.angle) {
+        for (const p of points) {
+          ctx.rotatePoint(p, content, content.angle)
+        }
+      }
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines: [],
@@ -92,11 +107,25 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    rotate(content, center, angle) {
+      ctx.rotatePoint(content, center, angle)
+      content.angle = (content.angle ?? 0) + angle
+    },
     scale(content, center, sx, sy) {
       ctx.scalePoint(content, center, sx, sy)
-      content.fontSize *= sy
-      if (content.width) {
-        content.width *= sx
+      const scale = ctx.getScaleOptionsScale(content)
+      content.scale = {
+        x: (scale?.x ?? 1) * sx,
+        y: (scale?.y ?? 1) * sy,
+      }
+    },
+    mirror(content, line, angle) {
+      ctx.mirrorPoint(content, line)
+      content.angle = 2 * angle - (content.angle ?? 0)
+      const scale = ctx.getScaleOptionsScale(content)
+      content.scale = {
+        x: scale?.x ?? 1,
+        y: -(scale?.y ?? 1),
       }
     },
     getEditPoints(content) {
@@ -157,19 +186,21 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
         cacheKey = content
       }
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx)
+      const children: ReturnType<typeof target.renderGroup>[] = []
       if (hasWidth(content)) {
         const { layoutResult } = getTextLayoutResult(content, textStyleContent, variableContext)
-        const children: ReturnType<typeof target.renderGroup>[] = []
         for (const { x, y, content: text } of layoutResult) {
           const textWidth = ctx.getTextSizeFromCache(ctx.getTextStyleFont(textStyleContent), text)?.width ?? 0
           children.push(target.renderText(content.x + x + textWidth / 2, content.y + y + textStyleContent.fontSize, text, textStyleContent.color, textStyleContent.fontSize, textStyleContent.fontFamily, { textAlign: 'center', cacheKey, ...textOptions }))
         }
-        return target.renderGroup(children)
+      } else {
+        children.push(target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions }))
       }
-      return target.renderText(content.x, content.y, text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions })
+      return target.renderGroup(children, { base: content, angle: content.angle, scale: content.scale })
     },
     getGeometries: getTextGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      const scale = ctx.getScaleOptionsScale(content)
       return {
         from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTextContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTextContent(c)) { c.x = v } })} />,
@@ -184,6 +215,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           <ctx.BooleanEditor value={content.textVariableName !== undefined} setValue={(v) => update(c => { if (isTextContent(c)) { c.textVariableName = v ? '' : undefined } })} />,
           content.textVariableName !== undefined ? <ctx.StringEditor value={content.textVariableName} setValue={(v) => update(c => { if (isTextContent(c)) { c.textVariableName = v } })} /> : undefined,
         ],
+        angle: <ctx.NumberEditor value={content.angle ?? 0} setValue={(v) => update(c => { if (isTextContent(c)) { c.angle = v } })} />,
+        sx: <ctx.NumberEditor value={scale?.x ?? 1} setValue={(v) => update(c => { if (isTextContent(c)) { c.scale = { x: v, y: scale?.y ?? v } } })} />,
+        sy: <ctx.NumberEditor value={scale?.y ?? 1} setValue={(v) => update(c => { if (isTextContent(c)) { c.scale = { x: scale?.x ?? v, y: v } } })} />,
       }
     },
     editPanel(content, scale, update, contents, cancel, transformPosition) {
@@ -201,7 +235,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
           onCancel={cancel}
           x={p.x}
           y={p.y}
-          value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />
+          value={content.text}
+          setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })}
+        />
       }
       return <ctx.StringEditor style={{
         zIndex: 10,

@@ -153,8 +153,8 @@ export function getCommand(ctx: PluginContext): Command {
         hovering: hovering ? [hovering.path] : trimHovering ? [trimHovering.path] : undefined,
       }
     },
-    contentSelectable(content) {
-      return !content.readonly && ctx.getContentModel(content)?.extend !== undefined
+    contentSelectable(content, contents) {
+      return !content.readonly && !!ctx.getContentModel(content)?.getGeometries?.(content, contents)?.lines?.length
     },
     icon,
   }

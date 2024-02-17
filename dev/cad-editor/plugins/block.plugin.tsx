@@ -78,20 +78,27 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     block: BlockContent,
     contents: readonly core.Nullable<model.BaseContent>[],
   ) {
-    const model = ctx.getContentModel(target)
+    let model = ctx.getContentModel(target)
     if (!model) {
       return undefined
     }
-    return ctx.produce(target, (draft) => {
-      if (content.angle) {
-        model.rotate?.(draft, block.base, content.angle, contents)
-      }
+    let newResult: model.BaseContent | undefined
+    const result = ctx.produce(target, (draft) => {
       const scale = ctx.getScaleOptionsScale(content)
       if (scale) {
-        model.scale?.(draft, block.base, scale.x, scale.y, contents)
+        const r = model?.scale?.(draft, block.base, scale.x, scale.y, contents)
+        if (r) {
+          model = ctx.getContentModel(r)
+          newResult = r
+          draft = r
+        }
       }
-      model.move?.(draft, content)
+      if (content.angle) {
+        model?.rotate?.(draft, block.base, content.angle, contents)
+      }
+      model?.move?.(draft, content)
     })
+    return newResult || result
   }
   function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const block = ctx.getReference(content.refId, contents, isBlockContent)
@@ -107,7 +114,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
           }
           const extracted = extractContentInBlockReference(c, content, block, contents)
           if (extracted) {
-            const r = ctx.getContentModel(c)?.getGeometries?.(extracted)
+            const r = ctx.getContentModel(extracted)?.getGeometries?.(extracted)
             if (r) {
               lines.push(...r.lines)
               if (r.bounding) {
@@ -116,9 +123,9 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
               if (r.renderingLines) {
                 renderingLines.push(...r.renderingLines)
               }
-              if (r.regions) [
+              if (r.regions) {
                 regions.push(...r.regions)
-              ]
+              }
             }
           }
         })

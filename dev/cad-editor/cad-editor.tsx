@@ -683,6 +683,9 @@ export const CADEditor = React.forwardRef((props: {
   const onDoubleClick = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     endDragSelect(e)
   })
+  const onMouseLeave = useEvent(() => {
+    setHovering()
+  })
   useGlobalKeyDown(e => {
     onCommandKeyDown?.(e)
     onSelectBeforeOperateKeyDown(e)
@@ -1014,6 +1017,7 @@ export const CADEditor = React.forwardRef((props: {
           onMouseUp={onMouseUp}
           onContextMenu={onContextMenu}
           onDoubleClick={onDoubleClick}
+          onMouseLeave={onMouseLeave}
           x={transform.x}
           y={transform.y}
           scale={transform.scale}

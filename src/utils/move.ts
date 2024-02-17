@@ -142,21 +142,21 @@ export function scaleEllipse(ellipse: Ellipse, center: Position, sx: number, sy 
   ellipse.cx = (ellipse.cx - center.x) * sx + center.x
   ellipse.cy = (ellipse.cy - center.y) * sy + center.y
   if (equals(sx, sy)) {
-    ellipse.rx *= sx
-    ellipse.ry *= sy
+    ellipse.rx *= Math.abs(sx)
+    ellipse.ry *= Math.abs(sy)
     return
   }
   const radian = angleToRadian(ellipse.angle)
   const d1 = Math.sin(radian)
   if (isZero(d1)) {
-    ellipse.rx *= sx
-    ellipse.ry *= sy
+    ellipse.rx *= Math.abs(sx)
+    ellipse.ry *= Math.abs(sy)
     return
   }
   const d2 = Math.cos(radian)
   if (isZero(d2)) {
-    ellipse.rx *= sy
-    ellipse.ry *= sx
+    ellipse.rx *= Math.abs(sy)
+    ellipse.ry *= Math.abs(sx)
     return
   }
   // (d2 x + d1 y)^2/rx/rx + (-d1 x + d2 y)^2/ry/ry = 1
@@ -210,9 +210,9 @@ export function scaleGeometryLine(line: GeometryLine, center: Position, sx: numb
     scalePoint(line[0], center, sx, sy)
     scalePoint(line[1], center, sx, sy)
   } else if (line.type === 'arc') {
-    if (sx === sy) {
-      scalePoint(line.curve, center, sx)
-      line.curve.r *= sx
+    if (sx === sy || isZero(sx + sy)) {
+      scalePoint(line.curve, center, sx, sy)
+      line.curve.r *= Math.abs(sx)
     } else {
       const ellipse = arcToEllipseArc(line.curve)
       scaleEllipseArc(ellipse, center, sx, sy)
