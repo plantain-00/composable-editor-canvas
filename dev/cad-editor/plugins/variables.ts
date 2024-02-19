@@ -7405,6 +7405,232 @@ export {
   isPenContent
 };
 `,
+`// dev/cad-editor/plugins/pline.plugin.tsx
+function getModel(ctx) {
+  const PlineContent = ctx.and(ctx.BaseContent("pline"), ctx.StrokeFields, ctx.FillFields, {
+    points: ctx.minItems(2, [{ point: ctx.Position, bulge: ctx.number }]),
+    closed: ctx.optional(ctx.boolean)
+  });
+  const geometriesCache = new ctx.WeakmapCache();
+  function getPlineGeometries(content) {
+    return geometriesCache.get(content, () => {
+      const lines = [];
+      for (let i = 0; i < content.points.length; i++) {
+        const p = content.points[i];
+        if (i === content.points.length - 1) {
+          if (content.closed) {
+            lines.push(ctx.getGeometryLineByStartEndBulge(p.point, content.points[0].point, p.bulge));
+          }
+        } else {
+          lines.push(ctx.getGeometryLineByStartEndBulge(p.point, content.points[i + 1].point, p.bulge));
+        }
+      }
+      const points = ctx.getGeometryLinesPoints(lines);
+      return {
+        lines,
+        points,
+        bounding: ctx.getGeometryLinesBounding(lines),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
+        regions: ctx.hasFill(content) ? [
+          {
+            lines,
+            points
+          }
+        ] : void 0
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "pline",
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
+    move(content, offset) {
+      for (const point of content.points) {
+        ctx.movePoint(point.point, offset);
+      }
+    },
+    rotate(content, center, angle) {
+      for (const point of content.points) {
+        ctx.rotatePoint(point.point, center, angle);
+      }
+    },
+    scale(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.scalePoint(point.point, center, sx, sy);
+      }
+    },
+    mirror(content, line) {
+      for (const point of content.points) {
+        ctx.mirrorPoint(point.point, line);
+      }
+    },
+    explode(content) {
+      const { lines } = getPlineGeometries(content);
+      return lines.map((line) => ctx.geometryLineToContent(line));
+    },
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
+      return target.renderPath([getPlineGeometries(content).points], options);
+    },
+    getOperatorRenderPosition(content) {
+      return content.points[0].point;
+    },
+    getSnapPoints(content) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        return content.points.map((p) => ({ ...p.point, type: "endpoint" }));
+      });
+    },
+    getGeometries: getPlineGeometries,
+    canSelectPart: true,
+    propertyPanel(content, update, contents, { acquirePoint }) {
+      var _a;
+      return {
+        points: /* @__PURE__ */ React.createElement(
+          ctx.ArrayEditor,
+          {
+            inline: true,
+            ...ctx.getArrayEditorProps((v) => v.points, { point: { x: 0, y: 0 }, bulge: 0 }, (v) => update((c) => {
+              if (isPlineContent(c)) {
+                v(c);
+              }
+            })),
+            items: content.points.map((f, i) => /* @__PURE__ */ React.createElement(
+              ctx.ObjectEditor,
+              {
+                inline: true,
+                properties: {
+                  from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+                    if (isPlineContent(c)) {
+                      c.points[i].point.x = p.x, c.points[i].point.y = p.y;
+                    }
+                  })) }, "canvas"),
+                  x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.point.x, setValue: (v) => update((c) => {
+                    if (isPlineContent(c)) {
+                      c.points[i].point.x = v;
+                    }
+                  }) }),
+                  y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.point.y, setValue: (v) => update((c) => {
+                    if (isPlineContent(c)) {
+                      c.points[i].point.y = v;
+                    }
+                  }) }),
+                  bulge: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: f.bulge, setValue: (v) => update((c) => {
+                    if (isPlineContent(c)) {
+                      c.points[i].bulge = v;
+                    }
+                  }) })
+                }
+              }
+            ))
+          }
+        ),
+        closed: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: (_a = content.closed) != null ? _a : false, setValue: (v) => update((c) => {
+          if (isPlineContent(c)) {
+            c.closed = v;
+          }
+        }) }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getFillContentPropertyPanel(content, update, contents)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, PlineContent, p),
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    reverse: (content) => ({
+      ...content,
+      points: content.points.slice().reverse()
+    }),
+    isPointIn: (content, point) => ctx.pointInPolygon(point, getPlineGeometries(content).points)
+  };
+}
+function isPlineContent(content) {
+  return content.type === "pline";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "6,92 56,92", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("path", { d: "M 54 15 A 38 38 0 0 1 55 92", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create pline",
+    useCommand({ onEnd, scale, type, strokeStyleId, fillStyleId }) {
+      const { line, onClick, onMove, input, inputMode, lastPosition, reset, positions } = ctx.useLineClickCreate(
+        type === "create pline",
+        (c) => onEnd({
+          updateContents: (contents) => contents.push({ points: c.map((p) => ({ point: p, bulge: 0 })), strokeStyleId, fillStyleId, type: "pline" })
+        })
+      );
+      const assistentContents = [];
+      if (line && line.length > 1) {
+        const start = line[line.length - 2];
+        const end = line[line.length - 1];
+        const r = ctx.getTwoPointsDistance(start, end);
+        const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, start));
+        assistentContents.push(
+          {
+            type: "arc",
+            x: start.x,
+            y: start.y,
+            r,
+            dashArray: [4 / scale],
+            startAngle: angle > 180 || angle < 0 ? angle : 0,
+            endAngle: angle > 180 || angle < 0 ? 0 : angle
+          },
+          {
+            type: "line",
+            dashArray: [4 / scale],
+            points: [start, { x: start.x + r, y: start.y }]
+          },
+          ...ctx.getAssistentText(
+            r.toFixed(2),
+            16 / scale,
+            (start.x + end.x) / 2 - 20,
+            (start.y + end.y) / 2 + 4,
+            inputMode === "length" ? 16711680 : 16764108
+          ),
+          ...ctx.getAssistentText(
+            \`\${angle.toFixed(1)}\\xB0\`,
+            16 / scale,
+            end.x + 10,
+            end.y - 10,
+            inputMode === "angle" ? 16711680 : 16764108
+          )
+        );
+      }
+      if (line) {
+        assistentContents.push({ points: line, strokeStyleId, fillStyleId, type: "polyline" });
+      }
+      return {
+        onStart: onClick,
+        input,
+        onMove,
+        assistentContents,
+        lastPosition,
+        reset,
+        subcommand: type === "create pline" && positions.length > 2 ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            onClick: () => {
+              onEnd({
+                updateContents: (contents) => contents.push({ points: positions, type: "polygon" })
+              });
+              reset();
+            },
+            style: { position: "relative" }
+          },
+          "close"
+        )) : void 0
+      };
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand,
+  getModel,
+  isPlineContent
+};
+`,
 `// dev/cad-editor/plugins/point.plugin.tsx
 function getModel(ctx) {
   const PointContent = ctx.and(ctx.BaseContent("point"), ctx.Position);

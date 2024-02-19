@@ -115,3 +115,18 @@ export function getArcControlPoint(arc: Arc) {
   const line2 = getPerpendicularLine(end, twoPointLineToGeneralFormLine(arc, end))
   return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }
+
+export function getArcByStartEndBulge(start: Position, end: Position, bulge: number): Arc {
+  const p = getPointByLengthAndRadian(
+    getTwoPointCenter(start, end),
+    bulge * getTwoPointsDistance(start, end) / 2,
+    getTwoPointsRadian(end, start) - Math.PI / 2,
+  )
+  const circle = getThreePointsCircle(start, end, p)
+  return {
+    ...circle,
+    startAngle: radianToAngle(getTwoPointsRadian(start, circle)),
+    endAngle: radianToAngle(getTwoPointsRadian(end, circle)),
+    counterclockwise: bulge < 0,
+  }
+}
