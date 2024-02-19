@@ -1,6 +1,6 @@
 import { geometryLineIntersectWithPolygon } from "./intersection";
 import { QuadraticCurve, BezierCurve, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier";
-import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle } from "./circle";
+import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge } from "./circle";
 import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
@@ -9,7 +9,7 @@ import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePoint
 import { Position, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange } from "./angle";
-import { largerThan, lessOrEqual, lessThan } from "./math";
+import { isZero, largerThan, lessOrEqual, lessThan } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 
@@ -178,7 +178,7 @@ export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
   return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
 }
 
-export function getGeometryLinePointAndTangentRadianAtParam(param: number, line: GeometryLine): { point: Position; radian: number}  {
+export function getGeometryLinePointAndTangentRadianAtParam(param: number, line: GeometryLine): { point: Position; radian: number } {
   if (Array.isArray(line)) {
     const distance = param * getTwoPointsDistance(...line)
     return {
@@ -291,5 +291,15 @@ export function getPartOfGeometryLine(param1: number, param2: number, line: Geom
   return {
     ...line,
     curve: getPartOfNurbsCurve(line.curve, param1 * maxParam, param2 * maxParam)
+  }
+}
+
+export function getGeometryLineByStartEndBulge(start: Position, end: Position, bulge: number): GeometryLine {
+  if (isZero(bulge)) {
+    return [start, end]
+  }
+  return {
+    type: 'arc',
+    curve: getArcByStartEndBulge(start, end, bulge),
   }
 }
