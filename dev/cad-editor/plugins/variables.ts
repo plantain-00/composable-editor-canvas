@@ -1174,22 +1174,13 @@ function getModel(ctx) {
       const points = ctx.arcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const startAngle = ctx.angleToRadian(content.startAngle);
       const endAngle = ctx.angleToRadian(content.endAngle);
-      const middleAngle = (startAngle + endAngle) / 2;
+      const middleAngle = ctx.getTwoNumberCenter(startAngle, ctx.getFormattedEndAngle(content));
       const geometries = {
         lines: [{ type: "arc", curve: content }],
         points,
-        start: {
-          x: content.x + content.r * Math.cos(startAngle),
-          y: content.y + content.r * Math.sin(startAngle)
-        },
-        end: {
-          x: content.x + content.r * Math.cos(endAngle),
-          y: content.y + content.r * Math.sin(endAngle)
-        },
-        middle: {
-          x: content.x + content.r * Math.cos(middleAngle),
-          y: content.y + content.r * Math.sin(middleAngle)
-        },
+        start: ctx.getPointByLengthAndRadian(content, content.r, startAngle),
+        end: ctx.getPointByLengthAndRadian(content, content.r, endAngle),
+        middle: ctx.getPointByLengthAndRadian(content, content.r, middleAngle),
         bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
@@ -7415,6 +7406,8 @@ function getModel(ctx) {
   function getPlineGeometries(content) {
     return geometriesCache.get(content, () => {
       const lines = [];
+      const centers = [];
+      const middles = [];
       for (let i = 0; i < content.points.length; i++) {
         const p = content.points[i];
         if (i === content.points.length - 1) {
@@ -7425,10 +7418,20 @@ function getModel(ctx) {
           lines.push(ctx.getGeometryLineByStartEndBulge(p.point, content.points[i + 1].point, p.bulge));
         }
       }
+      for (const line of lines) {
+        if (Array.isArray(line)) {
+          middles.push(ctx.getTwoPointCenter(...line));
+        } else if (line.type === "arc") {
+          centers.push(line.curve);
+          middles.push(ctx.getPointByLengthAndRadian(line.curve, line.curve.r, ctx.angleToRadian(ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve)))));
+        }
+      }
       const points = ctx.getGeometryLinesPoints(lines);
       return {
         lines,
         points,
+        centers,
+        middles,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -7463,6 +7466,7 @@ function getModel(ctx) {
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point.point, line);
+        point.bulge *= -1;
       }
     },
     explode(content) {
@@ -7476,9 +7480,68 @@ function getModel(ctx) {
     getOperatorRenderPosition(content) {
       return content.points[0].point;
     },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { middles } = getPlineGeometries(content);
+        const endpoints = content.points.map((p, i) => ({
+          x: p.point.x,
+          y: p.point.y,
+          cursor: "move",
+          type: "move",
+          update(c, { cursor, start, scale }) {
+            if (!isPlineContent(c)) {
+              return;
+            }
+            c.points[i].point.x += cursor.x - start.x;
+            c.points[i].point.y += cursor.y - start.y;
+            return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p.point, cursor] }] };
+          }
+        }));
+        const midpoints = middles.map((p, i) => ({
+          x: p.x,
+          y: p.y,
+          cursor: "move",
+          type: "move",
+          update(c, { cursor, start, scale }) {
+            if (!isPlineContent(c)) {
+              return;
+            }
+            const j = i === content.points.length - 1 ? 0 : i + 1;
+            if (ctx.isZero(content.points[i].bulge)) {
+              c.points[i].point.x += cursor.x - start.x;
+              c.points[i].point.y += cursor.y - start.y;
+              c.points[j].point.x += cursor.x - start.x;
+              c.points[j].point.y += cursor.y - start.y;
+            } else {
+              const start2 = content.points[i].point;
+              const end = content.points[j].point;
+              const circle = ctx.getThreePointsCircle(start2, end, cursor);
+              const startAngle = ctx.radianToAngle(ctx.getCircleRadian(start2, circle));
+              const endAngle = ctx.radianToAngle(ctx.getCircleRadian(end, circle));
+              const arc = [{ ...circle, startAngle, endAngle, counterclockwise: false }, { ...circle, startAngle, endAngle, counterclockwise: true }].find((a) => ctx.pointIsOnArc(cursor, a));
+              if (arc) {
+                c.points[i].bulge = ctx.getArcBulge(arc, start2, end);
+              }
+            }
+            return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p, cursor] }] };
+          }
+        }));
+        return {
+          editPoints: [
+            ...endpoints,
+            ...midpoints
+          ]
+        };
+      });
+    },
     getSnapPoints(content) {
+      const { centers, middles } = getPlineGeometries(content);
       return ctx.getSnapPointsFromCache(content, () => {
-        return content.points.map((p) => ({ ...p.point, type: "endpoint" }));
+        return [
+          ...content.points.map((p) => ({ ...p.point, type: "endpoint" })),
+          ...centers.map((p) => ({ ...p, type: "center" })),
+          ...middles.map((p) => ({ ...p, type: "midpoint" }))
+        ];
       });
     },
     getGeometries: getPlineGeometries,
@@ -7519,7 +7582,12 @@ function getModel(ctx) {
                     if (isPlineContent(c)) {
                       c.points[i].bulge = v;
                     }
-                  }) })
+                  }) }),
+                  radius: f.bulge ? /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: ctx.getArcByStartEndBulge(f.point, (content.points[i + 1] || content.points[0]).point, f.bulge).r, setValue: (v) => update((c) => {
+                    if (isPlineContent(c)) {
+                      c.points[i].bulge = ctx.getArcBulgeByStartEndRadius(f.point, (content.points[i + 1] || content.points[0]).point, v, f.bulge) || 0;
+                    }
+                  }) }) : []
                 }
               }
             ))
@@ -7539,7 +7607,10 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
-      points: content.points.slice().reverse()
+      points: content.points.slice().reverse().map((p, i, points) => ({
+        point: p.point,
+        bulge: -points[i === points.length - 1 ? 0 : i + 1].bulge
+      }))
     }),
     isPointIn: (content, point) => ctx.pointInPolygon(point, getPlineGeometries(content).points)
   };

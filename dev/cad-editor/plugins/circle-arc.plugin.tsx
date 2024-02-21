@@ -40,22 +40,13 @@ export function getModel(ctx: PluginContext) {
       const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const startAngle = ctx.angleToRadian(content.startAngle)
       const endAngle = ctx.angleToRadian(content.endAngle)
-      const middleAngle = (startAngle + endAngle) / 2
+      const middleAngle = ctx.getTwoNumberCenter(startAngle, ctx.getFormattedEndAngle(content))
       const geometries = {
         lines: [{ type: 'arc' as const, curve: content }],
         points,
-        start: {
-          x: content.x + content.r * Math.cos(startAngle),
-          y: content.y + content.r * Math.sin(startAngle),
-        },
-        end: {
-          x: content.x + content.r * Math.cos(endAngle),
-          y: content.y + content.r * Math.sin(endAngle),
-        },
-        middle: {
-          x: content.x + content.r * Math.cos(middleAngle),
-          y: content.y + content.r * Math.sin(middleAngle),
-        },
+        start: ctx.getPointByLengthAndRadian(content, content.r, startAngle),
+        end: ctx.getPointByLengthAndRadian(content, content.r, endAngle),
+        middle: ctx.getPointByLengthAndRadian(content, content.r, middleAngle),
         bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
