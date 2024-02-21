@@ -17,10 +17,12 @@ export function getModel(ctx: PluginContext) {
     points: ctx.minItems(2, [{ point: ctx.Position, bulge: ctx.number }]),
     closed: ctx.optional(ctx.boolean),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], centers: core.Position[], middles: core.Position[] }>>()
   function getPlineGeometries(content: Omit<PlineContent, "type">) {
     return geometriesCache.get(content, () => {
       const lines: core.GeometryLine[] = []
+      const centers: core.Position[] = []
+      const middles: core.Position[] = []
       for (let i = 0; i < content.points.length; i++) {
         const p = content.points[i]
         if (i === content.points.length - 1) {
@@ -31,10 +33,20 @@ export function getModel(ctx: PluginContext) {
           lines.push(ctx.getGeometryLineByStartEndBulge(p.point, content.points[i + 1].point, p.bulge))
         }
       }
+      for (const line of lines) {
+        if (Array.isArray(line)) {
+          middles.push(ctx.getTwoPointCenter(...line))
+        } else if (line.type === 'arc') {
+          centers.push(line.curve)
+          middles.push(ctx.getPointByLengthAndRadian(line.curve, line.curve.r, ctx.angleToRadian(ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve)))))
+        }
+      }
       const points = ctx.getGeometryLinesPoints(lines)
       return {
         lines,
         points,
+        centers,
+        middles,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -69,6 +81,7 @@ export function getModel(ctx: PluginContext) {
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point.point, line)
+        point.bulge *= -1
       }
     },
     explode(content) {
@@ -82,9 +95,68 @@ export function getModel(ctx: PluginContext) {
     getOperatorRenderPosition(content) {
       return content.points[0].point
     },
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { middles } = getPlineGeometries(content)
+        const endpoints: core.EditPoint<model.BaseContent>[] = content.points.map((p, i) => ({
+          x: p.point.x,
+          y: p.point.y,
+          cursor: 'move',
+          type: 'move',
+          update(c, { cursor, start, scale }) {
+            if (!isPlineContent(c)) {
+              return
+            }
+            c.points[i].point.x += cursor.x - start.x
+            c.points[i].point.y += cursor.y - start.y
+            return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p.point, cursor] } as LineContent] }
+          },
+        }))
+        const midpoints: core.EditPoint<model.BaseContent>[] = middles.map((p, i) => ({
+          x: p.x,
+          y: p.y,
+          cursor: 'move',
+          type: 'move',
+          update(c, { cursor, start, scale }) {
+            if (!isPlineContent(c)) {
+              return
+            }
+            const j = i === content.points.length - 1 ? 0 : i + 1
+            if (ctx.isZero(content.points[i].bulge)) {
+              c.points[i].point.x += cursor.x - start.x
+              c.points[i].point.y += cursor.y - start.y
+              c.points[j].point.x += cursor.x - start.x
+              c.points[j].point.y += cursor.y - start.y
+            } else {
+              const start = content.points[i].point
+              const end = content.points[j].point
+              const circle = ctx.getThreePointsCircle(start, end, cursor)
+              const startAngle = ctx.radianToAngle(ctx.getCircleRadian(start, circle))
+              const endAngle = ctx.radianToAngle(ctx.getCircleRadian(end, circle))
+              const arc = [{ ...circle, startAngle, endAngle, counterclockwise: false }, { ...circle, startAngle, endAngle, counterclockwise: true }].find(a => ctx.pointIsOnArc(cursor, a))
+              if (arc) {
+                c.points[i].bulge = ctx.getArcBulge(arc, start, end)
+              }
+            }
+            return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p, cursor] } as LineContent] }
+          },
+        }))
+        return {
+          editPoints: [
+            ...endpoints,
+            ...midpoints,
+          ]
+        }
+      })
+    },
     getSnapPoints(content) {
+      const { centers, middles } = getPlineGeometries(content)
       return ctx.getSnapPointsFromCache(content, () => {
-        return content.points.map((p) => ({ ...p.point, type: 'endpoint' as const }))
+        return [
+          ...content.points.map((p) => ({ ...p.point, type: 'endpoint' as const })),
+          ...centers.map((p) => ({ ...p, type: 'center' as const })),
+          ...middles.map((p) => ({ ...p, type: 'midpoint' as const })),
+        ]
       })
     },
     getGeometries: getPlineGeometries,
@@ -101,6 +173,11 @@ export function getModel(ctx: PluginContext) {
               x: <ctx.NumberEditor value={f.point.x} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].point.x = v } })} />,
               y: <ctx.NumberEditor value={f.point.y} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].point.y = v } })} />,
               bulge: <ctx.NumberEditor value={f.bulge} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].bulge = v } })} />,
+              radius: f.bulge ? <ctx.NumberEditor value={ctx.getArcByStartEndBulge(f.point, (content.points[i + 1] || content.points[0]).point, f.bulge).r} setValue={(v) => update(c => {
+                if (isPlineContent(c)) {
+                  c.points[i].bulge = ctx.getArcBulgeByStartEndRadius(f.point, (content.points[i + 1] || content.points[0]).point, v, f.bulge) || 0
+                }
+              })} /> : [],
             }}
           />)}
         />,
@@ -114,7 +191,10 @@ export function getModel(ctx: PluginContext) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
-      points: content.points.slice().reverse(),
+      points: content.points.slice().reverse().map((p, i, points) => ({
+        point: p.point,
+        bulge: -points[i === points.length - 1 ? 0 : i + 1].bulge,
+      })),
     }),
     isPointIn: (content, point) => ctx.pointInPolygon(point, getPlineGeometries(content).points),
   } as model.Model<PlineContent>

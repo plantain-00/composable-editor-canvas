@@ -1,4 +1,4 @@
-import { AngleRange } from "./angle";
+import { AngleRange, getLargeArc } from "./angle";
 import { getTwoPointsRadian } from "./radian";
 import { isZero } from "./math";
 import { getTwoPointCenter } from "./position";
@@ -129,4 +129,34 @@ export function getArcByStartEndBulge(start: Position, end: Position, bulge: num
     endAngle: radianToAngle(getTwoPointsRadian(end, circle)),
     counterclockwise: bulge < 0,
   }
+}
+
+export function getArcBulgeByStartEndRadius(start: Position, end: Position, radius: number, oldBulge?: number) {
+  let radian = Math.asin(getTwoPointsDistance(start, end) / 2 / radius)
+  if (oldBulge) {
+    if (Math.abs(oldBulge) > 1) {
+      radian = Math.PI - radian
+    }
+    if (oldBulge < 0) {
+      radian = -radian
+    }
+  }
+  return Math.tan(radian / 2)
+}
+
+export function getArcBulge(arc: Arc, start?: Position, end?: Position) {
+  if (!start) {
+    start = getPointByLengthAndRadian(arc, arc.r, angleToRadian(arc.startAngle))
+  }
+  if (!end) {
+    end = getPointByLengthAndRadian(arc, arc.r, angleToRadian(arc.endAngle))
+  }
+  let bulge = getArcBulgeByStartEndRadius(start, end, arc.r)
+  if (getLargeArc(arc)) {
+    bulge = 1 / bulge
+  }
+  if (arc.counterclockwise) {
+    bulge = -bulge
+  }
+  return bulge
 }
