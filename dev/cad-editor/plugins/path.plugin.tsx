@@ -100,10 +100,10 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     },
     offset(content, point, distance) {
       const lines = getPathGeometriesFromCache(content).lines
-      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map(g => ({
+      return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(g),
-      }))
+        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistance(point, lines, distance)),
+      }
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)

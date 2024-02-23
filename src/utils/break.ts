@@ -12,7 +12,7 @@ import { getNurbsCurveParamAtPoint, getNurbsMaxParam, getPartOfNurbsCurve } from
 import { radianToAngle } from "./radian"
 import { getGeometryLineStartAndEnd } from "./geometry-line"
 import { pointIsOnGeometryLine } from "./geometry-line"
-import { reverseRay } from "./reverse"
+import { reverseGeometryLine, reverseRay } from "./reverse"
 
 /**
  * @public
@@ -266,4 +266,27 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
     }
   }
   return result
+}
+
+export function mergeGeometryLines(line1: GeometryLine[], line2: GeometryLine[]): GeometryLine[] | void {
+  const start1 = getGeometryLineStartAndEnd(line1[0]).start
+  if (!start1) return
+  const end1 = getGeometryLineStartAndEnd(line1[line1.length - 1]).end
+  if (!end1) return
+  const start2 = getGeometryLineStartAndEnd(line2[0]).start
+  if (!start2) return
+  const end2 = getGeometryLineStartAndEnd(line2[line2.length - 1]).end
+  if (!end2) return
+  if (isSamePoint(end1, start2)) {
+    return [...line1, ...line2]
+  }
+  if (isSamePoint(end1, end2)) {
+    return [...line1, ...line2.slice().reverse().map(g => reverseGeometryLine(g))]
+  }
+  if (isSamePoint(start1, end2)) {
+    return [...line2, ...line1]
+  }
+  if (isSamePoint(start1, start2)) {
+    return [...line1.slice().reverse().map(g => reverseGeometryLine(g)), ...line2]
+  }
 }

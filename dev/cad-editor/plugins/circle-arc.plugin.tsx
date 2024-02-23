@@ -2,7 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
-import { LineContent } from './line-polyline.plugin'
+import { type LineContent, isLineContent, isPolyLineContent } from './line-polyline.plugin'
 import type { PolygonContent } from './polygon.plugin'
 import type { TextContent } from './text.plugin'
 import type { EllipseArcContent, EllipseContent } from './ellipse.plugin'
@@ -38,15 +38,13 @@ export function getModel(ctx: PluginContext) {
   function getArcGeometries(content: Omit<ArcContent, "type">) {
     return arcGeometriesCache.get(content, () => {
       const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
-      const startAngle = ctx.angleToRadian(content.startAngle)
-      const endAngle = ctx.angleToRadian(content.endAngle)
-      const middleAngle = ctx.getTwoNumberCenter(startAngle, ctx.getFormattedEndAngle(content))
+      const middleAngle = ctx.getTwoNumberCenter(content.startAngle, ctx.getFormattedEndAngle(content))
       const geometries = {
         lines: [{ type: 'arc' as const, curve: content }],
         points,
-        start: ctx.getPointByLengthAndRadian(content, content.r, startAngle),
-        end: ctx.getPointByLengthAndRadian(content, content.r, endAngle),
-        middle: ctx.getPointByLengthAndRadian(content, content.r, middleAngle),
+        start: ctx.getArcPointAtAngle(content, content.startAngle),
+        end: ctx.getArcPointAtAngle(content, content.endAngle),
+        middle: ctx.getArcPointAtAngle(content, middleAngle),
         bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
       }
@@ -296,6 +294,12 @@ export function getModel(ctx: PluginContext) {
       join(content, target) {
         if (isArcContent(target)) {
           return ctx.mergeArc(content, target)
+        }
+        if (isLineContent(target) || isPolyLineContent(target)) {
+          const newLines = ctx.mergeGeometryLines([{ type: 'arc', curve: content }], Array.from(ctx.iteratePolylineLines(target.points)))
+          if (newLines) {
+            return ctx.geometryLinesToPline(newLines)
+          }
         }
         return
       },
