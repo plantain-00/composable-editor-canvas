@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding, getArcPointAtAngle, getArcBulge } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -9,6 +9,7 @@ import type { EllipseArcContent } from './plugins/ellipse.plugin'
 import type { PathContent } from './plugins/path.plugin'
 import type { NurbsContent } from './plugins/nurbs.plugin'
 import type { RayContent } from './plugins/ray.plugin'
+import type { PlineContent } from './plugins/pline.plugin'
 export { math } from '../expression/math'
 
 export interface BaseContent<T extends string = string> {
@@ -412,6 +413,28 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
     return { type: 'ray', ...line.line } as RayContent
   }
   return { type: 'nurbs', ...line.curve } as NurbsContent
+}
+
+export function geometryLinesToPline(line: GeometryLine[]) {
+  if (line.length === 1) {
+    return geometryLineToContent(line[0])
+  }
+  const pline: PlineContent = { type: 'pline', points: [] }
+  for (let i = 0; i < line.length; i++) {
+    const n = line[i]
+    if (Array.isArray(n)) {
+      pline.points.push({ point: n[0], bulge: 0 })
+      if (i === line.length - 1) {
+        pline.points.push({ point: n[1], bulge: 0 })
+      }
+    } else if (n.type === 'arc') {
+      pline.points.push({ point: getArcPointAtAngle(n.curve, n.curve.startAngle), bulge: getArcBulge(n.curve) })
+      if (i === line.length - 1) {
+        pline.points.push({ point: getArcPointAtAngle(n.curve, n.curve.endAngle), bulge: 0 })
+      }
+    }
+  }
+  return pline
 }
 
 export function getContentsPoints(

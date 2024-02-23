@@ -1146,7 +1146,15 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+`// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
+}
+function isPolyLineContent(content) {
+  return content.type === "polyline";
+}
+
+// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function getModel(ctx) {
   const CircleContent = ctx.and(ctx.BaseContent("circle"), ctx.StrokeFields, ctx.FillFields, ctx.Circle, {
     xExpression: ctx.optional(ctx.string),
@@ -1172,15 +1180,13 @@ function getModel(ctx) {
     return arcGeometriesCache.get(content, () => {
       var _a;
       const points = ctx.arcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
-      const startAngle = ctx.angleToRadian(content.startAngle);
-      const endAngle = ctx.angleToRadian(content.endAngle);
-      const middleAngle = ctx.getTwoNumberCenter(startAngle, ctx.getFormattedEndAngle(content));
+      const middleAngle = ctx.getTwoNumberCenter(content.startAngle, ctx.getFormattedEndAngle(content));
       const geometries = {
         lines: [{ type: "arc", curve: content }],
         points,
-        start: ctx.getPointByLengthAndRadian(content, content.r, startAngle),
-        end: ctx.getPointByLengthAndRadian(content, content.r, endAngle),
-        middle: ctx.getPointByLengthAndRadian(content, content.r, middleAngle),
+        start: ctx.getArcPointAtAngle(content, content.startAngle),
+        end: ctx.getArcPointAtAngle(content, content.endAngle),
+        middle: ctx.getArcPointAtAngle(content, middleAngle),
         bounding: ctx.getArcBounding(content),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
       };
@@ -1470,6 +1476,12 @@ function getModel(ctx) {
       join(content, target) {
         if (isArcContent(target)) {
           return ctx.mergeArc(content, target);
+        }
+        if (isLineContent(target) || isPolyLineContent(target)) {
+          const newLines = ctx.mergeGeometryLines([{ type: "arc", curve: content }], Array.from(ctx.iteratePolylineLines(target.points)));
+          if (newLines) {
+            return ctx.geometryLinesToPline(newLines);
+          }
         }
         return;
       },
@@ -1914,17 +1926,17 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/line-polyline.plugin.tsx
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function isLineContent(content) {
   return content.type === "line";
 }
 function isPolyLineContent(content) {
   return content.type === "polyline";
-}
-
-// dev/cad-editor/plugins/circle-arc.plugin.tsx
-function isArcContent(content) {
-  return content.type === "arc";
 }
 
 // dev/cad-editor/plugins/ellipse.plugin.tsx
@@ -2521,17 +2533,17 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/line-polyline.plugin.tsx
-function isLineContent(content) {
-  return content.type === "line";
-}
-
-// dev/cad-editor/plugins/circle-arc.plugin.tsx
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function isCircleContent(content) {
   return content.type === "circle";
 }
 function isArcContent(content) {
   return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
 }
 
 // dev/cad-editor/plugins/create-tangent-tangent-radius-circle.plugin.tsx
@@ -2746,17 +2758,17 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/line-polyline.plugin.tsx
-function isLineContent(content) {
-  return content.type === "line";
-}
-
-// dev/cad-editor/plugins/circle-arc.plugin.tsx
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function isCircleContent(content) {
   return content.type === "circle";
 }
 function isArcContent(content) {
   return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
 }
 
 // dev/cad-editor/plugins/create-tangent-tangent-tangent-circle.plugin.tsx
@@ -4413,17 +4425,17 @@ export {
   getModel
 };
 `,
-`// dev/cad-editor/plugins/line-polyline.plugin.tsx
-function isLineContent(content) {
-  return content.type === "line";
-}
-
-// dev/cad-editor/plugins/circle-arc.plugin.tsx
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function isCircleContent(content) {
   return content.type === "circle";
 }
 function isArcContent(content) {
   return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/line-polyline.plugin.tsx
+function isLineContent(content) {
+  return content.type === "line";
 }
 
 // dev/cad-editor/plugins/fillet.plugin.tsx
@@ -5077,7 +5089,12 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/line-polyline.plugin.tsx
+`// dev/cad-editor/plugins/circle-arc.plugin.tsx
+function isArcContent(content) {
+  return content.type === "arc";
+}
+
+// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function getModel(ctx) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or("line", "polyline")), ctx.StrokeFields, ctx.FillFields, {
     points: ctx.minItems(2, [ctx.Position])
@@ -5129,10 +5146,10 @@ function getModel(ctx) {
       return ctx.breakPolyline(lines, intersectionPoints);
     },
     offset(content, point, distance) {
-      if (!distance) {
-        distance = Math.min(...getPolylineGeometries(content).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
-      }
       const { lines } = getPolylineGeometries(content);
+      if (!distance) {
+        distance = Math.min(...lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
+      }
       const index = ctx.getLinesOffsetDirection(point, lines);
       const points = ctx.getParallelPolylineByDistance(lines, index, distance);
       return ctx.trimOffsetResult(points, point, closed).map((p) => ctx.produce(content, (d) => {
@@ -5151,6 +5168,12 @@ function getModel(ctx) {
             ...content,
             points: lines[0].points
           };
+        }
+      }
+      if (isArcContent(target)) {
+        const newLines = ctx.mergeGeometryLines([{ type: "arc", curve: target }], getPolylineGeometries(content).lines);
+        if (newLines) {
+          return ctx.geometryLinesToPline(newLines);
         }
       }
       return;
@@ -6160,7 +6183,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       const lines = getNurbsGeometries(content).lines;
-      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((r) => r.map((t) => ctx.geometryLineToContent(t))).flat();
+      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((r) => ctx.geometryLineToContent(r));
     },
     render(content, renderCtx) {
       const { points } = getNurbsGeometries(content);
@@ -6846,10 +6869,10 @@ function getModel(ctx) {
     },
     offset(content, point, distance) {
       const lines = getPathGeometriesFromCache(content).lines;
-      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((g) => ({
+      return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(g)
-      }));
+        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistance(point, lines, distance))
+      };
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
@@ -7423,7 +7446,7 @@ function getModel(ctx) {
           middles.push(ctx.getTwoPointCenter(...line));
         } else if (line.type === "arc") {
           centers.push(line.curve);
-          middles.push(ctx.getPointByLengthAndRadian(line.curve, line.curve.r, ctx.angleToRadian(ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve)))));
+          middles.push(ctx.getArcPointAtAngle(line.curve, ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve))));
         }
       }
       const points = ctx.getGeometryLinesPoints(lines);
@@ -7469,9 +7492,56 @@ function getModel(ctx) {
         point.bulge *= -1;
       }
     },
+    break(content, intersectionPoints) {
+      const { lines } = getPlineGeometries(content);
+      const newLines = ctx.breakGeometryLines(lines, intersectionPoints);
+      return newLines.map((line) => ctx.geometryLinesToPline(line));
+    },
     explode(content) {
       const { lines } = getPlineGeometries(content);
       return lines.map((line) => ctx.geometryLineToContent(line));
+    },
+    offset(content, point, distance) {
+      const { lines } = getPlineGeometries(content);
+      const newLines = ctx.getParallelGeometryLinesByDistance(point, lines, distance);
+      return ctx.geometryLinesToPline(newLines);
+    },
+    join(content, target) {
+      var _a, _b, _c;
+      const { lines } = getPlineGeometries(content);
+      const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target)) == null ? void 0 : _c.lines;
+      if (!line2)
+        return;
+      const newLines = ctx.mergeGeometryLines(lines, line2);
+      if (!newLines)
+        return;
+      return ctx.geometryLinesToPline(newLines);
+    },
+    extend(content, point) {
+      if (content.closed)
+        return;
+      const { lines } = getPlineGeometries(content);
+      const first = lines[0], last = lines[lines.length - 1];
+      if (Array.isArray(first)) {
+        if (ctx.pointIsOnRay(point, { ...first[0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(...first)) })) {
+          content.points[0].point = point;
+        }
+      } else if (first.type === "arc") {
+        if (ctx.pointIsOnCircle(point, first.curve)) {
+          content.points[0].point = point;
+          content.points[0].bulge = ctx.getArcBulge({ ...first.curve, startAngle: ctx.radianToAngle(ctx.getCircleRadian(point, first.curve)) }, point);
+        }
+      }
+      if (Array.isArray(last)) {
+        if (ctx.pointIsOnRay(point, { ...last[1], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(last[1], last[0])) })) {
+          content.points[content.points.length - 1].point = point;
+        }
+      } else if (last.type === "arc") {
+        if (ctx.pointIsOnCircle(point, last.curve)) {
+          content.points[0].point = point;
+          content.points[0].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, void 0, point);
+        }
+      }
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);

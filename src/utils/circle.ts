@@ -146,10 +146,10 @@ export function getArcBulgeByStartEndRadius(start: Position, end: Position, radi
 
 export function getArcBulge(arc: Arc, start?: Position, end?: Position) {
   if (!start) {
-    start = getPointByLengthAndRadian(arc, arc.r, angleToRadian(arc.startAngle))
+    start = getArcPointAtAngle(arc, arc.startAngle)
   }
   if (!end) {
-    end = getPointByLengthAndRadian(arc, arc.r, angleToRadian(arc.endAngle))
+    end = getArcPointAtAngle(arc, arc.endAngle)
   }
   let bulge = getArcBulgeByStartEndRadius(start, end, arc.r)
   if (getLargeArc(arc)) {

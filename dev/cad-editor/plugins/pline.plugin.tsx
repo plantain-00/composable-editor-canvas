@@ -5,7 +5,7 @@ import type * as model from '../model'
 import type { ArcContent } from './circle-arc.plugin'
 import type { TextContent } from './text.plugin'
 import type { PolygonContent } from './polygon.plugin'
-import { LineContent } from './line-polyline.plugin'
+import type { LineContent } from './line-polyline.plugin'
 
 export type PlineContent = model.BaseContent<'pline'> & model.StrokeFields & model.FillFields & {
   points: { point: core.Position, bulge: number }[]
@@ -38,7 +38,7 @@ export function getModel(ctx: PluginContext) {
           middles.push(ctx.getTwoPointCenter(...line))
         } else if (line.type === 'arc') {
           centers.push(line.curve)
-          middles.push(ctx.getPointByLengthAndRadian(line.curve, line.curve.r, ctx.angleToRadian(ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve)))))
+          middles.push(ctx.getArcPointAtAngle(line.curve, ctx.getTwoNumberCenter(line.curve.startAngle, ctx.getFormattedEndAngle(line.curve))))
         }
       }
       const points = ctx.getGeometryLinesPoints(lines)
@@ -84,9 +84,52 @@ export function getModel(ctx: PluginContext) {
         point.bulge *= -1
       }
     },
+    break(content, intersectionPoints) {
+      const { lines } = getPlineGeometries(content)
+      const newLines = ctx.breakGeometryLines(lines, intersectionPoints)
+      return newLines.map(line => ctx.geometryLinesToPline(line))
+    },
     explode(content) {
       const { lines } = getPlineGeometries(content)
       return lines.map((line) => ctx.geometryLineToContent(line))
+    },
+    offset(content, point, distance) {
+      const { lines } = getPlineGeometries(content)
+      const newLines = ctx.getParallelGeometryLinesByDistance(point, lines, distance)
+      return ctx.geometryLinesToPline(newLines)
+    },
+    join(content, target) {
+      const { lines } = getPlineGeometries(content)
+      const line2 = ctx.getContentModel(target)?.getGeometries?.(target)?.lines
+      if (!line2) return
+      const newLines = ctx.mergeGeometryLines(lines, line2)
+      if (!newLines) return
+      return ctx.geometryLinesToPline(newLines)
+    },
+    extend(content, point) {
+      if (content.closed) return
+      const { lines } = getPlineGeometries(content)
+      const first = lines[0], last = lines[lines.length - 1]
+      if (Array.isArray(first)) {
+        if (ctx.pointIsOnRay(point, { ...first[0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(...first)) })) {
+          content.points[0].point = point
+        }
+      } else if (first.type === 'arc') {
+        if (ctx.pointIsOnCircle(point, first.curve)) {
+          content.points[0].point = point
+          content.points[0].bulge = ctx.getArcBulge({ ...first.curve, startAngle: ctx.radianToAngle(ctx.getCircleRadian(point, first.curve)) }, point)
+        }
+      }
+      if (Array.isArray(last)) {
+        if (ctx.pointIsOnRay(point, { ...last[1], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(last[1], last[0])) })) {
+          content.points[content.points.length - 1].point = point
+        }
+      } else if (last.type === 'arc') {
+        if (ctx.pointIsOnCircle(point, last.curve)) {
+          content.points[0].point = point
+          content.points[0].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, undefined, point)
+        }
+      }
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)

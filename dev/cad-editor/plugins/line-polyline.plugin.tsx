@@ -2,7 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
-import type { ArcContent } from './circle-arc.plugin'
+import { isArcContent, type ArcContent } from './circle-arc.plugin'
 import type { TextContent } from './text.plugin'
 import type { PolygonContent } from './polygon.plugin'
 
@@ -61,10 +61,10 @@ export function getModel(ctx: PluginContext) {
       return ctx.breakPolyline(lines, intersectionPoints)
     },
     offset(content, point, distance) {
-      if (!distance) {
-        distance = Math.min(...getPolylineGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
-      }
       const { lines } = getPolylineGeometries(content)
+      if (!distance) {
+        distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+      }
       const index = ctx.getLinesOffsetDirection(point, lines)
       const points = ctx.getParallelPolylineByDistance(lines, index, distance)
       return ctx.trimOffsetResult(points, point, closed).map(p => ctx.produce(content, (d) => {
@@ -83,6 +83,12 @@ export function getModel(ctx: PluginContext) {
             ...content,
             points: lines[0].points,
           } as LineContent
+        }
+      }
+      if (isArcContent(target)) {
+        const newLines = ctx.mergeGeometryLines([{ type: 'arc', curve: target }], getPolylineGeometries(content).lines)
+        if (newLines) {
+          return ctx.geometryLinesToPline(newLines)
         }
       }
       return

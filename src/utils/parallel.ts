@@ -297,18 +297,18 @@ export function getParallelGeometryLineByDistance(line: GeometryLine, distance: 
   }
 }
 
-export function getParallelGeometryLinesByDistance(point: Position, lines: GeometryLine[], distance: number): GeometryLine[][] {
+export function getParallelGeometryLinesByDistance(point: Position, lines: GeometryLine[], distance: number): GeometryLine[] {
   if (!distance) {
     distance = Math.min(...lines.map(line => getPointAndGeometryLineMinimumDistance(point, line)))
   }
   if (isZero(distance)) {
-    return [lines]
+    return lines
   }
   const closed = isGeometryLinesClosed(lines) && lines.length > 1
   const index = getLinesOffsetDirection(point, lines)
   const parallels = lines.map(line => getParallelGeometryLineByDistance(line, distance, index))
   if (parallels.length === 1) {
-    return [parallels]
+    return parallels
   }
   const result: GeometryLine[] = []
   let previous: Position | undefined
@@ -372,7 +372,7 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
     }
     previous = current
   }
-  return [result]
+  return result
 }
 
 function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
