@@ -129,7 +129,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       }
     },
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref === 'number' ? [content.ref] : [])],
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref.id === 'number' ? [content.ref.id] : [])],
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id)

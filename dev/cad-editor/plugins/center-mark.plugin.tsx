@@ -51,7 +51,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
       }
     },
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
-    getRefIds: (content) => typeof content.ref === 'number' ? [content.ref] : [],
+    getRefIds: (content) => typeof content.ref.id === 'number' ? [content.ref.id] : [],
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id)

@@ -19,7 +19,7 @@ import { getEllipseRadian } from "./ellipse"
 import { EllipseArc } from "./ellipse"
 import { Circle, Arc } from "./circle"
 import { Ellipse } from "./ellipse"
-import { GeometryLine } from "./geometry-line"
+import { GeometryLine, pointIsOnGeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
@@ -34,8 +34,16 @@ export function getPerpendicularLine(point: Position, line: GeneralFormLine): Ge
 }
 
 export function getPerpendicularLineToGeometryLine(point: Position, line: GeometryLine): GeneralFormLine | undefined {
+  const p = getPerpendicularPointToGeometryLine(point, line)
+  if (p) {
+    return twoPointLineToGeneralFormLine(point, p)
+  }
+  return
+}
+
+export function getPerpendicularPointToGeometryLine(point: Position, line: GeometryLine): Position | undefined {
   if (Array.isArray(line)) {
-    return getPerpendicularLine(point, twoPointLineToGeneralFormLine(...line))
+    return getPerpendicularPoint(point, twoPointLineToGeneralFormLine(...line))
   }
   let p: Position | undefined
   if (line.type === 'arc') {
@@ -60,11 +68,36 @@ export function getPerpendicularLineToGeometryLine(point: Position, line: Geomet
     if (param !== undefined) {
       p = getNurbsCurvePointAtParam(line.curve, param)
     }
+  } else if (line.type === 'ray') {
+    p = getPerpendicularPoint(point, pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle)))
   }
-  if (p) {
-    return twoPointLineToGeneralFormLine(point, p)
+  return p
+}
+
+export function getPerpendicularPointToGeometryLines(point: Position, lines: GeometryLine[]): { point: Position, line?: GeometryLine } | undefined {
+  const notExtendedCandidates: { point: Position, distance: number }[] = []
+  const extendedCandidates: { point: Position, distance: number, line: GeometryLine }[] = []
+  for (const line of lines) {
+    const p = getPerpendicularPointToGeometryLine(point, line)
+    if (p) {
+      if (pointIsOnGeometryLine(p, line)) {
+        notExtendedCandidates.push({
+          point: p,
+          distance: getTwoPointsDistance(p, point),
+        })
+      } else {
+        extendedCandidates.push({
+          point: p,
+          distance: getTwoPointsDistance(p, point),
+          line,
+        })
+      }
+    }
   }
-  return
+  if (notExtendedCandidates.length > 0) {
+    return minimumBy(notExtendedCandidates, n => n.distance)
+  }
+  return minimumBy(extendedCandidates, n => n.distance)
 }
 
 export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine): Position {

@@ -486,11 +486,11 @@ export function useAttributedTextEditor<T extends object>(props: {
   }
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) {
-      onComposing(e, inputText)
+      onComposing(e, inputText, backspace)
       return
     }
     if (e.keyCode === 229) {
-      onComposing(e, inputText)
+      onComposing(e, inputText, backspace)
       return
     }
     if (props.processInput?.(e)) {

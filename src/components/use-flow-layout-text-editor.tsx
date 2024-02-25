@@ -32,7 +32,7 @@ export function useFlowLayoutTextEditor(props: {
   const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
   const getComposition = (index: number) => getTextComposition(index, props.state, getTextWidth, c => c)
   const { onComposing, getCompositionCountThenEnd } = useTextComposing()
-  const { inputContent, getCopiedContents, ref, layoutResult, cursor, location, setLocation, isSelected, renderEditor, actualHeight, setSelectionStart, positionToLocation, getPosition } = useFlowLayoutEditor({
+  const { inputContent, getCopiedContents, ref, layoutResult, cursor, location, setLocation, isSelected, renderEditor, actualHeight, setSelectionStart, positionToLocation, getPosition, backspace } = useFlowLayoutEditor({
     state: props.state,
     width: props.width,
     height: props.height,
@@ -94,7 +94,7 @@ export function useFlowLayoutTextEditor(props: {
       if (newLocation !== undefined) setLocation(newLocation)
     },
     onComposing(e) {
-      onComposing(e, inputText)
+      onComposing(e, inputText, backspace)
     },
   })
 
@@ -157,7 +157,14 @@ export function useTextComposing() {
       compositionCount.current = 0
       return result
     },
-    onComposing(e: React.KeyboardEvent<HTMLInputElement>, inputText: (text: string) => void) {
+    onComposing(e: React.KeyboardEvent<HTMLInputElement>, inputText: (text: string) => void, backspace: () => void) {
+      if (e.code === 'Backspace') {
+        if (compositionCount.current > 0) {
+          compositionCount.current--
+          backspace()
+          return
+        }
+      }
       for (const key of ['Key', 'Digit']) {
         if (e.code.startsWith(key)) {
           const text = e.code.slice(key.length)[0].toLocaleLowerCase()
