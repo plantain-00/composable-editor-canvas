@@ -375,6 +375,7 @@ export function useFlowLayoutEditor<T>(props: {
       y: cursorY + scrollY,
       row: cursorRow,
     },
+    backspace,
     inputContent,
     location,
     setLocation,

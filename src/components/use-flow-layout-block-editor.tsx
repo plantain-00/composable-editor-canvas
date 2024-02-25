@@ -707,7 +707,7 @@ export function useFlowLayoutBlockOperation<T, V extends { children: readonly T[
   }
 
   return {
-    range, inputContent, inputInline, getCopiedContents, skipVoidBlock, scrollRef,
+    range, inputContent, inputInline, getCopiedContents, skipVoidBlock, scrollRef, backspace,
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref, setLocation, location, contentHeight, setContentHeight, blockLocation,
     contentLocation, isSelected, actualHeight, onBlur, onMouseUp, onMouseDown, onMouseMove, onKeyDown,
   }

@@ -1,12 +1,12 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { getGeometryLineParamAtPoint } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam } from "./geometry-line"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
 import { isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
 import { getTwoPointsRadian } from "./radian"
-import { normalizeRadian } from "./angle"
+import { normalizeRadian, twoRadiansSameDirection } from "./angle"
 import { GeneralFormLine, getParallelRaysByDistance } from "./line"
 import { getParallelLineSegmentsByDistance, getParallelLinesByDistance } from "./line"
 import { pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./line"
@@ -315,21 +315,59 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
   for (let i = 0; i < parallels.length + 1; i++) {
     let parallel = parallels[i]
     let current: Position | undefined
+    let newItem: { line: GeometryLine, current: Position } | undefined
     if (i === 0) {
       if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallels[parallels.length - 1], parallel)
+        current = getTwoGeometryLinesNearestIntersectionPoint(parallels[parallels.length - 1], parallel, point)
       } else {
         current = getGeometryLineStartAndEnd(parallel).start
       }
     } else if (i === parallels.length) {
       parallel = parallels[parallels.length - 1]
       if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallel, parallels[0])
+        current = getTwoGeometryLinesNearestIntersectionPoint(parallel, parallels[0], point)
       } else {
         current = getGeometryLineStartAndEnd(parallel).end
       }
     } else {
-      current = getTwoGeometryLinesNearestIntersectionPoint(parallels[i - 1], parallel)
+      const previousParallel = parallels[i - 1]
+      current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel, point)
+      if (!current) {
+        if (!Array.isArray(parallel) && parallel.type === 'arc' && parallel.curve.r <= 0) {
+          lines = lines.toSpliced(i, 1)
+          parallels.splice(i, 1)
+          i--
+          continue
+        }
+        if (Array.isArray(previousParallel) && Array.isArray(parallel)) {
+          current = parallel[0]
+        } else {
+          const previousLine = lines[i - 1]
+          getGeometryLineStartAndEnd(previousLine).start
+          const center = getGeometryLineStartAndEnd(previousLine).end
+          current = getGeometryLineStartAndEnd(previousParallel).end
+          const next = getGeometryLineStartAndEnd(parallel).start
+          if (center && current && next) {
+            const arc: Arc = {
+              x: center.x,
+              y: center.y,
+              r: distance,
+              startAngle: radianToAngle(getTwoPointsRadian(current, center)),
+              endAngle: radianToAngle(getTwoPointsRadian(next, center)),
+            }
+            newItem = {
+              current: next,
+              line: {
+                type: 'arc',
+                curve: {
+                  ...arc,
+                  counterclockwise: twoRadiansSameDirection(getGeometryLinePointAndTangentRadianAtParam(0, { type: 'arc', curve: arc }).radian, getGeometryLinePointAndTangentRadianAtParam(1, previousLine).radian) ? undefined : true,
+                },
+              },
+            }
+          }
+        }
+      }
     }
     if (current && previous) {
       const line = parallels[i - 1]
@@ -371,14 +409,18 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
       }
     }
     previous = current
+    if (newItem) {
+      result.push(newItem.line)
+      previous = newItem.current
+    }
   }
   return result
 }
 
-function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
+function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine, cursor?: Position) {
   const intersections = getTwoGeometryLinesIntersectionPoint(line1, line2, true)
   if (intersections.length > 1) {
-    const s = getGeometryLineStartAndEnd(line2).start
+    const s = cursor || getGeometryLineStartAndEnd(line2).start
     return minimumBy(intersections.map(p => ({ point: p, distance: getTwoPointsDistance(p, s) })), p => p.distance).point
   }
   return intersections[0]

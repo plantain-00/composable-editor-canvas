@@ -37,10 +37,10 @@ export function useHtmlEditor(props: {
 
   const { range, inputContent, inputInline, getCopiedContents, scrollRef,
     scrollY, dragLocation, setY, selectionStart, setSelectionStart, ref: cursorRef, setLocation, location, contentHeight, setContentHeight, blockLocation,
-    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown } = useFlowLayoutBlockOperation({
+    contentLocation, actualHeight, isSelected, onBlur, onMouseUp: mouseUp, onMouseDown: mouseDown, onMouseMove: mouseMove, onKeyDown: keyDown, backspace } = useFlowLayoutBlockOperation({
       ...props,
       onComposing(e) {
-        onComposing(e, inputText)
+        onComposing(e, inputText, backspace)
       },
     })
 

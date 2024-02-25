@@ -16,11 +16,15 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'copy',
       execute({ contents, selected, type }) {
-        const ids = new Set<number>()
+        const ids: number[] = []
         contents.forEach((content, index) => {
           if (content && ctx.isSelected([index], selected)) {
             for (const id of iterateRefContents(index, contents, ctx)) {
-              ids.add(id)
+              const index = ids.indexOf(id)
+              if (index >= 0) {
+                ids.splice(index, 1)
+              }
+              ids.push(id)
             }
             if (type === 'cut' && ctx.contentIsDeletable(content, contents)) {
               contents[index] = undefined

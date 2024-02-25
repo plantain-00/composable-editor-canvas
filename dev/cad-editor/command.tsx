@@ -1,7 +1,7 @@
-import { Patch } from "immer"
+import { Patch, produce } from "immer"
 import React from "react"
 import { ContentPath, Nullable, Position, prependPatchPath, SelectPath, Size, Transform, TwoPointsFormRegion } from "../../src"
-import { BaseContent, fixedButtomStyle, fixedInputStyle, PartRef, Select, SnapTarget } from "./model"
+import { BaseContent, fixedButtomStyle, fixedInputStyle, getContentModel, PartRef, Select, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
   type?: CommandType[]
@@ -140,8 +140,8 @@ export function useCommands(
     commandUpdateSelectedContent(contents: readonly Nullable<BaseContent>[]) {
       const assistentContents: BaseContent[] = []
       const patches: [Patch[], Patch[]][] = []
-      let index = 0
       const s = selected.map(e => e.content)
+      let newContents: BaseContent[] = []
       for (const { content, path } of selected) {
         if (commandResult?.updateSelectedContent) {
           const result = commandResult.updateSelectedContent(content, contents, s)
@@ -152,21 +152,35 @@ export function useCommands(
             patches.push([prependPatchPath(result.patches[0], path), prependPatchPath(result.patches[1], path)])
           }
           if (result.newContents) {
-            patches.push(...result.newContents.map((c, i) => [
-              [{
-                op: 'add',
-                path: [contents.length + i + index],
-                value: c,
-              }],
-              [{
-                op: 'remove',
-                path: [contents.length + i + index],
-              }]
-            ] as [Patch[], Patch[]]))
-            index += result.newContents.length
+            newContents.push(...result.newContents)
           }
         }
       }
+      const idMap: Record<number, number> = {}
+      for(let i = 0; i < selected.length;i++) {
+        idMap[selected[i].path[0]] = contents.length + i
+      }
+      newContents = newContents.map(c => {
+        const model = getContentModel(c)
+        if (!model) return c
+        const refIds = model.getRefIds?.(c)
+        if (!refIds) return c
+        if (refIds.every(d => idMap[d] === undefined)) return c
+        return produce(c, draft => {
+          model.updateRefId?.(draft, d => typeof d === 'number' ? idMap[d] : undefined)
+        })
+      })
+      patches.push(...newContents.map((c, i) => [
+        [{
+          op: 'add',
+          path: [contents.length + i],
+          value: c,
+        }],
+        [{
+          op: 'remove',
+          path: [contents.length + i],
+        }]
+      ] as [Patch[], Patch[]]))
       return {
         assistentContents,
         patches,

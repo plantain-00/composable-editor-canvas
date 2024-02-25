@@ -987,7 +987,7 @@ function getModel(ctx) {
       };
     },
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
-    getRefIds: (content) => typeof content.ref === "number" ? [content.ref] : [],
+    getRefIds: (content) => typeof content.ref.id === "number" ? [content.ref.id] : [],
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id);
@@ -2302,11 +2302,15 @@ function getCommand(ctx) {
   const cutOrCopyCommand = {
     name: "copy",
     execute({ contents, selected, type }) {
-      const ids = /* @__PURE__ */ new Set();
+      const ids = [];
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected)) {
           for (const id of iterateRefContents(index, contents, ctx)) {
-            ids.add(id);
+            const index2 = ids.indexOf(id);
+            if (index2 >= 0) {
+              ids.splice(index2, 1);
+            }
+            ids.push(id);
           }
           if (type === "cut" && ctx.contentIsDeletable(content, contents)) {
             contents[index] = void 0;
@@ -8606,7 +8610,7 @@ function getModel(ctx) {
       };
     },
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.ref === "number" ? [content.ref] : []],
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...typeof content.ref.id === "number" ? [content.ref.id] : []],
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id);
