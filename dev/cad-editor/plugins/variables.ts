@@ -8457,8 +8457,8 @@ function getModel(ctx) {
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent("radial dimension reference"), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
     ref: ctx.PartRef
   });
-  function getRadialDimensionReferenceGeometriesFromCache(content, contents) {
-    const target = ctx.getRefPart(content.ref, contents, contentSelectable);
+  function getRadialDimensionReferenceGeometriesFromCache(content, contents, patches) {
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches);
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         var _a, _b;
@@ -8491,7 +8491,7 @@ function getModel(ctx) {
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
-      const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents);
+      const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents, renderCtx.patches);
       const children = [];
       for (const line of lines) {
         children.push(target.renderPolyline(line, options));
@@ -8499,7 +8499,7 @@ function getModel(ctx) {
       if (regions && regions.length > 0) {
         children.push(target.renderPolygon(regions[0].points, fillOptions));
       }
-      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable);
+      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable, renderCtx.patches);
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget);
         const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(strokeColor, renderCtx);

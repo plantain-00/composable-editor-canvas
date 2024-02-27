@@ -119,6 +119,7 @@ export function Renderer(props: {
     getFillPattern,
     time: props.time,
     contents: previewContents,
+    patches: previewPatches,
   }
   children = renderCache.current.get(sortedContents, props.time, () => {
     sortedContents.forEach((content) => {
