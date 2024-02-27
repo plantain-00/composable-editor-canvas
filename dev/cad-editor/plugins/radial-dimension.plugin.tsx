@@ -4,6 +4,7 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 import type { LineContent } from './line-polyline.plugin'
+import type { Patch } from 'immer'
 
 export type RadialDimensionReferenceContent = model.BaseContent<'radial dimension reference'> & model.StrokeFields & model.ArrowFields & core.RadialDimension & {
   ref: model.PartRef
@@ -13,8 +14,8 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent('radial dimension reference'), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
     ref: ctx.PartRef,
   })
-  function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const target = ctx.getRefPart(content.ref, contents, contentSelectable)
+  function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], patches?: Patch[]) {
+    const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches)
     if (target) {
       return radialDimensionReferenceLinesCache.get(target, content, () => {
         return ctx.getRadialDimensionGeometries(content, target, {
@@ -52,7 +53,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-      const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents)
+      const { regions, lines } = getRadialDimensionReferenceGeometriesFromCache(content, contents, renderCtx.patches)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of lines) {
         children.push(target.renderPolyline(line, options))
@@ -60,7 +61,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       if (regions && regions.length > 0) {
         children.push(target.renderPolygon(regions[0].points, fillOptions))
       }
-      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable)
+      const referenceTarget = ctx.getRefPart(content.ref, contents, contentSelectable, renderCtx.patches)
       if (referenceTarget) {
         const { textPosition, textRotation, text } = getTextPosition(content, referenceTarget)
         const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(strokeColor, renderCtx)

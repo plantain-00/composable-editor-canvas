@@ -270,6 +270,7 @@ export interface RenderContext<V, T = V> {
   target: ReactRenderTarget<V, T>
   transformStrokeWidth: (strokeWidth: number) => number,
   contents: readonly Nullable<BaseContent>[]
+  patches?: Patch[]
   getStrokeColor(content: StrokeFields & FillFields): number | undefined
   getFillColor(content: FillFields): number | undefined
   getFillPattern: (content: FillFields) => Pattern<V> | undefined
@@ -1026,6 +1027,7 @@ export function getReference<T extends BaseContent>(
   id: number | BaseContent,
   contents: readonly Nullable<BaseContent>[],
   filter: (content: BaseContent) => content is T = (c): c is T => true,
+  patches?: Patch[],
 ) {
   if (typeof id !== 'number') {
     if (filter(id)) {
@@ -1033,7 +1035,11 @@ export function getReference<T extends BaseContent>(
     }
     return
   }
-  const content = contents[id]
+  let content = contents[id]
+  if (!content && patches && patches.length > 0) {
+    // type-coverage:ignore-next-line
+    content = patches.find(p => p.op === 'add' && p.path[0] === id)?.value
+  } 
   if (content && filter(content)) {
     return content
   }
@@ -1456,9 +1462,9 @@ export const PositionRef = {
   param: optional(number),
 }
 
-export function getRefPosition(positionRef: PositionRef | undefined, contents: readonly Nullable<BaseContent>[]) {
+export function getRefPosition(positionRef: PositionRef | undefined, contents: readonly Nullable<BaseContent>[], patches?: Patch[]) {
   if (positionRef !== undefined) {
-    const ref = getReference(positionRef.id, contents)
+    const ref = getReference(positionRef.id, contents, undefined, patches)
     if (ref) {
       const model = getContentModel(ref)
       let p: Position | undefined = model?.getSnapPoints?.(ref, contents)?.[positionRef.snapIndex]
@@ -1488,9 +1494,10 @@ export function getRefPart<T extends BaseContent = BaseContent>(
   partRef: PartRef | undefined,
   contents: readonly Nullable<BaseContent>[],
   filter: (content: BaseContent) => content is T = (c): c is T => true,
+  patches?: Patch[],
 ) {
   if (partRef !== undefined) {
-    const ref = getReference(partRef.id, contents)
+    const ref = getReference(partRef.id, contents, undefined, patches)
     if (ref) {
       const model = getContentModel(ref)
       if (partRef.partIndex !== undefined) {
