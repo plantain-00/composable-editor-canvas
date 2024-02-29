@@ -424,6 +424,13 @@ export function getRayStartAndEnd(ray: Ray): { start?: Position, end?: Position 
   }
 }
 
+export function getLineParamAtPoint(p1: Position, p2: Position, point: Position) {
+  if (isSameNumber(p1.x, p2.x)) {
+    return (point.y - p1.y) / (p2.y - p1.y)
+  }
+  return (point.x - p1.x) / (p2.x - p1.x)
+}
+
 export function getRayParamAtPoint(ray: Ray, point: Position) {
   const d = getTwoPointsDistance(ray, point)
   if (isZero(d)) return 0

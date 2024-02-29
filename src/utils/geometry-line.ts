@@ -4,7 +4,7 @@ import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, poi
 import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
-import { Ray, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
+import { Ray, getLineParamAtPoint, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
 import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, NurbsCurve, pointIsOnNurbsCurve } from "./nurbs";
 import { Position, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
@@ -123,7 +123,7 @@ export function pointIsOnGeometryLine(p: Position, line: GeometryLine) {
 
 export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
-    return getTwoPointsDistance(line[0], point) / getTwoPointsDistance(...line)
+    return getLineParamAtPoint(...line, point)
   }
   if (line.type === 'arc') {
     const angle = getAngleInRange(radianToAngle(getTwoPointsRadian(point, line.curve)), line.curve)

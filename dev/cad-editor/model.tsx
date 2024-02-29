@@ -45,7 +45,7 @@ export interface StrokeFields {
   dashArray?: number[]
   strokeColor?: number
   strokeWidth?: number
-  strokeStyleId?: number | BaseContent
+  strokeStyleId?: ContentRef
   trueStrokeColor?: boolean
   strokeOpacity?: number
   lineJoin?: LineJoin
@@ -72,7 +72,7 @@ export interface FillFields {
     strokeColor?: number
     strokeOpacity?: number
   }
-  fillStyleId?: number | BaseContent
+  fillStyleId?: ContentRef
   fillOpacity?: number
 }
 
@@ -89,7 +89,7 @@ export const FillFields = {
 
 export interface TextFields extends TextStyle {
   color: number
-  textStyleId?: number | BaseContent
+  textStyleId?: ContentRef
   lineHeight?: number
   align?: Align
   verticalAlign?: VerticalAlign
@@ -250,7 +250,7 @@ export type Model<T> = Partial<FeatureModels> & {
     activeChild?: number[],
   ): JSX.Element
   getRefIds?(content: T): number[] | undefined
-  updateRefId?(content: T, update: (id: number | BaseContent) => number | undefined | BaseContent): void
+  updateRefId?(content: T, update: (id: ContentRef) => number | undefined | BaseContent): void
   isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position): boolean
@@ -1024,7 +1024,7 @@ export function getSortedContents(contents: readonly Nullable<BaseContent>[]) {
 }
 
 export function getReference<T extends BaseContent>(
-  id: number | BaseContent,
+  id: ContentRef,
   contents: readonly Nullable<BaseContent>[],
   filter: (content: BaseContent) => content is T = (c): c is T => true,
   patches?: Patch[],
@@ -1302,7 +1302,7 @@ export function getContentsBreak(array: Nullable<BaseContent>[], points: Positio
 export function getStrokeRefIds(content: StrokeFields) {
   return typeof content.strokeStyleId === 'number' ? [content.strokeStyleId] : []
 }
-export function updateStrokeRefIds(content: StrokeFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+export function updateStrokeRefIds(content: StrokeFields, update: (id: ContentRef) => ContentRef | undefined) {
   if (content.strokeStyleId !== undefined) {
     const newRefId = update(content.strokeStyleId)
     if (newRefId !== undefined) {
@@ -1313,7 +1313,7 @@ export function updateStrokeRefIds(content: StrokeFields, update: (id: number | 
 export function getFillRefIds(content: FillFields) {
   return typeof content.fillStyleId === 'number' ? [content.fillStyleId] : []
 }
-export function updateFillRefIds(content: FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+export function updateFillRefIds(content: FillFields, update: (id: ContentRef) => ContentRef | undefined) {
   if (content.fillStyleId !== undefined) {
     const newRefId = update(content.fillStyleId)
     if (newRefId !== undefined) {
@@ -1324,7 +1324,7 @@ export function updateFillRefIds(content: FillFields, update: (id: number | Base
 export function getStrokeAndFillRefIds(content: StrokeFields & FillFields) {
   return [...getStrokeRefIds(content), ...getFillRefIds(content)]
 }
-export function updateStrokeAndFillRefIds(content: StrokeFields & FillFields, update: (id: number | BaseContent) => number | BaseContent | undefined) {
+export function updateStrokeAndFillRefIds(content: StrokeFields & FillFields, update: (id: ContentRef) => ContentRef | undefined) {
   updateStrokeRefIds(content, update)
   updateFillRefIds(content, update)
 }
@@ -1450,14 +1450,18 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
   }
 }
 
+export type ContentRef = number | BaseContent
+
+export const ContentRef = or(number, Content)
+
 export interface PositionRef {
-  id: number | BaseContent
+  id: ContentRef
   snapIndex: number
   param?: number
 }
 
 export const PositionRef = {
-  id: or(number, Content),
+  id: ContentRef,
   snapIndex: number,
   param: optional(number),
 }
@@ -1481,12 +1485,12 @@ export function getRefPosition(positionRef: PositionRef | undefined, contents: r
 }
 
 export interface PartRef {
-  id: number | BaseContent
+  id: ContentRef
   partIndex?: number
 }
 
 export const PartRef = {
-  id: or(number, Content),
+  id: ContentRef,
   partIndex: optional(number),
 }
 
