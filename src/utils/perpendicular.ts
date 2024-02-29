@@ -74,7 +74,7 @@ export function getPerpendicularPointToGeometryLine(point: Position, line: Geome
   return p
 }
 
-export function getPerpendicularPointToGeometryLines(point: Position, lines: GeometryLine[]): { point: Position, line?: GeometryLine } | undefined {
+export function getPerpendicularPointToGeometryLines(point: Position, lines: GeometryLine[]): { point: Position, line?: GeometryLine } {
   const notExtendedCandidates: { point: Position, distance: number }[] = []
   const extendedCandidates: { point: Position, distance: number, line: GeometryLine }[] = []
   for (const line of lines) {

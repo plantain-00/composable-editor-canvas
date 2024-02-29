@@ -5093,6 +5093,115 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/lead.plugin.tsx
+function getModel(ctx) {
+  const LeadContent = ctx.and(ctx.BaseContent("lead"), ctx.StrokeFields, ctx.ArrowFields, ctx.TextFields, {
+    ref: ctx.ContentRef,
+    points: [ctx.Position],
+    text: ctx.string
+  });
+  const leadCache = new ctx.WeakmapCache();
+  const leadCache2 = new ctx.WeakmapCache2();
+  function getLeadGeometriesByPoints(p0, p1, content, line) {
+    const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p0, content);
+    const lines = Array.from(ctx.iteratePolylineLines([endPoint, ...content.points.slice(1)]));
+    if (line) {
+      const param0 = ctx.getGeometryLineParamAtPoint(p0, line);
+      const { start, end } = ctx.getGeometryLineStartAndEnd(line);
+      if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
+        line = ctx.getPartOfGeometryLine(param0, 0, line);
+        const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin);
+        if (marginParam !== void 0) {
+          lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line));
+        }
+      } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
+        line = ctx.getPartOfGeometryLine(param0, 1, line);
+        const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin);
+        if (marginParam !== void 0) {
+          lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line));
+        }
+      }
+    }
+    const size = ctx.getTextSize(ctx.getTextStyleFont(content), content.text);
+    if (!size) {
+      throw "not supported";
+    }
+    const last = content.points[content.points.length - 1];
+    const textPoints = [
+      { x: last.x, y: last.y - size.height },
+      { x: last.x + size.width, y: last.y - size.height },
+      { x: last.x + size.width, y: last.y },
+      { x: last.x, y: last.y }
+    ];
+    const points = ctx.getGeometryLinesPoints(lines);
+    return {
+      lines,
+      bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
+      regions: [
+        {
+          points: arrowPoints,
+          lines: Array.from(ctx.iteratePolygonLines(arrowPoints))
+        },
+        {
+          points: textPoints,
+          lines: Array.from(ctx.iteratePolygonLines(textPoints))
+        }
+      ],
+      renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+    };
+  }
+  function getLeadGeometriesFromCache(content, contents) {
+    var _a, _b, _c;
+    const ref = ctx.getReference(content.ref, contents);
+    let p0 = content.points[0];
+    const p1 = content.points[1];
+    if (ref) {
+      const lines = (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c.lines;
+      if (lines) {
+        const p = ctx.getPerpendicularPointToGeometryLines(p1, lines);
+        p0 = p.point;
+        return leadCache2.get(content, ref, () => getLeadGeometriesByPoints(p0, p1, content, p.line));
+      }
+    }
+    return leadCache.get(content, () => getLeadGeometriesByPoints(p0, p1, content));
+  }
+  return {
+    type: "lead",
+    ...ctx.strokeModel,
+    ...ctx.arrowModel,
+    ...ctx.textModel,
+    render(content, renderCtx) {
+      const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+      const { regions, renderingLines } = getLeadGeometriesFromCache(content, contents);
+      const children = [];
+      for (const line of renderingLines) {
+        children.push(target.renderPolyline(line, options));
+      }
+      if (regions) {
+        children.push(target.renderPolygon(regions[0].points, fillOptions));
+      }
+      const textStyleContent = ctx.getTextStyleContent(content, contents);
+      const color = renderCtx.transformColor(textStyleContent.color);
+      let cacheKey;
+      if (renderCtx.isAssistence) {
+        cacheKey = ctx.assistentTextCache.get(content.text, textStyleContent.fontSize, textStyleContent.color);
+      }
+      if (!cacheKey) {
+        cacheKey = content;
+      }
+      const last = content.points[content.points.length - 1];
+      const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx);
+      children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: "middle" }));
+      return target.renderGroup(children);
+    },
+    getGeometries: getLeadGeometriesFromCache,
+    isValid: (c, p) => ctx.validate(c, LeadContent, p)
+  };
+}
+export {
+  getModel
+};
+`,
 `// dev/cad-editor/plugins/circle-arc.plugin.tsx
 function isArcContent(content) {
   return content.type === "arc";

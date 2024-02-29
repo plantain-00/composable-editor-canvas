@@ -42,9 +42,15 @@ export function mergeBoundingsUnsafe(boundings: TwoPointsFormRegion[]): TwoPoint
   return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
 }
 
-export function mergeBoundings(boundings: TwoPointsFormRegion[]): TwoPointsFormRegion | undefined {
-  if (boundings.length === 0) return
-  return getPointsBoundingUnsafe(boundings.map(b => [b.start, b.end]).flat());
+export function mergeBoundings(boundings: (TwoPointsFormRegion | undefined)[]): TwoPointsFormRegion | undefined {
+  const points: Position[] = []
+  for (const b of boundings) {
+    if (b) {
+      points.push(b.start, b.end)
+    }
+  }
+  if (points.length === 0) return
+  return getPointsBoundingUnsafe(points)
 }
 
 export function getPointsBoundingUnsafe(points: Position[]): TwoPointsFormRegion {
