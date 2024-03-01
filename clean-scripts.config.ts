@@ -37,6 +37,10 @@ export default {
         },
         `eslint --no-eslintrc --parser-options ecmaVersion:latest --parser-options sourceType:module --plugin unused-imports --rule 'unused-imports/no-unused-imports:error' ${packages.map(p => `packages/${p.name}/index.js`).join(' ')} --fix`,
         async () => {
+          await Promise.all(packages.map(bundleJs2))
+          return { name: 'bundle js 2' }
+        },
+        async () => {
           await savePackageSizes()
           return { name: 'save package sizes' }
         },
@@ -77,18 +81,18 @@ export default {
 const readFileAsync = promisify(readFile)
 const writeFileAsync = promisify(writeFile)
 
+const option: BuildOptions = {
+  bundle: true,
+  format: 'esm',
+  external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine', 'verb-nurbs-web'],
+}
+
 async function bundleJs(d: typeof packages[number]) {
   const outfile = `packages/${d.name}/index.js`
-  const depdendencies = new Set<string>()
   const possibleDepdendencies = packages.map(p => p.name).filter(n => n !== d.name)
-  const option: BuildOptions = {
-    bundle: true,
-    outfile,
-    format: 'esm',
-    external: ['earcut', 'twgl.js', 'react', 'react-dom', 'immer', 'expression-engine', 'verb-nurbs-web'],
-  }
   await build({
     entryPoints: [d.entry],
+    outfile,
     ...option,
     plugins: possibleDepdendencies.length > 0 ? [{
       name: 'alias to external',
@@ -101,15 +105,22 @@ async function bundleJs(d: typeof packages[number]) {
       },
     }] : [],
   })
+}
+
+async function bundleJs2(d: typeof packages[number]) {
+  const outfile = `packages/${d.name}/index.js`
+  const possibleDepdendencies = packages.map(p => p.name).filter(n => n !== d.name)
+  const depdendencies = new Set<string>()
   await build({
     entryPoints: [outfile],
+    outfile,
     ...option,
     allowOverwrite: true,
     plugins: possibleDepdendencies.length > 0 ? [{
       name: 'alias to external',
       setup(build) {
         possibleDepdendencies.forEach(d => {
-          build.onResolve({ filter: new RegExp('/' + d) }, () => {
+          build.onResolve({ filter: new RegExp(d) }, () => {
             depdendencies.add(d)
             return { path: d, external: true }
           })
