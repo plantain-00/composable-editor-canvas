@@ -1024,13 +1024,13 @@ export function getSortedContents(contents: readonly Nullable<BaseContent>[]) {
 }
 
 export function getReference<T extends BaseContent>(
-  id: ContentRef,
+  id: ContentRef | undefined,
   contents: readonly Nullable<BaseContent>[],
   filter: (content: BaseContent) => content is T = (c): c is T => true,
   patches?: Patch[],
 ) {
   if (typeof id !== 'number') {
-    if (filter(id)) {
+    if (id && filter(id)) {
       return id
     }
     return

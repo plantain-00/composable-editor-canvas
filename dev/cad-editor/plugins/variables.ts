@@ -5096,15 +5096,22 @@ export {
 `// dev/cad-editor/plugins/lead.plugin.tsx
 function getModel(ctx) {
   const LeadContent = ctx.and(ctx.BaseContent("lead"), ctx.StrokeFields, ctx.ArrowFields, ctx.TextFields, {
-    ref: ctx.ContentRef,
+    ref: ctx.optional(ctx.ContentRef),
     points: [ctx.Position],
     text: ctx.string
   });
   const leadCache = new ctx.WeakmapCache();
   const leadCache2 = new ctx.WeakmapCache2();
-  function getLeadGeometriesByPoints(p0, p1, content, line) {
-    const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p0, content);
-    const lines = Array.from(ctx.iteratePolylineLines([endPoint, ...content.points.slice(1)]));
+  function getLeadGeometriesByPoints(p0, content, line) {
+    let lines;
+    let arrow;
+    if (content.points.length > 1) {
+      const arrowPoints = ctx.getArrowPoints(content.points[1], p0, content);
+      arrow = arrowPoints.arrowPoints;
+      lines = Array.from(ctx.iteratePolylineLines([arrowPoints.endPoint, ...content.points.slice(1)]));
+    } else {
+      lines = [];
+    }
     if (line) {
       const param0 = ctx.getGeometryLineParamAtPoint(p0, line);
       const { start, end } = ctx.getGeometryLineStartAndEnd(line);
@@ -5133,37 +5140,34 @@ function getModel(ctx) {
       { x: last.x + size.width, y: last.y },
       { x: last.x, y: last.y }
     ];
-    const points = ctx.getGeometryLinesPoints(lines);
+    const points = lines.map((line2) => ctx.getGeometryLinesPoints([line2]));
     return {
       lines,
       bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
       regions: [
         {
-          points: arrowPoints,
-          lines: Array.from(ctx.iteratePolygonLines(arrowPoints))
-        },
-        {
           points: textPoints,
           lines: Array.from(ctx.iteratePolygonLines(textPoints))
-        }
+        },
+        ...arrow ? [{
+          points: arrow,
+          lines: Array.from(ctx.iteratePolygonLines(arrow))
+        }] : []
       ],
-      renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+      renderingLines: points.map((p) => ctx.dashedPolylineToLines(p, content.dashArray)).flat()
     };
   }
   function getLeadGeometriesFromCache(content, contents) {
     var _a, _b, _c;
     const ref = ctx.getReference(content.ref, contents);
-    let p0 = content.points[0];
-    const p1 = content.points[1];
-    if (ref) {
+    if (ref && content.points.length > 1) {
       const lines = (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c.lines;
       if (lines) {
-        const p = ctx.getPerpendicularPointToGeometryLines(p1, lines);
-        p0 = p.point;
-        return leadCache2.get(content, ref, () => getLeadGeometriesByPoints(p0, p1, content, p.line));
+        const p = ctx.getPerpendicularPointToGeometryLines(content.points[1], lines);
+        return leadCache2.get(content, ref, () => getLeadGeometriesByPoints(p.point, content, p.line));
       }
     }
-    return leadCache.get(content, () => getLeadGeometriesByPoints(p0, p1, content));
+    return leadCache.get(content, () => getLeadGeometriesByPoints(content.points[0], content));
   }
   return {
     type: "lead",
@@ -5177,8 +5181,8 @@ function getModel(ctx) {
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, options));
       }
-      if (regions) {
-        children.push(target.renderPolygon(regions[0].points, fillOptions));
+      if (regions && regions.length > 1) {
+        children.push(target.renderPolygon(regions[1].points, fillOptions));
       }
       const textStyleContent = ctx.getTextStyleContent(content, contents);
       const color = renderCtx.transformColor(textStyleContent.color);
@@ -5198,8 +5202,93 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, LeadContent, p)
   };
 }
+function isLeadContent(content) {
+  return content.type === "lead";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "16,22 83,22", strokeWidth: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "49,22 49,89", strokeWidth: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create lead",
+    icon,
+    useCommand({ onEnd, type, scale, textStyleId }) {
+      const [lead, setLead] = React.useState();
+      let message = "";
+      if (type) {
+        message = "press Enter to end";
+      }
+      const { input, clearText, setCursorPosition, setInputPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
+        if (e.key === "Enter") {
+          if (text) {
+            clearText();
+          } else if (lead) {
+            onEnd({ updateContents: (contents) => contents.push(ctx.produce(lead, (draft) => {
+              draft.points.splice(draft.points.length - 1, 1);
+              return;
+            })) });
+            reset();
+          }
+        }
+      } : void 0);
+      const reset = () => {
+        setLead(void 0);
+        resetInput();
+      };
+      const assistentContents = [];
+      let panel;
+      if (type) {
+        if (lead) {
+          assistentContents.push(lead);
+        }
+      }
+      return {
+        input,
+        onStart: (p, target) => {
+          if (!type)
+            return;
+          if (!lead) {
+            setLead({
+              type: "lead",
+              text: "abc",
+              textStyleId,
+              color: 0,
+              fontSize: 16 / scale,
+              fontFamily: "monospace",
+              points: [p, p],
+              ref: target == null ? void 0 : target.id
+            });
+          } else {
+            const last = lead.points[lead.points.length - 1];
+            setLead(ctx.produce(lead, (draft) => {
+              draft.points.push(last);
+              return;
+            }));
+          }
+        },
+        onMove(p, viewportPosition) {
+          if (!type)
+            return;
+          setInputPosition(viewportPosition || p);
+          setCursorPosition(p);
+          if (lead) {
+            setLead(ctx.produce(lead, (draft) => {
+              draft.points[lead.points.length - 1] = p;
+              return;
+            }));
+          }
+        },
+        assistentContents,
+        reset,
+        panel
+      };
+    },
+    selectCount: 0
+  };
+}
 export {
-  getModel
+  getCommand,
+  getModel,
+  isLeadContent
 };
 `,
 `// dev/cad-editor/plugins/circle-arc.plugin.tsx
