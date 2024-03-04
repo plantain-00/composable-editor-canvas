@@ -250,7 +250,7 @@ export type Model<T> = Partial<FeatureModels> & {
     activeChild?: number[],
   ): JSX.Element
   getRefIds?(content: T): number[] | undefined
-  updateRefId?(content: T, update: (id: ContentRef) => number | undefined | BaseContent): void
+  updateRefId?(content: T, update: (id: ContentRef) => ContentRef | undefined): void
   isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position): boolean

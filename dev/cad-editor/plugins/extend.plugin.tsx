@@ -45,7 +45,6 @@ export function getCommand(ctx: PluginContext): Command {
                   ctx.getContentModel(content)?.extend?.(content, hovering.point)
                 }
               },
-              repeatedly: true,
             })
           } else if (trimHovering) {
             const content = ctx.getContentByIndex(contents, trimHovering.path)
@@ -74,7 +73,6 @@ export function getCommand(ctx: PluginContext): Command {
                       contents[index] = undefined
                       contents.push(...newContents)
                     },
-                    repeatedly: true,
                   })
                   const newSelected = selected.map(s => s.path)
                   for (let i = 0; i < newContents.length; i++) {
@@ -157,5 +155,6 @@ export function getCommand(ctx: PluginContext): Command {
       return !content.readonly && !!ctx.getContentModel(content)?.getGeometries?.(content, contents)?.lines?.length
     },
     icon,
+    repeatedly: true,
   }
 }

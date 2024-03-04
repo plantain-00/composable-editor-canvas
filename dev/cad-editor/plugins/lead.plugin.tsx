@@ -15,9 +15,9 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     points: [ctx.Position],
     text: ctx.string,
   })
-  const leadCache = new ctx.WeakmapCache<Omit<LeadContent, "type">, model.Geometries>()
-  const leadCache2 = new ctx.WeakmapCache2<Omit<LeadContent, "type">, model.BaseContent, model.Geometries>()
-  function getLeadGeometriesByPoints(p0: core.Position, content: Omit<LeadContent, "type">, line?: core.GeometryLine): model.Geometries {
+  const leadCache = new ctx.WeakmapCache<Omit<LeadContent, "type">, model.Geometries<{ right: boolean, last: core.Position }>>()
+  const leadCache2 = new ctx.WeakmapCache2<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position }>>()
+  function getLeadGeometriesByPoints(p0: core.Position, content: Omit<LeadContent, "type">, line?: core.GeometryLine): model.Geometries<{ right: boolean, last: core.Position }> {
     let lines: core.GeometryLine[]
     let arrow: core.Position[] | undefined
     if (content.points.length > 1) {
@@ -28,15 +28,16 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       lines = []
     }
     if (line) {
-      const param0 = ctx.getGeometryLineParamAtPoint(p0, line)
       const { start, end } = ctx.getGeometryLineStartAndEnd(line)
       if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
+        const param0 = ctx.getGeometryLineParamAtPoint(p0, line, true)
         line = ctx.getPartOfGeometryLine(param0, 0, line)
         const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
         if (marginParam !== undefined) {
           lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
         }
       } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
+        const param0 = ctx.getGeometryLineParamAtPoint(p0, line)
         line = ctx.getPartOfGeometryLine(param0, 1, line)
         const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
         if (marginParam !== undefined) {
@@ -48,16 +49,20 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     if (!size) {
       throw 'not supported'
     }
+    const previous = content.points[content.points.length - 2]
     const last = content.points[content.points.length - 1]
+    const right = !previous || previous.x <= last.x
     const textPoints = [
-      { x: last.x, y: last.y - size.height },
-      { x: last.x + size.width, y: last.y - size.height },
-      { x: last.x + size.width, y: last.y },
-      { x: last.x, y: last.y },
+      { x: last.x, y: last.y - size.height / 2 },
+      { x: last.x + size.width * (right ? 1 : -1), y: last.y - size.height / 2 },
+      { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
+      { x: last.x, y: last.y + size.height / 2 },
     ]
     const points = lines.map(line => ctx.getGeometryLinesPoints([line]))
     return {
       lines,
+      last,
+      right,
       bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
       regions: [
         {
@@ -83,6 +88,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     }
     return leadCache.get(content, () => getLeadGeometriesByPoints(content.points[0], content))
   }
+  const React = ctx.React
   return {
     type: 'lead',
     ...ctx.strokeModel,
@@ -90,7 +96,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     ...ctx.textModel,
     render(content, renderCtx) {
       const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-      const { regions, renderingLines } = getLeadGeometriesFromCache(content, contents)
+      const { regions, renderingLines, last, right } = getLeadGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, options))
@@ -107,13 +113,72 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       if (!cacheKey) {
         cacheKey = content
       }
-      const last = content.points[content.points.length - 1]
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx)
-      children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: 'middle' }))
+      children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: 'middle', textAlign: right ? 'left' : 'right' }))
       return target.renderGroup(children)
     },
     getGeometries: getLeadGeometriesFromCache,
+    propertyPanel(content, update, contents, { acquirePoint }) {
+      return {
+        ref: [
+          <ctx.BooleanEditor value={content.ref !== undefined} readOnly={content.ref === undefined} setValue={(v) => update(c => { if (isLeadContent(c) && !v) { c.ref = undefined } })} />,
+          typeof content.ref === 'number' ? <ctx.NumberEditor value={content.ref} setValue={(v) => update(c => { if (isLeadContent(c)) { c.ref = v } })} /> : undefined,
+        ],
+        points: <ctx.ArrayEditor
+          inline
+          {...ctx.getArrayEditorProps<core.Position, typeof content>(v => v.points, { x: 0, y: 0 }, (v) => update(c => { if (isLeadContent(c)) { v(c) } }))}
+          items={content.points.map((f, i) => <ctx.ObjectEditor
+            inline
+            properties={{
+              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLeadContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
+              x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isLeadContent(c)) { c.points[i].x = v } })} />,
+              y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isLeadContent(c)) { c.points[i].y = v } })} />,
+            }}
+          />)}
+        />,
+        text: <ctx.StringEditor textarea value={content.text} setValue={(v) => update(c => { if (isLeadContent(c)) { c.text = v } })} />,
+        ...ctx.getTextContentPropertyPanel(content, update, contents),
+        ...ctx.getArrowContentPropertyPanel(content, update),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+      }
+    },
+    editPanel(content, scale, update, contents, cancel, transformPosition) {
+      const p = transformPosition(content.points[content.points.length - 1])
+      const textStyleContent = ctx.getTextStyleContent(content, contents)
+      const fontSize = textStyleContent.fontSize * scale
+      return (
+        <ctx.StringEditor
+          style={{
+            zIndex: 10,
+            position: 'absolute',
+            left: `${p.x - 1}px`,
+            top: `${p.y - fontSize - 1}px`,
+            fontSize: `${fontSize}px`,
+            fontFamily: content.fontFamily,
+            color: ctx.getColorString(content.color),
+            padding: '0px',
+          }}
+          textarea
+          autoFocus
+          onCancel={cancel}
+          value={content.text}
+          setValue={(v) => {
+            update(c => { if (isLeadContent(c)) { c.text = v } })
+          }}
+        />
+      )
+    },
     isValid: (c, p) => ctx.validate(c, LeadContent, p),
+    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref === 'number' ? [content.ref] : [])],
+    updateRefId(content, update) {
+      if (content.ref !== undefined) {
+        const newRefId = update(content.ref)
+        if (newRefId !== undefined) {
+          content.ref = newRefId
+        }
+      }
+      ctx.updateStrokeRefIds(content, update)
+    },
   }
 }
 
@@ -126,17 +191,20 @@ export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <polyline points="16,22 83,22" strokeWidth="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
-      <polyline points="49,22 49,89" strokeWidth="10" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor"></polyline>
+      <polyline points="47,4 96,4" strokeWidth="8" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
+      <polyline points="71,4 71,54" strokeWidth="8" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
+      <polyline points="46,29 5,92" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
+      <polygon points="0,100 12,62 30,73" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></polygon>
     </svg>
   )
   return {
     name: 'create lead',
     icon,
-    useCommand({ onEnd, type, scale, textStyleId }) {
+    useCommand({ onEnd, type, scale, textStyleId, transformPosition, contents }) {
       const [lead, setLead] = React.useState<LeadContent>()
+      const [editText, setEditText] = React.useState(false)
       let message = ''
-      if (type) {
+      if (type && !editText) {
         message = 'press Enter to end'
       }
       const { input, clearText, setCursorPosition, setInputPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
@@ -144,23 +212,54 @@ export function getCommand(ctx: PluginContext): Command {
           if (text) {
             clearText()
           } else if (lead) {
-            onEnd({ updateContents: (contents) => contents.push(ctx.produce(lead, draft => {
+            setEditText(true)
+            setLead(ctx.produce(lead, draft => {
+              draft.text = ''
               draft.points.splice(draft.points.length - 1, 1)
-              return
-            })) })
-            reset()
+            }))
+            e.preventDefault()
           }
         }
       } : undefined)
       const reset = () => {
         setLead(undefined)
         resetInput()
+        setEditText(false)
       }
       const assistentContents: LeadContent[] = []
       let panel: JSX.Element | undefined
       if (type) {
         if (lead) {
           assistentContents.push(lead)
+          if (editText) {
+            const last = lead.points[lead.points.length - 1]
+            const p = transformPosition(last)
+            const textStyleContent = ctx.getTextStyleContent(lead, contents)
+            const fontSize = textStyleContent.fontSize * scale
+            panel = (
+              <ctx.StringEditor
+                style={{
+                  zIndex: 10,
+                  position: 'absolute',
+                  left: `${p.x - 1}px`,
+                  top: `${p.y - fontSize - 1}px`,
+                  fontSize: `${fontSize}px`,
+                  fontFamily: lead.fontFamily,
+                  color: ctx.getColorString(lead.color),
+                  padding: '0px',
+                }}
+                textarea
+                autoFocus
+                onCancel={reset}
+                value={lead.text}
+                setValue={(v) => {
+                  setLead(ctx.produce(lead, draft => {
+                    draft.text = v
+                  }))
+                }}
+              />
+            )
+          }
         }
       }
       return {
@@ -178,22 +277,26 @@ export function getCommand(ctx: PluginContext): Command {
               points: [p, p],
               ref: target?.id,
             })
+          } else if (editText) {
+            onEnd({
+              updateContents: (contents) => contents.push(lead)
+            })
+            reset()
           } else {
             const last = lead.points[lead.points.length - 1]
             setLead(ctx.produce(lead, draft => {
               draft.points.push(last)
-              return
             }))
           }
         },
         onMove(p, viewportPosition) {
           if (!type) return
+          if (editText) return
           setInputPosition(viewportPosition || p)
           setCursorPosition(p)
           if (lead) {
             setLead(ctx.produce(lead, draft => {
               draft.points[lead.points.length - 1] = p
-              return
             }))
           }
         },

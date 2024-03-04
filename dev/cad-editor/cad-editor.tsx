@@ -375,7 +375,7 @@ export const CADEditor = React.forwardRef((props: {
 
   // commands
   const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, onCommandKeyUp, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, commandSelected, commandHovering, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
-    async ({ updateContents, nextCommand, repeatedly } = {}) => {
+    async ({ updateContents, nextCommand } = {}) => {
       let newStates = state
       if (updateContents) {
         const [, ...patches] = produceWithPatches(editingContent, (draft) => {
@@ -385,7 +385,7 @@ export const CADEditor = React.forwardRef((props: {
       } else if (previewPatches.length > 0) {
         newStates = await applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
       }
-      if (repeatedly) {
+      if (operations.type === 'operate' && operations.operate.type === 'command' ? getCommand(operations.operate.name)?.repeatedly : false) {
         return
       }
       resetOperation()
@@ -763,6 +763,12 @@ export const CADEditor = React.forwardRef((props: {
             undo(e)
           }
           setSelected()
+        } else if (getCommand(operations.operate.name)?.repeatedly) {
+          if (e.shiftKey) {
+            redo(e)
+          } else {
+            undo(e)
+          }
         }
       } else if (!e.shiftKey) {
         if (e.code === 'KeyA') {

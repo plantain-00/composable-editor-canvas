@@ -10,6 +10,7 @@ import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { reverseArc, reverseEllipseArc } from "./reverse"
+import { AngleRange } from "./angle"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
   if (!isSamePoint(line1[1], line2[0])) {
@@ -26,20 +27,7 @@ export function mergeArc<T extends Arc>(curve1: T, curve2: T): T | undefined {
   if (curve1.counterclockwise !== curve2.counterclockwise) {
     curve2 = reverseArc(curve2)
   }
-  if (!isZero(Math.abs(curve1.endAngle - curve2.startAngle) % 360)) {
-    return mergeArc(curve2, curve1)
-  }
-  if (isSameNumber(curve2.endAngle, curve1.startAngle)) {
-    return {
-      ...curve1,
-      startAngle: 0,
-      endAngle: 360,
-    }
-  }
-  return {
-    ...curve1,
-    endAngle: curve2.endAngle,
-  }
+  return mergeAngleRange(curve1, curve2)
 }
 
 export function mergeEllipseArc<T extends EllipseArc>(curve1: T, curve2: T): T | undefined {
@@ -47,24 +35,33 @@ export function mergeEllipseArc<T extends EllipseArc>(curve1: T, curve2: T): T |
   if (!isSameNumber(curve1.cy, curve2.cy)) return
   if (!isSameNumber(curve1.rx, curve2.rx)) return
   if (!isSameNumber(curve1.ry, curve2.ry)) return
+  if (!equals(curve1.angle, curve2.angle)) return
   if (curve1.counterclockwise !== curve2.counterclockwise) {
     curve2 = reverseEllipseArc(curve2)
   }
-  if (!equals(curve1.angle, curve2.angle)) return
-  if (!isZero(Math.abs(curve1.endAngle - curve2.startAngle) % 360)) {
-    return mergeEllipseArc(curve2, curve1)
-  }
-  if (isSameNumber(curve2.endAngle, curve1.startAngle)) {
+  return mergeAngleRange(curve1, curve2)
+}
+
+function mergeAngleRange<T extends AngleRange>(curve1: T, curve2: T): T | undefined {
+  if (isZero(Math.abs(curve1.endAngle - curve2.startAngle) % 360)) {
+    if (isZero(Math.abs(curve1.startAngle - curve2.endAngle) % 360)) {
+      return {
+        ...curve1,
+        startAngle: 0,
+        endAngle: 360,
+      }
+    }
     return {
       ...curve1,
-      startAngle: 0,
-      endAngle: 360,
+      endAngle: curve2.endAngle,
+    }
+  } else if (isZero(Math.abs(curve1.startAngle - curve2.endAngle) % 360)) {
+    return {
+      ...curve1,
+      startAngle: curve2.startAngle,
     }
   }
-  return {
-    ...curve1,
-    endAngle: curve2.endAngle,
-  }
+  return
 }
 
 export function mergeQuadraticCurve(curve1: QuadraticCurve, curve2: QuadraticCurve): QuadraticCurve | undefined {
