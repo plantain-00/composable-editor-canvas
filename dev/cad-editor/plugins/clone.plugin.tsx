@@ -13,7 +13,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'clone',
     useCommand({ onEnd, transform, type, scale }) {
       const { offset, onStart, mask, startPosition, resetDragMove } = ctx.useDragMove(
-        () => onEnd({ repeatedly: true }),
+        () => onEnd({}),
         {
           repeatedly: true,
           transform,
@@ -64,5 +64,6 @@ export function getCommand(ctx: PluginContext): Command {
     },
     hotkey: 'CO',
     icon,
+    repeatedly: true
   }
 }

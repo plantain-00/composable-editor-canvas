@@ -21,12 +21,12 @@ export interface Command extends CommandType {
   selectCount?: number
   selectType?: 'select part'
   pointSnapDisabled?: boolean
+  repeatedly?: boolean,
 }
 
 interface CommandEndOptions {
   updateContents: (contents: Nullable<BaseContent>[], selected: readonly ContentPath[]) => void,
   nextCommand: string,
-  repeatedly: boolean,
 }
 
 interface CommandProps {

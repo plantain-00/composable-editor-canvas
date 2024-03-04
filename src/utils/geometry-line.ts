@@ -121,17 +121,27 @@ export function pointIsOnGeometryLine(p: Position, line: GeometryLine) {
   return pointIsOnNurbsCurve(p, line.curve)
 }
 
-export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine) {
+export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine, beforeStart?: boolean) {
   if (Array.isArray(line)) {
     return getLineParamAtPoint(...line, point)
   }
   if (line.type === 'arc') {
     const angle = getAngleInRange(radianToAngle(getTwoPointsRadian(point, line.curve)), line.curve)
-    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+    const angleRange = line.curve.endAngle - line.curve.startAngle
+    const param = (angle - line.curve.startAngle) / angleRange
+    if (param > 1 && beforeStart) {
+      return param - 360 / angleRange
+    }
+    return param
   }
   if (line.type === 'ellipse arc') {
     const angle = getAngleInRange(getEllipseAngle(point, line.curve), line.curve)
-    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+    const angleRange = line.curve.endAngle - line.curve.startAngle
+    const param = (angle - line.curve.startAngle) / angleRange
+    if (param > 1 && beforeStart) {
+      return param - 360 / angleRange
+    }
+    return param
   }
   if (line.type === 'quadratic curve') {
     return getQuadraticCurvePercentAtPoint(line.curve, point)
