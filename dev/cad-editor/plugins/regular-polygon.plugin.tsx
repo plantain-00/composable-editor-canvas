@@ -16,9 +16,11 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     count: ctx.number,
     angle: ctx.number,
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
-  function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<RegularPolygonContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<RegularPolygonContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
+  function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.radius, y: content.y }, content, angle)
       const points: core.Position[] = []
@@ -48,9 +50,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, sx, sy) {
+    scale(content, center, sx, sy, contents) {
       if (sx !== sy) {
-        const points = ctx.produce(getRegularPolygonGeometriesFromCache(content).points, draft => {
+        const points = ctx.produce(getRegularPolygonGeometriesFromCache(content, contents).points, draft => {
           for (const p of draft) {
             ctx.scalePoint(p, center, sx, sy)
           }
@@ -61,11 +63,11 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.radius *= sx
       return
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getRegularPolygonGeometriesFromCache(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getRegularPolygonGeometriesFromCache(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      distance *= this.isPointIn?.(content, point, contents) ? -1 : 1
       const radius = distance / Math.cos(Math.PI / content.count)
       return ctx.produce(content, (d) => {
         d.radius += radius
@@ -73,12 +75,12 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { points } = getRegularPolygonGeometriesFromCache(content)
+      const { points } = getRegularPolygonGeometriesFromCache(content, renderCtx.contents)
       return target.renderPolygon(points, options)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points } = getRegularPolygonGeometriesFromCache(content)
+        const { points } = getRegularPolygonGeometriesFromCache(content, contents)
         return {
           editPoints: [
             {
@@ -125,9 +127,9 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       }
     },
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content, contents).points),
   }
 }
 

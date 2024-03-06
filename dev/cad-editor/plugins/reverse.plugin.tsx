@@ -20,7 +20,7 @@ export function getCommand(ctx: PluginContext): Command {
     execute({ contents, selected }) {
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          const result = ctx.getContentModel(content)?.reverse?.(content)
+          const result = ctx.getContentModel(content)?.reverse?.(content, contents)
           if (result) {
             contents[index] = result
           }

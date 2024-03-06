@@ -42,7 +42,7 @@ export function getCommand(ctx: PluginContext): Command {
               updateContents(contents) {
                 const content = ctx.getContentByIndex(contents, hovering.path)
                 if (content) {
-                  ctx.getContentModel(content)?.extend?.(content, hovering.point)
+                  ctx.getContentModel(content)?.extend?.(content, hovering.point, contents)
                 }
               },
             })
@@ -130,7 +130,7 @@ export function getCommand(ctx: PluginContext): Command {
                   ...s,
                   point,
                   content: ctx.produce(s.content, draft => {
-                    ctx.getContentModel(s.content)?.extend?.(draft, point)
+                    ctx.getContentModel(s.content)?.extend?.(draft, point, contents)
                   }),
                 })
                 return

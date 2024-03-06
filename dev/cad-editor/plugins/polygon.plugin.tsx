@@ -12,9 +12,11 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
   const PolygonContent = ctx.and(ctx.BaseContent('polygon'), ctx.StrokeFields, ctx.FillFields, {
     points: [ctx.Position]
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
-  function getPolygonGeometries(content: Omit<PolygonContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<PolygonContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<PolygonContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getPolygonGeometries(content: Omit<PolygonContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points))
       return {
         lines,
@@ -55,16 +57,16 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         ctx.mirrorPoint(point, line)
       }
     },
-    explode(content) {
-      const { lines } = getPolygonGeometries(content)
+    explode(content, contents) {
+      const { lines } = getPolygonGeometries(content, contents)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
     },
-    break(content, intersectionPoints) {
-      const { lines } = getPolygonGeometries(content)
+    break(content, intersectionPoints, contents) {
+      const { lines } = getPolygonGeometries(content, contents)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    offset(content, point, distance) {
-      const { lines } = getPolygonGeometries(content)
+    offset(content, point, distance, contents) {
+      const { lines } = getPolygonGeometries(content, contents)
       if (!distance) {
         distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
@@ -79,7 +81,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
           points.push(p)
         }
       }
-      return ctx.trimOffsetResult(points, point, true).map(p => ctx.produce(content, (d) => {
+      return ctx.trimOffsetResult(points, point, true, contents).map(p => ctx.produce(content, (d) => {
         d.points = p
       }))
     },
@@ -93,9 +95,9 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isPolygonContent, true) }))
     },
-    getSnapPoints(content) {
+    getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getPolygonGeometries(content)
+        const { points, lines } = getPolygonGeometries(content, contents)
         return [
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
           ...lines.map(([start, end]) => ({
@@ -127,7 +129,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, PolygonContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isPointIn: (content, point) => ctx.pointInPolygon(point, content.points),
   }

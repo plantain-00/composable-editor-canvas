@@ -28,13 +28,17 @@ export class WeaksetCache<T extends object> {
 }
 
 export class WeakValuesChangedCache<TKey extends object, TValue> {
-  private cache: { keys: WeakSet<TKey>, value: TValue } | undefined
+  private cache: { keys: WeakSet<TKey>, value: TValue, size: number } | undefined
 
-  public get(keys: TKey[], func: () => TValue) {
-    if (this.cache === undefined) {
+  public get(keys: TKey[] | Set<TKey>, func: () => TValue) {
+    if (Array.isArray(keys)) {
+      keys = new Set(keys)
+    }
+    if (this.cache === undefined || keys.size !== this.cache.size) {
       this.cache = {
         keys: new WeakSet(keys),
         value: func(),
+        size: keys.size,
       }
       return this.cache.value
     }
@@ -43,6 +47,7 @@ export class WeakValuesChangedCache<TKey extends object, TValue> {
         this.cache = {
           keys: new WeakSet(keys),
           value: func(),
+          size: keys.size,
         }
         return this.cache.value
       }

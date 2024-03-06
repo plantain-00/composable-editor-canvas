@@ -12,10 +12,12 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
   const CenterMarkReferenceContent = ctx.and(ctx.BaseContent('center mark'), {
     ref: ctx.PartRef,
   })
-  function getCenterMarkGeometriesFromCache(content: Omit<CenterMarkReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const target = ctx.getRefPart(content.ref, contents, contentSelectable)
-    if (target) {
-      return centerMarkLinesCache.get(target, content, () => {
+  const getRefIds = (content: CenterMarkReferenceContent) => [content.ref.id]
+  function getCenterMarkGeometriesFromCache(content: CenterMarkReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      const target = ctx.getRefPart(content.ref, contents, contentSelectable)
+      if (target) {
         const lines: [core.Position, core.Position][] = [
           [{ x: target.x - target.r, y: target.y }, { x: target.x + target.r, y: target.y }],
           [{ x: target.x, y: target.y - target.r, }, { x: target.x, y: target.y + target.r }],
@@ -25,12 +27,10 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
           bounding: ctx.getPointsBounding(lines.flat()),
           renderingLines: lines.map(line => ctx.dashedPolylineToLines(line, [8, 4])).flat(),
         }
-      })
-    }
-    return { lines: [], renderingLines: [] }
+      }
+      return { lines: [], renderingLines: [] }
+    })
   }
-  const centerMarkLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<CenterMarkReferenceContent, "type">, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
-
   const React = ctx.React
   return {
     type: 'center mark',
@@ -51,7 +51,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
       }
     },
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
-    getRefIds: (content) => typeof content.ref.id === 'number' ? [content.ref.id] : [],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id)

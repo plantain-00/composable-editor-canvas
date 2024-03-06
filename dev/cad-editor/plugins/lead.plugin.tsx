@@ -15,78 +15,81 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     points: [ctx.Position],
     text: ctx.string,
   })
-  const leadCache = new ctx.WeakmapCache<Omit<LeadContent, "type">, model.Geometries<{ right: boolean, last: core.Position }>>()
-  const leadCache2 = new ctx.WeakmapCache2<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position }>>()
-  function getLeadGeometriesByPoints(p0: core.Position, content: Omit<LeadContent, "type">, line?: core.GeometryLine): model.Geometries<{ right: boolean, last: core.Position }> {
-    let lines: core.GeometryLine[]
-    let arrow: core.Position[] | undefined
-    if (content.points.length > 1) {
-      const arrowPoints = ctx.getArrowPoints(content.points[1], p0, content)
-      arrow = arrowPoints.arrowPoints
-      lines = Array.from(ctx.iteratePolylineLines([arrowPoints.endPoint, ...content.points.slice(1)]))
-    } else {
-      lines = []
-    }
-    if (line) {
-      const { start, end } = ctx.getGeometryLineStartAndEnd(line)
-      if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
-        const param0 = ctx.getGeometryLineParamAtPoint(p0, line, true)
-        line = ctx.getPartOfGeometryLine(param0, 0, line)
-        const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
-        if (marginParam !== undefined) {
-          lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
-        }
-      } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
-        const param0 = ctx.getGeometryLineParamAtPoint(p0, line)
-        line = ctx.getPartOfGeometryLine(param0, 1, line)
-        const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
-        if (marginParam !== undefined) {
-          lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
+  const getRefIds = (content: LeadContent) => [content.strokeStyleId, content.ref]
+  const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position }>>()
+  function getLeadGeometriesFromCache(content: LeadContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return leadCache.get(content, refs, () => {
+      const ref = ctx.getReference(content.ref, contents)
+      let p0 = content.points[0]
+      let line: core.GeometryLine | undefined
+      if (ref && content.points.length > 1) {
+        const lines = ctx.getContentModel(ref)?.getGeometries?.(ref, contents)?.lines
+        if (lines) {
+          const p = ctx.getPerpendicularPointToGeometryLines(content.points[1], lines)
+          p0 = p.point
+          line = p.line
         }
       }
-    }
-    const size = ctx.getTextSize(ctx.getTextStyleFont(content), content.text)
-    if (!size) {
-      throw 'not supported'
-    }
-    const previous = content.points[content.points.length - 2]
-    const last = content.points[content.points.length - 1]
-    const right = !previous || previous.x <= last.x
-    const textPoints = [
-      { x: last.x, y: last.y - size.height / 2 },
-      { x: last.x + size.width * (right ? 1 : -1), y: last.y - size.height / 2 },
-      { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
-      { x: last.x, y: last.y + size.height / 2 },
-    ]
-    const points = lines.map(line => ctx.getGeometryLinesPoints([line]))
-    return {
-      lines,
-      last,
-      right,
-      bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
-      regions: [
-        {
-          points: textPoints,
-          lines: Array.from(ctx.iteratePolygonLines(textPoints)),
-        },
-        ...(arrow ? [{
-          points: arrow,
-          lines: Array.from(ctx.iteratePolygonLines(arrow)),
-        }] : []),
-      ],
-      renderingLines: points.map(p => ctx.dashedPolylineToLines(p, content.dashArray)).flat(),
-    }
-  }
-  function getLeadGeometriesFromCache(content: Omit<LeadContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const ref = ctx.getReference(content.ref, contents)
-    if (ref && content.points.length > 1) {
-      const lines = ctx.getContentModel(ref)?.getGeometries?.(ref, contents)?.lines
-      if (lines) {
-        const p = ctx.getPerpendicularPointToGeometryLines(content.points[1], lines)
-        return leadCache2.get(content, ref, () => getLeadGeometriesByPoints(p.point, content, p.line))
+      let lines: core.GeometryLine[]
+      let arrow: core.Position[] | undefined
+      if (content.points.length > 1) {
+        const arrowPoints = ctx.getArrowPoints(content.points[1], p0, content)
+        arrow = arrowPoints.arrowPoints
+        lines = Array.from(ctx.iteratePolylineLines([arrowPoints.endPoint, ...content.points.slice(1)]))
+      } else {
+        lines = []
       }
-    }
-    return leadCache.get(content, () => getLeadGeometriesByPoints(content.points[0], content))
+      if (line) {
+        const { start, end } = ctx.getGeometryLineStartAndEnd(line)
+        if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
+          const param0 = ctx.getGeometryLineParamAtPoint(p0, line, true)
+          line = ctx.getPartOfGeometryLine(param0, 0, line)
+          const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
+          if (marginParam !== undefined) {
+            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
+          }
+        } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
+          const param0 = ctx.getGeometryLineParamAtPoint(p0, line)
+          line = ctx.getPartOfGeometryLine(param0, 1, line)
+          const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
+          if (marginParam !== undefined) {
+            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
+          }
+        }
+      }
+      const size = ctx.getTextSize(ctx.getTextStyleFont(content), content.text)
+      if (!size) {
+        throw 'not supported'
+      }
+      const previous = content.points[content.points.length - 2]
+      const last = content.points[content.points.length - 1]
+      const right = !previous || previous.x <= last.x
+      const textPoints = [
+        { x: last.x, y: last.y - size.height / 2 },
+        { x: last.x + size.width * (right ? 1 : -1), y: last.y - size.height / 2 },
+        { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
+        { x: last.x, y: last.y + size.height / 2 },
+      ]
+      const points = lines.map(line => ctx.getGeometryLinesPoints([line]))
+      return {
+        lines,
+        last,
+        right,
+        bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
+        regions: [
+          {
+            points: textPoints,
+            lines: Array.from(ctx.iteratePolygonLines(textPoints)),
+          },
+          ...(arrow ? [{
+            points: arrow,
+            lines: Array.from(ctx.iteratePolygonLines(arrow)),
+          }] : []),
+        ],
+        renderingLines: points.map(p => ctx.dashedPolylineToLines(p, content.dashArray)).flat(),
+      }
+    })
   }
   const React = ctx.React
   return {
@@ -94,6 +97,11 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     ...ctx.strokeModel,
     ...ctx.arrowModel,
     ...ctx.textModel,
+    move(content, offset) {
+      for (const point of content.points) {
+        ctx.movePoint(point, offset)
+      }
+    },
     render(content, renderCtx) {
       const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { regions, renderingLines, last, right } = getLeadGeometriesFromCache(content, contents)
@@ -169,7 +177,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       )
     },
     isValid: (c, p) => ctx.validate(c, LeadContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref === 'number' ? [content.ref] : [])],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref !== undefined) {
         const newRefId = update(content.ref)

@@ -10,10 +10,12 @@ export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeF
 export function getModel(ctx: PluginContext) {
   const EllipseContent = ctx.and(ctx.BaseContent('ellipse'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse)
   const EllipseArcContent = ctx.and(ctx.BaseContent('ellipse arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc)
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position }>>()
-  const ellipseArcGeometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], center: core.Position, start: core.Position, end: core.Position, middle: core.Position }>>()
-  function getEllipseGeometries(content: Omit<EllipseContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: model.StrokeFields & model.FillFields) => [content.strokeStyleId, content.fillStyleId]
+  const ellipseGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position }>>()
+  const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], center: core.Position, start: core.Position, end: core.Position, middle: core.Position }>>()
+  function getEllipseGeometries(content: Omit<EllipseContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ellipseGeometriesCache.get(content, refs, () => {
       const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolygonLines(points))
       const polylinePoints = ctx.polygonToPolyline(points)
@@ -40,8 +42,9 @@ export function getModel(ctx: PluginContext) {
       }
     })
   }
-  function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">) {
-    return ellipseArcGeometriesCache.get(content, () => {
+  function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ellipseArcGeometriesCache.get(content, refs, () => {
       const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolylineLines(points))
       const center = ctx.getEllipseCenter(content)
@@ -87,9 +90,9 @@ export function getModel(ctx: PluginContext) {
     mirror(content, line, angle) {
       ctx.mirrorEllipse(content, line, angle)
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getEllipseGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getEllipseGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       return ctx.getParallelEllipsesByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipse(point, content))]
     },
@@ -109,7 +112,7 @@ export function getModel(ctx: PluginContext) {
     render(content, renderCtx) {
       const { options, target, dashed } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       if (dashed) {
-        const { points } = getEllipseGeometries(content)
+        const { points } = getEllipseGeometries(content, renderCtx.contents)
         return target.renderPolygon(points, options)
       }
       return target.renderEllipse(content.cx, content.cy, content.rx, content.ry, { ...options, angle: content.angle })
@@ -117,9 +120,9 @@ export function getModel(ctx: PluginContext) {
     getOperatorRenderPosition(content) {
       return ctx.getEllipseCenter(content)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { center, left, right, top, bottom } = getEllipseGeometries(content)
+        const { center, left, right, top, bottom } = getEllipseGeometries(content, contents)
         const rotate = -(content.angle ?? 0)
         return {
           editPoints: [
@@ -190,8 +193,8 @@ export function getModel(ctx: PluginContext) {
         }
       })
     },
-    getSnapPoints(content) {
-      const { center, left, right, top, bottom } = getEllipseGeometries(content)
+    getSnapPoints(content, contents) {
+      const { center, left, right, top, bottom } = getEllipseGeometries(content, contents)
       return ctx.getSnapPointsFromCache(content, () => [
         { ...center, type: 'center' },
         { ...left, type: 'endpoint' },
@@ -218,9 +221,9 @@ export function getModel(ctx: PluginContext) {
       }
     },
     isValid: (c, p) => ctx.validate(c, EllipseContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getEllipseGeometries(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getEllipseGeometries(content, contents).points),
     getArea: (content) => Math.PI * content.rx * content.ry,
   }
   return [
@@ -272,9 +275,9 @@ export function getModel(ctx: PluginContext) {
         })
         return result.length > 1 ? result : undefined
       },
-      offset(content, point, distance) {
+      offset(content, point, distance, contents) {
         if (!distance) {
-          distance = Math.min(...getEllipseArcGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+          distance = Math.min(...getEllipseArcGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
         }
         return ctx.getParallelEllipseArcsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfEllipseArc(point, content))]
       },
@@ -298,20 +301,20 @@ export function getModel(ctx: PluginContext) {
       },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-        const { points } = getEllipseArcGeometries(content)
+        const { points } = getEllipseArcGeometries(content, renderCtx.contents)
         return target.renderPolyline(points, options)
       },
-      renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle })
+      renderIfSelected(content, { color, target, strokeWidth, contents }) {
+        const { points } = getEllipseArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle }, contents)
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },
-      getOperatorRenderPosition(content) {
-        const { points } = getEllipseArcGeometries(content)
+      getOperatorRenderPosition(content, contents) {
+        const { points } = getEllipseArcGeometries(content, contents)
         return points[0]
       },
-      getEditPoints(content) {
+      getEditPoints(content, contents) {
         return ctx.getEditPointsFromCache(content, () => {
-          const { center, start, end } = getEllipseArcGeometries(content)
+          const { center, start, end } = getEllipseArcGeometries(content, contents)
           const rotate = -(content.angle ?? 0)
           return {
             editPoints: [
@@ -357,9 +360,9 @@ export function getModel(ctx: PluginContext) {
           }
         })
       },
-      getSnapPoints(content) {
+      getSnapPoints(content, contents) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const { center, start, end, middle } = getEllipseArcGeometries(content)
+          const { center, start, end, middle } = getEllipseArcGeometries(content, contents)
           return [
             { ...center, type: 'center' },
             { ...start, type: 'endpoint' },
@@ -389,7 +392,7 @@ export function getModel(ctx: PluginContext) {
         }
       },
       isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
-      getRefIds: ctx.getStrokeAndFillRefIds,
+      getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)

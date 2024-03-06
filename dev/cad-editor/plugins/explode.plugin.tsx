@@ -15,7 +15,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'explode',
     execute({ contents, selected }) {
-      const newContents: model.BaseContent<string>[] = []
+      const newContents: model.BaseContent[] = []
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           const result = ctx.getContentModel(content)?.explode?.(content, contents)

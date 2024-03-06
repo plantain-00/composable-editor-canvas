@@ -165,7 +165,7 @@ export function useCommands(
         if (!model) return c
         const refIds = model.getRefIds?.(c)
         if (!refIds) return c
-        if (refIds.every(d => idMap[d] === undefined)) return c
+        if (refIds.every(d => typeof d !== 'number' || idMap[d] === undefined)) return c
         return produce(c, draft => {
           model.updateRefId?.(draft, d => typeof d === 'number' ? idMap[d] : undefined)
         })
@@ -177,7 +177,7 @@ export function useCommands(
           value: c,
         }],
         [{
-          op: 'remove',
+          op: 'replace',
           path: [contents.length + i],
         }]
       ] as [Patch[], Patch[]]))

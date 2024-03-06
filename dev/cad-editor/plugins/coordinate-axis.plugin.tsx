@@ -12,8 +12,10 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
   const CoordinateAxisContent = ctx.and(ctx.BaseContent('coordinate axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, ctx.Bounding, {
     flipY: ctx.optional(ctx.boolean),
   })
-  function getGeometriesFromCache(content: Omit<CoordinateAxisContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<CoordinateAxisContent, "type">) => [content.strokeStyleId]
+  function getGeometriesFromCache(content: Omit<CoordinateAxisContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       const yMin = content.flipY ? -content.yMax : content.yMin
       const yMax = content.flipY ? -content.yMin : content.yMax
       const lines: [core.Position, core.Position][] = [
@@ -67,7 +69,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
     },
     render(content, renderCtx) {
       const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-      const { regions, renderingLines } = getGeometriesFromCache(content)
+      const { regions, renderingLines } = getGeometriesFromCache(content, renderCtx.contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, options))
@@ -115,7 +117,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
       }
     },
     isValid: (c, p) => ctx.validate(c, CoordinateAxisContent, p),
-    getRefIds: ctx.getStrokeRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
   }
 }

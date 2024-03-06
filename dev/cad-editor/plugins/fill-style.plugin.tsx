@@ -5,7 +5,7 @@ import type { LineContent } from './line-polyline.plugin'
 
 export function getModel(ctx: PluginContext): model.Model<model.FillStyleContent> {
   function getGeometriesFromCache(content: Omit<model.FillStyleContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return ctx.getGeometriesFromCache(content, new Set(), () => {
       const points = [
         { x: content.x, y: content.y },
         { x: content.x + content.width, y: content.y },

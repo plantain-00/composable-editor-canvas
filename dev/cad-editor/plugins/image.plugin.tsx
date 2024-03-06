@@ -9,7 +9,7 @@ export type ImageContent = model.BaseContent<'image'> & core.Image & model.ClipF
 export function getModel(ctx: PluginContext): model.Model<ImageContent> {
   const ImageContent = ctx.and(ctx.BaseContent('image'), ctx.Image, ctx.ClipFields)
   function getImageGeometries(content: Omit<ImageContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return ctx.getGeometriesFromCache(content, new Set(), () => {
       const points = [
         { x: content.x, y: content.y + content.height },
         { x: content.x + content.width, y: content.y + content.height },

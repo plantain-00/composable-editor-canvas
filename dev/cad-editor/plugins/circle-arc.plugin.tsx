@@ -21,22 +21,25 @@ export function getModel(ctx: PluginContext) {
     rExpression: ctx.optional(ctx.string),
   })
   const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], quadrantPoints: core.Position[] }>>()
-  const arcGeometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
-  function getCircleGeometries(content: Omit<CircleContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
+  const getRefIds = (content: model.StrokeFields & model.FillFields) => [content.strokeStyleId, content.fillStyleId]
+  const circleGeometriesCache = new ctx.WeakmapValuesCache<Omit<CircleContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], quadrantPoints: core.Position[] }>>()
+  const arcGeometriesCache = new ctx.WeakmapValuesCache<Omit<ArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
+  function getCircleGeometries(content: Omit<CircleContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], time?: number) {
     const quadrantPoints = ctx.getCircleQuadrantPoints(content)
     if (time && (content.xExpression || content.yExpression || content.rExpression)) {
       const x = ctx.getTimeExpressionValue(content.xExpression, time, content.x)
       const y = ctx.getTimeExpressionValue(content.yExpression, time, content.y)
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
-      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r })) }
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r }), contents) }
     }
-    return geometriesCache.get(content, () => {
-      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content)) }
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return circleGeometriesCache.get(content, refs, () => {
+      return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content), contents) }
     })
   }
-  function getArcGeometries(content: Omit<ArcContent, "type">) {
-    return arcGeometriesCache.get(content, () => {
+  function getArcGeometries(content: Omit<ArcContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return arcGeometriesCache.get(content, refs, () => {
       const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const middleAngle = ctx.getTwoNumberCenter(content.startAngle, ctx.getFormattedEndAngle(content))
       const geometries = {
@@ -129,11 +132,11 @@ export function getModel(ctx: PluginContext) {
       getOperatorRenderPosition(content) {
         return content
       },
-      getEditPoints(content) {
+      getEditPoints(content, contents) {
         return ctx.getEditPointsFromCache(content, () => {
           const x = content.x
           const y = content.y
-          const { quadrantPoints } = getCircleGeometries(content)
+          const { quadrantPoints } = getCircleGeometries(content, contents)
           const updateEdges = (c: model.BaseContent, { cursor, scale }: { cursor: core.Position, scale: number }) => {
             if (!isCircleContent(c)) {
               return
@@ -182,8 +185,8 @@ export function getModel(ctx: PluginContext) {
           }
         })
       },
-      getSnapPoints(content) {
-        const { quadrantPoints } = getCircleGeometries(content)
+      getSnapPoints(content, contents) {
+        const { quadrantPoints } = getCircleGeometries(content, contents)
         return ctx.getSnapPointsFromCache(content, () => [
           { x: content.x, y: content.y, type: 'center' },
           ...quadrantPoints.map(p => ({ ...p, type: 'endpoint' as const })),
@@ -213,7 +216,7 @@ export function getModel(ctx: PluginContext) {
         }
       },
       isValid: (c, p) => ctx.validate(c, CircleContent, p),
-      getRefIds: ctx.getStrokeAndFillRefIds,
+      getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
       getArea: (content) => Math.PI * content.r ** 2,
@@ -318,21 +321,21 @@ export function getModel(ctx: PluginContext) {
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         if (dashed) {
-          return target.renderPolyline(getCircleGeometries(content).points, options)
+          return target.renderPolyline(getCircleGeometries(content, renderCtx.contents).points, options)
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
-      renderIfSelected(content, { color, target, strokeWidth }) {
-        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle })
+      renderIfSelected(content, { color, target, strokeWidth, contents }) {
+        const { points } = getArcGeometries({ ...content, startAngle: content.endAngle, endAngle: content.startAngle }, contents)
         return target.renderPolyline(points, { strokeColor: color, dashArray: [4], strokeWidth })
       },
-      getOperatorRenderPosition(content) {
-        const { points } = getArcGeometries(content)
+      getOperatorRenderPosition(content, contents) {
+        const { points } = getArcGeometries(content, contents)
         return points[0]
       },
-      getEditPoints(content) {
+      getEditPoints(content, contents) {
         return ctx.getEditPointsFromCache(content, () => {
-          const { start, end, middle } = getArcGeometries(content)
+          const { start, end, middle } = getArcGeometries(content, contents)
           return {
             editPoints: [
               {
@@ -391,9 +394,9 @@ export function getModel(ctx: PluginContext) {
           }
         })
       },
-      getSnapPoints(content) {
+      getSnapPoints(content, contents) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const { start, end, middle } = getArcGeometries(content)
+          const { start, end, middle } = getArcGeometries(content, contents)
           return [
             { x: content.x, y: content.y, type: 'center' },
             { ...start, type: 'endpoint' },
@@ -418,7 +421,7 @@ export function getModel(ctx: PluginContext) {
         }
       },
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
-      getRefIds: ctx.getStrokeAndFillRefIds,
+      getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)

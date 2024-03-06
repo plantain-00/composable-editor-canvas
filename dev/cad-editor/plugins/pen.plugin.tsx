@@ -11,8 +11,10 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
   const PenContent = ctx.and(ctx.BaseContent('pen'), ctx.StrokeFields, {
     points: ctx.minItems(2, [ctx.Position]),
   })
-  function getGeometries(content: Omit<PenContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<PenContent, "type">) => [content.strokeStyleId]
+  function getGeometries(content: Omit<PenContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {
         lines,
@@ -53,7 +55,7 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
       return ctx.getStrokeContentPropertyPanel(content, update, contents)
     },
     isValid: (c, p) => ctx.validate(c, PenContent, p),
-    getRefIds: ctx.getStrokeRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     reverse: (content) => ({
       ...content,

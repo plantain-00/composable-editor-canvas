@@ -45,7 +45,8 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     widths: [ctx.number],
     mergedCells: ctx.optional([MergedCell])
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{
+  const getRefIds = (content: Omit<TableContent, "type">) => [content.strokeStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<TableContent, "type">, model.BaseContent, model.Geometries<{
     rows: (core.Position & { index: number })[]
     columns: (core.Position & { index: number })[]
     xs: number[]
@@ -53,8 +54,9 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     children: ({ region: core.Position[], row: number, column: number } & core.Region)[]
   }>>()
   const textLayoutResultCache = new ctx.WeakmapMap3Cache<object, object, number, number, ReturnType<typeof ctx.flowLayout<string>>>()
-  const getGeometries = (content: Omit<TableContent, 'type'>) => {
-    return geometriesCache.get(content, () => {
+  const getGeometries = (content: Omit<TableContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const lines: [core.Position, core.Position][] = []
       const width = content.widths.reduce((p, c) => p + c, 0)
       const height = content.rows.reduce((p, c) => p + c.height, 0)
@@ -158,7 +160,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       content.widths = content.widths.map(w => w * sx)
     },
     render(content, renderCtx) {
-      const geometries = getGeometries(content)
+      const geometries = getGeometries(content, renderCtx.contents)
       const { options, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(strokeColor, renderCtx)
       const children = geometries.renderingLines.map(line => renderCtx.target.renderPolyline(line, options))
@@ -194,9 +196,9 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       })
       return renderCtx.target.renderGroup(children)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { rows, columns, xs, ys } = getGeometries(content)
+        const { rows, columns, xs, ys } = getGeometries(content, contents)
         return {
           editPoints: [
             {
@@ -308,7 +310,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       const [row, column] = activeChild
       const cell = content.rows[row].cells?.find(c => c.column === column)
       if (!cell) return <></>
-      const { children } = getGeometries(content)
+      const { children } = getGeometries(content, contents)
       const child = children.find(f => f.row === row && f.column === column)
       if (!child) return <></>
       const textStyleContent = ctx.getTextStyleContent(cell, contents)
@@ -331,8 +333,9 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       />
     },
     isValid: (c, p) => ctx.validate(c, TableContent, p),
-    getChildByPoint(content, point, { textStyleId }) {
-      const { children } = getGeometries(content)
+    getRefIds,
+    getChildByPoint(content, point, contents, { textStyleId }) {
+      const { children } = getGeometries(content, contents)
       const child = children.find(c => ctx.pointInPolygon(point, c.region))
       if (child) {
         if (!content.rows[child.row].cells?.some(c => c.column === child.column)) {

@@ -2,10 +2,10 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
-import { CoordinateAxisContent, isCoordinateAxisContent } from './coordinate-axis.plugin'
+import { isCoordinateAxisContent } from './coordinate-axis.plugin'
 
 export type ParametricEquationContent = model.BaseContent<'parametric equation'> & model.StrokeFields & model.SegmentCountFields & {
-  axisId: number | model.BaseContent
+  axisId: model.ContentRef
   xExpression: string
   yExpression: string
   min: number
@@ -14,17 +14,19 @@ export type ParametricEquationContent = model.BaseContent<'parametric equation'>
 
 export function getModel(ctx: PluginContext): model.Model<ParametricEquationContent> {
   const ParametricEquationContent = ctx.and(ctx.BaseContent('parametric equation'), ctx.StrokeFields, ctx.SegmentCountFields, {
-    axisId: ctx.or(ctx.number, ctx.Content),
+    axisId: ctx.ContentRef,
     xExpression: ctx.string,
     yExpression: ctx.string,
     min: ctx.number,
     max: ctx.number,
   })
-  const equationCache = new ctx.WeakmapCache2<Omit<ParametricEquationContent, 'type'>, Omit<CoordinateAxisContent, "type">, model.Geometries<{ points: core.Position[] }>>()
+  const getRefIds = (content: Omit<ParametricEquationContent, "type">) => [content.strokeStyleId, content.axisId]
+  const equationCache = new ctx.WeakmapValuesCache<Omit<ParametricEquationContent, 'type'>, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getGeometriesFromCache(content: Omit<ParametricEquationContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent)
-    if (axis) {
-      return equationCache.get(content, axis, () => {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return equationCache.get(content, refs, () => {
+      const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent)
+      if (axis) {
         if (content.xExpression && content.yExpression) {
           try {
             const xExpression = ctx.parseExpression(ctx.tokenizeExpression(content.xExpression))
@@ -51,9 +53,9 @@ export function getModel(ctx: PluginContext): model.Model<ParametricEquationCont
           }
         }
         return { lines: [], points: [], renderingLines: [] }
-      })
-    }
-    return { lines: [], points: [], renderingLines: [] }
+      }
+      return { lines: [], points: [], renderingLines: [] }
+    })
   }
   const React = ctx.React
   return {
@@ -77,7 +79,7 @@ export function getModel(ctx: PluginContext): model.Model<ParametricEquationCont
       }
     },
     isValid: (c, p) => ctx.validate(c, ParametricEquationContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.axisId === 'number' ? [content.axisId] : [])],
+    getRefIds,
     updateRefId(content, update) {
       const newAxisId = update(content.axisId)
       if (newAxisId !== undefined) {

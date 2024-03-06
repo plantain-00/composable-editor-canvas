@@ -13,8 +13,10 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     outerRadius: ctx.number,
     innerRadius: ctx.number,
   })
-  function getRingGeometriesFromCache(content: Omit<RingContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<RingContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  function getRingGeometriesFromCache(content: Omit<RingContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
       const arc1 = ctx.circleToArc({ ...content, r: content.outerRadius })
       const arc2 = ctx.circleToArc({ ...content, r: content.innerRadius })
@@ -54,7 +56,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { renderingLines, regions } = getRingGeometriesFromCache(content)
+      const { renderingLines, regions } = getRingGeometriesFromCache(content, renderCtx.contents)
       if (regions) {
         return target.renderPath([regions[0].points, ...(regions[0].holes || [])], options)
       }
@@ -94,7 +96,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, RingContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }

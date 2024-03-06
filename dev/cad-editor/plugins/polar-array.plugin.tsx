@@ -20,10 +20,11 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
     rowCount: ctx.number,
     rowSpacing: ctx.number,
   })
+  const getRefIds = (content: Omit<PolarArrayContent, 'type'>) => content.contents
   const getAllContentsFromCache = (content: Omit<PolarArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
     return ctx.allContentsCache.get(content, () => {
       const result: core.Nullable<model.BaseContent>[] = []
-      const bounding = ctx.getContentsBounding(content.contents)
+      const bounding = ctx.getContentsBounding(content.contents, contents)
       if (!bounding) return result
       const base = {
         x: ctx.getTwoNumberCenter(bounding.start.x, bounding.end.x),
@@ -59,7 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<PolarArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, c => getAllContentsFromCache(c, contents))
+  const getGeometries = (content: Omit<PolarArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, c => getAllContentsFromCache(c, contents))
   const React = ctx.React
   return {
     type: 'polar array',
@@ -88,9 +89,9 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content, renderCtx.contents), variableValues: content.variableValues }, renderCtx))
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const bounding = ctx.getContentsBounding(content.contents)
+        const bounding = ctx.getContentsBounding(content.contents, contents)
         if (!bounding) {
           return { editPoints: [] }
         }
@@ -220,6 +221,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, PolarArrayContent, p),
+    getRefIds,
   }
 }
 
@@ -245,7 +247,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'create polar array',
-    useCommand({ onEnd, type, scale }) {
+    useCommand({ onEnd, type, scale, contents }) {
       let message = ''
       if (type) {
         message = 'specify target point'
@@ -258,7 +260,7 @@ export function getCommand(ctx: PluginContext): Command {
           onEnd({
             updateContents: (contents, selected) => {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents))
-              const bounding = ctx.getContentsBounding(target)
+              const bounding = ctx.getContentsBounding(target, contents)
               if (!bounding) return
               const newContent: PolarArrayContent = {
                 type: 'polar array',
@@ -289,7 +291,7 @@ export function getCommand(ctx: PluginContext): Command {
         },
         updateSelectedContent(content) {
           if (cursorPosition) {
-            const bounding = ctx.getContentModel(content)?.getGeometries?.(content).bounding
+            const bounding = ctx.getContentModel(content)?.getGeometries?.(content, contents).bounding
             if (!bounding) return {}
             const base = {
               x: ctx.getTwoNumberCenter(bounding.start.x, bounding.end.x),

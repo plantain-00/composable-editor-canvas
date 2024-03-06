@@ -8,9 +8,11 @@ export type NurbsContent = model.BaseContent<'nurbs'> & model.StrokeFields & mod
 
 export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
   const NurbsContent = ctx.and(ctx.BaseContent('nurbs'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, ctx.Nurbs)
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
-  function getNurbsGeometries(content: Omit<NurbsContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<NurbsContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<NurbsContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
+  function getNurbsGeometries(content: Omit<NurbsContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       let points: core.Position[]
       const nurbsSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
       let lines: core.GeometryLine[]
@@ -75,17 +77,17 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
         ctx.mirrorPoint(point, line)
       }
     },
-    break(content, intersectionPoints) {
-      const lines = getNurbsGeometries(content).lines
+    break(content, intersectionPoints, contents) {
+      const lines = getNurbsGeometries(content, contents).lines
       const result = ctx.breakGeometryLines(lines, intersectionPoints)
       return result.map(r => r.map(t => ctx.geometryLineToContent(t))).flat()
     },
-    offset(content, point, distance) {
-      const lines = getNurbsGeometries(content).lines
+    offset(content, point, distance, contents) {
+      const lines = getNurbsGeometries(content, contents).lines
       return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map(r => ctx.geometryLineToContent(r))
     },
     render(content, renderCtx) {
-      const { points } = getNurbsGeometries(content)
+      const { points } = getNurbsGeometries(content, renderCtx.contents)
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPolyline(points, options)
     },
@@ -139,7 +141,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
       }
     },
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ctx.reverseNurbs(content),
   }

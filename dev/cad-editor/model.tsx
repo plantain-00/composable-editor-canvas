@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding, getArcPointAtAngle, getArcBulge } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding, getArcPointAtAngle, getArcBulge, WeakmapValuesCache } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -216,9 +216,9 @@ export type Model<T> = Partial<FeatureModels> & {
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  offset?(content: T, point: Position, distance: number): BaseContent | BaseContent[] | void
-  join?(content: T, target: BaseContent): BaseContent | void
-  extend?(content: T, point: Position): void
+  offset?(content: T, point: Position, distance: number, contents: readonly Nullable<BaseContent>[]): BaseContent | BaseContent[] | void
+  join?(content: T, target: BaseContent, contents: readonly Nullable<BaseContent>[]): BaseContent | void
+  extend?(content: T, point: Position, contents: readonly Nullable<BaseContent>[]): void
   render?<V, P>(content: T, ctx: RenderContext<V, P>): V
   renderIfSelected?<V>(content: Omit<T, 'type'>, ctx: RenderIfSelectedContext<V>): V
   getOperatorRenderPosition?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Position
@@ -227,7 +227,7 @@ export type Model<T> = Partial<FeatureModels> & {
     angleSnapStartPoint?: Position
   } | undefined
   getSnapPoints?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): SnapPoint[]
-  getGeometries?(content: Omit<T, 'type'>, contents?: readonly Nullable<BaseContent>[]): Geometries
+  getGeometries?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): Geometries
   canSelectPart?: boolean
   propertyPanel?(
     content: Omit<T, 'type'>,
@@ -249,14 +249,14 @@ export type Model<T> = Partial<FeatureModels> & {
     transformPosition: (p: Position) => Position,
     activeChild?: number[],
   ): JSX.Element
-  getRefIds?(content: T): number[] | undefined
+  getRefIds?(content: T): Nullable<ContentRef>[] | undefined
   updateRefId?(content: T, update: (id: ContentRef) => ContentRef | undefined): void
   isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
-  isPointIn?(content: T, point: Position): boolean
-  getChildByPoint?(content: T, point: Position, options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
+  isPointIn?(content: T, point: Position, contents: readonly Nullable<BaseContent>[]): boolean
+  getChildByPoint?(content: T, point: Position, contents: readonly Nullable<BaseContent>[], options: { textStyleId?: number }): { child: number[], patches?: [Patch[], Patch[]] } | undefined
   getArea?(content: T): number
-  reverse?(content: T): T
+  reverse?(content: T, contents: readonly Nullable<BaseContent>[]): T
 }
 
 export interface Select {
@@ -324,7 +324,7 @@ export type Geometries<T extends object = object> = T & {
   renderingLines: Position[][]
 }
 
-const geometriesCache = new WeakmapCache<object, Geometries>()
+const geometriesCache = new WeakmapValuesCache<object, BaseContent, Geometries>()
 const snapPointsCache = new WeakmapCache<object, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<object, { editPoints: (EditPoint<BaseContent> & { type?: 'move' })[], angleSnapStartPoint?: Position } | undefined>()
 export const allContentsCache = new WeakmapCache<object, Nullable<BaseContent>[]>()
@@ -818,7 +818,7 @@ export function getVariableValuesContentPropertyPanel(
 
 export function getClipContentPropertyPanel(
   content: ClipFields,
-  contents: readonly Nullable<BaseContent<string>>[],
+  contents: readonly Nullable<BaseContent>[],
   acquireContent: (select: Select, handle: (refs: readonly PartRef[]) => void) => void,
   update: (recipe: (content: BaseContent) => void) => void,
 ) {
@@ -928,7 +928,7 @@ export const dimensionStyle = {
 
 export function getPolylineEditPoints(
   content: { points: Position[] },
-  isPolyLineContent: (content: BaseContent<string>) => content is { type: string, points: Position[] },
+  isPolyLineContent: (content: BaseContent) => content is { type: string, points: Position[] },
   isPolygon?: boolean,
   midpointDisabled?: boolean,
 ) {
@@ -1039,7 +1039,7 @@ export function getReference<T extends BaseContent>(
   if (!content && patches && patches.length > 0) {
     // type-coverage:ignore-next-line
     content = patches.find(p => p.op === 'add' && p.path[0] === id)?.value
-  } 
+  }
   if (content && filter(content)) {
     return content
   }
@@ -1061,6 +1061,40 @@ export function contentIsDeletable(content: BaseContent, contents: readonly Null
 }
 export function contentIsClosedPath(content: Nullable<BaseContent>) {
   return !!content && !content.readonly && getContentModel(content)?.isPointIn !== undefined
+}
+
+export function* iterateRefIds(ids: Nullable<ContentRef>[] | undefined, contents: readonly Nullable<BaseContent>[]): Generator<number, void, unknown> {
+  if (!ids) {
+    return
+  }
+  for (const id of ids) {
+    if (id === undefined) continue
+    if (id === null) continue
+    if (typeof id === 'number') {
+      yield id
+    }
+    const content = typeof id !== 'number' ? id : contents[id]
+    if (content) {
+      const refIds = getContentModel(content)?.getRefIds?.(content)
+      yield* iterateRefIds(refIds, contents)
+    }
+  }
+}
+
+export function* iterateRefContents(ids: Nullable<ContentRef>[] | undefined, contents: readonly Nullable<BaseContent>[]): Generator<BaseContent, void, unknown> {
+  if (!ids) {
+    return
+  }
+  for (const id of ids) {
+    if (id === undefined) continue
+    if (id === null) continue
+    const content = typeof id !== 'number' ? id : contents[id]
+    if (content) {
+      yield content
+      const refIds = getContentModel(content)?.getRefIds?.(content)
+      yield* iterateRefContents(refIds, contents)
+    }
+  }
 }
 
 export function updateReferencedContents(
@@ -1163,8 +1197,12 @@ export function getContainerVariableNames(container: ContainerFields) {
   return Array.from(result)
 }
 
-export function renderContainerIfSelected<V>(container: ContainerFields, ctx: RenderIfSelectedContext<V>) {
-  const { bounding } = getContainerGeometries(container)
+export function renderContainerIfSelected<V, T extends ContainerFields>(
+  container: T,
+  ctx: RenderIfSelectedContext<V>,
+  getRefIds: (content: T) => Nullable<ContentRef>[],
+) {
+  const { bounding } = getContainerGeometries<T>(container, ctx.contents, getRefIds)
   if (!bounding) {
     return ctx.target.renderEmpty()
   }
@@ -1177,15 +1215,22 @@ export function renderContainerIfSelected<V>(container: ContainerFields, ctx: Re
   )
 }
 
-export function getContainerGeometries(content: ContainerFields) {
-  return getContentsGeometries(content)
+export function getContainerGeometries<T extends ContainerFields>(
+  content: T,
+  contents: readonly Nullable<BaseContent>[],
+  getRefIds: (content: T) => Nullable<ContentRef>[]
+) {
+  return getContentsGeometries<T>(content, contents, getRefIds)
 }
 
 export function getContentsGeometries<T extends ContainerFields>(
   content: T,
+  contents: readonly Nullable<BaseContent>[],
+  getRefIds: (content: T) => Nullable<ContentRef>[],
   getAllContents = (c: T) => c.contents,
 ) {
-  return getGeometriesFromCache(content, () => {
+  const refs = new Set(iterateRefContents(getRefIds(content), contents))
+  return getGeometriesFromCache(content, refs, () => {
     const lines: GeometryLine[] = []
     const renderingLines: Position[][] = []
     const boundings: Position[] = []
@@ -1194,7 +1239,7 @@ export function getContentsGeometries<T extends ContainerFields>(
       if (!c) {
         return
       }
-      const r = getContentModel(c)?.getGeometries?.(c)
+      const r = getContentModel(c)?.getGeometries?.(c, contents)
       if (r) {
         lines.push(...r.lines)
         if (r.bounding) {
@@ -1217,11 +1262,11 @@ export function getContentsGeometries<T extends ContainerFields>(
   })
 }
 
-export function getContentsBounding(contents: Nullable<BaseContent>[]) {
+export function getContentsBounding(contents: Nullable<BaseContent>[], state: readonly Nullable<BaseContent>[]) {
   const points: Position[] = []
   contents.forEach(content => {
     if (content) {
-      const bounding = getContentModel(content)?.getGeometries?.(content).bounding
+      const bounding = getContentModel(content)?.getGeometries?.(content, state).bounding
       if (bounding) {
         points.push(bounding.start, bounding.end)
       }
@@ -1273,8 +1318,12 @@ export function getContainerRender<V, P>(content: ContainerFields, ctx: RenderCo
   const children = renderContainerChildren(content, ctx)
   return ctx.target.renderGroup(children)
 }
-export function getContainerRenderIfSelected<V>(content: ContainerFields, ctx: RenderIfSelectedContext<V>) {
-  return renderContainerIfSelected(content, ctx)
+export function getContainerRenderIfSelected<V, T extends ContainerFields>(
+  content: T,
+  ctx: RenderIfSelectedContext<V>,
+  getRefIds: (content: T) => Nullable<ContentRef>[]
+) {
+  return renderContainerIfSelected(content, ctx, getRefIds)
 }
 export function getContentsExplode(array: Nullable<BaseContent>[]) {
   return array.filter((c): c is BaseContent => !!c)
@@ -1299,9 +1348,6 @@ export function getContentsBreak(array: Nullable<BaseContent>[], points: Positio
   return result
 }
 
-export function getStrokeRefIds(content: StrokeFields) {
-  return typeof content.strokeStyleId === 'number' ? [content.strokeStyleId] : []
-}
 export function updateStrokeRefIds(content: StrokeFields, update: (id: ContentRef) => ContentRef | undefined) {
   if (content.strokeStyleId !== undefined) {
     const newRefId = update(content.strokeStyleId)
@@ -1310,9 +1356,7 @@ export function updateStrokeRefIds(content: StrokeFields, update: (id: ContentRe
     }
   }
 }
-export function getFillRefIds(content: FillFields) {
-  return typeof content.fillStyleId === 'number' ? [content.fillStyleId] : []
-}
+
 export function updateFillRefIds(content: FillFields, update: (id: ContentRef) => ContentRef | undefined) {
   if (content.fillStyleId !== undefined) {
     const newRefId = update(content.fillStyleId)
@@ -1321,12 +1365,18 @@ export function updateFillRefIds(content: FillFields, update: (id: ContentRef) =
     }
   }
 }
-export function getStrokeAndFillRefIds(content: StrokeFields & FillFields) {
-  return [...getStrokeRefIds(content), ...getFillRefIds(content)]
-}
 export function updateStrokeAndFillRefIds(content: StrokeFields & FillFields, update: (id: ContentRef) => ContentRef | undefined) {
   updateStrokeRefIds(content, update)
   updateFillRefIds(content, update)
+}
+
+export function updateTextStyleRefIds(content: TextFields, update: (id: ContentRef) => ContentRef | undefined) {
+  if (content.textStyleId !== undefined) {
+    const newRefId = update(content.textStyleId)
+    if (newRefId !== undefined) {
+      content.textStyleId = newRefId
+    }
+  }
 }
 
 export function breakPolyline(
@@ -1410,22 +1460,22 @@ export const SnapResult = {
   target: optional(SnapTarget),
 }
 
-export function getDefaultViewport(content: BaseContent, contents: readonly Nullable<BaseContent<string>>[], rotate?: number) {
+export function getDefaultViewport(content: BaseContent, contents: readonly Nullable<BaseContent>[], rotate?: number) {
   const points = getContentsPoints(contents, contents, c => !isViewportContent(c))
-  return getViewportByPoints(content, points, rotate)
+  return getViewportByPoints(content, points, contents, rotate)
 }
 
-export function getViewportByPoints(content: BaseContent, points: Position[], rotate?: number) {
+export function getViewportByPoints(content: BaseContent, points: Position[], contents: readonly Nullable<BaseContent>[], rotate?: number) {
   if (rotate) {
     points = points.map(p => rotatePosition(p, { x: 0, y: 0 }, rotate))
   }
   const contentsBounding = getPointsBounding(points)
   if (!contentsBounding) return
-  return getViewportByRegion(content, contentsBounding)
+  return getViewportByRegion(content, contentsBounding, contents)
 }
 
-export function getViewportByRegion(content: BaseContent, contentsBounding: TwoPointsFormRegion) {
-  const borderBounding = getContentModel(content)?.getGeometries?.(content).bounding
+export function getViewportByRegion(content: BaseContent, contentsBounding: TwoPointsFormRegion, contents: readonly Nullable<BaseContent>[]) {
+  const borderBounding = getContentModel(content)?.getGeometries?.(content, contents).bounding
   if (!borderBounding) return
   const viewportWidth = borderBounding.end.x - borderBounding.start.x
   const viewportHeight = borderBounding.end.y - borderBounding.start.y
@@ -1529,7 +1579,7 @@ export function getSnapTargetRef(target: CoreSnapTarget<BaseContent> | undefined
   } : undefined
 }
 
-export function trimOffsetResult(points: Position[], point: Position, closed: boolean) {
+export function trimOffsetResult(points: Position[], point: Position, closed: boolean, contents: readonly Nullable<BaseContent>[]) {
   let intersectionPoints: Position[] = []
   for (let i = 0; i < points.length - 1; i++) {
     for (let j = i + 2; j < points.length - 1; j++) {
@@ -1545,8 +1595,8 @@ export function trimOffsetResult(points: Position[], point: Position, closed: bo
     let newLines = breakPolyline(Array.from(iteratePolylineLines(points)), intersectionPoints)
     const newLines1 = newLines.filter((_, i) => i % 2 === 0)
     const newLines2 = newLines.filter((_, i) => i % 2 === 1)
-    const distance1 = Math.min(...newLines1.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
-    const distance2 = Math.min(...newLines2.map(line => (getContentModel(line)?.getGeometries?.(line)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
+    const distance1 = Math.min(...newLines1.map(line => (getContentModel(line)?.getGeometries?.(line, contents)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
+    const distance2 = Math.min(...newLines2.map(line => (getContentModel(line)?.getGeometries?.(line, contents)?.lines ?? [])?.map(line => getPointAndGeometryLineMinimumDistance(point, line))).flat(2))
     newLines = distance1 > distance2 ? newLines2 : newLines1
     mergePolylines(newLines)
     return newLines.map(line => line.points)
@@ -1757,11 +1807,11 @@ export function renderClipContent<V, P>(content: ClipFields & BaseContent, targe
     const render = model?.render
     if (render) {
       if (content.clip.reverse) {
-        const borderGeometries = model.getGeometries?.(content.clip.border)
+        const borderGeometries = model.getGeometries?.(content.clip.border, renderCtx.contents)
         if (!borderGeometries?.bounding) return target
         const contentModel = getContentModel(content)
         if (!contentModel) return target
-        const geometries = contentModel.getGeometries?.(content)
+        const geometries = contentModel.getGeometries?.(content, renderCtx.contents)
         if (!geometries?.bounding) return target
         return renderCtx.target.renderPath([
           getPolygonFromTwoPointsFormRegion(mergeBoundingsUnsafe([geometries.bounding, borderGeometries.bounding])),

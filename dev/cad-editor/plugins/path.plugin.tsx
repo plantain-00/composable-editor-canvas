@@ -12,8 +12,10 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
   const PathContent = ctx.and(ctx.BaseContent('path'), ctx.StrokeFields, ctx.FillFields, {
     commands: [ctx.PathCommand]
   })
-  function getPathGeometriesFromCache(content: Omit<PathContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<PathContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  function getPathGeometriesFromCache(content: Omit<PathContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = ctx.pathCommandsToGeometryLines(content.commands)[0]
       const points = ctx.getGeometryLinesPoints(lines)
       return {
@@ -94,12 +96,12 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         }
       }
     },
-    break(content, intersectionPoints) {
-      const lines = getPathGeometriesFromCache(content).lines
+    break(content, intersectionPoints, contents) {
+      const lines = getPathGeometriesFromCache(content, contents).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
     },
-    offset(content, point, distance) {
-      const lines = getPathGeometriesFromCache(content).lines
+    offset(content, point, distance, contents) {
+      const lines = getPathGeometriesFromCache(content, contents).lines
       return {
         ...content,
         commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistance(point, lines, distance)),
@@ -325,11 +327,11 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, PathContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    reverse: (content) => ({
+    reverse: (content, contents) => ({
       ...content,
-      commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content).lines.map(n => ctx.reverseGeometryLine(n)).reverse()),
+      commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content, contents).lines.map(n => ctx.reverseGeometryLine(n)).reverse()),
     }),
   }
 }

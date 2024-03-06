@@ -14,10 +14,10 @@ export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent) {
     return ctx.getContentModel(content)?.offset !== undefined
   }
-  function getOffsetResult(content: model.BaseContent, p: core.Position, offset: number) {
+  function getOffsetResult(content: model.BaseContent, p: core.Position, offset: number, contents: readonly core.Nullable<model.BaseContent>[]) {
     const model = ctx.getContentModel(content)
     if (model?.offset) {
-      const newContent = model.offset(content, p, offset)
+      const newContent = model.offset(content, p, offset, contents)
       if (Array.isArray(newContent)) {
         return newContent.filter(c => model.isValid(c) === true)
       }
@@ -29,7 +29,7 @@ export function getCommand(ctx: PluginContext): Command {
   }
   return {
     name: 'offset',
-    useCommand({ onEnd, type }) {
+    useCommand({ onEnd, type, contents }) {
       let message = ''
       if (type) {
         message = 'input offset or click to end'
@@ -56,7 +56,7 @@ export function getCommand(ctx: PluginContext): Command {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c))
               for (const content of target) {
                 if (content) {
-                  contents.push(...getOffsetResult(content, p, offset))
+                  contents.push(...getOffsetResult(content, p, offset, contents))
                 }
               }
               setCursorPosition(undefined)
@@ -73,7 +73,7 @@ export function getCommand(ctx: PluginContext): Command {
         },
         updateSelectedContent(content) {
           if (cursorPosition) {
-            const newContents = getOffsetResult(content, cursorPosition, offset)
+            const newContents = getOffsetResult(content, cursorPosition, offset, contents)
             if (newContents.length > 0) {
               return {
                 newContents,

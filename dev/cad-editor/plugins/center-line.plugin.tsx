@@ -14,11 +14,13 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
     ref1: ctx.PartRef,
     ref2: ctx.PartRef,
   })
-  function getCenterLineGeometriesFromCache(content: Omit<CenterLineReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent)
-    const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent)
-    if (ref1 && ref2) {
-      return centerMarkLinesCache.get(ref1, ref2, content, () => {
+  const getRefIds = (content: CenterLineReferenceContent) => [content.ref1.id, content.ref2.id]
+  function getCenterLineGeometriesFromCache(content: CenterLineReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent)
+      const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent)
+      if (ref1 && ref2) {
         const line = ctx.maxmiumBy([
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])] as [core.Position, core.Position],
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[1]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[0])] as [core.Position, core.Position],
@@ -28,12 +30,10 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
           bounding: ctx.getPointsBounding(line),
           renderingLines: ctx.dashedPolylineToLines(line, [8, 4]),
         }
-      })
-    }
-    return { lines: [], renderingLines: [] }
+      }
+      return { lines: [], renderingLines: [] }
+    })
   }
-  const centerMarkLinesCache = new ctx.WeakmapCache3<Omit<LineContent, 'type'>, Omit<LineContent, 'type'>, Omit<CenterLineReferenceContent, "type">, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
-
   const React = ctx.React
   return {
     type: 'center line',
@@ -58,10 +58,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
       }
     },
     isValid: (c, p) => ctx.validate(c, CenterLineReferenceContent, p),
-    getRefIds: (content) => [
-      ...(content.ref1 && typeof content.ref1.id === 'number' ? [content.ref1.id] : []),
-      ...(content.ref2 && typeof content.ref2.id === 'number' ? [content.ref2.id] : []),
-    ],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref1) {
         const newRefId = update(content.ref1.id)

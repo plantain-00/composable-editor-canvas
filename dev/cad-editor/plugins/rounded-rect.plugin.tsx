@@ -12,9 +12,11 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
   const RoundedRectContent = ctx.and(ctx.BaseContent('rounded rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
     radius: ctx.number
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], arcPoints: core.Position[] }>>()
-  function getGeometries(content: Omit<RoundedRectContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<RoundedRectContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<RoundedRectContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], arcPoints: core.Position[] }>>()
+  function getGeometries(content: Omit<RoundedRectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const rectPoints = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
@@ -72,11 +74,11 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       content.height *= sy
       content.radius *= sx
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= this.isPointIn?.(content, point) ? -2 : 2
+      distance *= this.isPointIn?.(content, point, contents) ? -2 : 2
       return ctx.produce(content, (d) => {
         d.width += distance
         d.height += distance
@@ -84,16 +86,16 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { renderingLines } = getGeometries(content)
+      const { renderingLines } = getGeometries(content, renderCtx.contents)
       return target.renderPath(renderingLines, options)
     },
-    renderIfSelected(content, { color, target, strokeWidth }) {
-      const { points, arcPoints } = getGeometries(content)
+    renderIfSelected(content, { color, target, strokeWidth, contents }) {
+      const { points, arcPoints } = getGeometries(content, contents)
       return target.renderGroup(points.map((p, i) => target.renderPolyline([arcPoints[2 * i], p, arcPoints[2 * i + 1]], { strokeColor: color, dashArray: [4], strokeWidth })))
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points } = getGeometries(content)
+        const { points } = getGeometries(content, contents)
         return {
           editPoints: [
             { x: content.x, y: content.y, direction: 'center' as const },
@@ -123,9 +125,9 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
         }
       })
     },
-    getSnapPoints(content) {
+    getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points } = getGeometries(content)
+        const { points } = getGeometries(content, contents)
         return [
           { x: content.x, y: content.y, type: 'center' },
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
@@ -153,9 +155,9 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getGeometries(content, contents).points),
   }
 }
 

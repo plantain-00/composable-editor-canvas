@@ -21,7 +21,7 @@ export function getCommand(ctx: PluginContext): Command {
         const [current, ...rest] = source
         const count = source.size
         for (const r of rest) {
-          const result = ctx.getContentModel(current)?.join?.(current, r)
+          const result = ctx.getContentModel(current)?.join?.(current, r, contents)
           if (result) {
             removedContents.add(r)
             source.delete(r)

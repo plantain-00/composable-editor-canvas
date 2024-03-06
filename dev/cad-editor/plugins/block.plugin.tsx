@@ -8,7 +8,7 @@ export type BlockContent = model.BaseContent<'block'> & model.ContainerFields & 
   base: core.Position
 }
 export type BlockReferenceContent = model.BaseContent<'block reference'> & core.Position & model.VariableValuesFields & {
-  refId: number | model.BaseContent
+  refId: model.ContentRef
   angle: number
   scale?: number | core.Position
 }
@@ -19,16 +19,18 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     base: ctx.Position,
   })
   const BlockReferenceContent = ctx.and(ctx.BaseContent('block reference'), ctx.Position, ctx.VariableValuesFields, {
-    refId: ctx.or(ctx.number, ctx.Content),
+    refId: ctx.ContentRef,
     angle: ctx.number,
     scale: ctx.optional(ctx.or(ctx.number, ctx.Position)),
   })
+  const getBlockRefIds = (content: Omit<BlockContent, 'type'>) => content.contents
+  const getBlockReferenceRefIds = (content: BlockReferenceContent) => [content.refId]
   const blockModel: model.Model<BlockContent> = {
     type: 'block',
     ...ctx.containerModel,
     explode: ctx.getContainerExplode,
     render: ctx.getContainerRender,
-    renderIfSelected: ctx.getContainerRenderIfSelected,
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getBlockRefIds),
     getOperatorRenderPosition(content) {
       return content.base
     },
@@ -54,7 +56,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       })
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: ctx.getContainerGeometries,
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getBlockRefIds),
     propertyPanel(content, update, _, { acquirePoint }) {
       return {
         base: <ctx.ObjectEditor
@@ -69,8 +71,8 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       }
     },
     isValid: (c, p) => ctx.validate(c, BlockContent, p),
+    getRefIds: getBlockRefIds,
   }
-  const blockLinesCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.Geometries>()
   const blockSnapPointsCache = new ctx.WeakmapCache2<Omit<BlockContent, 'type'>, Omit<BlockReferenceContent, "type">, model.SnapPoint[]>()
   function extractContentInBlockReference(
     target: model.BaseContent,
@@ -100,10 +102,11 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     })
     return newResult || result
   }
-  function getBlockReferenceGeometries(content: Omit<BlockReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const block = ctx.getReference(content.refId, contents, isBlockContent)
-    if (block) {
-      return blockLinesCache.get(block, content, () => {
+  function getBlockReferenceGeometries(content: BlockReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getBlockReferenceRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      const block = ctx.getReference(content.refId, contents, isBlockContent)
+      if (block) {
         const lines: core.GeometryLine[] = []
         const boundings: core.TwoPointsFormRegion[] = []
         const renderingLines: core.Position[][] = []
@@ -114,7 +117,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
           }
           const extracted = extractContentInBlockReference(c, content, block, contents)
           if (extracted) {
-            const r = ctx.getContentModel(extracted)?.getGeometries?.(extracted)
+            const r = ctx.getContentModel(extracted)?.getGeometries?.(extracted, contents)
             if (r) {
               lines.push(...r.lines)
               if (r.bounding) {
@@ -135,9 +138,9 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
           renderingLines,
           regions,
         }
-      })
-    }
-    return { lines: [], renderingLines: [] }
+      }
+      return { lines: [], renderingLines: [] }
+    })
   }
   const blockReferenceModel: model.Model<BlockReferenceContent> = {
     type: 'block reference',
@@ -210,7 +213,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     renderIfSelected(content, renderCtx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
-        const children = ctx.renderContainerIfSelected(block, renderCtx)
+        const children = ctx.renderContainerIfSelected(block, renderCtx, getBlockRefIds)
         return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle, scale: content.scale })
       }
       return renderCtx.target.renderEmpty()
@@ -291,9 +294,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       }
     },
     isValid: (c, p) => ctx.validate(c, BlockReferenceContent, p),
-    getRefIds(content) {
-      return typeof content.refId === 'number' ? [content.refId] : undefined
-    },
+    getRefIds: getBlockReferenceRefIds,
     updateRefId(content, update) {
       const newRefId = update(content.refId)
       if (newRefId !== undefined) {
