@@ -18,11 +18,12 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const arrowCache = new ctx.WeakmapCache3<Omit<ArrowContent, "type">, core.Position, core.Position, model.Geometries>()
-  function getArrowGeometriesFromCache(content: Omit<ArrowContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
-    const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
-    return arrowCache.get(content, p1, p2, () => {
+  const getRefIds = (content: ArrowContent) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
+  function getArrowGeometriesFromCache(content: ArrowContent, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
+      const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content)
       const points = [p1, endPoint]
       return {
@@ -143,11 +144,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, ArrowContent, p),
-    getRefIds: (content) => [
-      ...ctx.getStrokeRefIds(content),
-      ...(content.ref1 && typeof content.ref1.id === 'number' ? [content.ref1.id] : []),
-      ...(content.ref2 && typeof content.ref2.id === 'number' ? [content.ref2.id] : []),
-    ],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref1) {
         const newRefId = update(content.ref1.id)

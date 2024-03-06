@@ -14,9 +14,11 @@ export function getModel(ctx: PluginContext) {
   const LineContent = ctx.and(ctx.BaseContent(ctx.or('line', 'polyline')), ctx.StrokeFields, ctx.FillFields, {
     points: ctx.minItems(2, [ctx.Position])
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
-  function getPolylineGeometries(content: Omit<LineContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<LineContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<LineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getPolylineGeometries(content: Omit<LineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {
         lines,
@@ -56,26 +58,26 @@ export function getModel(ctx: PluginContext) {
         ctx.mirrorPoint(point, line)
       }
     },
-    break(content, intersectionPoints) {
-      const { lines } = getPolylineGeometries(content)
+    break(content, intersectionPoints, contents) {
+      const { lines } = getPolylineGeometries(content, contents)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    offset(content, point, distance) {
-      const { lines } = getPolylineGeometries(content)
+    offset(content, point, distance, contents) {
+      const { lines } = getPolylineGeometries(content, contents)
       if (!distance) {
         distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       const index = ctx.getLinesOffsetDirection(point, lines)
       const points = ctx.getParallelPolylineByDistance(lines, index, distance)
-      return ctx.trimOffsetResult(points, point, closed).map(p => ctx.produce(content, (d) => {
+      return ctx.trimOffsetResult(points, point, closed, contents).map(p => ctx.produce(content, (d) => {
         d.points = p
       }))
     },
-    join(content, target) {
+    join(content, target, contents) {
       if (isLineContent(target) || isPolyLineContent(target)) {
         const lines = [
-          ...getPolylineGeometries(content).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
-          ...getPolylineGeometries(target).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+          ...getPolylineGeometries(content, contents).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
+          ...getPolylineGeometries(target, contents).lines.map(n => ({ type: 'line', points: [...n] }) as LineContent),
         ]
         ctx.mergePolylines(lines)
         if (lines.length === 1) {
@@ -86,15 +88,15 @@ export function getModel(ctx: PluginContext) {
         }
       }
       if (isArcContent(target)) {
-        const newLines = ctx.mergeGeometryLines([{ type: 'arc', curve: target }], getPolylineGeometries(content).lines)
+        const newLines = ctx.mergeGeometryLines([{ type: 'arc', curve: target }], getPolylineGeometries(content, contents).lines)
         if (newLines) {
           return ctx.geometryLinesToPline(newLines)
         }
       }
       return
     },
-    extend(content, point) {
-      const { lines } = getPolylineGeometries(content)
+    extend(content, point, contents) {
+      const { lines } = getPolylineGeometries(content, contents)
       if (ctx.pointIsOnRay(point, { ...lines[0][0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(lines[0][0], lines[0][1])) })) {
         content.points[0] = point
       } else {
@@ -111,9 +113,9 @@ export function getModel(ctx: PluginContext) {
     getEditPoints(content) {
       return ctx.getEditPointsFromCache(content, () => ({ editPoints: ctx.getPolylineEditPoints(content, isLineContent) }))
     },
-    getSnapPoints(content) {
+    getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getPolylineGeometries(content)
+        const { points, lines } = getPolylineGeometries(content, contents)
         return [
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
           ...lines.map(([start, end]) => ({
@@ -143,7 +145,7 @@ export function getModel(ctx: PluginContext) {
       }
     },
     isValid: (c, p) => ctx.validate(c, LineContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
@@ -156,8 +158,8 @@ export function getModel(ctx: PluginContext) {
       ...lineModel,
       type: 'polyline',
       ...ctx.fillModel,
-      explode(content) {
-        const { lines } = getPolylineGeometries(content)
+      explode(content, contents) {
+        const { lines } = getPolylineGeometries(content, contents)
         return lines.map((line) => ({ type: 'line', points: line } as LineContent))
       },
       render(content, renderCtx) {

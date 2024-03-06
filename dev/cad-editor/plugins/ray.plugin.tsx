@@ -8,15 +8,17 @@ export type RayContent = model.BaseContent<'ray'> & model.StrokeFields & core.Ra
 
 export function getModel(ctx: PluginContext) {
   const RayContent = ctx.and(ctx.BaseContent('ray'), ctx.StrokeFields, ctx.Ray)
-  const React = ctx.React
-  function getRayGeometries(content: Omit<RayContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<RayContent, "type">) => [content.strokeStyleId]
+  function getRayGeometries(content: Omit<RayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       return {
         lines: [{ type: 'ray', line: content }],
         renderingLines: [],
       }
     })
   }
+  const React = ctx.React
   const rayModel: model.Model<RayContent> = {
     type: 'ray',
     ...ctx.strokeModel,
@@ -34,8 +36,8 @@ export function getModel(ctx: PluginContext) {
       ctx.mirrorPoint(content, line)
       content.angle = 2 * angle - content.angle
     },
-    break(content, intersectionPoints) {
-      return ctx.breakGeometryLines(getRayGeometries(content).lines, intersectionPoints).flat().map(n => ctx.geometryLineToContent(n))
+    break(content, intersectionPoints, contents) {
+      return ctx.breakGeometryLines(getRayGeometries(content, contents).lines, intersectionPoints).flat().map(n => ctx.geometryLineToContent(n))
     },
     offset(content, point, distance) {
       if (!distance) {
@@ -84,7 +86,7 @@ export function getModel(ctx: PluginContext) {
       }
     },
     isValid: (c, p) => ctx.validate(c, RayContent, p),
-    getRefIds: ctx.getStrokeRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     reverse: content => ({ ...content, ...ctx.reverseRay(content) }),
   }

@@ -14,21 +14,22 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent('radial dimension reference'), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
     ref: ctx.PartRef,
   })
-  function getRadialDimensionReferenceGeometriesFromCache(content: Omit<RadialDimensionReferenceContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], patches?: Patch[]) {
-    const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches)
-    if (target) {
-      return radialDimensionReferenceLinesCache.get(target, content, () => {
+  const getRefIds = (content: RadialDimensionReferenceContent) => [content.strokeStyleId, content.ref.id]
+  const radialDimensionReferenceCache = new ctx.WeakmapValuesCache<Omit<RadialDimensionReferenceContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getRadialDimensionReferenceGeometriesFromCache(content: RadialDimensionReferenceContent, contents: readonly core.Nullable<model.BaseContent>[], patches?: Patch[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return radialDimensionReferenceCache.get(content, refs, () => {
+      const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches)
+      if (target) {
         return ctx.getRadialDimensionGeometries(content, target, {
           arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
           arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
           margin: ctx.dimensionStyle.margin,
         }, getTextPosition)
-      })
-    }
-    return { lines: [], points: [], renderingLines: [] }
+      }
+      return { lines: [], points: [], renderingLines: [] }
+    })
   }
-  const radialDimensionReferenceLinesCache = new ctx.WeakmapCache2<Omit<CircleContent | ArcContent, 'type'>, Omit<RadialDimensionReferenceContent, "type">, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
-
   const textPositionMap = new ctx.WeakmapCache2<core.RadialDimension, core.Circle, {
     textPosition: core.Position
     textRotation: number
@@ -130,7 +131,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
       }
     },
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
-    getRefIds: (content) => [...ctx.getStrokeRefIds(content), ...(typeof content.ref.id === 'number' ? [content.ref.id] : [])],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref) {
         const newRefId = update(content.ref.id)

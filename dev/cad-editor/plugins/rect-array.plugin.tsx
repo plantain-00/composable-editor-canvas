@@ -18,6 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
     columnCount: ctx.number,
     columnSpacing: ctx.number,
   })
+  const getRefIds = (content: Omit<RectArrayContent, "type">) => content.contents
   const getAllContentsFromCache = (content: Omit<RectArrayContent, 'type'>) => {
     return ctx.allContentsCache.get(content, () => {
       const result: core.Nullable<model.BaseContent>[] = []
@@ -42,7 +43,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<RectArrayContent, "type">) => ctx.getContentsGeometries(content, getAllContentsFromCache)
+  const getGeometries = (content: Omit<RectArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, getAllContentsFromCache)
   const React = ctx.React
   return {
     type: 'rect array',
@@ -74,9 +75,9 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
     render(content, renderCtx) {
       return renderCtx.target.renderGroup(ctx.renderContainerChildren({ contents: getAllContentsFromCache(content), variableValues: content.variableValues }, renderCtx))
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const bounding = ctx.getContentsBounding(content.contents)
+        const bounding = ctx.getContentsBounding(content.contents, contents)
         if (!bounding) {
           return { editPoints: [] }
         }
@@ -199,6 +200,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, RectArrayContent, p),
+    getRefIds,
   }
 }
 
@@ -226,7 +228,7 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'create rect array',
     execute({ contents, selected }) {
       const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents))
-      const bounding = ctx.getContentsBounding(target)
+      const bounding = ctx.getContentsBounding(target, contents)
       if (!bounding) return
       const newContent: RectArrayContent = {
         type: 'rect array',

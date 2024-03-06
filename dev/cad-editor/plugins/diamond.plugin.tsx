@@ -9,9 +9,11 @@ export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields &
 
 export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
   const DiamondContent = ctx.and(ctx.BaseContent('diamond'), ctx.StrokeFields, ctx.FillFields, ctx.Region)
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
-  function getGeometries(content: Omit<DiamondContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<DiamondContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<DiamondContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getGeometries(content: Omit<DiamondContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y },
@@ -46,15 +48,15 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
       content.width *= sx
       content.height *= sy
     },
-    explode(content) {
-      const { lines } = getGeometries(content)
+    explode(content, contents) {
+      const { lines } = getGeometries(content, contents)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= this.isPointIn?.(content, point) ? -2 : 2
+      distance *= this.isPointIn?.(content, point, contents) ? -2 : 2
       const scale = content.width / content.height
       const height = distance / Math.sin(Math.atan(scale))
       const width = height * scale
@@ -65,16 +67,16 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { points } = getGeometries(content)
+      const { points } = getGeometries(content, renderCtx.contents)
       return target.renderPolygon(points, options)
     },
-    getOperatorRenderPosition(content) {
-      const { points } = getGeometries(content)
+    getOperatorRenderPosition(content, contents) {
+      const { points } = getGeometries(content, contents)
       return points[0]
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points } = getGeometries(content)
+        const { points } = getGeometries(content, contents)
         return {
           editPoints: [
             { x: content.x, y: content.y, direction: 'center' as const },
@@ -104,9 +106,9 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
         }
       })
     },
-    getSnapPoints(content) {
+    getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, lines } = getGeometries(content)
+        const { points, lines } = getGeometries(content, contents)
         return [
           { x: content.x, y: content.y, type: 'center' },
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
@@ -132,9 +134,9 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getGeometries(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getGeometries(content, contents).points),
   }
 }
 

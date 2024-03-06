@@ -10,8 +10,10 @@ export type CombinedPathContent = model.BaseContent<'combined path'> & model.Con
 
 export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
   const CombinedPathContent = ctx.and(ctx.BaseContent('combined path'), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields)
-  const getGeometries = (content: CombinedPathContent) => {
-    return ctx.getGeometriesFromCache(content, () => {
+  const getRefIds = (content: Omit<CombinedPathContent, 'type'>) => [content.strokeStyleId, content.fillStyleId]
+  const getGeometries = (content: CombinedPathContent, contents: readonly core.Nullable<model.BaseContent>[]) => {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       const lines: core.GeometryLine[] = []
       const result: { points: core.Position[] }[] = []
       const boundings: core.Position[] = []
@@ -19,7 +21,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
         if (!c) {
           return
         }
-        const r = ctx.getContentModel(c)?.getGeometries?.(c)
+        const r = ctx.getContentModel(c)?.getGeometries?.(c, contents)
         if (r) {
           lines.push(...r.lines)
           if (r.bounding) {
@@ -59,13 +61,13 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     explode: ctx.getContainerExplode,
     mirror: ctx.getContainerMirror,
     render(content, renderCtx) {
-      const geometries = getGeometries(content)
+      const geometries = getGeometries(content, renderCtx.contents)
       const { options } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return renderCtx.target.renderGroup(geometries.renderingLines.map(line => {
         return renderCtx.target.renderPolyline(line, options)
       }))
     },
-    renderIfSelected: ctx.getContainerRenderIfSelected,
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds),
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries,
     propertyPanel(content, update, contents) {
@@ -75,7 +77,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, CombinedPathContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
   }
 }

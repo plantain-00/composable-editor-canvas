@@ -12,7 +12,8 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
   const TimeAxisContent = ctx.and(ctx.BaseContent('time axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
     max: ctx.number,
   })
-  function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">, _?: readonly core.Nullable<model.BaseContent>[], time?: number) {
+  const getRefIds = (content: Omit<TimeAxisContent, "type">) => [content.strokeStyleId]
+  function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], time?: number) {
     const getGeometries = (): model.Geometries => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content)
       const points = [content, endPoint]
@@ -39,7 +40,8 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
     if (time) {
       return getGeometries()
     }
-    return ctx.getGeometriesFromCache(content, getGeometries)
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, getGeometries)
   }
   const React = ctx.React
   return {
@@ -96,7 +98,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, TimeAxisContent, p),
-    getRefIds: ctx.getStrokeRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
   }
 }

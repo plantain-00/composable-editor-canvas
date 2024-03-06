@@ -17,9 +17,11 @@ export function getModel(ctx: PluginContext) {
     points: ctx.minItems(2, [{ point: ctx.Position, bulge: ctx.number }]),
     closed: ctx.optional(ctx.boolean),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], centers: core.Position[], middles: core.Position[] }>>()
-  function getPlineGeometries(content: Omit<PlineContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<PlineContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<PlineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], centers: core.Position[], middles: core.Position[] }>>()
+  function getPlineGeometries(content: Omit<PlineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const lines: core.GeometryLine[] = []
       const centers: core.Position[] = []
       const middles: core.Position[] = []
@@ -84,31 +86,31 @@ export function getModel(ctx: PluginContext) {
         point.bulge *= -1
       }
     },
-    break(content, intersectionPoints) {
-      const { lines } = getPlineGeometries(content)
+    break(content, intersectionPoints, contents) {
+      const { lines } = getPlineGeometries(content, contents)
       const newLines = ctx.breakGeometryLines(lines, intersectionPoints)
       return newLines.map(line => ctx.geometryLinesToPline(line))
     },
-    explode(content) {
-      const { lines } = getPlineGeometries(content)
+    explode(content, contents) {
+      const { lines } = getPlineGeometries(content, contents)
       return lines.map((line) => ctx.geometryLineToContent(line))
     },
-    offset(content, point, distance) {
-      const { lines } = getPlineGeometries(content)
+    offset(content, point, distance, contents) {
+      const { lines } = getPlineGeometries(content, contents)
       const newLines = ctx.getParallelGeometryLinesByDistance(point, lines, distance)
       return ctx.geometryLinesToPline(newLines)
     },
-    join(content, target) {
-      const { lines } = getPlineGeometries(content)
-      const line2 = ctx.getContentModel(target)?.getGeometries?.(target)?.lines
+    join(content, target, contents) {
+      const { lines } = getPlineGeometries(content, contents)
+      const line2 = ctx.getContentModel(target)?.getGeometries?.(target, contents)?.lines
       if (!line2) return
       const newLines = ctx.mergeGeometryLines(lines, line2)
       if (!newLines) return
       return ctx.geometryLinesToPline(newLines)
     },
-    extend(content, point) {
+    extend(content, point, contents) {
       if (content.closed) return
-      const { lines } = getPlineGeometries(content)
+      const { lines } = getPlineGeometries(content, contents)
       const first = lines[0], last = lines[lines.length - 1]
       if (Array.isArray(first)) {
         if (ctx.pointIsOnRay(point, { ...first[0], angle: ctx.radianToAngle(ctx.getTwoPointsRadian(...first)) })) {
@@ -133,14 +135,14 @@ export function getModel(ctx: PluginContext) {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      return target.renderPath([getPlineGeometries(content).points], options)
+      return target.renderPath([getPlineGeometries(content, renderCtx.contents).points], options)
     },
     getOperatorRenderPosition(content) {
       return content.points[0].point
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { middles } = getPlineGeometries(content)
+        const { middles } = getPlineGeometries(content, contents)
         const endpoints: core.EditPoint<model.BaseContent>[] = content.points.map((p, i) => ({
           x: p.point.x,
           y: p.point.y,
@@ -192,8 +194,8 @@ export function getModel(ctx: PluginContext) {
         }
       })
     },
-    getSnapPoints(content) {
-      const { centers, middles } = getPlineGeometries(content)
+    getSnapPoints(content, contents) {
+      const { centers, middles } = getPlineGeometries(content, contents)
       return ctx.getSnapPointsFromCache(content, () => {
         return [
           ...content.points.map((p) => ({ ...p.point, type: 'endpoint' as const })),
@@ -230,7 +232,7 @@ export function getModel(ctx: PluginContext) {
       }
     },
     isValid: (c, p) => ctx.validate(c, PlineContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
@@ -239,7 +241,7 @@ export function getModel(ctx: PluginContext) {
         bulge: -points[i === points.length - 1 ? 0 : i + 1].bulge,
       })),
     }),
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getPlineGeometries(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getPlineGeometries(content, contents).points),
   } as model.Model<PlineContent>
 }
 

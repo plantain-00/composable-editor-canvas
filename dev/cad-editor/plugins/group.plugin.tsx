@@ -7,6 +7,7 @@ export type GroupContent = model.BaseContent<'group'> & model.ContainerFields & 
 
 export function getModel(ctx: PluginContext): model.Model<GroupContent> {
   const GroupContent = ctx.and(ctx.BaseContent('group'), ctx.ContainerFields, ctx.ClipFields)
+  const getRefIds = (content: Omit<GroupContent, "type">) => content.contents
   return {
     type: 'group',
     ...ctx.containerModel,
@@ -47,11 +48,11 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
       return ctx.renderClipContent(content, ctx.getContainerRender(content, renderCtx), renderCtx)
     },
     renderIfSelected(content, renderCtx) {
-      const result = ctx.getContainerRenderIfSelected(content, renderCtx)
+      const result = ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds)
       return ctx.renderClipContentIfSelected(content, result, renderCtx)
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: ctx.getContainerGeometries,
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getRefIds),
     propertyPanel: (content, update, contents, { acquireContent }) => {
       return {
         ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
@@ -59,6 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, GroupContent, p),
+    getRefIds,
   }
 }
 

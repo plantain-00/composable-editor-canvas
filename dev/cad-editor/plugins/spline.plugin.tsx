@@ -23,9 +23,12 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     points: [ctx.Position],
     fitting: ctx.optional(ctx.boolean),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[] }>>()
-  function getSplineGeometries(content: Omit<SplineContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getSplineRefIds = (content: Omit<SplineContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getSplineArrowRefIds = (content: Omit<SplineArrowContent, "type">) => [content.strokeStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<SplineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
+  function getSplineGeometries(content: Omit<SplineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       let points: core.Position[]
       let lines: core.GeometryLine[]
       const splineSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount
@@ -59,9 +62,10 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       }
     })
   }
-  function getSplineArrowGeometries(content: Omit<SplineArrowContent, "type">): model.Geometries {
-    return ctx.getGeometriesFromCache(content, () => {
-      const geometry = getSplineGeometries(content)
+  function getSplineArrowGeometries(content: Omit<SplineArrowContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]): model.Geometries {
+    const refs = new Set(ctx.iterateRefContents(getSplineArrowRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
+      const geometry = getSplineGeometries(content, contents)
       let arrowPoints: core.Position[] | undefined
       let points = geometry.points
       if (content.points.length > 1) {
@@ -113,17 +117,17 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         ctx.mirrorPoint(point, line)
       }
     },
-    break(content, intersectionPoints) {
-      const lines = getSplineGeometries(content).lines
+    break(content, intersectionPoints, contents) {
+      const lines = getSplineGeometries(content, contents).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
     },
-    explode(content) {
-      const lines = getSplineGeometries(content).lines
+    explode(content, contents) {
+      const lines = getSplineGeometries(content, contents).lines
       return [{ type: 'path', commands: ctx.geometryLineToPathCommands(lines) } as PathContent]
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { points } = getSplineGeometries(content)
+      const { points } = getSplineGeometries(content, renderCtx.contents)
       return target.renderPolyline(points, options)
     },
     renderIfSelected(content, { color, target, strokeWidth }) {
@@ -160,7 +164,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       }
     },
     isValid: (c, p) => ctx.validate(c, SplineContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds: getSplineRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
@@ -180,7 +184,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       mirror: splineModel.mirror,
       render(content, renderCtx) {
         const { options, target, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-        const { regions, renderingLines } = getSplineArrowGeometries(content)
+        const { regions, renderingLines } = getSplineArrowGeometries(content, renderCtx.contents)
         const children: ReturnType<typeof target.renderGroup>[] = []
         for (const line of renderingLines) {
           children.push(target.renderPolyline(line, options))
@@ -220,7 +224,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
         }
       },
       isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
-      getRefIds: ctx.getStrokeRefIds,
+      getRefIds: getSplineArrowRefIds,
       updateRefId: ctx.updateStrokeRefIds,
       reverse: (content) => ({
         ...content,

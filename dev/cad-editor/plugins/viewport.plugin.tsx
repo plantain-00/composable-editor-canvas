@@ -4,6 +4,7 @@ import type { Command } from '../command'
 import type * as model from '../model'
 
 export function getModel(ctx: PluginContext): model.Model<model.ViewportContent> {
+  const getRefIds = (content: Omit<model.ViewportContent, "type">) => [content.strokeStyleId, content.border]
   function getViewportGeometriesFromCache(content: Omit<model.ViewportContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]): model.Geometries {
     const geometries = ctx.getContentModel(content.border)?.getGeometries?.(content.border, contents)
     if (geometries) {
@@ -106,7 +107,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
       }
     },
     isValid: (c, p) => ctx.validate(c, ctx.ViewportContent, p),
-    getRefIds: (content) => ctx.getStrokeRefIds(content),
+    getRefIds,
     updateRefId(content, update) {
       ctx.updateStrokeRefIds(content, update)
     },

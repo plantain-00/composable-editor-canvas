@@ -9,3 +9,7 @@ export function* iterateItemOrArray<T>(item: T | (T | undefined)[]): Generator<T
     yield item
   }
 }
+
+export function itemToArray<T>(item?: T | T[]): T[] {
+  return item === undefined ? [] : Array.isArray(item) ? item : [item]
+}

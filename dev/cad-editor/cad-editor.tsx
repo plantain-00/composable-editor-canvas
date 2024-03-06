@@ -423,7 +423,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       if (operations.type === 'operate' && operations.operate.name === 'zoom window') {
         if (activeViewportIndex !== undefined && activeViewport) {
-          const viewport = getViewportByPoints(activeViewport, polygon, activeViewport.rotate)
+          const viewport = getViewportByPoints(activeViewport, polygon, state, activeViewport.rotate)
           if (viewport) {
             setState((draft) => {
               draft = getContentByPath(draft)
@@ -464,7 +464,7 @@ export const CADEditor = React.forwardRef((props: {
     } else {
       // double click
       const point = reverseTransform(start)
-      const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point))
+      const activeIndex = editingContent.findIndex((e): e is ViewportContent => !!e && isViewportContent(e) && !!getContentModel(e.border)?.isPointIn?.(e.border, point, state))
       if (activeIndex >= 0) {
         if (activeViewportIndex === activeIndex && activeViewport) {
           const viewport = getDefaultViewport(activeViewport, state, activeViewport.rotate)
@@ -488,7 +488,7 @@ export const CADEditor = React.forwardRef((props: {
       if (index !== undefined) {
         const content = editingContent[index[0]]
         if (content) {
-          const child = getContentModel(content)?.getChildByPoint?.(content, point, { textStyleId })
+          const child = getContentModel(content)?.getChildByPoint?.(content, point, state, { textStyleId })
           if (child) {
             setActiveChild(child.child)
             if (child.patches) {
@@ -664,7 +664,7 @@ export const CADEditor = React.forwardRef((props: {
       onCommandMouseMove(s.position, viewportPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
     if (operations.type !== 'operate') {
-      let s: core.SnapResult<BaseContent<string>>
+      let s: core.SnapResult<BaseContent>
       if (editPoint && isViewportContent(editPoint.content)) {
         const viewport = editPoint.content
         s = getSnapPoint(model.reverseTransformPositionByViewport(p, editPoint.content), editingContent, getContentsInRange, lastPosition, c => model.transformPositionByViewport(c, viewport))

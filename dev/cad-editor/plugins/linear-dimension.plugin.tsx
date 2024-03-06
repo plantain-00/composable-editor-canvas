@@ -14,15 +14,17 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const linearDimensionCache = new ctx.WeakmapCache3<Omit<LinearDimensionContent, "type">, core.Position, core.Position, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
+  const getRefIds = (content: Omit<LinearDimensionContent, "type">) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
+  const linearDimensionCache = new ctx.WeakmapValuesCache<Omit<LinearDimensionContent, "type">, model.BaseContent, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
   const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
     const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
     return { p1, p2 }
   }
   function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const { p1, p2 } = getLinearDimensionPositions(content, contents)
-    return linearDimensionCache.get(content, p1, p2, () => {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return linearDimensionCache.get(content, refs, () => {
+      const { p1, p2 } = getLinearDimensionPositions(content, contents)
       return ctx.getLinearDimensionGeometries({ ...content, p1, p2 }, {
         arrowAngle: content.arrowAngle ?? ctx.dimensionStyle.arrowAngle,
         arrowSize: content.arrowSize ?? ctx.dimensionStyle.arrowSize,
@@ -183,11 +185,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
       }
     },
     isValid: (c, p) => ctx.validate(c, LinearDimensionContent, p),
-    getRefIds: (content) => [
-      ...ctx.getStrokeRefIds(content),
-      ...(content.ref1 && typeof content.ref1.id === 'number' ? [content.ref1.id] : []),
-      ...(content.ref2 && typeof content.ref2.id === 'number' ? [content.ref2.id] : []),
-    ],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref1) {
         const newRefId = update(content.ref1.id)

@@ -13,9 +13,11 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   const RectContent = ctx.and(ctx.BaseContent('rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
     angle: ctx.number
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], midpoints: core.Position[], lines: [core.Position, core.Position][] }>>()
-  function getRectGeometries(content: Omit<RectContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<RectContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<RectContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], midpoints: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getRectGeometries(content: Omit<RectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
         { x: content.x + content.width / 2, y: content.y - content.height / 2 },
@@ -50,9 +52,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       ctx.rotatePoint(content, center, angle)
       content.angle += angle
     },
-    scale(content, center, sx, sy) {
+    scale(content, center, sx, sy, contents) {
       if (content.angle) {
-        const points = ctx.produce(getRectGeometries(content).points, draft => {
+        const points = ctx.produce(getRectGeometries(content, contents).points, draft => {
           for (const p of draft) {
             ctx.scalePoint(p, center, sx, sy)
           }
@@ -64,23 +66,23 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.height *= sy
       return
     },
-    explode(content) {
-      const { lines } = getRectGeometries(content)
+    explode(content, contents) {
+      const { lines } = getRectGeometries(content, contents)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))
     },
-    break(content, intersectionPoints) {
-      const { lines } = getRectGeometries(content)
+    break(content, intersectionPoints, contents) {
+      const { lines } = getRectGeometries(content, contents)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
     mirror(content, line, angle) {
       ctx.mirrorPoint(content, line)
       content.angle = 2 * angle - content.angle
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getRectGeometries(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getRectGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= 2 * (this.isPointIn?.(content, point) ? -1 : 1)
+      distance *= 2 * (this.isPointIn?.(content, point, contents) ? -1 : 1)
       return ctx.produce(content, (d) => {
         d.width += distance
         d.height += distance
@@ -89,18 +91,18 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     render(content, renderCtx) {
       const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       if (dashed) {
-        const { points } = getRectGeometries(content)
+        const { points } = getRectGeometries(content, renderCtx.contents)
         return target.renderPolygon(points, options)
       }
       return target.renderRect(content.x - content.width / 2, content.y - content.height / 2, content.width, content.height, { ...options, angle: content.angle })
     },
-    getOperatorRenderPosition(content) {
-      const { points } = getRectGeometries(content)
+    getOperatorRenderPosition(content, contents) {
+      const { points } = getRectGeometries(content, contents)
       return points[0]
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points, midpoints } = getRectGeometries(content)
+        const { points, midpoints } = getRectGeometries(content, contents)
         return {
           editPoints: [
             { x: content.x, y: content.y, direction: 'center' as const },
@@ -135,9 +137,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
         }
       })
     },
-    getSnapPoints(content) {
+    getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { points, midpoints } = getRectGeometries(content)
+        const { points, midpoints } = getRectGeometries(content, contents)
         return [
           { x: content.x, y: content.y, type: 'center' },
           ...points.map((p) => ({ ...p, type: 'endpoint' as const })),
@@ -160,9 +162,9 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, RectContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getRectGeometries(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getRectGeometries(content, contents).points),
     getArea: (content) => content.width * content.height,
   }
 }

@@ -15,8 +15,9 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
     length: ctx.number,
     aligned: ctx.optional(ctx.boolean),
   })
+  const getRefIds = (content: Omit<PathArrayContent, 'type'>) => [content.path.id, ...content.contents]
   const allContentsCache = new ctx.WeakmapCache2<object, model.BaseContent, core.Nullable<model.BaseContent>[]>()
-  const getAllContentsFromCache = (content: Omit<PathArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent<string>>[]) => {
+  const getAllContentsFromCache = (content: Omit<PathArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const path = ctx.getRefPart(content.path, contents)
     if (!path) return []
     return allContentsCache.get(content, path, () => {
@@ -61,7 +62,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<PathArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent<string>>[]) => ctx.getContentsGeometries(content, c => getAllContentsFromCache(c, contents))
+  const getGeometries = (content: Omit<PathArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, c => getAllContentsFromCache(c, contents))
   const React = ctx.React
   return {
     type: 'path array',
@@ -93,7 +94,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
         ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
       }
     },
-    getRefIds: (content) => typeof content.path === 'number' ? [content.path] : [],
+    getRefIds,
     updateRefId(content, update) {
       if (content.path) {
         const newRefId = update(content.path.id)
@@ -110,7 +111,7 @@ export function isPathArrayContent(content: model.BaseContent): content is PathA
   return content.type === 'path array'
 }
 
-function pathContentSelectable(ctx: PluginContext, content: core.Nullable<model.BaseContent>, contents: readonly core.Nullable<model.BaseContent<string>>[]): boolean {
+function pathContentSelectable(ctx: PluginContext, content: core.Nullable<model.BaseContent>, contents: readonly core.Nullable<model.BaseContent>[]): boolean {
   if (!content) return false
   const geometries = ctx.getContentModel(content)?.getGeometries?.(content, contents)
   if (!geometries) return false
@@ -160,7 +161,7 @@ export function getCommand(ctx: PluginContext): Command {
           )
         } else if (path.current) {
           const children = target.current.map(c => contents[c[0]])
-          const bounding = ctx.getContentsBounding(children)
+          const bounding = ctx.getContentsBounding(children, contents)
           if (bounding) {
             const length = ctx.getTwoPointsDistance(bounding.start, bounding.end)
             onEnd({

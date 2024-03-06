@@ -9,7 +9,7 @@ export type HatchContent = model.BaseContent<'hatch'> & model.FillFields & {
   ref?: {
     point: core.Position
     end: core.Position
-    ids: (number | model.BaseContent)[]
+    ids: model.ContentRef[]
   }
 }
 
@@ -20,13 +20,31 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     ref: ctx.optional({
       point: ctx.Position,
       end: ctx.Position,
-      ids: [ctx.or(ctx.number, ctx.Content)],
+      ids: [ctx.ContentRef],
     }),
   })
+  const getRefIds = (content: Omit<HatchContent, "type">) => [content.fillStyleId, ...(content.ref?.ids || [])]
   const refGeometriesCache = new ctx.WeakmapValuesCache<object, model.BaseContent, model.Geometries<{ border: core.Position[], holes: core.Position[][] }>>()
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ border: core.Position[], holes: core.Position[][] }>>()
-  function getHatchGeometries(content: Omit<HatchContent, "type">, contents: readonly core.Nullable<model.BaseContent<string>>[]) {
-    const getDefault = (hatch: Omit<HatchContent, "type">) => geometriesCache.get(hatch, () => {
+  function getHatchGeometries(content: Omit<HatchContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return refGeometriesCache.get(content, refs, () => {
+      let hatch = content
+      if (content.ref && content.ref.ids.length > 0) {
+        const refContents = content.ref.ids.map(id => ctx.getReference(id, contents)).filter((d): d is model.BaseContent => !!d)
+        if (refContents.length > 0) {
+          const p = content.ref.point
+          const end = content.ref.end
+          const getGeometriesInRange = () => refContents.map(c => ctx.getContentHatchGeometries(c, contents))
+          const border = ctx.getHatchByPosition(p, end, getGeometriesInRange)
+          if (border) {
+            const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
+            hatch = {
+              border: border.lines,
+              holes: holes?.holes,
+            }
+          }
+        }
+      }
       const points = ctx.getGeometryLinesPoints(hatch.border)
       const holes = (hatch.holes || []).map(h => ctx.getGeometryLinesPoints(h))
       return {
@@ -44,26 +62,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         ],
       }
     })
-    if (content.ref && content.ref.ids.length > 0) {
-      const refContents = content.ref.ids.map(id => ctx.getReference(id, contents)).filter((d): d is model.BaseContent => !!d)
-      if (refContents.length > 0) {
-        const p = content.ref.point
-        const end = content.ref.end
-        return refGeometriesCache.get(content, refContents, () => {
-          const getGeometriesInRange = () => refContents.map(c => ctx.getContentHatchGeometries(c, contents))
-          const border = ctx.getHatchByPosition(p, end, getGeometriesInRange)
-          if (border) {
-            const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
-            return getDefault({
-              border: border.lines,
-              holes: holes?.holes,
-            })
-          }
-          return getDefault(content)
-        })
-      }
-    }
-    return getDefault(content)
   }
   return {
     type: 'hatch',
@@ -140,10 +138,7 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, HatchContent, p),
-    getRefIds: (content) => [
-      ...ctx.getFillRefIds(content),
-      ...(content.ref?.ids || []).filter((d): d is number => typeof d === 'number'),
-    ],
+    getRefIds,
     updateRefId(content, update) {
       if (content.ref) {
         for (const [i, id] of content.ref.ids.entries()) {

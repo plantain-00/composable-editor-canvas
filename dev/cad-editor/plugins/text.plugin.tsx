@@ -21,6 +21,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     angle: ctx.optional(ctx.number),
     scale: ctx.optional(ctx.or(ctx.number, ctx.Position)),
   })
+  const getRefIds = (content: Omit<TextContent, "type">) => [content.textStyleId]
   const textLayoutResultCache = new ctx.WeakmapCache2<object, object, ReturnType<typeof ctx.flowLayout<string>>>()
   function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, c: model.TextFields, variableContext?: Record<string, unknown>) {
     return textLayoutResultCache.get(content, c, () => {
@@ -51,8 +52,9 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     }
     return content.text
   }
-  function getTextGeometries(content: Omit<TextContent, "type">, contents: readonly core.Nullable<model.BaseContent<string>>[]) {
-    return ctx.getGeometriesFromCache(content, () => {
+  function getTextGeometries(content: Omit<TextContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return ctx.getGeometriesFromCache(content, refs, () => {
       let points: core.Position[]
       if (hasWidth(content)) {
         const textStyleContent = ctx.getTextStyleContent(content, contents)
@@ -251,6 +253,10 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       }} textarea autoFocus onCancel={cancel} value={content.text} setValue={(v) => update(c => { if (isTextContent(c)) { c.text = v } })} />
     },
     isValid: (c, p) => ctx.validate(c, TextContent, p),
+    getRefIds,
+    updateRefId(content, update) {
+      ctx.updateTextStyleRefIds(content, update)
+    },
     getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : [],
   }
 }

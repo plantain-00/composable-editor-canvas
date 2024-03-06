@@ -95,7 +95,7 @@ export class WeakmapCache4<TKey1 extends object, TKey2 extends object, TKey3 ext
 export class WeakmapValuesCache<TTarget extends object, TKey extends object, TValue> {
   private caches = new WeakMap<TTarget, WeakValuesChangedCache<TKey, TValue>>()
 
-  public get(target: TTarget, keys: TKey[], func: () => TValue) {
+  public get(target: TTarget, keys: TKey[] | Set<TKey>, func: () => TValue) {
     let cache = this.caches.get(target)
     if (!cache) {
       cache = new WeakValuesChangedCache<TKey, TValue>()

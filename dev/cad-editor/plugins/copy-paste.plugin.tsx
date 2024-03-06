@@ -19,7 +19,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         const ids: number[] = []
         contents.forEach((content, index) => {
           if (content && ctx.isSelected([index], selected)) {
-            for (const id of iterateRefContents(index, contents, ctx)) {
+            for (const id of ctx.iterateRefIds([index], contents)) {
               const index = ids.indexOf(id)
               if (index >= 0) {
                 ids.splice(index, 1)
@@ -166,23 +166,6 @@ export function getCommand(ctx: PluginContext): Command[] {
       selectCount: 0,
     },
   ]
-}
-
-function* iterateRefContents(
-  id: number,
-  contents: core.Nullable<model.BaseContent>[],
-  ctx: PluginContext,
-): Generator<number, void, unknown> {
-  yield id
-  const content = contents[id]
-  if (content) {
-    const refIds = ctx.getContentModel(content)?.getRefIds?.(content)
-    if (refIds) {
-      for (const refId of refIds) {
-        yield* iterateRefContents(refId, contents, ctx)
-      }
-    }
-  }
 }
 
 export interface CopyData {

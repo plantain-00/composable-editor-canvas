@@ -9,7 +9,7 @@ export type PointContent = model.BaseContent<'point'> & core.Position
 export function getModel(ctx: PluginContext): model.Model<PointContent> {
   const PointContent = ctx.and(ctx.BaseContent('point'), ctx.Position)
   function getPointGeometries(content: Omit<PointContent, "type">) {
-    return ctx.getGeometriesFromCache(content, () => {
+    return ctx.getGeometriesFromCache(content, new Set(), () => {
       return {
         lines: [[content, content]],
         bounding: ctx.getPointsBounding([content]),

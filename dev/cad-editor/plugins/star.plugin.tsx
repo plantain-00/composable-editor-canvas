@@ -18,9 +18,11 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     count: ctx.number,
     angle: ctx.optional(ctx.number),
   })
-  const geometriesCache = new ctx.WeakmapCache<object, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
-  function getStarGeometriesFromCache(content: Omit<StarContent, "type">) {
-    return geometriesCache.get(content, () => {
+  const getRefIds = (content: Omit<StarContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<StarContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
+  function getStarGeometriesFromCache(content: Omit<StarContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    return geometriesCache.get(content, refs, () => {
       const angle = -(content.angle ?? 0)
       const p0 = ctx.rotatePositionByCenter({ x: content.x + content.outerRadius, y: content.y }, content, angle)
       const p1 = ctx.rotatePositionByCenter({ x: content.x + content.innerRadius, y: content.y }, content, angle + 180 / content.count)
@@ -55,9 +57,9 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
-    scale(content, center, sx, sy) {
+    scale(content, center, sx, sy, contents) {
       if (sx !== sy) {
-        const points = ctx.produce(getStarGeometriesFromCache(content).points, draft => {
+        const points = ctx.produce(getStarGeometriesFromCache(content, contents).points, draft => {
           for (const p of draft) {
             ctx.scalePoint(p, center, sx, sy)
           }
@@ -69,15 +71,15 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       content.outerRadius *= sy
       return
     },
-    break(content, intersectionPoints) {
-      const { lines } = getStarGeometriesFromCache(content)
+    break(content, intersectionPoints, contents) {
+      const { lines } = getStarGeometriesFromCache(content, contents)
       return ctx.breakPolyline(lines, intersectionPoints)
     },
-    offset(content, point, distance) {
+    offset(content, point, distance, contents) {
       if (!distance) {
-        distance = Math.min(...getStarGeometriesFromCache(content).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+        distance = Math.min(...getStarGeometriesFromCache(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      distance *= this.isPointIn?.(content, point) ? -1 : 1
+      distance *= this.isPointIn?.(content, point, contents) ? -1 : 1
       const angle = Math.PI / content.count
       const length = Math.sqrt(content.innerRadius ** 2 + content.outerRadius ** 2 - 2 * content.innerRadius * content.outerRadius * Math.cos(angle))
       distance *= length / Math.sin(angle)
@@ -88,12 +90,12 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
-      const { points } = getStarGeometriesFromCache(content)
+      const { points } = getStarGeometriesFromCache(content, renderCtx.contents)
       return target.renderPolygon(points, options)
     },
-    getEditPoints(content) {
+    getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { points } = getStarGeometriesFromCache(content)
+        const { points } = getStarGeometriesFromCache(content, contents)
         return {
           editPoints: [
             {
@@ -143,9 +145,9 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       }
     },
     isValid: (c, p) => ctx.validate(c, StarContent, p),
-    getRefIds: ctx.getStrokeAndFillRefIds,
+    getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isPointIn: (content, point) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content).points),
+    isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content, contents).points),
   }
 }
 
