@@ -55,7 +55,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
   }>>()
   const textLayoutResultCache = new ctx.WeakmapMap3Cache<object, object, number, number, ReturnType<typeof ctx.flowLayout<string>>>()
   const getGeometries = (content: Omit<TableContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const lines: [core.Position, core.Position][] = []
       const width = content.widths.reduce((p, c) => p + c, 0)

@@ -30,7 +30,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     ...ctx.containerModel,
     explode: ctx.getContainerExplode,
     render: ctx.getContainerRender,
-    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getBlockRefIds),
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, [content], getBlockRefIds),
     getOperatorRenderPosition(content) {
       return content.base
     },
@@ -56,7 +56,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
       })
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getBlockRefIds),
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getBlockRefIds, [content]),
     propertyPanel(content, update, _, { acquirePoint }) {
       return {
         base: <ctx.ObjectEditor
@@ -103,7 +103,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     return newResult || result
   }
   function getBlockReferenceGeometries(content: BlockReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getBlockReferenceRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getBlockReferenceRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const block = ctx.getReference(content.refId, contents, isBlockContent)
       if (block) {
@@ -213,7 +213,7 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     renderIfSelected(content, renderCtx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent)
       if (block) {
-        const children = ctx.renderContainerIfSelected(block, renderCtx, getBlockRefIds)
+        const children = ctx.renderContainerIfSelected(block, renderCtx, [content], getBlockRefIds)
         return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle, scale: content.scale })
       }
       return renderCtx.target.renderEmpty()

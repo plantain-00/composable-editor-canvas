@@ -43,7 +43,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<RectArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, getAllContentsFromCache)
+  const getGeometries = (content: Omit<RectArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, [content], getAllContentsFromCache)
   const React = ctx.React
   return {
     type: 'rect array',

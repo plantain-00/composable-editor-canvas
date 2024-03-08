@@ -43,7 +43,7 @@ export function getCommand(ctx: PluginContext): Command {
               }
             },
             r => {
-              border.current = ctx.getRefPart(r[0], contents)
+              border.current = ctx.getRefPart(r[0], contents, (c): c is model.BaseContent => c !== selected[0].content)
             },
           )
         } else if (border.current) {

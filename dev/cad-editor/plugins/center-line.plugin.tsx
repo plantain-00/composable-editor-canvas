@@ -16,7 +16,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
   })
   const getRefIds = (content: CenterLineReferenceContent) => [content.ref1.id, content.ref2.id]
   function getCenterLineGeometriesFromCache(content: CenterLineReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent)
       const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent)

@@ -20,10 +20,10 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
   })
   const getRefIds = (content: ArrowContent) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
   function getArrowGeometriesFromCache(content: ArrowContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
-      const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
-      const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
+      const p1 = ctx.getRefPosition(content.ref1, contents, [content]) ?? content.p1
+      const p2 = ctx.getRefPosition(content.ref2, contents, [content]) ?? content.p2
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content)
       const points = [p1, endPoint]
       return {

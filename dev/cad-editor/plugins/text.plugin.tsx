@@ -53,7 +53,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     return content.text
   }
   function getTextGeometries(content: Omit<TextContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       let points: core.Position[]
       if (hasWidth(content)) {

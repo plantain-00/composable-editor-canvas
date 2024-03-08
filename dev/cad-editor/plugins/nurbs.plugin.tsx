@@ -11,7 +11,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
   const getRefIds = (content: Omit<NurbsContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<NurbsContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getNurbsGeometries(content: Omit<NurbsContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       let points: core.Position[]
       const nurbsSegmentCount = content.segmentCount ?? ctx.defaultSegmentCount

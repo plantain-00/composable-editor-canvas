@@ -15,7 +15,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
   })
   const getRefIds = (content: Omit<RingContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const angleDelta = content.angleDelta ?? ctx.defaultAngleDelta
       const arc1 = ctx.circleToArc({ ...content, r: content.outerRadius })

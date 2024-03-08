@@ -70,6 +70,10 @@ export function deepEquals<T>(a: T, b: T): boolean {
   return false
 }
 
+export function shallowEquals(a: unknown, b: unknown) {
+  return a === b
+}
+
 export function getTwoNumbersDistance(n1: number, n2: number) {
   return Math.abs(n1 - n2)
 }

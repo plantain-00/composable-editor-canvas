@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   const getRefIds = (content: RadialDimensionReferenceContent) => [content.strokeStyleId, content.ref.id]
   const radialDimensionReferenceCache = new ctx.WeakmapValuesCache<Omit<RadialDimensionReferenceContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getRadialDimensionReferenceGeometriesFromCache(content: RadialDimensionReferenceContent, contents: readonly core.Nullable<model.BaseContent>[], patches?: Patch[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return radialDimensionReferenceCache.get(content, refs, () => {
       const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches)
       if (target) {

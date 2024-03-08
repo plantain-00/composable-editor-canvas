@@ -60,7 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<PolarArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, c => getAllContentsFromCache(c, contents))
+  const getGeometries = (content: Omit<PolarArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, [content], c => getAllContentsFromCache(c, contents))
   const React = ctx.React
   return {
     type: 'polar array',

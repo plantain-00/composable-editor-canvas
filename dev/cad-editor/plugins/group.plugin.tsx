@@ -48,11 +48,11 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
       return ctx.renderClipContent(content, ctx.getContainerRender(content, renderCtx), renderCtx)
     },
     renderIfSelected(content, renderCtx) {
-      const result = ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds)
+      const result = ctx.getContainerRenderIfSelected(content, renderCtx, [content], getRefIds)
       return ctx.renderClipContentIfSelected(content, result, renderCtx)
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getRefIds),
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getRefIds, [content]),
     propertyPanel: (content, update, contents, { acquireContent }) => {
       return {
         ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),

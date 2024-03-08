@@ -12,11 +12,11 @@ function getModel(ctx) {
     return [content.strokeStyleId, (_a = content.ref1) == null ? void 0 : _a.id, (_b = content.ref2) == null ? void 0 : _b.id];
   };
   function getArrowGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       var _a, _b;
-      const p1 = (_a = ctx.getRefPosition(content.ref1, contents)) != null ? _a : content.p1;
-      const p2 = (_b = ctx.getRefPosition(content.ref2, contents)) != null ? _b : content.p2;
+      const p1 = (_a = ctx.getRefPosition(content.ref1, contents, [content])) != null ? _a : content.p1;
+      const p2 = (_b = ctx.getRefPosition(content.ref2, contents, [content])) != null ? _b : content.p2;
       const { arrowPoints, endPoint } = ctx.getArrowPoints(p1, p2, content);
       const points = [p1, endPoint];
       return {
@@ -295,7 +295,7 @@ function getModel(ctx) {
     ...ctx.containerModel,
     explode: ctx.getContainerExplode,
     render: ctx.getContainerRender,
-    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getBlockRefIds),
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, [content], getBlockRefIds),
     getOperatorRenderPosition(content) {
       return content.base;
     },
@@ -321,7 +321,7 @@ function getModel(ctx) {
       });
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getBlockRefIds),
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getBlockRefIds, [content]),
     propertyPanel(content, update, _, { acquirePoint }) {
       return {
         base: /* @__PURE__ */ React.createElement(
@@ -379,7 +379,7 @@ function getModel(ctx) {
     return newResult || result;
   }
   function getBlockReferenceGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getBlockReferenceRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getBlockReferenceRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const block = ctx.getReference(content.refId, contents, isBlockContent);
       if (block) {
@@ -492,7 +492,7 @@ function getModel(ctx) {
     renderIfSelected(content, renderCtx) {
       const block = ctx.getReference(content.refId, renderCtx.contents, isBlockContent);
       if (block) {
-        const children = ctx.renderContainerIfSelected(block, renderCtx, getBlockRefIds);
+        const children = ctx.renderContainerIfSelected(block, renderCtx, [content], getBlockRefIds);
         return renderCtx.target.renderGroup([children], { translate: content, base: block.base, angle: content.angle, scale: content.scale });
       }
       return renderCtx.target.renderEmpty();
@@ -804,7 +804,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.ref1.id, content.ref2.id];
   function getCenterLineGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent);
       const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent);
@@ -938,7 +938,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.ref.id];
   function getCenterMarkGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const target = ctx.getRefPart(content.ref, contents, contentSelectable);
       if (target) {
@@ -1173,13 +1173,13 @@ function getModel(ctx) {
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r);
       return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r }), contents) };
     }
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return circleGeometriesCache.get(content, refs, () => {
       return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content), contents) };
     });
   }
   function getArcGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return arcGeometriesCache.get(content, refs, () => {
       var _a;
       const points = ctx.arcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
@@ -1828,7 +1828,7 @@ function getCommand(ctx) {
               }
             },
             (r) => {
-              border.current = ctx.getRefPart(r[0], contents);
+              border.current = ctx.getRefPart(r[0], contents, (c) => c !== selected[0].content);
             }
           );
         } else if (border.current) {
@@ -1953,7 +1953,7 @@ function getModel(ctx) {
   const CombinedPathContent = ctx.and(ctx.BaseContent("combined path"), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields);
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const getGeometries = (content, contents) => {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = [];
       const result = [];
@@ -2009,7 +2009,7 @@ function getModel(ctx) {
         return renderCtx.target.renderPolyline(line, options);
       }));
     },
-    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds),
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, [content], getRefIds),
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries,
     propertyPanel(content, update, contents) {
@@ -2104,7 +2104,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.strokeStyleId];
   function getGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const yMin = content.flipY ? -content.yMax : content.yMin;
       const yMax = content.flipY ? -content.yMin : content.yMax;
@@ -2892,7 +2892,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x, y: content.y - content.height / 2 },
@@ -3150,7 +3150,7 @@ function getModel(ctx) {
   const ellipseGeometriesCache = new ctx.WeakmapValuesCache();
   const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache();
   function getEllipseGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ellipseGeometriesCache.get(content, refs, () => {
       var _a;
       const points = ctx.ellipseToPolygon(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
@@ -3184,7 +3184,7 @@ function getModel(ctx) {
     });
   }
   function getEllipseArcGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ellipseArcGeometriesCache.get(content, refs, () => {
       var _a;
       const points = ctx.ellipseArcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
@@ -3761,7 +3761,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.axisId];
   const equationCache = new ctx.WeakmapValuesCache();
   function getGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return equationCache.get(content, refs, () => {
       var _a;
       const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
@@ -4606,11 +4606,11 @@ function getModel(ctx) {
       return ctx.renderClipContent(content, ctx.getContainerRender(content, renderCtx), renderCtx);
     },
     renderIfSelected(content, renderCtx) {
-      const result = ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds);
+      const result = ctx.getContainerRenderIfSelected(content, renderCtx, [content], getRefIds);
       return ctx.renderClipContentIfSelected(content, result, renderCtx);
     },
     getSnapPoints: ctx.getContainerSnapPoints,
-    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getRefIds),
+    getGeometries: (content, contents) => ctx.getContainerGeometries(content, contents, getRefIds, [content]),
     propertyPanel: (content, update, contents, { acquireContent }) => {
       return {
         ...ctx.getVariableValuesContentPropertyPanel(content, ctx.getContainerVariableNames(content), update),
@@ -4668,11 +4668,11 @@ function getModel(ctx) {
   };
   const refGeometriesCache = new ctx.WeakmapValuesCache();
   function getHatchGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return refGeometriesCache.get(content, refs, () => {
       let hatch = content;
       if (content.ref && content.ref.ids.length > 0) {
-        const refContents = content.ref.ids.map((id) => ctx.getReference(id, contents)).filter((d) => !!d);
+        const refContents = content.ref.ids.map((id) => ctx.getReference(id, contents)).filter((d) => !!d && !ctx.shallowEquals(d, content));
         if (refContents.length > 0) {
           const p = content.ref.point;
           const end = content.ref.end;
@@ -5101,29 +5101,32 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.ref];
   const leadCache = new ctx.WeakmapValuesCache();
   function getLeadGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return leadCache.get(content, refs, () => {
       var _a, _b, _c;
-      const ref = ctx.getReference(content.ref, contents);
+      const ref = ctx.getReference(content.ref, contents, (c) => !ctx.shallowEquals(c, content));
       let p0 = content.points[0];
       let line;
       if (ref && content.points.length > 1) {
         const lines2 = (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c.lines;
         if (lines2) {
           const p = ctx.getPerpendicularPointToGeometryLines(content.points[1], lines2);
-          p0 = p.point;
-          line = p.line;
+          if (p) {
+            p0 = p.point;
+            line = p.line;
+          }
         }
       }
-      let lines;
+      let points;
       let arrow;
       if (content.points.length > 1) {
         const arrowPoints = ctx.getArrowPoints(content.points[1], p0, content);
         arrow = arrowPoints.arrowPoints;
-        lines = Array.from(ctx.iteratePolylineLines([arrowPoints.endPoint, ...content.points.slice(1)]));
+        points = [arrowPoints.endPoint, ...content.points.slice(1)];
       } else {
-        lines = [];
+        points = [];
       }
+      let extendLine;
       if (line) {
         const { start, end } = ctx.getGeometryLineStartAndEnd(line);
         if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
@@ -5131,14 +5134,14 @@ function getModel(ctx) {
           line = ctx.getPartOfGeometryLine(param0, 0, line);
           const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin);
           if (marginParam !== void 0) {
-            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line));
+            extendLine = ctx.getPartOfGeometryLine(marginParam, 1, line);
           }
         } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
           const param0 = ctx.getGeometryLineParamAtPoint(p0, line);
           line = ctx.getPartOfGeometryLine(param0, 1, line);
           const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin);
           if (marginParam !== void 0) {
-            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line));
+            extendLine = ctx.getPartOfGeometryLine(marginParam, 1, line);
           }
         }
       }
@@ -5155,9 +5158,15 @@ function getModel(ctx) {
         { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
         { x: last.x, y: last.y + size.height / 2 }
       ];
-      const points = lines.map((line2) => ctx.getGeometryLinesPoints([line2]));
+      const lines = Array.from(ctx.iteratePolylineLines(points));
+      const renderingLines = ctx.dashedPolylineToLines(points, content.dashArray);
+      if (extendLine) {
+        lines.push(extendLine);
+        renderingLines.push(...ctx.dashedPolylineToLines(ctx.getGeometryLinesPoints([extendLine])));
+      }
       return {
         lines,
+        first: p0,
         last,
         right,
         bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
@@ -5171,7 +5180,7 @@ function getModel(ctx) {
             lines: Array.from(ctx.iteratePolygonLines(arrow))
           }] : []
         ],
-        renderingLines: points.map((p) => ctx.dashedPolylineToLines(p, content.dashArray)).flat()
+        renderingLines
       };
     });
   }
@@ -5184,6 +5193,22 @@ function getModel(ctx) {
     move(content, offset) {
       for (const point of content.points) {
         ctx.movePoint(point, offset);
+      }
+    },
+    rotate(content, center, angle) {
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle);
+      }
+    },
+    scale(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, sx, sy);
+      }
+      content.fontSize *= Math.abs(sx);
+    },
+    mirror(content, line) {
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line);
       }
     },
     render(content, renderCtx) {
@@ -5208,6 +5233,41 @@ function getModel(ctx) {
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx);
       children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: "middle", textAlign: right ? "left" : "right" }));
       return target.renderGroup(children);
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const geometries = getLeadGeometriesFromCache(content, contents);
+        return {
+          editPoints: content.points.map((p, i) => {
+            if (i === 0) {
+              p = geometries.first;
+            }
+            return {
+              ...p,
+              cursor: "move",
+              update(c, { cursor, start, scale }) {
+                if (!isLeadContent(c)) {
+                  return;
+                }
+                c.points[i].x += cursor.x - start.x;
+                c.points[i].y += cursor.y - start.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start, cursor] }] };
+              }
+            };
+          })
+        };
+      });
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const geometries = getLeadGeometriesFromCache(content, contents);
+        return content.points.map((p, i) => {
+          if (i === 0) {
+            p = geometries.first;
+          }
+          return { ...p, type: "endpoint" };
+        });
+      });
     },
     getGeometries: getLeadGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {
@@ -5452,7 +5512,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getPolylineGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
       return {
@@ -5842,12 +5902,12 @@ function getModel(ctx) {
   const linearDimensionCache = new ctx.WeakmapValuesCache();
   const getLinearDimensionPositions = (content, contents) => {
     var _a, _b;
-    const p1 = (_a = ctx.getRefPosition(content.ref1, contents)) != null ? _a : content.p1;
-    const p2 = (_b = ctx.getRefPosition(content.ref2, contents)) != null ? _b : content.p2;
+    const p1 = (_a = ctx.getRefPosition(content.ref1, contents, [content])) != null ? _a : content.p1;
+    const p2 = (_b = ctx.getRefPosition(content.ref2, contents, [content])) != null ? _b : content.p2;
     return { p1, p2 };
   };
   function getLinearDimensionGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return linearDimensionCache.get(content, refs, () => {
       var _a, _b;
       const { p1, p2 } = getLinearDimensionPositions(content, contents);
@@ -6464,7 +6524,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getNurbsGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       var _a;
       let points;
@@ -6815,7 +6875,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.axisId];
   const equationCache = new ctx.WeakmapValuesCache();
   function getGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return equationCache.get(content, refs, () => {
       var _a;
       const axis = ctx.getReference(content.axisId, contents, isCoordinateAxisContent);
@@ -6937,7 +6997,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.path.id, ...content.contents];
   const allContentsCache = new ctx.WeakmapCache2();
   const getAllContentsFromCache = (content, contents) => {
-    const path = ctx.getRefPart(content.path, contents);
+    const path = ctx.getRefPart(content.path, contents, (c) => !ctx.shallowEquals(c, content));
     if (!path)
       return [];
     return allContentsCache.get(content, path, () => {
@@ -6988,7 +7048,7 @@ function getModel(ctx) {
       return result;
     });
   };
-  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, (c) => getAllContentsFromCache(c, contents));
+  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, [content], (c) => getAllContentsFromCache(c, contents));
   const React = ctx.React;
   return {
     type: "path array",
@@ -7141,7 +7201,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   function getPathGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = ctx.pathCommandsToGeometryLines(content.commands)[0];
       const points = ctx.getGeometryLinesPoints(lines);
@@ -7695,7 +7755,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.strokeStyleId];
   function getGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points));
       return {
@@ -7790,7 +7850,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getPlineGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const lines = [];
       const centers = [];
@@ -8313,7 +8373,7 @@ function getModel(ctx) {
       return result;
     });
   };
-  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, (c) => getAllContentsFromCache(c, contents));
+  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, [content], (c) => getAllContentsFromCache(c, contents));
   const React = ctx.React;
   return {
     type: "polar array",
@@ -8617,7 +8677,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getPolygonGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points));
       return {
@@ -8824,7 +8884,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.ref.id];
   const radialDimensionReferenceCache = new ctx.WeakmapValuesCache();
   function getRadialDimensionReferenceGeometriesFromCache(content, contents, patches) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return radialDimensionReferenceCache.get(content, refs, () => {
       var _a, _b;
       const target = ctx.getRefPart(content.ref, contents, contentSelectable, patches);
@@ -9092,7 +9152,7 @@ function getModel(ctx) {
   const RayContent = ctx.and(ctx.BaseContent("ray"), ctx.StrokeFields, ctx.Ray);
   const getRefIds = (content) => [content.strokeStyleId];
   function getRayGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       return {
         lines: [{ type: "ray", line: content }],
@@ -9276,7 +9336,7 @@ function getModel(ctx) {
       return result;
     });
   };
-  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, getAllContentsFromCache);
+  const getGeometries = (content, contents) => ctx.getContentsGeometries(content, contents, getRefIds, [content], getAllContentsFromCache);
   const React = ctx.React;
   return {
     type: "rect array",
@@ -9504,7 +9564,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getRectGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },
@@ -9751,7 +9811,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getRegularPolygonGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       var _a;
       const angle = -((_a = content.angle) != null ? _a : 0);
@@ -9988,7 +10048,7 @@ function getModel(ctx) {
   });
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   function getRingGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       var _a;
       const angleDelta = (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta;
@@ -10267,7 +10327,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       var _a;
       const rectPoints = [
@@ -10628,7 +10688,7 @@ function getModel(ctx) {
   const getSplineArrowRefIds = (content) => [content.strokeStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getSplineGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       var _a;
       let points;
@@ -10665,7 +10725,7 @@ function getModel(ctx) {
     });
   }
   function getSplineArrowGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getSplineArrowRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getSplineArrowRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const geometry = getSplineGeometries(content, contents);
       let arrowPoints;
@@ -10979,7 +11039,7 @@ function getModel(ctx) {
   const getRefIds = (content) => [content.strokeStyleId, content.fillStyleId];
   const geometriesCache = new ctx.WeakmapValuesCache();
   function getStarGeometriesFromCache(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       var _a;
       const angle = -((_a = content.angle) != null ? _a : 0);
@@ -11390,7 +11450,7 @@ function getModel(ctx) {
   const geometriesCache = new ctx.WeakmapValuesCache();
   const textLayoutResultCache = new ctx.WeakmapMap3Cache();
   const getGeometries = (content, contents) => {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
       const lines = [];
       const width = content.widths.reduce((p, c) => p + c, 0);
@@ -12099,7 +12159,7 @@ function getModel(ctx) {
     return content.text;
   }
   function getTextGeometries(content, contents) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, () => {
       let points;
       if (hasWidth(content)) {
@@ -12522,7 +12582,7 @@ function getModel(ctx) {
     if (time) {
       return getGeometries();
     }
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents));
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return ctx.getGeometriesFromCache(content, refs, getGeometries);
   }
   const React = ctx.React;

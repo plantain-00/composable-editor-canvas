@@ -17,12 +17,12 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
   const getRefIds = (content: Omit<LinearDimensionContent, "type">) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
   const linearDimensionCache = new ctx.WeakmapValuesCache<Omit<LinearDimensionContent, "type">, model.BaseContent, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
   const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
-    const p1 = ctx.getRefPosition(content.ref1, contents) ?? content.p1
-    const p2 = ctx.getRefPosition(content.ref2, contents) ?? content.p2
+    const p1 = ctx.getRefPosition(content.ref1, contents, [content]) ?? content.p1
+    const p2 = ctx.getRefPosition(content.ref2, contents, [content]) ?? content.p2
     return { p1, p2 }
   }
   function getLinearDimensionGeometriesFromCache(content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return linearDimensionCache.get(content, refs, () => {
       const { p1, p2 } = getLinearDimensionPositions(content, contents)
       return ctx.getLinearDimensionGeometries({ ...content, p1, p2 }, {

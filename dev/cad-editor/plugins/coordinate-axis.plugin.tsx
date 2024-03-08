@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
   })
   const getRefIds = (content: Omit<CoordinateAxisContent, "type">) => [content.strokeStyleId]
   function getGeometriesFromCache(content: Omit<CoordinateAxisContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const yMin = content.flipY ? -content.yMax : content.yMin
       const yMax = content.flipY ? -content.yMin : content.yMax
