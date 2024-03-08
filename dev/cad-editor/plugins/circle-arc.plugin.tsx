@@ -32,13 +32,13 @@ export function getModel(ctx: PluginContext) {
       const r = ctx.getTimeExpressionValue(content.rExpression, time, content.r)
       return { quadrantPoints, ...getArcGeometries(ctx.circleToArc({ ...content, x, y, r }), contents) }
     }
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return circleGeometriesCache.get(content, refs, () => {
       return { quadrantPoints, ...getArcGeometries(ctx.circleToArc(content), contents) }
     })
   }
   function getArcGeometries(content: Omit<ArcContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return arcGeometriesCache.get(content, refs, () => {
       const points = ctx.arcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const middleAngle = ctx.getTwoNumberCenter(content.startAngle, ctx.getFormattedEndAngle(content))

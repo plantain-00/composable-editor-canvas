@@ -13,7 +13,7 @@ export function getModel(ctx: PluginContext): model.Model<PenContent> {
   })
   const getRefIds = (content: Omit<PenContent, "type">) => [content.strokeStyleId]
   function getGeometries(content: Omit<PenContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = Array.from(ctx.iteratePolylineLines(content.points))
       return {

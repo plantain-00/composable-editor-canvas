@@ -16,7 +16,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   const getRefIds = (content: Omit<RectContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<RectContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], midpoints: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getRectGeometries(content: Omit<RectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x - content.width / 2, y: content.y - content.height / 2 },

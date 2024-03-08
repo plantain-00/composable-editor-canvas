@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
   const getRefIds = (content: Omit<PathArrayContent, 'type'>) => [content.path.id, ...content.contents]
   const allContentsCache = new ctx.WeakmapCache2<object, model.BaseContent, core.Nullable<model.BaseContent>[]>()
   const getAllContentsFromCache = (content: Omit<PathArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
-    const path = ctx.getRefPart(content.path, contents)
+    const path = ctx.getRefPart(content.path, contents, (c): c is model.BaseContent => !ctx.shallowEquals(c, content))
     if (!path) return []
     return allContentsCache.get(content, path, () => {
       const lines = ctx.getContentModel(path)?.getGeometries?.(path, contents).lines
@@ -62,7 +62,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
       return result
     })
   }
-  const getGeometries = (content: Omit<PathArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, c => getAllContentsFromCache(c, contents))
+  const getGeometries = (content: Omit<PathArrayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => ctx.getContentsGeometries(content, contents, getRefIds, [content], c => getAllContentsFromCache(c, contents))
   const React = ctx.React
   return {
     type: 'path array',

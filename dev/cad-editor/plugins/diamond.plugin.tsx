@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
   const getRefIds = (content: Omit<DiamondContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<DiamondContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getGeometries(content: Omit<DiamondContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const points = [
         { x: content.x, y: content.y - content.height / 2 },

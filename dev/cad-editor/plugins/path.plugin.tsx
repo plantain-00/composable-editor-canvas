@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
   })
   const getRefIds = (content: Omit<PathContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   function getPathGeometriesFromCache(content: Omit<PathContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines = ctx.pathCommandsToGeometryLines(content.commands)[0]
       const points = ctx.getGeometryLinesPoints(lines)

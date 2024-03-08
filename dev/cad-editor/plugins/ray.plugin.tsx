@@ -10,7 +10,7 @@ export function getModel(ctx: PluginContext) {
   const RayContent = ctx.and(ctx.BaseContent('ray'), ctx.StrokeFields, ctx.Ray)
   const getRefIds = (content: Omit<RayContent, "type">) => [content.strokeStyleId]
   function getRayGeometries(content: Omit<RayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       return {
         lines: [{ type: 'ray', line: content }],

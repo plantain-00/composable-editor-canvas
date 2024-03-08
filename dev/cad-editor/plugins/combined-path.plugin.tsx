@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
   const CombinedPathContent = ctx.and(ctx.BaseContent('combined path'), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields)
   const getRefIds = (content: Omit<CombinedPathContent, 'type'>) => [content.strokeStyleId, content.fillStyleId]
   const getGeometries = (content: CombinedPathContent, contents: readonly core.Nullable<model.BaseContent>[]) => {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const lines: core.GeometryLine[] = []
       const result: { points: core.Position[] }[] = []
@@ -67,7 +67,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
         return renderCtx.target.renderPolyline(line, options)
       }))
     },
-    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, getRefIds),
+    renderIfSelected: (content, renderCtx) => ctx.getContainerRenderIfSelected(content, renderCtx, [content], getRefIds),
     getSnapPoints: ctx.getContainerSnapPoints,
     getGeometries,
     propertyPanel(content, update, contents) {

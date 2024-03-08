@@ -544,7 +544,7 @@ export function getTextGraphic(
       canvas,
     }
   }
-  const imageDataInfo = options?.cacheKey ? textCanvasCache.get(options.cacheKey, getTextImageData) : getTextImageData()
+  const imageDataInfo = options?.cacheKey ? textCanvasCache.get(options.cacheKey, text, getTextImageData) : getTextImageData()
   if (!imageDataInfo) {
     return undefined
   }
@@ -975,7 +975,7 @@ export interface FillStyle {
   fillRadialGradient: RadialGradient
 }
 
-const textCanvasCache = new WeakmapCache<object, { imageData: ImageData, textMetrics: TextMetrics, canvas: HTMLCanvasElement } | undefined>()
+const textCanvasCache = new WeakmapMapCache<object, string, { imageData: ImageData, textMetrics: TextMetrics, canvas: HTMLCanvasElement } | undefined>()
 const polylineTrianglesCache = new WeakmapMap3Cache<Position[], number, LineCapWithClosed, LineJoinWithLimit, { points: number[], base: number[] }>()
 const combinedTrianglesCache = new WeakmapMap3Cache<Position[][], number, LineCapWithClosed, LineJoinWithLimit, { points: number[], base: number[] }>()
 const polylineLinesCache = new WeakmapMapCache<Position[], LineCapWithClosed, number[]>()

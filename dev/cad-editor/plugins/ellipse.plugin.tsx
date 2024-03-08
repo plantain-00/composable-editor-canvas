@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext) {
   const ellipseGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position }>>()
   const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], center: core.Position, start: core.Position, end: core.Position, middle: core.Position }>>()
   function getEllipseGeometries(content: Omit<EllipseContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ellipseGeometriesCache.get(content, refs, () => {
       const points = ctx.ellipseToPolygon(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolygonLines(points))
@@ -43,7 +43,7 @@ export function getModel(ctx: PluginContext) {
     })
   }
   function getEllipseArcGeometries(content: Omit<EllipseArcContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ellipseArcGeometriesCache.get(content, refs, () => {
       const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolylineLines(points))

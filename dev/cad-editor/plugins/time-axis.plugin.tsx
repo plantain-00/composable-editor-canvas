@@ -40,7 +40,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
     if (time) {
       return getGeometries()
     }
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, getGeometries)
   }
   const React = ctx.React

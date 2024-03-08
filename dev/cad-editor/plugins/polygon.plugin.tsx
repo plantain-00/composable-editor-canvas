@@ -15,7 +15,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
   const getRefIds = (content: Omit<PolygonContent, "type">) => [content.strokeStyleId, content.fillStyleId]
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<PolygonContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getPolygonGeometries(content: Omit<PolygonContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const lines = Array.from(ctx.iteratePolygonLines(content.points))
       return {

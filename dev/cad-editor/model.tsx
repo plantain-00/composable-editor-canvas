@@ -824,7 +824,7 @@ export function getClipContentPropertyPanel(
 ) {
   const picker = <Button onClick={() => acquireContent({ count: 1, selectable: (v) => contentIsClosedPath(getContentByIndex(contents, v)) }, r => update(c => {
     if (isClipContent(c)) {
-      const border = getRefPart(r[0], contents)
+      const border = getRefPart(r[0], contents, (c): c is BaseContent => c !== content)
       if (border) {
         c.clip = {
           border: border,
@@ -1081,7 +1081,11 @@ export function* iterateRefIds(ids: Nullable<ContentRef>[] | undefined, contents
   }
 }
 
-export function* iterateRefContents(ids: Nullable<ContentRef>[] | undefined, contents: readonly Nullable<BaseContent>[]): Generator<BaseContent, void, unknown> {
+export function* iterateRefContents(
+  ids: Nullable<ContentRef>[] | undefined,
+  contents: readonly Nullable<BaseContent>[],
+  parents: Omit<BaseContent, 'type'>[],
+): Generator<BaseContent, void, unknown> {
   if (!ids) {
     return
   }
@@ -1089,10 +1093,10 @@ export function* iterateRefContents(ids: Nullable<ContentRef>[] | undefined, con
     if (id === undefined) continue
     if (id === null) continue
     const content = typeof id !== 'number' ? id : contents[id]
-    if (content) {
+    if (content && !parents.includes(content)) {
       yield content
       const refIds = getContentModel(content)?.getRefIds?.(content)
-      yield* iterateRefContents(refIds, contents)
+      yield* iterateRefContents(refIds, contents, [...parents, content])
     }
   }
 }
@@ -1200,9 +1204,10 @@ export function getContainerVariableNames(container: ContainerFields) {
 export function renderContainerIfSelected<V, T extends ContainerFields>(
   container: T,
   ctx: RenderIfSelectedContext<V>,
+  parents: Omit<BaseContent, 'type'>[],
   getRefIds: (content: T) => Nullable<ContentRef>[],
 ) {
-  const { bounding } = getContainerGeometries<T>(container, ctx.contents, getRefIds)
+  const { bounding } = getContainerGeometries<T>(container, ctx.contents, getRefIds, parents)
   if (!bounding) {
     return ctx.target.renderEmpty()
   }
@@ -1218,18 +1223,20 @@ export function renderContainerIfSelected<V, T extends ContainerFields>(
 export function getContainerGeometries<T extends ContainerFields>(
   content: T,
   contents: readonly Nullable<BaseContent>[],
-  getRefIds: (content: T) => Nullable<ContentRef>[]
+  getRefIds: (content: T) => Nullable<ContentRef>[],
+  parents: Omit<BaseContent, 'type'>[],
 ) {
-  return getContentsGeometries<T>(content, contents, getRefIds)
+  return getContentsGeometries<T>(content, contents, getRefIds, parents)
 }
 
 export function getContentsGeometries<T extends ContainerFields>(
   content: T,
   contents: readonly Nullable<BaseContent>[],
   getRefIds: (content: T) => Nullable<ContentRef>[],
+  parents: Omit<BaseContent, 'type'>[],
   getAllContents = (c: T) => c.contents,
 ) {
-  const refs = new Set(iterateRefContents(getRefIds(content), contents))
+  const refs = new Set(iterateRefContents(getRefIds(content), contents, parents))
   return getGeometriesFromCache(content, refs, () => {
     const lines: GeometryLine[] = []
     const renderingLines: Position[][] = []
@@ -1321,9 +1328,10 @@ export function getContainerRender<V, P>(content: ContainerFields, ctx: RenderCo
 export function getContainerRenderIfSelected<V, T extends ContainerFields>(
   content: T,
   ctx: RenderIfSelectedContext<V>,
+  parents: Omit<BaseContent, 'type'>[],
   getRefIds: (content: T) => Nullable<ContentRef>[]
 ) {
-  return renderContainerIfSelected(content, ctx, getRefIds)
+  return renderContainerIfSelected(content, ctx, parents, getRefIds)
 }
 export function getContentsExplode(array: Nullable<BaseContent>[]) {
   return array.filter((c): c is BaseContent => !!c)
@@ -1516,9 +1524,14 @@ export const PositionRef = {
   param: optional(number),
 }
 
-export function getRefPosition(positionRef: PositionRef | undefined, contents: readonly Nullable<BaseContent>[], patches?: Patch[]) {
+export function getRefPosition(
+  positionRef: PositionRef | undefined,
+  contents: readonly Nullable<BaseContent>[],
+  parents: Omit<BaseContent, 'type'>[] = [],
+  patches?: Patch[],
+) {
   if (positionRef !== undefined) {
-    const ref = getReference(positionRef.id, contents, undefined, patches)
+    const ref = getReference(positionRef.id, contents, (c): c is BaseContent => !parents.includes(c), patches)
     if (ref) {
       const model = getContentModel(ref)
       let p: Position | undefined = model?.getSnapPoints?.(ref, contents)?.[positionRef.snapIndex]
@@ -1551,7 +1564,7 @@ export function getRefPart<T extends BaseContent = BaseContent>(
   patches?: Patch[],
 ) {
   if (partRef !== undefined) {
-    const ref = getReference(partRef.id, contents, undefined, patches)
+    const ref = getReference(partRef.id, contents, filter, patches)
     if (ref) {
       const model = getContentModel(ref)
       if (partRef.partIndex !== undefined) {
@@ -1638,7 +1651,7 @@ export function TextEditor(props: JsonEditorProps<string> & Position & {
       }
       return false
     },
-    autoHeight: !props.height,
+    autoHeight: true,
     autoFocus: true,
     onBlur: () => {
       setTimeout(() => {

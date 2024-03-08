@@ -27,7 +27,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
   const getSplineArrowRefIds = (content: Omit<SplineArrowContent, "type">) => [content.strokeStyleId]
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<SplineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getSplineGeometries(content: Omit<SplineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       let points: core.Position[]
       let lines: core.GeometryLine[]
@@ -63,7 +63,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     })
   }
   function getSplineArrowGeometries(content: Omit<SplineArrowContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]): model.Geometries {
-    const refs = new Set(ctx.iterateRefContents(getSplineArrowRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getSplineArrowRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const geometry = getSplineGeometries(content, contents)
       let arrowPoints: core.Position[] | undefined

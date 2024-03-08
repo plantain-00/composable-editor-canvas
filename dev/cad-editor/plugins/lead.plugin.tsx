@@ -2,6 +2,7 @@ import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type * as model from '../model'
 import type { Command } from '../command'
+import type { LineContent } from './line-polyline.plugin'
 
 export type LeadContent = model.BaseContent<'lead'> & model.StrokeFields & model.ArrowFields & model.TextFields & {
   ref?: model.ContentRef
@@ -15,31 +16,34 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     points: [ctx.Position],
     text: ctx.string,
   })
-  const getRefIds = (content: LeadContent) => [content.strokeStyleId, content.ref]
-  const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position }>>()
-  function getLeadGeometriesFromCache(content: LeadContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+  const getRefIds = (content: Omit<LeadContent, "type">) => [content.strokeStyleId, content.ref]
+  const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position, first: core.Position }>>()
+  function getLeadGeometriesFromCache(content: Omit<LeadContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return leadCache.get(content, refs, () => {
-      const ref = ctx.getReference(content.ref, contents)
+      const ref = ctx.getReference(content.ref, contents, (c): c is model.BaseContent => !ctx.shallowEquals(c, content))
       let p0 = content.points[0]
       let line: core.GeometryLine | undefined
       if (ref && content.points.length > 1) {
         const lines = ctx.getContentModel(ref)?.getGeometries?.(ref, contents)?.lines
         if (lines) {
           const p = ctx.getPerpendicularPointToGeometryLines(content.points[1], lines)
-          p0 = p.point
-          line = p.line
+          if (p) {
+            p0 = p.point
+            line = p.line
+          }
         }
       }
-      let lines: core.GeometryLine[]
+      let points: core.Position[]
       let arrow: core.Position[] | undefined
       if (content.points.length > 1) {
         const arrowPoints = ctx.getArrowPoints(content.points[1], p0, content)
         arrow = arrowPoints.arrowPoints
-        lines = Array.from(ctx.iteratePolylineLines([arrowPoints.endPoint, ...content.points.slice(1)]))
+        points = [arrowPoints.endPoint, ...content.points.slice(1)]
       } else {
-        lines = []
+        points = []
       }
+      let extendLine: core.GeometryLine | undefined
       if (line) {
         const { start, end } = ctx.getGeometryLineStartAndEnd(line)
         if (start && (!end || ctx.getTwoPointsDistance(start, p0) < ctx.getTwoPointsDistance(end, p0))) {
@@ -47,14 +51,14 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
           line = ctx.getPartOfGeometryLine(param0, 0, line)
           const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
           if (marginParam !== undefined) {
-            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
+            extendLine = ctx.getPartOfGeometryLine(marginParam, 1, line)
           }
         } else if (end && (!start || ctx.getTwoPointsDistance(end, p0) < ctx.getTwoPointsDistance(start, p0))) {
           const param0 = ctx.getGeometryLineParamAtPoint(p0, line)
           line = ctx.getPartOfGeometryLine(param0, 1, line)
           const marginParam = ctx.getGeometryLineParamByLength(line, -ctx.dimensionStyle.margin)
           if (marginParam !== undefined) {
-            lines.push(ctx.getPartOfGeometryLine(marginParam, 1, line))
+            extendLine = ctx.getPartOfGeometryLine(marginParam, 1, line)
           }
         }
       }
@@ -71,9 +75,15 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
         { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
         { x: last.x, y: last.y + size.height / 2 },
       ]
-      const points = lines.map(line => ctx.getGeometryLinesPoints([line]))
+      const lines: core.GeometryLine[] = Array.from(ctx.iteratePolylineLines(points))
+      const renderingLines: core.Position[][] = ctx.dashedPolylineToLines(points, content.dashArray)
+      if (extendLine) {
+        lines.push(extendLine)
+        renderingLines.push(...ctx.dashedPolylineToLines(ctx.getGeometryLinesPoints([extendLine])))
+      }
       return {
         lines,
+        first: p0,
         last,
         right,
         bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
@@ -87,7 +97,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
             lines: Array.from(ctx.iteratePolygonLines(arrow)),
           }] : []),
         ],
-        renderingLines: points.map(p => ctx.dashedPolylineToLines(p, content.dashArray)).flat(),
+        renderingLines,
       }
     })
   }
@@ -100,6 +110,22 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     move(content, offset) {
       for (const point of content.points) {
         ctx.movePoint(point, offset)
+      }
+    },
+    rotate(content, center, angle) {
+      for (const point of content.points) {
+        ctx.rotatePoint(point, center, angle)
+      }
+    },
+    scale(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.scalePoint(point, center, sx, sy)
+      }
+      content.fontSize *= Math.abs(sx)
+    },
+    mirror(content, line) {
+      for (const point of content.points) {
+        ctx.mirrorPoint(point, line)
       }
     },
     render(content, renderCtx) {
@@ -124,6 +150,41 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx)
       children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: 'middle', textAlign: right ? 'left' : 'right' }))
       return target.renderGroup(children)
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const geometries = getLeadGeometriesFromCache(content, contents)
+        return {
+          editPoints: content.points.map((p, i) => {
+            if (i === 0) {
+              p = geometries.first
+            }
+            return {
+              ...p,
+              cursor: 'move',
+              update(c, { cursor, start, scale }) {
+                if (!isLeadContent(c)) {
+                  return
+                }
+                c.points[i].x += cursor.x - start.x
+                c.points[i].y += cursor.y - start.y
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            }
+          })
+        }
+      })
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const geometries = getLeadGeometriesFromCache(content, contents)
+        return content.points.map((p, i) => {
+          if (i === 0) {
+            p = geometries.first
+          }
+          return { ...p, type: 'endpoint' as const }
+        })
+      })
     },
     getGeometries: getLeadGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {

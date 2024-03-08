@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
   })
   const getRefIds = (content: CenterMarkReferenceContent) => [content.ref.id]
   function getCenterMarkGeometriesFromCache(content: CenterMarkReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
-    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents))
+    const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
       const target = ctx.getRefPart(content.ref, contents, contentSelectable)
       if (target) {
