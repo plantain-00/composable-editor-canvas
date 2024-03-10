@@ -160,3 +160,14 @@ export function getArcBulge(arc: Arc, start?: Position, end?: Position) {
   }
   return bulge
 }
+
+export function getArcBulgeByStartEndPoint(start: Position, end: Position, point: Position) {
+  const circle = getThreePointsCircle(start, end, point)
+  const startAngle = radianToAngle(getCircleRadian(start, circle))
+  const endAngle = radianToAngle(getCircleRadian(end, circle))
+  const arc = [{ ...circle, startAngle, endAngle, counterclockwise: false }, { ...circle, startAngle, endAngle, counterclockwise: true }].find(a => pointIsOnArc(point, a))
+  if (arc) {
+    return getArcBulge(arc, start, end)
+  }
+  return
+}

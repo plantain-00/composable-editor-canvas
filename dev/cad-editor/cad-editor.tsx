@@ -329,7 +329,7 @@ export const CADEditor = React.forwardRef((props: {
     return p
   }
 
-  const { editPoint, editLastPosition, updateEditPreview, onEditMove, onEditClick, getEditAssistentContents, resetEdit } = useEdit<BaseContent, ContentPath>(
+  const { editPoint, editMenu, editLastPosition, updateEditPreview, onEditMove, onEditClick, onEditContextMenu, getEditAssistentContents, resetEdit } = useEdit<BaseContent, ContentPath>(
     (p1, p2) => applyPatchFromSelf(prependPatchPath([...previewPatches, ...p1]), prependPatchPath([...previewReversePatches, ...p2])),
     (s) => getContentModel(s)?.getEditPoints?.(s, editingContent),
     {
@@ -840,6 +840,17 @@ export const CADEditor = React.forwardRef((props: {
     }
   }
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    if (editPoint?.menu) {
+      const viewportPosition = { x: e.clientX, y: e.clientY }
+      const p = reverseTransform(viewportPosition)
+      onEditContextMenu(p, (menu, getClickHandler) => (
+        <div style={{ position: 'absolute', boxShadow: '0 0 5px black', borderRadius: '5px', padding: '5px', cursor: 'pointer', background: 'white', left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }}>
+          {menu.map(m => <div key={m.title} onClick={getClickHandler(m)}>{m.title}</div>)}
+        </div>
+      ))
+      e.preventDefault()
+      return
+    }
     if (lastOperation) {
       startOperation(lastOperation)
       e.preventDefault()
@@ -1059,6 +1070,7 @@ export const CADEditor = React.forwardRef((props: {
         {!readOnly && !snapOffsetActive && commandInput}
         {!readOnly && !snapOffsetActive && commandButtons}
         {commandPanel}
+        {editMenu}
         {!readOnly && snapOffsetInput}
       </div>
       {dragSelectMask}

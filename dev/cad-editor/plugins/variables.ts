@@ -7989,7 +7989,27 @@ function getModel(ctx) {
             c.points[i].point.x += cursor.x - start.x;
             c.points[i].point.y += cursor.y - start.y;
             return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p.point, cursor] }] };
-          }
+          },
+          menu: [
+            {
+              title: "Remove",
+              execute(draft) {
+                if (isPlineContent(draft)) {
+                  draft.points.splice(i, 1);
+                }
+              }
+            },
+            ...i === 0 || i === content.points.length - 1 ? [{
+              title: "Add",
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return;
+                }
+                c.points.splice(i === 0 ? 0 : i + 1, 0, { point: { x: cursor.x, y: cursor.y }, bulge: 0 });
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p.point, cursor] }] };
+              }
+            }] : []
+          ]
         }));
         const midpoints = middles.map((p, i) => ({
           x: p.x,
@@ -8007,18 +8027,46 @@ function getModel(ctx) {
               c.points[j].point.x += cursor.x - start.x;
               c.points[j].point.y += cursor.y - start.y;
             } else {
-              const start2 = content.points[i].point;
-              const end = content.points[j].point;
-              const circle = ctx.getThreePointsCircle(start2, end, cursor);
-              const startAngle = ctx.radianToAngle(ctx.getCircleRadian(start2, circle));
-              const endAngle = ctx.radianToAngle(ctx.getCircleRadian(end, circle));
-              const arc = [{ ...circle, startAngle, endAngle, counterclockwise: false }, { ...circle, startAngle, endAngle, counterclockwise: true }].find((a) => ctx.pointIsOnArc(cursor, a));
-              if (arc) {
-                c.points[i].bulge = ctx.getArcBulge(arc, start2, end);
+              const bulge = ctx.getArcBulgeByStartEndPoint(content.points[i].point, content.points[j].point, cursor);
+              if (bulge !== void 0) {
+                c.points[i].bulge = bulge;
               }
             }
             return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p, cursor] }] };
-          }
+          },
+          menu: [
+            {
+              title: "Add",
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return;
+                }
+                c.points.splice(i + 1, 0, { point: { x: cursor.x, y: cursor.y }, bulge: 0 });
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p, cursor] }] };
+              }
+            },
+            ctx.isZero(content.points[i].bulge) ? {
+              title: "To Arc",
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return;
+                }
+                const j = i === content.points.length - 1 ? 0 : i + 1;
+                const bulge = ctx.getArcBulgeByStartEndPoint(content.points[i].point, content.points[j].point, cursor);
+                if (bulge !== void 0) {
+                  c.points[i].bulge = bulge;
+                }
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [p, cursor] }] };
+              }
+            } : {
+              title: "To Line",
+              execute(draft) {
+                if (isPlineContent(draft)) {
+                  draft.points[i].bulge = 0;
+                }
+              }
+            }
+          ]
         }));
         return {
           editPoints: [
@@ -12905,8 +12953,7 @@ function getCommand(ctx) {
       };
     },
     contentSelectable(content, contents) {
-      const model = ctx.getContentModel(content);
-      return (model == null ? void 0 : model.break) !== void 0 && ctx.contentIsDeletable(content, contents);
+      return ctx.contentIsDeletable(content, contents);
     },
     hotkey: "TR",
     icon,
