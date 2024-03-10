@@ -156,6 +156,26 @@ export function getModel(ctx: PluginContext) {
             c.points[i].point.y += cursor.y - start.y
             return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p.point, cursor] } as LineContent] }
           },
+          menu: [
+            {
+              title: 'Remove',
+              execute(draft) {
+                if (isPlineContent(draft)) {
+                  draft.points.splice(i, 1)
+                }
+              },
+            },
+            ...(i === 0 || i === content.points.length - 1 ? [{
+              title: 'Add',
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return
+                }
+                c.points.splice(i === 0 ? 0 : i + 1, 0, { point: { x: cursor.x, y: cursor.y }, bulge: 0 })
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p.point, cursor] } as LineContent] }
+              },
+            } as core.EditPointMenu<model.BaseContent>] : []),
+          ]
         }))
         const midpoints: core.EditPoint<model.BaseContent>[] = middles.map((p, i) => ({
           x: p.x,
@@ -173,18 +193,46 @@ export function getModel(ctx: PluginContext) {
               c.points[j].point.x += cursor.x - start.x
               c.points[j].point.y += cursor.y - start.y
             } else {
-              const start = content.points[i].point
-              const end = content.points[j].point
-              const circle = ctx.getThreePointsCircle(start, end, cursor)
-              const startAngle = ctx.radianToAngle(ctx.getCircleRadian(start, circle))
-              const endAngle = ctx.radianToAngle(ctx.getCircleRadian(end, circle))
-              const arc = [{ ...circle, startAngle, endAngle, counterclockwise: false }, { ...circle, startAngle, endAngle, counterclockwise: true }].find(a => ctx.pointIsOnArc(cursor, a))
-              if (arc) {
-                c.points[i].bulge = ctx.getArcBulge(arc, start, end)
+              const bulge = ctx.getArcBulgeByStartEndPoint(content.points[i].point, content.points[j].point, cursor)
+              if (bulge !== undefined) {
+                c.points[i].bulge = bulge
               }
             }
             return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p, cursor] } as LineContent] }
           },
+          menu: [
+            {
+              title: 'Add',
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return
+                }
+                c.points.splice(i + 1, 0, { point: { x: cursor.x, y: cursor.y }, bulge: 0 })
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p, cursor] } as LineContent] }
+              },
+            },
+            ctx.isZero(content.points[i].bulge) ? {
+              title: 'To Arc',
+              update(c, { cursor, scale }) {
+                if (!isPlineContent(c)) {
+                  return
+                }
+                const j = i === content.points.length - 1 ? 0 : i + 1
+                const bulge = ctx.getArcBulgeByStartEndPoint(content.points[i].point, content.points[j].point, cursor)
+                if (bulge !== undefined) {
+                  c.points[i].bulge = bulge
+                }
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [p, cursor] } as LineContent] }
+              },
+            } : {
+              title: 'To Line',
+              execute(draft) {
+                if (isPlineContent(draft)) {
+                  draft.points[i].bulge = 0
+                }
+              },
+            },
+          ]
         }))
         return {
           editPoints: [

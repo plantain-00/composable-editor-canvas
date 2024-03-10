@@ -23,9 +23,11 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
   }>,
 ) {
   const [editPoint, setEditPoint] = React.useState<EditPoint<T> & { path: TPath, content: T, angleSnapStartPoint?: Position, relatedEditPoints: (EditPoint<T> & { path: TPath, content: T })[] }>()
+  const [menuEditPoint, setMenuEditPoint] = React.useState<{ update: EditPointUpdate<T>, path: TPath, content: T }>()
   const [startPosition, setStartPosition] = React.useState<Position>()
   const [cursorPosition, setCursorPosition] = React.useState<Position>()
   const [snapTarget, setSnapTarget] = React.useState<SnapTarget<T>>()
+  const [editMenu, setEditMenu] = React.useState<JSX.Element>()
   const cursorWidth = 5 / (options?.scale ?? 1)
   const readOnly = options?.readOnly ?? false
 
@@ -34,6 +36,8 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
     setStartPosition(undefined)
     setCursorPosition(undefined)
     setSnapTarget(undefined)
+    setEditMenu(undefined)
+    setMenuEditPoint(undefined)
   }
 
   React.useEffect(() => {
@@ -68,6 +72,23 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       assistentContents: T[];
       relatedEditPointResults: Map<T, T>;
     } | undefined {
+      if (menuEditPoint && startPosition && cursorPosition) {
+        const assistentContents: T[] = []
+        const [result, patches, reversePatches] = produceWithPatches(menuEditPoint.content, (draft) => {
+          const r = menuEditPoint.update?.(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
+          if (r?.assistentContents) {
+            assistentContents.push(...r.assistentContents)
+          }
+        })
+        return {
+          content: menuEditPoint.content,
+          result,
+          patches: prependPatchPath(patches, menuEditPoint.path),
+          reversePatches: prependPatchPath(reversePatches, menuEditPoint.path),
+          assistentContents,
+          relatedEditPointResults: new Map<T, T>(),
+        }
+      }
       if (editPoint && startPosition && cursorPosition && editPoint.update) {
         const assistentContents: T[] = []
         const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
@@ -131,6 +152,11 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
       setEditPoint(result)
     },
     onEditClick(p: Position) {
+      if (menuEditPoint) {
+        onEnd([], [])
+        reset()
+        return
+      }
       if (!editPoint) {
         return
       }
@@ -148,25 +174,57 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
         reset()
       }
     },
+    onEditContextMenu(p: Position, getMenu: (menu: EditPointMenu<T>[], getClickHandler: (m: EditPointMenu<T>) => () => void) => JSX.Element) {
+      if (!editPoint?.menu) {
+        return
+      }
+      setEditMenu(getMenu(editPoint.menu, m => () => {
+        setEditMenu(undefined)
+        if (m.execute) {
+          const [, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
+            m.execute?.(draft)
+          })
+          onEnd(prependPatchPath(patches, editPoint.path), prependPatchPath(reversePatches, editPoint.path))
+          return
+        }
+        if (m.update) {
+          setStartPosition(p)
+          setCursorPosition(p)
+          setMenuEditPoint({
+            content: editPoint.content,
+            path: editPoint.path,
+            update: m.update,
+          })
+          setEditPoint(editPoint)
+        }
+      }))
+    },
+    editMenu,
     resetEdit: reset,
   }
 }
 
-/**
- * @public
- */
+export type EditPointUpdate<T> = (
+  content: Draft<T>,
+  props: {
+    cursor: Position
+    start: Position
+    scale: number
+    target?: SnapTarget<T>
+  },
+) => {
+  assistentContents?: T[]
+} | void
+
 export type EditPoint<T> = Position & {
   cursor: string
-  update?: (
-    content: Draft<T>,
-    props: {
-      cursor: Position
-      start: Position
-      scale: number
-      target?: SnapTarget<T>
-    },
-  ) => {
-    assistentContents?: T[]
-  } | void
+  update?: EditPointUpdate<T>
+  execute?: (content: Draft<T>) => void
+  menu?: EditPointMenu<T>[]
+}
+
+export interface EditPointMenu<T> {
+  title: string
+  update?: EditPointUpdate<T>
   execute?: (content: Draft<T>) => void
 }
