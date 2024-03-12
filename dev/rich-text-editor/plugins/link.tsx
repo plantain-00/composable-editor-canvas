@@ -2,7 +2,7 @@ import React from "react"
 import { RichTextEditorPluginHook } from "../model"
 import { BooleanEditor, StringEditor, HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline } from "../../../src";
 
-interface Link extends HtmlText {
+export interface Link extends HtmlText {
   url: string
   type: 'link'
   targetBlank?: boolean

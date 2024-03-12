@@ -5365,14 +5365,7 @@ write-file-atomic@^5.0.1:
     imurmurhash "^0.1.4"
     signal-exit "^4.0.1"
 
-ws-heartbeat@1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/ws-heartbeat/-/ws-heartbeat-1.2.0.tgz#52f68ba3b583e95b7a45929be3b326a8587e1387"
-  integrity sha512-HlN5j2LEFU5O3onX/poHEEwOduF4QYPWrY956CYe+nJQP4tU7aAM+8KciNFlZ1wDEX1/ZnLFP3QNMqnTgMmBkw==
-  dependencies:
-    ws "7"
-
-ws@7, ws@^7.3.1:
+ws@^7.3.1:
   version "7.5.9"
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.5.9.tgz#54fa7db29f4c7cec68b1ddd3a89de099942bb591"
   integrity sha512-F+P9Jil7UiSKSkppIiD94dN07AwvFixvLIj1Og1Rl9GGMuNipJnV9JzjD6XuqmAeiswGvUmNLjr5cFuXwNS77Q==

@@ -653,7 +653,7 @@ export type BlockType = keyof JSX.IntrinsicElements
 /**
  * @public
  */
-export interface HtmlBlock extends FlowLayoutBlock<HtmlTextInline>, Partial<HtmlTextStyle> {
+export interface HtmlBlock<T = HtmlTextInline> extends FlowLayoutBlock<T>, Partial<HtmlTextStyle> {
   type: BlockType
 }
 

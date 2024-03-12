@@ -1,7 +1,5 @@
 import React from 'react'
 import { SnapPointType, allSnapTypes, colorStringToNumber, getColorString, Nullable, useLocalStorageState } from '../src'
-import { Patch } from 'immer'
-import { setWsHeartbeat } from 'ws-heartbeat/client'
 import { BaseContent } from './cad-editor/model'
 import { getAllRendererTypes } from './cad-editor/renderer'
 import type { EllipseContent } from './cad-editor/plugins/ellipse.plugin'
@@ -13,11 +11,8 @@ import type { StarContent } from './cad-editor/plugins/star.plugin'
 
 const me = Math.round(Math.random() * 15 * 16 ** 3 + 16 ** 3).toString(16)
 
-const key = 'combination-2.json'
-
 export function Combination2() {
   const [initialState, setInitialState] = React.useState<Nullable<BaseContent>[]>()
-  const [coEdit, setCoEdit] = React.useState(true)
   const { pluginLoaded, pluginCommandTypes } = usePlugins()
   const [panelVisible, setPanelVisible] = useLocalStorageState('composable-editor-canvas-combination2:panel', true)
   const [printMode, setPrintMode] = useLocalStorageState('composable-editor-canvas-combination2:print-mode', false)
@@ -25,39 +20,11 @@ export function Combination2() {
   const valid = useInitialStateValidated(initialState, pluginLoaded)
 
   React.useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`https://storage.yorkyao.one/${key}`)
-        const json: Nullable<BaseContent>[] = await res.json()
-        setInitialState(json)
-      } catch {
-        setInitialState([])
-      }
-    })()
+    setInitialState([])
   }, [])
-
-  const ws = React.useRef<WebSocket>()
-  React.useEffect(() => {
-    ws.current = new WebSocket(`wss://storage.yorkyao.one/ws/composable-editor-canvas?key=${key}`)
-    setWsHeartbeat(ws.current, '{"method":"ping"}')
-    return () => ws.current?.close()
-  }, [])
-
-  const onApplyPatchesFromSelf = (patches: Patch[], reversePatches: Patch[]) => {
-    if (ws.current && ws.current.readyState === ws.current.OPEN && coEdit) {
-      const operations = patches.map((p) => ({ ...p, path: p.path.map((c) => `/${c}`).join('') }))
-      ws.current.send(JSON.stringify({ method: 'patch', operations, reversePatches, operator: me }))
-    }
-  }
-  const onSendSelection = (selectedContents: readonly number[]) => {
-    if (ws.current && ws.current.readyState === ws.current.OPEN && coEdit) {
-      ws.current.send(JSON.stringify({ method: 'selection', selectedContents, operator: me }))
-    }
-  }
 
   const addMockData = () => {
     setInitialState(undefined)
-    setCoEdit(false)
     setTimeout(() => {
       const json: (CircleContent | RectContent | EllipseContent | RegularPolygonContent | StarContent)[] = []
       const max = 200
@@ -117,26 +84,6 @@ export function Combination2() {
   }
 
   const editorRef = React.useRef<CADEditorRef | null>(null)
-  React.useEffect(() => {
-    if (!ws.current || !editorRef.current) {
-      return
-    }
-    ws.current.onmessage = (data: MessageEvent<unknown>) => {
-      if (editorRef.current && typeof data.data === 'string' && data.data && coEdit) {
-        const json = JSON.parse(data.data) as
-          | { method: 'patch', operations: (Omit<Patch, 'path'> & { path: string })[], reversePatches: Patch[], operator: string }
-          | { method: 'selection', selectedContents: number[], operator: string }
-        if (json.method === 'patch') {
-          editorRef.current.handlePatchesEvent({
-            ...json,
-            patches: json.operations.map((p) => ({ ...p, path: p.path.substring(1).split('/') }))
-          })
-        } else if (json.method === 'selection') {
-          editorRef.current.handleSelectionEvent(json)
-        }
-      }
-    }
-  }, [ws.current, editorRef.current])
 
   const [readOnly, setReadOnly] = React.useState(false)
   const [snapTypes, setSnapTypes] = useLocalStorageState<readonly SnapPointType[]>('composable-editor-canvas-combination2:snaps', allSnapTypes)
@@ -156,8 +103,6 @@ export function Combination2() {
           id='combination2'
           operator={me}
           initialState={initialState}
-          onApplyPatchesFromSelf={onApplyPatchesFromSelf}
-          onSendSelection={onSendSelection}
           readOnly={readOnly}
           snapTypes={snapTypes}
           renderTarget={renderTarget}

@@ -2,7 +2,7 @@ import React from "react"
 import { RichTextEditorPluginHook } from "../model"
 import { StringEditor, HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline, defaultFontSize } from "../../../src";
 
-interface Circle extends HtmlText {
+export interface Circle extends HtmlText {
   type: 'circle'
 }
 
