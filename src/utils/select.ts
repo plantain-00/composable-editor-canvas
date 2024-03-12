@@ -76,6 +76,62 @@ export function getContentByClickPosition<T>(
   return undefined
 }
 
+export function getContentsByClickPosition<T>(
+  contents: readonly Nullable<T>[],
+  position: Position,
+  contentSelectable: (path: ContentPath) => boolean,
+  getModel: (content: T) => {
+    getGeometries?: (content: T, contents: readonly Nullable<T>[]) => {
+      lines: GeometryLine[]
+      regions?: {
+        points: Position[]
+        holes?: Position[][]
+      }[]
+    },
+  } | undefined,
+  contentVisible?: (content: T) => boolean,
+  delta = 3,
+): ContentPath[] {
+  const result: ContentPath[] = []
+  contents.forEach((content, i) => {
+    if (!content) {
+      return
+    }
+    if (contentVisible && !contentVisible(content)) {
+      return
+    }
+    const model = getModel(content)
+    if (model?.getGeometries) {
+      const { lines, regions } = model.getGeometries(content, contents)
+      for (let j = 0; j < lines.length; j++) {
+        const line = lines[j]
+        const minDistance = getPointAndGeometryLineMinimumDistance(position, line)
+        if (minDistance <= delta) {
+          if (contentSelectable([i])) {
+            result.push([i])
+            return
+          }
+        }
+      }
+      if (regions) {
+        for (let j = 0; j < regions.length; j++) {
+          const region = regions[j]
+          if (region.holes && region.holes.some(h => pointInPolygon(position, h))) {
+            return
+          }
+          if (pointInPolygon(position, region.points)) {
+            if (contentSelectable([i])) {
+              result.push([i])
+              return
+            }
+          }
+        }
+      }
+    }
+  })
+  return result
+}
+
 /**
  * @public
  */

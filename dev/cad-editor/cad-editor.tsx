@@ -1,5 +1,5 @@
 import React from 'react'
-import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath } from '../../src'
+import { bindMultipleRefs, Position, reactCanvasRenderTarget, reactSvgRenderTarget, useCursorInput, useDragMove, useDragSelect, usePatchBasedUndoRedo, useSelected, useSelectBeforeOperate, useWheelScroll, useWheelZoom, useZoom, usePartialEdit, useEdit, reverseTransformPosition, Transform, getContentsByRegion, getContentByClickPosition, usePointSnap, SnapPointType, scaleByCursorPosition, TwoPointsFormRegion, useEvent, metaKeyIfMacElseCtrlKey, reactWebglRenderTarget, Nullable, zoomToFitPoints, isSamePath, Debug, useWindowSize, Validator, validate, BooleanEditor, NumberEditor, ObjectEditor, iterateItemOrArray, useDelayedAction, useMinimap, useDragRotate, RotationBar, angleToRadian, getPointsBoundingUnsafe, useLocalStorageState, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, reactWebgpuRenderTarget, useGlobalKeyDown, ContentPath, Menu, getContentsByClickPosition } from '../../src'
 import { produce, enablePatches, Patch, produceWithPatches } from 'immer'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
@@ -182,6 +182,7 @@ export const CADEditor = React.forwardRef((props: {
   const acquirePointHandler = React.useRef<(r: SnapResult) => void>()
   const acquireContentHandler = React.useRef<(path: readonly ContentPath[]) => void>()
   const acquireRegionHandler = React.useRef<(region: Position[]) => void>()
+  const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -797,6 +798,7 @@ export const CADEditor = React.forwardRef((props: {
       }
       resetCommand?.(true)
       resetEdit()
+      setContextMenu(undefined)
       resetDragSelect()
       resetDragRotate()
       resetDragMove()
@@ -840,21 +842,114 @@ export const CADEditor = React.forwardRef((props: {
     }
   }
   const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+    e.preventDefault()
+    const viewportPosition = { x: e.clientX, y: e.clientY }
+    const p = reverseTransform(viewportPosition)
     if (editPoint?.menu) {
-      const viewportPosition = { x: e.clientX, y: e.clientY }
-      const p = reverseTransform(viewportPosition)
-      onEditContextMenu(p, (menu, getClickHandler) => (
-        <div style={{ position: 'absolute', boxShadow: '0 0 5px black', borderRadius: '5px', padding: '5px', cursor: 'pointer', background: 'white', left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }}>
-          {menu.map(m => <div key={m.title} onClick={getClickHandler(m)}>{m.title}</div>)}
-        </div>
-      ))
-      e.preventDefault()
+      onEditContextMenu(p, (menu, getClickHandler) => <Menu items={menu.map(m => ({ title: m.title, onClick: getClickHandler(m) }))} style={{ left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }} />)
       return
     }
+    const items: (core.MenuItem | core.MenuDivider)[] = [
+      {
+        title: 'Undo',
+        disabled: !canUndo,
+        onClick: () => {
+          undo()
+          setContextMenu(undefined)
+        }
+      },
+      {
+        title: 'Redo',
+        disabled: !canRedo,
+        onClick: () => {
+          redo()
+          setContextMenu(undefined)
+        }
+      }
+    ]
     if (lastOperation) {
-      startOperation(lastOperation)
-      e.preventDefault()
+      items.push(
+        { type: 'divider' },
+        {
+          title: lastOperation.name,
+          onClick: () => {
+            startOperation(lastOperation)
+            setContextMenu(undefined)
+          },
+        },
+      )
     }
+    items.push({ type: 'divider' })
+    items.push({
+      title: 'Select All',
+      disabled: editingContent.length === 0,
+      onClick: () => {
+        addSelection(...editingContent.map((_, i) => [i] as ContentPath))
+        setContextMenu(undefined)
+      }
+    })
+    const targets = getContentsByClickPosition(editingContent, p, e.shiftKey ? () => true : isSelectable, getContentModel, contentVisible, 3 / scaleWithViewport)
+    if (targets.length > 0) {
+      items.push({
+        title: 'Select',
+        children: targets.map(t => ({
+          title: editingContent[t[0]]?.type + ' ' + t[0],
+          onClick: () => {
+            addSelection(t)
+            setContextMenu(undefined)
+          }
+        }))
+      })
+    }
+    items.push({ type: 'divider' })
+    items.push({
+      title: 'Cut',
+      disabled: selected.length === 0,
+      onClick: () => {
+        startOperation({ type: 'command', name: 'cut' })
+        setContextMenu(undefined)
+      }
+    })
+    items.push({
+      title: 'Copy',
+      disabled: selected.length === 0,
+      onClick: () => {
+        startOperation({ type: 'command', name: 'copy' })
+        setContextMenu(undefined)
+      }
+    })
+    items.push({
+      title: 'Paste',
+      onClick: () => {
+        startOperation({ type: 'command', name: 'paste' })
+        setContextMenu(undefined)
+      }
+    })
+    items.push({ type: 'divider' })
+    items.push({
+      title: 'Zoom In',
+      onClick: () => {
+        zoomIn()
+        setContextMenu(undefined)
+      }
+    })
+    items.push({
+      title: 'Zoom Out',
+      onClick: () => {
+        zoomOut()
+        setContextMenu(undefined)
+      }
+    })
+    items.push({
+      title: 'Reset',
+      onClick: () => {
+        setScale(1)
+        setX(0)
+        setY(0)
+        setContextMenu(undefined)
+      }
+    })
+    setContextMenu(<Menu items={items} style={{ left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }} />)
   })
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
@@ -1071,6 +1166,7 @@ export const CADEditor = React.forwardRef((props: {
         {!readOnly && !snapOffsetActive && commandButtons}
         {commandPanel}
         {editMenu}
+        {contextMenu}
         {!readOnly && snapOffsetInput}
       </div>
       {dragSelectMask}

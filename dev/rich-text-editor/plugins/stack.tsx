@@ -2,7 +2,7 @@ import React from "react"
 import { RichTextEditorPluginHook } from "../model"
 import { StringEditor, HtmlEditorPluginInline, isHtmlText, renderHtmlTextStyle, HtmlText, HtmlTextInline } from "../../../src";
 
-interface Stack extends HtmlText {
+export interface Stack extends HtmlText {
   type: 'stack'
   bottomText: string
 }
