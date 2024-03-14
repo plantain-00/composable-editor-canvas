@@ -5,8 +5,9 @@ import { GeometryLine } from "./geometry-line";
 import { QuadraticCurve } from "./bezier";
 import { BezierCurve } from "./bezier";
 import { Nurbs, reverseNurbsCurve } from "./nurbs";
-import { Ray } from "./line";
+import { Ray, getPolygonArea } from "./line";
 import { normalizeAngle } from "./angle";
+import { getGeometryLinesPoints } from "./hatch";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {
   return [line[1], line[0]]
@@ -68,6 +69,17 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
     return { ...geometryLine, line: reverseRay(geometryLine.line) }
   }
   return { ...geometryLine, curve: reverseNurbsCurve(geometryLine.curve) }
+}
+
+export function reverseGeometryLines(lines: GeometryLine[]): GeometryLine[] {
+  return lines.map(n => reverseGeometryLine(n)).reverse()
+}
+
+export function reverseClosedGeometryLinesIfAreaIsNegative(lines: GeometryLine[]) {
+  if (getPolygonArea(getGeometryLinesPoints(lines)) < 0) {
+    return reverseGeometryLines(lines)
+  }
+  return lines
 }
 
 export function reverseRay(ray: Ray): Ray {

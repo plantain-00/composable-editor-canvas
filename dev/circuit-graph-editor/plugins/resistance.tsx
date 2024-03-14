@@ -59,7 +59,7 @@ function getResistanceGeometriesFromCache(content: Omit<ResistanceDevice, "type"
       const center = getTwoPointCenter(start.position, end.position)
       const p1 = getPointByLengthAndDirection(center, 8, start.position)
       const p2 = getPointByLengthAndDirection(center, 8, end.position)
-      const radian = getTwoPointsRadian(start.position, end.position)
+      const radian = getTwoPointsRadian(start.position, end.position) + Math.PI / 2
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],

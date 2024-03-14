@@ -7677,7 +7677,7 @@ function getModel(ctx) {
     updateRefId: ctx.updateStrokeAndFillRefIds,
     reverse: (content, contents) => ({
       ...content,
-      commands: ctx.geometryLineToPathCommands(getPathGeometriesFromCache(content, contents).lines.map((n) => ctx.reverseGeometryLine(n)).reverse())
+      commands: ctx.geometryLineToPathCommands(ctx.reverseGeometryLines(getPathGeometriesFromCache(content, contents).lines))
     })
   };
 }

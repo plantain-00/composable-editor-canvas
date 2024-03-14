@@ -1,17 +1,19 @@
-import { geometryLineIntersectWithPolygon } from "./intersection";
+import { geometryLineIntersectWithPolygon, iterateGeometryLinesSelfIntersectionPoints } from "./intersection";
 import { QuadraticCurve, BezierCurve, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier";
 import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge } from "./circle";
 import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
-import { Ray, getLineParamAtPoint, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
+import { Ray, getLineParamAtPoint, getPolygonArea, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
 import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, NurbsCurve, pointIsOnNurbsCurve } from "./nurbs";
-import { Position, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
+import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange } from "./angle";
-import { isZero, largerThan, lessOrEqual, lessThan } from "./math";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
+import { reverseGeometryLines } from "./reverse";
+import { getGeometryLinesPoints } from "./hatch";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -156,13 +158,16 @@ export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine,
 }
 
 export function getGeometryLinesParamAtPoint(point: Position, lines: GeometryLine[]) {
+  return first(iterateGeometryLinesParamsAtPoint(point, lines)) ?? 0
+}
+
+export function* iterateGeometryLinesParamsAtPoint(point: Position, lines: GeometryLine[]) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     if (pointIsOnGeometryLine(point, line)) {
-      return i + getGeometryLineParamAtPoint(point, line)
+      yield i + getGeometryLineParamAtPoint(point, line)
     }
   }
-  return 0
 }
 
 export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
@@ -304,6 +309,38 @@ export function getPartOfGeometryLine(param1: number, param2: number, line: Geom
   }
 }
 
+export function getPartOfGeometryLines(param1: number, param2: number, lines: GeometryLine[]): GeometryLine[] {
+  if (param1 > param2) {
+    return reverseGeometryLines(getPartOfGeometryLines(param2, param1, lines))
+  }
+  const result: GeometryLine[] = []
+  const start = Math.max(0, Math.floor(param1))
+  const end = Math.min(lines.length - 1, Math.floor(param2))
+  for (let i = start; i <= end; i++) {
+    const line = lines[i]
+    const j = param1 - i
+    const k = param2 - i
+    if (isBetween(j, 0, 1)) {
+      if (isBetween(k, 0, 1)) {
+        if (!equals(j, k)) {
+          result.push(getPartOfGeometryLine(j, k, line))
+        }
+      } else {
+        if (!equals(j, 1)) {
+          result.push(getPartOfGeometryLine(j, 1, line))
+        }
+      }
+    } else if (isBetween(k, 0, 1)) {
+      if (!equals(k, 0)) {
+        result.push(getPartOfGeometryLine(0, k, line))
+      }
+    } else {
+      result.push(line)
+    }
+  }
+  return result
+}
+
 export function getGeometryLineByStartEndBulge(start: Position, end: Position, bulge: number): GeometryLine {
   if (isZero(bulge)) {
     return [start, end]
@@ -312,4 +349,32 @@ export function getGeometryLineByStartEndBulge(start: Position, end: Position, b
     type: 'arc',
     curve: getArcByStartEndBulge(start, end, bulge),
   }
+}
+
+export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
+  const points = deduplicatePosition(Array.from(iterateGeometryLinesSelfIntersectionPoints(lines)))
+  for (const point of points) {
+    const params = deduplicate(Array.from(iterateGeometryLinesParamsAtPoint(point, lines)), isSameNumber)
+    if (params.length < 2) {
+      continue
+    }
+    const result: GeometryLine[][] = []
+    const part1 = [
+      ...getPartOfGeometryLines(params[1], lines.length, lines),
+      ...getPartOfGeometryLines(0, params[0], lines),
+    ]
+    const part2 = getPartOfGeometryLines(params[0], params[1], lines)
+    const area1 = getPolygonArea(getGeometryLinesPoints(part1))
+    if (!isZero(area1)) {
+      if (area1 < 0) continue
+      result.push(...splitGeometryLines(part1))
+    }
+    const area2 = getPolygonArea(getGeometryLinesPoints(part2))
+    if (!isZero(area2)) {
+      if (area2 < 0) continue
+      result.push(...splitGeometryLines(part2))
+    }
+    return result
+  }
+  return [lines]
 }

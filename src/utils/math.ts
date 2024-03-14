@@ -158,6 +158,13 @@ export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
   return result
 }
 
+export function first<T>(generator: Generator<T, void, undefined>) {
+  for (const item of generator) {
+    return item
+  }
+  return
+}
+
 export function multiplyOpacity(a?: number, b?: number) {
   if (a === undefined) return b
   if (b === undefined) return a

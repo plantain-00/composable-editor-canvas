@@ -3,7 +3,7 @@ import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
-import { Position } from "./position"
+import { Position, isSamePoint } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
 import { getPolygonLine, getRayPointAtDistance, pointAndDirectionToGeneralFormLine, pointIsOnRay, rayToLineSegment } from "./line"
@@ -18,7 +18,7 @@ import { pointIsOnArc } from "./circle"
 import { getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
-import { GeometryLine } from "./geometry-line"
+import { GeometryLine, getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 
 /**
@@ -38,11 +38,37 @@ export function* iterateIntersectionPoints<T>(
     if (model1.getGeometries && model2.getGeometries) {
       const lines1 = model1.getGeometries(content1, contents).lines
       const lines2 = model2.getGeometries(content2, contents).lines
-      for (const line1 of lines1) {
-        for (const line2 of lines2) {
-          yield* getTwoGeometryLinesIntersectionPoint(line1, line2)
+      yield* iterateGeometryLinesIntersectionPoints(lines1, lines2)
+    }
+  }
+}
+
+export function* iterateGeometryLinesIntersectionPoints(lines1: GeometryLine[], lines2: GeometryLine[]) {
+  for (const line1 of lines1) {
+    for (const line2 of lines2) {
+      yield* getTwoGeometryLinesIntersectionPoint(line1, line2)
+    }
+  }
+}
+
+export function* iterateGeometryLinesSelfIntersectionPoints(lines: GeometryLine[]) {
+  const closed = isGeometryLinesClosed(lines)
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i + 1; j < lines.length; j++) {
+      let points = getTwoGeometryLinesIntersectionPoint(lines[i], lines[j])
+      if (j === i + 1) {
+        const end = getGeometryLineStartAndEnd(lines[i])?.end
+        if (end) {
+          points = points.filter(p => !isSamePoint(p, end))
         }
       }
+      if (closed && i === 0 && j === lines.length - 1) {
+        const start = getGeometryLineStartAndEnd(lines[i])?.start
+        if (start) {
+          points = points.filter(p => !isSamePoint(p, start))
+        }
+      }
+      yield* points
     }
   }
 }

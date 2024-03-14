@@ -69,8 +69,8 @@ export function useAttributedTextEditor<T extends object>(props: {
     const newState: AttributedText<T>[] = []
     let index = 0
     let inserted = false
-    const inReadonlyRangeStart = readonlyRanges.find(r => location === r.min)?.min === newLocation
-    const inReadonlyRangeEnd = readonlyRanges.find(r => location === r.max)?.max === newLocation
+    const inReadonlyRangeStart = readonlyRanges.some(r => r.min === newLocation)
+    const inReadonlyRangeEnd = readonlyRanges.some(r => r.max === newLocation)
     for (const s of middleState) {
       const k = newLocation - index
       const insertLength = getInsertLength(s)

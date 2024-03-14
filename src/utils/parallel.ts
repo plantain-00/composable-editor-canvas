@@ -343,7 +343,6 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
           current = parallel[0]
         } else {
           const previousLine = lines[i - 1]
-          getGeometryLineStartAndEnd(previousLine).start
           const center = getGeometryLineStartAndEnd(previousLine).end
           current = getGeometryLineStartAndEnd(previousParallel).end
           const next = getGeometryLineStartAndEnd(parallel).start
