@@ -327,7 +327,7 @@ export function getPolygonArea(points: Position[]) {
     const next = i === points.length - 1 ? 0 : i + 1
     result += points[i].x * points[next].y - points[next].x * points[i].y
   }
-  return Math.abs(result) / 2
+  return result / 2
 }
 
 export function* getPolygonLine(polygon: Position[]): Generator<[Position, Position], void, unknown> {

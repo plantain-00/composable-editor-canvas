@@ -67,7 +67,7 @@ function getCapacitorGeometriesFromCache(content: Omit<CapacitorDevice, "type">,
       const center = getTwoPointCenter(start.position, end.position)
       const p1 = getPointByLengthAndDirection(center, 3, start.position)
       const p2 = getPointByLengthAndDirection(center, 3, end.position)
-      const radian = getTwoPointsRadian(start.position, end.position)
+      const radian = getTwoPointsRadian(start.position, end.position) + Math.PI / 2
       const lines: [Position, Position][] = [
         [start.position, p1],
         [end.position, p2],

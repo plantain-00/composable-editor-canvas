@@ -1,8 +1,8 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getPartOfGeometryLine, pointIsOnGeometryLine } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { deepEquals, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
+import { deepEquals, first, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
@@ -12,12 +12,12 @@ import { getTwoPointsRadian } from "./radian"
 import { pointInPolygon } from "./line"
 import { ellipseArcToPolyline } from "./ellipse"
 import { arcToPolyline } from "./circle"
-import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
+import { getTwoGeometryLinesIntersectionPoint, iterateGeometryLinesIntersectionPoints } from "./intersection"
 import { GeometryLine } from "./geometry-line"
 import { mergeGeometryLine } from "./merge"
 import { getNurbsPoints } from "./nurbs"
 import { getRadianSideOfRadian } from "./parallel"
-import { reverseGeometryLine } from "./reverse"
+import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine } from "./reverse"
 
 export function getHatchByPosition(
   position: Position,
@@ -251,4 +251,37 @@ export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100
     }
   }
   return points
+}
+
+export function mergeHatchBorderAndHole(border: GeometryLine[], hole: GeometryLine[]): GeometryLine[] | undefined {
+  const point = first(iterateGeometryLinesIntersectionPoints(border, hole))
+  if (point) {
+    const param1 = getGeometryLinesParamAtPoint(point, border)
+    const param2 = getGeometryLinesParamAtPoint(point, hole)
+    return [
+      ...getPartOfGeometryLines(0, param1, border),
+      ...getPartOfGeometryLines(param2, 0, hole),
+      ...getPartOfGeometryLines(hole.length, param2, hole),
+      ...getPartOfGeometryLines(param1, border.length, border),
+    ]
+  }
+  return
+}
+
+export function optimizeHatch(border: GeometryLine[], holes: GeometryLine[][]) {
+  border = reverseClosedGeometryLinesIfAreaIsNegative(border)
+  holes = holes.map(h => reverseClosedGeometryLinesIfAreaIsNegative(h))
+  return optimizeHatchInternally(border, holes)
+}
+
+export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryLine[][]): { border: GeometryLine[], holes: GeometryLine[][] }[] {
+  for (let i = 0; i < holes.length; i++) {
+    const lines = mergeHatchBorderAndHole(border, holes[i])
+    if (lines) {
+      holes.splice(i, 1)
+      const borders = splitGeometryLines(lines)
+      return borders.map(b => optimizeHatchInternally(b, holes)).flat()
+    }
+  }
+  return [{ border, holes }]
 }
