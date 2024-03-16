@@ -191,7 +191,8 @@ export const CADEditor = React.forwardRef((props: {
     setYOffset: unlockedActiveViewport ? (offset) => setYOffset(y => y + offset) : undefined,
   })
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
-    min: 0.001,
+    min: MIN_SCALE,
+    max: MAX_SCALE,
     localStorageKey: props.id + '-scale',
     setScaleOffset: unlockedActiveViewport ? (scaleOffset, cursor) => {
       setScaleOffset(f => f * scaleOffset)
@@ -230,7 +231,7 @@ export const CADEditor = React.forwardRef((props: {
       },
     }
   )
-  const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: 0.001 })
+  const { zoomIn, zoomOut } = useZoom(scale, setScale, { min: MIN_SCALE, max: MAX_SCALE })
   const { offset, onStart: onStartMoveCanvas, mask: moveCanvasMask, resetDragMove } = useDragMove(() => {
     if (unlockedActiveViewportIndex !== undefined) {
       applyPatchFromSelf(prependPatchPath(previewPatches), prependPatchPath(previewReversePatches))
@@ -1182,6 +1183,9 @@ export const CADEditor = React.forwardRef((props: {
     </>
   )
 })
+
+const MIN_SCALE = 0.001
+const MAX_SCALE = 100
 
 export function usePlugins() {
   const [pluginCommandTypes, setPluginCommandTypes] = React.useState<CommandType[]>([])

@@ -297,7 +297,7 @@ export function getParallelGeometryLineByDistance(line: GeometryLine, distance: 
   }
 }
 
-export function getParallelGeometryLinesByDistance(point: Position, lines: GeometryLine[], distance: number): GeometryLine[] {
+export function getParallelGeometryLinesByDistance(point: Position, lines: GeometryLine[], distance: number, direction?: 0 | 1): GeometryLine[] {
   if (!distance) {
     distance = Math.min(...lines.map(line => getPointAndGeometryLineMinimumDistance(point, line)))
   }
@@ -305,7 +305,7 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
     return lines
   }
   const closed = isGeometryLinesClosed(lines) && lines.length > 1
-  const index = getLinesOffsetDirection(point, lines)
+  const index = direction ?? getLinesOffsetDirection(point, lines)
   const parallels = lines.map(line => getParallelGeometryLineByDistance(line, distance, index))
   if (parallels.length === 1) {
     return parallels
@@ -318,20 +318,20 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
     let newItem: { line: GeometryLine, current: Position } | undefined
     if (i === 0) {
       if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallels[parallels.length - 1], parallel, point)
+        current = getTwoGeometryLinesNearestIntersectionPoint(parallels[parallels.length - 1], parallel, lines[i])
       } else {
         current = getGeometryLineStartAndEnd(parallel).start
       }
     } else if (i === parallels.length) {
       parallel = parallels[parallels.length - 1]
       if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallel, parallels[0], point)
+        current = getTwoGeometryLinesNearestIntersectionPoint(parallel, parallels[0], lines[0])
       } else {
         current = getGeometryLineStartAndEnd(parallel).end
       }
     } else {
       const previousParallel = parallels[i - 1]
-      current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel, point)
+      current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel, lines[i])
       if (!current) {
         if (!Array.isArray(parallel) && parallel.type === 'arc' && parallel.curve.r <= 0) {
           lines = lines.toSpliced(i, 1)
@@ -416,10 +416,10 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
   return result
 }
 
-function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine, cursor?: Position) {
+function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine, originalLine2: GeometryLine) {
   const intersections = getTwoGeometryLinesIntersectionPoint(line1, line2, true)
   if (intersections.length > 1) {
-    const s = cursor || getGeometryLineStartAndEnd(line2).start
+    const s = getGeometryLineStartAndEnd(originalLine2).start
     return minimumBy(intersections.map(p => ({ point: p, distance: getTwoPointsDistance(p, s) })), p => p.distance).point
   }
   return intersections[0]

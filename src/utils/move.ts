@@ -244,3 +244,7 @@ export function scaleGeometryLines(lines: GeometryLine[], center: Position, sx: 
     }
   }
 }
+
+export function skewPoint(point: Position, y0: number, rate: number) {
+  point.x += (point.y - y0) * rate
+}

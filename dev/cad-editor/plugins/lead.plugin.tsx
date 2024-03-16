@@ -8,6 +8,8 @@ export type LeadContent = model.BaseContent<'lead'> & model.StrokeFields & model
   ref?: model.ContentRef
   points: core.Position[]
   text: string
+  toleranceSymbolId?: number
+  bordered?: boolean
 }
 
 export function getModel(ctx: PluginContext): model.Model<LeadContent> {
@@ -15,9 +17,11 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     ref: ctx.optional(ctx.ContentRef),
     points: [ctx.Position],
     text: ctx.string,
+    toleranceSymbolId: ctx.optional(ctx.number),
+    bordered: ctx.optional(ctx.boolean),
   })
   const getRefIds = (content: Omit<LeadContent, "type">) => [content.strokeStyleId, content.ref]
-  const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position, first: core.Position }>>()
+  const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position, first: core.Position, padding: number }>>()
   function getLeadGeometriesFromCache(content: Omit<LeadContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return leadCache.get(content, refs, () => {
@@ -69,11 +73,15 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       const previous = content.points[content.points.length - 2]
       const last = content.points[content.points.length - 1]
       const right = !previous || previous.x <= last.x
+      const padding = content.fontSize / 4
+      const toleranceSymbol = content.toleranceSymbolId !== undefined ? toleranceSymbols[content.toleranceSymbolId] : undefined
+      const width = (size.width + content.fontSize * (toleranceSymbol ? 1 : 0) + padding * (toleranceSymbol ? 4 : 2)) * (right ? 1 : -1)
+      const height = Math.max(size.height, content.fontSize) / 2 + padding
       const textPoints = [
-        { x: last.x, y: last.y - size.height / 2 },
-        { x: last.x + size.width * (right ? 1 : -1), y: last.y - size.height / 2 },
-        { x: last.x + size.width * (right ? 1 : -1), y: last.y + size.height / 2 },
-        { x: last.x, y: last.y + size.height / 2 },
+        { x: last.x, y: last.y - height },
+        { x: last.x + width, y: last.y - height },
+        { x: last.x + width, y: last.y + height },
+        { x: last.x, y: last.y + height },
       ]
       const lines: core.GeometryLine[] = Array.from(ctx.iteratePolylineLines(points))
       const renderingLines: core.Position[][] = ctx.dashedPolylineToLines(points, content.dashArray)
@@ -86,6 +94,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
         first: p0,
         last,
         right,
+        padding,
         bounding: ctx.mergeBoundings([ctx.getGeometryLinesBounding(lines), ctx.getPointsBounding(textPoints)]),
         regions: [
           {
@@ -130,13 +139,16 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     },
     render(content, renderCtx) {
       const { options, target, contents, fillOptions } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-      const { regions, renderingLines, last, right } = getLeadGeometriesFromCache(content, contents)
+      const { regions, renderingLines, last, right, padding } = getLeadGeometriesFromCache(content, contents)
       const children: ReturnType<typeof target.renderGroup>[] = []
       for (const line of renderingLines) {
         children.push(target.renderPolyline(line, options))
       }
       if (regions && regions.length > 1) {
         children.push(target.renderPolygon(regions[1].points, fillOptions))
+      }
+      if (content.bordered && regions && regions.length > 0) {
+        children.push(target.renderPolygon(regions[0].points, options))
       }
       const textStyleContent = ctx.getTextStyleContent(content, contents)
       const color = renderCtx.transformColor(textStyleContent.color)
@@ -147,8 +159,20 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
       if (!cacheKey) {
         cacheKey = content
       }
+      let textX = last.x
+      const toleranceSymbol = content.toleranceSymbolId !== undefined ? toleranceSymbols[content.toleranceSymbolId] : undefined
+      if (toleranceSymbol) {
+        children.push(target.renderGroup([
+          toleranceSymbol(target, textStyleContent.fontSize, options),
+        ], { translate: { x: last.x + textStyleContent.fontSize * (right ? 0 : -1) + padding * (right ? 1 : -1), y: last.y - textStyleContent.fontSize / 2 } }))
+        textX += (textStyleContent.fontSize + padding * 2) * (right ? 1 : -1)
+        if (content.bordered && regions && regions.length > 0) {
+          children.push(target.renderPolyline([{ x: textX, y: regions[0].points[0].y }, { x: textX, y: regions[0].points[2].y }], options))
+        }
+      }
+      textX += padding * (right ? 1 : -1)
       const textOptions = ctx.getTextStyleRenderOptionsFromRenderContext(color, renderCtx)
-      children.push(target.renderText(last.x, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: 'middle', textAlign: right ? 'left' : 'right' }))
+      children.push(target.renderText(textX, last.y, content.text, color, textStyleContent.fontSize, textStyleContent.fontFamily, { cacheKey, ...textOptions, textBaseline: 'middle', textAlign: right ? 'left' : 'right' }))
       return target.renderGroup(children)
     },
     getEditPoints(content, contents) {
@@ -206,6 +230,16 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
           />)}
         />,
         text: <ctx.StringEditor textarea value={content.text} setValue={(v) => update(c => { if (isLeadContent(c)) { c.text = v } })} />,
+        toleranceSymbolId: [
+          <ctx.BooleanEditor value={content.toleranceSymbolId !== undefined} setValue={(v) => update(c => { if (isLeadContent(c)) { c.toleranceSymbolId = v ? 0 : undefined } })} />,
+          content.toleranceSymbolId !== undefined ? <ctx.EnumEditor
+            enums={toleranceSymbols.map((_, i) => i)}
+            enumTitles={toleranceSymbols.map(s => ctx.reactSvgRenderTarget.renderResult([s(ctx.reactSvgRenderTarget, 13)], 13, 13))}
+            value={content.toleranceSymbolId}
+            setValue={(v) => update(c => { if (isLeadContent(c)) { c.toleranceSymbolId = v } })}
+          /> : undefined
+        ],
+        bordered: <ctx.BooleanEditor value={content.bordered ?? false} setValue={(v) => update(c => { if (isLeadContent(c)) { c.bordered = v } })} />,
         ...ctx.getTextContentPropertyPanel(content, update, contents),
         ...ctx.getArrowContentPropertyPanel(content, update),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
@@ -254,6 +288,51 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
 export function isLeadContent(content: model.BaseContent): content is LeadContent {
   return content.type === 'lead'
 }
+
+const toleranceSymbols: (<V, P>(target: core.ReactRenderTarget<V, P>, size: number, options?: Partial<core.PathOptions<V>>) => V)[] = [
+  (target, size, options) => target.renderPolyline([{ x: 0, y: size * 0.5 }, { x: size, y: size * 0.5 }], options),
+  (target, size, options) => target.renderPolygon([{ x: 0, y: size }, { x: size * 0.7, y: size }, { x: size, y: 0 }, { x: size * 0.3, y: 0 }], options),
+  (target, size, options) => target.renderCircle(size * 0.5, size * 0.5, size * 0.48, options),
+  (target, size, options) => target.renderGroup([
+    target.renderCircle(size * 0.5, size * 0.5, size * 0.25, options),
+    target.renderPolyline([{ x: 0, y: size }, { x: size * 0.4, y: 0 }], options),
+    target.renderPolyline([{ x: size, y: 0 }, { x: size * 0.6, y: size }], options),
+  ]),
+  (target, size, options) => target.renderArc(size * 0.5, size * 0.7, size * 0.48, -180, 0, options),
+  (target, size, options) => target.renderArc(size * 0.5, size * 0.7, size * 0.48, -180, 0, { ...options, closed: true }),
+  (target, size, options) => target.renderGroup([
+    target.renderPolyline([{ x: 0, y: size }, { x: size * 0.4, y: 0 }], options),
+    target.renderPolyline([{ x: size, y: 0 }, { x: size * 0.6, y: size }], options),
+  ]),
+  (target, size, options) => target.renderGroup([
+    target.renderPolyline([{ x: 0, y: size }, { x: size, y: size }], options),
+    target.renderPolyline([{ x: size * 0.5, y: 0 }, { x: size * 0.5, y: size }], options),
+  ]),
+  (target, size, options) => target.renderPolyline([{ x: size, y: size }, { x: 0, y: size }, { x: size, y: 0 }], options),
+  (target, size, options) => target.renderGroup([
+    target.renderCircle(size * 0.5, size * 0.5, size * 0.25, options),
+    target.renderPolyline([{ x: size * 0.5, y: 0 }, { x: size * 0.5, y: size }], options),
+    target.renderPolyline([{ x: 0, y: size * 0.5 }, { x: size, y: size * 0.5 }], options),
+  ]),
+  (target, size, options) => target.renderGroup([
+    target.renderCircle(size * 0.5, size * 0.5, size * 0.25, options),
+    target.renderCircle(size * 0.5, size * 0.5, size * 0.45, options),
+  ]),
+  (target, size, options) => target.renderGroup([
+    target.renderPolyline([{ x: 0, y: size * 0.5 }, { x: size, y: size * 0.5 }], options),
+    target.renderPolyline([{ x: size * 0.25, y: size * 0.25 }, { x: size * 0.75, y: size * 0.25 }], options),
+    target.renderPolyline([{ x: size * 0.25, y: size * 0.75 }, { x: size * 0.75, y: size * 0.75 }], options),
+  ]),
+  (target, size, options) => target.renderGroup([
+    target.renderPolyline([{ x: size * 0.2, y: size }, { x: size * 0.8, y: 0 }], options),
+    target.renderPolyline([{ x: size * 0.35, y: size * 0.4 }, { x: size * 0.8, y: 0 }, { x: size * 0.65, y: size * 0.55 }], options),
+  ]),
+  (target, size, options) => target.renderGroup([
+    target.renderPolyline([{ x: size * 0.4, y: 0 }, { x: 0, y: size }, { x: size * 0.6, y: size }, { x: size, y: 0 }], options),
+    target.renderPolyline([{ x: 0, y: size * 0.4 }, { x: size * 0.4, y: 0 }, { x: size * 0.35, y: size * 0.55 }], options),
+    target.renderPolyline([{ x: size * 0.6, y: size * 0.4 }, { x: size, y: 0 }, { x: size * 0.95, y: size * 0.55 }], options),
+  ]),
+]
 
 export function getCommand(ctx: PluginContext): Command {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
