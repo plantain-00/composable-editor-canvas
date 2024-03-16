@@ -13,7 +13,8 @@ export default () => {
     target.renderArc(170, 170, 20, 120, 0, { counterclockwise: true }),
     target.renderArc(120, 200, 15, 0, 360,),
     target.renderArc(120, 200, 10, 360, 0, { counterclockwise: true }),
-  ], 230, 280)
+    target.renderArc(170, 170, 10, 0, 120, { closed: true }),
+  ], 230, 310)
 
   const renderCircles = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderCircle(70, 100, 30, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -57,7 +58,8 @@ export default () => {
     target.renderEllipseArc(110, 100, 80, 40, 0, 120, { strokeColor: 0x00ff00, angle: 30 }),
     target.renderEllipseArc(120, 200, 30, 15, 0, 360,),
     target.renderEllipseArc(120, 200, 20, 10, 360, 0, { counterclockwise: true }),
-  ], 230, 310)
+    target.renderEllipseArc(170, 160, 25, 20, 0, 120, { closed: true }),
+  ], 230, 330)
 
   const renderEllipses = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderEllipse(70, 60, 40, 20, { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -126,7 +128,8 @@ export default () => {
     target.renderPolyline([{ x: 95, y: 10 }, { x: 135, y: 150 }, { x: 135, y: 10 }], { strokeColor: 0x00ff00 }),
     target.renderPolyline([{ x: 140, y: 10 }, { x: 180, y: 150 }, { x: 180, y: 10 }], { strokeWidth: 5 }),
     target.renderPolyline([{ x: 185, y: 10 }, { x: 225, y: 150 }, { x: 225, y: 10 }], { dashArray: [4] }),
-  ], 230, 190)
+    target.renderPolyline([{ x: 195, y: 10 }, { x: 215, y: 80 }, { x: 215, y: 10 }], { closed: true }),
+  ], 230, 220)
 
   const renderPolygons = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderPolygon([{ x: 5, y: 10 }, { x: 45, y: 150 }, { x: 45, y: 10 }], { fillPattern: { width: 10, height: 10, pattern: () => target.renderPath([[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]], { strokeColor: 0x0000ff }) } }),
@@ -138,7 +141,8 @@ export default () => {
 
   const renderPathCommands = <T,>(target: ReactRenderTarget<T>) => target.renderResult([
     target.renderPathCommands([{ type: 'move', to: { x: 220, y: 10 } }, { type: 'arc', from: { x: 220, y: 80 }, to: { x: 150, y: 10 }, radius: 20 }, { type: 'line', to: { x: 150, y: 10 } }, { type: 'quadraticCurve', cp: { x: 150, y: 90 }, to: { x: 110, y: 70 } }, { type: 'bezierCurve', cp1: { x: 70, y: 20 }, cp2: { x: 40, y: 80 }, to: { x: 10, y: 10 } }, { type: 'ellipseArc', rx: 30, ry: 20, angle: 0, largeArc: false, sweep: true, to: { x: 50, y: 30 } }], { strokeColor: 0x00ff00 }),
-  ], 230, 90)
+    target.renderPathCommands([{ type: 'move', to: { x: 210, y: 10 } }, { type: 'arc', from: { x: 210, y: 80 }, to: { x: 160, y: 10 }, radius: 20 }, { type: 'line', to: { x: 160, y: 10 } }], { closed: true }),
+  ], 230, 120)
 
   const renderGroups = <T,>(target: ReactRenderTarget<T>) => {
     const items = [

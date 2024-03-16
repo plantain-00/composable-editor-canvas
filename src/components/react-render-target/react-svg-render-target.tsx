@@ -165,7 +165,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
     return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path
-        d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
+        d={`M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}${options?.closed ? ' Z' : ''}`}
         {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
@@ -188,7 +188,7 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
     const clockwiseFlag = options?.counterclockwise ? "1" : "0"
     return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path
-        d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}`}
+        d={`M ${start.x} ${start.y} A ${rx} ${ry} 0 ${largeArcFlag} ${clockwiseFlag} ${end.x} ${end.y}${options?.closed ? ' Z' : ''}`}
         {...getCommonLineAttributes(scale, strokeWidthFixed, options)}
         fill={fill}
         stroke={stroke}
@@ -242,6 +242,9 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
       } else if (command.type === 'close') {
         d += ' Z'
       }
+    }
+    if (options?.closed) {
+      d += ' Z'
     }
     return renderPattern((fill, stroke, scale, strokeWidthFixed) => (
       <path

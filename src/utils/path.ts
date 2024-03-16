@@ -1,5 +1,5 @@
 import { getLargeArc } from "./angle";
-import { getGeometryLineStartAndEnd } from "./geometry-line";
+import { getGeometryLineStartAndEnd, optimizeGeometryLines } from "./geometry-line";
 import { getArcControlPoint } from "./circle";
 import { getEllipseArcByStartEnd } from "./ellipse";
 import { GeometryLine } from "./geometry-line";
@@ -277,7 +277,7 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
   if (lines.length > 0) {
     result.push(lines)
   }
-  return result
+  return result.map(r => optimizeGeometryLines(r))
 }
 
 export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[] {

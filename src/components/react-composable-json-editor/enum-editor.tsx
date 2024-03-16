@@ -44,7 +44,7 @@ export function EnumArrayEditor<T extends string>(props: JsonEditorProps<T[]> & 
  */
 export function EnumEditor<T extends string | number>(props: JsonEditorProps<T> & {
   enums: readonly T[]
-  enumTitles?: readonly string[]
+  enumTitles?: readonly (string | JSX.Element)[]
   select?: boolean
 }): JSX.Element {
   if (props.select) {

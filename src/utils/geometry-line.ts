@@ -378,3 +378,12 @@ export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
   }
   return [lines]
 }
+
+export function optimizeGeometryLines(lines: GeometryLine[]): GeometryLine[] {
+  return lines.filter(line => {
+    if (Array.isArray(line)) {
+      return !isSamePoint(...line)
+    }
+    return true
+  })
+}

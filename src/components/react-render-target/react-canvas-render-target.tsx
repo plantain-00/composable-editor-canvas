@@ -146,6 +146,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       ctx.beginPath()
       setCanvasLineDash(ctx, options)
       ctx.arc(cx, cy, r, angleToRadian(startAngle), angleToRadian(endAngle), options?.counterclockwise)
+      if (options?.closed) {
+        ctx.closePath()
+      }
       renderStroke(ctx, scale, rerender, width, height, transform, matrix, options)
       renderFill(ctx, scale, rerender, width, height, transform, matrix, options)
       ctx.restore()
@@ -158,6 +161,9 @@ export const reactCanvasRenderTarget: ReactRenderTarget<CanvasDraw> = {
       setCanvasLineDash(ctx, options)
       const rotation = options?.rotation ?? (angleToRadian(options?.angle))
       ctx.ellipse(cx, cy, rx, ry, rotation, angleToRadian(startAngle), angleToRadian(endAngle), options?.counterclockwise)
+      if (options?.closed) {
+        ctx.closePath()
+      }
       renderStroke(ctx, scale, rerender, width, height, transform, matrix, options)
       renderFill(ctx, scale, rerender, width, height, transform, matrix, options)
       ctx.restore()
