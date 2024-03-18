@@ -54,8 +54,8 @@ export function getPointByLengthAndDirectionSafely(
   return getPointByLengthAndDirection(startPoint, length, directionPoint)
 }
 
-export function isSamePoint(p1: Position, p2: Position) {
-  return isSameNumber(p1.x, p2.x) && isSameNumber(p1.y, p2.y)
+export function isSamePoint(p1: Position, p2: Position, delta?: number) {
+  return isSameNumber(p1.x, p2.x, delta) && isSameNumber(p1.y, p2.y, delta)
 }
 
 export function getPointByLengthAndRadian(

@@ -17,6 +17,13 @@ export function calculateEquation2(a: number, b: number, c: number, delta?: numb
   if (isZero(a, delta)) {
     return calculateEquation1(b, c, delta)
   }
+  if (isZero(c, delta)) {
+    const remains = calculateEquation1(a, b, delta)
+    if (remains.some(r => isZero(r, delta))) {
+      return remains
+    }
+    return [0, ...remains]
+  }
   if (a !== 1) {
     b /= a
     c /= a
@@ -41,6 +48,13 @@ export function calculateEquation2(a: number, b: number, c: number, delta?: numb
 export function calculateEquation3(a: number, b: number, c: number, d: number, delta?: number) {
   if (isZero(a, delta)) {
     return calculateEquation2(b, c, d, delta)
+  }
+  if (isZero(d, delta)) {
+    const remains = calculateEquation2(a, b, c, delta)
+    if (remains.some(r => isZero(r, delta))) {
+      return remains
+    }
+    return [0, ...remains]
   }
   if (a !== 1) {
     b /= a
@@ -86,6 +100,13 @@ export function calculateEquation3(a: number, b: number, c: number, d: number, d
 export function calculateEquation4(a: number, b: number, c: number, d: number, e: number, delta?: number) {
   if (isZero(a, delta)) {
     return calculateEquation3(b, c, d, e, delta)
+  }
+  if (isZero(e, delta)) {
+    const remains = calculateEquation3(a, b, c, d, delta)
+    if (remains.some(r => isZero(r, delta))) {
+      return remains
+    }
+    return [0, ...remains]
   }
   if (a !== 1) {
     b /= a
@@ -192,6 +213,13 @@ export function calculateEquation5(params: number[], x0: number, delta = delta2,
   if (params.length <= 5) {
     return calculateEquation4(params[params.length - 5] || 0, params[params.length - 4] || 0, params[params.length - 3] || 0, params[params.length - 2] || 0, params[params.length - 1] || 0, delta)
   }
+  if (isZero(params[params.length - 1], delta)) {
+    const remains = calculateEquation5(params.slice(0, params.length - 1), delta)
+    if (remains.some(r => isZero(r, delta))) {
+      return remains
+    }
+    return [0, ...remains]
+  }
   const f1 = (x: number) => {
     let result = 0
     for (const p of params) {
@@ -225,8 +253,8 @@ export function calculateEquation5(params: number[], x0: number, delta = delta2,
 
 export function newtonIterate(
   x0: number,
-  f1:(x: number) => number,
-  f2:(x: number) => number,
+  f1: (x: number) => number,
+  f2: (x: number) => number,
   delta: number,
   maxIteratorCount = 100,
 ) {

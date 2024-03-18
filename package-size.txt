@@ -1,5 +1,5 @@
 composable-type-validator: 5.29e+3
-react-render-target: 1.60e+5
+react-render-target: 1.62e+5
 use-undo-redo: 1.38e+3
 use-patch-based-undo-redo: 4.10e+3
 react-composable-json-editor: 2.00e+4
@@ -12,4 +12,4 @@ use-drag-resize: 6.71e+3
 use-drag-rotate: 2.75e+3
 equation-renderer: 1.21e+4
 equation-solver: 7.33e+4
-equation-calculater: 6.06e+3
+equation-calculater: 6.88e+3

@@ -1,5 +1,5 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, pointIsOnGeometryLine } from "./geometry-line"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
 import { isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
@@ -24,6 +24,7 @@ import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfN
 import { getPerpendicularLine, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
+import { LineJoin, defaultLineJoin } from "./triangles"
 
 export function getParallelCirclesByDistance<T extends Circle>(circle: T, distance: number): [T, T] {
   if (isZero(distance)) {
@@ -78,6 +79,30 @@ export function getParallelEllipseArcsByDistance<T extends EllipseArc>(ellipseAr
 export function getParallelQuadraticCurvesByDistance<T extends QuadraticCurve>(curve: T, distance: number): [T, T] {
   if (isZero(distance)) {
     return [curve, curve]
+  }
+  let line: GeneralFormLine | undefined
+  if (isSamePoint(curve.from, curve.cp)) {
+    line = twoPointLineToGeneralFormLine(curve.cp, curve.to)
+  }
+  if (isSamePoint(curve.cp, curve.to)) {
+    line = twoPointLineToGeneralFormLine(curve.from, curve.cp)
+  }
+  if (line) {
+    const parallelLines = getParallelLinesByDistance(line, distance)
+    return [
+      {
+        ...curve,
+        from: getPerpendicularPoint(curve.from, parallelLines[0]),
+        cp: getPerpendicularPoint(curve.cp, parallelLines[0]),
+        to: getPerpendicularPoint(curve.to, parallelLines[0]),
+      },
+      {
+        ...curve,
+        from: getPerpendicularPoint(curve.from, parallelLines[1]),
+        cp: getPerpendicularPoint(curve.cp, parallelLines[1]),
+        to: getPerpendicularPoint(curve.to, parallelLines[1]),
+      },
+    ]
   }
   const line1 = twoPointLineToGeneralFormLine(curve.from, curve.cp)
   const line2 = twoPointLineToGeneralFormLine(curve.cp, curve.to)
@@ -257,56 +282,53 @@ export function pointSideToIndex(side: number) {
   return side > 0 ? 1 : 0
 }
 
-export function getParallelGeometryLineByDistance(line: GeometryLine, distance: number, index: 0 | 1): GeometryLine {
+export function getParallelGeometryLinesByDistance(line: GeometryLine, distance: number): [GeometryLine, GeometryLine] {
   if (Array.isArray(line)) {
-    return getParallelLineSegmentsByDistance(line, distance)[index]
+    return getParallelLineSegmentsByDistance(line, distance)
   }
   if (line.type === 'arc') {
-    return {
-      type: 'arc',
-      curve: getParallelArcsByDistance(line.curve, distance)[index],
-    }
+    const curves = getParallelArcsByDistance(line.curve, distance)
+    return [{ type: 'arc', curve: curves[0] }, { type: 'arc', curve: curves[1] }]
   }
   if (line.type === 'ellipse arc') {
-    return {
-      type: 'ellipse arc',
-      curve: getParallelEllipseArcsByDistance(line.curve, distance)[index],
-    }
+    const curves = getParallelEllipseArcsByDistance(line.curve, distance)
+    return [{ type: 'ellipse arc', curve: curves[0] }, { type: 'ellipse arc', curve: curves[1] }]
   }
   if (line.type === 'quadratic curve') {
-    return {
-      type: line.type,
-      curve: getParallelQuadraticCurvesByDistance(line.curve, distance)[index],
-    }
+    const curves = getParallelQuadraticCurvesByDistance(line.curve, distance)
+    return [{ type: 'quadratic curve', curve: curves[0] }, { type: 'quadratic curve', curve: curves[1] }]
   }
   if (line.type === 'bezier curve') {
-    return {
-      type: line.type,
-      curve: getParallelBezierCurvesByDistance(line.curve, distance)[index],
-    }
+    const curves = getParallelBezierCurvesByDistance(line.curve, distance)
+    return [{ type: 'bezier curve', curve: curves[0] }, { type: 'bezier curve', curve: curves[1] }]
   }
   if (line.type === 'ray') {
-    return {
-      type: line.type,
-      line: getParallelRaysByDistance(line.line, distance)[index],
-    }
+    const curves = getParallelRaysByDistance(line.line, distance)
+    return [{ type: 'ray', line: curves[0] }, { type: 'ray', line: curves[1] }]
   }
-  return {
-    type: line.type,
-    curve: getParallelNurbsCurvesByDistance(line.curve, distance)[index],
-  }
+  const curves = getParallelNurbsCurvesByDistance(line.curve, distance)
+  return [{ type: 'nurbs curve', curve: curves[0] }, { type: 'nurbs curve', curve: curves[1] }]
 }
 
-export function getParallelGeometryLinesByDistance(point: Position, lines: GeometryLine[], distance: number, direction?: 0 | 1): GeometryLine[] {
+export function getParallelGeometryLinesByDistancePoint(point: Position, lines: GeometryLine[], distance: number): GeometryLine[] {
   if (!distance) {
     distance = Math.min(...lines.map(line => getPointAndGeometryLineMinimumDistance(point, line)))
   }
+  const index = getLinesOffsetDirection(point, lines)
+  return getParallelGeometryLinesByDistanceDirectionIndex(lines, distance, index)
+}
+
+export function getParallelGeometryLinesByDistanceDirectionIndex(
+  lines: GeometryLine[],
+  distance: number,
+  index: 0 | 1,
+  lineJoin: LineJoin = defaultLineJoin,
+): GeometryLine[] {
   if (isZero(distance)) {
     return lines
   }
   const closed = isGeometryLinesClosed(lines) && lines.length > 1
-  const index = direction ?? getLinesOffsetDirection(point, lines)
-  const parallels = lines.map(line => getParallelGeometryLineByDistance(line, distance, index))
+  const parallels = lines.map(line => getParallelGeometryLinesByDistance(line, distance)[index])
   if (parallels.length === 1) {
     return parallels
   }
@@ -332,6 +354,9 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
     } else {
       const previousParallel = parallels[i - 1]
       current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel, lines[i])
+      if (lineJoin !== 'miter' && current && !pointIsOnGeometryLine(current, parallel)) {
+        current = undefined
+      }
       if (!current) {
         if (!Array.isArray(parallel) && parallel.type === 'arc' && parallel.curve.r <= 0) {
           lines = lines.toSpliced(i, 1)
@@ -339,8 +364,17 @@ export function getParallelGeometryLinesByDistance(point: Position, lines: Geome
           i--
           continue
         }
-        if (Array.isArray(previousParallel) && Array.isArray(parallel)) {
+        if (lineJoin === 'miter' && Array.isArray(previousParallel) && Array.isArray(parallel)) {
           current = parallel[0]
+        } else if (lineJoin === 'bevel') {
+          current = getGeometryLineStartAndEnd(previousParallel).end
+          const next = getGeometryLineStartAndEnd(parallel).start
+          if (current && next) {
+            newItem = {
+              current: next,
+              line: [current, next],
+            }
+          }
         } else {
           const previousLine = lines[i - 1]
           const center = getGeometryLineStartAndEnd(previousLine).end
