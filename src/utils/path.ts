@@ -7,7 +7,7 @@ import { getGeometryLinesPoints } from "./hatch";
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection";
 import { isRecord } from "./is-record";
 import { twoPointLineToGeneralFormLine, getPointSideOfLine, getParallelLinesByDistance, pointInPolygon } from "./line";
-import { isZero } from "./math";
+import { delta2, isZero } from "./math";
 import { getPerpendicularPoint } from "./perpendicular";
 import { Position, isSamePoint } from "./position";
 import { getTwoPointsRadian, radianToAngle } from "./radian";
@@ -282,11 +282,16 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
 
 export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[] {
   const result: PathCommand[] = []
+  let first: Position | undefined
   let last: Position | undefined
-  for (const n of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const n = lines[i]
     const { start, end } = getGeometryLineStartAndEnd(n)
+    if (i === 0) {
+      first = start
+    }
     if (!start || !end) continue
-    if (!last || !isSamePoint(last, start)) {
+    if (!last || !isSamePoint(last, start, delta2)) {
       result.push({ type: 'move', to: start })
     }
     if (Array.isArray(n)) {
@@ -305,6 +310,9 @@ export function geometryLineToPathCommands(lines: GeometryLine[]): PathCommand[]
       result.push({ type: 'bezierCurve', cp1: n.curve.cp1, cp2: n.curve.cp2, to: n.curve.to })
     }
     last = end
+  }
+  if (first && last && isSamePoint(first, last)) {
+    result.push({ type: 'close' })
   }
   return result
 }

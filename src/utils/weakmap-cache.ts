@@ -319,3 +319,36 @@ export class MapCache3<TKey1, TKey2, TKey3, TValue> {
     return result
   }
 }
+
+export class MapCache4<TKey1, TKey2, TKey3, TKey4, TValue> {
+  private cache = new Map<TKey1, Map<TKey2, Map<TKey3, Map<TKey4, TValue>>>>()
+
+  public get(key1: TKey1, key2: TKey2, key3: TKey3, key4: TKey4): TValue | undefined
+  public get(key1: TKey1, key2: TKey2, key3: TKey3, key4: TKey4, func: () => TValue): TValue
+  public get(key1: TKey1, key2: TKey2, key3: TKey3, key4: TKey4, func?: () => TValue): TValue | undefined {
+    let map = this.cache.get(key1)
+    if (!map) {
+      map = new Map<TKey2, Map<TKey3, Map<TKey4, TValue>>>()
+      this.cache.set(key1, map)
+    }
+    let map2 = map.get(key2)
+    if (!map2) {
+      map2 = new Map<TKey3, Map<TKey4, TValue>>()
+      map.set(key2, map2)
+    }
+    let map3 = map2.get(key3)
+    if (!map3) {
+      map3 = new Map<TKey4, TValue>()
+      map2.set(key3, map3)
+    }
+    let result = map3.get(key4)
+    if (result === undefined) {
+      if (!func) {
+        return
+      }
+      result = func()
+      map3.set(key4, result)
+    }
+    return result
+  }
+}

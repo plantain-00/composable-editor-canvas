@@ -9,11 +9,12 @@ import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePoint
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange } from "./angle";
-import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan } from "./math";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
-import { reverseGeometryLines } from "./reverse";
+import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
 import { getGeometryLinesPoints } from "./hatch";
+import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -363,7 +364,9 @@ export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
       ...getPartOfGeometryLines(params[1], lines.length, lines),
       ...getPartOfGeometryLines(0, params[0], lines),
     ]
+    if (part1.length === 0) continue
     const part2 = getPartOfGeometryLines(params[0], params[1], lines)
+    if (part2.length === 0) continue
     const area1 = getPolygonArea(getGeometryLinesPoints(part1))
     if (!isZero(area1)) {
       if (area1 < 0) continue
@@ -379,11 +382,83 @@ export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
   return [lines]
 }
 
-export function optimizeGeometryLines(lines: GeometryLine[]): GeometryLine[] {
-  return lines.filter(line => {
-    if (Array.isArray(line)) {
-      return !isSamePoint(...line)
+export function optimizeGeometryLine(line: GeometryLine): GeometryLine | undefined {
+  if (Array.isArray(line)) {
+    if (isSamePoint(...line)) return
+  } else if (line.type === 'arc') {
+    if (isSameNumber(line.curve.startAngle, line.curve.endAngle)) return
+    if (lessOrEqual(line.curve.r, 0)) return
+  } else if (line.type === 'ellipse arc') {
+    if (isSameNumber(line.curve.startAngle, line.curve.endAngle)) return
+    if (lessOrEqual(line.curve.rx, 0)) return
+    if (lessOrEqual(line.curve.ry, 0)) return
+    if (isSameNumber(line.curve.rx, line.curve.ry)) {
+      return optimizeGeometryLine({
+        type: 'arc',
+        curve: {
+          r: line.curve.rx,
+          x: line.curve.cx,
+          y: line.curve.cy,
+          startAngle: line.curve.startAngle,
+          endAngle: line.curve.endAngle,
+          counterclockwise: line.curve.counterclockwise,
+        }
+      })
     }
-    return true
+  } else if (line.type === 'quadratic curve') {
+    if (pointIsOnLine(line.curve.cp, line.curve.from, line.curve.to)) {
+      return optimizeGeometryLine([line.curve.from, line.curve.to])
+    }
+  } else if (line.type === 'bezier curve') {
+    if (pointIsOnLine(line.curve.cp1, line.curve.from, line.curve.to) && pointIsOnLine(line.curve.cp2, line.curve.from, line.curve.to)) {
+      return optimizeGeometryLine([line.curve.from, line.curve.to])
+    }
+  } else if (line.type === 'nurbs curve') {
+    if (line.curve.points.length < 2) return
+    if (line.curve.points.length === 2) {
+      return optimizeGeometryLine([line.curve.points[0], line.curve.points[1]])
+    }
+  }
+  return line
+}
+
+export function optimizeGeometryLines(lines: GeometryLine[]): GeometryLine[] {
+  const result: GeometryLine[] = []
+  for (const line of lines) {
+    const r = optimizeGeometryLine(line)
+    if (r) {
+      result.push(r)
+    }
+  }
+  return result
+}
+
+export function boldGeometryLines(lines: GeometryLine[][], distance = 1): GeometryLine[][] {
+  const polygons = lines.map(n => {
+    const points = deduplicatePosition(getGeometryLinesPoints(n, 10))
+    return {
+      points,
+      lines: n,
+      direction: Math.sign(getPolygonArea(points)),
+    }
+  })
+  const baseDirection = (polygons.find(p => polygons.every(e => e === p || !pointInPolygon(p.points[0], e.points))) || polygons[0]).direction
+  const result: GeometryLine[][] = []
+  for (const polygon of polygons) {
+    const direction = polygon.direction
+    result.push(getParallelGeometryLinesByDistanceDirectionIndex(polygon.lines, direction === baseDirection ? distance : -distance, pointSideToIndex(direction), 'bevel'))
+  }
+  return result.map(lines => {
+    const newLines = reverseClosedGeometryLinesIfAreaIsNegative(lines)
+    const reversed = newLines !== lines
+    lines = newLines
+    lines = maxmiumBy(splitGeometryLines(lines).map(n => ({
+      lines: n,
+      area: Math.abs(getPolygonArea(getGeometryLinesPoints(n, 10))),
+    })), n => n.area).lines
+    if (reversed) {
+      lines = reverseGeometryLines(lines)
+    }
+    return lines
   })
 }

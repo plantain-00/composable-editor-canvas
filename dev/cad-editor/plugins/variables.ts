@@ -6690,7 +6690,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents) {
       const lines = getNurbsGeometries(content, contents).lines;
-      return ctx.getParallelGeometryLinesByDistance(point, lines, distance).map((r) => ctx.geometryLineToContent(r));
+      return ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance).map((r) => ctx.geometryLineToContent(r));
     },
     render(content, renderCtx) {
       const { points } = getNurbsGeometries(content, renderCtx.contents);
@@ -7383,7 +7383,7 @@ function getModel(ctx) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
       return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistance(point, lines, distance))
+        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance))
       };
     },
     render(content, renderCtx) {
@@ -8019,7 +8019,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents) {
       const { lines } = getPlineGeometries(content, contents);
-      const newLines = ctx.getParallelGeometryLinesByDistance(point, lines, distance);
+      const newLines = ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance);
       return ctx.geometryLinesToPline(newLines);
     },
     join(content, target, contents) {

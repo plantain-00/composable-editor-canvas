@@ -97,7 +97,7 @@ export function getModel(ctx: PluginContext) {
     },
     offset(content, point, distance, contents) {
       const { lines } = getPlineGeometries(content, contents)
-      const newLines = ctx.getParallelGeometryLinesByDistance(point, lines, distance)
+      const newLines = ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance)
       return ctx.geometryLinesToPline(newLines)
     },
     join(content, target, contents) {
