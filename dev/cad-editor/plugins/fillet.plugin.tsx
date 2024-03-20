@@ -6,36 +6,46 @@ import { isLineContent, LineContent } from './line-polyline.plugin'
 import { ArcContent, CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
-  function getFillets(content1: model.BaseContent, content2: model.BaseContent, radius: number) {
+  function getFillets(content1: model.BaseContent, content2: model.BaseContent, radius: number): core.Arc[] {
     const result: core.Arc[] = []
     if (!contentSelectable(content1) || !contentSelectable(content2)) {
       return result
     }
     const circles: { center: core.Position, foot1: core.Position, foot2: core.Position }[] = []
-    if (isLineContent(content1) && isLineContent(content2)) {
-      circles.push(...ctx.getCirclesTangentTo2Lines(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
-        foot2: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
-      })))
-    } else if ((isCircleContent(content1) || isArcContent(content1)) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
-      })))
-    } else if (isLineContent(content1) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), content2, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
-      })))
-    } else if (isLineContent(content2) && (isCircleContent(content1) || isArcContent(content1))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), content1, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
-      })))
+    if (isLineContent(content1)) {
+      const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])
+      if (!line1) return []
+      if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
+        circles.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line1),
+          foot2: ctx.getPerpendicularPoint(c, line2),
+        })))
+      } else if (isCircleContent(content2) || isArcContent(content2)) {
+        circles.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line1),
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
+        })))
+      }
+    } else if ((isCircleContent(content1) || isArcContent(content1))) {
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        circles.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0],
+        })))
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
+        circles.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line2),
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
+        })))
+      }
     }
     return circles.map(({ foot1, foot2, center: c }) => {
       const angle1 = ctx.radianToAngle(ctx.getTwoPointsRadian(foot1, c))

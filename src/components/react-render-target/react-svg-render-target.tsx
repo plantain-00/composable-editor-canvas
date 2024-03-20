@@ -212,8 +212,8 @@ export const reactSvgRenderTarget: ReactRenderTarget<SvgDraw> = {
           const p2 = command.to
           const line1 = twoPointLineToGeneralFormLine(last, p1)
           const line2 = twoPointLineToGeneralFormLine(p1, p2)
-          const p2Direction = getPointSideOfLine(p2, line1)
-          if (isZero(p2Direction)) {
+          const p2Direction = line1 ? getPointSideOfLine(p2, line1) : 0
+          if (isZero(p2Direction) || !line1 || !line2) {
             d += ` L ${p2.x} ${p2.y}`
             last = p2
           } else {

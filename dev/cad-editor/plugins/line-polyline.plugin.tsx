@@ -68,8 +68,8 @@ export function getModel(ctx: PluginContext) {
         distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
       const index = ctx.getLinesOffsetDirection(point, lines)
-      const points = ctx.getParallelPolylineByDistance(lines, index, distance)
-      return ctx.trimOffsetResult(points, point, closed, contents).map(p => ctx.produce(content, (d) => {
+      const points = ctx.getParallelPolylineByDistance(lines, distance, index)
+      return ctx.trimOffsetResult(points, point, false, contents).map(p => ctx.produce(content, (d) => {
         d.points = p
       }))
     },

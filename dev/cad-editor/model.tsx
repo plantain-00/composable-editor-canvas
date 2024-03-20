@@ -216,7 +216,7 @@ export type Model<T> = Partial<FeatureModels> & {
   explode?(content: Omit<T, 'type'>, contents: readonly Nullable<BaseContent>[]): BaseContent[]
   break?(content: Omit<T, 'type'>, intersectionPoints: Position[], contents: readonly Nullable<BaseContent>[]): BaseContent[] | undefined
   mirror?(content: Omit<T, 'type'>, line: GeneralFormLine, angle: number, contents: readonly Nullable<BaseContent>[]): void
-  offset?(content: T, point: Position, distance: number, contents: readonly Nullable<BaseContent>[]): BaseContent | BaseContent[] | void
+  offset?(content: T, point: Position, distance: number, contents: readonly Nullable<BaseContent>[], lineJoin?: LineJoin): BaseContent | BaseContent[] | void
   join?(content: T, target: BaseContent, contents: readonly Nullable<BaseContent>[]): BaseContent | void
   extend?(content: T, point: Position, contents: readonly Nullable<BaseContent>[]): void
   render?<V, P>(content: T, ctx: RenderContext<V, P>): V

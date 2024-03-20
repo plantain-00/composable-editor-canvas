@@ -3,7 +3,6 @@ import * as twgl from 'twgl.js'
 import { delta2, delta3, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
-import { iteratePolylineLines } from "./line"
 import { pointAndDirectionToGeneralFormLine } from "./line"
 import { getPointSideOfLine } from "./line"
 import { EllipseArc } from "./ellipse"
@@ -14,7 +13,7 @@ import { angleToRadian } from './radian'
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { newtonIterate } from './equation-calculater'
-import { getParallelPolylineByDistance } from './parallel'
+import { getParallelPolylinesByDistance } from './parallel'
 import { Vec2, Vec3 } from './types'
 
 export interface Nurbs {
@@ -482,9 +481,7 @@ export function getParallelNurbsCurvesByDistance<T extends NurbsCurve>(curve: T,
   if (isZero(distance)) {
     return [curve, curve]
   }
-  const lines = Array.from(iteratePolylineLines(curve.points))
-  const p0 = getParallelPolylineByDistance(lines, 0, distance)
-  const p1 = getParallelPolylineByDistance(lines, 1, distance)
+  const [p0, p1] = getParallelPolylinesByDistance(curve.points, distance, false)
   return [
     {
       ...curve,

@@ -6,21 +6,24 @@ import { isLineContent } from './line-polyline.plugin'
 import { CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 
 export function getCommand(ctx: PluginContext): Command[] {
-  function getTangentTangentRadiusCircles(content1: model.BaseContent, content2: model.BaseContent, radius: number) {
+  function getTangentTangentRadiusCircles(content1: model.BaseContent, content2: model.BaseContent, radius: number): core.Circle[] {
     const result: core.Position[] = []
     if (isCircleContent(content1) || isArcContent(content1)) {
       if (isCircleContent(content2) || isArcContent(content2)) {
         result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius))
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
         result.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius))
       }
     } else if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])
+      if (!line1) return []
       if (isCircleContent(content2) || isArcContent(content2)) {
         result.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius))
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
         result.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius))
       }
     }

@@ -70,18 +70,9 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
       if (!distance) {
         distance = Math.min(...lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
       }
-      const generalFormLines = lines.map(line => ctx.twoPointLineToGeneralFormLine(...line))
       const index = ctx.getLinesOffsetDirection(point, lines)
-      const parallelLines = generalFormLines.map(line => ctx.getParallelLinesByDistance(line, distance)[index])
-      const points: core.Position[] = []
-      for (let i = 0; i < parallelLines.length; i++) {
-        const previous = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1]
-        const p = ctx.getTwoGeneralFormLinesIntersectionPoint(previous, parallelLines[i])
-        if (p) {
-          points.push(p)
-        }
-      }
-      return ctx.trimOffsetResult(points, point, true, contents).map(p => ctx.produce(content, (d) => {
+      const points = ctx.getParallelPolylineByDistance(lines, distance, index)
+      return ctx.trimOffsetResult(points.slice(0, points.length - 1), point, true, contents).map(p => ctx.produce(content, (d) => {
         d.points = p
       }))
     },

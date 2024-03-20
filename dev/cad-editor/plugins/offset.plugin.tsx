@@ -14,10 +14,10 @@ export function getCommand(ctx: PluginContext): Command {
   function contentSelectable(content: model.BaseContent) {
     return ctx.getContentModel(content)?.offset !== undefined
   }
-  function getOffsetResult(content: model.BaseContent, p: core.Position, offset: number, contents: readonly core.Nullable<model.BaseContent>[]) {
+  function getOffsetResult(content: model.BaseContent, p: core.Position, offset: number, contents: readonly core.Nullable<model.BaseContent>[], lineJoin?: core.LineJoin) {
     const model = ctx.getContentModel(content)
     if (model?.offset) {
-      const newContent = model.offset(content, p, offset, contents)
+      const newContent = model.offset(content, p, offset, contents, lineJoin)
       if (Array.isArray(newContent)) {
         return newContent.filter(c => model.isValid(c) === true)
       }
@@ -34,6 +34,7 @@ export function getCommand(ctx: PluginContext): Command {
       if (type) {
         message = 'input offset or click to end'
       }
+      const [lineJoin, setLineJoin] = React.useState<core.LineJoin>(ctx.defaultLineJoin)
       const [offset, setOffset] = React.useState(0)
       const { input, clearText, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === 'Enter') {
@@ -56,7 +57,7 @@ export function getCommand(ctx: PluginContext): Command {
               const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c))
               for (const content of target) {
                 if (content) {
-                  contents.push(...getOffsetResult(content, p, offset, contents))
+                  contents.push(...getOffsetResult(content, p, offset, contents, lineJoin))
                 }
               }
               setCursorPosition(undefined)
@@ -73,7 +74,7 @@ export function getCommand(ctx: PluginContext): Command {
         },
         updateSelectedContent(content) {
           if (cursorPosition) {
-            const newContents = getOffsetResult(content, cursorPosition, offset, contents)
+            const newContents = getOffsetResult(content, cursorPosition, offset, contents, lineJoin)
             if (newContents.length > 0) {
               return {
                 newContents,
@@ -82,6 +83,13 @@ export function getCommand(ctx: PluginContext): Command {
           }
           return {}
         },
+        subcommand: type === 'offset'
+          ? (
+            <span>
+              <ctx.EnumEditor value={lineJoin} enums={['miter', 'bevel', 'round']} setValue={setLineJoin} />
+            </span>
+          )
+          : undefined,
         reset: resetInput,
       }
     },

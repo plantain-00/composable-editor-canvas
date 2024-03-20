@@ -997,6 +997,13 @@ function getLinearGradientGraphic(linearGradient: LinearGradient, points: Positi
     y: end.y - start.y,
   }
   const line = twoPointLineToGeneralFormLine(start, end)
+  if (!line) {
+    return {
+      type: 'triangle strip',
+      points: [],
+      colors: [],
+    }
+  }
   const stops = linearGradient.stops.slice(0).sort((a, b) => a.offset - b.offset)
   const distances: number[] = []
   let minOffset = stops[0].offset

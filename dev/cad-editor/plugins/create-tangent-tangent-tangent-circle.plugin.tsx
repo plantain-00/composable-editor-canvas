@@ -6,14 +6,17 @@ import { isLineContent } from './line-polyline.plugin'
 import { CircleContent, isArcContent, isCircleContent } from './circle-arc.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
-  function getTangentTangentTangentCircles(content1: model.BaseContent, content2: model.BaseContent, content3: model.BaseContent) {
+  function getTangentTangentTangentCircles(content1: model.BaseContent, content2: model.BaseContent, content3: model.BaseContent): core.Circle[] {
     const result: core.Circle[] = []
     if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])
+      if (!line1) return []
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1])
+          if (!line3) return []
           result.push(...ctx.getCirclesTangentTo3Lines(line1, line2, line3))
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line2, content3))
@@ -21,6 +24,7 @@ export function getCommand(ctx: PluginContext): Command {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1])
+          if (!line3) return []
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line3, content2))
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line1, content2, content3))
@@ -29,8 +33,10 @@ export function getCommand(ctx: PluginContext): Command {
     } else if (isCircleContent(content1) || isArcContent(content1)) {
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])
+        if (!line2) return []
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1])
+          if (!line3) return []
           result.push(...ctx.getCirclesTangentToLineLineCircle(line2, line3, content1))
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line2, content1, content3))
@@ -38,6 +44,7 @@ export function getCommand(ctx: PluginContext): Command {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1])
+          if (!line3) return []
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line3, content1, content2))
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentTo3Circles(content1, content2, content3))

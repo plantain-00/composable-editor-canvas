@@ -158,7 +158,7 @@ export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
   return result
 }
 
-export function first<T>(generator: Generator<T, void, undefined>) {
+export function first<T>(generator: IterableIterator<T>) {
   for (const item of generator) {
     return item
   }
@@ -169,4 +169,55 @@ export function multiplyOpacity(a?: number, b?: number) {
   if (a === undefined) return b
   if (b === undefined) return a
   return a * b
+}
+
+export function findIndexFrom<T>(
+  items: T[],
+  index: number,
+  predicate: (value: T) => boolean,
+  options: Partial<{
+    reverse: boolean
+    closed: boolean
+  }>,
+): number | undefined {
+  if (options?.reverse) {
+    for (let i = index; i >= 0; i--) {
+      const item = items[i]
+      if (predicate(item)) return i
+    }
+    if (options?.closed) {
+      for (let i = items.length - 1; i > index; i--) {
+        const item = items[i]
+        if (predicate(item)) return i
+      }
+    }
+    return
+  }
+  for (let i = index; i < items.length; i++) {
+    const item = items[i]
+    if (predicate(item)) return i
+  }
+  if (options?.closed) {
+    for (let i = 0; i < index; i++) {
+      const item = items[i]
+      if (predicate(item)) return i
+    }
+  }
+  return
+}
+
+export function findFrom<T>(
+  items: T[],
+  index: number,
+  predicate: (value: T) => boolean,
+  options: Partial<{
+    reverse: boolean
+    closed: boolean
+  }>,
+): T | undefined {
+  const result = findIndexFrom(items, index, predicate, options)
+  if (result !== undefined) {
+    return items[result]
+  }
+  return
 }

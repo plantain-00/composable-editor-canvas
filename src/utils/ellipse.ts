@@ -162,7 +162,9 @@ export function getEllipseArcByStartEnd(
   if (centers.length === 1) {
     index = 0
   } else {
-    const firstSide = getPointSideOfLine(centers[0], twoPointLineToGeneralFormLine(from, to))
+    const line = twoPointLineToGeneralFormLine(from, to)
+    if (!line) return
+    const firstSide = getPointSideOfLine(centers[0], line)
     if (firstSide > 0) {
       index = largeArc === sweep ? 0 : 1
     } else {

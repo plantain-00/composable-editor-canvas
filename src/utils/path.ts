@@ -106,8 +106,8 @@ export function getPathCommandEndPoint(pathCommands: PathCommand[], index: numbe
         const p2 = command.to
         const line1 = twoPointLineToGeneralFormLine(last, p1)
         const line2 = twoPointLineToGeneralFormLine(p1, p2)
-        const p2Direction = getPointSideOfLine(p2, line1)
-        if (isZero(p2Direction)) {
+        const p2Direction = line1 ? getPointSideOfLine(p2, line1) : 0
+        if (isZero(p2Direction) || !line1 || !line2) {
           return command.to
         }
         const i = p2Direction < 0 ? 0 : 1
@@ -188,8 +188,8 @@ export function pathCommandsToGeometryLines(pathCommands: PathCommand[]): Geomet
         const p2 = command.to
         const line1 = twoPointLineToGeneralFormLine(last, p1)
         const line2 = twoPointLineToGeneralFormLine(p1, p2)
-        const p2Direction = getPointSideOfLine(p2, line1)
-        if (isZero(p2Direction)) {
+        const p2Direction = line1 ? getPointSideOfLine(p2, line1) : 0
+        if (isZero(p2Direction) || !line1 || !line2) {
           if (last) {
             lines.push([last, p2])
             last = p2

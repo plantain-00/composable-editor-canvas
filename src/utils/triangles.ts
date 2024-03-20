@@ -26,13 +26,17 @@ export function getPolylineTriangles(
     lineCapWithClosed = true
   }
 
+  const newPoints: Position[] = [points[0]]
   const lines: GeneralFormLine[] = []
   const parallelLines: [GeneralFormLine, GeneralFormLine][] = []
   for (let i = 1; i < points.length; i++) {
     const line = twoPointLineToGeneralFormLine(points[i - 1], points[i])
+    if (!line) continue
+    newPoints.push(points[i])
     lines.push(line)
     parallelLines.push(getParallelLinesByDistance(line, radius))
   }
+  points = newPoints
 
   const radianLimit = typeof lineJoinWithLimit === 'number' ? Math.asin(1 / lineJoinWithLimit) * 2 : undefined
 

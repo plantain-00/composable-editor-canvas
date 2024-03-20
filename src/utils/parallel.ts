@@ -1,27 +1,27 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, pointIsOnGeometryLine } from "./geometry-line"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
-import { isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
+import { findFrom, findIndexFrom, isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
 import { getTwoPointsRadian } from "./radian"
 import { normalizeRadian, twoRadiansSameDirection } from "./angle"
-import { GeneralFormLine, getParallelRaysByDistance } from "./line"
-import { getParallelLineSegmentsByDistance, getParallelLinesByDistance } from "./line"
+import { getParallelRaysByDistance, iteratePolylineLines } from "./line"
+import { getParallelLineSegmentsByDistance } from "./line"
 import { pointAndDirectionToGeneralFormLine, twoPointLineToGeneralFormLine } from "./line"
 import { getPointSideOfLine } from "./line"
 import { getEllipseAngle } from "./ellipse"
 import { EllipseArc } from "./ellipse"
 import { Arc, Circle } from "./circle"
 import { Ellipse } from "./ellipse"
-import { getTwoGeneralFormLinesIntersectionPoint, getTwoGeometryLinesIntersectionPoint } from "./intersection"
+import { getTwoGeometryLinesIntersectionPoint, getTwoLinesIntersectionPoint } from "./intersection"
 import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
-import { getPerpendicularLine, getPerpendicularPoint, getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
+import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 import { LineJoin, defaultLineJoin } from "./triangles"
@@ -80,47 +80,10 @@ export function getParallelQuadraticCurvesByDistance<T extends QuadraticCurve>(c
   if (isZero(distance)) {
     return [curve, curve]
   }
-  let line: GeneralFormLine | undefined
-  if (isSamePoint(curve.from, curve.cp)) {
-    line = twoPointLineToGeneralFormLine(curve.cp, curve.to)
-  }
-  if (isSamePoint(curve.cp, curve.to)) {
-    line = twoPointLineToGeneralFormLine(curve.from, curve.cp)
-  }
-  if (line) {
-    const parallelLines = getParallelLinesByDistance(line, distance)
-    return [
-      {
-        ...curve,
-        from: getPerpendicularPoint(curve.from, parallelLines[0]),
-        cp: getPerpendicularPoint(curve.cp, parallelLines[0]),
-        to: getPerpendicularPoint(curve.to, parallelLines[0]),
-      },
-      {
-        ...curve,
-        from: getPerpendicularPoint(curve.from, parallelLines[1]),
-        cp: getPerpendicularPoint(curve.cp, parallelLines[1]),
-        to: getPerpendicularPoint(curve.to, parallelLines[1]),
-      },
-    ]
-  }
-  const line1 = twoPointLineToGeneralFormLine(curve.from, curve.cp)
-  const line2 = twoPointLineToGeneralFormLine(curve.cp, curve.to)
-  const parallelLines1 = getParallelLinesByDistance(line1, distance)
-  const parallelLines2 = getParallelLinesByDistance(line2, distance)
+  const [p0, p1] = getParallelPolylinesByDistance([curve.from, curve.cp, curve.to], distance, false)
   return [
-    {
-      ...curve,
-      from: getPerpendicularPoint(curve.from, parallelLines1[0]),
-      cp: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[0], parallelLines2[0]),
-      to: getPerpendicularPoint(curve.to, parallelLines2[0]),
-    },
-    {
-      ...curve,
-      from: getPerpendicularPoint(curve.from, parallelLines1[1]),
-      cp: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[1], parallelLines2[1]),
-      to: getPerpendicularPoint(curve.to, parallelLines2[1]),
-    },
+    { ...curve, from: p0[0], cp: p0[1], to: p0[2] },
+    { ...curve, from: p1[0], cp: p1[1], to: p1[2] },
   ]
 }
 
@@ -128,27 +91,10 @@ export function getParallelBezierCurvesByDistance<T extends BezierCurve>(curve: 
   if (isZero(distance)) {
     return [curve, curve]
   }
-  const line1 = twoPointLineToGeneralFormLine(curve.from, curve.cp1)
-  const line2 = twoPointLineToGeneralFormLine(curve.cp1, curve.cp2)
-  const line3 = twoPointLineToGeneralFormLine(curve.cp2, curve.to)
-  const parallelLines1 = getParallelLinesByDistance(line1, distance)
-  const parallelLines2 = getParallelLinesByDistance(line2, distance)
-  const parallelLines3 = getParallelLinesByDistance(line3, distance)
+  const [p0, p1] = getParallelPolylinesByDistance([curve.from, curve.cp1, curve.cp2, curve.to], distance, false)
   return [
-    {
-      ...curve,
-      from: getPerpendicularPoint(curve.from, parallelLines1[0]),
-      cp1: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[0], parallelLines2[0]),
-      cp2: getTwoGeneralFormLinesIntersectionPoint(parallelLines2[0], parallelLines3[0]),
-      to: getPerpendicularPoint(curve.to, parallelLines3[0]),
-    },
-    {
-      ...curve,
-      from: getPerpendicularPoint(curve.from, parallelLines1[1]),
-      cp1: getTwoGeneralFormLinesIntersectionPoint(parallelLines1[1], parallelLines2[1]),
-      cp2: getTwoGeneralFormLinesIntersectionPoint(parallelLines2[1], parallelLines3[1]),
-      to: getPerpendicularPoint(curve.to, parallelLines3[1]),
-    },
+    { ...curve, from: p0[0], cp1: p0[1], cp2: p0[2], to: p0[3] },
+    { ...curve, from: p1[0], cp1: p1[1], cp2: p1[2], to: p1[3] },
   ]
 }
 
@@ -221,7 +167,9 @@ export function getPointSideOfBezierCurve(point: Position, curve: BezierCurve): 
 
 export function getPointSideOfGeometryLine(point: Position, line: GeometryLine): number {
   if (Array.isArray(line)) {
-    return getPointSideOfLine(point, twoPointLineToGeneralFormLine(...line))
+    const generalFormLine = twoPointLineToGeneralFormLine(...line)
+    if (!generalFormLine) return 0
+    return getPointSideOfLine(point, generalFormLine)
   }
   if (line.type === 'arc') {
     return getPointSideOfArc(point, line.curve)
@@ -282,7 +230,7 @@ export function pointSideToIndex(side: number) {
   return side > 0 ? 1 : 0
 }
 
-export function getParallelGeometryLinesByDistance(line: GeometryLine, distance: number): [GeometryLine, GeometryLine] {
+export function getParallelGeometryLinesByDistance(line: GeometryLine, distance: number): [GeometryLine, GeometryLine] | undefined {
   if (Array.isArray(line)) {
     return getParallelLineSegmentsByDistance(line, distance)
   }
@@ -310,12 +258,12 @@ export function getParallelGeometryLinesByDistance(line: GeometryLine, distance:
   return [{ type: 'nurbs curve', curve: curves[0] }, { type: 'nurbs curve', curve: curves[1] }]
 }
 
-export function getParallelGeometryLinesByDistancePoint(point: Position, lines: GeometryLine[], distance: number): GeometryLine[] {
+export function getParallelGeometryLinesByDistancePoint(point: Position, lines: GeometryLine[], distance: number, lineJoin?: LineJoin): GeometryLine[] {
   if (!distance) {
     distance = Math.min(...lines.map(line => getPointAndGeometryLineMinimumDistance(point, line)))
   }
   const index = getLinesOffsetDirection(point, lines)
-  return getParallelGeometryLinesByDistanceDirectionIndex(lines, distance, index)
+  return getParallelGeometryLinesByDistanceDirectionIndex(lines, distance, index, lineJoin)
 }
 
 export function getParallelGeometryLinesByDistanceDirectionIndex(
@@ -328,32 +276,29 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
     return lines
   }
   const closed = isGeometryLinesClosed(lines) && lines.length > 1
-  const parallels = lines.map(line => getParallelGeometryLinesByDistance(line, distance)[index])
+  const parallels = lines.map(line => getParallelGeometryLinesByDistance(line, distance)?.[index])
   if (parallels.length === 1) {
-    return parallels
+    const parallel = parallels[0]
+    return parallel ? [parallel] : []
   }
   const result: GeometryLine[] = []
   let previous: Position | undefined
   for (let i = 0; i < parallels.length + 1; i++) {
-    let parallel = parallels[i]
+    const previousParallelIndex = findIndexFrom(parallels, i - 1, p => p !== undefined, { closed, reverse: true })
+    const previousParallel = previousParallelIndex !== undefined ? parallels[previousParallelIndex] : undefined
+    const parallel = findFrom(parallels, i, p => p !== undefined, { closed })
     let current: Position | undefined
     let newItem: { line: GeometryLine, current: Position } | undefined
-    if (i === 0) {
-      if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallels[parallels.length - 1], parallel, lines[i])
+    if (previousParallel) {
+      if (parallel) {
+        current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel)
       } else {
-        current = getGeometryLineStartAndEnd(parallel).start
+        current = getGeometryLineStartAndEnd(previousParallel).end
       }
-    } else if (i === parallels.length) {
-      parallel = parallels[parallels.length - 1]
-      if (closed) {
-        current = getTwoGeometryLinesNearestIntersectionPoint(parallel, parallels[0], lines[0])
-      } else {
-        current = getGeometryLineStartAndEnd(parallel).end
-      }
-    } else {
-      const previousParallel = parallels[i - 1]
-      current = getTwoGeometryLinesNearestIntersectionPoint(previousParallel, parallel, lines[i])
+    } else if (parallel) {
+      current = getGeometryLineStartAndEnd(parallel).start
+    }
+    if (previousParallel && parallel) {
       if (lineJoin !== 'miter' && current && !pointIsOnGeometryLine(current, parallel)) {
         current = undefined
       }
@@ -375,8 +320,8 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
               line: [current, next],
             }
           }
-        } else {
-          const previousLine = lines[i - 1]
+        } else if (previousParallelIndex !== undefined) {
+          const previousLine = lines[previousParallelIndex]
           const center = getGeometryLineStartAndEnd(previousLine).end
           current = getGeometryLineStartAndEnd(previousParallel).end
           const next = getGeometryLineStartAndEnd(parallel).start
@@ -402,8 +347,8 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
         }
       }
     }
-    if (current && previous) {
-      const line = parallels[i - 1]
+    if (current && previous && previousParallel) {
+      const line = previousParallel
       if (Array.isArray(line)) {
         result.push([previous, current])
       } else if (line.type === 'arc') {
@@ -450,48 +395,49 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
   return result
 }
 
-function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine, originalLine2: GeometryLine) {
+function getTwoGeometryLinesNearestIntersectionPoint(line1: GeometryLine, line2: GeometryLine) {
   const intersections = getTwoGeometryLinesIntersectionPoint(line1, line2, true)
   if (intersections.length > 1) {
-    const s = getGeometryLineStartAndEnd(originalLine2).start
-    return minimumBy(intersections.map(p => ({ point: p, distance: getTwoPointsDistance(p, s) })), p => p.distance).point
+    const params = intersections.map(p => ({ point: p, param: getGeometryLineParamAtPoint(p, line1) })).filter(p => p.param >= 0)
+    if (params.length > 1) {
+      return minimumBy(params, p => p.param).point
+    }
+    return params[0]?.point
   }
   return intersections[0]
 }
 
-export function getParallelPolylineByDistance(lines: [Position, Position][], index: 0 | 1, distance: number) {
-  const first = lines[0][0]
-  const last = lines[lines.length - 1][1]
-  const closed = isSamePoint(first, last) && lines.length > 1
-  const generalFormLines = lines.map(line => twoPointLineToGeneralFormLine(...line))
-  const parallelLines = generalFormLines.map(line => getParallelLinesByDistance(line, distance)[index])
+export function getParallelPolylineByDistance(lines: [Position, Position][], distance: number, index: 0 | 1): Position[] {
+  const closed = isSamePoint(lines[0][0], lines[lines.length - 1][1]) && lines.length > 1
+  const parallels = lines.map(line => getParallelLineSegmentsByDistance(line, distance)?.[index])
+  return getParallelLineSegmentsPoints(parallels, closed)
+}
+
+export function getParallelPolylinesByDistance(points: Position[], distance: number, closed: boolean): [Position[], Position[]] {
+  const parallels = Array.from(iteratePolylineLines(points)).map(line => getParallelLineSegmentsByDistance(line, distance))
+  return [
+    getParallelLineSegmentsPoints(parallels.map(p => p?.[0]), closed),
+    getParallelLineSegmentsPoints(parallels.map(p => p?.[1]), closed),
+  ]
+}
+
+export function getParallelLineSegmentsPoints(parallels: ([Position, Position] | undefined)[], closed: boolean) {
   const result: Position[] = []
-  for (let i = 0; i < parallelLines.length + 1; i++) {
-    let pline1: GeneralFormLine
-    let pline2 = parallelLines[i]
-    let line2 = lines[i]
-    if (i === 0) {
-      if (closed) {
-        pline1 = parallelLines[parallelLines.length - 1]
+  for (let i = 0; i < parallels.length + 1; i++) {
+    const previousParallel = findFrom(parallels, i - 1, p => p !== undefined, { closed, reverse: true })
+    const parallel = findFrom(parallels, i, p => p !== undefined, { closed })
+    let current: Position | undefined
+    if (previousParallel) {
+      if (parallel) {
+        current = getTwoLinesIntersectionPoint(...previousParallel, ...parallel)
       } else {
-        pline1 = getPerpendicularLine(first, pline2)
+        current = previousParallel[1]
       }
-    } else if (i === parallelLines.length) {
-      pline1 = parallelLines[parallelLines.length - 1]
-      line2 = lines[0]
-      if (closed) {
-        pline2 = parallelLines[0]
-      } else {
-        pline2 = getPerpendicularLine(last, pline1)
-      }
-    } else {
-      pline1 = parallelLines[i - 1]
+    } else if (parallel) {
+      current = parallel[0]
     }
-    const p = getTwoGeneralFormLinesIntersectionPoint(pline1, pline2)
-    if (p) {
-      result.push(p)
-    } else {
-      result.push(getPerpendicularPoint(line2[0], pline2))
+    if (current) {
+      result.push(current)
     }
   }
   return result

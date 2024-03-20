@@ -2554,14 +2554,20 @@ function getCommand(ctx) {
         result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius));
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
         result.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius));
       }
     } else if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
+      if (!line1)
+        return [];
       if (isCircleContent(content2) || isArcContent(content2)) {
         result.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius));
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
         result.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius));
       }
     }
@@ -2776,10 +2782,16 @@ function getCommand(ctx) {
     const result = [];
     if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
+      if (!line1)
+        return [];
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          if (!line3)
+            return [];
           result.push(...ctx.getCirclesTangentTo3Lines(line1, line2, line3));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line2, content3));
@@ -2787,6 +2799,8 @@ function getCommand(ctx) {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          if (!line3)
+            return [];
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line3, content2));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line1, content2, content3));
@@ -2795,8 +2809,12 @@ function getCommand(ctx) {
     } else if (isCircleContent(content1) || isArcContent(content1)) {
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          if (!line3)
+            return [];
           result.push(...ctx.getCirclesTangentToLineLineCircle(line2, line3, content1));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line2, content1, content3));
@@ -2804,6 +2822,8 @@ function getCommand(ctx) {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
+          if (!line3)
+            return [];
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line3, content1, content2));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentTo3Circles(content1, content2, content3));
@@ -4451,30 +4471,43 @@ function getCommand(ctx) {
       return result;
     }
     const circles = [];
-    if (isLineContent(content1) && isLineContent(content2)) {
-      circles.push(...ctx.getCirclesTangentTo2Lines(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
-        foot2: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]))
-      })));
-    } else if ((isCircleContent(content1) || isArcContent(content1)) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
-      })));
-    } else if (isLineContent(content1) && (isCircleContent(content2) || isArcContent(content2))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]), content2, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1])),
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
-      })));
-    } else if (isLineContent(content2) && (isCircleContent(content1) || isArcContent(content1))) {
-      circles.push(...ctx.getCirclesTangentToLineAndCircle(ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]), content1, radius).map((c) => ({
-        center: c,
-        foot1: ctx.getPerpendicularPoint(c, ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1])),
-        foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0]
-      })));
+    if (isLineContent(content1)) {
+      const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
+      if (!line1)
+        return [];
+      if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
+        circles.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line1),
+          foot2: ctx.getPerpendicularPoint(c, line2)
+        })));
+      } else if (isCircleContent(content2) || isArcContent(content2)) {
+        circles.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line1),
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
+        })));
+      }
+    } else if (isCircleContent(content1) || isArcContent(content1)) {
+      if (isCircleContent(content2) || isArcContent(content2)) {
+        circles.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0],
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content2)[0]
+        })));
+      } else if (isLineContent(content2)) {
+        const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
+        if (!line2)
+          return [];
+        circles.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius).map((c) => ({
+          center: c,
+          foot1: ctx.getPerpendicularPoint(c, line2),
+          foot2: ctx.getTwoCircleIntersectionPoints({ ...c, r: radius }, content1)[0]
+        })));
+      }
     }
     return circles.map(({ foot1, foot2, center: c }) => {
       const angle1 = ctx.radianToAngle(ctx.getTwoPointsRadian(foot1, c));
@@ -5655,8 +5688,8 @@ function getModel(ctx) {
         distance = Math.min(...lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
       const index = ctx.getLinesOffsetDirection(point, lines);
-      const points = ctx.getParallelPolylineByDistance(lines, index, distance);
-      return ctx.trimOffsetResult(points, point, closed, contents).map((p) => ctx.produce(content, (d) => {
+      const points = ctx.getParallelPolylineByDistance(lines, distance, index);
+      return ctx.trimOffsetResult(points, point, false, contents).map((p) => ctx.produce(content, (d) => {
         d.points = p;
       }));
     },
@@ -6499,6 +6532,8 @@ function getCommand(ctx) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
+            if (!line)
+              return {};
             const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, startPosition));
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
@@ -6870,10 +6905,10 @@ function getCommand(ctx) {
     var _a;
     return ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.offset) !== void 0;
   }
-  function getOffsetResult(content, p, offset, contents) {
+  function getOffsetResult(content, p, offset, contents, lineJoin) {
     const model = ctx.getContentModel(content);
     if (model == null ? void 0 : model.offset) {
-      const newContent = model.offset(content, p, offset, contents);
+      const newContent = model.offset(content, p, offset, contents, lineJoin);
       if (Array.isArray(newContent)) {
         return newContent.filter((c) => model.isValid(c) === true);
       }
@@ -6890,6 +6925,7 @@ function getCommand(ctx) {
       if (type) {
         message = "input offset or click to end";
       }
+      const [lineJoin, setLineJoin] = React.useState(ctx.defaultLineJoin);
       const [offset, setOffset] = React.useState(0);
       const { input, clearText, setInputPosition, cursorPosition, setCursorPosition, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
         if (e.key === "Enter") {
@@ -6912,7 +6948,7 @@ function getCommand(ctx) {
               const target = contents2.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c));
               for (const content of target) {
                 if (content) {
-                  contents2.push(...getOffsetResult(content, p, offset, contents2));
+                  contents2.push(...getOffsetResult(content, p, offset, contents2, lineJoin));
                 }
               }
               setCursorPosition(void 0);
@@ -6929,7 +6965,7 @@ function getCommand(ctx) {
         },
         updateSelectedContent(content) {
           if (cursorPosition) {
-            const newContents = getOffsetResult(content, cursorPosition, offset, contents);
+            const newContents = getOffsetResult(content, cursorPosition, offset, contents, lineJoin);
             if (newContents.length > 0) {
               return {
                 newContents
@@ -6938,6 +6974,7 @@ function getCommand(ctx) {
           }
           return {};
         },
+        subcommand: type === "offset" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement(ctx.EnumEditor, { value: lineJoin, enums: ["miter", "bevel", "round"], setValue: setLineJoin })) : void 0,
         reset: resetInput
       };
     },
@@ -7379,11 +7416,11 @@ function getModel(ctx) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
     },
-    offset(content, point, distance, contents) {
+    offset(content, point, distance, contents, lineJoin) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
       return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance))
+        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin))
       };
     },
     render(content, renderCtx) {
@@ -8017,9 +8054,9 @@ function getModel(ctx) {
       const { lines } = getPlineGeometries(content, contents);
       return lines.map((line) => ctx.geometryLineToContent(line));
     },
-    offset(content, point, distance, contents) {
+    offset(content, point, distance, contents, lineJoin) {
       const { lines } = getPlineGeometries(content, contents);
-      const newLines = ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance);
+      const newLines = ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin);
       return ctx.geometryLinesToPline(newLines);
     },
     join(content, target, contents) {
@@ -8872,18 +8909,9 @@ function getModel(ctx) {
       if (!distance) {
         distance = Math.min(...lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
       }
-      const generalFormLines = lines.map((line) => ctx.twoPointLineToGeneralFormLine(...line));
       const index = ctx.getLinesOffsetDirection(point, lines);
-      const parallelLines = generalFormLines.map((line) => ctx.getParallelLinesByDistance(line, distance)[index]);
-      const points = [];
-      for (let i = 0; i < parallelLines.length; i++) {
-        const previous = parallelLines[i === 0 ? parallelLines.length - 1 : i - 1];
-        const p = ctx.getTwoGeneralFormLinesIntersectionPoint(previous, parallelLines[i]);
-        if (p) {
-          points.push(p);
-        }
-      }
-      return ctx.trimOffsetResult(points, point, true, contents).map((p) => ctx.produce(content, (d) => {
+      const points = ctx.getParallelPolylineByDistance(lines, distance, index);
+      return ctx.trimOffsetResult(points.slice(0, points.length - 1), point, true, contents).map((p) => ctx.produce(content, (d) => {
         d.points = p;
       }));
     },

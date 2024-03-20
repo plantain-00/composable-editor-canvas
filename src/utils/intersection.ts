@@ -84,7 +84,7 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
   return undefined
 }
 
-export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = delta2) {
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = delta2): Position[] {
   if (Array.isArray(line1)) {
     if (Array.isArray(line2)) {
       const point = extend
@@ -120,7 +120,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
     }
     if (line2.type === 'ray') {
-      const point = getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(...line1), pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
+      const generalFormLine1 = twoPointLineToGeneralFormLine(...line1)
+      if (!generalFormLine1) return []
+      const point = getTwoGeneralFormLinesIntersectionPoint(generalFormLine1, pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
       if (point && (extend || (pointIsOnLineSegment(point, ...line1) && pointIsOnRay(point, line2.line)))) {
         return [point]
       }
@@ -248,8 +250,12 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
 /**
  * @public
  */
-export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
-  return getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(p1Start, p1End), twoPointLineToGeneralFormLine(p2Start, p2End))
+export function getTwoLinesIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position): Position | undefined {
+  const line1 = twoPointLineToGeneralFormLine(p1Start, p1End)
+  if (!line1) return
+  const line2 = twoPointLineToGeneralFormLine(p2Start, p2End)
+  if (!line2) return
+  return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }
 
 /**
@@ -487,7 +493,14 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
         return true
       }
     } else if (g.type === 'ray') {
-      const p = getTwoGeneralFormLinesIntersectionPoint(twoPointLineToGeneralFormLine(...line), pointAndDirectionToGeneralFormLine(g.line, angleToRadian(g.line.angle)))
+      const generalFormLine = twoPointLineToGeneralFormLine(...line)
+      if (!generalFormLine) {
+        if (pointIsOnRay(line[0], g.line)) {
+          return true
+        }
+        continue
+      }
+      const p = getTwoGeneralFormLinesIntersectionPoint(generalFormLine, pointAndDirectionToGeneralFormLine(g.line, angleToRadian(g.line.angle)))
       if (p && pointIsOnRay(p, g.line) && pointIsOnLineSegment(p, ...line)) {
         return true
       }
