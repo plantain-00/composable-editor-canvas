@@ -40,8 +40,10 @@ export function pointIsOnLineSegment(p: Position, point1: Position, point2: Posi
   return false
 }
 
-export function pointIsOnLine(p: Position, point1: Position, point2: Position) {
-  return pointIsOnGeneralFormLine(p, twoPointLineToGeneralFormLine(point1, point2))
+export function pointIsOnLine(p: Position, point1: Position, point2: Position): boolean {
+  const line = twoPointLineToGeneralFormLine(point1, point2)
+  if (!line) return false
+  return pointIsOnGeneralFormLine(p, line)
 }
 
 export function pointIsOnGeneralFormLine(p: Position, { a, b, c }: GeneralFormLine) {
@@ -65,7 +67,8 @@ export function getPointSideOfLine(point: Position, line: GeneralFormLine): numb
   return line.a * point.x + line.b * point.y + line.c
 }
 
-export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine {
+export function twoPointLineToGeneralFormLine(point1: Position, point2: Position): GeneralFormLine | undefined {
+  if (isSamePoint(point1, point2)) return undefined
   const dx = point2.x - point1.x
   const dy = point2.y - point1.y
   return {
@@ -233,10 +236,11 @@ export function getParallelLinesByDistance(line: GeneralFormLine, distance: numb
   ]
 }
 
-export function getParallelLineSegmentsByDistance(line: [Position, Position], distance: number): [[Position, Position], [Position, Position]] {
+export function getParallelLineSegmentsByDistance(line: [Position, Position], distance: number): [[Position, Position], [Position, Position]] | undefined {
   if (isZero(distance)) {
     return [line, line]
   }
+  if (isSamePoint(...line)) return
   const radian = getTwoPointsRadian(line[1], line[0])
   const leftRadian = radian - Math.PI / 2
   const rightRadian = radian + Math.PI / 2
@@ -381,10 +385,12 @@ export function rayToLineSegment(ray: Ray, polygon: Position[]): [Position, Posi
 }
 
 export function getRayLineSegmentIntersectionDistance({ x: x1, y: y1, angle, bidirectional }: Ray, line: [Position, Position]): number | undefined {
+  const generalFormLine = twoPointLineToGeneralFormLine(...line)
+  if (!generalFormLine) return
   const r = angleToRadian(angle), e1 = Math.cos(r), e2 = Math.sin(r)
   // x = x1 + d e1
   // y = y1 + d e2
-  const { a, b, c } = twoPointLineToGeneralFormLine(...line)
+  const { a, b, c } = generalFormLine
   // a x + b y + c = 0
   // replace x,y: (a e1 + b e2) d + a x1 + b y1 + c = 0
   const e3 = a * e1 + b * e2

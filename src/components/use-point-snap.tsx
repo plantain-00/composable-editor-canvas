@@ -268,7 +268,9 @@ export function usePointSnap<T>(
               ) {
                 for (const line of lines) {
                   if (Array.isArray(line)) {
-                    const perpendicularPoint = getPerpendicularPoint(lastPosition, twoPointLineToGeneralFormLine(...line))
+                    const generalFormLine = twoPointLineToGeneralFormLine(...line)
+                    if (!generalFormLine) continue
+                    const perpendicularPoint = getPerpendicularPoint(lastPosition, generalFormLine)
                     if (pointIsOnLineSegment(perpendicularPoint, ...line)) {
                       const distance = getTwoPointsDistance(p, perpendicularPoint)
                       if (distance <= delta) {

@@ -108,11 +108,15 @@ export function getArcByStartEnd(from: Position, r: number, largeArc: boolean, s
   }
 }
 
-export function getArcControlPoint(arc: Arc) {
+export function getArcControlPoint(arc: Arc): Position | undefined {
   const start = getCirclePointAtRadian(arc, angleToRadian(arc.startAngle))
+  const lineStart = twoPointLineToGeneralFormLine(arc, start)
+  if (!lineStart) return
   const end = getCirclePointAtRadian(arc, angleToRadian(arc.endAngle))
-  const line1 = getPerpendicularLine(start, twoPointLineToGeneralFormLine(arc, start))
-  const line2 = getPerpendicularLine(end, twoPointLineToGeneralFormLine(arc, end))
+  const lineEnd = twoPointLineToGeneralFormLine(arc, end)
+  if (!lineEnd) return
+  const line1 = getPerpendicularLine(start, lineStart)
+  const line2 = getPerpendicularLine(end, lineEnd)
   return getTwoGeneralFormLinesIntersectionPoint(line1, line2)
 }
 

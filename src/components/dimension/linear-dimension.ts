@@ -30,7 +30,8 @@ export function getLinearDimensionGeometries(
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
-    const distance = getPerpendicularDistance(content.position, twoPointLineToGeneralFormLine(left, right))
+    const line = twoPointLineToGeneralFormLine(left, right)
+    const distance = line ? getPerpendicularDistance(content.position, line) : getTwoPointsDistance(content.position, left)
     const r = getTwoPointsRadian(right, left)
     let rotationDelta = r - centerRotation
     if (rotationDelta < -Math.PI) {
@@ -179,7 +180,8 @@ export function getLinearDimensionTextPosition(
   if (content.direct) {
     const left = content.p1.x > content.p2.x ? content.p2 : content.p1
     const right = content.p1.x > content.p2.x ? content.p1 : content.p2
-    const footPoint = getPerpendicularPoint(content.position, twoPointLineToGeneralFormLine(left, right))
+    const line = twoPointLineToGeneralFormLine(left, right)
+    const footPoint = line ? getPerpendicularPoint(content.position, line) : left
     const distance = getTwoPointsDistance(content.position, footPoint)
     textRotation = getTwoPointsRadian(right, left)
     const r = getTwoPointsRadian(right, left)

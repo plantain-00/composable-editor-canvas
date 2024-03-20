@@ -43,7 +43,9 @@ export function getPerpendicularLineToGeometryLine(point: Position, line: Geomet
 
 export function getPerpendicularPointToGeometryLine(point: Position, line: GeometryLine): Position | undefined {
   if (Array.isArray(line)) {
-    return getPerpendicularPoint(point, twoPointLineToGeneralFormLine(...line))
+    const generalFormLine = twoPointLineToGeneralFormLine(...line)
+    if (!generalFormLine) return
+    return getPerpendicularPoint(point, generalFormLine)
   }
   let p: Position | undefined
   if (line.type === 'arc') {
@@ -228,8 +230,9 @@ export function getPerpendicularPointToBezierCurve(point: Position, curve: Bezie
   return us.filter(u => isValidPercent(u)).map(u => getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, u))
 }
 
-export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position, extend = false) {
-  const perpendicularPoint = getPerpendicularPoint(position, twoPointLineToGeneralFormLine(point1, point2))
+export function getPointAndLineSegmentNearestPointAndDistance(position: Position, point1: Position, point2: Position, extend = false): { point: Position, distance: number } {
+  const line = twoPointLineToGeneralFormLine(point1, point2)
+  const perpendicularPoint = line ? getPerpendicularPoint(position, line) : point1
   if (extend || pointIsOnLineSegment(perpendicularPoint, point1, point2)) {
     return {
       point: perpendicularPoint,

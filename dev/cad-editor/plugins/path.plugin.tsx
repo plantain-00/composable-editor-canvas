@@ -100,11 +100,11 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       const lines = getPathGeometriesFromCache(content, contents).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
     },
-    offset(content, point, distance, contents) {
+    offset(content, point, distance, contents, lineJoin) {
       const lines = getPathGeometriesFromCache(content, contents).lines
       return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance)),
+        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin)),
       }
     },
     render(content, renderCtx) {
