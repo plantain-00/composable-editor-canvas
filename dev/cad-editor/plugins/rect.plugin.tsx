@@ -66,6 +66,14 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
       content.height *= sy
       return
     },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getRectGeometries(content, contents).points, draft => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy)
+        }
+      })
+      return { ...content, points, type: 'polygon', } as PolygonContent
+    },
     explode(content, contents) {
       const { lines } = getRectGeometries(content, contents)
       return lines.map((line) => ({ type: 'line', points: line } as LineContent))

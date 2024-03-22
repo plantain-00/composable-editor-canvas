@@ -299,7 +299,7 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
       current = getGeometryLineStartAndEnd(parallel).start
     }
     if (previousParallel && parallel) {
-      if (lineJoin !== 'miter' && current && !pointIsOnGeometryLine(current, parallel)) {
+      if (lineJoin !== 'miter' && current && (!pointIsOnGeometryLine(current, previousParallel) || !pointIsOnGeometryLine(current, parallel))) {
         current = undefined
       }
       if (!current) {

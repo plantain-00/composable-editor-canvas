@@ -80,6 +80,10 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
       ctx.scalePoint(content.center, center, sx, sy)
       ctx.getContainerScale(content, center, sx, sy, contents)
     },
+    skew(content, center, sx, sy, contents) {
+      ctx.skewPoint(content.center, center, sx, sy)
+      ctx.getContainerSkew(content, center, sx, sy, contents)
+    },
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents))
     },

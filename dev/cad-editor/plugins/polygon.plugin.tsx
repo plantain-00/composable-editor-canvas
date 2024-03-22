@@ -52,6 +52,11 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
         ctx.scalePoint(point, center, sx, sy)
       }
     },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point, center, sx, sy)
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line)

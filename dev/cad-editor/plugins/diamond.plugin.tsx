@@ -4,6 +4,7 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
 import type { RectContent } from './rect.plugin'
+import type { PolygonContent } from './polygon.plugin'
 
 export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields & model.FillFields & core.Region
 
@@ -47,6 +48,14 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
       ctx.scalePoint(content, center, sx, sy)
       content.width *= sx
       content.height *= sy
+    },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getGeometries(content, contents).points, draft => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy)
+        }
+      })
+      return { ...content, points, type: 'polygon', } as PolygonContent
     },
     explode(content, contents) {
       const { lines } = getGeometries(content, contents)

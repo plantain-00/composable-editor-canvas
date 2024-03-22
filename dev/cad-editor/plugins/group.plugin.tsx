@@ -30,6 +30,12 @@ export function getModel(ctx: PluginContext): model.Model<GroupContent> {
         return ctx.getContentModel(content.clip.border)?.scale?.(content.clip.border, center, sx, sy, contents)
       }
     },
+    skew(content, center, sx, sy, contents) {
+      ctx.getContainerSkew(content, center, sx, sy, contents)
+      if (content.clip) {
+        return ctx.getContentModel(content.clip.border)?.skew?.(content.clip.border, center, sx, sy, contents)
+      }
+    },
     explode: ctx.getContainerExplode,
     mirror(content, line, angle, contents) {
       ctx.getContainerMirror(content, line, angle, contents)

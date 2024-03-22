@@ -36,7 +36,7 @@ export function opentypeCommandsToPathCommands(path: opentype.Path, italicY?: nu
 
 function skewPointIfItalic(point: Position, italicY?: number) {
   if (italicY !== undefined) {
-    skewPoint(point, italicY, -0.15)
+    skewPoint(point, { x: 0, y: italicY }, -0.15)
   }
   return point
 }

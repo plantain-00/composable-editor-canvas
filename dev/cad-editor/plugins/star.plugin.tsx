@@ -71,6 +71,14 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
       content.outerRadius *= sy
       return
     },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getStarGeometriesFromCache(content, contents).points, draft => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy)
+        }
+      })
+      return { ...content, points, type: 'polygon', } as PolygonContent
+    },
     break(content, intersectionPoints, contents) {
       const { lines } = getStarGeometriesFromCache(content, contents)
       return ctx.breakPolyline(lines, intersectionPoints)

@@ -56,6 +56,10 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
       ctx.scalePoint(content.p1, center, sx, sy)
       ctx.scalePoint(content.p2, center, sx, sy)
     },
+    skew(content, center, sx, sy) {
+      ctx.skewPoint(content.p1, center, sx, sy)
+      ctx.skewPoint(content.p2, center, sx, sy)
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content.p1, line)
       ctx.mirrorPoint(content.p2, line)
