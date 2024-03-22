@@ -49,6 +49,10 @@ function getModel(ctx) {
       ctx.scalePoint(content.p1, center, sx, sy);
       ctx.scalePoint(content.p2, center, sx, sy);
     },
+    skew(content, center, sx, sy) {
+      ctx.skewPoint(content.p1, center, sx, sy);
+      ctx.skewPoint(content.p2, center, sx, sy);
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content.p1, line);
       ctx.mirrorPoint(content.p2, line);
@@ -1238,6 +1242,18 @@ function getModel(ctx) {
         content.r *= Math.abs(sx);
         return;
       },
+      skew(content, center, sx, sy) {
+        const ellipse = {
+          ...content,
+          type: "ellipse",
+          cx: content.x,
+          cy: content.y,
+          rx: content.r,
+          ry: content.r
+        };
+        ctx.skewEllipse(ellipse, center, sx, sy);
+        return ellipse;
+      },
       mirror(content, line) {
         ctx.mirrorPoint(content, line);
       },
@@ -1430,6 +1446,18 @@ function getModel(ctx) {
         ctx.scalePoint(content, center, sx, sy);
         content.r *= Math.abs(sx);
         return;
+      },
+      skew(content, center, sx, sy) {
+        const ellipse = {
+          ...content,
+          type: "ellipse arc",
+          cx: content.x,
+          cy: content.y,
+          rx: content.r,
+          ry: content.r
+        };
+        ctx.skewEllipseArc(ellipse, center, sx, sy);
+        return ellipse;
       },
       mirror(content, line, angle) {
         ctx.mirrorArc(content, line, angle);
@@ -2948,6 +2976,14 @@ function getModel(ctx) {
       content.width *= sx;
       content.height *= sy;
     },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getGeometries(content, contents).points, (draft) => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy);
+        }
+      });
+      return { ...content, points, type: "polygon" };
+    },
     explode(content, contents) {
       const { lines } = getGeometries(content, contents);
       return lines.map((line) => ({ type: "line", points: line }));
@@ -3249,6 +3285,9 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       ctx.scaleEllipse(content, center, sx, sy);
     },
+    skew(content, center, sx, sy) {
+      ctx.skewEllipse(content, center, sx, sy);
+    },
     mirror(content, line, angle) {
       ctx.mirrorEllipse(content, line, angle);
     },
@@ -3428,6 +3467,9 @@ function getModel(ctx) {
       rotate: ellipseModel.rotate,
       scale(content, center, sx, sy) {
         ctx.scaleEllipseArc(content, center, sx, sy);
+      },
+      skew(content, center, sx, sy) {
+        ctx.skewEllipseArc(content, center, sx, sy);
       },
       mirror: ellipseModel.mirror,
       break(content, points) {
@@ -4620,6 +4662,13 @@ function getModel(ctx) {
         return (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.clip.border, center, sx, sy, contents);
       }
     },
+    skew(content, center, sx, sy, contents) {
+      var _a, _b;
+      ctx.getContainerSkew(content, center, sx, sy, contents);
+      if (content.clip) {
+        return (_b = (_a = ctx.getContentModel(content.clip.border)) == null ? void 0 : _a.skew) == null ? void 0 : _b.call(_a, content.clip.border, center, sx, sy, contents);
+      }
+    },
     explode: ctx.getContainerExplode,
     mirror(content, line, angle, contents) {
       var _a, _b;
@@ -4782,6 +4831,18 @@ function getModel(ctx) {
       if (content.holes) {
         for (const hole of content.holes) {
           ctx.scaleGeometryLines(hole, center, sx, sy);
+        }
+      }
+    },
+    skew(content, center, sx, sy) {
+      if (content.ref) {
+        ctx.skewPoint(content.ref.point, center, sx, sy);
+        ctx.skewPoint(content.ref.end, center, sx, sy);
+      }
+      ctx.skewGeometryLines(content.border, center, sx, sy);
+      if (content.holes) {
+        for (const hole of content.holes) {
+          ctx.skewGeometryLines(hole, center, sx, sy);
         }
       }
     },
@@ -5671,6 +5732,11 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       for (const point of content.points) {
         ctx.scalePoint(point, center, sx, sy);
+      }
+    },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point, center, sx, sy);
       }
     },
     mirror(content, line) {
@@ -7397,6 +7463,21 @@ function getModel(ctx) {
         }
       }
     },
+    skew(content, center, sx, sy) {
+      for (const command of content.commands) {
+        if (command.type !== "close") {
+          ctx.skewPoint(command.to, center, sx, sy);
+        }
+        if (command.type === "arc") {
+          ctx.skewPoint(command.from, center, sx, sy);
+        } else if (command.type === "bezierCurve") {
+          ctx.skewPoint(command.cp1, center, sx, sy);
+          ctx.skewPoint(command.cp2, center, sx, sy);
+        } else if (command.type === "quadraticCurve") {
+          ctx.skewPoint(command.cp, center, sx, sy);
+        }
+      }
+    },
     mirror(content, line) {
       for (const command of content.commands) {
         if (command.type !== "close") {
@@ -7912,6 +7993,11 @@ function getModel(ctx) {
         ctx.scalePoint(point, center, sx, sy);
       }
     },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point, center, sx, sy);
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line);
@@ -8037,6 +8123,11 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       for (const point of content.points) {
         ctx.scalePoint(point.point, center, sx, sy);
+      }
+    },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point.point, center, sx, sy);
       }
     },
     mirror(content, line) {
@@ -8398,6 +8489,9 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       ctx.scalePoint(content, center, sx, sy);
     },
+    skew(content, center, sx, sy) {
+      ctx.skewPoint(content, center, sx, sy);
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content, line);
     },
@@ -8478,13 +8572,28 @@ function getCommand(ctx) {
     {
       name: "create point",
       icon,
-      useCommand({ onEnd }) {
+      useCommand({ type, onEnd }) {
+        const [point, setPoint] = React.useState();
+        const reset = () => {
+          setPoint(void 0);
+        };
+        const assistentContents = [];
+        if (point) {
+          assistentContents.push({ ...point, type: "point" });
+        }
         return {
           onStart: (p) => {
             onEnd({
               updateContents: (contents) => contents.push({ x: p.x, y: p.y, type: "point" })
             });
-          }
+          },
+          onMove(p) {
+            if (!type)
+              return;
+            setPoint(p);
+          },
+          assistentContents,
+          reset
         };
       },
       selectCount: 0
@@ -8571,6 +8680,10 @@ function getModel(ctx) {
     scale(content, center, sx, sy, contents) {
       ctx.scalePoint(content.center, center, sx, sy);
       ctx.getContainerScale(content, center, sx, sy, contents);
+    },
+    skew(content, center, sx, sy, contents) {
+      ctx.skewPoint(content.center, center, sx, sy);
+      ctx.getContainerSkew(content, center, sx, sy, contents);
     },
     explode(content, contents) {
       return ctx.getContentsExplode(getAllContentsFromCache(content, contents));
@@ -8891,6 +9004,11 @@ function getModel(ctx) {
         ctx.scalePoint(point, center, sx, sy);
       }
     },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point, center, sx, sy);
+      }
+    },
     mirror(content, line) {
       for (const point of content.points) {
         ctx.mirrorPoint(point, line);
@@ -9082,6 +9200,9 @@ function getModel(ctx) {
     },
     scale(content, center, sx, sy) {
       ctx.scalePoint(content.position, center, sx, sy);
+    },
+    skew(content, center, sx, sy) {
+      ctx.skewPoint(content.position, center, sx, sy);
     },
     render(content, renderCtx) {
       const { options, contents, target, fillOptions, strokeColor } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
@@ -9782,6 +9903,14 @@ function getModel(ctx) {
       content.height *= sy;
       return;
     },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getRectGeometries(content, contents).points, (draft) => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy);
+        }
+      });
+      return { ...content, points, type: "polygon" };
+    },
     explode(content, contents) {
       const { lines } = getRectGeometries(content, contents);
       return lines.map((line) => ({ type: "line", points: line }));
@@ -10023,6 +10152,14 @@ function getModel(ctx) {
       ctx.scalePoint(content, center, sx, sy);
       content.radius *= sx;
       return;
+    },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getRegularPolygonGeometriesFromCache(content, contents).points, (draft) => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy);
+        }
+      });
+      return { ...content, points, type: "polygon" };
     },
     offset(content, point, distance, contents) {
       var _a;
@@ -10842,6 +10979,117 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/skew.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "5", y: "5", width: "51", height: "89", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polygon", { points: "40,5 92,5 57,95 5,95", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "skew",
+    useCommand({ onEnd, scale, type, selected, contents }) {
+      const [data, setData] = React.useState();
+      const [cursor, setCursor] = React.useState();
+      let message = "";
+      if (type) {
+        message = data ? "specify skew" : "specify center point";
+      }
+      const { input, setInputPosition, resetInput, setCursorPosition } = ctx.useCursorInput(message, type ? (e, text) => {
+        if (e.key === "Enter" && data) {
+          const value = +text;
+          if (!isNaN(value)) {
+            onEnd({
+              updateContents(contents2, selected2) {
+                contents2.forEach((content, index) => {
+                  var _a, _b;
+                  if (content && ctx.isSelected([index], selected2)) {
+                    const result = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.skew) == null ? void 0 : _b.call(_a, content, data.center, value, 0, contents2);
+                    if (result) {
+                      contents2[index] = result;
+                    }
+                  }
+                });
+              }
+            });
+            reset();
+          }
+        }
+      } : void 0);
+      const reset = () => {
+        setData(void 0);
+        setCursor(void 0);
+        resetInput();
+      };
+      return {
+        onStart(s) {
+          var _a, _b, _c;
+          if (!type)
+            return;
+          if (!data) {
+            const boundings = [];
+            for (const c of selected) {
+              const bounding2 = (_c = (_b = (_a = ctx.getContentModel(c.content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, c.content, contents)) == null ? void 0 : _c.bounding;
+              if (bounding2) {
+                boundings.push(bounding2);
+              }
+            }
+            const bounding = ctx.mergeBoundings(boundings);
+            if (bounding) {
+              setData({ center: s, size: Math.max(bounding.end.x - bounding.start.x, bounding.end.y - bounding.start.y) });
+            }
+          } else {
+            onEnd();
+            reset();
+          }
+        },
+        onMove(p, c) {
+          if (!type)
+            return;
+          setInputPosition(c || p);
+          setCursorPosition(c || p);
+          if (data) {
+            setCursor(p);
+          }
+        },
+        reset,
+        input,
+        updateSelectedContent(content, contents2, selected2) {
+          if (data && cursor) {
+            const sx = (cursor.x - data.center.x) / data.size;
+            if (!sx) {
+              return {};
+            }
+            const sy = (cursor.y - data.center.y) / data.size;
+            const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
+              var _a, _b;
+              return (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.skew) == null ? void 0 : _b.call(_a, draft, data.center, sx, sy, contents2);
+            });
+            const assistentContents = ctx.updateReferencedContents(content, newContent, contents2, selected2);
+            return {
+              patches,
+              assistentContents
+            };
+          }
+          return {};
+        },
+        assistentContents: data && cursor ? [
+          {
+            type: "line",
+            dashArray: [4 / scale],
+            points: [data.center, cursor]
+          }
+        ] : void 0
+      };
+    },
+    contentSelectable(content) {
+      var _a;
+      return !content.readonly && ((_a = ctx.getContentModel(content)) == null ? void 0 : _a.skew) !== void 0;
+    },
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/spline.plugin.tsx
 function getModel(ctx) {
   const SplineContent = ctx.and(ctx.BaseContent("spline"), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, {
@@ -10940,6 +11188,11 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       for (const point of content.points) {
         ctx.scalePoint(point, center, sx, sy);
+      }
+    },
+    skew(content, center, sx, sy) {
+      for (const point of content.points) {
+        ctx.skewPoint(point, center, sx, sy);
       }
     },
     mirror(content, line) {
@@ -11257,6 +11510,14 @@ function getModel(ctx) {
       content.innerRadius *= sx;
       content.outerRadius *= sy;
       return;
+    },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getStarGeometriesFromCache(content, contents).points, (draft) => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy);
+        }
+      });
+      return { ...content, points, type: "polygon" };
     },
     break(content, intersectionPoints, contents) {
       const { lines } = getStarGeometriesFromCache(content, contents);
@@ -13113,6 +13374,10 @@ function getModel(ctx) {
     scale(content, center, sx, sy, contents) {
       var _a, _b;
       return (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.scale) == null ? void 0 : _b.call(_a, content.border, center, sx, sy, contents);
+    },
+    skew(content, center, sx, sy, contents) {
+      var _a, _b;
+      return (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.skew) == null ? void 0 : _b.call(_a, content.border, center, sx, sy, contents);
     },
     mirror(content, line, angle, contents) {
       var _a, _b;

@@ -32,7 +32,7 @@ export default () => {
       }
     })
   }
-  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: '我们出' }, { insert: '去吧', attributes: { stackText: 'ab' } }, { insert: 'Aag jioIb BD', attributes: { color: 0xff0000 } }])
+  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: '我们出' }, { insert: '去吧', attributes: { stackText: 'ab' } }, { insert: 'Aag jioIb BDxVX', attributes: { color: 0xff0000 } }])
   const [align, setAlign] = React.useState<Align>('left')
   const [verticalAlign, setVerticalAlign] = React.useState<VerticalAlign>('top')
   const [strokeOnly, setStrokeOnly] = React.useState(false)

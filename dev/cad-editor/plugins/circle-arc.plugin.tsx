@@ -96,6 +96,18 @@ export function getModel(ctx: PluginContext) {
         content.r *= Math.abs(sx)
         return
       },
+      skew(content, center, sx, sy) {
+        const ellipse: EllipseContent = {
+          ...content,
+          type: 'ellipse',
+          cx: content.x,
+          cy: content.y,
+          rx: content.r,
+          ry: content.r,
+        }
+        ctx.skewEllipse(ellipse, center, sx, sy)
+        return ellipse
+      },
       mirror(content, line) {
         ctx.mirrorPoint(content, line)
       },
@@ -248,6 +260,18 @@ export function getModel(ctx: PluginContext) {
         ctx.scalePoint(content, center, sx, sy)
         content.r *= Math.abs(sx)
         return
+      },
+      skew(content, center, sx, sy) {
+        const ellipse: EllipseArcContent = {
+          ...content,
+          type: 'ellipse arc',
+          cx: content.x,
+          cy: content.y,
+          rx: content.r,
+          ry: content.r,
+        }
+        ctx.skewEllipseArc(ellipse, center, sx, sy)
+        return ellipse
       },
       mirror(content, line, angle) {
         ctx.mirrorArc(content, line, angle)

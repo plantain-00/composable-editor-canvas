@@ -30,6 +30,9 @@ export function getModel(ctx: PluginContext): model.Model<PointContent> {
     scale(content, center, sx, sy) {
       ctx.scalePoint(content, center, sx, sy)
     },
+    skew(content, center, sx, sy) {
+      ctx.skewPoint(content, center, sx, sy)
+    },
     mirror(content, line) {
       ctx.mirrorPoint(content, line)
     },
@@ -105,13 +108,27 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create point',
       icon,
-      useCommand({ onEnd }) {
+      useCommand({ type, onEnd }) {
+        const [point, setPoint] = React.useState<core.Position>()
+        const reset = () => {
+          setPoint(undefined)
+        }
+        const assistentContents: PointContent[] = []
+        if (point) {
+          assistentContents.push({ ...point, type: 'point' })
+        }
         return {
           onStart: (p) => {
             onEnd({
               updateContents: (contents) => contents.push({ x: p.x, y: p.y, type: 'point' } as PointContent)
             })
           },
+          onMove(p) {
+            if (!type) return
+            setPoint(p)
+          },
+          assistentContents,
+          reset,
         }
       },
       selectCount: 0,

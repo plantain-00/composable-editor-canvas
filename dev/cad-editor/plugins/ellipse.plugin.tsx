@@ -87,6 +87,9 @@ export function getModel(ctx: PluginContext) {
     scale(content, center, sx, sy) {
       ctx.scaleEllipse(content, center, sx, sy)
     },
+    skew(content, center, sx, sy) {
+      ctx.skewEllipse(content, center, sx, sy)
+    },
     mirror(content, line, angle) {
       ctx.mirrorEllipse(content, line, angle)
     },
@@ -237,6 +240,9 @@ export function getModel(ctx: PluginContext) {
       rotate: ellipseModel.rotate,
       scale(content, center, sx, sy) {
         ctx.scaleEllipseArc(content, center, sx, sy)
+      },
+      skew(content, center, sx, sy) {
+        ctx.skewEllipseArc(content, center, sx, sy)
       },
       mirror: ellipseModel.mirror,
       break(content, points) {

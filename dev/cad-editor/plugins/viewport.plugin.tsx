@@ -28,6 +28,9 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
     scale(content, center, sx, sy, contents) {
       return ctx.getContentModel(content.border)?.scale?.(content.border, center, sx, sy, contents)
     },
+    skew(content, center, sx, sy, contents) {
+      return ctx.getContentModel(content.border)?.skew?.(content.border, center, sx, sy, contents)
+    },
     mirror(content, line, angle, contents) {
       ctx.getContentModel(content.border)?.mirror?.(content.border, line, angle, contents)
     },

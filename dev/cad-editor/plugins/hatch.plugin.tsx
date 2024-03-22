@@ -110,6 +110,18 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
     },
+    skew(content, center, sx, sy) {
+      if (content.ref) {
+        ctx.skewPoint(content.ref.point, center, sx, sy)
+        ctx.skewPoint(content.ref.end, center, sx, sy)
+      }
+      ctx.skewGeometryLines(content.border, center, sx, sy)
+      if (content.holes) {
+        for (const hole of content.holes) {
+          ctx.skewGeometryLines(hole, center, sx, sy)
+        }
+      }
+    },
     mirror(content, line, angle) {
       if (content.ref) {
         ctx.mirrorPoint(content.ref.point, line)

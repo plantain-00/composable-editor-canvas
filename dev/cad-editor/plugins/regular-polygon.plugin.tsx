@@ -63,6 +63,14 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
       content.radius *= sx
       return
     },
+    skew(content, center, sx, sy, contents) {
+      const points = ctx.produce(getRegularPolygonGeometriesFromCache(content, contents).points, draft => {
+        for (const p of draft) {
+          ctx.skewPoint(p, center, sx, sy)
+        }
+      })
+      return { ...content, points, type: 'polygon', } as PolygonContent
+    },
     offset(content, point, distance, contents) {
       if (!distance) {
         distance = Math.min(...getRegularPolygonGeometriesFromCache(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
