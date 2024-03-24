@@ -73,6 +73,7 @@ export interface FillFields {
     strokeOpacity?: number
   }
   fillStyleId?: ContentRef
+  trueFillColor?: boolean
   fillOpacity?: number
 }
 
@@ -84,6 +85,7 @@ export const FillFields = {
     strokeOpacity: optional(maximum(1, minimum(0, number))),
   })),
   fillStyleId: optional(or(number, Content)),
+  trueFillColor: optional(boolean),
   fillOpacity: optional(maximum(1, minimum(0, number))),
 }
 
@@ -684,6 +686,7 @@ export function getFillContentPropertyPanel(
       <BooleanEditor value={content.fillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v ? 0 : undefined } })} />,
       content.fillColor !== undefined ? <NumberEditor type='color' value={content.fillColor} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillColor = v } })} /> : undefined,
     ],
+    trueFillColor: <BooleanEditor value={content.trueFillColor !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.trueFillColor = v ? true : undefined } })} />,
     fillPattern: [
       <BooleanEditor value={content.fillPattern !== undefined} setValue={(v) => update(c => { if (isFillContent(c)) { c.fillPattern = v ? { width: 10, height: 10, lines: [[{ x: 0, y: 5 }, { x: 5, y: 0 }], [{ x: 10, y: 5 }, { x: 5, y: 10 }]] } : undefined } })} />,
       content.fillPattern !== undefined

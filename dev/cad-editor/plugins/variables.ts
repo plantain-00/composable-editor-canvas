@@ -4268,7 +4268,7 @@ function getCommand(ctx) {
                         if (shift) {
                           points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line));
                         } else {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter((p2) => lines.every((n) => !ctx.pointIsOnGeometryLine(p2, n))));
+                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter((p2) => !ctx.pointIsOnGeometryLines(p2, lines)));
                         }
                       }
                     }
@@ -4740,7 +4740,6 @@ function getModel(ctx) {
     holes: ctx.optional([[ctx.GeometryLine]]),
     ref: ctx.optional({
       point: ctx.Position,
-      end: ctx.Position,
       ids: [ctx.ContentRef]
     })
   });
@@ -4755,11 +4754,14 @@ function getModel(ctx) {
       let hatch = content;
       if (content.ref && content.ref.ids.length > 0) {
         const refContents = content.ref.ids.map((id) => ctx.getReference(id, contents)).filter((d) => !!d && !ctx.shallowEquals(d, content));
-        if (refContents.length > 0) {
+        const bounding = ctx.mergeBoundings(refContents.map((ref) => {
+          var _a, _b, _c;
+          return (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c.bounding;
+        }));
+        if (refContents.length > 0 && bounding) {
           const p = content.ref.point;
-          const end = content.ref.end;
           const getGeometriesInRange = () => refContents.map((c) => ctx.getContentHatchGeometries(c, contents));
-          const border = ctx.getHatchByPosition(p, end, getGeometriesInRange);
+          const border = ctx.getHatchByPosition(p, { x: bounding.end.x, y: p.y }, getGeometriesInRange);
           if (border) {
             const holes2 = ctx.getHatchHoles(border.lines, getGeometriesInRange);
             hatch = {
@@ -4793,7 +4795,6 @@ function getModel(ctx) {
     move(content, offset) {
       if (content.ref) {
         ctx.movePoint(content.ref.point, offset);
-        ctx.movePoint(content.ref.end, offset);
       }
       for (const line of content.border) {
         ctx.moveGeometryLine(line, offset);
@@ -4809,7 +4810,6 @@ function getModel(ctx) {
     rotate(content, center, angle) {
       if (content.ref) {
         ctx.rotatePoint(content.ref.point, center, angle);
-        ctx.rotatePoint(content.ref.end, center, angle);
       }
       for (const line of content.border) {
         ctx.rotateGeometryLine(line, center, angle);
@@ -4825,7 +4825,6 @@ function getModel(ctx) {
     scale(content, center, sx, sy) {
       if (content.ref) {
         ctx.scalePoint(content.ref.point, center, sx, sy);
-        ctx.scalePoint(content.ref.end, center, sx, sy);
       }
       ctx.scaleGeometryLines(content.border, center, sx, sy);
       if (content.holes) {
@@ -4837,7 +4836,6 @@ function getModel(ctx) {
     skew(content, center, sx, sy) {
       if (content.ref) {
         ctx.skewPoint(content.ref.point, center, sx, sy);
-        ctx.skewPoint(content.ref.end, center, sx, sy);
       }
       ctx.skewGeometryLines(content.border, center, sx, sy);
       if (content.holes) {
@@ -4849,7 +4847,6 @@ function getModel(ctx) {
     mirror(content, line, angle) {
       if (content.ref) {
         ctx.mirrorPoint(content.ref.point, line);
-        ctx.mirrorPoint(content.ref.end, line);
       }
       for (const b of content.border) {
         ctx.mirrorGeometryLine(b, line, angle);
@@ -4868,6 +4865,26 @@ function getModel(ctx) {
       return target.renderPath([border, ...holes], options);
     },
     getGeometries: getHatchGeometries,
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const editPoints = [];
+        if (content.ref) {
+          editPoints.push({
+            x: content.ref.point.x,
+            y: content.ref.point.y,
+            cursor: "move",
+            update(c, { cursor, start }) {
+              if (!isHatchContent(c) || !c.ref) {
+                return;
+              }
+              c.ref.point.x += cursor.x - start.x;
+              c.ref.point.y += cursor.y - start.y;
+            }
+          });
+        }
+        return { editPoints };
+      });
+    },
     propertyPanel(content, update, contents) {
       return {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
@@ -4898,7 +4915,7 @@ function getCommand(ctx) {
     {
       name: "create hatch",
       icon,
-      useCommand({ onEnd, contents, getContentsInRange }) {
+      useCommand({ onEnd, contents, getContentsInRange, width, height, x, y, rotate, scale }) {
         const [hatch, setHatch] = React.useState();
         const reset = () => {
           setHatch(void 0);
@@ -4914,15 +4931,11 @@ function getCommand(ctx) {
             });
           },
           onMove(p) {
-            if (contents.length === 0)
+            const lineSegment = ctx.getRayTransformedLineSegment({ x: p.x, y: p.y, angle: 0 }, width, height, { x, y, scale, rotate });
+            if (!lineSegment)
               return;
-            const bounding = ctx.contentsBoundingCache.get(contents, () => {
-              const points = ctx.getContentsPoints(contents, contents);
-              return ctx.getPointsBoundingUnsafe(points);
-            });
             const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
-            const end = { x: bounding.end.x, y: p.y };
-            const border = ctx.getHatchByPosition(p, end, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
+            const border = ctx.getHatchByPosition(...lineSegment, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
             if (border) {
               const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
               setHatch({
@@ -4931,7 +4944,6 @@ function getCommand(ctx) {
                 holes: holes == null ? void 0 : holes.holes,
                 ref: {
                   point: p,
-                  end,
                   ids: [...border.ids, ...(holes == null ? void 0 : holes.ids) || []]
                 }
               });
@@ -13139,20 +13151,24 @@ export {
   isTimeAxisContent
 };
 `,
-`// dev/cad-editor/plugins/trim.plugin.tsx
+`// dev/cad-editor/plugins/hatch.plugin.tsx
+function isHatchContent(content) {
+  return content.type === "hatch";
+}
+
+// dev/cad-editor/plugins/trim.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
   const icon = /* @__PURE__ */ React.createElement("svg", { viewBox: "64 64 896 896", width: "1em", height: "1em", fill: "currentColor" }, /* @__PURE__ */ React.createElement("path", { d: "M567.1 512l318.5-319.3c5-5 1.5-13.7-5.6-13.7h-90.5c-2.1 0-4.2.8-5.6 2.3l-273.3 274-90.2-90.5c12.5-22.1 19.7-47.6 19.7-74.8 0-83.9-68.1-152-152-152s-152 68.1-152 152 68.1 152 152 152c27.7 0 53.6-7.4 75.9-20.3l90 90.3-90.1 90.3A151.04 151.04 0 00288 582c-83.9 0-152 68.1-152 152s68.1 152 152 152 152-68.1 152-152c0-27.2-7.2-52.7-19.7-74.8l90.2-90.5 273.3 274c1.5 1.5 3.5 2.3 5.6 2.3H880c7.1 0 10.7-8.6 5.6-13.7L567.1 512zM288 370c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80zm0 444c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z" }));
   return {
     name: "trim",
-    useCommand({ onEnd, type, selected, backgroundColor, contents }) {
-      var _a, _b;
+    useCommand({ onEnd, type, selected, backgroundColor, contents, getContentsInRange }) {
       const [candidates, setCandidates] = React.useState([]);
       const [currents, setCurrents] = React.useState([]);
       const [trackPoints, setTrackPoints] = React.useState([]);
       const { state, setState, resetHistory, undo, redo } = ctx.useUndoRedo([]);
       React.useEffect(() => {
-        var _a2, _b2;
+        var _a, _b;
         if (type) {
           const allContents = [];
           for (let i = 0; i < selected.length; i++) {
@@ -13167,7 +13183,7 @@ function getCommand(ctx) {
             }
             intersectionPoints = ctx.deduplicatePosition(intersectionPoints);
             if (intersectionPoints.length > 0) {
-              const result = (_b2 = (_a2 = ctx.getContentModel(content)) == null ? void 0 : _a2.break) == null ? void 0 : _b2.call(_a2, content, intersectionPoints, contents);
+              const result = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.break) == null ? void 0 : _b.call(_a, content, intersectionPoints, contents);
               if (result) {
                 allContents.push({ content, children: result });
               }
@@ -13179,16 +13195,27 @@ function getCommand(ctx) {
         }
       }, [type]);
       const assistentContents = [];
+      const collectAssistentContent = (child) => {
+        var _a;
+        if (ctx.isStrokeContent(child)) {
+          assistentContents.push({
+            ...child,
+            strokeWidth: ((_a = child.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(child)) + 2,
+            strokeColor: backgroundColor,
+            trueStrokeColor: true
+          });
+        } else if (isHatchContent(child)) {
+          assistentContents.push({
+            ...child,
+            fillPattern: void 0,
+            fillColor: backgroundColor,
+            trueFillColor: true
+          });
+        }
+      };
       for (const current of currents) {
         for (const child of current.children) {
-          if (ctx.isStrokeContent(child)) {
-            assistentContents.push({
-              ...child,
-              strokeWidth: ((_a = child.strokeWidth) != null ? _a : ctx.getDefaultStrokeWidth(child)) + 2,
-              strokeColor: backgroundColor,
-              trueStrokeColor: true
-            });
-          }
+          collectAssistentContent(child);
         }
       }
       if (trackPoints.length > 1) {
@@ -13196,14 +13223,7 @@ function getCommand(ctx) {
       }
       for (const { children } of state) {
         for (const child of children) {
-          if (ctx.isStrokeContent(child)) {
-            assistentContents.push({
-              ...child,
-              strokeWidth: ((_b = child.strokeWidth) != null ? _b : ctx.getDefaultStrokeWidth(child)) + 2,
-              strokeColor: backgroundColor,
-              trueStrokeColor: true
-            });
-          }
+          collectAssistentContent(child);
         }
       }
       const reset = () => {
@@ -13234,7 +13254,7 @@ function getCommand(ctx) {
           }
         },
         onMove(p) {
-          var _a2, _b2, _c, _d;
+          var _a, _b, _c, _d;
           if (trackPoints.length > 0) {
             const newTracePoints = [...trackPoints, p];
             if (newTracePoints.length > 1) {
@@ -13242,7 +13262,7 @@ function getCommand(ctx) {
               const newCurrents = [];
               for (const candidate of candidates) {
                 for (const child of candidate.children) {
-                  const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+                  const geometries = (_b = (_a = ctx.getContentModel(child)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, child, contents);
                   if (geometries) {
                     for (const line of geometries.lines) {
                       if (trackLines.some((t) => ctx.getTwoGeometryLinesIntersectionPoint(line, t).length > 0)) {
@@ -13267,6 +13287,33 @@ function getCommand(ctx) {
             for (const child of candidate.children) {
               const geometries = (_d = (_c = ctx.getContentModel(child)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, child, contents);
               if (geometries) {
+                if (isHatchContent(child) && geometries.regions && geometries.bounding) {
+                  for (const region of geometries.regions) {
+                    if (region.holes && region.holes.some((h) => ctx.pointInPolygon(p, h))) {
+                      continue;
+                    }
+                    if (ctx.pointInPolygon(p, region.points)) {
+                      const getGeometriesInRange = (region2) => getContentsInRange(region2).map((c) => ctx.getContentHatchGeometries(c, contents));
+                      const border = ctx.getHatchByPosition(p, { x: geometries.bounding.end.x, y: p.y }, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
+                      if (border) {
+                        const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
+                        setCurrents([{
+                          children: [{
+                            type: "hatch",
+                            border: border.lines,
+                            holes: holes == null ? void 0 : holes.holes,
+                            ref: {
+                              point: p,
+                              ids: [...border.ids, ...(holes == null ? void 0 : holes.ids) || []]
+                            }
+                          }],
+                          content: candidate.content
+                        }]);
+                      }
+                      return;
+                    }
+                  }
+                }
                 for (const line of geometries.lines) {
                   if (ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5) {
                     setCurrents([{ children: [child], content: candidate.content }]);
@@ -13279,7 +13326,7 @@ function getCommand(ctx) {
           setCurrents([]);
         },
         onKeyDown(e) {
-          var _a2, _b2;
+          var _a, _b;
           if (e.code === "KeyZ" && ctx.metaKeyIfMacElseCtrlKey(e)) {
             if (e.shiftKey) {
               redo(e);
@@ -13296,7 +13343,7 @@ function getCommand(ctx) {
               if (parentModel == null ? void 0 : parentModel.break) {
                 let points = [];
                 for (const child of children) {
-                  const geometries = (_b2 = (_a2 = ctx.getContentModel(child)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b2.call(_a2, child, contents);
+                  const geometries = (_b = (_a = ctx.getContentModel(child)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, child, contents);
                   if (geometries) {
                     const { start, end } = ctx.getGeometryLinesStartAndEnd(geometries.lines);
                     if (start && end) {
@@ -13316,6 +13363,48 @@ function getCommand(ctx) {
                   removedIndexes.push(ctx.getContentIndex(content, contents));
                   newContents.push(...r.filter((c) => children.every((f) => !ctx.deepEquals(f, c))));
                 }
+              } else if (isHatchContent(content)) {
+                const holes = [];
+                const ids = [];
+                if (content.ref) {
+                  ids.push(...content.ref.ids);
+                }
+                const borders = [content.border];
+                if (content.holes) {
+                  holes.push(...content.holes);
+                }
+                for (const child of children) {
+                  if (isHatchContent(child)) {
+                    holes.push(child.border);
+                    if (child.holes) {
+                      borders.push(...child.holes);
+                    }
+                    if (child.ref) {
+                      ids.push(...child.ref.ids);
+                    }
+                  }
+                }
+                removedIndexes.push(ctx.getContentIndex(content, contents));
+                const result = borders.map((b) => {
+                  const polygon = ctx.getGeometryLinesPoints(b);
+                  return ctx.optimizeHatch(b, holes.filter((h) => {
+                    const start = ctx.getGeometryLineStartAndEnd(h[0]).start;
+                    return start && (ctx.pointIsOnGeometryLines(start, b) || ctx.pointInPolygon(start, polygon));
+                  }));
+                }).flat();
+                newContents.push(...result.map((r) => {
+                  let ref;
+                  if (content.ref) {
+                    const p = content.ref.point;
+                    if (ctx.pointInPolygon(p, ctx.getGeometryLinesPoints(r.border)) && r.holes.every((h) => !ctx.pointInPolygon(p, ctx.getGeometryLinesPoints(h)))) {
+                      ref = {
+                        point: p,
+                        ids: Array.from(new Set(ids))
+                      };
+                    }
+                  }
+                  return { ...content, border: r.border, holes: r.holes, ref };
+                }));
               }
             }
             onEnd({

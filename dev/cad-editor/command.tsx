@@ -35,6 +35,11 @@ interface CommandProps {
   type: string | undefined,
   selected: { content: BaseContent, path: ContentPath }[],
   setSelected: (...value: readonly Nullable<ContentPath>[]) => void
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  rotate: number,
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
@@ -66,7 +71,7 @@ interface CommandResult {
   }
   assistentContents?: BaseContent[]
   selected?: ContentPath[]
-  hovering?:ContentPath[]
+  hovering?: ContentPath[]
   lastPosition?: Position
   reset?(saveCurrent?: boolean): void
 }
@@ -92,6 +97,11 @@ export function useCommands(
   inputFixed: boolean | undefined,
   operation: string | undefined,
   selected: { content: BaseContent, path: ContentPath }[],
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  rotate: number,
   scale: number,
   strokeStyleId: number | undefined,
   fillStyleId: number | undefined,
@@ -115,6 +125,11 @@ export function useCommands(
         type,
         selected,
         setSelected,
+        width,
+        height,
+        x,
+        y,
+        rotate,
         scale,
         strokeStyleId,
         fillStyleId,
@@ -157,7 +172,7 @@ export function useCommands(
         }
       }
       const idMap: Record<number, number> = {}
-      for(let i = 0; i < selected.length;i++) {
+      for (let i = 0; i < selected.length; i++) {
         idMap[selected[i].path[0]] = contents.length + i
       }
       newContents = newContents.map(c => {

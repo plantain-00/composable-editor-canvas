@@ -8,7 +8,6 @@ export type HatchContent = model.BaseContent<'hatch'> & model.FillFields & {
   holes?: core.GeometryLine[][]
   ref?: {
     point: core.Position
-    end: core.Position
     ids: model.ContentRef[]
   }
 }
@@ -19,7 +18,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     holes: ctx.optional([[ctx.GeometryLine]]),
     ref: ctx.optional({
       point: ctx.Position,
-      end: ctx.Position,
       ids: [ctx.ContentRef],
     }),
   })
@@ -31,11 +29,11 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       let hatch = content
       if (content.ref && content.ref.ids.length > 0) {
         const refContents = content.ref.ids.map(id => ctx.getReference(id, contents)).filter((d): d is model.BaseContent => !!d && !ctx.shallowEquals(d, content))
-        if (refContents.length > 0) {
+        const bounding = ctx.mergeBoundings(refContents.map(ref => ctx.getContentModel(ref)?.getGeometries?.(ref, contents)?.bounding))
+        if (refContents.length > 0 && bounding) {
           const p = content.ref.point
-          const end = content.ref.end
           const getGeometriesInRange = () => refContents.map(c => ctx.getContentHatchGeometries(c, contents))
-          const border = ctx.getHatchByPosition(p, end, getGeometriesInRange)
+          const border = ctx.getHatchByPosition(p, { x: bounding.end.x, y: p.y }, getGeometriesInRange)
           if (border) {
             const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
             hatch = {
@@ -69,7 +67,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     move(content, offset) {
       if (content.ref) {
         ctx.movePoint(content.ref.point, offset)
-        ctx.movePoint(content.ref.end, offset)
       }
       for (const line of content.border) {
         ctx.moveGeometryLine(line, offset)
@@ -85,7 +82,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     rotate(content, center, angle) {
       if (content.ref) {
         ctx.rotatePoint(content.ref.point, center, angle)
-        ctx.rotatePoint(content.ref.end, center, angle)
       }
       for (const line of content.border) {
         ctx.rotateGeometryLine(line, center, angle)
@@ -101,7 +97,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     scale(content, center, sx, sy) {
       if (content.ref) {
         ctx.scalePoint(content.ref.point, center, sx, sy)
-        ctx.scalePoint(content.ref.end, center, sx, sy)
       }
       ctx.scaleGeometryLines(content.border, center, sx, sy)
       if (content.holes) {
@@ -113,7 +108,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     skew(content, center, sx, sy) {
       if (content.ref) {
         ctx.skewPoint(content.ref.point, center, sx, sy)
-        ctx.skewPoint(content.ref.end, center, sx, sy)
       }
       ctx.skewGeometryLines(content.border, center, sx, sy)
       if (content.holes) {
@@ -125,7 +119,6 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     mirror(content, line, angle) {
       if (content.ref) {
         ctx.mirrorPoint(content.ref.point, line)
-        ctx.mirrorPoint(content.ref.end, line)
       }
       for (const b of content.border) {
         ctx.mirrorGeometryLine(b, line, angle)
@@ -144,6 +137,26 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       return target.renderPath([border, ...holes], options)
     },
     getGeometries: getHatchGeometries,
+    getEditPoints(content) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const editPoints: core.EditPoint<model.BaseContent>[] = []
+        if (content.ref) {
+          editPoints.push({
+            x: content.ref.point.x,
+            y: content.ref.point.y,
+            cursor: 'move',
+            update(c, { cursor, start }) {
+              if (!isHatchContent(c) || !c.ref) {
+                return
+              }
+              c.ref.point.x += cursor.x - start.x
+              c.ref.point.y += cursor.y - start.y
+            },
+          })
+        }
+        return { editPoints }
+      })
+    },
     propertyPanel(content, update, contents) {
       return {
         ...ctx.getFillContentPropertyPanel(content, update, contents),
@@ -185,7 +198,7 @@ export function getCommand(ctx: PluginContext): Command[] {
     {
       name: 'create hatch',
       icon,
-      useCommand({ onEnd, contents, getContentsInRange }) {
+      useCommand({ onEnd, contents, getContentsInRange, width, height, x, y, rotate, scale }) {
         const [hatch, setHatch] = React.useState<HatchContent>()
         const reset = () => {
           setHatch(undefined)
@@ -201,14 +214,10 @@ export function getCommand(ctx: PluginContext): Command[] {
             })
           },
           onMove(p) {
-            if (contents.length === 0) return
-            const bounding = ctx.contentsBoundingCache.get(contents, () => {
-              const points = ctx.getContentsPoints(contents, contents)
-              return ctx.getPointsBoundingUnsafe(points)
-            })
+            const lineSegment = ctx.getRayTransformedLineSegment({ x: p.x, y: p.y, angle: 0 }, width, height, { x, y, scale, rotate })
+            if (!lineSegment) return
             const getGeometriesInRange = (region: core.TwoPointsFormRegion | undefined) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
-            const end = { x: bounding.end.x, y: p.y }
-            const border = ctx.getHatchByPosition(p, end, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
+            const border = ctx.getHatchByPosition(...lineSegment, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
             if (border) {
               const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
               setHatch({
@@ -217,7 +226,6 @@ export function getCommand(ctx: PluginContext): Command[] {
                 holes: holes?.holes,
                 ref: {
                   point: p,
-                  end,
                   ids: [...border.ids, ...(holes?.ids || [])],
                 },
               })
