@@ -3,6 +3,7 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import { HatchContent, isHatchContent } from './hatch.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
@@ -13,7 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'trim',
-    useCommand({ onEnd, type, selected, backgroundColor, contents }) {
+    useCommand({ onEnd, type, selected, backgroundColor, contents, getContentsInRange }) {
       const [candidates, setCandidates] = React.useState<{ content: model.BaseContent, children: model.BaseContent[] }[]>([])
       const [currents, setCurrents] = React.useState<{ content: model.BaseContent, children: model.BaseContent[] }[]>([])
       const [trackPoints, setTrackPoints] = React.useState<core.Position[]>([])
@@ -46,17 +47,27 @@ export function getCommand(ctx: PluginContext): Command {
         }
       }, [type])
 
-      const assistentContents: (model.BaseContent & model.StrokeFields)[] = []
+      const assistentContents: ((model.BaseContent & model.StrokeFields) | HatchContent)[] = []
+      const collectAssistentContent = (child: model.BaseContent) => {
+        if (ctx.isStrokeContent(child)) {
+          assistentContents.push({
+            ...child,
+            strokeWidth: (child.strokeWidth ?? ctx.getDefaultStrokeWidth(child)) + 2,
+            strokeColor: backgroundColor,
+            trueStrokeColor: true,
+          })
+        } else if (isHatchContent(child)) {
+          assistentContents.push({
+            ...child,
+            fillPattern: undefined,
+            fillColor: backgroundColor,
+            trueFillColor: true,
+          })
+        }
+      }
       for (const current of currents) {
         for (const child of current.children) {
-          if (ctx.isStrokeContent(child)) {
-            assistentContents.push({
-              ...child,
-              strokeWidth: (child.strokeWidth ?? ctx.getDefaultStrokeWidth(child)) + 2,
-              strokeColor: backgroundColor,
-              trueStrokeColor: true,
-            })
-          }
+          collectAssistentContent(child)
         }
       }
       if (trackPoints.length > 1) {
@@ -64,14 +75,7 @@ export function getCommand(ctx: PluginContext): Command {
       }
       for (const { children } of state) {
         for (const child of children) {
-          if (ctx.isStrokeContent(child)) {
-            assistentContents.push({
-              ...child,
-              strokeWidth: (child.strokeWidth ?? ctx.getDefaultStrokeWidth(child)) + 2,
-              strokeColor: backgroundColor,
-              trueStrokeColor: true,
-            })
-          }
+          collectAssistentContent(child)
         }
       }
       const reset = () => {
@@ -135,6 +139,33 @@ export function getCommand(ctx: PluginContext): Command {
             for (const child of candidate.children) {
               const geometries = ctx.getContentModel(child)?.getGeometries?.(child, contents)
               if (geometries) {
+                if (isHatchContent(child) && geometries.regions && geometries.bounding) {
+                  for (const region of geometries.regions) {
+                    if (region.holes && region.holes.some(h => ctx.pointInPolygon(p, h))) {
+                      continue
+                    }
+                    if (ctx.pointInPolygon(p, region.points)) {
+                      const getGeometriesInRange = (region: core.TwoPointsFormRegion | undefined) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
+                      const border = ctx.getHatchByPosition(p, { x: geometries.bounding.end.x, y: p.y }, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
+                      if (border) {
+                        const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
+                        setCurrents([{
+                          children: [{
+                            type: 'hatch',
+                            border: border.lines,
+                            holes: holes?.holes,
+                            ref: {
+                              point: p,
+                              ids: [...border.ids, ...(holes?.ids || [])],
+                            },
+                          } as HatchContent],
+                          content: candidate.content
+                        }])
+                      }
+                      return
+                    }
+                  }
+                }
                 for (const line of geometries.lines) {
                   if (ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5) {
                     setCurrents([{ children: [child], content: candidate.content }])
@@ -182,6 +213,51 @@ export function getCommand(ctx: PluginContext): Command {
                   removedIndexes.push(ctx.getContentIndex(content, contents))
                   newContents.push(...r.filter(c => children.every(f => !ctx.deepEquals(f, c))))
                 }
+              } else if (isHatchContent(content)) {
+                const holes: core.GeometryLine[][] = []
+                const ids: model.ContentRef[] = []
+                if (content.ref) {
+                  ids.push(...content.ref.ids)
+                }
+                const borders = [content.border]
+                if (content.holes) {
+                  holes.push(...content.holes)
+                }
+                for (const child of children) {
+                  if (isHatchContent(child)) {
+                    holes.push(child.border)
+                    if (child.holes) {
+                      borders.push(...child.holes)
+                    }
+                    if (child.ref) {
+                      ids.push(...child.ref.ids)
+                    }
+                  }
+                }
+                removedIndexes.push(ctx.getContentIndex(content, contents))
+                const result = borders.map(b => {
+                  const polygon = ctx.getGeometryLinesPoints(b)
+                  return ctx.optimizeHatch(b, holes.filter(h => {
+                    const start = ctx.getGeometryLineStartAndEnd(h[0]).start
+                    return start && (ctx.pointIsOnGeometryLines(start, b) || ctx.pointInPolygon(start, polygon))
+                  }))
+                }).flat()
+                newContents.push(...result.map(r => {
+                  let ref: { point: core.Position, ids: model.ContentRef[] } | undefined
+                  if (content.ref) {
+                    const p = content.ref.point
+                    if (
+                      ctx.pointInPolygon(p, ctx.getGeometryLinesPoints(r.border)) &&
+                      r.holes.every(h => !ctx.pointInPolygon(p, ctx.getGeometryLinesPoints(h)))
+                    ) {
+                      ref = {
+                        point: p,
+                        ids: Array.from(new Set(ids)),
+                      }
+                    }
+                  }
+                  return { ...content, border: r.border, holes: r.holes, ref }
+                }))
               }
             }
             onEnd({

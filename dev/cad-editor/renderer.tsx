@@ -60,7 +60,7 @@ export function Renderer(props: {
     return hasFill(content) ? undefined : defaultStrokeColor
   }
   const getFillColor = (content: FillFields) => {
-    return content.fillColor !== undefined ? transformColor(content.fillColor) : undefined
+    return content.fillColor !== undefined ? content.trueFillColor ? content.fillColor : transformColor(content.fillColor) : undefined
   }
   const getFillPattern = (content: FillFields): Pattern<unknown> | undefined => {
     if (content.fillPattern === undefined) {

@@ -100,7 +100,7 @@ export function getCommand(ctx: PluginContext): Command {
                         if (shift) {
                           points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line))
                         } else {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter(p => lines.every(n => !ctx.pointIsOnGeometryLine(p, n))))
+                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter(p => !ctx.pointIsOnGeometryLines(p, lines)))
                         }
                       }
                     }

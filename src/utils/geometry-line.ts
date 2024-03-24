@@ -102,6 +102,10 @@ export function isGeometryLinesClosed(lines: GeometryLine[]) {
   return isSamePoint(start, end)
 }
 
+export function pointIsOnGeometryLines(p: Position, lines: GeometryLine[]) {
+  return lines.some(line => pointIsOnGeometryLine(p, line))
+}
+
 export function pointIsOnGeometryLine(p: Position, line: GeometryLine) {
   if (Array.isArray(line)) {
     return pointIsOnLine(p, ...line) && pointIsOnLineSegment(p, ...line)
