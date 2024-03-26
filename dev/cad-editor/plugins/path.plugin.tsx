@@ -119,7 +119,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
       const lines = getPathGeometriesFromCache(content, contents).lines
       return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin)),
+        commands: ctx.geometryLineToPathCommands(ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin))),
       }
     },
     render(content, renderCtx) {

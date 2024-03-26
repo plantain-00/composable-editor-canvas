@@ -84,7 +84,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     },
     offset(content, point, distance, contents) {
       const lines = getNurbsGeometries(content, contents).lines
-      return ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance).map(r => ctx.geometryLineToContent(r))
+      return ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance)).map(r => ctx.geometryLineToContent(r))
     },
     render(content, renderCtx) {
       const { points } = getNurbsGeometries(content, renderCtx.contents)

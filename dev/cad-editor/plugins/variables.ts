@@ -6803,7 +6803,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents) {
       const lines = getNurbsGeometries(content, contents).lines;
-      return ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance).map((r) => ctx.geometryLineToContent(r));
+      return ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance)).map((r) => ctx.geometryLineToContent(r));
     },
     render(content, renderCtx) {
       const { points } = getNurbsGeometries(content, renderCtx.contents);
@@ -7513,7 +7513,7 @@ function getModel(ctx) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
       return {
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin))
+        commands: ctx.geometryLineToPathCommands(ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin)))
       };
     },
     render(content, renderCtx) {
@@ -8159,7 +8159,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents, lineJoin) {
       const { lines } = getPlineGeometries(content, contents);
-      const newLines = ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin);
+      const newLines = ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin));
       return ctx.geometryLinesToPline(newLines);
     },
     join(content, target, contents) {
@@ -13620,6 +13620,226 @@ function getCommand(ctx) {
 export {
   getCommand,
   getModel
+};
+`,
+`// dev/cad-editor/plugins/wire.plugin.tsx
+function getModel(ctx) {
+  const WireContent = ctx.and(ctx.BaseContent("wire"), {
+    points: ctx.minItems(2, [ctx.Position]),
+    refs: [ctx.ContentRef]
+  });
+  const LampContent = ctx.and(ctx.BaseContent("lamp"), ctx.Position, {
+    size: ctx.number
+  });
+  const getWireRefIds = (content) => [content.strokeStyleId, ...content.refs];
+  const getLampRefIds = (content) => [content.strokeStyleId];
+  function getWireGeometries(content, contents) {
+    const refs = new Set(ctx.iterateRefContents(getWireRefIds(content), contents, [content]));
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      let lines = Array.from(ctx.iteratePolylineLines(content.points));
+      for (const ref of content.refs) {
+        if (ref) {
+          const lamp = ctx.getReference(ref, contents, isLampContent);
+          if (lamp) {
+            const params = ctx.deduplicate(Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getLampGeometries(lamp, contents).lines)).map((p) => ctx.getGeometryLinesParamAtPoint(p, lines)), ctx.isSameNumber);
+            if (params.length === 1) {
+              const param = params[0];
+              if (param < lines.length / 2) {
+                lines = ctx.getPartOfGeometryLines(param, lines.length, lines);
+              } else {
+                lines = ctx.getPartOfGeometryLines(0, param, lines);
+              }
+            } else if (params.length > 1) {
+              lines = [
+                ...ctx.getPartOfGeometryLines(0, Math.min(...params), lines),
+                ...ctx.getPartOfGeometryLines(Math.max(...params), lines.length, lines)
+              ];
+            }
+          }
+        }
+      }
+      return {
+        lines,
+        bounding: ctx.getPointsBounding(content.points),
+        renderingLines: lines.map((line) => ctx.dashedPolylineToLines(ctx.getGeometryLinesPoints([line]), content.dashArray)).flat()
+      };
+    });
+  }
+  function getLampGeometries(content, contents) {
+    const refs = new Set(ctx.iterateRefContents(getLampRefIds(content), contents, [content]));
+    const arc = ctx.circleToArc({ x: content.x, y: content.y, r: content.size });
+    return ctx.getGeometriesFromCache(content, refs, () => {
+      const size = content.size * Math.SQRT1_2;
+      const lineSegments = [
+        [{ x: content.x - size, y: content.y - size }, { x: content.x + size, y: content.y + size }],
+        [{ x: content.x - size, y: content.y + size }, { x: content.x + size, y: content.y - size }]
+      ];
+      const points = ctx.arcToPolyline(arc, ctx.defaultAngleDelta);
+      return {
+        lines: [{ type: "arc", curve: arc }, ...lineSegments],
+        bounding: {
+          start: { x: content.x - content.size, y: content.y - content.size },
+          end: { x: content.x + content.size, y: content.y + content.size }
+        },
+        renderingLines: [
+          ...ctx.dashedPolylineToLines(points, content.dashArray),
+          ...lineSegments.map((s) => ctx.dashedPolylineToLines(s, content.dashArray)).flat()
+        ]
+      };
+    });
+  }
+  const React = ctx.React;
+  return [
+    {
+      type: "wire",
+      ...ctx.strokeModel,
+      move(content, offset) {
+        for (const point of content.points) {
+          ctx.movePoint(point, offset);
+        }
+      },
+      render(content, renderCtx) {
+        const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+        const renderingLines = getWireGeometries(content, renderCtx.contents).renderingLines;
+        return target.renderGroup(renderingLines.map((line) => target.renderPolyline(line, options)));
+      },
+      getGeometries: getWireGeometries,
+      propertyPanel(content, update, contents) {
+        return {
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents)
+        };
+      },
+      isValid: (c, p) => ctx.validate(c, WireContent, p),
+      getRefIds: getWireRefIds,
+      updateRefId(content, update) {
+        for (const [i, id] of content.refs.entries()) {
+          const newRefId = update(id);
+          if (newRefId !== void 0) {
+            content.refs[i] = newRefId;
+          }
+        }
+        ctx.updateStrokeRefIds(content, update);
+      }
+    },
+    {
+      type: "lamp",
+      ...ctx.strokeModel,
+      move(content, offset) {
+        ctx.movePoint(content, offset);
+      },
+      render(content, renderCtx) {
+        const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+        const geometries = getLampGeometries(content, renderCtx.contents);
+        const children = [target.renderCircle(content.x, content.y, content.size, options)];
+        for (const line of geometries.lines) {
+          if (Array.isArray(line)) {
+            children.push(target.renderPolyline(line, options));
+          }
+        }
+        return target.renderGroup(children);
+      },
+      getGeometries: getLampGeometries,
+      propertyPanel(content, update, contents) {
+        return {
+          size: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.size, setValue: (v) => update((c) => {
+            if (isLampContent(c)) {
+              c.size = v;
+            }
+          }) }),
+          ...ctx.getStrokeContentPropertyPanel(content, update, contents)
+        };
+      },
+      isValid: (c, p) => ctx.validate(c, LampContent, p),
+      getRefIds: getLampRefIds,
+      updateRefId(content, update) {
+        ctx.updateStrokeRefIds(content, update);
+      }
+    }
+  ];
+}
+function isWireContent(content) {
+  return content.type === "wire";
+}
+function isLampContent(content) {
+  return content.type === "lamp";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon1 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "4,4 97,4 97,96", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  const icon2 = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "50", cy: "50", r: "45", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "18,18 82,82", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "18,82 82,18", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return [
+    {
+      name: "create wire",
+      useCommand({ onEnd, type, strokeStyleId }) {
+        const { line, onClick, onMove, input, lastPosition, reset } = ctx.useLineClickCreate(
+          type === "create wire",
+          (c) => onEnd({
+            updateContents: (contents) => contents.push({ points: c, refs: [], strokeStyleId, type: "wire" })
+          })
+        );
+        const assistentContents = [];
+        if (line) {
+          assistentContents.push({ points: line, refs: [], strokeStyleId, type: "wire" });
+        }
+        return {
+          onStart: onClick,
+          input,
+          onMove,
+          assistentContents,
+          lastPosition,
+          reset
+        };
+      },
+      selectCount: 0,
+      icon: icon1
+    },
+    {
+      name: "create lamp",
+      useCommand({ onEnd, type, strokeStyleId }) {
+        const [lamp, setLamp] = React.useState();
+        const [wireId, setWireId] = React.useState();
+        const reset = () => {
+          setWireId(void 0);
+          setLamp(void 0);
+        };
+        const assistentContents = [];
+        if (lamp) {
+          assistentContents.push(lamp);
+        }
+        return {
+          onStart: (p) => {
+            onEnd({
+              updateContents: (contents) => {
+                if (wireId !== void 0) {
+                  const content = contents[wireId];
+                  if (content && isWireContent(content)) {
+                    content.refs.push(contents.length);
+                  }
+                }
+                contents.push({ x: p.x, y: p.y, size: 5, strokeStyleId, type: "lamp" });
+              }
+            });
+          },
+          onMove(p, _, target) {
+            if (!type)
+              return;
+            setWireId(target == null ? void 0 : target.id);
+            setLamp({ x: p.x, y: p.y, size: 5, strokeStyleId, type: "lamp" });
+          },
+          assistentContents,
+          reset
+        };
+      },
+      selectCount: 0,
+      icon: icon2
+    }
+  ];
+}
+export {
+  getCommand,
+  getModel,
+  isLampContent,
+  isWireContent
 };
 `,
 ]

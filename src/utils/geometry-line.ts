@@ -452,17 +452,19 @@ export function boldGeometryLines(lines: GeometryLine[][], distance = 1): Geomet
     const direction = polygon.direction
     result.push(getParallelGeometryLinesByDistanceDirectionIndex(polygon.lines, direction === baseDirection ? distance : -distance, pointSideToIndex(direction), 'bevel'))
   }
-  return result.map(lines => {
-    const newLines = reverseClosedGeometryLinesIfAreaIsNegative(lines)
-    const reversed = newLines !== lines
-    lines = newLines
-    lines = maxmiumBy(splitGeometryLines(lines).map(n => ({
-      lines: n,
-      area: Math.abs(getPolygonArea(getGeometryLinesPoints(n, 10))),
-    })), n => n.area).lines
-    if (reversed) {
-      lines = reverseGeometryLines(lines)
-    }
-    return lines
-  })
+  return result.map(lines => trimGeometryLines(lines))
+}
+
+export function trimGeometryLines(lines: GeometryLine[]): GeometryLine[] {
+  const newLines = reverseClosedGeometryLinesIfAreaIsNegative(lines)
+  const reversed = newLines !== lines
+  lines = newLines
+  lines = maxmiumBy(splitGeometryLines(lines).map(n => ({
+    lines: n,
+    area: Math.abs(getPolygonArea(getGeometryLinesPoints(n, 10))),
+  })), n => n.area).lines
+  if (reversed) {
+    lines = reverseGeometryLines(lines)
+  }
+  return lines
 }
