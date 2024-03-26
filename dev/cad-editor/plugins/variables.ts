@@ -13795,7 +13795,7 @@ function getCommand(ctx) {
     },
     {
       name: "create lamp",
-      useCommand({ onEnd, type, strokeStyleId, contents }) {
+      useCommand({ onEnd, type, strokeStyleId }) {
         const [lamp, setLamp] = React.useState();
         const [wireId, setWireId] = React.useState();
         const reset = () => {
@@ -13809,14 +13809,14 @@ function getCommand(ctx) {
         return {
           onStart: (p) => {
             onEnd({
-              updateContents: (contents2) => {
+              updateContents: (contents) => {
                 if (wireId !== void 0) {
-                  const content = contents2[wireId];
+                  const content = contents[wireId];
                   if (content && isWireContent(content)) {
-                    content.refs.push(contents2.length);
+                    content.refs.push(contents.length);
                   }
                 }
-                contents2.push({ x: p.x, y: p.y, size: 5, strokeStyleId, type: "lamp" });
+                contents.push({ x: p.x, y: p.y, size: 5, strokeStyleId, type: "lamp" });
               }
             });
           },

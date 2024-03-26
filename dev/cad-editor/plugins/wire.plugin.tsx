@@ -194,7 +194,7 @@ export function getCommand(ctx: PluginContext): Command[] {
     },
     {
       name: 'create lamp',
-      useCommand({ onEnd, type, strokeStyleId, contents }) {
+      useCommand({ onEnd, type, strokeStyleId }) {
         const [lamp, setLamp] = React.useState<LampContent>()
         const [wireId, setWireId] = React.useState<number>()
         const reset = () => {
