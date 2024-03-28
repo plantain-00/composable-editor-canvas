@@ -16,15 +16,17 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'explode',
     execute({ contents, selected }) {
       const newContents: model.BaseContent[] = []
+      const indexes: number[] = []
       contents.forEach((content, index) => {
         if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
           const result = ctx.getContentModel(content)?.explode?.(content, contents)
           if (result) {
             newContents.push(...result)
-            contents[index] = undefined
+            indexes.push(index)
           }
         }
       })
+      ctx.deleteSelectedContents(contents, indexes)
       contents.push(...newContents)
     },
     contentSelectable(content, contents) {

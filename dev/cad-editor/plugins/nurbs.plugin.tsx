@@ -8,7 +8,7 @@ export type NurbsContent = model.BaseContent<'nurbs'> & model.StrokeFields & mod
 
 export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
   const NurbsContent = ctx.and(ctx.BaseContent('nurbs'), ctx.StrokeFields, ctx.FillFields, ctx.SegmentCountFields, ctx.Nurbs)
-  const getRefIds = (content: Omit<NurbsContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<NurbsContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<NurbsContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getNurbsGeometries(content: Omit<NurbsContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -143,6 +143,7 @@ export function getModel(ctx: PluginContext): model.Model<NurbsContent>[] {
     isValid: (c, p) => ctx.validate(c, NurbsContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     reverse: (content) => ctx.reverseNurbs(content),
   }
   return [

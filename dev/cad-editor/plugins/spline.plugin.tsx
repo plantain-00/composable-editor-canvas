@@ -23,8 +23,8 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     points: [ctx.Position],
     fitting: ctx.optional(ctx.boolean),
   })
-  const getSplineRefIds = (content: Omit<SplineContent, "type">) => [content.strokeStyleId, content.fillStyleId]
-  const getSplineArrowRefIds = (content: Omit<SplineArrowContent, "type">) => [content.strokeStyleId]
+  const getSplineRefIds = (content: Omit<SplineContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
+  const getSplineArrowRefIds = (content: Omit<SplineArrowContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<SplineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getSplineGeometries(content: Omit<SplineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getSplineRefIds(content), contents, [content]))
@@ -171,6 +171,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
     isValid: (c, p) => ctx.validate(c, SplineContent, p),
     getRefIds: getSplineRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
       points: content.points.slice().reverse(),
@@ -231,6 +232,7 @@ export function getModel(ctx: PluginContext): model.Model<SplineContent | Spline
       isValid: (c, p) => ctx.validate(c, SplineArrowContent, p),
       getRefIds: getSplineArrowRefIds,
       updateRefId: ctx.updateStrokeRefIds,
+      deleteRefId: ctx.deleteStrokeRefIds,
       reverse: (content) => ({
         ...content,
         points: content.points.slice().reverse(),

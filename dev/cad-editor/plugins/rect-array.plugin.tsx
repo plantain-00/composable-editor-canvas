@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<RectArrayContent> {
     columnCount: ctx.number,
     columnSpacing: ctx.number,
   })
-  const getRefIds = (content: Omit<RectArrayContent, "type">) => content.contents
+  const getRefIds = (content: Omit<RectArrayContent, "type">): model.RefId[] => ctx.toRefIds(content.contents)
   const getAllContentsFromCache = (content: Omit<RectArrayContent, 'type'>) => {
     return ctx.allContentsCache.get(content, () => {
       const result: core.Nullable<model.BaseContent>[] = []
@@ -238,11 +238,7 @@ export function getCommand(ctx: PluginContext): Command {
         columnCount: 4,
         columnSpacing: (bounding.end.x - bounding.start.x) * 1.5,
       }
-      for (let i = contents.length; i >= 0; i--) {
-        if (ctx.isSelected([i], selected)) {
-          contents[i] = undefined
-        }
-      }
+      ctx.deleteSelectedContents(contents, selected.map(c => c[0]))
       contents.push(newContent)
     },
     contentSelectable,

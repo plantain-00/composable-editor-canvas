@@ -15,7 +15,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
     length: ctx.number,
     aligned: ctx.optional(ctx.boolean),
   })
-  const getRefIds = (content: Omit<PathArrayContent, 'type'>) => [content.path.id, ...content.contents]
+  const getRefIds = (content: Omit<PathArrayContent, 'type'>): model.RefId[] => [...ctx.toRefId(content.path.id, true), ...ctx.toRefIds(content.contents)]
   const allContentsCache = new ctx.WeakmapCache2<object, model.BaseContent, core.Nullable<model.BaseContent>[]>()
   const getAllContentsFromCache = (content: Omit<PathArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const path = ctx.getRefPart(content.path, contents, (c): c is model.BaseContent => !ctx.shallowEquals(c, content))
@@ -173,9 +173,7 @@ export function getCommand(ctx: PluginContext): Command {
                     path: path.current,
                     length,
                   } as PathArrayContent)
-                  for (const c of target.current) {
-                    contents[c[0]] = undefined
-                  }
+                  ctx.deleteSelectedContents(contents, target.current.map(c => c[0]))
                 }
               },
             })

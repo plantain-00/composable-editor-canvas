@@ -17,7 +17,7 @@ export function getModel(ctx: PluginContext) {
     points: ctx.minItems(2, [{ point: ctx.Position, bulge: ctx.number }]),
     closed: ctx.optional(ctx.boolean),
   })
-  const getRefIds = (content: Omit<PlineContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<PlineContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<PlineContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], centers: core.Position[], middles: core.Position[] }>>()
   function getPlineGeometries(content: Omit<PlineContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -287,6 +287,7 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, PlineContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     reverse: (content) => ({
       ...content,
       points: content.points.slice().reverse().map((p, i, points) => ({

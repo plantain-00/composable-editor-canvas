@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
   const CenterMarkReferenceContent = ctx.and(ctx.BaseContent('center mark'), {
     ref: ctx.PartRef,
   })
-  const getRefIds = (content: CenterMarkReferenceContent) => [content.ref.id]
+  const getRefIds = (content: CenterMarkReferenceContent): model.RefId[] => ctx.toRefId(content.ref.id, true)
   function getCenterMarkGeometriesFromCache(content: CenterMarkReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -53,11 +53,9 @@ export function getModel(ctx: PluginContext): model.Model<CenterMarkReferenceCon
     isValid: (c, p) => ctx.validate(c, CenterMarkReferenceContent, p),
     getRefIds,
     updateRefId(content, update) {
-      if (content.ref) {
-        const newRefId = update(content.ref.id)
-        if (newRefId !== undefined) {
-          content.ref.id = newRefId
-        }
+      const newRefId = update(content.ref.id)
+      if (newRefId !== undefined) {
+        content.ref.id = newRefId
       }
     },
   }

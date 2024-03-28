@@ -16,7 +16,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
     dependentVariable: ctx.or('x', 'y'),
     expression: ctx.string,
   })
-  const getRefIds = (content: Omit<EquationContent, 'type'>) => [content.strokeStyleId, content.axisId]
+  const getRefIds = (content: Omit<EquationContent, 'type'>): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefId(content.axisId, true)]
   const equationCache = new ctx.WeakmapValuesCache<Omit<EquationContent, 'type'>, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getGeometriesFromCache(content: Omit<EquationContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -95,6 +95,7 @@ export function getModel(ctx: PluginContext): model.Model<EquationContent> {
       }
       ctx.updateStrokeRefIds(content, update)
     },
+    deleteRefId: ctx.deleteStrokeRefIds,
   }
 }
 

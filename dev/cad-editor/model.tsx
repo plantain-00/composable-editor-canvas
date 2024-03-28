@@ -252,8 +252,9 @@ export type Model<T> = Partial<FeatureModels> & {
     transformPosition: (p: Position) => Position,
     activeChild?: number[],
   ): JSX.Element
-  getRefIds?(content: T): Nullable<ContentRef>[] | undefined
+  getRefIds?(content: T): Nullable<RefId>[] | undefined
   updateRefId?(content: T, update: (id: ContentRef) => ContentRef | undefined): void
+  deleteRefId?(content: T, ids: ContentRef[]): void
   isValid(content: Omit<T, 'type'>, path?: Path): ValidationResult
   getVariableNames?(content: Omit<T, 'type'>): string[]
   isPointIn?(content: T, point: Position, contents: readonly Nullable<BaseContent>[]): boolean
@@ -1050,18 +1051,15 @@ export function getReference<T extends BaseContent>(
   return
 }
 
-export function contentIsReferenced(content: object, contents: readonly Nullable<BaseContent>[]): boolean {
+export function contentIsDeletable(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean {
+  if (content.readonly) return false
   const id = getContentIndex(content, contents)
   for (const content of iterateAllContents(contents)) {
-    if (getContentModel(content)?.getRefIds?.(content)?.includes(id)) {
-      return true
+    if (getContentModel(content)?.getRefIds?.(content)?.some(d => d?.id === id && d.required)) {
+      return false
     }
   }
-  return false
-}
-
-export function contentIsDeletable(content: BaseContent, contents: readonly Nullable<BaseContent>[]): boolean {
-  return !content.readonly && !contentIsReferenced(content, contents)
+  return true
 }
 export function contentIsClosedPath(content: Nullable<BaseContent>) {
   return !!content && !content.readonly && getContentModel(content)?.isPointIn !== undefined
@@ -1080,13 +1078,13 @@ export function* iterateRefIds(ids: Nullable<ContentRef>[] | undefined, contents
     const content = typeof id !== 'number' ? id : contents[id]
     if (content) {
       const refIds = getContentModel(content)?.getRefIds?.(content)
-      yield* iterateRefIds(refIds, contents)
+      yield* iterateRefIds(refIds?.map(d => d?.id), contents)
     }
   }
 }
 
 export function* iterateRefContents(
-  ids: Nullable<ContentRef>[] | undefined,
+  ids: Nullable<RefId>[] | undefined,
   contents: readonly Nullable<BaseContent>[],
   parents: Omit<BaseContent, 'type'>[],
 ): Generator<BaseContent, void, unknown> {
@@ -1096,13 +1094,24 @@ export function* iterateRefContents(
   for (const id of ids) {
     if (id === undefined) continue
     if (id === null) continue
-    const content = typeof id !== 'number' ? id : contents[id]
+    const content = typeof id.id !== 'number' ? id.id : contents[id.id]
     if (content && !parents.includes(content)) {
       yield content
       const refIds = getContentModel(content)?.getRefIds?.(content)
       yield* iterateRefContents(refIds, contents, [...parents, content])
     }
   }
+}
+
+export function deleteSelectedContents(contents: Nullable<BaseContent>[], indexes: number[]) {
+  for (const index of indexes) {
+    contents[index] = undefined
+  }
+  contents.forEach((content, index) => {
+    if (content && !indexes.includes(index)) {
+      getContentModel(content)?.deleteRefId?.(content, indexes)
+    }
+  })
 }
 
 export function updateReferencedContents(
@@ -1116,7 +1125,7 @@ export function updateReferencedContents(
   for (const c of iterateAllContents(contents)) {
     if (selected?.includes(c)) continue
     const model = getContentModel(c)
-    if (model?.getRefIds?.(c)?.includes(id)) {
+    if (model?.getRefIds?.(c)?.some(d => d?.id === id)) {
       assistentContents.push(produce(c, (draft) => {
         model.updateRefId?.(draft, d => {
           if (d === id) {
@@ -1209,7 +1218,7 @@ export function renderContainerIfSelected<V, T extends ContainerFields>(
   container: T,
   ctx: RenderIfSelectedContext<V>,
   parents: Omit<BaseContent, 'type'>[],
-  getRefIds: (content: T) => Nullable<ContentRef>[],
+  getRefIds: (content: T) => Nullable<RefId>[],
 ) {
   const { bounding } = getContainerGeometries<T>(container, ctx.contents, getRefIds, parents)
   if (!bounding) {
@@ -1227,7 +1236,7 @@ export function renderContainerIfSelected<V, T extends ContainerFields>(
 export function getContainerGeometries<T extends ContainerFields>(
   content: T,
   contents: readonly Nullable<BaseContent>[],
-  getRefIds: (content: T) => Nullable<ContentRef>[],
+  getRefIds: (content: T) => Nullable<RefId>[],
   parents: Omit<BaseContent, 'type'>[],
 ) {
   return getContentsGeometries<T>(content, contents, getRefIds, parents)
@@ -1236,7 +1245,7 @@ export function getContainerGeometries<T extends ContainerFields>(
 export function getContentsGeometries<T extends ContainerFields>(
   content: T,
   contents: readonly Nullable<BaseContent>[],
-  getRefIds: (content: T) => Nullable<ContentRef>[],
+  getRefIds: (content: T) => Nullable<RefId>[],
   parents: Omit<BaseContent, 'type'>[],
   getAllContents = (c: T) => c.contents,
 ) {
@@ -1345,7 +1354,7 @@ export function getContainerRenderIfSelected<V, T extends ContainerFields>(
   content: T,
   ctx: RenderIfSelectedContext<V>,
   parents: Omit<BaseContent, 'type'>[],
-  getRefIds: (content: T) => Nullable<ContentRef>[]
+  getRefIds: (content: T) => Nullable<RefId>[]
 ) {
   return renderContainerIfSelected(content, ctx, parents, getRefIds)
 }
@@ -1370,6 +1379,57 @@ export function getContentsBreak(array: Nullable<BaseContent>[], points: Positio
     }
   }
   return result
+}
+
+export function toRefId(id?: ContentRef, required?: boolean): RefId[] {
+  return id !== undefined ? [{ id, required }] : []
+}
+
+export function toRefIds(ids?: Nullable<ContentRef>[], required?: boolean): RefId[] {
+  const result: RefId[] = []
+  if (ids) {
+    for (const id of ids) {
+      if (id) {
+        result.push({ id, required })
+      }
+    }
+  }
+  return result
+}
+
+export function getStrokeRefIds(content: StrokeFields): RefId[] {
+  return toRefId(content.strokeStyleId)
+}
+
+export function getFillRefIds(content: FillFields): RefId[] {
+  return toRefId(content.fillStyleId)
+}
+
+export function getStrokeAndFillRefIds(content: StrokeFields & FillFields): RefId[] {
+  return [...toRefId(content.strokeStyleId), ...toRefId(content.fillStyleId)]
+}
+
+export function deleteStrokeRefIds(content: StrokeFields, ids: ContentRef[]) {
+  if (content.strokeStyleId !== undefined && ids.includes(content.strokeStyleId)) {
+    content.strokeStyleId = undefined
+  }
+}
+
+export function deleteFillRefIds(content: FillFields, ids: ContentRef[]) {
+  if (content.fillStyleId !== undefined && ids.includes(content.fillStyleId)) {
+    content.fillStyleId = undefined
+  }
+}
+
+export function deleteStrokeAndFillRefIds(content: StrokeFields & FillFields, ids: ContentRef[]) {
+  deleteStrokeRefIds(content, ids)
+  deleteFillRefIds(content, ids)
+}
+
+export function deleteTextStyleRefIds(content: TextFields, ids: ContentRef[]) {
+  if (content.textStyleId !== undefined && ids.includes(content.textStyleId)) {
+    content.textStyleId = undefined
+  }
 }
 
 export function updateStrokeRefIds(content: StrokeFields, update: (id: ContentRef) => ContentRef | undefined) {
@@ -1522,6 +1582,11 @@ export function getViewportByRegion(content: BaseContent, contentsBounding: TwoP
     y: borderBounding.start.y - contentsBounding.start.y * ratio + yOffset,
     scale: ratio,
   }
+}
+
+export interface RefId {
+  id: ContentRef
+  required?: boolean
 }
 
 export type ContentRef = number | BaseContent

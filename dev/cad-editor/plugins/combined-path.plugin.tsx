@@ -10,7 +10,7 @@ export type CombinedPathContent = model.BaseContent<'combined path'> & model.Con
 
 export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
   const CombinedPathContent = ctx.and(ctx.BaseContent('combined path'), ctx.ContainerFields, ctx.StrokeFields, ctx.FillFields)
-  const getRefIds = (content: Omit<CombinedPathContent, 'type'>) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<CombinedPathContent, 'type'>): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const getGeometries = (content: CombinedPathContent, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -79,6 +79,7 @@ export function getModel(ctx: PluginContext): model.Model<CombinedPathContent> {
     isValid: (c, p) => ctx.validate(c, CombinedPathContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
   }
 }
 
@@ -102,11 +103,7 @@ export function getCommand(ctx: PluginContext): Command {
         fillStyleId,
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
       }
-      for (let i = contents.length; i >= 0; i--) {
-        if (ctx.isSelected([i], selected)) {
-          contents[i] = undefined
-        }
-      }
+      ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
       contents.push(newContent)
     },
     contentSelectable,

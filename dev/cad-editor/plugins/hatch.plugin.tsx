@@ -21,7 +21,7 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       ids: [ctx.ContentRef],
     }),
   })
-  const getRefIds = (content: Omit<HatchContent, "type">) => [content.fillStyleId, ...(content.ref?.ids || [])]
+  const getRefIds = (content: Omit<HatchContent, "type">): model.RefId[] => [...ctx.getFillRefIds(content), ...ctx.toRefIds(content.ref?.ids)]
   const refGeometriesCache = new ctx.WeakmapValuesCache<object, model.BaseContent, model.Geometries<{ border: core.Position[], holes: core.Position[][] }>>()
   function getHatchGeometries(content: Omit<HatchContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -174,6 +174,17 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
       ctx.updateFillRefIds(content, update)
+    },
+    deleteRefId(content, ids) {
+      if (content.ref) {
+        for (const id of ids) {
+          const index = content.ref.ids.indexOf(id)
+          if (index >= 0) {
+            content.ref.ids.splice(index, 1)
+          }
+        }
+      }
+      ctx.deleteFillRefIds(content, ids)
     },
   }
 }

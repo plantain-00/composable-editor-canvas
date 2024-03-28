@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
   const CoordinateAxisContent = ctx.and(ctx.BaseContent('coordinate axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, ctx.Bounding, {
     flipY: ctx.optional(ctx.boolean),
   })
-  const getRefIds = (content: Omit<CoordinateAxisContent, "type">) => [content.strokeStyleId]
+  const getRefIds = (content: Omit<CoordinateAxisContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
   function getGeometriesFromCache(content: Omit<CoordinateAxisContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -119,6 +119,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
     isValid: (c, p) => ctx.validate(c, CoordinateAxisContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
+    deleteRefId: ctx.deleteStrokeRefIds,
   }
 }
 

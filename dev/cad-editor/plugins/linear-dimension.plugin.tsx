@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const getRefIds = (content: Omit<LinearDimensionContent, "type">) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
+  const getRefIds = (content: Omit<LinearDimensionContent, "type">): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefIds([content.ref1?.id, content.ref2?.id])]
   const linearDimensionCache = new ctx.WeakmapValuesCache<Omit<LinearDimensionContent, "type">, model.BaseContent, model.Geometries<{ lines: [core.Position, core.Position][] }>>()
   const getLinearDimensionPositions = (content: Omit<LinearDimensionContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
     const p1 = ctx.getRefPosition(content.ref1, contents, [content]) ?? content.p1
@@ -200,6 +200,15 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         }
       }
       ctx.updateStrokeRefIds(content, update)
+    },
+    deleteRefId(content, ids) {
+      if (content.ref1 && ids.includes(content.ref1.id)) {
+        content.ref1 = undefined
+      }
+      if (content.ref2 && ids.includes(content.ref2.id)) {
+        content.ref2 = undefined
+      }
+      ctx.deleteStrokeRefIds(content, ids)
     },
   }
 }

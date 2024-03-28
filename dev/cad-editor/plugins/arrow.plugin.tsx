@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
     ref1: ctx.optional(ctx.PositionRef),
     ref2: ctx.optional(ctx.PositionRef),
   })
-  const getRefIds = (content: ArrowContent) => [content.strokeStyleId, content.ref1?.id, content.ref2?.id]
+  const getRefIds = (content: ArrowContent): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefIds([content.ref1?.id, content.ref2?.id])]
   function getArrowGeometriesFromCache(content: ArrowContent, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -163,6 +163,15 @@ export function getModel(ctx: PluginContext): model.Model<ArrowContent> {
         }
       }
       ctx.updateStrokeRefIds(content, update)
+    },
+    deleteRefId(content, ids) {
+      if (content.ref1 && ids.includes(content.ref1.id)) {
+        content.ref1 = undefined
+      }
+      if (content.ref2 && ids.includes(content.ref2.id)) {
+        content.ref2 = undefined
+      }
+      ctx.deleteStrokeRefIds(content, ids)
     },
     reverse: (content) => ({
       ...content,

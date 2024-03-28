@@ -18,7 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     count: ctx.number,
     angle: ctx.optional(ctx.number),
   })
-  const getRefIds = (content: Omit<StarContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<StarContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<StarContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getStarGeometriesFromCache(content: Omit<StarContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -155,6 +155,7 @@ export function getModel(ctx: PluginContext): model.Model<StarContent> {
     isValid: (c, p) => ctx.validate(c, StarContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getStarGeometriesFromCache(content, contents).points),
   }
 }

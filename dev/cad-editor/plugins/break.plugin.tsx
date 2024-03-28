@@ -35,9 +35,7 @@ export function getCommand(ctx: PluginContext): Command {
           }
         }
       })
-      for (const index of indexes) {
-        contents[index] = undefined
-      }
+      ctx.deleteSelectedContents(contents, indexes)
       contents.push(...newContents)
     },
     contentSelectable(content, contents) {

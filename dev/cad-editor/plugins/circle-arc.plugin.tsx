@@ -21,7 +21,7 @@ export function getModel(ctx: PluginContext) {
     rExpression: ctx.optional(ctx.string),
   })
   const ArcContent = ctx.and(ctx.BaseContent('arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Arc)
-  const getRefIds = (content: model.StrokeFields & model.FillFields) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: model.StrokeFields & model.FillFields): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const circleGeometriesCache = new ctx.WeakmapValuesCache<Omit<CircleContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], quadrantPoints: core.Position[] }>>()
   const arcGeometriesCache = new ctx.WeakmapValuesCache<Omit<ArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
   function getCircleGeometries(content: Omit<CircleContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], time?: number) {
@@ -230,6 +230,7 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, CircleContent, p),
       getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
+      deleteRefId: ctx.deleteStrokeAndFillRefIds,
       isPointIn: (content, point) => ctx.getTwoPointsDistance(content, point) < content.r,
       getArea: (content) => Math.PI * content.r ** 2,
     } as model.Model<CircleContent>,
@@ -447,6 +448,7 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, ArcContent, p),
       getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
+      deleteRefId: ctx.deleteStrokeAndFillRefIds,
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.r ** 2 * (radian - Math.sin(radian)) / 2
