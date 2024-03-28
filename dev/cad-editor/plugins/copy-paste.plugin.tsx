@@ -26,11 +26,11 @@ export function getCommand(ctx: PluginContext): Command[] {
               }
               ids.push(id)
             }
-            if (type === 'cut' && ctx.contentIsDeletable(content, contents)) {
-              contents[index] = undefined
-            }
           }
         })
+        if (type === 'cut') {
+          ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
+        }
         const copiedContents: CopyData['contents'] = []
         const boundingPoints: core.Position[] = []
         ids.forEach(id => {

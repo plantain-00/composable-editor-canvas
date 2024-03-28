@@ -21,7 +21,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     angle: ctx.optional(ctx.number),
     scale: ctx.optional(ctx.or(ctx.number, ctx.Position)),
   })
-  const getRefIds = (content: Omit<TextContent, "type">) => [content.textStyleId]
+  const getRefIds = (content: Omit<TextContent, "type">): model.RefId[] => ctx.toRefId(content.textStyleId)
   const textLayoutResultCache = new ctx.WeakmapCache2<object, object, ReturnType<typeof ctx.flowLayout<string>>>()
   function getTextLayoutResult(content: Omit<core.RequiredField<TextContent, "width">, "type">, c: model.TextFields, variableContext?: Record<string, unknown>) {
     return textLayoutResultCache.get(content, c, () => {
@@ -254,9 +254,8 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     },
     isValid: (c, p) => ctx.validate(c, TextContent, p),
     getRefIds,
-    updateRefId(content, update) {
-      ctx.updateTextStyleRefIds(content, update)
-    },
+    updateRefId: ctx.updateTextStyleRefIds,
+    deleteRefId: ctx.deleteTextStyleRefIds,
     getVariableNames: (content) => content.textVariableName ? [content.textVariableName] : [],
   }
 }

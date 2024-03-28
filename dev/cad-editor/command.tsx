@@ -180,7 +180,7 @@ export function useCommands(
         if (!model) return c
         const refIds = model.getRefIds?.(c)
         if (!refIds) return c
-        if (refIds.every(d => typeof d !== 'number' || idMap[d] === undefined)) return c
+        if (refIds.every(d => !d || typeof d.id !== 'number' || idMap[d.id] === undefined)) return c
         return produce(c, draft => {
           model.updateRefId?.(draft, d => typeof d === 'number' ? idMap[d] : undefined)
         })

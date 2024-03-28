@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
   const RoundedRectContent = ctx.and(ctx.BaseContent('rounded rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, ctx.AngleDeltaFields, {
     radius: ctx.number
   })
-  const getRefIds = (content: Omit<RoundedRectContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<RoundedRectContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<RoundedRectContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], arcPoints: core.Position[] }>>()
   function getGeometries(content: Omit<RoundedRectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -157,6 +157,7 @@ export function getModel(ctx: PluginContext): model.Model<RoundedRectContent> {
     isValid: (c, p) => ctx.validate(c, RoundedRectContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getGeometries(content, contents).points),
   }
 }

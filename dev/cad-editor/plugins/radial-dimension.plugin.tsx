@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
   const RadialDimensionReferenceContent = ctx.and(ctx.BaseContent('radial dimension reference'), ctx.StrokeFields, ctx.ArrowFields, ctx.RadialDimension, {
     ref: ctx.PartRef,
   })
-  const getRefIds = (content: RadialDimensionReferenceContent) => [content.strokeStyleId, content.ref.id]
+  const getRefIds = (content: RadialDimensionReferenceContent): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefId(content.ref.id, true)]
   const radialDimensionReferenceCache = new ctx.WeakmapValuesCache<Omit<RadialDimensionReferenceContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getRadialDimensionReferenceGeometriesFromCache(content: RadialDimensionReferenceContent, contents: readonly core.Nullable<model.BaseContent>[], patches?: Patch[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -136,14 +136,13 @@ export function getModel(ctx: PluginContext): model.Model<RadialDimensionReferen
     isValid: (c, p) => ctx.validate(c, RadialDimensionReferenceContent, p),
     getRefIds,
     updateRefId(content, update) {
-      if (content.ref) {
-        const newRefId = update(content.ref.id)
-        if (newRefId !== undefined) {
-          content.ref.id = newRefId
-        }
+      const newRefId = update(content.ref.id)
+      if (newRefId !== undefined) {
+        content.ref.id = newRefId
       }
       ctx.updateStrokeRefIds(content, update)
     },
+    deleteRefId: ctx.deleteStrokeRefIds,
   }
 }
 

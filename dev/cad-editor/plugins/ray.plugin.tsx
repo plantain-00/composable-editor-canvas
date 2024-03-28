@@ -8,7 +8,7 @@ export type RayContent = model.BaseContent<'ray'> & model.StrokeFields & core.Ra
 
 export function getModel(ctx: PluginContext) {
   const RayContent = ctx.and(ctx.BaseContent('ray'), ctx.StrokeFields, ctx.Ray)
-  const getRefIds = (content: Omit<RayContent, "type">) => [content.strokeStyleId]
+  const getRefIds = (content: Omit<RayContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
   function getRayGeometries(content: Omit<RayContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -88,6 +88,7 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, RayContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
+    deleteRefId: ctx.deleteStrokeRefIds,
     reverse: content => ({ ...content, ...ctx.reverseRay(content) }),
   }
   return rayModel

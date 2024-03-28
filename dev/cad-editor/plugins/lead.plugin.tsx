@@ -20,7 +20,7 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
     toleranceSymbolId: ctx.optional(ctx.number),
     bordered: ctx.optional(ctx.boolean),
   })
-  const getRefIds = (content: Omit<LeadContent, "type">) => [content.strokeStyleId, content.ref]
+  const getRefIds = (content: Omit<LeadContent, "type">): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefId(content.ref)]
   const leadCache = new ctx.WeakmapValuesCache<Omit<LeadContent, "type">, model.BaseContent, model.Geometries<{ right: boolean, last: core.Position, first: core.Position, padding: number }>>()
   function getLeadGeometriesFromCache(content: Omit<LeadContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -281,6 +281,12 @@ export function getModel(ctx: PluginContext): model.Model<LeadContent> {
         }
       }
       ctx.updateStrokeRefIds(content, update)
+    },
+    deleteRefId(content, ids) {
+      if (content.ref && ids.includes(content.ref)) {
+        content.ref = undefined
+      }
+      ctx.deleteStrokeRefIds(content, ids)
     },
   }
 }

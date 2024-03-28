@@ -23,8 +23,8 @@ export function getModel(ctx: PluginContext): (model.Model<BlockContent> | model
     angle: ctx.number,
     scale: ctx.optional(ctx.or(ctx.number, ctx.Position)),
   })
-  const getBlockRefIds = (content: Omit<BlockContent, 'type'>) => content.contents
-  const getBlockReferenceRefIds = (content: BlockReferenceContent) => [content.refId]
+  const getBlockRefIds = (content: Omit<BlockContent, 'type'>): model.RefId[] => ctx.toRefIds(content.contents)
+  const getBlockReferenceRefIds = (content: BlockReferenceContent): model.RefId[] => ctx.toRefId(content.refId, true)
   const blockModel: model.Model<BlockContent> = {
     type: 'block',
     ...ctx.containerModel,
@@ -349,11 +349,7 @@ export function getCommand(ctx: PluginContext): Command[] {
                 contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
                 base: p,
               }
-              contents.forEach((_, i) => {
-                if (ctx.isSelected([i], selected)) {
-                  contents[i] = undefined
-                }
-              })
+              ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
               contents.push(newContent)
             }
           })

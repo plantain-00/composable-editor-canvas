@@ -45,7 +45,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
     widths: [ctx.number],
     mergedCells: ctx.optional([MergedCell])
   })
-  const getRefIds = (content: Omit<TableContent, "type">) => [content.strokeStyleId]
+  const getRefIds = (content: Omit<TableContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<TableContent, "type">, model.BaseContent, model.Geometries<{
     rows: (core.Position & { index: number })[]
     columns: (core.Position & { index: number })[]

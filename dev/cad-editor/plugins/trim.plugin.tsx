@@ -262,9 +262,7 @@ export function getCommand(ctx: PluginContext): Command {
             }
             onEnd({
               updateContents: (contents) => {
-                for (const index of removedIndexes) {
-                  contents[index] = undefined
-                }
+                ctx.deleteSelectedContents(contents, removedIndexes)
                 contents.push(...newContents)
               },
             })

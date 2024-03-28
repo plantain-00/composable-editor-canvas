@@ -10,7 +10,7 @@ export type DiamondContent = model.BaseContent<'diamond'> & model.StrokeFields &
 
 export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
   const DiamondContent = ctx.and(ctx.BaseContent('diamond'), ctx.StrokeFields, ctx.FillFields, ctx.Region)
-  const getRefIds = (content: Omit<DiamondContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<DiamondContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<DiamondContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getGeometries(content: Omit<DiamondContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -145,6 +145,7 @@ export function getModel(ctx: PluginContext): model.Model<DiamondContent> {
     isValid: (c, p) => ctx.validate(c, DiamondContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getGeometries(content, contents).points),
   }
 }

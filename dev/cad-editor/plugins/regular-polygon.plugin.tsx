@@ -16,7 +16,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     count: ctx.number,
     angle: ctx.number,
   })
-  const getRefIds = (content: Omit<RegularPolygonContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<RegularPolygonContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<RegularPolygonContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
   function getRegularPolygonGeometriesFromCache(content: Omit<RegularPolygonContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -137,6 +137,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getRegularPolygonGeometriesFromCache(content, contents).points),
   }
 }

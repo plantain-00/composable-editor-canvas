@@ -7,7 +7,7 @@ export type GroupContent = model.BaseContent<'group'> & model.ContainerFields & 
 
 export function getModel(ctx: PluginContext): model.Model<GroupContent> {
   const GroupContent = ctx.and(ctx.BaseContent('group'), ctx.ContainerFields, ctx.ClipFields)
-  const getRefIds = (content: Omit<GroupContent, "type">) => content.contents
+  const getRefIds = (content: Omit<GroupContent, "type">): model.RefId[] => ctx.toRefIds(content.contents)
   return {
     type: 'group',
     ...ctx.containerModel,
@@ -89,11 +89,7 @@ export function getCommand(ctx: PluginContext): Command {
         type: 'group',
         contents: contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents)),
       }
-      for (let i = contents.length; i >= 0; i--) {
-        if (ctx.isSelected([i], selected)) {
-          contents[i] = undefined
-        }
-      }
+      ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
       contents.push(newContent)
     },
     contentSelectable,

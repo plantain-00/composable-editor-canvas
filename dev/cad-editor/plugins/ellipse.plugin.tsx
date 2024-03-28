@@ -10,7 +10,7 @@ export type EllipseArcContent = model.BaseContent<'ellipse arc'> & model.StrokeF
 export function getModel(ctx: PluginContext) {
   const EllipseContent = ctx.and(ctx.BaseContent('ellipse'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse)
   const EllipseArcContent = ctx.and(ctx.BaseContent('ellipse arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc)
-  const getRefIds = (content: model.StrokeFields & model.FillFields) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: model.StrokeFields & model.FillFields): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const ellipseGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position }>>()
   const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], center: core.Position, start: core.Position, end: core.Position, middle: core.Position }>>()
   function getEllipseGeometries(content: Omit<EllipseContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
@@ -226,6 +226,7 @@ export function getModel(ctx: PluginContext) {
     isValid: (c, p) => ctx.validate(c, EllipseContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getEllipseGeometries(content, contents).points),
     getArea: (content) => Math.PI * content.rx * content.ry,
   }
@@ -400,6 +401,7 @@ export function getModel(ctx: PluginContext) {
       isValid: (c, p) => ctx.validate(c, EllipseArcContent, p),
       getRefIds,
       updateRefId: ctx.updateStrokeAndFillRefIds,
+      deleteRefId: ctx.deleteStrokeAndFillRefIds,
       getArea: (content) => {
         const radian = ctx.angleToRadian(content.endAngle - content.startAngle)
         return content.rx * content.ry * (radian - Math.sin(radian)) / 2

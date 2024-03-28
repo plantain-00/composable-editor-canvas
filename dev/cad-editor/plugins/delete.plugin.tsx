@@ -13,11 +13,7 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'delete',
     execute({ contents, selected }) {
-      contents.forEach((content, index) => {
-        if (content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)) {
-          contents[index] = undefined
-        }
-      })
+      ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
     },
     contentSelectable(content: model.BaseContent, contents: readonly model.BaseContent[]) {
       return ctx.contentIsDeletable(content, contents)

@@ -13,7 +13,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   const RectContent = ctx.and(ctx.BaseContent('rect'), ctx.StrokeFields, ctx.FillFields, ctx.Region, {
     angle: ctx.number
   })
-  const getRefIds = (content: Omit<RectContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<RectContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   const geometriesCache = new ctx.WeakmapValuesCache<Omit<RectContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], midpoints: core.Position[], lines: [core.Position, core.Position][] }>>()
   function getRectGeometries(content: Omit<RectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
@@ -172,6 +172,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
     isValid: (c, p) => ctx.validate(c, RectContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     isPointIn: (content, point, contents) => ctx.pointInPolygon(point, getRectGeometries(content, contents).points),
     getArea: (content) => content.width * content.height,
   }

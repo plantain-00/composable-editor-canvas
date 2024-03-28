@@ -13,7 +13,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     outerRadius: ctx.number,
     innerRadius: ctx.number,
   })
-  const getRefIds = (content: Omit<RingContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<RingContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   function getRingGeometriesFromCache(content: Omit<RingContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -98,6 +98,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     isValid: (c, p) => ctx.validate(c, RingContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
   }
 }
 

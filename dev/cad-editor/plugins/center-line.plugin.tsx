@@ -14,7 +14,7 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
     ref1: ctx.PartRef,
     ref2: ctx.PartRef,
   })
-  const getRefIds = (content: CenterLineReferenceContent) => [content.ref1.id, content.ref2.id]
+  const getRefIds = (content: CenterLineReferenceContent): model.RefId[] => ctx.toRefIds([content.ref1.id, content.ref2.id], true)
   function getCenterLineGeometriesFromCache(content: CenterLineReferenceContent, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -60,17 +60,13 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
     isValid: (c, p) => ctx.validate(c, CenterLineReferenceContent, p),
     getRefIds,
     updateRefId(content, update) {
-      if (content.ref1) {
-        const newRefId = update(content.ref1.id)
-        if (newRefId !== undefined) {
-          content.ref1.id = newRefId
-        }
+      const newRefId1 = update(content.ref1.id)
+      if (newRefId1 !== undefined) {
+        content.ref1.id = newRefId1
       }
-      if (content.ref2) {
-        const newRefId = update(content.ref2.id)
-        if (newRefId !== undefined) {
-          content.ref2.id = newRefId
-        }
+      const newRefId2 = update(content.ref2.id)
+      if (newRefId2 !== undefined) {
+        content.ref2.id = newRefId2
       }
     },
   }

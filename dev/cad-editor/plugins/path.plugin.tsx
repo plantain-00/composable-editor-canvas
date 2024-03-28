@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
   const PathContent = ctx.and(ctx.BaseContent('path'), ctx.StrokeFields, ctx.FillFields, {
     commands: [ctx.PathCommand]
   })
-  const getRefIds = (content: Omit<PathContent, "type">) => [content.strokeStyleId, content.fillStyleId]
+  const getRefIds = (content: Omit<PathContent, "type">): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
   function getPathGeometriesFromCache(content: Omit<PathContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -344,6 +344,7 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
     isValid: (c, p) => ctx.validate(c, PathContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
+    deleteRefId: ctx.deleteStrokeAndFillRefIds,
     reverse: (content, contents) => ({
       ...content,
       commands: ctx.geometryLineToPathCommands(ctx.reverseGeometryLines(getPathGeometriesFromCache(content, contents).lines)),

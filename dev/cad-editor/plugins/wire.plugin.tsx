@@ -20,8 +20,8 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
   const LampContent = ctx.and(ctx.BaseContent('lamp'), ctx.Position, {
     size: ctx.number,
   })
-  const getWireRefIds = (content: Omit<WireContent, "type">) => [content.strokeStyleId, ...content.refs]
-  const getLampRefIds = (content: Omit<LampContent, "type">) => [content.strokeStyleId]
+  const getWireRefIds = (content: Omit<WireContent, "type">): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefIds(content.refs)]
+  const getLampRefIds = (content: Omit<LampContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
   function getWireGeometries(content: Omit<WireContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getWireRefIds(content), contents, [content]))
     return ctx.getGeometriesFromCache(content, refs, () => {
@@ -109,6 +109,15 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
         }
         ctx.updateStrokeRefIds(content, update)
       },
+      deleteRefId(content, ids) {
+        for (const id of ids) {
+          const index = content.refs.indexOf(id)
+          if (index >= 0) {
+            content.refs.splice(index, 1)
+          }
+        }
+        ctx.deleteStrokeRefIds(content, ids)
+      },
     },
     {
       type: 'lamp',
@@ -128,6 +137,23 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
         return target.renderGroup(children)
       },
       getGeometries: getLampGeometries,
+      getEditPoints(content) {
+        return ctx.getEditPointsFromCache(content, () => {
+          const editPoints: core.EditPoint<model.BaseContent>[] = [{
+            x: content.x,
+            y: content.y,
+            cursor: 'move',
+            update(c, { cursor, start }) {
+              if (!isLampContent(c)) {
+                return
+              }
+              c.x += cursor.x - start.x
+              c.y += cursor.y - start.y
+            },
+          }]
+          return { editPoints }
+        })
+      },
       propertyPanel(content, update, contents) {
         return {
           size: <ctx.NumberEditor value={content.size} setValue={(v) => update(c => { if (isLampContent(c)) { c.size = v } })} />,
@@ -136,9 +162,8 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
       },
       isValid: (c, p) => ctx.validate(c, LampContent, p),
       getRefIds: getLampRefIds,
-      updateRefId(content, update) {
-        ctx.updateStrokeRefIds(content, update)
-      },
+      updateRefId: ctx.updateStrokeRefIds,
+      deleteRefId: ctx.deleteStrokeRefIds,
     },
   ]
 }

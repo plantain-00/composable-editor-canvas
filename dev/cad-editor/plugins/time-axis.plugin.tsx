@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
   const TimeAxisContent = ctx.and(ctx.BaseContent('time axis'), ctx.StrokeFields, ctx.ArrowFields, ctx.Position, {
     max: ctx.number,
   })
-  const getRefIds = (content: Omit<TimeAxisContent, "type">) => [content.strokeStyleId]
+  const getRefIds = (content: Omit<TimeAxisContent, "type">): model.RefId[] => ctx.toRefId(content.strokeStyleId)
   function getGeometriesFromCache(content: Omit<TimeAxisContent, "type">, contents: readonly core.Nullable<model.BaseContent>[], time?: number) {
     const getGeometries = (): model.Geometries => {
       const { arrowPoints, endPoint } = ctx.getArrowPoints(content, { x: content.x + content.max / 10, y: content.y }, content)
@@ -100,6 +100,7 @@ export function getModel(ctx: PluginContext): model.Model<TimeAxisContent> {
     isValid: (c, p) => ctx.validate(c, TimeAxisContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeRefIds,
+    deleteRefId: ctx.deleteStrokeRefIds,
   }
 }
 

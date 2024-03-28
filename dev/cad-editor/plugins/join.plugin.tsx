@@ -41,12 +41,14 @@ export function getCommand(ctx: PluginContext): Command {
           continue
         }
       }
+      const indexes: number[] = []
       for (const content of removedContents) {
         const id = ctx.getContentIndex(content, contents)
         if (id >= 0) {
-          contents[id] = undefined
+          indexes.push(id)
         }
       }
+      ctx.deleteSelectedContents(contents, indexes)
       for (const content of newContents) {
         contents.push(content)
       }

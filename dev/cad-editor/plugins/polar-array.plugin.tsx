@@ -20,7 +20,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
     rowCount: ctx.number,
     rowSpacing: ctx.number,
   })
-  const getRefIds = (content: Omit<PolarArrayContent, 'type'>) => content.contents
+  const getRefIds = (content: Omit<PolarArrayContent, 'type'>): model.RefId[] => ctx.toRefIds(content.contents)
   const getAllContentsFromCache = (content: Omit<PolarArrayContent, 'type'>, contents: readonly core.Nullable<model.BaseContent>[]) => {
     return ctx.allContentsCache.get(content, () => {
       const result: core.Nullable<model.BaseContent>[] = []
@@ -275,11 +275,7 @@ export function getCommand(ctx: PluginContext): Command {
                 itemCount: 6,
                 itemAngle: 60,
               }
-              for (let i = contents.length; i >= 0; i--) {
-                if (ctx.isSelected([i], selected)) {
-                  contents[i] = undefined
-                }
-              }
+              ctx.deleteSelectedContents(contents, selected.map(c => c[0]))
               contents.push(newContent)
               setCursorPosition(undefined)
             }
