@@ -9,7 +9,7 @@ import { TwoPointsFormRegion } from "./region"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
 import { getTwoPointsRadian } from "./radian"
-import { pointInPolygon } from "./line"
+import { getPolygonArea, pointInPolygon } from "./line"
 import { ellipseArcToPolyline } from "./ellipse"
 import { arcToPolyline } from "./circle"
 import { getTwoGeometryLinesIntersectionPoint, iterateGeometryLinesIntersectionPoints } from "./intersection"
@@ -274,7 +274,7 @@ export function optimizeHatch(border: GeometryLine[], holes: GeometryLine[][]) {
   return optimizeHatchInternally(border, holes)
 }
 
-export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryLine[][]): { border: GeometryLine[], holes: GeometryLine[][] }[] {
+export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryLine[][]): Hatch[] {
   for (let i = 0; i < holes.length; i++) {
     const lines = mergeHatchBorderAndHole(border, holes[i])
     if (lines) {
@@ -284,4 +284,44 @@ export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryL
     }
   }
   return [{ border, holes }]
+}
+
+interface Hatch {
+  border: GeometryLine[]
+  holes: GeometryLine[][]
+}
+
+export function mergeHatchBorderAndBorder(border1: GeometryLine[], border2: GeometryLine[]): GeometryLine[] | undefined {
+  const point = first(iterateGeometryLinesIntersectionPoints(border1, border2))
+  if (point) {
+    const param1 = getGeometryLinesParamAtPoint(point, border1)
+    const param2 = getGeometryLinesParamAtPoint(point, border2)
+    return [
+      ...getPartOfGeometryLines(0, param1, border1),
+      ...getPartOfGeometryLines(param2, border2.length, border2),
+      ...getPartOfGeometryLines(0, param2, border2),
+      ...getPartOfGeometryLines(param1, border1.length, border1),
+    ]
+  }
+  return
+}
+
+export function mergeHatchBorders(border1: GeometryLine[], border2: GeometryLine[]) {
+  border1 = reverseClosedGeometryLinesIfAreaIsNegative(border1)
+  border2 = reverseClosedGeometryLinesIfAreaIsNegative(border2)
+  const lines = mergeHatchBorderAndBorder(border1, border2)
+  if (lines) {
+    const results = splitGeometryLines(lines)
+    if (results.length < 2) {
+      return results[0]
+    }
+    return maxmiumBy(results.map(r => ({ line: r, area: getPolygonArea(getGeometryLinesPoints(r)) })), a => a.area).line
+  }
+  return
+}
+
+export function mergeHatches(hatch1: Hatch, hatch2: Hatch): Hatch[] | undefined {
+  const mergedBorder = mergeHatchBorders(hatch1.border, hatch2.border)
+  if (!mergedBorder) return
+  return optimizeHatch(mergedBorder, [...hatch1.holes, ...hatch2.holes])
 }

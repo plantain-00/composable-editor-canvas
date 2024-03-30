@@ -74,34 +74,48 @@ export function useEdit<T, TPath extends SelectPath = SelectPath>(
     } | undefined {
       if (menuEditPoint && startPosition && cursorPosition) {
         const assistentContents: T[] = []
+        const allPatches: Patch[] = []
+        const allReversePatches: Patch[] = []
         const [result, patches, reversePatches] = produceWithPatches(menuEditPoint.content, (draft) => {
           const r = menuEditPoint.update?.(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
           if (r?.assistentContents) {
             assistentContents.push(...r.assistentContents)
           }
+          if (r?.updateRelatedContents) {
+            const c = r.updateRelatedContents()
+            allPatches.push(...c.patches)
+            allReversePatches.push(...c.reversePatches)
+          }
         })
         return {
           content: menuEditPoint.content,
           result,
-          patches: prependPatchPath(patches, menuEditPoint.path),
-          reversePatches: prependPatchPath(reversePatches, menuEditPoint.path),
+          patches: [...prependPatchPath(patches, menuEditPoint.path), ...allPatches],
+          reversePatches: [...prependPatchPath(reversePatches, menuEditPoint.path), ...allReversePatches],
           assistentContents,
           relatedEditPointResults: new Map<T, T>(),
         }
       }
       if (editPoint && startPosition && cursorPosition && editPoint.update) {
         const assistentContents: T[] = []
+        const allPatches: Patch[] = []
+        const allReversePatches: Patch[] = []
         const [result, patches, reversePatches] = produceWithPatches(editPoint.content, (draft) => {
           const r = editPoint.update?.(draft, { cursor: cursorPosition, start: startPosition, scale: options?.scale ?? 1, target: snapTarget })
           if (r?.assistentContents) {
             assistentContents.push(...r.assistentContents)
           }
+          if (r?.updateRelatedContents) {
+            const c = r.updateRelatedContents()
+            allPatches.push(...c.patches)
+            allReversePatches.push(...c.reversePatches)
+          }
         })
         const s = {
           content: editPoint.content,
           result,
-          patches: prependPatchPath(patches, editPoint.path),
-          reversePatches: prependPatchPath(reversePatches, editPoint.path),
+          patches: [...prependPatchPath(patches, editPoint.path), ...allPatches],
+          reversePatches: [...prependPatchPath(reversePatches, editPoint.path), ...allReversePatches],
           assistentContents,
           relatedEditPointResults: new Map<T, T>(),
         }
@@ -214,6 +228,7 @@ export type EditPointUpdate<T> = (
   },
 ) => {
   assistentContents?: T[]
+  updateRelatedContents?: () => { patches: Patch[], reversePatches: Patch[] }
 } | void
 
 export type EditPoint<T> = Position & {
