@@ -137,18 +137,38 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
         return target.renderGroup(children)
       },
       getGeometries: getLampGeometries,
-      getEditPoints(content) {
+      getEditPoints(content, contents) {
         return ctx.getEditPointsFromCache(content, () => {
           const editPoints: core.EditPoint<model.BaseContent>[] = [{
             x: content.x,
             y: content.y,
             cursor: 'move',
-            update(c, { cursor, start }) {
+            update(c, { cursor, start, target }) {
               if (!isLampContent(c)) {
                 return
               }
               c.x += cursor.x - start.x
               c.y += cursor.y - start.y
+              return {
+                updateRelatedContents() {
+                  const index = ctx.getContentIndex(content, contents)
+                  const targetIndex = target ? ctx.getContentIndex(target.content, contents) : undefined
+                  const [, patches, reversePatches] = ctx.produceWithPatches(contents, draft => {
+                    for (let i = 0; i < draft.length; i++) {
+                      const c = draft[i]
+                      if (!c) continue
+                      if (i === targetIndex && isWireContent(c)) {
+                        if (!c.refs.includes(index)) {
+                          c.refs.push(index)
+                        }
+                      } else {
+                        ctx.getContentModel(c)?.deleteRefId?.(c, [index])
+                      }
+                    }
+                  })
+                  return { patches, reversePatches }
+                },
+              }
             },
           }]
           return { editPoints }

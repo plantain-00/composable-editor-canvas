@@ -131,6 +131,20 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
     },
+    join(content, target) {
+      if (isHatchContent(target)) {
+        const result = ctx.mergeHatches({ border: content.border, holes: content.holes || [] }, { border: target.border, holes: target.holes || [] })?.[0]
+        if (result) {
+          return {
+            ...content,
+            border: result.border,
+            holes: result.holes,
+            ref: undefined,
+          } as HatchContent
+        }
+      }
+      return
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx)
       const { border, holes } = getHatchGeometries(content, renderCtx.contents)

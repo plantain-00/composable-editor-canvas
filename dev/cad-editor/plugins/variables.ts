@@ -4853,6 +4853,21 @@ function getModel(ctx) {
         }
       }
     },
+    join(content, target) {
+      var _a;
+      if (isHatchContent(target)) {
+        const result = (_a = ctx.mergeHatches({ border: content.border, holes: content.holes || [] }, { border: target.border, holes: target.holes || [] })) == null ? void 0 : _a[0];
+        if (result) {
+          return {
+            ...content,
+            border: result.border,
+            holes: result.holes,
+            ref: void 0
+          };
+        }
+      }
+      return;
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getFillRenderOptionsFromRenderContext(content, renderCtx);
       const { border, holes } = getHatchGeometries(content, renderCtx.contents);
@@ -13771,18 +13786,40 @@ function getModel(ctx) {
         return target.renderGroup(children);
       },
       getGeometries: getLampGeometries,
-      getEditPoints(content) {
+      getEditPoints(content, contents) {
         return ctx.getEditPointsFromCache(content, () => {
           const editPoints = [{
             x: content.x,
             y: content.y,
             cursor: "move",
-            update(c, { cursor, start }) {
+            update(c, { cursor, start, target }) {
               if (!isLampContent(c)) {
                 return;
               }
               c.x += cursor.x - start.x;
               c.y += cursor.y - start.y;
+              return {
+                updateRelatedContents() {
+                  const index = ctx.getContentIndex(content, contents);
+                  const targetIndex = target ? ctx.getContentIndex(target.content, contents) : void 0;
+                  const [, patches, reversePatches] = ctx.produceWithPatches(contents, (draft) => {
+                    var _a, _b;
+                    for (let i = 0; i < draft.length; i++) {
+                      const c2 = draft[i];
+                      if (!c2)
+                        continue;
+                      if (i === targetIndex && isWireContent(c2)) {
+                        if (!c2.refs.includes(index)) {
+                          c2.refs.push(index);
+                        }
+                      } else {
+                        (_b = (_a = ctx.getContentModel(c2)) == null ? void 0 : _a.deleteRefId) == null ? void 0 : _b.call(_a, c2, [index]);
+                      }
+                    }
+                  });
+                  return { patches, reversePatches };
+                }
+              };
             }
           }];
           return { editPoints };
