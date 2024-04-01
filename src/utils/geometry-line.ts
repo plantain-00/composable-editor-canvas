@@ -12,7 +12,7 @@ import { getAngleInRange, AngleRange } from "./angle";
 import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
-import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
+import { reverseAngle, reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
 import { getGeometryLinesPoints } from "./hatch";
 import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
 
@@ -235,7 +235,7 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
   if (line.type === 'ray') {
     return {
       point: getRayPointAtDistance(line.line, param),
-      radian: angleToRadian(line.line.angle),
+      radian: angleToRadian(line.line.reversed ? reverseAngle(line.line.angle) : line.line.angle),
     }
   }
   const [point, point1] = getNurbsCurveDerivatives(line.curve, param * getNurbsMaxParam(line.curve))

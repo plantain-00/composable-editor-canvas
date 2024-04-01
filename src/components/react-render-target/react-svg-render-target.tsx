@@ -464,7 +464,7 @@ function renderPattern(
           width={options.strokePattern.width}
           height={options.strokePattern.height}
         >
-          {options.strokePattern.pattern()(id, scale, strokeWidthFixed, width, height, transform, matrix)}
+          {options.strokePattern.pattern()(id, scale, false, width, height, transform, matrix)}
         </pattern>
       )
       stroke = `url(#${id})`
@@ -511,7 +511,7 @@ function renderPattern(
           width={options.fillPattern.width}
           height={options.fillPattern.height}
         >
-          {options.fillPattern.pattern()(id, scale, strokeWidthFixed, width, height, transform, matrix)}
+          {options.fillPattern.pattern()(id, scale, false, width, height, transform, matrix)}
         </pattern>
       )
       fill = `url(#${id})`

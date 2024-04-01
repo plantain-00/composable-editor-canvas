@@ -54,7 +54,7 @@ interface CommandProps {
 }
 
 interface CommandResult {
-  onStart(p: Position, target?: SnapTarget): void
+  onStart?(p: Position, target?: SnapTarget): void
   onMove?: (p: Position, viewportPosition?: Position, target?: SnapTarget) => void
   onMouseDown?: (p: Position) => void
   onMouseUp?: (p: Position) => void

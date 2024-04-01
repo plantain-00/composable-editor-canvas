@@ -2,7 +2,7 @@ import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
 import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { deepEquals, first, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
+import { deepEquals, equals, first, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
@@ -171,14 +171,20 @@ function getRightSideGeometryLine(
   if (debug) {
     console.info(`Target ${printGeometryLine(start.line)} at ${printParam(startParam)} ${printPoint(start.point)}`)
   }
-  const intersections: (HatchIntersection & { param: number, originalParam: number })[] = []
+  let intersections: (HatchIntersection & { param: number, originalParam: number })[] = []
   for (const geometry of geometries) {
     if (!geometry) continue
     for (const line of geometry.lines) {
       const points = getTwoGeometryLinesIntersectionPoint(line, start.line)
       for (const point of points) {
         const param = getGeometryLineParamAtPoint(point, start.line)
-        intersections.push({ line, param: largerThan(param, startParam) ? param : param + ((!Array.isArray(start.line) && start.line.type === 'ray') ? Infinity : 1), point, originalParam: param, id: geometry.id })
+        intersections.push({
+          line,
+          param: largerThan(param, startParam) ? param : param + ((!Array.isArray(start.line) && start.line.type === 'ray') ? Infinity : 1),
+          point,
+          originalParam: param,
+          id: geometry.id,
+        })
       }
     }
   }
@@ -189,6 +195,16 @@ function getRightSideGeometryLine(
     }
   }
   if (intersections.length < 2) return
+  intersections = intersections.filter(n => {
+    if (!equals(n.originalParam, 1) && !equals(n.originalParam, 0)) {
+      const radian = getGeometryLinePointAndTangentRadianAtParam(n.originalParam, start.line).radian
+      reverseGeometryLineIfDirectionIsWrong(radian, n)
+      const targetRadian = getGeometryLinePointAndTangentRadianAtParam(getGeometryLineParamAtPoint(n.point, n.line), n.line).radian
+      return getRadianSideOfRadian(radian, targetRadian) !== 1
+    }
+    return true
+  })
+  if (intersections.length === 0) return
   const minimums = minimumsBy(intersections, s => s.param)
   let r = minimums[0]
   if (minimums.length > 1) {

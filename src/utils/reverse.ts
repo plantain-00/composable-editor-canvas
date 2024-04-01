@@ -6,7 +6,7 @@ import { QuadraticCurve } from "./bezier";
 import { BezierCurve } from "./bezier";
 import { Nurbs, reverseNurbsCurve } from "./nurbs";
 import { Ray, getPolygonArea } from "./line";
-import { normalizeAngle } from "./angle";
+import { normalizeAngle, normalizeRadian } from "./angle";
 import { getGeometryLinesPoints } from "./hatch";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {
@@ -93,6 +93,14 @@ export function reverseRay(ray: Ray): Ray {
     ...ray,
     angle: normalizeAngle(ray.angle + 180),
   }
+}
+
+export function reverseRadian(radian: number) {
+  return normalizeRadian(radian + Math.PI)
+}
+
+export function reverseAngle(angle: number) {
+  return normalizeAngle(angle + 180)
 }
 
 function knotsReverse(knots: number[]): number[] {
