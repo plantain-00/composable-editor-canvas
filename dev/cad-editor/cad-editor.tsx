@@ -16,6 +16,7 @@ import type { RectContent } from './plugins/rect.plugin'
 import type { CircleContent } from './plugins/circle-arc.plugin'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
+import type { PointContent } from './plugins/point.plugin'
 
 enablePatches()
 
@@ -183,6 +184,7 @@ export const CADEditor = React.forwardRef((props: {
   const acquireContentHandler = React.useRef<(path: readonly ContentPath[]) => void>()
   const acquireRegionHandler = React.useRef<(region: Position[]) => void>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
+  const [markers, setMarkers] = React.useState<BaseContent[]>([])
 
   const { x, y, ref: wheelScrollRef, setX, setY } = useWheelScroll<HTMLDivElement>({
     localStorageXKey: props.id + '-x',
@@ -644,6 +646,7 @@ export const CADEditor = React.forwardRef((props: {
       onStartSelect(e)
     }
     setSnapOffset(undefined)
+    setContextMenu(undefined)
   })
   const onMouseDown = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     if (e.shiftKey) {
@@ -847,12 +850,16 @@ export const CADEditor = React.forwardRef((props: {
       onCommandMouseMove(s.position, inputPosition, s.target ? { id: getContentIndex(s.target.content, state), snapIndex: s.target.snapIndex, param: s.target.param } : undefined)
     }
   }
-  const onContextMenu = useEvent((e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
+  const onContextMenu = useEvent(async (e: React.MouseEvent<HTMLOrSVGElement, MouseEvent>) => {
     e.preventDefault()
     const viewportPosition = { x: e.clientX, y: e.clientY }
     const p = reverseTransform(viewportPosition)
     if (editPoint?.menu) {
       onEditContextMenu(p, (menu, getClickHandler) => <Menu items={menu.map(m => ({ title: m.title, onClick: getClickHandler(m) }))} style={{ left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }} />)
+      return
+    }
+    if (contextMenu) {
+      setContextMenu(undefined)
       return
     }
     const items: (core.MenuItem | core.MenuDivider)[] = [
@@ -884,6 +891,47 @@ export const CADEditor = React.forwardRef((props: {
           },
         },
       )
+    }
+    items.push({ type: 'divider' })
+    items.push({
+      title: 'Create geometry lines',
+      disabled: editingContent.length === 0,
+      onClick: () => {
+        startOperation({ type: 'command', name: 'create geometry lines' })
+        setContextMenu(undefined)
+      }
+    })
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) {
+        let marker: BaseContent | undefined
+        const parts = text.split(',')
+        if (parts.length === 2) {
+          const nums = parts.map(p => +p)
+          if (nums.every(n => !isNaN(n))) {
+            marker = { type: 'point', x: nums[0], y: nums[1] } as PointContent
+          }
+        }
+        if (!marker) {
+          const content: BaseContent = JSON.parse(text)
+          if (validate(content, Content) === true) {
+            marker = content
+          }
+        }
+        if (marker) {
+          items.push({
+            title: `Mark ${marker.type}`,
+            onClick: () => {
+              if (marker) {
+                setMarkers([...markers, marker])
+              }
+              setContextMenu(undefined)
+            }
+          })
+        }
+      }
+    } catch (error) {
+      console.info(error)
     }
     items.push({ type: 'divider' })
     items.push({
@@ -975,6 +1023,7 @@ export const CADEditor = React.forwardRef((props: {
     setRTree({ rtree: newRTree, boundlessContents })
   }
 
+  assistentContents.push(...markers)
   const operatorVisible = props.onApplyPatchesFromSelf !== undefined
   const minimapHeight = 100
   const minimapWidth = 100

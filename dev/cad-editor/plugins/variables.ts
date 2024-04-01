@@ -4631,6 +4631,122 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/geometry-lines.plugin.tsx
+function getModel(ctx) {
+  const GeometryLinesContent = ctx.and(ctx.BaseContent("geometry lines"), ctx.StrokeFields, ctx.FillFields, {
+    lines: [ctx.GeometryLine]
+  });
+  const refGeometriesCache = new ctx.WeakmapValuesCache();
+  function getGeometryLinesGeometries(content) {
+    return refGeometriesCache.get(content, [], () => {
+      const points = ctx.getGeometryLinesPoints(content.lines);
+      const rays = [];
+      for (const line of content.lines) {
+        if (!Array.isArray(line) && line.type === "ray") {
+          rays.push(line.line);
+        }
+      }
+      const geometries = {
+        lines: content.lines,
+        points,
+        rays,
+        bounding: ctx.getGeometryLinesBounding(content.lines),
+        renderingLines: rays.length > 0 ? [] : ctx.dashedPolylineToLines(points, content.dashArray),
+        region: rays.length > 0 ? [] : void 0
+      };
+      if (ctx.hasFill(content)) {
+        return {
+          ...geometries,
+          lines: [],
+          regions: [{
+            lines: geometries.lines,
+            points
+          }],
+          renderingLines: []
+        };
+      }
+      return geometries;
+    });
+  }
+  return {
+    type: "geometry lines",
+    ...ctx.strokeModel,
+    ...ctx.fillModel,
+    move(content, offset) {
+      for (const line of content.lines) {
+        ctx.moveGeometryLine(line, offset);
+      }
+    },
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
+      const { points, rays } = getGeometryLinesGeometries(content);
+      return target.renderGroup([
+        target.renderPath([points], options),
+        ...rays.map((r) => target.renderRay(r.x, r.y, r.angle, { ...options, bidirectional: r.bidirectional }))
+      ]);
+    },
+    getGeometries: getGeometryLinesGeometries,
+    propertyPanel(content, update, contents) {
+      return {
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getFillContentPropertyPanel(content, update, contents)
+      };
+    },
+    getRefIds: ctx.getStrokeAndFillRefIds,
+    updateRefId: ctx.updateStrokeAndFillRefIds,
+    isValid: (c, p) => ctx.validate(c, GeometryLinesContent, p)
+  };
+}
+function isGeometryLinesContent(content) {
+  return content.type === "geometry lines";
+}
+function getCommand(ctx) {
+  const React = ctx.React;
+  return [
+    {
+      name: "create geometry lines",
+      useCommand({ type, onEnd, width, height }) {
+        const [json, setJson] = React.useState("");
+        const reset = () => {
+          setJson("");
+        };
+        return {
+          reset,
+          subcommand: type === "create geometry lines" ? /* @__PURE__ */ React.createElement("span", { style: { position: "relative" } }, /* @__PURE__ */ React.createElement(ctx.StringEditor, { textarea: true, value: json, style: { width: width * 0.7 + "px", height: height * 0.7 + "px" }, setValue: setJson }), /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => {
+            if (json) {
+              try {
+                const lines = JSON.parse(json);
+                const result = ctx.validate(lines, [ctx.GeometryLine]);
+                if (result === true && lines.length > 0) {
+                  const target = {
+                    type: "geometry lines",
+                    lines
+                  };
+                  onEnd({
+                    updateContents: (contents) => {
+                      contents.push(target);
+                    }
+                  });
+                } else {
+                  console.info(result);
+                }
+              } catch (error) {
+                console.info(error);
+              }
+            }
+          } }, "OK")) : void 0
+        };
+      },
+      selectCount: 0
+    }
+  ];
+}
+export {
+  getCommand,
+  getModel,
+  isGeometryLinesContent
+};
+`,
 `// dev/cad-editor/plugins/group.plugin.tsx
 function getModel(ctx) {
   const GroupContent = ctx.and(ctx.BaseContent("group"), ctx.ContainerFields, ctx.ClipFields);
