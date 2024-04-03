@@ -29,3 +29,8 @@ export type Vec3 = [number, number, number]
 export type Vec4 = [number, number, number, number]
 
 export type Primitive = string | number | boolean
+
+export type Tuple2<T> = [T, T]
+export type Tuple3<T> = [T, T, T]
+export type Tuple4<T> = [T, T, T, T]
+export type Tuple5<T> = [T, T, T, T, T]

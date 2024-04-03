@@ -1,9 +1,9 @@
 import { calculateEquation2, calculateEquation3 } from "./equation-calculater"
-import { isSameNumber, delta3, isValidPercent } from "./math"
+import { isSameNumber, delta3, isValidPercent, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointCenter } from "./position"
 import { toBezierCurves } from "./nurbs"
-import { Vec3 } from "./types"
+import { Tuple3, Tuple4, Vec3 } from "./types"
 
 export interface BezierCurve {
   from: Position
@@ -60,7 +60,11 @@ export function getQuadraticCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp: { 
   // c2 c4 u u + 2 c2 c3 u + (b1 - py) c2 = 0
   // 2(c1 c4 - c2 c3)u + ((a1 - px) c4 - (b1 - py) c2) = 0
   // u = -((a1 - px) c4 - (b1 - py) c2)/2/(c1 c4 - c2 c3)
-  return -((a1 - point.x) * c4 - (b1 - point.y) * c2) / 2 / (c1 * c4 - c2 * c3)
+  const d = c1 * c4 - c2 * c3
+  if (isZero(d)) {
+    return calculateEquation2(c2, 2 * c1, a1 - point.x).filter(u => isSameNumber(c4 * u * u + 2 * c3 * u + b1, point.y, delta3))[0]
+  }
+  return -((a1 - point.x) * c4 - (b1 - point.y) * c2) / 2 / d
 }
 
 export function getQuadraticCurvePointAtPercent(p1: Position, p2: Position, p3: Position, percent: number) {
@@ -286,7 +290,7 @@ export function getPartOfBezierCurve({ from: { x: a1, y: b1 }, cp1: { x: a2, y: 
   }
 }
 
-export function getQuadraticCurveDerivatives({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve): [(t: number) => Position, (t: number) => Position, (t: number) => Position] {
+export function getQuadraticCurveDerivatives({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve): Tuple3<(t: number) => Position> {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
   // y = c4 t t + 2 c3 t + b1
@@ -306,7 +310,7 @@ export function getQuadraticCurveDerivatives({ from: { x: a1, y: b1 }, cp: { x: 
   ]
 }
 
-export function getBezierCurveDerivatives({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve): [(t: number) => Position, (t: number) => Position, (t: number) => Position, (t: number) => Position] {
+export function getBezierCurveDerivatives({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve): Tuple4<(t: number) => Position> {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1

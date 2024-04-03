@@ -1,5 +1,5 @@
 import React from "react"
-import { Align, AttributedText, BooleanEditor, Button, EnumEditor, MapCache4, NumberEditor, ObjectEditor, PathCommand, StringEditor, VerticalAlign, aligns, boldGeometryLines, geometryLineToPathCommands, pathCommandsToGeometryLines, reactSvgRenderTarget, useAttributedTextEditor, useWindowSize, verticalAligns } from "../src"
+import { Align, AttributedText, BooleanEditor, Button, EnumEditor, MapCache4, NumberEditor, ObjectEditor, PathCommand, StringEditor, VerticalAlign, aligns, boldHatch, geometryLineToPathCommands, geometryLinesToHatches, pathCommandsToGeometryLines, reactSvgRenderTarget, useAttributedTextEditor, useWindowSize, verticalAligns } from "../src"
 import * as opentype from 'opentype.js'
 import { allFonts, opentypeCommandsToPathCommands } from "./opentype/utils"
 import { CopyData } from "./cad-editor/plugins/copy-paste.plugin"
@@ -11,7 +11,7 @@ export default () => {
   const size = useWindowSize()
   const width = size.width / 2 - 30
   const [font, setFont] = React.useState<opentype.Font>()
-  const cache = React.useRef(new MapCache4<boolean, boolean, number, string, { commands: PathCommand[], x1: number, y1: number, width: number }>())
+  const cache = React.useRef(new MapCache4<boolean, boolean, number, string, { commands: PathCommand[][], x1: number, y1: number, width: number }>())
   const getTextLayout = (text: string, fontSize: number, italic = false, bold = false) => {
     if (!font || !text) return
     return cache.current.get(italic, bold, fontSize, text, () => {
@@ -20,19 +20,20 @@ export default () => {
       const box = glyph.getBoundingBox()
       const advanceWidth = glyph.advanceWidth || 0
       const width = box.x2 - box.x1
-      let commands = opentypeCommandsToPathCommands(path, italic ? fontSize * 0.7 : undefined)
-      if (bold && commands.length > 0) {
-        commands = boldGeometryLines(pathCommandsToGeometryLines(commands)).map(lines => geometryLineToPathCommands(lines)).flat()
+      const commands = opentypeCommandsToPathCommands(path, italic ? fontSize * 0.7 : undefined)
+      let hatches = geometryLinesToHatches(pathCommandsToGeometryLines(commands))
+      if (bold) {
+        hatches = hatches.map(h => boldHatch(h, fontSize * 0.01))
       }
       return {
-        commands,
+        commands: hatches.map(h => [h.border, ...h.holes]).map(h => h.map(lines => geometryLineToPathCommands(lines)).flat()),
         x1: (advanceWidth > width ? 0 : box.x1) / font.unitsPerEm * fontSize,
         y1: (glyph.unicode && glyph.unicode < 256 ? 0 : box.y1) / font.unitsPerEm * fontSize,
         width: Math.max(advanceWidth, width) / font.unitsPerEm * fontSize,
       }
     })
   }
-  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: '我们出' }, { insert: '去吧', attributes: { stackText: 'ab' } }, { insert: 'Aag jioIb BDxVX', attributes: { color: 0xff0000 } }])
+  const [state, setState] = React.useState<AttributedText<Attribute>[]>([{ insert: '我们出' }, { insert: '去吧', attributes: { stackText: 'ab' } }, { insert: 'Aag jioIb BDxVX晒回吧', attributes: { color: 0xff0000 } }])
   const [align, setAlign] = React.useState<Align>('left')
   const [verticalAlign, setVerticalAlign] = React.useState<VerticalAlign>('top')
   const [strokeOnly, setStrokeOnly] = React.useState(false)
@@ -129,9 +130,9 @@ export default () => {
         children.push(target.renderCircle(x + width / 2, y + lineHeight / 2, lineHeight / 2, { strokeColor: color, strokeOpacity: opacity }))
       }
       const style = strokeOnly ? { strokeColor: color, strokeOpacity: opacity, strokeWidth: 1 } : { fillColor: color, fillOpacity: opacity, strokeWidth: 0 }
-      children.push(target.renderGroup([target.renderPathCommands(layout.commands, style)], { translate: pos }))
+      children.push(target.renderGroup(layout.commands.map(c => target.renderPathCommands(c, style)), { translate: pos }))
       if (selected) {
-        commands.push(layout.commands)
+        commands.push(...layout.commands)
       }
       if (stackText) {
         const stackWidth = stackText.split('').reduce((p, c) => p + (getTextLayout(c, fontSize)?.width ?? 0), 0)
@@ -144,7 +145,7 @@ export default () => {
               y: y + stackLayout.y1 + (lineHeight - getLineHeight(content)) + fontSize * 0.2,
             }
             xOffset += stackLayout.width
-            children.push(target.renderGroup([target.renderPathCommands(stackLayout.commands, style)], { translate: stackPos }))
+            children.push(target.renderGroup(stackLayout.commands.map(c => target.renderPathCommands(c, style)), { translate: stackPos }))
           }
         }
       }

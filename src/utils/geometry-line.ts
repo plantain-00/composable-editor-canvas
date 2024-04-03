@@ -198,12 +198,36 @@ export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
   return getNurbsCurvePointAtParam(line.curve, param * getNurbsMaxParam(line.curve))
 }
 
-export function getGeometryLinePointAndTangentRadianAtParam(param: number, line: GeometryLine): { point: Position; radian: number } {
+export function getGeometryLineTangentRadianAtParam(param: number, line: GeometryLine): number {
   if (Array.isArray(line)) {
-    const distance = param * getTwoPointsDistance(...line)
+    return getTwoPointsRadian(line[1], line[0])
+  }
+  if (line.type === 'arc') {
+    const radian = angleToRadian(getAngleAtParam(param, line.curve))
+    return getArcTangentRadianAtRadian(line.curve, radian)
+  }
+  if (line.type === 'ellipse arc') {
+    const radian = angleToRadian(getAngleAtParam(param, line.curve))
+    return getEllipseArcTangentRadianAtRadian(line.curve, radian)
+  }
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurveTangentRadianAtPercent(line.curve, param)
+  }
+  if (line.type === 'bezier curve') {
+    return getBezierCurveTangentRadianAtPercent(line.curve, param)
+  }
+  if (line.type === 'ray') {
+    return angleToRadian(line.line.reversed ? reverseAngle(line.line.angle) : line.line.angle)
+  }
+  const [, point1] = getNurbsCurveDerivatives(line.curve, param * getNurbsMaxParam(line.curve))
+  return Math.atan2(point1.y, point1.x)
+}
+
+export function getGeometryLinePointAndTangentRadianAtParam(param: number, line: GeometryLine): { point: Position; radian: number } {
+  if (Array.isArray(line) || line.type === 'quadratic curve' || line.type === 'bezier curve' || line.type === 'ray') {
     return {
-      point: getPointByLengthAndDirection(line[0], distance, line[1]),
-      radian: getTwoPointsRadian(line[1], line[0]),
+      point: getGeometryLinePointAtParam(param, line),
+      radian: getGeometryLineTangentRadianAtParam(param, line),
     }
   }
   if (line.type === 'arc') {
@@ -218,24 +242,6 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
     return {
       point: getEllipsePointAtRadian(line.curve, radian),
       radian: getEllipseArcTangentRadianAtRadian(line.curve, radian),
-    }
-  }
-  if (line.type === 'quadratic curve') {
-    return {
-      point: getQuadraticCurvePointAtPercent(line.curve.from, line.curve.cp, line.curve.to, param),
-      radian: getQuadraticCurveTangentRadianAtPercent(line.curve, param),
-    }
-  }
-  if (line.type === 'bezier curve') {
-    return {
-      point: getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param),
-      radian: getBezierCurveTangentRadianAtPercent(line.curve, param)
-    }
-  }
-  if (line.type === 'ray') {
-    return {
-      point: getRayPointAtDistance(line.line, param),
-      radian: angleToRadian(line.line.reversed ? reverseAngle(line.line.angle) : line.line.angle),
     }
   }
   const [point, point1] = getNurbsCurveDerivatives(line.curve, param * getNurbsMaxParam(line.curve))

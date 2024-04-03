@@ -11,6 +11,7 @@ import { number, minimum, optional, and } from "./validators";
 import { calculateEquation2 } from "./equation-calculater";
 import { getPointSideOfLine, twoPointLineToGeneralFormLine } from "./line";
 import { Arc } from "./circle";
+import { Tuple5 } from "./types";
 
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc) {
   const angle = getEllipseAngle(p, ellipseArc)
@@ -179,4 +180,27 @@ export function getEllipseArcByStartEnd(
     endAngle: getEllipseAngle(to, ellipse),
     counterclockwise: !sweep,
   }
+}
+
+export function getEllipseDerivatives({ rx, ry, cx, cy, angle }: Ellipse): Tuple5<(t: number) => Position> {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  // x = d2 rx cos(t) - d1 ry sin(t) + cx
+  // x' = (-(d2 rx sin(t))) - d1 ry cos(t)
+  // x'' = d1 ry sin(t) + (-(d2 rx cos(t)))
+  // x''' = d1 ry cos(t) + d2 rx sin(t)
+  // x'''' = d2 rx cos(t) - d1 ry sin(t)
+
+  // y = d1 rx cos(t) + d2 ry sin(t) + cy
+  // y' = (-(d1 rx sin(t))) + d2 ry cos(t)
+  // y'' = (-(d1 rx cos(t))) + (-(d2 ry sin(t)))
+  // y''' = d1 rx sin(t) + (-(d2 ry cos(t)))
+  // y'''' = d1 rx cos(t) + d2 ry sin(t)
+  return [
+    t => ({ x: d2 * rx * Math.cos(t) - d1 * ry * Math.sin(t) + cx, y: d1 * rx * Math.cos(t) + d2 * ry * Math.sin(t) + cy }),
+    t => ({ x: -(d2 * rx * Math.sin(t)) - d1 * ry * Math.cos(t), y: -(d1 * rx * Math.sin(t)) + d2 * ry * Math.cos(t) }),
+    t => ({ x: d1 * ry * Math.sin(t) + -(d2 * rx * Math.cos(t)), y: -(d1 * rx * Math.cos(t)) + -(d2 * ry * Math.sin(t)) }),
+    t => ({ x: d1 * ry * Math.cos(t) + d2 * rx * Math.sin(t), y: d1 * rx * Math.sin(t) + -(d2 * ry * Math.cos(t)) }),
+    t => ({ x: d2 * rx * Math.cos(t) - d1 * ry * Math.sin(t), y: d1 * rx * Math.cos(t) + d2 * ry * Math.sin(t) }),
+  ]
 }

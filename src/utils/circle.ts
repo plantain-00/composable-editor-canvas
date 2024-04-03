@@ -13,6 +13,7 @@ import { and, minimum, number } from "./validators";
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection";
 import { twoPointLineToGeneralFormLine } from "./line";
 import { getPerpendicularLine } from "./perpendicular";
+import { Tuple5 } from "./types";
 
 export function pointIsOnArc(p: Position, arc: Arc) {
   const radian = getCircleRadian(p, arc)
@@ -174,4 +175,25 @@ export function getArcBulgeByStartEndPoint(start: Position, end: Position, point
     return getArcBulge(arc, start, end)
   }
   return
+}
+
+export function getCircleDerivatives({ x, y, r }: Circle): Tuple5<(t: number) => Position> {
+  // x = cx + r cos(t)
+  // x' = -r sin(t)
+  // x'' = -r cos(t)
+  // x''' = r sin(t)
+  // x'''' = r cos(t)
+
+  // y = cy + r sin(t)
+  // y' = r cos(t)
+  // y'' = -r sin(t)
+  // y''' = -r cos(t)
+  // y'''' = r sin(t)
+  return [
+    t => ({ x: x + r * Math.cos(t), y: y + r * Math.sin(t) }),
+    t => ({ x: -r * Math.sin(t), y: r * Math.cos(t) }),
+    t => ({ x: -r * Math.cos(t), y: -r * Math.sin(t) }),
+    t => ({ x: r * Math.sin(t), y: -r * Math.cos(t) }),
+    t => ({ x: r * Math.cos(t), y: r * Math.sin(t) }),
+  ]
 }

@@ -7383,7 +7383,7 @@ function getModel(ctx) {
       const lengths = lines.map((line) => ctx.getGeometryLineLength(line) || 0);
       const totalLength = lengths.reduce((p, c) => p + c, 0);
       for (let length = 0; length <= totalLength; length += content.length) {
-        const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length);
+        const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length, lengths);
         if (r) {
           result.push(...content.contents.map((child) => {
             var _a2, _b2;
