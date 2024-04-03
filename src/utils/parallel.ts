@@ -1,5 +1,5 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, pointIsOnGeometryLine } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLinePointAtParam, getGeometryLineTangentRadianAtParam, pointIsOnGeometryLine } from "./geometry-line"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
 import { findFrom, findIndexFrom, isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
 import { Position } from "./position"
@@ -19,7 +19,7 @@ import { getTwoGeometryLinesIntersectionPoint, getTwoLinesIntersectionPoint } fr
 import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
-import { getGeometryLineLength, getGeometryLinesPointAndTangentRadianByLength } from "./length"
+import { getGeometryLineLength, getGeometryLineParamByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
 import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
@@ -216,10 +216,10 @@ export function getLinesOffsetDirection(point: Position, lines: GeometryLine[]) 
           length = len - 0.1
         }
       }
-      const p = getGeometryLinesPointAndTangentRadianByLength([m.line], length)
+      const p = getGeometryLineParamByLength(m.line, length)
       return {
         ...m,
-        distance: p ? getTwoPointsDistance(p.point, point) : m.distance,
+        distance: p !== undefined ? getTwoPointsDistance(getGeometryLinePointAtParam(p, m.line), point) : m.distance,
       }
     }), v => v.distance)
   }
@@ -339,7 +339,7 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
                 type: 'arc',
                 curve: {
                   ...arc,
-                  counterclockwise: twoRadiansSameDirection(getGeometryLinePointAndTangentRadianAtParam(0, { type: 'arc', curve: arc }).radian, getGeometryLinePointAndTangentRadianAtParam(1, previousLine).radian) ? undefined : true,
+                  counterclockwise: twoRadiansSameDirection(getGeometryLineTangentRadianAtParam(0, { type: 'arc', curve: arc }), getGeometryLineTangentRadianAtParam(1, previousLine)) ? undefined : true,
                 },
               },
             }

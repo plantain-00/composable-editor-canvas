@@ -1,9 +1,9 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAndTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
 import { deepEquals, equals, first, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
-import { Position } from "./position"
+import { Position, deduplicatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
 import { getTwoPointsDistance } from "./position"
@@ -16,8 +16,8 @@ import { getTwoGeometryLinesIntersectionPoint, iterateGeometryLinesIntersectionP
 import { GeometryLine } from "./geometry-line"
 import { mergeGeometryLine } from "./merge"
 import { getNurbsPoints } from "./nurbs"
-import { getRadianSideOfRadian } from "./parallel"
-import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine } from "./reverse"
+import { getParallelGeometryLinesByDistanceDirectionIndex, getRadianSideOfRadian } from "./parallel"
+import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine, reverseGeometryLines } from "./reverse"
 
 export function getHatchByPosition(
   position: Position,
@@ -188,6 +188,15 @@ function getRightSideGeometryLine(
       }
     }
   }
+  intersections = intersections.filter(n => {
+    if (!equals(n.originalParam, 1) && !equals(n.originalParam, 0)) {
+      const radian = getGeometryLineTangentRadianAtParam(n.originalParam, start.line)
+      reverseGeometryLineIfDirectionIsWrong(radian, n)
+      const targetRadian = getGeometryLineTangentRadianAtParam(getGeometryLineParamAtPoint(n.point, n.line), n.line)
+      return getRadianSideOfRadian(radian, targetRadian) === -1
+    }
+    return true
+  })
   if (intersections.length === 0 && closed) {
     return {
       line: start.line,
@@ -195,16 +204,6 @@ function getRightSideGeometryLine(
     }
   }
   if (intersections.length < 2) return
-  intersections = intersections.filter(n => {
-    if (!equals(n.originalParam, 1) && !equals(n.originalParam, 0)) {
-      const radian = getGeometryLinePointAndTangentRadianAtParam(n.originalParam, start.line).radian
-      reverseGeometryLineIfDirectionIsWrong(radian, n)
-      const targetRadian = getGeometryLinePointAndTangentRadianAtParam(getGeometryLineParamAtPoint(n.point, n.line), n.line).radian
-      return getRadianSideOfRadian(radian, targetRadian) !== 1
-    }
-    return true
-  })
-  if (intersections.length === 0) return
   const minimums = minimumsBy(intersections, s => s.param)
   let r = minimums[0]
   if (minimums.length > 1) {
@@ -215,7 +214,7 @@ function getRightSideGeometryLine(
   if (debug) {
     console.info(`Result ${printParam(startParam)}->${printParam(endParam)} ${printGeometryLine(line)}`)
   }
-  const startRadian = getGeometryLinePointAndTangentRadianAtParam(endParam, start.line).radian
+  const startRadian = getGeometryLineTangentRadianAtParam(endParam, start.line)
   reverseGeometryLineIfDirectionIsWrong(startRadian, r)
   if (debug) {
     console.info(`Line ${printGeometryLine(r.line)}`)
@@ -240,7 +239,7 @@ function reverseGeometryLineIfDirectionIsWrong(startRadian: number, r: HatchInte
     r.line = reverseGeometryLine(r.line)
     return
   }
-  const radian = getGeometryLinePointAndTangentRadianAtParam(param, r.line).radian
+  const radian = getGeometryLineTangentRadianAtParam(param, r.line)
   if (getRadianSideOfRadian(startRadian, radian) === 1) {
     r.line = reverseGeometryLine(r.line)
   }
@@ -340,4 +339,48 @@ export function mergeHatches(hatch1: Hatch, hatch2: Hatch): Hatch[] | undefined 
   const mergedBorder = mergeHatchBorders(hatch1.border, hatch2.border)
   if (!mergedBorder) return
   return optimizeHatch(mergedBorder, [...hatch1.holes, ...hatch2.holes])
+}
+
+export function geometryLinesToHatches(lines: GeometryLine[][]): Hatch[] {
+  if (lines.length === 0) return []
+  if (lines.length === 1) {
+    return [{ border: reverseClosedGeometryLinesIfAreaIsNegative(lines[0]), holes: [] }]
+  }
+  type GeometryLinePolygon = { lines: GeometryLine[], points: Position[] }
+  const polygons: GeometryLinePolygon[] = lines.map(n => {
+    n = reverseClosedGeometryLinesIfAreaIsNegative(n)
+    const points = deduplicatePosition(getGeometryLinesPoints(n, 10))
+    return {
+      points,
+      lines: n,
+    }
+  })
+  let result: { border: GeometryLinePolygon, holes: GeometryLinePolygon[] }[] = []
+  for (const polygon of polygons) {
+    const r = result.find(r => pointInPolygon(polygon.points[0], r.border.points) && r.holes.every(h => !pointInPolygon(polygon.points[0], h.points)))
+    if (r) {
+      r.holes.push(polygon)
+    } else {
+      const newResult: { border: GeometryLinePolygon, holes: GeometryLinePolygon[] }[] = []
+      const holes: GeometryLinePolygon[] = []
+      for (const p of result) {
+        if (pointInPolygon(p.border.points[0], polygon.points)) {
+          holes.push(p.border)
+          newResult.push(...p.holes.map(h => ({ border: h, holes: [] })))
+        } else {
+          newResult.push(p)
+        }
+      }
+      result = newResult
+      result.push({ border: polygon, holes })
+    }
+  }
+  return result.map(r => ({ border: r.border.lines, holes: r.holes.map(h => reverseGeometryLines(h.lines)) }))
+}
+
+export function boldHatch(hatch: Hatch, distance = 1): Hatch {
+  return {
+    border: trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(hatch.border, distance, 1, 'bevel')),
+    holes: hatch.holes.map(h => trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(h, -distance, 0, 'bevel'))),
+  }
 }

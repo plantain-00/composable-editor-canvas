@@ -40,7 +40,7 @@ export function getModel(ctx: PluginContext): model.Model<PathArrayContent> {
       const lengths = lines.map(line => ctx.getGeometryLineLength(line) || 0)
       const totalLength = lengths.reduce((p, c) => p + c, 0)
       for (let length = 0; length <= totalLength; length += content.length) {
-        const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length)
+        const r = ctx.getGeometryLinesPointAndTangentRadianByLength(lines, length, lengths)
         if (r) {
           result.push(...content.contents.map(child => {
             if (!child) return
