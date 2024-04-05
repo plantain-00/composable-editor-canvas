@@ -86,7 +86,6 @@ export function useImageClickCreate(
               }
               reader.readAsDataURL(file)
             }
-            // type-coverage:ignore-next-line
             (e.target.value as string | null) = null
           }}
         />

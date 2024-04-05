@@ -17,6 +17,7 @@ import type { CircleContent } from './plugins/circle-arc.plugin'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
 import type { PointContent } from './plugins/point.plugin'
+import type { EllipseContent } from './plugins/ellipse.plugin'
 
 enablePatches()
 
@@ -913,9 +914,15 @@ export const CADEditor = React.forwardRef((props: {
           }
         }
         if (!marker) {
-          const content: BaseContent = JSON.parse(text)
-          if (validate(content, Content) === true) {
+          const content: unknown = JSON.parse(text)
+          if (core.is<BaseContent>(content, Content)) {
             marker = content
+          } else if (core.is<Position>(content, Position)) {
+            marker = { ...content, type: 'point' } as PointContent
+          } else if (core.is<core.Circle>(content, core.Circle)) {
+            marker = { ...content, type: 'circle' } as CircleContent
+          } else if (core.is<core.Ellipse>(content, core.Ellipse)) {
+            marker = { ...content, type: 'ellipse' } as EllipseContent
           }
         }
         if (marker) {

@@ -334,3 +334,19 @@ export function getBezierCurveDerivatives({ from: { x: a1, y: b1 }, cp1: { x: a2
     }),
   ]
 }
+
+export function getQuadraticCurveCurvatureAtParam(curve: QuadraticCurve, param: number) {
+  const derivatives = getQuadraticCurveDerivatives(curve)
+  const { x: x1, y: y1 } = derivatives[1](param)
+  const { x: x2, y: y2 } = derivatives[2](param)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}
+
+export function getBezierCurveCurvatureAtParam(curve: BezierCurve, param: number) {
+  const derivatives = getBezierCurveDerivatives(curve)
+  const { x: x1, y: y1 } = derivatives[1](param)
+  const { x: x2, y: y2 } = derivatives[2](param)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}

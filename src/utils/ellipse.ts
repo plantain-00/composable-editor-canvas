@@ -204,3 +204,22 @@ export function getEllipseDerivatives({ rx, ry, cx, cy, angle }: Ellipse): Tuple
     t => ({ x: d2 * rx * Math.cos(t) - d1 * ry * Math.sin(t), y: d1 * rx * Math.cos(t) + d2 * ry * Math.sin(t) }),
   ]
 }
+
+export function getEllipseCurvatureAtRadian({ rx, ry }: Ellipse, t: number): number {
+  // const radian = angleToRadian(angle)
+  // const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  // x = d2 rx cos(t) - d1 ry sin(t) + cx
+  // x1 = (-(d2 rx sin(t))) - d1 ry cos(t)
+  // x2 = d1 ry sin(t) + (-(d2 rx cos(t)))
+  // y = d1 rx cos(t) + d2 ry sin(t) + cy
+  // y1 = (-(d1 rx sin(t))) + d2 ry cos(t)
+  // y2 = (-(d1 rx cos(t))) + (-(d2 ry sin(t)))
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  // rx ry/(cos(t) cos(t) ry ry + rx rx sin(t) sin(t))**1.5
+  return rx * ry / ((rx * Math.sin(t)) ** 2 + (ry * Math.cos(t)) ** 2) ** 1.5
+}
+
+export function getEllipseArcCurvatureAtRadian(ellipse: EllipseArc, t: number): number {
+  const result = getEllipseCurvatureAtRadian(ellipse, t)
+  return ellipse.counterclockwise ? -result : result
+}

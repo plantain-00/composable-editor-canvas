@@ -1,20 +1,21 @@
 import { geometryLineIntersectWithPolygon, iterateGeometryLinesSelfIntersectionPoints } from "./intersection";
-import { QuadraticCurve, BezierCurve, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier";
-import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge } from "./circle";
-import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse";
+import { QuadraticCurve, BezierCurve, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve, getQuadraticCurveCurvatureAtParam, getBezierCurveCurvatureAtParam } from "./bezier";
+import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge, getArcCurvature } from "./circle";
+import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc, getEllipseArcCurvatureAtRadian } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
 import { Ray, getLineParamAtPoint, getPolygonArea, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
-import { getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, NurbsCurve, pointIsOnNurbsCurve } from "./nurbs";
+import { getNurbsCurveCurvatureAtParam, getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, NurbsCurve, pointIsOnNurbsCurve } from "./nurbs";
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
-import { getAngleInRange, AngleRange } from "./angle";
-import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy } from "./math";
+import { getAngleInRange, AngleRange, normalizeRadian } from "./angle";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, minimumsBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 import { reverseAngle, reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
 import { getGeometryLinesPoints } from "./hatch";
 import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
+import { getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -473,4 +474,68 @@ export function trimGeometryLines(lines: GeometryLine[]): GeometryLine[] {
     lines = reverseGeometryLines(lines)
   }
   return lines
+}
+
+/**
+ * > 0: turn right
+ * < 0: turn left
+ * = 0: go straight forward
+ */
+export function getGeometryLineCurvatureAtParam(line: GeometryLine, param: number): number {
+  if (Array.isArray(line) || line.type === 'ray') {
+    return 0
+  }
+  if (line.type === 'arc') {
+    return getArcCurvature(line.curve)
+  }
+  if (line.type === 'ellipse arc') {
+    const radian = angleToRadian(getAngleAtParam(param, line.curve))
+    return getEllipseArcCurvatureAtRadian(line.curve, radian)
+  }
+  if (line.type === 'quadratic curve') {
+    return getQuadraticCurveCurvatureAtParam(line.curve, param)
+  }
+  if (line.type === 'bezier curve') {
+    return getBezierCurveCurvatureAtParam(line.curve, param)
+  }
+  return getNurbsCurveCurvatureAtParam(line.curve, param * getNurbsMaxParam(line.curve))
+}
+
+export function getNearestGeometryLines(point: Position, lines: GeometryLine[]): GeometryLine[] {
+  let result = minimumsBy(lines.map(line => ({
+    ...getPointAndGeometryLineNearestPointAndDistance(point, line),
+    line,
+  })), v => v.distance)
+  if (result.length > 1) {
+    const radianLines = maxmiumsBy(result.map(m => {
+      const param = getGeometryLineParamAtPoint(m.point, m.line)
+      let radian = normalizeRadian(getTwoPointsRadian(m.point, point) - getGeometryLineTangentRadianAtParam(param, m.line))
+      let reversed = false
+      if (radian > Math.PI / 2) {
+        radian -= Math.PI
+        reversed = true
+      } else if (radian < -Math.PI / 2) {
+        radian += Math.PI
+      } else if (largerThan(radian, 0)) {
+        reversed = true
+      }
+      return {
+        ...m,
+        reversed,
+        param,
+        radian: Math.abs(radian),
+      }
+    }), m => m.radian)
+    if (radianLines.length > 1) {
+      result = maxmiumsBy(radianLines.map(m => {
+        return {
+          ...m,
+          curvature: getGeometryLineCurvatureAtParam(m.line, m.param) * (m.reversed ? -1 : 1),
+        }
+      }), m => m.curvature)
+    } else {
+      result = radianLines
+    }
+  }
+  return result.map(m => m.line)
 }

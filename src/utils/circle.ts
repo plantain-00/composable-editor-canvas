@@ -197,3 +197,21 @@ export function getCircleDerivatives({ x, y, r }: Circle): Tuple5<(t: number) =>
     t => ({ x: r * Math.cos(t), y: r * Math.sin(t) }),
   ]
 }
+
+export function getCircleCurvature(circle: Circle): number {
+  // x = cx + r cos(t)
+  // x1 = -r sin(t)
+  // x2 = -r cos(t)
+  // y = cy + r sin(t)
+  // y1 = r cos(t)
+  // y2 = -r sin(t)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  // (-r sin(t)(-r sin(t)) - r cos(t)(-r cos(t)))/(r ** 2)**1.5
+  // r ** 2/(r ** 2)**1.5 = 1 / r
+  return 1 / circle.r
+}
+
+export function getArcCurvature(arc: Arc): number {
+  const result = getCircleCurvature(arc)
+  return arc.counterclockwise ? -result : result
+}

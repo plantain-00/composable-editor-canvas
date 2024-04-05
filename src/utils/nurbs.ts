@@ -493,3 +493,10 @@ export function getParallelNurbsCurvesByDistance<T extends NurbsCurve>(curve: T,
     },
   ]
 }
+
+export function getNurbsCurveCurvatureAtParam(curve: NurbsCurve, param: number) {
+  const nurbs = toVerbNurbsCurve(curve)
+  const [, [x1, y1], [x2, y2]] = nurbs.derivatives(param, 2)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}
