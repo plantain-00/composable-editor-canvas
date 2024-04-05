@@ -1,7 +1,7 @@
 import { getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLinePointAtParam, getGeometryLineTangentRadianAtParam, pointIsOnGeometryLine } from "./geometry-line"
+import { getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getNearestGeometryLines, pointIsOnGeometryLine } from "./geometry-line"
 import { isGeometryLinesClosed, getGeometryLineStartAndEnd } from "./geometry-line"
-import { findFrom, findIndexFrom, isSameNumber, isZero, minimumBy, minimumsBy } from "./math"
+import { findFrom, findIndexFrom, isSameNumber, isZero, minimumBy } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { isSamePoint } from "./position"
@@ -19,9 +19,8 @@ import { getTwoGeometryLinesIntersectionPoint, getTwoLinesIntersectionPoint } fr
 import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
-import { getGeometryLineLength, getGeometryLineParamByLength } from "./length"
 import { getNurbsCurveParamAtPoint, getParallelNurbsCurvesByDistance, getPartOfNurbsCurve, getPointSideOfNurbsCurve } from "./nurbs"
-import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
+import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineMinimumDistance, getPointAndQuadraticCurveNearestPointAndDistance } from "./perpendicular"
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 import { LineJoin, defaultLineJoin } from "./triangles"
@@ -201,29 +200,8 @@ export function getRadianSideOfRadian(from: number, to: number) {
 }
 
 export function getLinesOffsetDirection(point: Position, lines: GeometryLine[]) {
-  const mins = minimumsBy(lines.map(line => ({
-    ...getPointAndGeometryLineNearestPointAndDistance(point, line),
-    line,
-  })), v => v.distance)
-  let min = mins[0]
-  if (mins.length > 1) {
-    min = minimumBy(mins.map(m => {
-      const param = getGeometryLineParamAtPoint(m.point, m.line)
-      let length = 0.1
-      if (!isZero(param)) {
-        const len = getGeometryLineLength(m.line)
-        if (len !== undefined) {
-          length = len - 0.1
-        }
-      }
-      const p = getGeometryLineParamByLength(m.line, length)
-      return {
-        ...m,
-        distance: p !== undefined ? getTwoPointsDistance(getGeometryLinePointAtParam(p, m.line), point) : m.distance,
-      }
-    }), v => v.distance)
-  }
-  return pointSideToIndex(getPointSideOfGeometryLine(point, min.line))
+  const line = getNearestGeometryLines(point, lines)[0]
+  return pointSideToIndex(getPointSideOfGeometryLine(point, line))
 }
 
 export function pointSideToIndex(side: number) {
