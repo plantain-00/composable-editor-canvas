@@ -134,6 +134,7 @@ export function getModel(ctx: PluginContext): model.Model<RegularPolygonContent>
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
+    canSelectPart: true,
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,

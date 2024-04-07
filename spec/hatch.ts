@@ -1,5 +1,5 @@
 import test from 'ava'
-import { GeometryLine, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, mergeHatchBorders, optimizeHatch } from '../src'
+import { GeometryLine, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, getRightSideGeometryLineAtPoint, mergeHatchBorders, optimizeHatch } from '../src'
 
 test('getHatchByPosition', (t) => {
   const lines1: HatchGeometries[] = [
@@ -126,8 +126,8 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1506, y: -1002 }, { x: 4827.926789679547, y: -1002 }, () => lines1))
-  t.snapshot(getHatchByPosition({ x: 1400, y: -892 }, { x: 4827.926789679547, y: -892 }, () => lines1))
+  t.snapshot(getHatchByPosition({ x: 1506, y: -1002 }, () => lines1))
+  t.snapshot(getHatchByPosition({ x: 1400, y: -892 }, () => lines1))
 
   const lines2: HatchGeometries[] = [
     {
@@ -175,7 +175,7 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines2))
+  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, () => lines2))
 
   const lines3: HatchGeometries[] = [
     {
@@ -223,8 +223,8 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, { x: 2294, y: -571 }, () => lines3))
-  t.snapshot(getHatchByPosition({ x: 1411, y: -858 }, { x: 4827.926789679547, y: -858 }, () => lines1))
+  t.snapshot(getHatchByPosition({ x: 1710, y: -571 }, () => lines3))
+  t.snapshot(getHatchByPosition({ x: 1411, y: -858 }, () => lines1))
 
   const lines4: HatchGeometries[] = [
     {
@@ -290,7 +290,7 @@ test('getHatchByPosition', (t) => {
       ]
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 1400, y: -1217 }, { x: 2000, y: -1217 }, () => lines4))
+  t.snapshot(getHatchByPosition({ x: 1400, y: -1217 }, () => lines4))
 
   const lines5: HatchGeometries[] = [
     {
@@ -354,7 +354,7 @@ test('getHatchByPosition', (t) => {
       "id": 37
     }
   ]
-  t.snapshot(getHatchByPosition({ x: 471, y: -72 }, { x: 646, y: -72 }, () => lines5))
+  t.snapshot(getHatchByPosition({ x: 471, y: -72 }, () => lines5))
 
   const lines6: HatchGeometries[] = [
     {
@@ -408,8 +408,147 @@ test('getHatchByPosition', (t) => {
       ]
     },
   ]
-  t.snapshot(getHatchByPosition({ x: 232, y: 179 }, { x: 248, y: 179 }, () => lines6))
-  t.snapshot(getHatchByPosition({ x: 266, y: 171 }, { x: 300, y: 171 }, () => lines6))
+  t.snapshot(getHatchByPosition({ x: 232, y: 179 }, () => lines6))
+  t.snapshot(getHatchByPosition({ x: 266, y: 171 }, () => lines6))
+
+  const lines7: HatchGeometries[] = [
+    {
+      id: 1,
+      lines: [
+        [
+          {
+            "x": 320.37236444221014,
+            "y": 260.66558553021326
+          },
+          {
+            "x": 338.7301710618281,
+            "y": 248.54266938750695
+          }
+        ],
+        [
+          {
+            "x": 338.7301710618281,
+            "y": 248.54266938750695
+          },
+          {
+            "x": 319.052514404487,
+            "y": 238.7058005685088
+          }
+        ],
+        [
+          {
+            "x": 319.052514404487,
+            "y": 238.7058005685088
+          },
+          {
+            "x": 320.37236444221014,
+            "y": 260.66558553021326
+          }
+        ]
+      ]
+    },
+    {
+      id: 2,
+      lines: [
+        {
+          "type": "arc",
+          "curve": {
+            "x": 328.6601674765272,
+            "y": 245.41758716622422,
+            "r": 17.35480144639651,
+            "startAngle": 0,
+            "endAngle": 360
+          }
+        }
+      ]
+    }
+  ]
+  t.snapshot(getHatchByPosition({ x: 335, y: 257 }, () => lines7))
+  t.snapshot(getHatchByPosition({ x: 325, y: 252 }, () => lines7))
+
+  const lines8: HatchGeometries[] = [
+    {
+      id: 1,
+      lines: [
+        [
+          {
+            "x": 285.4705913130764,
+            "y": -19.70500063736097
+          },
+          {
+            "x": 254.59328804445548,
+            "y": -71.05226139440423
+          }
+        ],
+        [
+          {
+            "x": 254.59328804445548,
+            "y": -71.05226139440423
+          },
+          {
+            "x": 225.56390744842267,
+            "y": -18.6381019849006
+          }
+        ],
+        [
+          {
+            "x": 225.56390744842267,
+            "y": -18.6381019849006
+          },
+          {
+            "x": 285.4705913130764,
+            "y": -19.70500063736097
+          }
+        ]
+      ]
+    },
+    {
+      id: 2,
+      lines: [{
+        "type": "arc",
+        "curve": {
+          "x": 261.2864390023792,
+          "y": -36.02858988817735,
+          "r": 12.313226846949355,
+          "startAngle": 0,
+          "endAngle": 360
+        }
+      }]
+    }
+  ]
+  t.snapshot(getHatchByPosition({ x: 256, y: -56 }, () => lines8))
+  t.snapshot(getHatchByPosition({ x: 260, y: -33 }, () => lines8))
+
+  const lines9: HatchGeometries[] = [
+    {
+      id: 1,
+      lines: [{
+        "type": "arc",
+        "curve": {
+          "x": 228.25987268595992,
+          "y": 95.87378888892061,
+          "r": 45.92249371020511,
+          "startAngle": 0,
+          "endAngle": 360
+        }
+      }]
+    },
+    {
+      id: 2,
+      lines: [{
+        "type": "arc",
+        "curve": {
+          "x": 246.86188749094913,
+          "y": 102.57051421871677,
+          "r": 26.151780901917924,
+          "startAngle": 0,
+          "endAngle": 360
+        }
+      }]
+    }
+  ]
+  t.snapshot(getHatchByPosition({ x: 211, y: 87 }, () => lines9))
+  t.snapshot(getHatchByPosition({ x: 250, y: 92 }, () => lines9))
 })
 
 test('optimize hatch', t => {
@@ -6756,4 +6895,79 @@ test('bold hatch', t => {
     ]
   ]
   t.snapshot(geometryLinesToHatches(lines3).map(h => boldHatch(h, 0.5)))
+})
+
+test('getRightSideGeometryLineAtPoint', t => {
+  const lines: GeometryLine[] = [
+    {
+      "type": "arc",
+      "curve": {
+        "x": 449.2808443495757,
+        "y": 274.09241492405556,
+        "r": 101.32361075190516,
+        "startAngle": -90,
+        "endAngle": -154.75338341707672,
+        "counterclockwise": true
+      }
+    },
+    [
+      {
+        "x": 346.7064646321841,
+        "y": 172.76880417215045
+      },
+      {
+        "x": 449.28084434957566,
+        "y": 172.76880417215045
+      }
+    ],
+    {
+      "type": "arc",
+      "curve": {
+        "x": 449.2808443495757,
+        "y": 71.44519342024529,
+        "r": 101.32361075190516,
+        "startAngle": 154.75338341707672,
+        "endAngle": 90,
+        "counterclockwise": true
+      }
+    },
+    {
+      "type": "arc",
+      "curve": {
+        "x": 347.95723359767055,
+        "y": 172.7688041721499,
+        "r": 101.32361075190516,
+        "startAngle": 3.268496584496461e-13,
+        "endAngle": -64.75338341707639,
+        "counterclockwise": true
+      }
+    },
+    [
+      {
+        "x": 449.28084434957566,
+        "y": 172.76880417215045
+      },
+      {
+        "x": 449.28084434957566,
+        "y": 61.48381736974602
+      }
+    ],
+    {
+      "type": "arc",
+      "curve": {
+        "x": 550.604455101481,
+        "y": 172.7688041721499,
+        "r": 101.32361075190516,
+        "startAngle": 244.7533834170764,
+        "endAngle": 179.99999999999966,
+        "counterclockwise": true
+      }
+    },
+  ]
+  const point = { "x": 449.28084434957566, "y": 172.76880417215045 }
+  for (const line of lines) {
+    t.snapshot(getRightSideGeometryLineAtPoint(point, line, lines).line)
+  }
+  t.snapshot(getRightSideGeometryLineAtPoint(point, [point, { x: 459.28084434957566, y: 182.76880417215045 }], lines).line)
+  t.snapshot(getRightSideGeometryLineAtPoint(point, [{ "x": 411.21910552293036, "y": 216.25061171676373 }, { "x": 481.838054908426, "y": 135.5753808722578 }], lines).line)
 })

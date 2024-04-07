@@ -4864,14 +4864,10 @@ function getModel(ctx) {
       let hatch = content;
       if (content.ref && content.ref.ids.length > 0) {
         const refContents = content.ref.ids.map((id) => ctx.getReference(id, contents)).filter((d) => !!d && !ctx.shallowEquals(d, content));
-        const bounding = ctx.mergeBoundings(refContents.map((ref) => {
-          var _a, _b, _c;
-          return (_c = (_b = (_a = ctx.getContentModel(ref)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, ref, contents)) == null ? void 0 : _c.bounding;
-        }));
-        if (refContents.length > 0 && bounding) {
+        if (refContents.length > 0) {
           const p = content.ref.point;
           const getGeometriesInRange = () => refContents.map((c) => ctx.getContentHatchGeometries(c, contents));
-          const border = ctx.getHatchByPosition(p, { x: bounding.end.x, y: p.y }, getGeometriesInRange);
+          const border = ctx.getHatchByPosition(p, getGeometriesInRange);
           if (border) {
             const holes2 = ctx.getHatchHoles(border.lines, getGeometriesInRange);
             hatch = {
@@ -5071,7 +5067,7 @@ function getCommand(ctx) {
             if (!lineSegment)
               return;
             const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
-            const border = ctx.getHatchByPosition(...lineSegment, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
+            const border = ctx.getHatchByPosition(p, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)), lineSegment[1].x);
             if (border) {
               const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
               setHatch({
@@ -10412,6 +10408,7 @@ function getModel(ctx) {
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
+    canSelectPart: true,
     isValid: (c, p) => ctx.validate(c, RegularPolygonContent, p),
     getRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
@@ -13451,7 +13448,7 @@ function getCommand(ctx) {
                     }
                     if (ctx.pointInPolygon(p, region.points)) {
                       const getGeometriesInRange = (region2) => getContentsInRange(region2).map((c) => ctx.getContentHatchGeometries(c, contents));
-                      const border = ctx.getHatchByPosition(p, { x: geometries.bounding.end.x, y: p.y }, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)));
+                      const border = ctx.getHatchByPosition(p, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)), geometries.bounding.end.x);
                       if (border) {
                         const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
                         setCurrents([{

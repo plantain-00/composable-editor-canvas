@@ -29,11 +29,10 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       let hatch = content
       if (content.ref && content.ref.ids.length > 0) {
         const refContents = content.ref.ids.map(id => ctx.getReference(id, contents)).filter((d): d is model.BaseContent => !!d && !ctx.shallowEquals(d, content))
-        const bounding = ctx.mergeBoundings(refContents.map(ref => ctx.getContentModel(ref)?.getGeometries?.(ref, contents)?.bounding))
-        if (refContents.length > 0 && bounding) {
+        if (refContents.length > 0) {
           const p = content.ref.point
           const getGeometriesInRange = () => refContents.map(c => ctx.getContentHatchGeometries(c, contents))
-          const border = ctx.getHatchByPosition(p, { x: bounding.end.x, y: p.y }, getGeometriesInRange)
+          const border = ctx.getHatchByPosition(p, getGeometriesInRange)
           if (border) {
             const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
             hatch = {
@@ -242,7 +241,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             const lineSegment = ctx.getRayTransformedLineSegment({ x: p.x, y: p.y, angle: 0 }, width, height, { x, y, scale, rotate })
             if (!lineSegment) return
             const getGeometriesInRange = (region: core.TwoPointsFormRegion | undefined) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
-            const border = ctx.getHatchByPosition(...lineSegment, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
+            const border = ctx.getHatchByPosition(p, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)), lineSegment[1].x)
             if (border) {
               const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
               setHatch({

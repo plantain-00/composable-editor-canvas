@@ -1,8 +1,8 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimGeometryLines } from "./geometry-line"
+import { getGeometryLineCurvatureAtParam, getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { deepEquals, equals, first, isSameNumber, isZero, largerThan, maxmiumBy, minimumBy, minimumsBy } from "./math"
+import { deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math"
 import { Position, deduplicatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
@@ -17,22 +17,22 @@ import { GeometryLine } from "./geometry-line"
 import { mergeGeometryLine } from "./merge"
 import { getNurbsPoints } from "./nurbs"
 import { getParallelGeometryLinesByDistanceDirectionIndex, getRadianSideOfRadian } from "./parallel"
-import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine, reverseGeometryLines } from "./reverse"
+import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine, reverseGeometryLines, reverseRadian } from "./reverse"
 
 export function getHatchByPosition(
   position: Position,
-  end: Position,
   getGeometriesInGeometryLineRange: (line: GeometryLine) => (HatchGeometries | undefined)[],
+  endX?: number,
   debug?: boolean,
 ) {
-  const directionLine: [Position, Position] = [position, end]
+  const directionLine: GeometryLine = endX !== undefined && endX > position.x ? [position, { x: endX, y: position.y }] : { type: 'ray', line: { x: position.x, y: position.y, angle: 0 } }
   const intersections: HatchIntersection[] = []
   const geometries = getGeometriesInGeometryLineRange(directionLine)
   for (const geometry of geometries) {
     if (!geometry) continue
     for (const line of geometry.lines) {
       const points = getTwoGeometryLinesIntersectionPoint(line, directionLine)
-      intersections.push(...points.map(point => ({ line, point, id: geometry.id })))
+      intersections.push(...points.filter(p => !isSamePoint(p, position)).map(point => ({ line, point, id: geometry.id })))
     }
   }
   if (intersections.length == 0) return
@@ -138,6 +138,7 @@ export function getHatchHoles(
     const intersection = minimumBy(intersections, s => s.distance)
     const startRadian = getTwoPointsRadian(directionLine[1], directionLine[0])
     const result = getRightSideGeometryLines(intersection, startRadian, () => holes, debug)
+    if (result.lines.length === 0) continue
     mergedHoles.push(result.lines)
     for (const id of result.ids) {
       ids.add(id)
@@ -171,62 +172,51 @@ function getRightSideGeometryLine(
   if (debug) {
     console.info(`Target ${printGeometryLine(start.line)} at ${printParam(startParam)} ${printPoint(start.point)}`)
   }
-  let intersections: (HatchIntersection & { param: number, originalParam: number })[] = []
+  let intersections: (HatchIntersection & { param: number })[] = []
   for (const geometry of geometries) {
     if (!geometry) continue
     for (const line of geometry.lines) {
       const points = getTwoGeometryLinesIntersectionPoint(line, start.line)
       for (const point of points) {
         const param = getGeometryLineParamAtPoint(point, start.line)
-        intersections.push({
-          line,
-          param: largerThan(param, startParam) ? param : param + ((!Array.isArray(start.line) && start.line.type === 'ray') ? Infinity : 1),
-          point,
-          originalParam: param,
-          id: geometry.id,
-        })
+        if (largerThan(param, startParam)) {
+          intersections.push({ line, param, point, id: geometry.id })
+        } else if (closed) {
+          intersections.push({ line, param: param + 1, point, id: geometry.id })
+        }
       }
     }
   }
-  intersections = intersections.filter(n => {
-    if (!equals(n.originalParam, 1) && !equals(n.originalParam, 0)) {
-      const radian = getGeometryLineTangentRadianAtParam(n.originalParam, start.line)
-      reverseGeometryLineIfDirectionIsWrong(radian, n)
-      const targetRadian = getGeometryLineTangentRadianAtParam(getGeometryLineParamAtPoint(n.point, n.line), n.line)
-      return getRadianSideOfRadian(radian, targetRadian) === -1
+  let nearestIntersections: HatchIntersection[] = []
+  let r: HatchIntersection | undefined
+  while (!r) {
+    if (nearestIntersections.length > 0) {
+      intersections = intersections.filter(n => !nearestIntersections.includes(n))
     }
-    return true
-  })
-  if (intersections.length === 0 && closed) {
-    return {
-      line: start.line,
-      id: start.id,
+    if (intersections.length === 0) {
+      if (closed) return { line: start.line, id: start.id }
+      return
     }
-  }
-  if (intersections.length < 2) return
-  const minimums = minimumsBy(intersections, s => s.param)
-  let r = minimums[0]
-  if (minimums.length > 1) {
-    r = maxmiumBy(intersections, s => s.originalParam)
+    nearestIntersections = minimumsBy(intersections, s => s.param)
+    const point = nearestIntersections[0].point
+    const { line: rightSideLine, reversed } = getRightSideGeometryLineAtPoint(point, start.line, nearestIntersections.map(m => m.line))
+    const intersection = nearestIntersections.find(m => m.line === rightSideLine)
+    if (intersection) {
+      r = { line: reversed ? reverseGeometryLine(rightSideLine) : rightSideLine, point, id: intersection.id }
+    }
   }
   const endParam = getGeometryLineParamAtPoint(r.point, start.line)
   const line = getPartOfGeometryLine(startParam, endParam, start.line, closed)
   if (debug) {
     console.info(`Result ${printParam(startParam)}->${printParam(endParam)} ${printGeometryLine(line)}`)
   }
-  const startRadian = getGeometryLineTangentRadianAtParam(endParam, start.line)
-  reverseGeometryLineIfDirectionIsWrong(startRadian, r)
   if (debug) {
     console.info(`Line ${printGeometryLine(r.line)}`)
   }
   return {
     line,
     id: start.id,
-    next: {
-      line: r.line,
-      point: r.point,
-      id: r.id,
-    },
+    next: r,
   }
 }
 
@@ -383,4 +373,58 @@ export function boldHatch(hatch: Hatch, distance = 1): Hatch {
     border: trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(hatch.border, distance, 1, 'bevel')),
     holes: hatch.holes.map(h => trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(h, -distance, 0, 'bevel'))),
   }
+}
+
+export function getRightSideGeometryLineAtPoint(point: Position, line0: GeometryLine, lines: GeometryLine[]): { line: GeometryLine, reversed: boolean } {
+  const param0 = getGeometryLineParamAtPoint(point, line0)
+  if (!isZero(param0) && !equals(param0, 1)) {
+    lines = [...lines, line0]
+  }
+  let radian0 = getGeometryLineTangentRadianAtParam(param0, line0)
+  let curvature0 = getGeometryLineCurvatureAtParam(line0, param0)
+  if (!isZero(param0)) {
+    radian0 = reverseRadian(radian0)
+    curvature0 = -curvature0
+  }
+  const radianLines = maxmiumsBy(lines.map(line => {
+    const param = getGeometryLineParamAtPoint(point, line)
+    const radian = getGeometryLineTangentRadianAtParam(param, line)
+    const directions: { radian: number, reversed: boolean, curvature?: number }[] = []
+    if (isGeometryLinesClosed([line])) {
+      directions.push({ radian: radian, reversed: false }, { radian: reverseRadian(radian), reversed: true })
+    } else if (isZero(param)) {
+      directions.push({ radian: radian, reversed: false })
+    } else if (equals(param, 1)) {
+      directions.push({ radian: reverseRadian(radian), reversed: true })
+    } else {
+      directions.push({ radian: radian, reversed: false }, { radian: reverseRadian(radian), reversed: true })
+    }
+    for (const d of directions) {
+      while (lessOrEqual(d.radian, radian0 - Math.PI * 2)) {
+        d.radian += Math.PI * 2
+      }
+      while (largerThan(d.radian, radian0)) {
+        d.radian -= Math.PI * 2
+      }
+      if (equals(d.radian, radian0)) {
+        d.curvature = getGeometryLineCurvatureAtParam(line, param) * (d.reversed ? -1 : 1)
+        if (largerOrEqual(d.curvature, curvature0)) {
+          d.radian -= Math.PI * 2
+        }
+      }
+    }
+    return {
+      ...maxmiumBy(directions, d => d.radian),
+      line,
+      param,
+    }
+  }), n => n.radian)
+  let result = radianLines[0]
+  if (radianLines.length > 1) {
+    result = maxmiumBy(radianLines.map(r => ({
+      ...r,
+      curvature: r.curvature ?? (getGeometryLineCurvatureAtParam(r.line, r.param) * (r.reversed ? -1 : 1)),
+    })), r => r.curvature)
+  }
+  return { line: result.line, reversed: result.reversed }
 }
