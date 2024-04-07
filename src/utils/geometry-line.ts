@@ -278,23 +278,25 @@ export function getPartOfGeometryLine(param1: number, param2: number, line: Geom
     ]
   }
   if (line.type === 'arc') {
+    const startAngle = getAngleAtParam(param1, line.curve)
     return {
       ...line,
       curve: {
         ...line.curve,
-        startAngle: getAngleAtParam(param1, line.curve),
-        endAngle: getAngleAtParam(param2, line.curve),
+        startAngle,
+        endAngle: equals(param1, param2) && closed ? startAngle + 360 : getAngleAtParam(param2, line.curve),
         counterclockwise: !closed && largerThan(param1, param2) ? !line.curve.counterclockwise : line.curve.counterclockwise,
       },
     }
   }
   if (line.type === 'ellipse arc') {
+    const startAngle = getAngleAtParam(param1, line.curve)
     return {
       ...line,
       curve: {
         ...line.curve,
-        startAngle: getAngleAtParam(param1, line.curve),
-        endAngle: getAngleAtParam(param2, line.curve),
+        startAngle,
+        endAngle: equals(param1, param2) && closed ? startAngle + 360 : getAngleAtParam(param2, line.curve),
         counterclockwise: !closed && largerThan(param1, param2) ? !line.curve.counterclockwise : line.curve.counterclockwise,
       },
     }

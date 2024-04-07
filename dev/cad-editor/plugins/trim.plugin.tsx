@@ -146,7 +146,7 @@ export function getCommand(ctx: PluginContext): Command {
                     }
                     if (ctx.pointInPolygon(p, region.points)) {
                       const getGeometriesInRange = (region: core.TwoPointsFormRegion | undefined) => getContentsInRange(region).map(c => ctx.getContentHatchGeometries(c, contents))
-                      const border = ctx.getHatchByPosition(p, { x: geometries.bounding.end.x, y: p.y }, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)))
+                      const border = ctx.getHatchByPosition(p, line => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)), geometries.bounding.end.x)
                       if (border) {
                         const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange)
                         setCurrents([{
