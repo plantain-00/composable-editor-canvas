@@ -541,3 +541,22 @@ export function getNearestGeometryLines(point: Position, lines: GeometryLine[]):
   }
   return result.map(m => m.line)
 }
+
+export function getSeparatedGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
+  const result: GeometryLine[][] = []
+  let current: GeometryLine[] = []
+  let previousEnd: Position | undefined
+  for (const line of lines) {
+    const { start, end } = getGeometryLineStartAndEnd(line)
+    if (current.length > 0 && (!previousEnd || !start || !isSamePoint(previousEnd, start))) {
+      result.push(current)
+      current = []
+    }
+    current.push(line)
+    previousEnd = end
+  }
+  if (current.length > 0) {
+    result.push(current)
+  }
+  return result
+}

@@ -122,6 +122,11 @@ export function getModel(ctx: PluginContext): model.Model<PathContent> {
         commands: ctx.geometryLineToPathCommands(ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin))),
       }
     },
+    extend(content, point, contents) {
+      const lines = getPathGeometriesFromCache(content, contents).lines
+      const newLines = ctx.produce(lines, draft => ctx.extendGeometryLines(draft, point))
+      content.commands = ctx.geometryLineToPathCommands(newLines)
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       return target.renderPathCommands(content.commands, options)

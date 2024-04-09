@@ -11,19 +11,28 @@ export function getModel(ctx: PluginContext): model.Model<GeometryLinesContent> 
   const GeometryLinesContent = ctx.and(ctx.BaseContent('geometry lines'), ctx.StrokeFields, ctx.FillFields, {
     lines: [ctx.GeometryLine],
   })
-  const refGeometriesCache = new ctx.WeakmapValuesCache<object, model.BaseContent, model.Geometries<{ points: core.Position[], rays: core.Ray[] }>>()
+  const refGeometriesCache = new ctx.WeakmapValuesCache<object, model.BaseContent, model.Geometries<{ points: core.Position[], endPoints: core.Position[], rays: core.Ray[] }>>()
   function getGeometryLinesGeometries(content: Omit<GeometryLinesContent, "type">) {
     return refGeometriesCache.get(content, [], () => {
       const points = ctx.getGeometryLinesPoints(content.lines)
       const rays: core.Ray[] = []
+      const endPoints: core.Position[] = []
       for (const line of content.lines) {
         if (!Array.isArray(line) && line.type === 'ray') {
           rays.push(line.line)
+        }
+        const { start, end } = ctx.getGeometryLineStartAndEnd(line)
+        if (start && endPoints.every(p => !ctx.isSamePoint(p, start))) {
+          endPoints.push(start)
+        }
+        if (end && endPoints.every(p => !ctx.isSamePoint(p, end))) {
+          endPoints.push(end)
         }
       }
       const geometries = {
         lines: content.lines,
         points,
+        endPoints,
         rays,
         bounding: ctx.getGeometryLinesBounding(content.lines),
         renderingLines: rays.length > 0 ? [] : ctx.dashedPolylineToLines(points, content.dashArray),
@@ -52,6 +61,42 @@ export function getModel(ctx: PluginContext): model.Model<GeometryLinesContent> 
         ctx.moveGeometryLine(line, offset)
       }
     },
+    rotate(content, center, angle) {
+      for (const line of content.lines) {
+        ctx.rotateGeometryLine(line, center, angle)
+      }
+    },
+    scale(content, center, sx, sy) {
+      ctx.scaleGeometryLines(content.lines, center, sx, sy)
+    },
+    skew(content, center, sx, sy) {
+      ctx.skewGeometryLines(content.lines, center, sx, sy)
+    },
+    explode(content) {
+      return content.lines.map(line => ctx.geometryLineToContent(line))
+    },
+    break(content, intersectionPoints) {
+      return ctx.breakGeometryLines(content.lines, intersectionPoints).map(lines => ({ ...content, type: 'geometry lines', lines }) as GeometryLinesContent)
+    },
+    mirror(content, line, angle) {
+      for (const n of content.lines) {
+        ctx.mirrorGeometryLine(n, line, angle)
+      }
+    },
+    offset(content, point, distance, _, lineJoin) {
+      const newLines = ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, content.lines, distance, lineJoin))
+      return { ...content, lines: newLines } as GeometryLinesContent
+    },
+    join(content, target, contents) {
+      const line2 = ctx.getContentModel(target)?.getGeometries?.(target, contents)?.lines
+      if (!line2) return
+      const newLines = ctx.mergeGeometryLines(content.lines, line2)
+      if (!newLines) return
+      return { ...content, lines: newLines } as GeometryLinesContent
+    },
+    extend(content, point) {
+      ctx.extendGeometryLines(content.lines, point)
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       const { points, rays } = getGeometryLinesGeometries(content)
@@ -60,7 +105,14 @@ export function getModel(ctx: PluginContext): model.Model<GeometryLinesContent> 
         ...rays.map(r => target.renderRay(r.x, r.y, r.angle, { ...options, bidirectional: r.bidirectional }),)
       ])
     },
+    getSnapPoints(content) {
+      const { endPoints } = getGeometryLinesGeometries(content)
+      return ctx.getSnapPointsFromCache(content, () => {
+        return endPoints.map(p => ({ ...p, type: 'endpoint' as const }))
+      })
+    },
     getGeometries: getGeometryLinesGeometries,
+    canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
@@ -70,6 +122,10 @@ export function getModel(ctx: PluginContext): model.Model<GeometryLinesContent> 
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
     isValid: (c, p) => ctx.validate(c, GeometryLinesContent, p),
+    reverse(content) {
+      const newLines = ctx.reverseGeometryLines(content.lines)
+      return { ...content, lines: newLines } as GeometryLinesContent
+    },
   }
 }
 
@@ -100,13 +156,10 @@ export function getCommand(ctx: PluginContext): Command[] {
                       const lines: core.GeometryLine[] = JSON.parse(json)
                       const result = ctx.validate(lines, [ctx.GeometryLine])
                       if (result === true && lines.length > 0) {
-                        const target: GeometryLinesContent = {
-                          type: 'geometry lines',
-                          lines,
-                        }
+                        const allLines = ctx.getSeparatedGeometryLines(lines)
                         onEnd({
                           updateContents: (contents) => {
-                            contents.push(target)
+                            contents.push(...allLines.map(n => ({ type: 'geometry lines', lines: n } as GeometryLinesContent)))
                           }
                         })
                       } else {
