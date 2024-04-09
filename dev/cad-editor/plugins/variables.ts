@@ -4641,14 +4641,23 @@ function getModel(ctx) {
     return refGeometriesCache.get(content, [], () => {
       const points = ctx.getGeometryLinesPoints(content.lines);
       const rays = [];
+      const endPoints = [];
       for (const line of content.lines) {
         if (!Array.isArray(line) && line.type === "ray") {
           rays.push(line.line);
+        }
+        const { start, end } = ctx.getGeometryLineStartAndEnd(line);
+        if (start && endPoints.every((p) => !ctx.isSamePoint(p, start))) {
+          endPoints.push(start);
+        }
+        if (end && endPoints.every((p) => !ctx.isSamePoint(p, end))) {
+          endPoints.push(end);
         }
       }
       const geometries = {
         lines: content.lines,
         points,
+        endPoints,
         rays,
         bounding: ctx.getGeometryLinesBounding(content.lines),
         renderingLines: rays.length > 0 ? [] : ctx.dashedPolylineToLines(points, content.dashArray),
@@ -4677,6 +4686,45 @@ function getModel(ctx) {
         ctx.moveGeometryLine(line, offset);
       }
     },
+    rotate(content, center, angle) {
+      for (const line of content.lines) {
+        ctx.rotateGeometryLine(line, center, angle);
+      }
+    },
+    scale(content, center, sx, sy) {
+      ctx.scaleGeometryLines(content.lines, center, sx, sy);
+    },
+    skew(content, center, sx, sy) {
+      ctx.skewGeometryLines(content.lines, center, sx, sy);
+    },
+    explode(content) {
+      return content.lines.map((line) => ctx.geometryLineToContent(line));
+    },
+    break(content, intersectionPoints) {
+      return ctx.breakGeometryLines(content.lines, intersectionPoints).map((lines) => ({ ...content, type: "geometry lines", lines }));
+    },
+    mirror(content, line, angle) {
+      for (const n of content.lines) {
+        ctx.mirrorGeometryLine(n, line, angle);
+      }
+    },
+    offset(content, point, distance, _, lineJoin) {
+      const newLines = ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, content.lines, distance, lineJoin));
+      return { ...content, lines: newLines };
+    },
+    join(content, target, contents) {
+      var _a, _b, _c;
+      const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target, contents)) == null ? void 0 : _c.lines;
+      if (!line2)
+        return;
+      const newLines = ctx.mergeGeometryLines(content.lines, line2);
+      if (!newLines)
+        return;
+      return { ...content, lines: newLines };
+    },
+    extend(content, point) {
+      ctx.extendGeometryLines(content.lines, point);
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
       const { points, rays } = getGeometryLinesGeometries(content);
@@ -4685,7 +4733,14 @@ function getModel(ctx) {
         ...rays.map((r) => target.renderRay(r.x, r.y, r.angle, { ...options, bidirectional: r.bidirectional }))
       ]);
     },
+    getSnapPoints(content) {
+      const { endPoints } = getGeometryLinesGeometries(content);
+      return ctx.getSnapPointsFromCache(content, () => {
+        return endPoints.map((p) => ({ ...p, type: "endpoint" }));
+      });
+    },
     getGeometries: getGeometryLinesGeometries,
+    canSelectPart: true,
     propertyPanel(content, update, contents) {
       return {
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
@@ -4694,7 +4749,11 @@ function getModel(ctx) {
     },
     getRefIds: ctx.getStrokeAndFillRefIds,
     updateRefId: ctx.updateStrokeAndFillRefIds,
-    isValid: (c, p) => ctx.validate(c, GeometryLinesContent, p)
+    isValid: (c, p) => ctx.validate(c, GeometryLinesContent, p),
+    reverse(content) {
+      const newLines = ctx.reverseGeometryLines(content.lines);
+      return { ...content, lines: newLines };
+    }
   };
 }
 function isGeometryLinesContent(content) {
@@ -4718,13 +4777,10 @@ function getCommand(ctx) {
                 const lines = JSON.parse(json);
                 const result = ctx.validate(lines, [ctx.GeometryLine]);
                 if (result === true && lines.length > 0) {
-                  const target = {
-                    type: "geometry lines",
-                    lines
-                  };
+                  const allLines = ctx.getSeparatedGeometryLines(lines);
                   onEnd({
                     updateContents: (contents) => {
-                      contents.push(target);
+                      contents.push(...allLines.map((n) => ({ type: "geometry lines", lines: n })));
                     }
                   });
                 } else {
@@ -7665,6 +7721,11 @@ function getModel(ctx) {
         ...content,
         commands: ctx.geometryLineToPathCommands(ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin)))
       };
+    },
+    extend(content, point, contents) {
+      const lines = getPathGeometriesFromCache(content, contents).lines;
+      const newLines = ctx.produce(lines, (draft) => ctx.extendGeometryLines(draft, point));
+      content.commands = ctx.geometryLineToPathCommands(newLines);
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);

@@ -1,13 +1,14 @@
 import { Position, rotatePositionByCenter } from "./position"
-import { GeneralFormLine } from "./line"
+import { GeneralFormLine, pointIsOnRay } from "./line"
 import { getSymmetryPoint } from "./line"
-import { EllipseArc, arcToEllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipseCenter } from "./ellipse"
-import { Arc } from "./circle"
+import { EllipseArc, arcToEllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipseCenter, pointIsOnEllipse } from "./ellipse"
+import { Arc, getCircleRadian, pointIsOnCircle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { GeometryLine } from "./geometry-line"
-import { angleToRadian, radianToAngle } from "./radian"
+import { angleToRadian, getTwoPointsRadian, radianToAngle } from "./radian"
 import { equals, isZero } from "./math"
 import { calculateEquation2 } from "./equation-calculater"
+import { pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x
@@ -342,6 +343,52 @@ export function skewGeometryLines(lines: GeometryLine[], center: Position, sx: n
     const line = skewGeometryLine(lines[i], center, sx, sy)
     if (line) {
       lines[i] = line
+    }
+  }
+}
+
+export function extendGeometryLines(lines: GeometryLine[], point: Position) {
+  const first = lines[0], last = lines[lines.length - 1]
+  if (Array.isArray(first)) {
+    if (pointIsOnRay(point, { ...first[0], angle: radianToAngle(getTwoPointsRadian(...first)) })) {
+      first[0] = point
+    }
+  } else if (first.type === 'arc') {
+    if (pointIsOnCircle(point, first.curve)) {
+      first.curve.startAngle = radianToAngle(getCircleRadian(point, first.curve))
+    }
+  } else if (first.type === 'ellipse arc') {
+    if (pointIsOnEllipse(point, first.curve)) {
+      first.curve.startAngle = getEllipseAngle(point, first.curve)
+    }
+  } else if (first.type === 'quadratic curve') {
+    if (pointIsOnQuadraticCurve(point, first.curve)) {
+      first.curve.from = point
+    }
+  } else if (first.type === 'bezier curve') {
+    if (pointIsOnBezierCurve(point, first.curve)) {
+      first.curve.from = point
+    }
+  }
+  if (Array.isArray(last)) {
+    if (pointIsOnRay(point, { ...last[1], angle: radianToAngle(getTwoPointsRadian(last[1], last[0])) })) {
+      last[1] = point
+    }
+  } else if (last.type === 'arc') {
+    if (pointIsOnCircle(point, last.curve)) {
+      last.curve.endAngle = radianToAngle(getCircleRadian(point, last.curve))
+    }
+  } else if (last.type === 'ellipse arc') {
+    if (pointIsOnEllipse(point, last.curve)) {
+      last.curve.endAngle = getEllipseAngle(point, last.curve)
+    }
+  } else if (last.type === 'quadratic curve') {
+    if (pointIsOnQuadraticCurve(point, last.curve)) {
+      last.curve.to = point
+    }
+  } else if (last.type === 'bezier curve') {
+    if (pointIsOnBezierCurve(point, last.curve)) {
+      last.curve.to = point
     }
   }
 }
