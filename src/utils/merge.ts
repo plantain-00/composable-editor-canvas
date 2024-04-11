@@ -1,11 +1,11 @@
 import { getBezierCurveDerivatives, getBezierCurvePercentAtPoint, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint } from "./bezier"
-import { isSameNumber, isZero, equals } from "./math"
+import { isSameNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointCenter } from "./position"
 import { isSamePoint } from "./position"
 import { pointIsOnLine } from "./line"
-import { EllipseArc } from "./ellipse"
-import { Arc } from "./circle"
+import { EllipseArc, isSameEllipse } from "./ellipse"
+import { Arc, isSameCircle } from "./circle"
 import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
@@ -21,9 +21,7 @@ export function mergeLineSegment(line1: [Position, Position], line2: [Position, 
 }
 
 export function mergeArc<T extends Arc>(curve1: T, curve2: T): T | undefined {
-  if (!isSameNumber(curve1.x, curve2.x)) return
-  if (!isSameNumber(curve1.y, curve2.y)) return
-  if (!isSameNumber(curve1.r, curve2.r)) return
+  if (!isSameCircle(curve1, curve2)) return
   if (curve1.counterclockwise !== curve2.counterclockwise) {
     curve2 = reverseArc(curve2)
   }
@@ -31,11 +29,7 @@ export function mergeArc<T extends Arc>(curve1: T, curve2: T): T | undefined {
 }
 
 export function mergeEllipseArc<T extends EllipseArc>(curve1: T, curve2: T): T | undefined {
-  if (!isSameNumber(curve1.cx, curve2.cx)) return
-  if (!isSameNumber(curve1.cy, curve2.cy)) return
-  if (!isSameNumber(curve1.rx, curve2.rx)) return
-  if (!isSameNumber(curve1.ry, curve2.ry)) return
-  if (!equals(curve1.angle, curve2.angle)) return
+  if (!isSameEllipse(curve1, curve2)) return
   if (curve1.counterclockwise !== curve2.counterclockwise) {
     curve2 = reverseEllipseArc(curve2)
   }

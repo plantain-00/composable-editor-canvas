@@ -3,23 +3,25 @@ import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
-import { Position, isSamePoint } from "./position"
+import { Position, deduplicatePosition, isSamePoint } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
-import { getPolygonLine, getRayPointAtDistance, pointAndDirectionToGeneralFormLine, pointIsOnRay, rayToLineSegment } from "./line"
+import { getPolygonLine, getRayPointAtDistance, isSameLine, pointAndDirectionToGeneralFormLine, pointIsOnRay, rayToLineSegment } from "./line"
 import { GeneralFormLine } from "./line"
 import { generalFormLineToTwoPointLine, twoPointLineToGeneralFormLine } from "./line"
 import { pointIsOnLineSegment } from "./line"
-import { EllipseArc } from "./ellipse"
-import { Arc, Circle } from "./circle"
+import { EllipseArc, getEllipseArcStartAndEnd, isSameEllipse } from "./ellipse"
+import { Arc, Circle, getArcStartAndEnd, isSameCircle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { pointIsOnEllipseArc } from "./ellipse"
 import { pointIsOnArc } from "./circle"
 import { getArcNurbsCurveIntersectionPoints, getBezierCurveNurbsCurveIntersectionPoints, getEllipseArcNurbsCurveIntersectionPoints, getLineSegmentNurbsCurveIntersectionPoints, getQuadraticCurveNurbsCurveIntersectionPoints, getTwoNurbsCurveIntersectionPoints } from "./nurbs"
 import { angleToRadian } from "./radian"
 import { Nullable } from "./types"
-import { GeometryLine, getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
+import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
+import { twoAnglesSameDirection } from "./angle"
+import { reverseAngle } from "./reverse"
 
 /**
  * @public
@@ -1101,4 +1103,98 @@ export function getTwoBezierCurveIntersectionPoints(
     result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p)))
   }
   return result
+}
+
+export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: GeometryLine): GeometryLine | undefined {
+  if (Array.isArray(line1)) {
+    const generalFormLine1 = twoPointLineToGeneralFormLine(...line1)
+    if (!generalFormLine1) return
+    if (Array.isArray(line2)) {
+      const generalFormLine2 = twoPointLineToGeneralFormLine(...line2)
+      if (!generalFormLine2) return
+      if (!isSameLine(generalFormLine1, generalFormLine2)) return
+      const points = deduplicatePosition([
+        ...line1.filter(n => pointIsOnLineSegment(n, ...line2)),
+        ...line2.filter(n => pointIsOnLineSegment(n, ...line1)),
+      ])
+      if (points.length >= 2) {
+        return getPartOfGeometryLine(getGeometryLineParamAtPoint(points[0], line1), getGeometryLineParamAtPoint(points[1], line1), line1)
+      }
+      return
+    }
+    if (line2.type === 'ray') {
+      const generalFormLine2 = pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle))
+      if (!isSameLine(generalFormLine1, generalFormLine2)) return
+      if (line2.line.bidirectional) return line1
+      const points = deduplicatePosition([
+        ...line1.filter(n => pointIsOnRay(n, line2.line)),
+        ...(pointIsOnLineSegment(line2.line, ...line1) ? [line2.line] : []),
+      ])
+      if (points.length >= 2) {
+        return getPartOfGeometryLine(getGeometryLineParamAtPoint(points[0], line1), getGeometryLineParamAtPoint(points[1], line1), line1)
+      }
+      return
+    }
+    return
+  }
+  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'arc') {
+    if (line2.type === 'arc') {
+      if (!isSameCircle(line1.curve, line2.curve)) return
+      const startEnd1 = getArcStartAndEnd(line1.curve)
+      const startEnd2 = getArcStartAndEnd(line2.curve)
+      const points = deduplicatePosition([
+        ...[startEnd1.start, startEnd1.end].filter(n => pointIsOnArc(n, line2.curve)),
+        ...[startEnd2.start, startEnd2.end].filter(n => pointIsOnArc(n, line1.curve)),
+      ])
+      if (points.length >= 2) {
+        return getPartOfGeometryLine(getGeometryLineParamAtPoint(points[0], line1), getGeometryLineParamAtPoint(points[1], line1), line1)
+      }
+      return
+    }
+    return
+  }
+  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'ellipse arc') {
+    if (line2.type === 'ellipse arc') {
+      if (!isSameEllipse(line1.curve, line2.curve)) return
+      const startEnd1 = getEllipseArcStartAndEnd(line1.curve)
+      const startEnd2 = getEllipseArcStartAndEnd(line2.curve)
+      const points = deduplicatePosition([
+        ...[startEnd1.start, startEnd1.end].filter(n => pointIsOnEllipseArc(n, line2.curve)),
+        ...[startEnd2.start, startEnd2.end].filter(n => pointIsOnEllipseArc(n, line1.curve)),
+      ])
+      if (points.length >= 2) {
+        return getPartOfGeometryLine(getGeometryLineParamAtPoint(points[0], line1), getGeometryLineParamAtPoint(points[1], line1), line1)
+      }
+      return
+    }
+    return
+  }
+  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'ray') {
+    if (line2.type === 'ray') {
+      const generalFormLine1 = pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle))
+      const generalFormLine2 = pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle))
+      if (!isSameLine(generalFormLine1, generalFormLine2)) return
+      if (line1.line.bidirectional) return line2
+      if (line2.line.bidirectional) return line1
+      const angle1 = line1.line.reversed ? reverseAngle(line1.line.angle) : line1.line.angle
+      const angle2 = line2.line.reversed ? reverseAngle(line2.line.angle) : line2.line.angle
+      if (twoAnglesSameDirection(angle1, angle2)) {
+        return pointIsOnRay(line1.line, line2.line) ? line1 : line2
+      }
+      const points = deduplicatePosition([
+        ...(pointIsOnRay(line1.line, line2.line) ? [line1.line] : []),
+        ...(pointIsOnRay(line2.line, line1.line) ? [line2.line] : []),
+      ])
+      if (points.length >= 2) {
+        return getPartOfGeometryLine(getGeometryLineParamAtPoint(points[0], line1), getGeometryLineParamAtPoint(points[1], line1), line1)
+      }
+      return
+    }
+    return
+  }
+  if (line2.type === 'ray') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  return
 }

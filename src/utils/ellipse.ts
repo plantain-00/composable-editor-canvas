@@ -3,7 +3,7 @@ import { AngleRange } from "./angle";
 import { rotatePosition } from "./position";
 import { getDirectionByRadian } from "./radian";
 import { getAngleRange } from "./angle";
-import { isSameNumber } from "./math";
+import { equals, isSameNumber } from "./math";
 import { Position } from "./position";
 import { angleInRange } from "./angle";
 import { angleToRadian, radianToAngle } from "./radian";
@@ -57,6 +57,14 @@ export interface EllipseArc extends Ellipse, AngleRange {
 }
 
 export const EllipseArc = /* @__PURE__ */ and(Ellipse, AngleRange)
+
+export function isSameEllipse(ellipse1: Ellipse, ellipse2: Ellipse): boolean {
+  return isSameNumber(ellipse1.cx, ellipse2.cx) &&
+    isSameNumber(ellipse1.cy, ellipse2.cy) &&
+    isSameNumber(ellipse1.rx, ellipse2.rx) &&
+    isSameNumber(ellipse1.ry, ellipse2.ry) &&
+    equals(ellipse1.angle, ellipse2.angle)
+}
 
 export function getEllipseAngle(p: Position, ellipse: Ellipse) {
   return radianToAngle(getEllipseRadian(p, ellipse))

@@ -1,6 +1,6 @@
 import { getPointByLengthAndRadian } from "./position";
 import { angleToRadian, getTwoPointsRadian } from "./radian";
-import { deduplicate, largerThan, lessOrEqual, lessThan } from "./math";
+import { deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
 import { isSamePoint } from "./position";
 import { getTwoPointsDistance } from "./position";
 import { getPointByLengthAndDirection } from "./position";
@@ -56,6 +56,21 @@ export function pointIsOnRay(p: Position, ray: Ray) {
     return pointIsOnGeneralFormLine(p, pointAndDirectionToGeneralFormLine(p, radian))
   }
   return isSamePoint(p, ray) || isSameNumber(radian, getTwoPointsRadian(p, ray))
+}
+
+export function isSameLine(line1: GeneralFormLine, line2: GeneralFormLine): boolean {
+  // a1 x + b1 y + c1 = 0
+  // a2 x + b2 y + c2 = 0
+  // a1/a2 = b1/b2
+  if (!equals(line1.a * line2.b, line2.a * line1.b)) {
+    return false
+  }
+  if (isZero(line1.a)) {
+    // b1/b2 = c1/c2
+    return equals(line1.b * line2.c, line2.b * line1.c)
+  }
+  // a1/a2 = c1/c2
+  return equals(line1.a * line2.c, line2.a * line1.c)
 }
 
 /**
