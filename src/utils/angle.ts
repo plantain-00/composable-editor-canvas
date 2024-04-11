@@ -38,6 +38,11 @@ export function twoRadiansSameDirection(radian1: number, radian2: number) {
   return Math.abs(radian) < Math.PI / 2
 }
 
+export function twoAnglesSameDirection(angle1: number, angle2: number) {
+  const angle = normalizeAngle(angle1 - angle2)
+  return Math.abs(angle) < 90
+}
+
 export function normalizeAngleRange(content: AngleRange) {
   if (lessThan(content.endAngle, content.startAngle)) {
     content.endAngle += 360

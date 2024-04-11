@@ -1,7 +1,7 @@
 import { AngleRange, getLargeArc } from "./angle";
 import { getTwoPointsRadian } from "./radian";
 import { isZero } from "./math";
-import { getTwoPointCenter } from "./position";
+import { getTwoPointCenter, isSamePoint } from "./position";
 import { getPointByLengthAndRadian } from "./position";
 import { getAngleRange } from "./angle";
 import { isSameNumber } from "./math";
@@ -53,6 +53,10 @@ export interface Arc extends Circle, AngleRange {
 }
 
 export const Arc = /* @__PURE__ */ and(Circle, AngleRange)
+
+export function isSameCircle(circle1: Circle, circle2: Circle): boolean {
+  return isSamePoint(circle1, circle2) && isSameNumber(circle1.r, circle2.r)
+}
 
 export function getCircleRadian(p: Position, circle: Circle) {
   return getTwoPointsRadian(p, circle)
