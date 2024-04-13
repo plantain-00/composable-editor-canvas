@@ -1,8 +1,8 @@
-import { BezierCurve } from "./bezier"
+import { BezierCurve, getBezierCurvePercentsAtBezierCurve, getQuadraticCurvePercentsAtQuadraticCurve } from "./bezier"
 import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { delta2, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
+import { delta2, getNumberRangeIntersection, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
 import { Position, deduplicatePosition, isSamePoint } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
@@ -1141,6 +1141,8 @@ export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: 
   if (line1.type === 'arc') {
     if (line2.type === 'arc') {
       if (!isSameCircle(line1.curve, line2.curve)) return
+      if (isGeometryLinesClosed([line1])) return line2
+      if (isGeometryLinesClosed([line2])) return line1
       const startEnd1 = getArcStartAndEnd(line1.curve)
       const startEnd2 = getArcStartAndEnd(line2.curve)
       const points = deduplicatePosition([
@@ -1158,6 +1160,8 @@ export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: 
   if (line1.type === 'ellipse arc') {
     if (line2.type === 'ellipse arc') {
       if (!isSameEllipse(line1.curve, line2.curve)) return
+      if (isGeometryLinesClosed([line1])) return line2
+      if (isGeometryLinesClosed([line2])) return line1
       const startEnd1 = getEllipseArcStartAndEnd(line1.curve)
       const startEnd2 = getEllipseArcStartAndEnd(line2.curve)
       const points = deduplicatePosition([
@@ -1172,6 +1176,28 @@ export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: 
     return
   }
   if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'quadratic curve') {
+    if (line2.type === 'quadratic curve') {
+      const percents = getQuadraticCurvePercentsAtQuadraticCurve(line1.curve, line2.curve)
+      if (!percents) return
+      const params = getNumberRangeIntersection(percents, [0, 1])
+      if (!params) return
+      return getPartOfGeometryLine(...params, line1)
+    }
+    return
+  }
+  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'bezier curve') {
+    if (line2.type === 'bezier curve') {
+      const percents = getBezierCurvePercentsAtBezierCurve(line1.curve, line2.curve)
+      if (!percents) return
+      const params = getNumberRangeIntersection(percents, [0, 1])
+      if (!params) return
+      return getPartOfGeometryLine(...params, line1)
+    }
+    return
+  }
+  if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionLine(line2, line1)
   if (line1.type === 'ray') {
     if (line2.type === 'ray') {
       const generalFormLine1 = pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle))
@@ -1197,4 +1223,15 @@ export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: 
   }
   if (line2.type === 'ray') return getTwoGeometryLinesIntersectionLine(line2, line1)
   return
+}
+
+export function* iterateGeometryLinesIntersectionLines(lines1: GeometryLine[], lines2: GeometryLine[]) {
+  for (const line1 of lines1) {
+    for (const line2 of lines2) {
+      const line = getTwoGeometryLinesIntersectionLine(line1, line2)
+      if (line) {
+        yield line
+      }
+    }
+  }
 }

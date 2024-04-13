@@ -1824,7 +1824,7 @@ export {
 `// dev/cad-editor/plugins/clip.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("mask", { id: "0" }, /* @__PURE__ */ React.createElement("path", { d: "M 1 1 L 1 100 L 103 100 L 103 1", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "white", stroke: "currentColor", fillRule: "evenodd" }), /* @__PURE__ */ React.createElement("path", { d: "M 91 70 L 91 73 L 91 75 L 90 78 L 90 80 L 89 82 L 88 84 L 86 86 L 85 88 L 83 90 L 81 91 L 79 93 L 77 94 L 75 95 L 73 96 L 71 97 L 68 97 L 66 98 L 64 98 L 61 98 L 59 97 L 57 97 L 54 96 L 52 95 L 50 94 L 48 93 L 46 91 L 44 90 L 43 88 L 41 86 L 40 84 L 39 82 L 38 80 L 37 78 L 37 75 L 36 73 L 36 70 L 36 68 L 37 66 L 37 63 L 38 61 L 39 59 L 40 57 L 41 55 L 43 53 L 44 51 L 46 49 L 48 48 L 50 47 L 52 46 L 54 45 L 57 44 L 59 43 L 61 43 L 64 43 L 66 43 L 68 43 L 71 44 L 73 45 L 75 46 L 77 47 L 79 48 L 81 49 L 83 51 L 85 53 L 86 55 L 88 57 L 89 59 L 90 61 L 90 63 L 91 66 L 91 68 L 91 70", fill: "black" })), /* @__PURE__ */ React.createElement("g", { mask: "url(#0)" }, /* @__PURE__ */ React.createElement("polygon", { points: "83,99 77,64 103,38 67,33 51,1 35,33 1,39 25,64 19,100 51,83", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" })));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("mask", { id: "clip" }, /* @__PURE__ */ React.createElement("path", { d: "M 1 1 L 1 100 L 103 100 L 103 1", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "white", stroke: "currentColor", fillRule: "evenodd" }), /* @__PURE__ */ React.createElement("path", { d: "M 91 70 L 91 73 L 91 75 L 90 78 L 90 80 L 89 82 L 88 84 L 86 86 L 85 88 L 83 90 L 81 91 L 79 93 L 77 94 L 75 95 L 73 96 L 71 97 L 68 97 L 66 98 L 64 98 L 61 98 L 59 97 L 57 97 L 54 96 L 52 95 L 50 94 L 48 93 L 46 91 L 44 90 L 43 88 L 41 86 L 40 84 L 39 82 L 38 80 L 37 78 L 37 75 L 36 73 L 36 70 L 36 68 L 37 66 L 37 63 L 38 61 L 39 59 L 40 57 L 41 55 L 43 53 L 44 51 L 46 49 L 48 48 L 50 47 L 52 46 L 54 45 L 57 44 L 59 43 L 61 43 L 64 43 L 66 43 L 68 43 L 71 44 L 73 45 L 75 46 L 77 47 L 79 48 L 81 49 L 83 51 L 85 53 L 86 55 L 88 57 L 89 59 L 90 61 L 90 63 L 91 66 L 91 68 L 91 70", fill: "black" })), /* @__PURE__ */ React.createElement("g", { mask: "url(#clip)" }, /* @__PURE__ */ React.createElement("polygon", { points: "83,99 77,64 103,38 67,33 51,1 35,33 1,39 25,64 19,100 51,83", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" })));
   return {
     name: "clip",
     icon,
@@ -4444,7 +4444,7 @@ function getModel(ctx) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "5", y: "6", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "1", patternUnits: "userSpaceOnUse", width: "20", height: "20" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 10 L 10 0 M 20 10 L 10 20", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("rect", { x: "5", y: "55", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "url(#1)", stroke: "currentColor" }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("rect", { x: "5", y: "6", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "fill-style", patternUnits: "userSpaceOnUse", width: "20", height: "20" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 10 L 10 0 M 20 10 L 10 20", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("rect", { x: "5", y: "55", width: "89", height: "39", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "url(#fill-style)", stroke: "currentColor" }));
   return {
     name: "create fill style",
     selectCount: 0,
@@ -4951,6 +4951,7 @@ function getModel(ctx) {
       };
     });
   }
+  const React = ctx.React;
   return {
     type: "hatch",
     ...ctx.fillModel,
@@ -5064,6 +5065,11 @@ function getModel(ctx) {
     },
     propertyPanel(content, update, contents) {
       return {
+        ref: /* @__PURE__ */ React.createElement(ctx.BooleanEditor, { value: content.ref !== void 0, readOnly: content.ref === void 0, setValue: (v) => update((c) => {
+          if (isHatchContent(c) && !v) {
+            c.ref = void 0;
+          }
+        }) }),
         ...ctx.getFillContentPropertyPanel(content, update, contents)
       };
     },
@@ -5098,7 +5104,7 @@ function isHatchContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "1,24 100,24", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "1,72 100,72", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "27,1 27,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "75,0 75,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "1", patternUnits: "userSpaceOnUse", width: "10", height: "10" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 5 L 5 0 M 10 5 L 5 10", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("polygon", { points: "75,43 75,72 27,72 27,24 75,24 75,43", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", fill: "url(#1)", stroke: "currentColor" }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "1,24 100,24", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "1,72 100,72", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "27,1 27,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "75,0 75,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "hatch", patternUnits: "userSpaceOnUse", width: "10", height: "10" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 5 L 5 0 M 10 5 L 5 10", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("polygon", { points: "75,43 75,72 27,72 27,24 75,24 75,43", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", fill: "url(#hatch)", stroke: "currentColor" }));
   return [
     {
       name: "create hatch",
@@ -5326,6 +5332,51 @@ export {
   getCommand,
   getModel,
   isImageContent
+};
+`,
+`// dev/cad-editor/plugins/intersection.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "32", cy: "50", r: "32", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "65", cy: "50", r: "32", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "intersection", patternUnits: "userSpaceOnUse", width: "10", height: "10" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 5 L 5 0 M 10 5 L 5 10", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("path", { d: "M 49 78 L 46 77 L 44 75 L 42 73 L 40 71 L 38 69 L 37 66 L 36 64 L 34 61 L 34 58 L 33 56 L 33 53 L 32 50 L 33 47 L 33 44 L 34 42 L 34 39 L 36 36 L 37 34 L 38 31 L 40 29 L 42 27 L 44 25 L 46 23 L 49 22 L 49 22 L 51 23 L 53 25 L 55 27 L 57 29 L 59 31 L 61 34 L 62 36 L 63 39 L 64 42 L 64 44 L 65 47 L 65 50 L 65 53 L 64 56 L 64 58 L 63 61 L 62 64 L 61 66 L 59 69 L 57 71 L 55 73 L 53 75 L 51 77 L 49 78", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", fill: "url(#intersection)", stroke: "currentColor", fillRule: "evenodd" }));
+  return {
+    name: "intersection",
+    execute({ contents, selected }) {
+      var _a, _b, _c, _d;
+      const first = contents[selected[0][0]];
+      if (!first)
+        return;
+      const firstLines = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents).lines;
+      if (!firstLines)
+        return;
+      const second = contents[selected[1][0]];
+      if (!second)
+        return;
+      const secondLines = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents).lines;
+      if (!secondLines)
+        return;
+      let points = ctx.deduplicatePosition(ctx.getIntersectionPoints(first, second, contents));
+      const lines = Array.from(ctx.iterateGeometryLinesIntersectionLines(firstLines, secondLines));
+      const newContents = [];
+      if (lines.length > 0) {
+        points = points.filter((p) => !ctx.pointIsOnGeometryLines(p, lines));
+        const allLines = ctx.getSeparatedGeometryLines(lines);
+        newContents.push(...allLines.map((n) => ({ type: "geometry lines", lines: n })));
+      }
+      newContents.push(...points.map((n) => ({ type: "point", x: n.x, y: n.y })));
+      if (newContents.length > 0) {
+        ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+        contents.push(...newContents);
+      }
+    },
+    contentSelectable(content, contents) {
+      return ctx.contentIsDeletable(content, contents);
+    },
+    selectCount: 2,
+    icon
+  };
+}
+export {
+  getCommand
 };
 `,
 `// dev/cad-editor/plugins/join.plugin.tsx

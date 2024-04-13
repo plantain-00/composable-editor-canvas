@@ -97,10 +97,10 @@ export function getCommand(ctx: PluginContext): Command {
   const icon = (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <rect x="5" y="6" width="89" height="39" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="currentColor" stroke="currentColor"></rect>
-      <pattern id="1" patternUnits="userSpaceOnUse" width="20" height="20">
+      <pattern id="fill-style" patternUnits="userSpaceOnUse" width="20" height="20">
         <path d="M 0 10 L 10 0 M 20 10 L 10 20" strokeWidth="1" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor" fillRule="evenodd"></path>
       </pattern>
-      <rect x="5" y="55" width="89" height="39" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="url(#1)" stroke="currentColor"></rect>
+      <rect x="5" y="55" width="89" height="39" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="url(#fill-style)" stroke="currentColor"></rect>
     </svg>
   )
   return {
