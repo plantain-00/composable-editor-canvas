@@ -86,15 +86,10 @@ export function isBetween(target: number, a: number, b: number) {
   return lessOrEqual(target, Math.max(a, b)) && largerOrEqual(target, Math.min(a, b))
 }
 
-export function numberRangeIsOverlapped(range1: [number, number], range2: [number, number]) {
-  const start1 = Math.min(...range1)
-  const start2 = Math.min(...range2)
-  if (lessThan(start1, start2)) {
-    const end1 = Math.max(...range1)
-    return largerThan(end1, start2)
-  }
-  const end2 = Math.max(...range2)
-  return lessThan(start1, end2)
+export function getNumberRangeIntersection(range1: [number, number], range2: [number, number]): [number, number] | undefined {
+  const start = Math.max(Math.min(...range1), Math.min(...range2))
+  const end = Math.min(Math.max(...range1), Math.max(...range2))
+  return largerThan(end, start) ? [start, end] : undefined
 }
 
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean) {

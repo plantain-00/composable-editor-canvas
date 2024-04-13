@@ -350,3 +350,77 @@ export function getBezierCurveCurvatureAtParam(curve: BezierCurve, param: number
   // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
   return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
 }
+
+export function getQuadraticCurvePercentsAtQuadraticCurve(curve1: QuadraticCurve, curve2: QuadraticCurve): [number, number] | undefined {
+  /**
+   * @see getPartOfQuadraticCurve
+   */
+  const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
+  const { from: { x: e1, y: f1 }, cp: { x: e2, y: f2 }, to: { x: e3, y: f3 } } = curve2
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+
+  // e1 = a1 + c2 * t1 * t1 + 2 * c1 * t1
+  // f1 = b1 + c4 * t1 * t1 + 2 * c3 * t1
+  let t1s = calculateEquation2(c2, 2 * c1, a1 - e1)
+  t1s = t1s.filter(t1 => isSameNumber(f1, b1 + c4 * t1 * t1 + 2 * c3 * t1))
+  if (t1s.length === 0) return
+
+  // e3 = c2 * d * d - e1 + 2 * e2
+  // f3 = c4 * d * d - f1 + 2 * f2
+  let ds = calculateEquation2(c2, 0, - e1 + 2 * e2 - e3)
+  ds = ds.filter(d => isSameNumber(f3, c4 * d * d - f1 + 2 * f2))
+  if (ds.length === 0) return
+
+  // f2 = f1 + (c4 * d * t1 + c3 * d)
+  // e2 = e1 + (c2 * d * t1 + c1 * d)
+  for (const t1 of t1s) {
+    for (const d of ds) {
+      if (isSameNumber(f2, f1 + (c4 * d * t1 + c3 * d)) && isSameNumber(e2, e1 + (c2 * d * t1 + c1 * d))) {
+        // d = t2 - t1
+        return [t1, d + t1]
+      }
+    }
+  }
+  return
+}
+
+export function getBezierCurvePercentsAtBezierCurve(curve1: BezierCurve, curve2: BezierCurve): [number, number] | undefined {
+  /**
+   * @see getPartOfBezierCurve
+   */
+  const { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } } = curve1
+  const { from: { x: e1, y: f1 }, cp1: { x: e2, y: f2 }, cp2: { x: e3, y: f3 }, to: { x: e4, y: f4 } } = curve2
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+
+  // e1 = a1 + c1 * t1 * t1 * t1 + c2 * t1 * t1 + c3 * t1
+  // f1 = b1 + c4 * t1 * t1 * t1 + c5 * t1 * t1 + c6 * t1
+  let t1s = calculateEquation3(c1, c2, c3, a1 - e1)
+  t1s = t1s.filter(t1 => isSameNumber(f1, b1 + c4 * t1 * t1 * t1 + c5 * t1 * t1 + c6 * t1))
+  if (t1s.length === 0) return
+
+  // e4 = c1 * d * d * d + e1 - 3 * e2 + 3 * e3
+  // f4 = c4 * d * d * d + f1 - 3 * f2 + 3 * f3
+  let ds = calculateEquation3(c1, 0, 0, e1 - 3 * e2 + 3 * e3 - e4)
+  ds = ds.filter(d => isSameNumber(f4, c4 * d * d * d + f1 - 3 * f2 + 3 * f3))
+  if (ds.length === 0) return
+
+  // e2 = e1 + (3 * c1 * d * t1 * t1 + 2 * c2 * d * t1 + c3 * d) / 3
+  // e3 = (3 * c1 * d * d * t1 + c2 * d * d) / 3 + 2 * e2 - e1
+  // f2 = f1 + (3 * c4 * d * t1 * t1 + 2 * c5 * d * t1 + c6 * d) / 3
+  // f3 = (3 * c4 * d * d * t1 + c5 * d * d) / 3 + 2 * f2 - f1
+  for (const t1 of t1s) {
+    for (const d of ds) {
+      if (
+        isSameNumber(e2, e1 + (3 * c1 * d * t1 * t1 + 2 * c2 * d * t1 + c3 * d) / 3) &&
+        isSameNumber(e3, (3 * c1 * d * d * t1 + c2 * d * d) / 3 + 2 * e2 - e1) &&
+        isSameNumber(f2, f1 + (3 * c4 * d * t1 * t1 + 2 * c5 * d * t1 + c6 * d) / 3) &&
+        isSameNumber(f3, (3 * c4 * d * d * t1 + c5 * d * d) / 3 + 2 * f2 - f1)
+      ) {
+        // d = t2 - t1
+        return [t1, d + t1]
+      }
+    }
+  }
+  return
+}

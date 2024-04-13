@@ -60,6 +60,7 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
       }
     })
   }
+  const React = ctx.React
   return {
     type: 'hatch',
     ...ctx.fillModel,
@@ -172,6 +173,7 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
     },
     propertyPanel(content, update, contents) {
       return {
+        ref: <ctx.BooleanEditor value={content.ref !== undefined} readOnly={content.ref === undefined} setValue={(v) => update(c => { if (isHatchContent(c) && !v) { c.ref = undefined } })} />,
         ...ctx.getFillContentPropertyPanel(content, update, contents),
       }
     },
@@ -215,7 +217,10 @@ export function getCommand(ctx: PluginContext): Command[] {
       <polyline points="1,72 100,72" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
       <polyline points="27,1 27,100" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
       <polyline points="75,0 75,100" strokeWidth="5" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" strokeOpacity="1" fill="none" stroke="currentColor"></polyline>
-      <pattern id="1" patternUnits="userSpaceOnUse" width="10" height="10"><path d="M 0 5 L 5 0 M 10 5 L 5 10" strokeWidth="1" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor" fillRule="evenodd"></path></pattern><polygon points="75,43 75,72 27,72 27,24 75,24 75,43" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fillOpacity="1" fill="url(#1)" stroke="currentColor"></polygon>
+      <pattern id="hatch" patternUnits="userSpaceOnUse" width="10" height="10">
+        <path d="M 0 5 L 5 0 M 10 5 L 5 10" strokeWidth="1" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fill="none" stroke="currentColor" fillRule="evenodd"></path>
+      </pattern>
+      <polygon points="75,43 75,72 27,72 27,24 75,24 75,43" strokeWidth="0" strokeMiterlimit="10" strokeLinejoin="miter" strokeLinecap="butt" fillOpacity="1" fill="url(#hatch)" stroke="currentColor"></polygon>
     </svg>
   )
   return [
