@@ -1,4 +1,4 @@
-import { isZero } from "./math";
+import { getNumberRangeIntersection, isZero } from "./math";
 import { lessOrEqual, largerOrEqual } from "./math";
 import { largerThan, lessThan, isSameNumber } from "./math";
 import { number, optional, boolean } from "./validators";
@@ -43,12 +43,13 @@ export function twoAnglesSameDirection(angle1: number, angle2: number) {
   return Math.abs(angle) < 90
 }
 
-export function normalizeAngleRange(content: AngleRange) {
+export function normalizeAngleRange<T extends AngleRange>(content: T) {
   if (lessThan(content.endAngle, content.startAngle)) {
     content.endAngle += 360
   } else if (largerThan(content.endAngle - content.startAngle, 360)) {
     content.endAngle -= 360
   }
+  return content
 }
 
 export function getFormattedStartAngle(range: AngleRange) {
@@ -62,11 +63,15 @@ export function getFormattedStartAngle(range: AngleRange) {
 }
 
 export function getFormattedEndAngle(range: AngleRange) {
-  let endAngle: number
+  let endAngle = range.endAngle
   if (range.counterclockwise) {
-    endAngle = lessThan(range.startAngle, range.endAngle) ? range.endAngle - 360 : range.endAngle
+    while (lessThan(range.startAngle, endAngle)) {
+      endAngle -= 360
+    }
   } else {
-    endAngle = largerThan(range.startAngle, range.endAngle) ? range.endAngle + 360 : range.endAngle
+    while (largerThan(range.startAngle, endAngle)) {
+      endAngle += 360
+    }
   }
   return endAngle
 }
@@ -146,4 +151,34 @@ export function angleInRange(angle: number, range: AngleRange) {
     return lessOrEqual(angle, range.endAngle + 360)
   }
   return lessOrEqual(angle, range.endAngle)
+}
+
+export function getNormalizedAngleInRanges(range: AngleRange): [number, number][] {
+  const startAngle = normalizeAngle(range.startAngle)
+  const endAngle = getFormattedEndAngle({ ...range, startAngle })
+  if (range.counterclockwise) {
+    if (lessThan(endAngle, -180)) {
+      return [[-180, startAngle], [endAngle + 360, 180]]
+    }
+    return [[endAngle, startAngle]]
+  }
+  if (largerThan(endAngle, 180)) {
+    return [[startAngle, 180], [endAngle - 360, -180]]
+  }
+  return [[startAngle, endAngle]]
+}
+
+export function getAngleRangesIntersections(range1: AngleRange, range2: AngleRange) {
+  const ranges1 = getNormalizedAngleInRanges(range1)
+  const ranges2 = getNormalizedAngleInRanges(range2)
+  const ranges: [number, number][] = []
+  for (const r1 of ranges1) {
+    for (const r2 of ranges2) {
+      const r = getNumberRangeIntersection(r1, r2)
+      if (r) {
+        ranges.push(r)
+      }
+    }
+  }
+  return ranges
 }

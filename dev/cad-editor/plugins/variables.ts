@@ -5386,46 +5386,16 @@ function getCommand(ctx) {
   return {
     name: "join",
     execute({ contents, selected }) {
-      var _a, _b;
       const source = new Set(contents.filter((content, index) => {
-        var _a2, _b2;
-        return !!content && ctx.isSelected([index], selected) && ((_b2 = (_a2 = this.contentSelectable) == null ? void 0 : _a2.call(this, content, contents)) != null ? _b2 : true);
+        var _a, _b;
+        return !!content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true);
       }));
-      const removedContents = /* @__PURE__ */ new Set();
-      const newContents = /* @__PURE__ */ new Set();
-      while (source.size > 1) {
-        const [current, ...rest] = source;
-        const count = source.size;
-        for (const r of rest) {
-          const result = (_b = (_a = ctx.getContentModel(current)) == null ? void 0 : _a.join) == null ? void 0 : _b.call(_a, current, r, contents);
-          if (result) {
-            removedContents.add(r);
-            source.delete(r);
-            newContents.delete(r);
-            removedContents.add(current);
-            source.delete(current);
-            newContents.delete(current);
-            source.add(result);
-            newContents.add(result);
-            break;
-          }
-        }
-        if (count === source.size) {
-          source.delete(current);
-          continue;
-        }
-      }
-      const indexes = [];
-      for (const content of removedContents) {
-        const id = ctx.getContentIndex(content, contents);
-        if (id >= 0) {
-          indexes.push(id);
-        }
-      }
-      ctx.deleteSelectedContents(contents, indexes);
-      for (const content of newContents) {
-        contents.push(content);
-      }
+      const newContents = ctx.mergeItems(Array.from(source), (item1, item2) => {
+        var _a, _b;
+        return (_b = (_a = ctx.getContentModel(item1)) == null ? void 0 : _a.join) == null ? void 0 : _b.call(_a, item1, item2, contents);
+      });
+      ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+      contents.push(...newContents);
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content);
@@ -13692,6 +13662,42 @@ function getCommand(ctx) {
     hotkey: "TR",
     icon,
     pointSnapDisabled: true
+  };
+}
+export {
+  getCommand
+};
+`,
+`// dev/cad-editor/plugins/union.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "32", cy: "50", r: "32", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "65", cy: "50", r: "32", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("pattern", { id: "union", patternUnits: "userSpaceOnUse", width: "10", height: "10" }, /* @__PURE__ */ React.createElement("path", { d: "M 0 5 L 5 0 M 10 5 L 5 10", strokeWidth: "1", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fill: "none", stroke: "currentColor", fillRule: "evenodd" })), /* @__PURE__ */ React.createElement("path", { d: "M 50 78 L 47 79 L 45 81 L 42 81 L 39 82 L 37 82 L 34 82 L 31 82 L 28 82 L 25 81 L 23 81 L 20 79 L 18 78 L 15 77 L 13 75 L 11 73 L 9 71 L 7 69 L 6 66 L 4 64 L 3 61 L 2 58 L 2 56 L 1 53 L 1 50 L 1 47 L 2 44 L 2 42 L 3 39 L 4 36 L 6 34 L 7 31 L 9 29 L 11 27 L 13 25 L 15 23 L 18 22 L 20 21 L 23 19 L 25 19 L 28 18 L 31 18 L 34 18 L 37 18 L 39 18 L 42 19 L 45 19 L 47 21 L 50 22 L 50 22 L 53 21 L 55 19 L 58 19 L 61 18 L 63 18 L 66 18 L 69 18 L 72 18 L 75 19 L 77 19 L 80 21 L 82 22 L 85 23 L 87 25 L 89 27 L 91 29 L 93 31 L 94 34 L 96 36 L 97 39 L 98 42 L 98 44 L 99 47 L 99 50 L 99 53 L 98 56 L 98 58 L 97 61 L 96 64 L 94 66 L 93 69 L 91 71 L 89 73 L 87 75 L 85 77 L 82 78 L 80 79 L 77 81 L 75 81 L 72 82 L 69 82 L 66 82 L 63 82 L 61 82 L 58 81 L 55 81 L 53 79 L 50 78", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", fill: "url(#union)", stroke: "currentColor", fillRule: "evenodd" }));
+  return {
+    name: "union",
+    execute({ contents, selected }) {
+      var _a, _b, _c, _d;
+      const first = contents[selected[0][0]];
+      if (!first)
+        return;
+      const firstLines = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents).lines;
+      if (!firstLines)
+        return;
+      const second = contents[selected[1][0]];
+      if (!second)
+        return;
+      const secondLines = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents).lines;
+      if (!secondLines)
+        return;
+      const lines = ctx.mergeItems([...firstLines, ...secondLines], ctx.getTwoGeometryLinesUnionLine);
+      ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+      const allLines = ctx.getSeparatedGeometryLines(lines);
+      contents.push(...allLines.map((n) => ({ type: "geometry lines", lines: n })));
+    },
+    contentSelectable(content, contents) {
+      return ctx.contentIsDeletable(content, contents);
+    },
+    selectCount: 2,
+    icon
   };
 }
 export {
