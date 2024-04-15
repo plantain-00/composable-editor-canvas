@@ -15,43 +15,9 @@ export function getCommand(ctx: PluginContext): Command {
     name: 'join',
     execute({ contents, selected }) {
       const source = new Set(contents.filter((content, index): content is model.BaseContent => !!content && ctx.isSelected([index], selected) && (this.contentSelectable?.(content, contents) ?? true)))
-      const removedContents = new Set<model.BaseContent>()
-      const newContents = new Set<model.BaseContent>()
-      while (source.size > 1) {
-        const [current, ...rest] = source
-        const count = source.size
-        for (const r of rest) {
-          const result = ctx.getContentModel(current)?.join?.(current, r, contents)
-          if (result) {
-            removedContents.add(r)
-            source.delete(r)
-            newContents.delete(r)
-
-            removedContents.add(current)
-            source.delete(current)
-            newContents.delete(current)
-
-            source.add(result)
-            newContents.add(result)
-            break
-          }
-        }
-        if (count === source.size) {
-          source.delete(current)
-          continue
-        }
-      }
-      const indexes: number[] = []
-      for (const content of removedContents) {
-        const id = ctx.getContentIndex(content, contents)
-        if (id >= 0) {
-          indexes.push(id)
-        }
-      }
-      ctx.deleteSelectedContents(contents, indexes)
-      for (const content of newContents) {
-        contents.push(content)
-      }
+      const newContents = ctx.mergeItems(Array.from(source), (item1, item2) => ctx.getContentModel(item1)?.join?.(item1, item2, contents))
+      ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
+      contents.push(...newContents)
     },
     contentSelectable(content, contents) {
       const model = ctx.getContentModel(content)

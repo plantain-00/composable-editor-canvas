@@ -10,7 +10,7 @@ import { GeometryLine } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { reverseArc, reverseEllipseArc } from "./reverse"
-import { AngleRange } from "./angle"
+import { AngleRange, normalizeAngle } from "./angle"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
   if (!isSamePoint(line1[1], line2[0])) {
@@ -47,12 +47,14 @@ function mergeAngleRange<T extends AngleRange>(curve1: T, curve2: T): T | undefi
     }
     return {
       ...curve1,
-      endAngle: curve2.endAngle,
+      startAngle: normalizeAngle(curve1.startAngle),
+      endAngle: normalizeAngle(curve2.endAngle)
     }
   } else if (isZero(Math.abs(curve1.startAngle - curve2.endAngle) % 360)) {
     return {
       ...curve1,
-      startAngle: curve2.startAngle,
+      startAngle: normalizeAngle(curve2.startAngle),
+      endAngle: normalizeAngle(curve1.endAngle)
     }
   }
   return

@@ -92,6 +92,14 @@ export function getNumberRangeIntersection(range1: [number, number], range2: [nu
   return largerThan(end, start) ? [start, end] : undefined
 }
 
+export function getNumberRangeUnion(range1: [number, number], range2: [number, number]): [number, number] | undefined {
+  const start1 = Math.min(...range1)
+  const start2 = Math.min(...range2)
+  const end1 = Math.max(...range1)
+  const end2 = Math.max(...range2)
+  return lessOrEqual(Math.max(start1, start2), Math.min(end1, end2)) ? [Math.min(start1, start2), Math.max(end1, end2)] : undefined
+}
+
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean) {
   const result: T[] = []
   for (const item of array) {
@@ -226,4 +234,20 @@ export function findFrom<T>(
     return items[result]
   }
   return
+}
+
+export function mergeItems<T>(items: T[], mergeTwo: (item1: T, item2: T) => T | undefined | void): T[] {
+  if (items.length < 2) return items
+  if (items.length === 2) {
+    const result = mergeTwo(items[0], items[1])
+    return result ? [result] : items
+  }
+  const first = items[0]
+  for (let i = 1; i < items.length; i++) {
+    const result = mergeTwo(first, items[i])
+    if (result) {
+      return mergeItems([result, ...items.slice(1, i), ...items.slice(i + 1)], mergeTwo)
+    }
+  }
+  return [first, ...mergeItems(items.slice(1), mergeTwo)]
 }

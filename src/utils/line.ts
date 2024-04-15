@@ -11,6 +11,7 @@ import { rotatePositionByCenter } from "./position";
 import { and, boolean, number, optional } from "./validators";
 import { RenderTransform, Transform, reverseTransformPosition } from "./transform";
 import { Matrix, m3 } from "./matrix";
+import { reverseAngle } from "./reverse";
 
 export interface GeneralFormLine {
   a: number
@@ -456,4 +457,8 @@ export function getRayParamAtPoint(ray: Ray, point: Position) {
   const d = getTwoPointsDistance(ray, point)
   if (isZero(d)) return 0
   return d * (isSameNumber(angleToRadian(ray.angle), getTwoPointsRadian(point, ray)) ? 1 : -1) * (ray.reversed ? -1 : 1)
+}
+
+export function getRayAngle(ray: Ray): number {
+  return ray.reversed ? reverseAngle(ray.angle) : ray.angle
 }
