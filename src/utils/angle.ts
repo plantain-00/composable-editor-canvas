@@ -1,4 +1,4 @@
-import { getNumberRangeIntersection, isZero } from "./math";
+import { applyToItems, getNumberRangeDifference, getNumberRangeIntersection, isZero } from "./math";
 import { lessOrEqual, largerOrEqual } from "./math";
 import { largerThan, lessThan, isSameNumber } from "./math";
 import { number, optional, boolean } from "./validators";
@@ -181,4 +181,10 @@ export function getAngleRangesIntersections(range1: AngleRange, range2: AngleRan
     }
   }
   return ranges
+}
+
+export function getAngleRangesDifferences(range1: AngleRange, range2: AngleRange): [number, number][] {
+  const ranges1 = getNormalizedAngleInRanges(range1)
+  const ranges2 = getNormalizedAngleInRanges(range2)
+  return ranges1.map(range1 => applyToItems(range1, ranges2, getNumberRangeDifference)).flat()
 }

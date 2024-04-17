@@ -100,6 +100,24 @@ export function getNumberRangeUnion(range1: [number, number], range2: [number, n
   return lessOrEqual(Math.max(start1, start2), Math.min(end1, end2)) ? [Math.min(start1, start2), Math.max(end1, end2)] : undefined
 }
 
+export function getNumberRangeDifference(range1: [number, number], range2: [number, number]): [number, number][] {
+  const start1 = Math.min(...range1)
+  const start2 = Math.min(...range2)
+  const end1 = Math.max(...range1)
+  const end2 = Math.max(...range2)
+  if (lessOrEqual(end2, start1) || largerOrEqual(start2, end1)) {
+    return [[start1, end1]]
+  }
+  const result: [number, number][] = []
+  if (lessThan(start1, start2)) {
+    result.push([start1, start2])
+  }
+  if (lessThan(end2, end1)) {
+    result.push([end2, end1])
+  }
+  return result
+}
+
 export function deduplicate<T>(array: T[], isSameValue: (a: T, b: T) => boolean) {
   const result: T[] = []
   for (const item of array) {
@@ -250,4 +268,12 @@ export function mergeItems<T>(items: T[], mergeTwo: (item1: T, item2: T) => T | 
     }
   }
   return [first, ...mergeItems(items.slice(1), mergeTwo)]
+}
+
+export function applyToItems<T>(item1: T, items2: T[], operate: (item1: T, item2: T) => T[]): T[] {
+  let result = [item1]
+  for (const item2 of items2) {
+    result = result.map(r => operate(r, item2)).flat()
+  }
+  return result
 }
