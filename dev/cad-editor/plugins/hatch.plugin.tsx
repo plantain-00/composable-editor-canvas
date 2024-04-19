@@ -43,18 +43,19 @@ export function getModel(ctx: PluginContext): model.Model<HatchContent> {
         }
       }
       const points = ctx.getGeometryLinesPoints(hatch.border)
-      const holes = (hatch.holes || []).map(h => ctx.getGeometryLinesPoints(h))
+      const holesPoints = (hatch.holes || []).map(h => ctx.getGeometryLinesPoints(h))
       return {
         lines: [],
         border: points,
-        holes,
+        holes: holesPoints,
         bounding: ctx.getGeometryLinesBounding(hatch.border),
         renderingLines: [],
         regions: [
           {
             lines: hatch.border,
             points,
-            holes,
+            holes: hatch.holes,
+            holesPoints,
           },
         ],
       }

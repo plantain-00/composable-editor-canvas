@@ -28,9 +28,10 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
         bounding: ctx.getCircleBounding({ ...content, r: content.outerRadius }),
         regions: ctx.hasFill(content) ? [
           {
-            lines,
+            lines: [lines[0]],
             points: points1,
-            holes: [points2],
+            holesPoints: [points2],
+            holes: [[lines[1]]]
           },
         ] : undefined,
         renderingLines: [
@@ -58,7 +59,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
       const { renderingLines, regions } = getRingGeometriesFromCache(content, renderCtx.contents)
       if (regions) {
-        return target.renderPath([regions[0].points, ...(regions[0].holes || [])], options)
+        return target.renderPath([regions[0].points, ...(regions[0].holesPoints || [])], options)
       }
       return target.renderGroup(renderingLines.map(r => target.renderPolyline(r, options)))
     },

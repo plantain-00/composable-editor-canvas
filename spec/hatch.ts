@@ -1,5 +1,5 @@
 import test from 'ava'
-import { GeometryLine, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, getRightSideGeometryLineAtPoint, mergeHatchBorders, optimizeHatch } from '../src'
+import { GeometryLine, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, getHatchesIntersection, getRightSideGeometryLineAtPoint, mergeHatchBorders, optimizeHatch } from '../src'
 
 test('getHatchByPosition', (t) => {
   const lines1: HatchGeometries[] = [
@@ -551,6 +551,91 @@ test('getHatchByPosition', (t) => {
   t.snapshot(getHatchByPosition({ x: 250, y: 92 }, () => lines9))
 })
 
+const d: GeometryLine[] = [
+  [
+    {
+      "x": 169.33311882256265,
+      "y": -78.18033214216297
+    },
+    {
+      "x": 89.16060499789984,
+      "y": -78.18033214216297
+    }
+  ],
+  [
+    {
+      "x": 89.16060499789984,
+      "y": -78.18033214216297
+    },
+    {
+      "x": 89.16060499789984,
+      "y": -138.12239855312583
+    }
+  ],
+  [
+    {
+      "x": 89.16060499789984,
+      "y": -138.12239855312583
+    },
+    {
+      "x": 169.33311882256262,
+      "y": -138.12239855312583
+    }
+  ],
+  [
+    {
+      "x": 169.33311882256265,
+      "y": -138.12239855312583
+    },
+    {
+      "x": 169.33311882256265,
+      "y": -78.18033214216295
+    }
+  ]
+]
+const e: GeometryLine[] = [
+  [
+    {
+      "x": 191.76791774263364,
+      "y": -68.90777486354403
+    },
+    {
+      "x": 128.8287480111226,
+      "y": -68.90777486354403
+    }
+  ],
+  [
+    {
+      "x": 128.82874801112263,
+      "y": -68.90777486354403
+    },
+    {
+      "x": 128.82874801112263,
+      "y": -93.63387725806622
+    }
+  ],
+  [
+    {
+      "x": 128.82874801112263,
+      "y": -93.6338772580662
+    },
+    {
+      "x": 191.7679177426336,
+      "y": -93.6338772580662
+    }
+  ],
+  [
+    {
+      "x": 191.76791774263364,
+      "y": -93.6338772580662
+    },
+    {
+      "x": 191.76791774263364,
+      "y": -68.90777486354405
+    }
+  ]
+]
+
 test('optimize hatch', t => {
   const lines1: GeometryLine[] = [
     [
@@ -745,6 +830,8 @@ test('optimize hatch', t => {
     ]
   ]
   t.snapshot(optimizeHatch(border, [holes1, holes2]))
+
+  optimizeHatch(d, [e])
 })
 
 test('merge hatch borders', t => {
@@ -847,6 +934,8 @@ test('merge hatch borders', t => {
     ]
   ]
   t.snapshot(mergeHatchBorders(a, c))
+
+  t.snapshot(mergeHatchBorders(d, e))
 })
 
 test('bold hatch', t => {
@@ -6970,4 +7059,8 @@ test('getRightSideGeometryLineAtPoint', t => {
   }
   t.snapshot(getRightSideGeometryLineAtPoint(point, [point, { x: 459.28084434957566, y: 182.76880417215045 }], lines).line)
   t.snapshot(getRightSideGeometryLineAtPoint(point, [{ "x": 411.21910552293036, "y": 216.25061171676373 }, { "x": 481.838054908426, "y": 135.5753808722578 }], lines).line)
+})
+
+test('getHatchesIntersection', t => {
+  t.snapshot(getHatchesIntersection({ border: d, holes: [] }, [{ border: e, holes: [] }]))
 })

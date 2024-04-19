@@ -2,7 +2,7 @@ import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
 import { getGeometryLineCurvatureAtParam, getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math"
+import { applyToItems, deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math"
 import { Position, deduplicatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
@@ -284,7 +284,7 @@ export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryL
     const lines = mergeHatchBorderAndHole(border, holes[i])
     if (lines) {
       holes.splice(i, 1)
-      const borders = splitGeometryLines(lines)
+      const borders = splitGeometryLines(lines, 'intersection')
       return borders.map(b => optimizeHatchInternally(b, holes)).flat()
     }
   }
@@ -316,7 +316,7 @@ export function mergeHatchBorders(border1: GeometryLine[], border2: GeometryLine
   border2 = reverseClosedGeometryLinesIfAreaIsNegative(border2)
   const lines = mergeHatchBorderAndBorder(border1, border2)
   if (lines) {
-    const results = splitGeometryLines(lines)
+    const results = splitGeometryLines(lines, 'union')
     if (results.length < 2) {
       return results[0]
     }
@@ -329,6 +329,30 @@ export function mergeHatches(hatch1: Hatch, hatch2: Hatch): Hatch[] | undefined 
   const mergedBorder = mergeHatchBorders(hatch1.border, hatch2.border)
   if (!mergedBorder) return
   return optimizeHatch(mergedBorder, [...hatch1.holes, ...hatch2.holes])
+}
+
+export function getHatchesUnion(hatch: Hatch, hatches: Hatch[]): Hatch[] {
+  return applyToItems(hatch, hatches, (h1, h2) => mergeHatches(h1, h2) || [h1, h2])
+}
+
+export function getHatchesDifference(hatch: Hatch, hatches: Hatch[]): Hatch[] {
+  const holes: GeometryLine[][] = []
+  const borders = [hatch.border]
+  if (hatch.holes) {
+    holes.push(...hatch.holes)
+  }
+  for (const child of hatches) {
+    holes.push(child.border)
+    if (child.holes) {
+      borders.push(...child.holes)
+    }
+  }
+  return borders.map(b => optimizeHatch(b, holes)).flat()
+}
+
+export function getHatchesIntersection(hatch: Hatch, hatches: Hatch[]): Hatch[] {
+  const difference = getHatchesDifference(hatch, hatches)
+  return getHatchesDifference(hatch, difference)
 }
 
 export function geometryLinesToHatches(lines: GeometryLine[][]): Hatch[] {
