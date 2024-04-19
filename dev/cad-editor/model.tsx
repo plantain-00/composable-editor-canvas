@@ -314,13 +314,17 @@ export type Geometries<T extends object = object> = T & {
      */
     points: Position[]
     /**
-     * Used for (1)select region by box
+     * Used for (1)select region by box, (2) hatch border
      */
     lines: GeometryLine[]
     /**
      * Used for (1)select region by click
      */
-    holes?: Position[][]
+    holesPoints?: Position[][]
+    /**
+     * Used for (1)hatch holes
+     */
+    holes?: GeometryLine[][]
   }[]
   /**
    * Used for (1)line rendering

@@ -3,6 +3,7 @@ import type { Command } from '../command'
 import type * as model from '../model'
 import type { GeometryLinesContent } from './geometry-lines.plugin'
 import type { PointContent } from './point.plugin'
+import type { HatchContent } from './hatch.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
   const React = ctx.React
@@ -21,14 +22,20 @@ export function getCommand(ctx: PluginContext): Command {
     execute({ contents, selected }) {
       const first = contents[selected[0][0]]
       if (!first) return
-      const firstLines = ctx.getContentModel(first)?.getGeometries?.(first, contents).lines
-      if (!firstLines) return
+      const firstGeometries = ctx.getContentModel(first)?.getGeometries?.(first, contents)
+      if (!firstGeometries) return
       const second = contents[selected[1][0]]
       if (!second) return
-      const secondLines = ctx.getContentModel(second)?.getGeometries?.(second, contents).lines
-      if (!secondLines) return
+      const secondGeometries = ctx.getContentModel(second)?.getGeometries?.(second, contents)
+      if (!secondGeometries) return
+      if (firstGeometries.regions && secondGeometries.regions) {
+        const result = firstGeometries.regions.map(r => ctx.getHatchesIntersection({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map(g => ({ border: g.lines, holes: g.holes || [] })))).flat()
+        ctx.deleteSelectedContents(contents, selected.map(s => s[0]))
+        contents.push(...result.map(r => ({ ...first, type: 'hatch', border: r.border, holes: r.holes, ref: undefined } as HatchContent)))
+        return
+      }
       let points = ctx.deduplicatePosition(ctx.getIntersectionPoints(first, second, contents))
-      const lines = Array.from(ctx.iterateGeometryLinesIntersectionLines(firstLines, secondLines))
+      const lines = Array.from(ctx.iterateGeometryLinesIntersectionLines(firstGeometries.lines, secondGeometries.lines))
       const newContents: model.BaseContent[] = []
       if (lines.length > 0) {
         points = points.filter(p => !ctx.pointIsOnGeometryLines(p, lines))

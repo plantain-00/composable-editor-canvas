@@ -9,7 +9,7 @@ import { getNurbsCurveCurvatureAtParam, getNurbsCurveDerivatives, getNurbsCurveP
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange, normalizeRadian } from "./angle";
-import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, minimumsBy } from "./math";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 import { reverseAngle, reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
@@ -365,14 +365,16 @@ export function getGeometryLineByStartEndBulge(start: Position, end: Position, b
   }
 }
 
-export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
+export function splitGeometryLines(lines: GeometryLine[], type?: 'union' | 'intersection'): GeometryLine[][] {
   const points = deduplicatePosition(Array.from(iterateGeometryLinesSelfIntersectionPoints(lines)))
+  const results: { result: GeometryLine[][], areas: number[] }[] = []
   for (const point of points) {
     const params = deduplicate(Array.from(iterateGeometryLinesParamsAtPoint(point, lines)), isSameNumber)
     if (params.length < 2) {
       continue
     }
     const result: GeometryLine[][] = []
+    const areas: number[] = []
     const part1 = [
       ...getPartOfGeometryLines(params[1], lines.length, lines),
       ...getPartOfGeometryLines(0, params[0], lines),
@@ -382,15 +384,28 @@ export function splitGeometryLines(lines: GeometryLine[]): GeometryLine[][] {
     if (part2.length === 0) continue
     const area1 = getPolygonArea(getGeometryLinesPoints(part1))
     if (!isZero(area1)) {
-      if (area1 < 0) continue
-      result.push(...splitGeometryLines(part1))
+      if (area1 < 0 && type !== 'intersection') continue
+      result.push(...splitGeometryLines(part1, type))
+      areas.push(area1)
     }
     const area2 = getPolygonArea(getGeometryLinesPoints(part2))
     if (!isZero(area2)) {
-      if (area2 < 0) continue
-      result.push(...splitGeometryLines(part2))
+      if (area2 < 0 && type !== 'intersection') continue
+      result.push(...splitGeometryLines(part2, type))
+      areas.push(area2)
     }
-    return result
+    if (!type) {
+      return result
+    }
+    results.push({ result, areas })
+  }
+  if (results.length > 0) {
+    if (type === 'intersection') {
+      const result = minimumBy(results.map(r => ({ ...r, area: r.areas.reduce((p, c) => p + Math.abs(c)) })), r => r.area)
+      const indexes = result.areas.map((a, i) => ({ area: a, index: i })).filter(a => a.area > 0).map(a => a.index)
+      return result.result.filter((_, i) => indexes.includes(i))
+    }
+    return results.map(r => r.result).flat()
   }
   return [lines]
 }

@@ -21,7 +21,7 @@ export function getContentByClickPosition<T>(
       lines: GeometryLine[]
       regions?: {
         points: Position[]
-        holes?: Position[][]
+        holesPoints?: Position[][]
       }[]
     },
     canSelectPart?: boolean,
@@ -58,7 +58,7 @@ export function getContentByClickPosition<T>(
       if (regions) {
         for (let j = 0; j < regions.length; j++) {
           const region = regions[j]
-          if (region.holes && region.holes.some(h => pointInPolygon(position, h))) {
+          if (region.holesPoints && region.holesPoints.some(h => pointInPolygon(position, h))) {
             continue
           }
           if (pointInPolygon(position, region.points)) {
@@ -85,7 +85,7 @@ export function getContentsByClickPosition<T>(
       lines: GeometryLine[]
       regions?: {
         points: Position[]
-        holes?: Position[][]
+        holesPoints?: Position[][]
       }[]
     },
   } | undefined,
@@ -116,7 +116,7 @@ export function getContentsByClickPosition<T>(
       if (regions) {
         for (let j = 0; j < regions.length; j++) {
           const region = regions[j]
-          if (region.holes && region.holes.some(h => pointInPolygon(position, h))) {
+          if (region.holesPoints && region.holesPoints.some(h => pointInPolygon(position, h))) {
             return
           }
           if (pointInPolygon(position, region.points)) {

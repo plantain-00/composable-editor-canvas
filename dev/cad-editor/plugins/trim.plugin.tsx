@@ -141,7 +141,7 @@ export function getCommand(ctx: PluginContext): Command {
               if (geometries) {
                 if (isHatchContent(child) && geometries.regions && geometries.bounding) {
                   for (const region of geometries.regions) {
-                    if (region.holes && region.holes.some(h => ctx.pointInPolygon(p, h))) {
+                    if (region.holesPoints && region.holesPoints.some(h => ctx.pointInPolygon(p, h))) {
                       continue
                     }
                     if (ctx.pointInPolygon(p, region.points)) {

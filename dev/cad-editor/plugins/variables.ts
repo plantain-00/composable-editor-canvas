@@ -3166,16 +3166,22 @@ function getCommand(ctx) {
       const first = contents[selected[0][0]];
       if (!first)
         return;
-      const firstLines = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents).lines;
-      if (!firstLines)
+      const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
+      if (!firstGeometries)
         return;
       const second = contents[selected[1][0]];
       if (!second)
         return;
-      const secondLines = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents).lines;
-      if (!secondLines)
+      const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
+      if (!secondGeometries)
         return;
-      const lines = ctx.getGeometryLinesDifferenceLines(firstLines, secondLines);
+      if (firstGeometries.regions && secondGeometries.regions) {
+        const result = firstGeometries.regions.map((r) => ctx.getHatchesDifference({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
+        ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+        contents.push(...result.map((r) => ({ ...first, type: "hatch", border: r.border, holes: r.holes, ref: void 0 })));
+        return;
+      }
+      const lines = ctx.getGeometryLinesDifferenceLines(firstGeometries.lines, secondGeometries.lines);
       ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
       const allLines = ctx.getSeparatedGeometryLines(lines);
       contents.push(...allLines.map((n) => ({ type: "geometry lines", lines: n })));
@@ -4961,27 +4967,28 @@ function getModel(ctx) {
           const getGeometriesInRange = () => refContents.map((c) => ctx.getContentHatchGeometries(c, contents));
           const border = ctx.getHatchByPosition(p, getGeometriesInRange);
           if (border) {
-            const holes2 = ctx.getHatchHoles(border.lines, getGeometriesInRange);
+            const holes = ctx.getHatchHoles(border.lines, getGeometriesInRange);
             hatch = {
               border: border.lines,
-              holes: holes2 == null ? void 0 : holes2.holes
+              holes: holes == null ? void 0 : holes.holes
             };
           }
         }
       }
       const points = ctx.getGeometryLinesPoints(hatch.border);
-      const holes = (hatch.holes || []).map((h) => ctx.getGeometryLinesPoints(h));
+      const holesPoints = (hatch.holes || []).map((h) => ctx.getGeometryLinesPoints(h));
       return {
         lines: [],
         border: points,
-        holes,
+        holes: holesPoints,
         bounding: ctx.getGeometryLinesBounding(hatch.border),
         renderingLines: [],
         regions: [
           {
             lines: hatch.border,
             points,
-            holes
+            holes: hatch.holes,
+            holesPoints
           }
         ]
       };
@@ -5381,17 +5388,23 @@ function getCommand(ctx) {
       const first = contents[selected[0][0]];
       if (!first)
         return;
-      const firstLines = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents).lines;
-      if (!firstLines)
+      const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
+      if (!firstGeometries)
         return;
       const second = contents[selected[1][0]];
       if (!second)
         return;
-      const secondLines = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents).lines;
-      if (!secondLines)
+      const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
+      if (!secondGeometries)
         return;
+      if (firstGeometries.regions && secondGeometries.regions) {
+        const result = firstGeometries.regions.map((r) => ctx.getHatchesIntersection({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
+        ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+        contents.push(...result.map((r) => ({ ...first, type: "hatch", border: r.border, holes: r.holes, ref: void 0 })));
+        return;
+      }
       let points = ctx.deduplicatePosition(ctx.getIntersectionPoints(first, second, contents));
-      const lines = Array.from(ctx.iterateGeometryLinesIntersectionLines(firstLines, secondLines));
+      const lines = Array.from(ctx.iterateGeometryLinesIntersectionLines(firstGeometries.lines, secondGeometries.lines));
       const newContents = [];
       if (lines.length > 0) {
         points = points.filter((p) => !ctx.pointIsOnGeometryLines(p, lines));
@@ -10646,9 +10659,10 @@ function getModel(ctx) {
         bounding: ctx.getCircleBounding({ ...content, r: content.outerRadius }),
         regions: ctx.hasFill(content) ? [
           {
-            lines,
+            lines: [lines[0]],
             points: points1,
-            holes: [points2]
+            holesPoints: [points2],
+            holes: [[lines[1]]]
           }
         ] : void 0,
         renderingLines: [
@@ -10676,7 +10690,7 @@ function getModel(ctx) {
       const { options, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
       const { renderingLines, regions } = getRingGeometriesFromCache(content, renderCtx.contents);
       if (regions) {
-        return target.renderPath([regions[0].points, ...regions[0].holes || []], options);
+        return target.renderPath([regions[0].points, ...regions[0].holesPoints || []], options);
       }
       return target.renderGroup(renderingLines.map((r) => target.renderPolyline(r, options)));
     },
@@ -13561,7 +13575,7 @@ function getCommand(ctx) {
               if (geometries) {
                 if (isHatchContent(child) && geometries.regions && geometries.bounding) {
                   for (const region of geometries.regions) {
-                    if (region.holes && region.holes.some((h) => ctx.pointInPolygon(p, h))) {
+                    if (region.holesPoints && region.holesPoints.some((h) => ctx.pointInPolygon(p, h))) {
                       continue;
                     }
                     if (ctx.pointInPolygon(p, region.points)) {
@@ -13715,16 +13729,22 @@ function getCommand(ctx) {
       const first = contents[selected[0][0]];
       if (!first)
         return;
-      const firstLines = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents).lines;
-      if (!firstLines)
+      const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
+      if (!firstGeometries)
         return;
       const second = contents[selected[1][0]];
       if (!second)
         return;
-      const secondLines = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents).lines;
-      if (!secondLines)
+      const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
+      if (!secondGeometries)
         return;
-      const lines = ctx.mergeItems([...firstLines, ...secondLines], ctx.getTwoGeometryLinesUnionLine);
+      if (firstGeometries.regions && secondGeometries.regions) {
+        const result = firstGeometries.regions.map((r) => ctx.getHatchesUnion({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
+        ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
+        contents.push(...result.map((r) => ({ ...first, type: "hatch", border: r.border, holes: r.holes, ref: void 0 })));
+        return;
+      }
+      const lines = ctx.mergeItems([...firstGeometries.lines, ...secondGeometries.lines], ctx.getTwoGeometryLinesUnionLine);
       ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
       const allLines = ctx.getSeparatedGeometryLines(lines);
       contents.push(...allLines.map((n) => ({ type: "geometry lines", lines: n })));
