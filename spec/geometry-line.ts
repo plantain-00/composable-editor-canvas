@@ -1,5 +1,5 @@
 import test from 'ava'
-import { GeometryLine, getNearestGeometryLines } from '../src'
+import { GeometryLine, getNearestGeometryLines, trimGeometryLinesOffsetResult } from '../src'
 
 const lines: GeometryLine[] = [
   {
@@ -72,4 +72,60 @@ test('getNearestGeometryLines', t => {
   t.snapshot(getNearestGeometryLines({ x: 459.28084434957566, y: 182.76880417215045 }, lines))
   t.snapshot(getNearestGeometryLines({ x: 512, y: 184 }, lines))
   t.snapshot(getNearestGeometryLines({ x: 460, y: 231 }, lines))
+})
+
+test('trimGeometryLinesOffsetResult', t => {
+  const lines1: GeometryLine[] = [
+    [
+      {
+        "x": 190,
+        "y": -180
+      },
+      {
+        "x": 300,
+        "y": -250
+      }
+    ],
+    [
+      {
+        "x": 300,
+        "y": -250
+      },
+      {
+        "x": 290,
+        "y": -120
+      }
+    ],
+    [
+      {
+        "x": 290,
+        "y": -120
+      },
+      {
+        "x": 220,
+        "y": -260
+      }
+    ],
+    [
+      {
+        "x": 220,
+        "y": -260
+      },
+      {
+        "x": 350,
+        "y": -210
+      }
+    ],
+    [
+      {
+        "x": 350,
+        "y": -210
+      },
+      {
+        "x": 230,
+        "y": -150
+      }
+    ]
+  ]
+  t.snapshot(trimGeometryLinesOffsetResult(lines1, { x: 212, y: -200 }))
 })

@@ -74,3 +74,7 @@ export interface MenuItem {
 export interface MenuDivider {
   type: 'divider'
 }
+
+export function getMenuHeight(items: (MenuItem | MenuDivider)[], fontSize: number) {
+  return items.reduce((p, c) => p + (c.type === 'divider' ? fontSize + 1 : 32), 0) + fontSize + 2
+}

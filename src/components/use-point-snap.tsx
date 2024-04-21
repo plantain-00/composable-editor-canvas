@@ -6,7 +6,7 @@ import { GeometryLine, getGeometryLinesParamAtPoint } from "../utils/geometry-li
 import { Region, TwoPointsFormRegion, pointIsInRegion } from "../utils/region"
 import { Circle } from "../utils/circle"
 import { getTwoNumbersDistance } from "../utils/math"
-import { pointAndDirectionToGeneralFormLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "../utils/line"
+import { Ray, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "../utils/line"
 import { getPerpendicularPoint, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToCircle, getPerpendicularPointToQuadraticCurve, getPointAndGeometryLineNearestPointAndDistance } from "../utils/perpendicular"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getTangencyParamToNurbsCurve } from "../utils/nurbs"
 import { angleInRange } from "../utils/angle"
@@ -82,25 +82,29 @@ export function usePointSnap<T>(
     return r
   }
 
-  const saveSnapPoint = (transformSnapPosition?: (p: Position) => Position, p?: SnapPoint) => {
+  const saveSnapPoint = (transformSnapPosition?: (p: Position) => Position, p?: SnapPoint, startPosition?: Position) => {
     if (p && transformSnapPosition) {
       setSnapPoint({
         ...p,
         ...transformSnapPosition(p),
+        startPosition,
       })
+    } else if (p) {
+      setSnapPoint({ ...p, startPosition })
     } else {
-      setSnapPoint(p)
+      setSnapPoint(undefined)
     }
   }
 
   return {
     snapPoint,
-    getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T>(
+    getSnapAssistentContents<TCircle = T, TRect = T, TPolyline = T, TRay = T>(
       createCircle: (circle: Circle) => TCircle,
       createRect: (rect: Region) => TRect,
       createPolyline: (points: Position[]) => TPolyline,
+      createRay: (ray: Ray) => TRay,
     ) {
-      const assistentContents: (TCircle | TRect | TPolyline)[] = []
+      const assistentContents: (TCircle | TRect | TPolyline | TRay)[] = []
       const snapPoints: SnapPoint[] = []
       if (snapPoint) {
         snapPoints.push(snapPoint)
@@ -174,6 +178,23 @@ export function usePointSnap<T>(
             { x: snapPoint.x - d * 1.5, y: snapPoint.y - d * 0.5 },
             { x: snapPoint.x + d * 1.5, y: snapPoint.y - d * 0.5 },
           ]))
+        } else if (snapPoint.type === 'grid') {
+          assistentContents.push(
+            createPolyline([
+              { x: snapPoint.x - d, y: snapPoint.y },
+              { x: snapPoint.x + d, y: snapPoint.y },
+            ]),
+            createPolyline([
+              { x: snapPoint.x, y: snapPoint.y + d },
+              { x: snapPoint.x, y: snapPoint.y - d },
+            ]),
+          )
+        } else if (snapPoint.type === 'angle' && createRay && snapPoint.startPosition) {
+          assistentContents.push(createRay({
+            x: snapPoint.startPosition.x,
+            y: snapPoint.startPosition.y,
+            angle: radianToAngle(getTwoPointsRadian(snapPoint, snapPoint.startPosition)),
+          }))
         }
       }
       return assistentContents
@@ -447,6 +468,9 @@ export function usePointSnap<T>(
         }
       }
       if (types.includes('nearest')) {
+        if (types.includes('grid')) {
+          p = getGridSnap(p)
+        }
         for (const content of contentsInRange) {
           if (!content) {
             continue
@@ -488,9 +512,15 @@ export function usePointSnap<T>(
       }
       if (types.includes('grid')) {
         p = getGridSnap(p)
+        saveSnapPoint(transformSnapPosition, { ...p, type: 'grid' })
+        return transformResult(transformSnapPosition, getOffsetSnapPoint(p))
       }
       if (lastPosition && types.includes('angle')) {
-        p = getAngleSnapPosition(lastPosition, p, getAngleSnap)
+        const newPosition = getAngleSnapPosition(lastPosition, p, getAngleSnap)
+        if (newPosition !== p) {
+          saveSnapPoint(transformSnapPosition, { ...newPosition, type: 'angle' }, lastPosition)
+          return transformResult(transformSnapPosition, getOffsetSnapPoint(newPosition))
+        }
       }
       saveSnapPoint(transformSnapPosition, undefined)
       return transformResult(transformSnapPosition, getOffsetSnapPoint(p))
@@ -515,7 +545,7 @@ export interface SnapTarget<T> {
 /**
  * @public
  */
-export type SnapPoint = Position & { type: SnapPointType }
+export type SnapPoint = Position & { type: SnapPointType, startPosition?: Position }
 
 /**
  * @public

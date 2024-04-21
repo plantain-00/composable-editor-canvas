@@ -96,5 +96,6 @@ export function getCommand(ctx: PluginContext): Command {
     contentSelectable,
     selectCount: 1,
     icon,
+    pointSnapDisabled: true,
   }
 }
