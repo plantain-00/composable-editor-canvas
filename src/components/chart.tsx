@@ -107,6 +107,27 @@ export function getChartAxis<T>(
   }
 }
 
+export function getGridLines(bounding: TwoPointsFormRegion, stepX: number, stepY = stepX, maxLineCount = Infinity): [Position, Position][] {
+  const xStartIndex = Math.floor(bounding.start.x / stepX)
+  const xEndIndex = Math.ceil(bounding.end.x / stepX)
+  const yStartIndex = Math.floor(bounding.start.y / stepY)
+  const yEndIndex = Math.ceil(bounding.end.y / stepY)
+  const lineCount = (xEndIndex - xStartIndex) + 1 + (yEndIndex - yStartIndex) + 1
+  if (lineCount > maxLineCount) return []
+  const result: [Position, Position][] = []
+  const xStart = xStartIndex * stepX, xEnd = xEndIndex * stepX
+  const yStart = yStartIndex * stepY, yEnd = yEndIndex * stepY
+  for (let i = xStartIndex; i <= xEndIndex; i++) {
+    const x = i * stepX
+    result.push([{ x, y: yStart }, { x, y: yEnd }])
+  }
+  for (let j = yStartIndex; j <= yEndIndex; j++) {
+    const y = j * stepY
+    result.push([{ x: xStart, y }, { x: xEnd, y }])
+  }
+  return result
+}
+
 interface ChartAxisOptions {
   type: 'line' | 'bar'
   axisColor: number

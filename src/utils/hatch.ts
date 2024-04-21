@@ -1,5 +1,5 @@
 import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
-import { getGeometryLineCurvatureAtParam, getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimGeometryLines } from "./geometry-line"
+import { getGeometryLineCurvatureAtParam, getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimHatchGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
 import { applyToItems, deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math"
@@ -394,8 +394,8 @@ export function geometryLinesToHatches(lines: GeometryLine[][]): Hatch[] {
 
 export function boldHatch(hatch: Hatch, distance = 1): Hatch {
   return {
-    border: trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(hatch.border, distance, 1, 'bevel')),
-    holes: hatch.holes.map(h => trimGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(h, -distance, 0, 'bevel'))),
+    border: trimHatchGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(hatch.border, distance, 1, 'bevel')),
+    holes: hatch.holes.map(h => trimHatchGeometryLines(getParallelGeometryLinesByDistanceDirectionIndex(h, -distance, 0, 'bevel'))),
   }
 }
 

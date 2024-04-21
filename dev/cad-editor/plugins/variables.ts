@@ -1529,7 +1529,7 @@ function getModel(ctx) {
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx);
         if (dashed) {
-          return target.renderPolyline(getCircleGeometries(content, renderCtx.contents).points, options);
+          return target.renderPolyline(getArcGeometries(content, renderCtx.contents).points, options);
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise });
       },
@@ -4751,8 +4751,8 @@ function getModel(ctx) {
       }
     },
     offset(content, point, distance, _, lineJoin) {
-      const newLines = ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, content.lines, distance, lineJoin));
-      return { ...content, lines: newLines };
+      const newLines = ctx.trimGeometryLinesOffsetResult(ctx.getParallelGeometryLinesByDistancePoint(point, content.lines, distance, lineJoin), point);
+      return newLines.map((n) => ctx.geometryLinesToPline(n));
     },
     join(content, target, contents) {
       var _a, _b, _c;
@@ -7079,7 +7079,7 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents) {
       const lines = getNurbsGeometries(content, contents).lines;
-      return ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance)).map((r) => ctx.geometryLineToContent(r));
+      return ctx.trimGeometryLinesOffsetResult(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance), point).map((r) => r.map((n) => ctx.geometryLineToContent(n))).flat();
     },
     render(content, renderCtx) {
       const { points } = getNurbsGeometries(content, renderCtx.contents);
@@ -7335,7 +7335,8 @@ function getCommand(ctx) {
     },
     contentSelectable,
     selectCount: 1,
-    icon
+    icon,
+    pointSnapDisabled: true
   };
 }
 export {
@@ -7787,10 +7788,11 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents, lineJoin) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
-      return {
+      const newLines = ctx.trimGeometryLinesOffsetResult(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin), point);
+      return newLines.map((n) => ({
         ...content,
-        commands: ctx.geometryLineToPathCommands(ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin)))
-      };
+        commands: ctx.geometryLineToPathCommands(n)
+      }));
     },
     extend(content, point, contents) {
       const lines = getPathGeometriesFromCache(content, contents).lines;
@@ -8442,8 +8444,8 @@ function getModel(ctx) {
     },
     offset(content, point, distance, contents, lineJoin) {
       const { lines } = getPlineGeometries(content, contents);
-      const newLines = ctx.trimGeometryLines(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin));
-      return ctx.geometryLinesToPline(newLines);
+      const newLines = ctx.trimGeometryLinesOffsetResult(ctx.getParallelGeometryLinesByDistancePoint(point, lines, distance, lineJoin), point);
+      return newLines.map((n) => ctx.geometryLinesToPline(n));
     },
     join(content, target, contents) {
       var _a, _b, _c;

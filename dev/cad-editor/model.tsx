@@ -336,6 +336,7 @@ const geometriesCache = new WeakmapValuesCache<object, BaseContent, Geometries>(
 const snapPointsCache = new WeakmapCache<object, SnapPoint[]>()
 const editPointsCache = new WeakmapCache<object, { editPoints: (EditPoint<BaseContent> & { type?: 'move' })[], angleSnapStartPoint?: Position } | undefined>()
 export const allContentsCache = new WeakmapCache<object, Nullable<BaseContent>[]>()
+export const lengthCache = new WeakmapCache<BaseContent, number>()
 
 export const getGeometriesFromCache = geometriesCache.get.bind(geometriesCache)
 export const getSnapPointsFromCache = snapPointsCache.get.bind(snapPointsCache)

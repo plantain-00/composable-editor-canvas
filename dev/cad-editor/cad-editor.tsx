@@ -18,6 +18,7 @@ import type { LineContent } from './plugins/line-polyline.plugin'
 import type { PluginContext } from './plugins/types'
 import type { PointContent } from './plugins/point.plugin'
 import type { EllipseContent } from './plugins/ellipse.plugin'
+import type { RayContent } from './plugins/ray.plugin'
 
 enablePatches()
 
@@ -346,6 +347,7 @@ export const CADEditor = React.forwardRef((props: {
 
   // snap point
   const { snapOffset, snapOffsetActive, snapOffsetInput, setSnapOffset, onSnapOffsetKeyDown } = useSnapOffset((operations.type === 'operate' && operations.operate.type === 'command') || (operations.type !== 'operate' && editPoint !== undefined))
+  const gridSize = 10
   const { getSnapAssistentContents, getSnapPoint } = usePointSnap(
     (operations.type === 'operate' && !getCommand(operations.operate.name)?.pointSnapDisabled) || editPoint !== undefined || acquirePointHandler.current !== undefined,
     getIntersectionPoints,
@@ -353,6 +355,7 @@ export const CADEditor = React.forwardRef((props: {
     getContentModel,
     snapOffset,
     5 / scaleWithViewport,
+    p => ({ x: core.formatNumber(p.x, 1 / gridSize), y: core.formatNumber(p.y, 1 / gridSize) }),
   )
 
   const getContentsInRange = (region?: TwoPointsFormRegion): readonly Nullable<BaseContent>[] => {
@@ -528,14 +531,21 @@ export const CADEditor = React.forwardRef((props: {
   })
 
   debug.mark('before assistent contents')
-  const assistentContents: BaseContent[] = [
+  const assistentContents: BaseContent[] = []
+  const gridLinesCache = React.useRef(new core.ValueChangedCache<TwoPointsFormRegion, [Position, Position][]>())
+  if (snapTypes.includes('grid')) {
+    const lines = gridLinesCache.current.get(bounding, () => core.getGridLines(bounding, gridSize, gridSize, 200))
+    assistentContents.push(...lines.map(n => ({ type: 'line', points: n, strokeOpacity: 0.2 } as LineContent)))
+  }
+  assistentContents.push(
     ...getSnapAssistentContents(
       (circle) => ({ type: 'circle', ...circle, strokeColor: 0x00ff00 } as CircleContent),
       (rect) => ({ type: 'rect', ...rect, angle: 0, strokeColor: 0x00ff00 } as RectContent),
       (points) => ({ type: 'polyline', points, strokeColor: 0x00ff00 } as LineContent),
+      (ray) => ({ type: 'ray', ...ray, strokeColor: 0x00ff00 } as RayContent)
     ),
     ...(commandAssistentContents || []),
-  ]
+  )
 
   const result = updateEditPreview()
   previewPatches.push(...result?.patches ?? [])
@@ -902,44 +912,51 @@ export const CADEditor = React.forwardRef((props: {
         setContextMenu(undefined)
       }
     })
-    try {
-      const text = await navigator.clipboard.readText()
-      if (text) {
-        let marker: BaseContent | undefined
-        const parts = text.split(',')
-        if (parts.length === 2) {
-          const nums = parts.map(p => +p)
-          if (nums.every(n => !isNaN(n))) {
-            marker = { type: 'point', x: nums[0], y: nums[1] } as PointContent
-          }
+    if (markers.length > 0) {
+      items.push({
+        title: 'Clear markers',
+        onClick: () => {
+          setMarkers([])
+          setContextMenu(undefined)
         }
-        if (!marker) {
-          const content: unknown = JSON.parse(text)
-          if (core.is<BaseContent>(content, Content)) {
-            marker = content
-          } else if (core.is<Position>(content, Position)) {
-            marker = { ...content, type: 'point' } as PointContent
-          } else if (core.is<core.Circle>(content, core.Circle)) {
-            marker = { ...content, type: 'circle' } as CircleContent
-          } else if (core.is<core.Ellipse>(content, core.Ellipse)) {
-            marker = { ...content, type: 'ellipse' } as EllipseContent
-          }
-        }
-        if (marker) {
-          items.push({
-            title: `Mark ${marker.type}`,
-            onClick: () => {
-              if (marker) {
-                setMarkers([...markers, marker])
-              }
-              setContextMenu(undefined)
-            }
-          })
-        }
-      }
-    } catch (error) {
-      console.info(error)
+      })
     }
+    items.push({
+      title: 'Mark',
+      onClick: async () => {
+        try {
+          const text = await navigator.clipboard.readText()
+          if (text) {
+            let marker: BaseContent | undefined
+            const parts = text.split(',')
+            if (parts.length === 2) {
+              const nums = parts.map(p => +p)
+              if (nums.every(n => !isNaN(n))) {
+                marker = { type: 'point', x: nums[0], y: nums[1] } as PointContent
+              }
+            }
+            if (!marker) {
+              const content: unknown = JSON.parse(text)
+              if (core.is<BaseContent>(content, Content)) {
+                marker = content
+              } else if (core.is<Position>(content, Position)) {
+                marker = { ...content, type: 'point' } as PointContent
+              } else if (core.is<core.Circle>(content, core.Circle)) {
+                marker = { ...content, type: 'circle' } as CircleContent
+              } else if (core.is<core.Ellipse>(content, core.Ellipse)) {
+                marker = { ...content, type: 'ellipse' } as EllipseContent
+              }
+            }
+            if (marker) {
+              setMarkers([...markers, marker])
+            }
+          }
+        } catch (error) {
+          console.info(error)
+        }
+        setContextMenu(undefined)
+      }
+    })
     items.push({ type: 'divider' })
     items.push({
       title: 'Select All',
@@ -1010,7 +1027,7 @@ export const CADEditor = React.forwardRef((props: {
         setContextMenu(undefined)
       }
     })
-    setContextMenu(<Menu items={items} style={{ left: viewportPosition.x + 'px', top: viewportPosition.y + 'px' }} />)
+    setContextMenu(<Menu items={items} style={{ left: viewportPosition.x + 'px', top: Math.min(viewportPosition.y, height - core.getMenuHeight(items, 16)) + 'px' }} />)
   })
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
@@ -1095,6 +1112,7 @@ export const CADEditor = React.forwardRef((props: {
     const visiblePanel: JSX.Element[] = []
     const readonlyPanel: JSX.Element[] = []
     let areas = 0
+    let lengths = 0
     selectedContents.forEach(target => {
       types.add(target.content.type)
       const id = target.path[0]
@@ -1144,12 +1162,22 @@ export const CADEditor = React.forwardRef((props: {
       if (area) {
         areas += area
       }
+      const length = model.lengthCache.get(target.content, () => {
+        const lines = getContentModel(target.content)?.getGeometries?.(target.content, state)?.lines
+        return lines ? (core.getGeometryLinesLength(lines) ?? 0) : 0
+      })
+      if (length) {
+        lengths += length
+      }
     })
     propertyPanels.z = zPanel
     propertyPanels.visible = visiblePanel
     propertyPanels.readonly = readonlyPanel
     if (areas) {
       propertyPanels.areas = <NumberEditor value={areas} />
+    }
+    if (lengths) {
+      propertyPanels.lengths = <NumberEditor value={lengths} />
     }
     propertyPanels.debug = <core.Button onClick={() => console.info(selectedContents.map(s => [s.content, getContentModel(s.content)?.getGeometries?.(s.content, state)]))}>log to console</core.Button>
     panel = (

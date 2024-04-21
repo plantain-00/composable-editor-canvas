@@ -1,3 +1,4 @@
+import { deepEquals } from "./math"
 import { WeakValuesChangedCache } from "./weakset-cache"
 
 /**
@@ -106,6 +107,41 @@ export class WeakmapValuesCache<TTarget extends object, TKey extends object, TVa
 
   public clear() {
     this.caches = new WeakMap<TTarget, WeakValuesChangedCache<TKey, TValue>>()
+  }
+}
+
+export class WeakmapValueCache<TTarget extends object, TKey, TValue> {
+  private caches = new WeakMap<TTarget, ValueChangedCache<TKey, TValue>>()
+
+  public get(target: TTarget, keys: TKey, func: () => TValue) {
+    let cache = this.caches.get(target)
+    if (!cache) {
+      cache = new ValueChangedCache<TKey, TValue>()
+      this.caches.set(target, cache)
+    }
+    return cache.get(keys, func)
+  }
+
+  public clear() {
+    this.caches = new WeakMap<TTarget, ValueChangedCache<TKey, TValue>>()
+  }
+}
+
+export class ValueChangedCache<TKey, TValue> {
+  private cache: { key: TKey, value: TValue } | undefined
+
+  public get(key: TKey, func: () => TValue) {
+    if (this.cache === undefined || !deepEquals(this.cache.key, key)) {
+      this.cache = {
+        key,
+        value: func(),
+      }
+    }
+    return this.cache.value
+  }
+
+  public clear() {
+    this.cache = undefined
   }
 }
 

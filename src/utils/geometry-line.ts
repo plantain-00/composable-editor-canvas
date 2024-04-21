@@ -9,13 +9,14 @@ import { getNurbsCurveCurvatureAtParam, getNurbsCurveDerivatives, getNurbsCurveP
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange, normalizeRadian } from "./angle";
-import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, mergeItems, minimumBy, minimumsBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 import { reverseAngle, reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
 import { getGeometryLinesPoints } from "./hatch";
 import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
-import { getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular";
+import { getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular";
+import { breakGeometryLines, mergeGeometryLines } from "./break";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -476,10 +477,10 @@ export function boldGeometryLines(lines: GeometryLine[][], distance = 1): Geomet
     const direction = polygon.direction
     result.push(getParallelGeometryLinesByDistanceDirectionIndex(polygon.lines, direction === baseDirection ? distance : -distance, pointSideToIndex(direction), 'bevel'))
   }
-  return result.map(lines => trimGeometryLines(lines))
+  return result.map(lines => trimHatchGeometryLines(lines))
 }
 
-export function trimGeometryLines(lines: GeometryLine[]): GeometryLine[] {
+export function trimHatchGeometryLines(lines: GeometryLine[]): GeometryLine[] {
   const newLines = reverseClosedGeometryLinesIfAreaIsNegative(lines)
   const reversed = newLines !== lines
   lines = newLines
@@ -491,6 +492,20 @@ export function trimGeometryLines(lines: GeometryLine[]): GeometryLine[] {
     lines = reverseGeometryLines(lines)
   }
   return lines
+}
+
+export function trimGeometryLinesOffsetResult(lines: GeometryLine[], point: Position): GeometryLine[][] {
+  const points = deduplicatePosition(Array.from(iterateGeometryLinesSelfIntersectionPoints(lines)))
+  if (points.length > 0) {
+    let newLines = breakGeometryLines(lines, points)
+    const newLines1 = newLines.filter((_, i) => i % 2 === 0)
+    const newLines2 = newLines.filter((_, i) => i % 2 === 1)
+    const distance1 = Math.min(...newLines1.map(line => line.map(n => getPointAndGeometryLineMinimumDistance(point, n))).flat())
+    const distance2 = Math.min(...newLines2.map(line => line.map(n => getPointAndGeometryLineMinimumDistance(point, n))).flat())
+    newLines = distance1 > distance2 ? newLines2 : newLines1
+    return mergeItems(newLines, mergeGeometryLines)
+  }
+  return [lines]
 }
 
 /**

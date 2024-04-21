@@ -346,7 +346,7 @@ export function getModel(ctx: PluginContext) {
       render(content, renderCtx) {
         const { options, dashed, target } = ctx.getStrokeFillRenderOptionsFromRenderContext(content, renderCtx)
         if (dashed) {
-          return target.renderPolyline(getCircleGeometries(content, renderCtx.contents).points, options)
+          return target.renderPolyline(getArcGeometries(content, renderCtx.contents).points, options)
         }
         return target.renderArc(content.x, content.y, content.r, content.startAngle, content.endAngle, { ...options, counterclockwise: content.counterclockwise })
       },
