@@ -239,7 +239,11 @@ export function getPointAndLineSegmentNearestPointAndDistance(position: Position
       distance: getTwoPointsDistance(position, perpendicularPoint),
     }
   }
-  return minimumBy([{ point: point1, distance: getTwoPointsDistance(position, point1) }, { point: point2, distance: getTwoPointsDistance(position, point2) }], v => v.distance)
+  return getPointAndPointsNearestPointAndDistance(position, [point1, point2])
+}
+
+export function getPointAndPointsNearestPointAndDistance(point: Position, points: Position[]): { point: Position, distance: number } {
+  return minimumBy(points.map(p => ({ point: p, distance: getTwoPointsDistance(point, p) })), v => v.distance)
 }
 
 export function getPointAndRayNearestPointAndDistance(position: Position, ray: Ray, extend = false) {
@@ -281,7 +285,7 @@ export function getPointAndArcNearestPointAndDistance(position: Position, arc: A
     return { point, distance }
   }
   const { start, end } = getArcStartAndEnd(arc)
-  return minimumBy([{ point: start, distance: getTwoPointsDistance(position, start) }, { point: end, distance: getTwoPointsDistance(position, end) }], v => v.distance)
+  return getPointAndPointsNearestPointAndDistance(position, [start, end])
 }
 
 export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc, extend = false) {
@@ -294,7 +298,7 @@ export function getPointAndEllipseArcNearestPointAndDistance(position: Position,
     }
   }
   const { start, end } = getEllipseArcStartAndEnd(ellipseArc)
-  return minimumBy([{ point: start, distance: getTwoPointsDistance(position, start) }, { point: end, distance: getTwoPointsDistance(position, end) }], v => v.distance)
+  return getPointAndPointsNearestPointAndDistance(position, [start, end])
 }
 
 export function getPointAndQuadraticCurveNearestPointAndDistance(position: Position, curve: QuadraticCurve, extend = false) {

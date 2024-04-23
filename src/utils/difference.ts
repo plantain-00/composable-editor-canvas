@@ -133,3 +133,8 @@ export function geometrylineIsOnGeometryLine(line1: GeometryLine, line2: Geometr
 export function isSameGeometryline(line1: GeometryLine, line2: GeometryLine): boolean {
   return geometrylineIsOnGeometryLine(line1, line2) && geometrylineIsOnGeometryLine(line2, line1)
 }
+
+export function isSameGeometrylines(lines1: GeometryLine[], lines2: GeometryLine[]): boolean {
+  if (lines1.length !== lines2.length) return false
+  return lines1.every(n1 => lines2.some(n2 => isSameGeometryline(n1, n2)))
+}

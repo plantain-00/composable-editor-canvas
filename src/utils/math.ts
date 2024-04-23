@@ -142,52 +142,74 @@ export function formatNumber(n: number, precision = 100) {
   return Math.round(n * precision) / precision
 }
 
-export function minimumBy<T>(values: T[], by: (value: T) => number) {
+export function minimumBy<T>(values: T[], by: (value: T) => number, isFinalResult?: (r: number) => boolean) {
   let result = values[0]
+  let byResult: number | undefined
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (lessThan(by(value), by(result))) {
+    if (byResult === undefined) {
+      byResult = by(result)
+      if (isFinalResult?.(byResult)) return result
+    }
+    const newByResult = by(value)
+    if (lessThan(newByResult, byResult)) {
       result = value
+      byResult = newByResult
+      if (isFinalResult?.(newByResult)) return result
     }
   }
   return result
 }
 
-export function maxmiumBy<T>(values: T[], by: (value: T) => number) {
+export function maximumBy<T>(values: T[], by: (value: T) => number, isFinalResult?: (r: number) => boolean) {
   let result = values[0]
+  let byResult: number | undefined
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (largerThan(by(value), by(result))) {
+    if (byResult === undefined) {
+      byResult = by(result)
+      if (isFinalResult?.(byResult)) return result
+    }
+    const newByResult = by(value)
+    if (largerThan(newByResult, byResult)) {
       result = value
+      byResult = newByResult
+      if (isFinalResult?.(newByResult)) return result
     }
   }
   return result
 }
 
-export function minimumsBy<T>(values: T[], by: (value: T) => number) {
-  let result = [values[0]]
+export function minimumsBy<T>(values: T[], by: (value: T) => number): T[] {
+  if (values.length === 0) return []
+  if (values.length === 1) return [values[0]]
+  let result = [{ value: values[0], byValue: by(values[0]) }]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (isSameNumber(by(value), by(result[0]))) {
-      result.push(value)
-    } else if (lessThan(by(value), by(result[0]))) {
-      result = [value]
+    const byValue = by(value)
+    if (isSameNumber(byValue, result[0].byValue)) {
+      result.push({ value, byValue })
+    } else if (lessThan(byValue, result[0].byValue)) {
+      result = [{ value, byValue }]
     }
   }
-  return result
+  return result.map(r => r.value)
 }
 
-export function maxmiumsBy<T>(values: T[], by: (value: T) => number) {
-  let result = [values[0]]
+export function maximumsBy<T>(values: T[], by: (value: T) => number): T[] {
+  if (values.length === 0) return []
+  if (values.length === 1) return [values[0]]
+  let result = [{ value: values[0], byValue: by(values[0]) }]
   for (let i = 1; i < values.length; i++) {
     const value = values[i]
-    if (isSameNumber(by(value), by(result[0]))) {
-      result.push(value)
-    } else if (largerThan(by(value), by(result[0]))) {
-      result = [value]
+    const byValue = by(value)
+    if (isSameNumber(byValue, result[0].byValue)) {
+      result.push({ value, byValue })
+    } else if (largerThan(byValue, result[0].byValue)) {
+      result = [{ value, byValue }]
     }
   }
-  return result
+  return result.map(r => r.value)
 }
 
 export function first<T>(generator: IterableIterator<T>) {

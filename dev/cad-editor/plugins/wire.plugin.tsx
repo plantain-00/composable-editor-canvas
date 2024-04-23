@@ -20,36 +20,78 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
   const LampContent = ctx.and(ctx.BaseContent('lamp'), ctx.Position, {
     size: ctx.number,
   })
+  const getIntersectedWires = (content: Omit<WireContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) => {
+    const lines = Array.from(ctx.iteratePolylineLines(content.points))
+    const wires: WireContent[] = []
+    for (const c of ctx.getSortedContents(contents).contents) {
+      if (!c) continue
+      if (ctx.shallowEquals(c, content)) {
+        return wires
+      }
+      if (isWireContent(c) && ctx.first(ctx.iterateGeometryLinesIntersectionPoints(getWireGeometries(c, contents).lines, lines))) {
+        wires.push(c)
+      }
+    }
+    return wires
+  }
   const getWireRefIds = (content: Omit<WireContent, "type">): model.RefId[] => [...ctx.getStrokeRefIds(content), ...ctx.toRefIds(content.refs)]
   const getLampRefIds = (content: Omit<LampContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
+  const wireGeometriesCache = new ctx.WeakmapValuesCache<Omit<WireContent, "type">, model.BaseContent, model.Geometries<{ joints: core.Position[] }>>()
   function getWireGeometries(content: Omit<WireContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getWireRefIds(content), contents, [content]))
-    return ctx.getGeometriesFromCache(content, refs, () => {
+    getIntersectedWires(content, contents).forEach(e => refs.add(e))
+    return wireGeometriesCache.get(content, refs, () => {
       let lines: core.GeometryLine[] = Array.from(ctx.iteratePolylineLines(content.points))
-      for (const ref of content.refs) {
-        if (ref) {
-          const lamp = ctx.getReference(ref, contents, isLampContent)
-          if (lamp) {
-            const params = ctx.deduplicate(Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getLampGeometries(lamp, contents).lines)).map(p => ctx.getGeometryLinesParamAtPoint(p, lines)), ctx.isSameNumber)
-            if (params.length === 1) {
-              const param = params[0]
-              if (param < lines.length / 2) {
-                lines = ctx.getPartOfGeometryLines(param, lines.length, lines)
-              } else {
-                lines = ctx.getPartOfGeometryLines(0, param, lines)
+      const joints: { position: core.Position, count: number }[] = []
+      for (const ref of refs) {
+        if (isWireContent(ref)) {
+          const intersections = Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getWireGeometries(ref, contents).lines))
+          for (const intersection of intersections) {
+            const param = ctx.getGeometryLinesParamAtPoint(intersection, lines)
+            if (ctx.isZero(param) || ctx.isSameNumber(lines.length, param)) {
+              let joint = joints.find(j => ctx.isSamePoint(j.position, intersection))
+              if (!joint) {
+                joint = { position: intersection, count: 1 }
+                joints.push(joint)
               }
-            } else if (params.length > 1) {
-              lines = [
-                ...ctx.getPartOfGeometryLines(0, Math.min(...params), lines),
-                ...ctx.getPartOfGeometryLines(Math.max(...params), lines.length, lines),
-              ]
+              joint.count++
+              continue
             }
+            const radian = ctx.getGeometryLinesTangentRadianAtParam(param, lines)
+            if (radian === undefined) continue
+            const angle = ctx.radianToAngle(radian)
+            const radius = 5
+            const startPoint = ctx.getPointByLengthAndRadian(intersection, -radius, radian)
+            const endPoint = ctx.getPointByLengthAndRadian(intersection, radius, radian)
+            lines = [
+              ...ctx.getPartOfGeometryLines(0, ctx.getGeometryLinesParamAtPoint(startPoint, lines), lines),
+              { type: 'arc', curve: { x: intersection.x, y: intersection.y, r: radius, startAngle: angle, endAngle: ctx.reverseAngle(angle) } },
+              ...ctx.getPartOfGeometryLines(ctx.getGeometryLinesParamAtPoint(endPoint, lines), lines.length, lines),
+            ]
+          }
+        } else if (isLampContent(ref)) {
+          const params = ctx.deduplicate(Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getLampGeometries(ref, contents).lines)).map(p => ctx.getGeometryLinesParamAtPoint(p, lines)), ctx.isSameNumber)
+          if (params.length === 1) {
+            const param = params[0]
+            if (param < lines.length / 2) {
+              lines = ctx.getPartOfGeometryLines(param, lines.length, lines)
+            } else {
+              lines = ctx.getPartOfGeometryLines(0, param, lines)
+            }
+          } else if (params.length > 1) {
+            lines = [
+              ...ctx.getPartOfGeometryLines(0, Math.min(...params), lines),
+              ...ctx.getPartOfGeometryLines(Math.max(...params), lines.length, lines),
+            ]
           }
         }
       }
+      const validJoints = joints.filter(j => j.count === 3).map(j => j.position)
       return {
         lines,
+        joints: validJoints,
         bounding: ctx.getPointsBounding(content.points),
+        regions: validJoints.length > 0 ? [] : undefined,
         renderingLines: lines.map(line => ctx.dashedPolylineToLines(ctx.getGeometryLinesPoints([line]), content.dashArray)).flat(),
       }
     })
@@ -89,8 +131,11 @@ export function getModel(ctx: PluginContext): [model.Model<WireContent>, model.M
       },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-        const renderingLines = getWireGeometries(content, renderCtx.contents).renderingLines
-        return target.renderGroup(renderingLines.map(line => target.renderPolyline(line, options)))
+        const { renderingLines, joints } = getWireGeometries(content, renderCtx.contents)
+        return target.renderGroup([
+          ...renderingLines.map(line => target.renderPolyline(line, options)),
+          ...joints.map(joint => target.renderCircle(joint.x, joint.y, 1, { fillColor: 0x000000 }))
+        ])
       },
       getGeometries: getWireGeometries,
       propertyPanel(content, update, contents) {

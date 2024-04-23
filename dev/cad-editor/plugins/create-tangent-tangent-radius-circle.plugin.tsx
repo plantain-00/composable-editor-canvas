@@ -133,11 +133,7 @@ export function getCommand(ctx: PluginContext): Command[] {
         const getCandidate = (radius: number) => {
           if (!first || !second) return
           const candidates = getTangentTangentRadiusCircles(first.content, second.content, radius)
-          const candidate = ctx.minimumBy(candidates.map(c => ({
-            content: c,
-            distance: ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point),
-          })), c => c.distance)
-          return candidate?.content
+          return ctx.minimumBy(candidates, c => ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point))
         }
         const { input, setInputPosition, setCursorPosition, clearText, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
           if (e.key === 'Enter') {

@@ -2,7 +2,7 @@ import { getBezierCurvePoints, getQuadraticCurvePoints } from "./bezier"
 import { getGeometryLineCurvatureAtParam, getGeometryLineParamAtPoint, getGeometryLineTangentRadianAtParam, getGeometryLinesParamAtPoint, getPartOfGeometryLine, getPartOfGeometryLines, pointIsOnGeometryLine, splitGeometryLines, trimHatchGeometryLines } from "./geometry-line"
 import { getGeometryLineStartAndEnd, isGeometryLinesClosed } from "./geometry-line"
 import { printGeometryLine, printParam, printPoint } from "./debug"
-import { applyToItems, deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maxmiumBy, maxmiumsBy, minimumBy, minimumsBy } from "./math"
+import { applyToItems, deduplicate, deepEquals, equals, first, isSameNumber, isZero, largerOrEqual, largerThan, lessOrEqual, maximumBy, maximumsBy, minimumBy, minimumsBy } from "./math"
 import { Position, deduplicatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { TwoPointsFormRegion } from "./region"
@@ -18,6 +18,7 @@ import { mergeGeometryLine } from "./merge"
 import { getNurbsPoints } from "./nurbs"
 import { getParallelGeometryLinesByDistanceDirectionIndex, getRadianSideOfRadian } from "./parallel"
 import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine, reverseGeometryLines, reverseRadian } from "./reverse"
+import { isSameGeometrylines } from "./difference"
 
 export function getHatchByPosition(
   position: Position,
@@ -291,7 +292,7 @@ export function optimizeHatchInternally(border: GeometryLine[], holes: GeometryL
   return [{ border, holes }]
 }
 
-interface Hatch {
+export interface Hatch {
   border: GeometryLine[]
   holes: GeometryLine[][]
 }
@@ -320,7 +321,7 @@ export function mergeHatchBorders(border1: GeometryLine[], border2: GeometryLine
     if (results.length < 2) {
       return results[0]
     }
-    return maxmiumBy(results.map(r => ({ line: r, area: getPolygonArea(getGeometryLinesPoints(r)) })), a => a.area).line
+    return maximumBy(results, a => getPolygonArea(getGeometryLinesPoints(a)))
   }
   return
 }
@@ -328,7 +329,11 @@ export function mergeHatchBorders(border1: GeometryLine[], border2: GeometryLine
 export function mergeHatches(hatch1: Hatch, hatch2: Hatch): Hatch[] | undefined {
   const mergedBorder = mergeHatchBorders(hatch1.border, hatch2.border)
   if (!mergedBorder) return
-  return optimizeHatch(mergedBorder, [...hatch1.holes, ...hatch2.holes])
+  const holes = deduplicate([
+    ...hatch1.holes.map(b => getHatchesDifference({ border: b, holes: [] }, [hatch2]).map(h => h.border)).flat(),
+    ...hatch2.holes.map(b => getHatchesDifference({ border: b, holes: [] }, [hatch1]).map(h => h.border)).flat(),
+  ], isSameGeometrylines)
+  return optimizeHatch(mergedBorder, holes)
 }
 
 export function getHatchesUnion(hatch: Hatch, hatches: Hatch[]): Hatch[] {
@@ -341,13 +346,15 @@ export function getHatchesDifference(hatch: Hatch, hatches: Hatch[]): Hatch[] {
   if (hatch.holes) {
     holes.push(...hatch.holes)
   }
+  const result: Hatch[] = []
   for (const child of hatches) {
     holes.push(child.border)
     if (child.holes) {
-      borders.push(...child.holes)
+      result.push(...child.holes.map(h => getHatchesIntersection(hatch, [{ border: h, holes: [] }])).flat())
     }
   }
-  return borders.map(b => optimizeHatch(b, holes)).flat()
+  result.push(...borders.map(b => optimizeHatch(b, holes)).flat())
+  return result
 }
 
 export function getHatchesIntersection(hatch: Hatch, hatches: Hatch[]): Hatch[] {
@@ -410,7 +417,7 @@ export function getRightSideGeometryLineAtPoint(point: Position, line0: Geometry
     radian0 = reverseRadian(radian0)
     curvature0 = -curvature0
   }
-  const radianLines = maxmiumsBy(lines.map(line => {
+  const radianLines = maximumsBy(lines.map(line => {
     const param = getGeometryLineParamAtPoint(point, line)
     const radian = getGeometryLineTangentRadianAtParam(param, line)
     const directions: { radian: number, reversed: boolean, curvature?: number }[] = []
@@ -438,17 +445,14 @@ export function getRightSideGeometryLineAtPoint(point: Position, line0: Geometry
       }
     }
     return {
-      ...maxmiumBy(directions, d => d.radian),
+      ...maximumBy(directions, d => d.radian),
       line,
       param,
     }
   }), n => n.radian)
   let result = radianLines[0]
   if (radianLines.length > 1) {
-    result = maxmiumBy(radianLines.map(r => ({
-      ...r,
-      curvature: r.curvature ?? (getGeometryLineCurvatureAtParam(r.line, r.param) * (r.reversed ? -1 : 1)),
-    })), r => r.curvature)
+    result = maximumBy(radianLines, r => r.curvature ?? (getGeometryLineCurvatureAtParam(r.line, r.param) * (r.reversed ? -1 : 1)))
   }
   return { line: result.line, reversed: result.reversed }
 }
