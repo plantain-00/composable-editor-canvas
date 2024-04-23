@@ -1,5 +1,5 @@
 import test from 'ava'
-import { GeometryLine, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, getHatchesIntersection, getRightSideGeometryLineAtPoint, mergeHatchBorders, optimizeHatch } from '../src'
+import { GeometryLine, Hatch, HatchGeometries, boldHatch, geometryLinesToHatches, getHatchByPosition, getHatchesDifference, getHatchesIntersection, getHatchesUnion, getRightSideGeometryLineAtPoint, mergeHatchBorders, optimizeHatch } from '../src'
 
 test('getHatchByPosition', (t) => {
   const lines1: HatchGeometries[] = [
@@ -7063,4 +7063,153 @@ test('getRightSideGeometryLineAtPoint', t => {
 
 test('getHatchesIntersection', t => {
   t.snapshot(getHatchesIntersection({ border: d, holes: [] }, [{ border: e, holes: [] }]))
+})
+
+const hatch1: Hatch = { "border": [[{ "x": 320, "y": -70 }, { "x": 400, "y": -100 }], [{ "x": 400, "y": -100 }, { "x": 390, "y": -40 }], [{ "x": 390, "y": -40 }, { "x": 320, "y": -70 }]], "holes": [] }
+const hatch2: Hatch = { "border": [[{ "x": 350, "y": 0 }, { "x": 260, "y": -80 }], [{ "x": 260, "y": -80 }, { "x": 350, "y": -120 }], [{ "x": 350, "y": -120 }, { "x": 350, "y": 0 }]], "holes": [[[{ "x": 300, "y": -70 }, { "x": 330, "y": -90 }], [{ "x": 330, "y": -90 }, { "x": 330, "y": -40 }], [{ "x": 330, "y": -40 }, { "x": 300, "y": -70 }]]] }
+
+test('getHatchesDifference', t => {
+  t.snapshot(getHatchesDifference(hatch1, [hatch2]))
+})
+
+test('getHatchesUnion', t => {
+  t.snapshot(getHatchesUnion(hatch1, [hatch2]))
+  t.snapshot(getHatchesUnion(
+    {
+      "border": [
+        [
+          {
+            "x": 350,
+            "y": 140
+          },
+          {
+            "x": 260,
+            "y": 60
+          }
+        ],
+        [
+          {
+            "x": 260,
+            "y": 60
+          },
+          {
+            "x": 350,
+            "y": 20
+          }
+        ],
+        [
+          {
+            "x": 350,
+            "y": 20
+          },
+          {
+            "x": 350,
+            "y": 140
+          }
+        ]
+      ],
+      "holes": [
+        [
+          [
+            {
+              "x": 280,
+              "y": 60
+            },
+            {
+              "x": 340,
+              "y": 30.000000000000004
+            }
+          ],
+          [
+            {
+              "x": 340,
+              "y": 30
+            },
+            {
+              "x": 340,
+              "y": 120
+            }
+          ],
+          [
+            {
+              "x": 340,
+              "y": 120
+            },
+            {
+              "x": 280,
+              "y": 59.999999999999986
+            }
+          ]
+        ]
+      ]
+    },
+    [{
+      "border": [
+        [
+          {
+            "x": 390,
+            "y": 140
+          },
+          {
+            "x": 300,
+            "y": 60
+          }
+        ],
+        [
+          {
+            "x": 300,
+            "y": 60
+          },
+          {
+            "x": 390,
+            "y": 20
+          }
+        ],
+        [
+          {
+            "x": 390,
+            "y": 20
+          },
+          {
+            "x": 390,
+            "y": 140
+          }
+        ]
+      ],
+      "holes": [
+        [
+          [
+            {
+              "x": 320,
+              "y": 60
+            },
+            {
+              "x": 380,
+              "y": 30.000000000000004
+            }
+          ],
+          [
+            {
+              "x": 380,
+              "y": 30
+            },
+            {
+              "x": 380,
+              "y": 120
+            }
+          ],
+          [
+            {
+              "x": 380,
+              "y": 120
+            },
+            {
+              "x": 320,
+              "y": 59.999999999999986
+            }
+          ]
+        ]
+      ]
+    }]
+  ))
 })

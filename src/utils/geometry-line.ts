@@ -9,7 +9,7 @@ import { getNurbsCurveCurvatureAtParam, getNurbsCurveDerivatives, getNurbsCurveP
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
 import { getAngleInRange, AngleRange, normalizeRadian } from "./angle";
-import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maxmiumBy, maxmiumsBy, mergeItems, minimumBy, minimumsBy } from "./math";
+import { deduplicate, equals, first, isBetween, isSameNumber, isZero, largerThan, lessOrEqual, lessThan, maximumBy, maximumsBy, mergeItems, minimumBy, minimumsBy } from "./math";
 import { radianToAngle, getTwoPointsRadian, angleToRadian } from "./radian";
 import { getArcTangentRadianAtRadian, getEllipseArcTangentRadianAtRadian, getQuadraticCurveTangentRadianAtPercent, getBezierCurveTangentRadianAtPercent } from "./tangency";
 import { reverseAngle, reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLines } from "./reverse";
@@ -253,6 +253,20 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
   }
 }
 
+export function getGeometryLinesTangentRadianAtParam(param: number, lines: GeometryLine[]) {
+  for (const line of lines) {
+    if (!Array.isArray(line) && line.type === 'ray') {
+      return getGeometryLineTangentRadianAtParam(param, line)
+    }
+    if (lessThan(param, 0)) return
+    if (lessOrEqual(param, 1)) {
+      return getGeometryLineTangentRadianAtParam(param, line)
+    }
+    param--
+  }
+  return
+}
+
 export function getGeometryLinesPointAtParam(param: number, lines: GeometryLine[]) {
   for (const line of lines) {
     if (!Array.isArray(line) && line.type === 'ray') {
@@ -398,11 +412,13 @@ export function splitGeometryLines(lines: GeometryLine[], type?: 'union' | 'inte
     if (!type) {
       return result
     }
-    results.push({ result, areas })
+    if (result.length > 0) {
+      results.push({ result, areas })
+    }
   }
   if (results.length > 0) {
     if (type === 'intersection') {
-      const result = minimumBy(results.map(r => ({ ...r, area: r.areas.reduce((p, c) => p + Math.abs(c)) })), r => r.area)
+      const result = minimumBy(results, r => r.areas.reduce((p, c) => p + Math.abs(c)))
       const indexes = result.areas.map((a, i) => ({ area: a, index: i })).filter(a => a.area > 0).map(a => a.index)
       return result.result.filter((_, i) => indexes.includes(i))
     }
@@ -484,10 +500,7 @@ export function trimHatchGeometryLines(lines: GeometryLine[]): GeometryLine[] {
   const newLines = reverseClosedGeometryLinesIfAreaIsNegative(lines)
   const reversed = newLines !== lines
   lines = newLines
-  lines = maxmiumBy(splitGeometryLines(lines).map(n => ({
-    lines: n,
-    area: Math.abs(getPolygonArea(getGeometryLinesPoints(n, 10))),
-  })), n => n.area).lines
+  lines = maximumBy(splitGeometryLines(lines), n => Math.abs(getPolygonArea(getGeometryLinesPoints(n, 10))))
   if (reversed) {
     lines = reverseGeometryLines(lines)
   }
@@ -539,7 +552,7 @@ export function getNearestGeometryLines(point: Position, lines: GeometryLine[]):
     line,
   })), v => v.distance)
   if (result.length > 1) {
-    const radianLines = maxmiumsBy(result.map(m => {
+    const radianLines = maximumsBy(result.map(m => {
       const param = getGeometryLineParamAtPoint(m.point, m.line)
       let radian = normalizeRadian(getTwoPointsRadian(m.point, point) - getGeometryLineTangentRadianAtParam(param, m.line))
       let reversed = false
@@ -559,12 +572,7 @@ export function getNearestGeometryLines(point: Position, lines: GeometryLine[]):
       }
     }), m => m.radian)
     if (radianLines.length > 1) {
-      result = maxmiumsBy(radianLines.map(m => {
-        return {
-          ...m,
-          curvature: getGeometryLineCurvatureAtParam(m.line, m.param) * (m.reversed ? -1 : 1),
-        }
-      }), m => m.curvature)
+      result = maximumsBy(radianLines, m => getGeometryLineCurvatureAtParam(m.line, m.param) * (m.reversed ? -1 : 1))
     } else {
       result = radianLines
     }

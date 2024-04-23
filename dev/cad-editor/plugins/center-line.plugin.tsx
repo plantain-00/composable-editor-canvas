@@ -21,10 +21,10 @@ export function getModel(ctx: PluginContext): model.Model<CenterLineReferenceCon
       const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent)
       const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent)
       if (ref1 && ref2) {
-        const line = ctx.maxmiumBy([
+        const line = ctx.maximumBy([
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])] as [core.Position, core.Position],
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[1]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[0])] as [core.Position, core.Position],
-        ].map(r => ({ line: r, length: ctx.getTwoPointsDistance(...r) })), v => v.length).line
+        ], v => ctx.getTwoPointsDistance(...v))
         return {
           lines: [line],
           bounding: ctx.getPointsBounding(line),

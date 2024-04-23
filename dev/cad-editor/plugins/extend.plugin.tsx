@@ -122,10 +122,7 @@ export function getCommand(ctx: PluginContext): Command {
                   return
                 }
               } else if (points.length > 0) {
-                const point = points.length === 1 ? points[0] : ctx.minimumBy(points.map(point => ({
-                  point,
-                  distance: ctx.getTwoPointsDistanceSquare(p, point),
-                })), n => n.distance).point
+                const point = ctx.minimumBy(points, n => ctx.getTwoPointsDistanceSquare(p, n))
                 setHovering({
                   ...s,
                   point,

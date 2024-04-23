@@ -82,6 +82,10 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
   if (result && pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
     return result
   }
+  if (!result) {
+    if (isSamePoint(p1Start, p2Start) || isSamePoint(p1Start, p2End)) return p1Start
+    if (isSamePoint(p1End, p2Start) || isSamePoint(p1End, p2End)) return p1End
+  }
   return undefined
 }
 

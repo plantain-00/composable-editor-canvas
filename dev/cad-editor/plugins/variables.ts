@@ -816,10 +816,10 @@ function getModel(ctx) {
       const ref1 = ctx.getRefPart(content.ref1, contents, isLineContent);
       const ref2 = ctx.getRefPart(content.ref2, contents, isLineContent);
       if (ref1 && ref2) {
-        const line = ctx.maxmiumBy([
+        const line = ctx.maximumBy([
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[0]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[1])],
           [ctx.getTwoPointCenter(ref1.points[0], ref2.points[1]), ctx.getTwoPointCenter(ref1.points[1], ref2.points[0])]
-        ].map((r) => ({ line: r, length: ctx.getTwoPointsDistance(...r) })), (v) => v.length).line;
+        ], (v) => ctx.getTwoPointsDistance(...v));
         return {
           lines: [line],
           bounding: ctx.getPointsBounding(line),
@@ -2696,11 +2696,7 @@ function getCommand(ctx) {
           if (!first || !second)
             return;
           const candidates = getTangentTangentRadiusCircles(first.content, second.content, radius);
-          const candidate = ctx.minimumBy(candidates.map((c) => ({
-            content: c,
-            distance: ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point)
-          })), (c) => c.distance);
-          return candidate == null ? void 0 : candidate.content;
+          return ctx.minimumBy(candidates, (c) => ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point));
         };
         const { input, setInputPosition, setCursorPosition, clearText, resetInput } = ctx.useCursorInput(message, type ? (e, text) => {
           if (e.key === "Enter") {
@@ -4333,10 +4329,7 @@ function getCommand(ctx) {
                   return;
                 }
               } else if (points.length > 0) {
-                const point = points.length === 1 ? points[0] : ctx.minimumBy(points.map((point2) => ({
-                  point: point2,
-                  distance: ctx.getTwoPointsDistanceSquare(p, point2)
-                })), (n) => n.distance).point;
+                const point = ctx.minimumBy(points, (n) => ctx.getTwoPointsDistanceSquare(p, n));
                 setHovering({
                   ...s,
                   point,
@@ -11276,6 +11269,42 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/shortest.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "24,50 24,56 23,61 22,67 20,72 18,77 15,82 12,87 9,91 5,95 1,99 -3,102 -8,105 -13,108 -18,110 -23,112 -29,113 -34,114 -40,114 -46,114 -51,113 -57,112 -62,110 -67,108 -72,105 -77,102 -81,99 -85,95 -89,91 -92,87 -95,82 -98,77 -100,72 -102,67 -103,61 -104,56 -104,50 -104,44 -103,39 -102,33 -100,28 -98,23 -95,18 -92,13 -89,9 -85,5 -81,1 -77,-2 -72,-5 -67,-8 -62,-10 -57,-12 -51,-13 -46,-14 -40,-14 -34,-14 -29,-13 -23,-12 -18,-10 -13,-8 -8,-5 -3,-2 1,1 5,5 9,9 12,13 15,18 18,23 20,28 22,33 23,39 24,44 24,50", strokeWidth: "4", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "204,50 204,56 203,61 202,67 200,72 198,77 195,82 192,87 189,91 185,95 181,99 177,102 172,105 167,108 162,110 157,112 151,113 146,114 140,114 134,114 129,113 123,112 118,110 113,108 108,105 103,102 99,99 95,95 91,91 88,87 85,82 82,77 80,72 78,67 77,61 76,56 76,50 76,44 77,39 78,33 80,28 82,23 85,18 88,13 91,9 95,5 99,1 103,-2 108,-5 113,-8 118,-10 123,-12 129,-13 134,-14 140,-14 146,-14 151,-13 157,-12 162,-10 167,-8 172,-5 177,-2 181,1 185,5 189,9 192,13 195,18 198,23 200,28 202,33 203,39 204,44 204,50", strokeWidth: "4", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "24,50 76,50", strokeWidth: "4", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "24", cy: "50", r: "6", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "76", cy: "50", r: "6", strokeWidth: "0", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "currentColor" }));
+  return {
+    name: "shortest",
+    execute({ contents, selected }) {
+      var _a, _b, _c, _d;
+      const first = contents[selected[0][0]];
+      if (!first)
+        return;
+      const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
+      if (!firstGeometries)
+        return;
+      const second = contents[selected[1][0]];
+      if (!second)
+        return;
+      const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
+      if (!secondGeometries)
+        return;
+      const result = ctx.getShortestDistanceOfTwoGeometryLines(firstGeometries.lines, secondGeometries.lines);
+      if (result && ctx.largerThan(result.distance, 0)) {
+        contents.push({ type: "line", points: result.points });
+      }
+    },
+    contentSelectable(content, contents) {
+      return ctx.contentIsDeletable(content, contents);
+    },
+    selectCount: 2,
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/skew.plugin.tsx
 function getCommand(ctx) {
   const React = ctx.React;
@@ -13958,36 +13987,80 @@ function getModel(ctx) {
   const LampContent = ctx.and(ctx.BaseContent("lamp"), ctx.Position, {
     size: ctx.number
   });
+  const getIntersectedWires = (content, contents) => {
+    const lines = Array.from(ctx.iteratePolylineLines(content.points));
+    const wires = [];
+    for (const c of ctx.getSortedContents(contents).contents) {
+      if (!c)
+        continue;
+      if (ctx.shallowEquals(c, content)) {
+        return wires;
+      }
+      if (isWireContent(c) && ctx.first(ctx.iterateGeometryLinesIntersectionPoints(getWireGeometries(c, contents).lines, lines))) {
+        wires.push(c);
+      }
+    }
+    return wires;
+  };
   const getWireRefIds = (content) => [...ctx.getStrokeRefIds(content), ...ctx.toRefIds(content.refs)];
   const getLampRefIds = (content) => ctx.getStrokeRefIds(content);
+  const wireGeometriesCache = new ctx.WeakmapValuesCache();
   function getWireGeometries(content, contents) {
     const refs = new Set(ctx.iterateRefContents(getWireRefIds(content), contents, [content]));
-    return ctx.getGeometriesFromCache(content, refs, () => {
+    getIntersectedWires(content, contents).forEach((e) => refs.add(e));
+    return wireGeometriesCache.get(content, refs, () => {
       let lines = Array.from(ctx.iteratePolylineLines(content.points));
-      for (const ref of content.refs) {
-        if (ref) {
-          const lamp = ctx.getReference(ref, contents, isLampContent);
-          if (lamp) {
-            const params = ctx.deduplicate(Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getLampGeometries(lamp, contents).lines)).map((p) => ctx.getGeometryLinesParamAtPoint(p, lines)), ctx.isSameNumber);
-            if (params.length === 1) {
-              const param = params[0];
-              if (param < lines.length / 2) {
-                lines = ctx.getPartOfGeometryLines(param, lines.length, lines);
-              } else {
-                lines = ctx.getPartOfGeometryLines(0, param, lines);
+      const joints = [];
+      for (const ref of refs) {
+        if (isWireContent(ref)) {
+          const intersections = Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getWireGeometries(ref, contents).lines));
+          for (const intersection of intersections) {
+            const param = ctx.getGeometryLinesParamAtPoint(intersection, lines);
+            if (ctx.isZero(param) || ctx.isSameNumber(lines.length, param)) {
+              let joint = joints.find((j) => ctx.isSamePoint(j.position, intersection));
+              if (!joint) {
+                joint = { position: intersection, count: 1 };
+                joints.push(joint);
               }
-            } else if (params.length > 1) {
-              lines = [
-                ...ctx.getPartOfGeometryLines(0, Math.min(...params), lines),
-                ...ctx.getPartOfGeometryLines(Math.max(...params), lines.length, lines)
-              ];
+              joint.count++;
+              continue;
             }
+            const radian = ctx.getGeometryLinesTangentRadianAtParam(param, lines);
+            if (radian === void 0)
+              continue;
+            const angle = ctx.radianToAngle(radian);
+            const radius = 5;
+            const startPoint = ctx.getPointByLengthAndRadian(intersection, -radius, radian);
+            const endPoint = ctx.getPointByLengthAndRadian(intersection, radius, radian);
+            lines = [
+              ...ctx.getPartOfGeometryLines(0, ctx.getGeometryLinesParamAtPoint(startPoint, lines), lines),
+              { type: "arc", curve: { x: intersection.x, y: intersection.y, r: radius, startAngle: angle, endAngle: ctx.reverseAngle(angle) } },
+              ...ctx.getPartOfGeometryLines(ctx.getGeometryLinesParamAtPoint(endPoint, lines), lines.length, lines)
+            ];
+          }
+        } else if (isLampContent(ref)) {
+          const params = ctx.deduplicate(Array.from(ctx.iterateGeometryLinesIntersectionPoints(lines, getLampGeometries(ref, contents).lines)).map((p) => ctx.getGeometryLinesParamAtPoint(p, lines)), ctx.isSameNumber);
+          if (params.length === 1) {
+            const param = params[0];
+            if (param < lines.length / 2) {
+              lines = ctx.getPartOfGeometryLines(param, lines.length, lines);
+            } else {
+              lines = ctx.getPartOfGeometryLines(0, param, lines);
+            }
+          } else if (params.length > 1) {
+            lines = [
+              ...ctx.getPartOfGeometryLines(0, Math.min(...params), lines),
+              ...ctx.getPartOfGeometryLines(Math.max(...params), lines.length, lines)
+            ];
           }
         }
       }
+      const validJoints = joints.filter((j) => j.count === 3).map((j) => j.position);
       return {
         lines,
+        joints: validJoints,
         bounding: ctx.getPointsBounding(content.points),
+        regions: validJoints.length > 0 ? [] : void 0,
         renderingLines: lines.map((line) => ctx.dashedPolylineToLines(ctx.getGeometryLinesPoints([line]), content.dashArray)).flat()
       };
     });
@@ -14027,8 +14100,11 @@ function getModel(ctx) {
       },
       render(content, renderCtx) {
         const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
-        const renderingLines = getWireGeometries(content, renderCtx.contents).renderingLines;
-        return target.renderGroup(renderingLines.map((line) => target.renderPolyline(line, options)));
+        const { renderingLines, joints } = getWireGeometries(content, renderCtx.contents);
+        return target.renderGroup([
+          ...renderingLines.map((line) => target.renderPolyline(line, options)),
+          ...joints.map((joint) => target.renderCircle(joint.x, joint.y, 1, { fillColor: 0 }))
+        ]);
       },
       getGeometries: getWireGeometries,
       propertyPanel(content, update, contents) {
