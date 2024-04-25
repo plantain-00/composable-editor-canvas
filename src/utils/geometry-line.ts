@@ -4,7 +4,7 @@ import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, poi
 import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc, getEllipseArcCurvatureAtRadian } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
-import { Ray, getLineParamAtPoint, getPolygonArea, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay } from "./line";
+import { GeneralFormLine, Ray, getLineParamAtPoint, getPolygonArea, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointAndDirectionToGeneralFormLine, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "./line";
 import { getNurbsCurveCurvatureAtParam, getNurbsCurveDerivatives, getNurbsCurveParamAtPoint, getNurbsCurvePointAtParam, getNurbsCurveStartAndEnd, getNurbsMaxParam, getPartOfNurbsCurve, NurbsCurve, pointIsOnNurbsCurve } from "./nurbs";
 import { Position, deduplicatePosition, getPointByLengthAndDirection, getTwoPointsDistance, isSamePoint } from "./position";
 import { Path, ValidationResult, validate, tuple } from "./validators";
@@ -597,4 +597,18 @@ export function getSeparatedGeometryLines(lines: GeometryLine[]): GeometryLine[]
     result.push(current)
   }
   return result
+}
+
+export function lineSegmentOrRayToGeneralFormLine(line: [Position, Position] | { type: 'ray', line: Ray }): GeneralFormLine | undefined {
+  if (Array.isArray(line)) {
+    return twoPointLineToGeneralFormLine(...line)
+  }
+  return pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle))
+}
+
+export function getLineSegmentOrRayPoint(line: [Position, Position] | { type: 'ray', line: Ray }): Position {
+  if (Array.isArray(line)) {
+    return line[0]
+  }
+  return line.line
 }
