@@ -134,7 +134,6 @@ export function isGeometryLinesContent(content: model.BaseContent): content is G
 }
 
 export function getCommand(ctx: PluginContext): Command[] {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const React = ctx.React
   return [
     {

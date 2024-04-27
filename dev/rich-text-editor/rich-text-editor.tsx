@@ -33,7 +33,6 @@ export const RichTextEditor = React.forwardRef((props: {
       }
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'z') {
-          // eslint-disable-next-line plantain/promise-not-await
           e.shiftKey ? redo(e) : undo(e)
           return true
         }

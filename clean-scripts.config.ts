@@ -35,7 +35,7 @@ export default {
           await Promise.all(packages.map(bundleJs))
           return { name: 'bundle js' }
         },
-        `eslint --no-eslintrc --parser-options ecmaVersion:latest --parser-options sourceType:module --plugin unused-imports --rule 'unused-imports/no-unused-imports:error' ${packages.map(p => `packages/${p.name}/index.js`).join(' ')} --fix`,
+        `eslint --no-config-lookup --parser-options ecmaVersion:latest --parser-options sourceType:module --plugin unused-imports --rule 'unused-imports/no-unused-imports:error' ${packages.map(p => `packages/${p.name}/index.js`).join(' ')} --fix`,
         async () => {
           await Promise.all(packages.map(bundleJs2))
           return { name: 'bundle js 2' }
@@ -70,12 +70,12 @@ export default {
     webpack: 'webpack serve --config dev/webpack.dev.js',
   },
   lint: {
-    ts: `eslint --ext .js,.ts ${tsFiles}`,
+    ts: `eslint ${tsFiles}`,
     markdown: `markdownlint README.md`,
     typeCoverage: 'type-coverage -p src/tsconfig.browser.json --strict',
     typeCoverageDev: 'type-coverage -p dev --strict'
   },
-  fix: `eslint --ext .js,.ts ${tsFiles} --fix`
+  fix: `eslint ${tsFiles} --fix`
 }
 
 const readFileAsync = promisify(readFile)
