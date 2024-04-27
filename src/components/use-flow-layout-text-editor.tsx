@@ -56,7 +56,6 @@ export function useFlowLayoutTextEditor(props: {
         if (e.key === 'c' || e.key === 'x') {
           const contents = getCopiedContents(e.key === 'x')
           if (contents) {
-            // eslint-disable-next-line plantain/promise-not-await
             navigator.clipboard.writeText(contents.join(''))
           }
           return true

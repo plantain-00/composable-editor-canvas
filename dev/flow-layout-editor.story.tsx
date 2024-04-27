@@ -28,7 +28,6 @@ export default () => {
       }
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'v') {
-          // eslint-disable-next-line plantain/promise-not-await
           navigator.clipboard.readText().then(v => {
             if (v) {
               inputContent(JSON.parse(v))
@@ -40,7 +39,6 @@ export default () => {
         if (e.key === 'c' || e.key === 'x') {
           const contents = getCopiedContents(e.key === 'x')
           if (contents) {
-            // eslint-disable-next-line plantain/promise-not-await
             navigator.clipboard.writeText(JSON.stringify(contents))
           }
           return true

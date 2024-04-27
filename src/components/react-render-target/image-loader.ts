@@ -27,7 +27,6 @@ export function getImageFromCache(
   const image = images.get(url)
   if (!image) {
     images.set(url, [])
-    // eslint-disable-next-line plantain/promise-not-await
     loadImage(url, options?.crossOrigin).then(image => {
       createImageBitmap(image).then(imageBitmap => {
         const listeners = images.get(url)

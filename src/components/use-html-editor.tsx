@@ -162,7 +162,6 @@ export function useHtmlEditor(props: {
           const contents = getCopiedContents(e.key === 'x')
           if (contents) {
             const html = renderToStaticMarkup(<>{renderContents(contents, () => false, renderInline)}</>)
-            // eslint-disable-next-line plantain/promise-not-await
             navigator.clipboard.write([new ClipboardItem({
               'text/plain': new Blob([JSON.stringify(contents)], { type: 'text/plain' }),
               'text/html': new Blob([html], { type: 'text/html' }),
