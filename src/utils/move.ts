@@ -6,7 +6,7 @@ import { Arc, getCircleRadian, pointIsOnCircle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { GeometryLine } from "./geometry-line"
 import { angleToRadian, getTwoPointsRadian, radianToAngle } from "./radian"
-import { equals, isZero } from "./math"
+import { equals, isZero, mirrorNumber } from "./math"
 import { calculateEquation2 } from "./equation-calculater"
 import { pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
 
@@ -97,8 +97,8 @@ export function mirrorPoint(point: Position, line: GeneralFormLine) {
 
 export function mirrorArc(arc: Arc, line: GeneralFormLine, angle: number) {
   mirrorPoint(arc, line)
-  const startAngle = 2 * angle - arc.endAngle
-  const endAngle = 2 * angle - arc.startAngle
+  const startAngle = mirrorNumber(arc.endAngle, angle)
+  const endAngle = mirrorNumber(arc.startAngle, angle)
   arc.startAngle = startAngle
   arc.endAngle = endAngle
 }
@@ -107,7 +107,7 @@ export function mirrorEllipse(ellipse: Ellipse, line: GeneralFormLine, angle: nu
   const p = mirrorPoint(getEllipseCenter(ellipse), line)
   ellipse.cx = p.x
   ellipse.cy = p.y
-  ellipse.angle = 2 * angle - (ellipse.angle ?? 0)
+  ellipse.angle = mirrorNumber(ellipse.angle ?? 0, angle)
 }
 
 export function mirrorGeometryLine(content: GeometryLine, line: GeneralFormLine, angle: number) {

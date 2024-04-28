@@ -1,13 +1,13 @@
 import { BezierCurve, QuadraticCurve, getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
-import { Circle, getCirclePointAtRadian } from "./circle"
+import { Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
 import { Ellipse, getEllipsePointAtRadian } from "./ellipse"
 import { calculateEquation2 } from "./equation-calculater"
 import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lineSegmentOrRayToGeneralFormLine, pointIsOnGeometryLine } from "./geometry-line"
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
-import { isZero, minimumBy } from "./math"
-import { getPerpendicularPoint, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
+import { isSameNumber, isZero, minimumBy } from "./math"
+import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
 import { Position, getPointByLengthAndDirection, getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint } from "./position"
 import { angleToRadian } from "./radian"
 import { reverseRadian } from "./reverse"
@@ -46,6 +46,12 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
   } else if (line1.type === 'arc') {
     if (line2.type === 'arc') {
       results = getTwoCircleExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'ellipse arc') {
+      results = getCircleAndEllipseExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'quadratic curve') {
+      results = getCircleAndQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'bezier curve') {
+      results = getCircleAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'arc') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
@@ -161,4 +167,34 @@ export function getTwoCircleExtremumPoints(circle1: Circle, circle2: Circle): Tu
   const p21 = getCirclePointAtRadian(circle2, t1)
   const p22 = getCirclePointAtRadian(circle2, t2)
   return [[p11, p21], [p12, p21], [p11, p22], [p12, p22]]
+}
+
+export function getCircleAndEllipseExtremumPoints(circle: Circle, ellipse: Ellipse): Tuple2<Position>[] {
+  if (isSameNumber(ellipse.rx, ellipse.ry)) {
+    return getTwoCircleExtremumPoints(circle, { x: ellipse.cx, y: ellipse.cy, r: ellipse.rx })
+  }
+  const ts = getPerpendicularPointRadiansToEllipse(circle, ellipse)
+  return ts.map(t => {
+    const p = getEllipsePointAtRadian(ellipse, t)
+    const t1 = getCircleRadian(p, circle)
+    return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
+  }).flat()
+}
+
+export function getCircleAndQuadraticCurveExtremumPoints(circle: Circle, curve: QuadraticCurve): Tuple2<Position>[] {
+  const ts = getPerpendicularPercentToQuadraticCurve(circle, curve)
+  return ts.map(t => {
+    const p = getQuadraticCurvePointAtPercent(curve.from, curve.cp, curve.to, t)
+    const t1 = getCircleRadian(p, circle)
+    return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
+  }).flat()
+}
+
+export function getCircleAndBezierCurveExtremumPoints(circle: Circle, curve: BezierCurve): Tuple2<Position>[] {
+  const ts = getPerpendicularPercentToBezierCurve(circle, curve)
+  return ts.map(t => {
+    const p = getBezierCurvePointAtPercent(curve.from, curve.cp1, curve.cp2, curve.to, t)
+    const t1 = getCircleRadian(p, circle)
+    return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
+  }).flat()
 }
