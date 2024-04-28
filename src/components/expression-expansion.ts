@@ -536,6 +536,32 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
             right: deriveExpressionWith(a, by),
           }
         }
+      } else if (functionName === 'tan') {
+        return {
+          type: 'BinaryExpression',
+          operator: '/',
+          left: {
+            type: 'BinaryExpression',
+            operator: '/',
+            left: deriveExpressionWith(a, by),
+            right: {
+              type: 'CallExpression',
+              callee: {
+                type: 'Identifier',
+                name: 'cos',
+              },
+              arguments: e.arguments,
+            },
+          },
+          right: {
+            type: 'CallExpression',
+            callee: {
+              type: 'Identifier',
+              name: 'cos',
+            },
+            arguments: e.arguments,
+          },
+        }
       }
     }
   }

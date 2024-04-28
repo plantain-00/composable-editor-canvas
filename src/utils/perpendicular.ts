@@ -1,12 +1,12 @@
 import { getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
-import { calculateEquation3, calculateEquation5, newtonIterate } from "./equation-calculater"
-import { minimumBy, delta2, isValidPercent } from "./math"
+import { calculateEquation3, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
+import { minimumBy, delta2, isValidPercent, isBetween, deduplicate, isSameNumber, mirrorNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
 import { getTwoPointsDistance } from "./position"
 import { getTwoPointsRadian } from "./radian"
-import { angleInRange } from "./angle"
+import { angleInRange, normalizeRadian } from "./angle"
 import { Ray, getPolygonLine, pointAndDirectionToGeneralFormLine, pointIsOnRay } from "./line"
 import { GeneralFormLine } from "./line"
 import { twoPointLineToGeneralFormLine } from "./line"
@@ -165,6 +165,42 @@ export function getPerpendicularPointRadianToEllipse(position: Position, ellipse
   const f1 = (cos: number, sin: number) => b1 * cos + b2 * sin * cos + b3 * sin
   const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
   return newtonIterate(r0, r => f1(Math.cos(r), Math.sin(r)), r => f2(Math.cos(r), Math.sin(r)), delta)
+}
+
+export function getPerpendicularPointRadiansToEllipse({ x: x1, y: y1 }: Position, ellipse: Ellipse, delta = delta2): number[] {
+  const { rx, ry, angle, cx, cy } = ellipse
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  // x = d2 rx cos(t) - d1 ry sin(t) + cx
+  // y = d1 rx cos(t) + d2 ry sin(t) + cy
+  // f = (x - x1)^2 + (y - y1)^2
+  // f = (d2 rx cos(t) - d1 ry sin(t) + cx - x1)^2 + (d1 rx cos(t) + d2 ry sin(t) + cy - y1)^2
+  const a1 = cx - x1, a2 = cy - y1
+  // f = (d2 rx cos(t) - d1 ry sin(t) + a1)^2 + (d1 rx cos(t) + d2 ry sin(t) + a2)^2
+  // f' = 2(d2 rx cos(t) - d1 ry sin(t) + a1)(-d2 rx sin(t) - d1 ry cos(t)) + 2(d1 rx cos(t) + d2 ry sin(t) + a2)(-d1 rx sin(t) + d2 ry cos(t))
+  // f' = 2 (ry ry - rx rx) sin(t) cos(t) + 2(a2 d2 - a1 d1)ry cos(t) - 2(a2 d1 + a1 d2) rx sin(t)
+  const b1 = ry * ry - rx * rx, b2 = (a2 * d2 - a1 * d1) * ry, b3 = -(a2 * d1 + a1 * d2) * rx
+  // f' = b1 sin(t) cos(t) + b2 cos(t) + b3 sin(t)
+  // let u = sin(t)
+  // b1 u cos(t) + b2 cos(t) + b3 u = 0
+  // cos(t) = -b3 u/(b1 u + b2)
+  // u u + cos(t)^2 = 1
+  // u u - 1 + b3 b3 u u/(b1 u + b2)/(b1 u + b2) = 0
+  // *(b1 u + b2)*(b1 u + b2): (u u - 1)(b1 u + b2)(b1 u + b2) + b3 b3 u u = 0
+  // expand, group by u: b1 b1 u u u u + 2 b1 b2 u u u + (-b1 b1 + b2 b2 + b3 b3) u u + -2 b1 b2 u + -b2 b2 = 0
+  const us = calculateEquation4(b1 * b1, 2 * b1 * b2, -b1 * b1 + b2 * b2 + b3 * b3, -2 * b1 * b2, -b2 * b2, delta)
+  const result: number[] = []
+  for (const u of us) {
+    if (isBetween(u, -1, 1)) {
+      const t1 = Math.asin(u)
+      for (const t of [t1, normalizeRadian(mirrorNumber(t1, Math.PI / 2))]) {
+        if (isZero(b1 * u * Math.cos(t) + b2 * Math.cos(t) + b3 * u)) {
+          result.push(t)
+        }
+      }
+    }
+  }
+  return deduplicate(result, isSameNumber)
 }
 
 export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = delta2) {

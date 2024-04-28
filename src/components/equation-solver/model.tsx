@@ -10,6 +10,12 @@ export function* iterateExpression(e: Expression): Generator<Expression, void, u
     yield* iterateExpression(e.right)
   } else if (e.type === 'UnaryExpression') {
     yield* iterateExpression(e.argument)
+  } else if (e.type === 'CallExpression') {
+    for (const arg of e.arguments) {
+      if (arg.type !== 'SpreadElement') {
+        yield* iterateExpression(arg)
+      }
+    }
   }
 }
 

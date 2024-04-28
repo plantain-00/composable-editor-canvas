@@ -299,3 +299,7 @@ export function applyToItems<T>(item1: T, items2: T[], operate: (item1: T, item2
   }
   return result
 }
+
+export function mirrorNumber(value: number, by: number) {
+  return 2 * by - value
+}
