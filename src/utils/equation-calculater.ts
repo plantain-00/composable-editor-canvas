@@ -11,7 +11,7 @@ export function calculateEquation1(a: number, b: number, delta?: number) {
 }
 
 /**
- * a * x^2 + b x + c = 0
+ * a x^2 + b x + c = 0
  */
 export function calculateEquation2(a: number, b: number, c: number, delta?: number) {
   if (isZero(a, delta)) {
@@ -43,7 +43,7 @@ export function calculateEquation2(a: number, b: number, c: number, delta?: numb
 }
 
 /**
- * a * x^3 + b x^2 + c x + d = 0
+ * a x^3 + b x^2 + c x + d = 0
  */
 export function calculateEquation3(a: number, b: number, c: number, d: number, delta?: number) {
   if (isZero(a, delta)) {
@@ -95,7 +95,7 @@ export function calculateEquation3(a: number, b: number, c: number, d: number, d
 }
 
 /**
- * a * x^4 + b x^3 + c x^2 + d x + e = 0
+ * a x^4 + b x^3 + c x^2 + d x + e = 0
  */
 export function calculateEquation4(a: number, b: number, c: number, d: number, e: number, delta?: number) {
   if (isZero(a, delta)) {
@@ -206,12 +206,18 @@ export function calculateEquation4(a: number, b: number, c: number, d: number, e
 }
 
 /**
- * p[0] * x^5 + p[1] x^4 + p[2] x^3 + p[3] x^2 + p[4] x + p[5] = 0
- * p[0] * x^6 + p[1] x^5 + p[2] x^4 + p[3] x^3 + p[4] x^2 + p[5] x + p[6] = 0
+ * p[0] x^5 + p[1] x^4 + p[2] x^3 + p[3] x^2 + p[4] x + p[5] = 0
+ * p[0] x^6 + p[1] x^5 + p[2] x^4 + p[3] x^3 + p[4] x^2 + p[5] x + p[6] = 0
  */
 export function calculateEquation5(params: number[], x0: number, delta = delta2, maxIteratorCount?: number): number[] {
   if (params.length <= 5) {
     return calculateEquation4(params[params.length - 5] || 0, params[params.length - 4] || 0, params[params.length - 3] || 0, params[params.length - 2] || 0, params[params.length - 1] || 0, delta)
+  }
+  if (Math.abs(params[0]) > 1 / delta) {
+    params = params.map(p => p / params[0])
+  }
+  if (isZero(params[0], delta)) {
+    return calculateEquation5(params.slice(1), x0, delta, maxIteratorCount)
   }
   if (isZero(params[params.length - 1], delta)) {
     const remains = calculateEquation5(params.slice(0, params.length - 1), delta)
@@ -271,4 +277,21 @@ export function newtonIterate(
     count++
   }
   return x
+}
+
+export function equationParamsToExpression(params: number[], variableName = 'x'): string {
+  let result = ''
+  for (let i = 0; i < params.length; i++) {
+    if (i !== 0) {
+      result += ' + '
+    }
+    result += params[i] + ' '
+    const power = params.length - i - 1
+    if (power === 1) {
+      result += variableName
+    } else if (power > 1) {
+      result += variableName + '^' + power
+    }
+  }
+  return result
 }
