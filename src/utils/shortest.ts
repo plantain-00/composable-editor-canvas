@@ -1,12 +1,12 @@
 import { BezierCurve, QuadraticCurve, getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
 import { Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
 import { Ellipse, getEllipsePointAtRadian } from "./ellipse"
-import { calculateEquation2 } from "./equation-calculater"
+import { calculateEquation2, calculateEquation5 } from "./equation-calculater"
 import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lineSegmentOrRayToGeneralFormLine, pointIsOnGeometryLine } from "./geometry-line"
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
-import { isSameNumber, isZero, minimumBy } from "./math"
+import { isBetween, isSameNumber, isZero, minimumBy } from "./math"
 import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
 import { Position, getPointByLengthAndDirection, getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint } from "./position"
 import { angleToRadian } from "./radian"
@@ -54,6 +54,14 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getCircleAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'arc') {
+    return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
+  } else if (line1.type === 'quadratic curve') {
+    if (line2.type === 'quadratic curve') {
+      results = getTwoQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'bezier curve') {
+      results = getQuadraticCurveAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    }
+  } else if (line2.type === 'quadratic curve') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
   }
   results = results.filter(r => pointIsOnGeometryLine(r.points[0], line1) && pointIsOnGeometryLine(r.points[1], line2))
@@ -104,7 +112,7 @@ export function getLineAndEllipseExtremumPoints(line: GeneralFormLine, ellipse: 
   // /cos(t): a((-(d2 rx tan(t))) - d1 ry) + b((-(d1 rx tan(t))) + d2 ry) = 0
   // let u = tan(t)
   // a((-(d2 rx u)) - d1 ry) + b((-(d1 rx u)) + d2 ry) = 0
-  // (-b d1 rx + -a d2 rx) u + -a d1 ry + b d2 ry = 0
+  // (-b d1 rx - a d2 rx) u - a d1 ry + b d2 ry = 0
   // u = (a d1 - b d2) ry / (-b d1 - a d2) / rx
   const t1 = Math.atan2((a * d1 - b * d2) * ry, (-b * d1 - a * d2) * rx)
   const t2 = reverseRadian(t1)
@@ -139,8 +147,8 @@ export function getLineAndQuadraticCurveExtremumPoint(line: GeneralFormLine, cur
 export function getLineAndBezierCurveExtremumPoints(line: GeneralFormLine, curve: BezierCurve): Tuple2<Position>[] {
   const { a, b } = line
   const { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } } = curve
-  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
-  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  const c1 = -a1 + 3 * a2 - 3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 - 3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // x = c1 t t t + c2 t t + c3 t + a1
   // y = c4 t t t + c5 t t + c6 t + b1
   // dx/dt = 3 c1 t^2 + 2 c2 t + c3
@@ -197,4 +205,113 @@ export function getCircleAndBezierCurveExtremumPoints(circle: Circle, curve: Bez
     const t1 = getCircleRadian(p, circle)
     return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
   }).flat()
+}
+
+export function getTwoQuadraticCurveExtremumPoints(curve1: QuadraticCurve, curve2: QuadraticCurve): Tuple2<Position>[] {
+  const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
+  const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
+  // x1 = c2 u u + 2 c1 u + a1
+  // y1 = c4 u u + 2 c3 u + b1
+  const { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } } = curve2
+  const d1 = a5 - a4, d2 = a6 - a5 - d1, d3 = b5 - b4, d4 = b6 - b5 - d3
+  // x2 = d2 v v + 2 d1 v + a4
+  // y2 = d4 v v + 2 d3 v + b4
+  // dx1/du = 2 c2 u + 2 c1
+  // dy1/du = 2 c4 u + 2 c3
+  // dx2/dv = 2 d2 v + 2 d1
+  // dy2/dv = 2 d4 v + 2 d3
+  // dy1/du dx2/dv = dy2/dv dx1/du
+  // (c4 u + c3) (d2 v + d1) = (d4 v + d3) (c2 u + c1)
+  // ((c4 d2 - c2 d4) v + c4 d1 - c2 d3) u + (c3 d2 - c1 d4) v + c3 d1 - c1 d3 = 0
+  const h1 = c4 * d2 - c2 * d4, h2 = c4 * d1 - c2 * d3, h3 = c3 * d2 - c1 * d4, h4 = c3 * d1 - c1 * d3
+  // (h1 v + h2) u + h3 v + h4 = 0
+  // u = -(h3 v + h4)/(h1 v + h2)
+
+  // dy1/du/(dx1/du)(y2 - y1)/(x2 - x1) = -1
+  // (c4 u + c3)(d4 v v + 2 d3 v + b4 - (c4 u u + 2 c3 u + b1)) + (c2 u + c1)(d2 v v + 2 d1 v + a4 - (c2 u u + 2 c1 u + a1)) = 0
+  const e1 = a1 - a4, e2 = b1 - b4
+  // (c4 u + c3)(d4 v v + 2 d3 v - c4 u u - 2 c3 u - e2) + (c2 u + c1)(d2 v v + 2 d1 v - c2 u u - 2 c1 u - e1) = 0
+  // (-c2 c2 - c4 c4) u u u + (-3 c1 c2 - 3 c3 c4) u u + ((c2 d2 + c4 d4) v v + (2 c2 d1 + 2 c4 d3) v - 2 c1 c1 - 2 c3 c3 - c2 e1 - c4 e2) u + (c1 d2 + c3 d4) v v + (2 c1 d1 + 2 c3 d3) v - c1 e1 - c3 e2 = 0
+  const f1 = -c2 * c2 - c4 * c4, f2 = -3 * c1 * c2 - 3 * c3 * c4, f3 = c2 * d2 + c4 * d4, f4 = 2 * c2 * d1 + 2 * c4 * d3
+  const f5 = -2 * c1 * c1 - 2 * c3 * c3 - c2 * e1 - c4 * e2, f6 = c1 * d2 + c3 * d4, f7 = 2 * c1 * d1 + 2 * c3 * d3, f8 = -c1 * e1 - c3 * e2
+  // f1 u u u + f2 u u + (f3 v v + f4 v + f5) u + f6 v v + f7 v + f8 = 0
+  // replace u, group by v: (f6 h1 h1 h1 - f3 h1 h1 h3) v v v v v + (f7 h1 h1 h1 + 3 f6 h1 h1 h2 - f4 h1 h1 h3 - 2 f3 h1 h2 h3 - f3 h1 h1 h4) v v v v + (f8 h1 h1 h1 + 3 f7 h1 h1 h2 + 3 f6 h1 h2 h2 + f2 h1 h3 h3 - f5 h1 h1 h3 - 2 f4 h1 h2 h3 - f3 h2 h2 h3 - f1 h3 h3 h3 - f4 h1 h1 h4 - 2 f3 h1 h2 h4) v v v + (3 f8 h1 h1 h2 + 3 f7 h1 h2 h2 + f6 h2 h2 h2 + f2 h2 h3 h3 - 2 f5 h1 h2 h3 - f4 h2 h2 h3 - f5 h1 h1 h4 - 2 f4 h1 h2 h4 - f3 h2 h2 h4 + 2 f2 h1 h3 h4 - 3 f1 h3 h3 h4) v v + (3 f8 h1 h2 h2 + f7 h2 h2 h2 - f5 h2 h2 h3 - 2 f5 h1 h2 h4 - f4 h2 h2 h4 + 2 f2 h2 h3 h4 + f2 h1 h4 h4 - 3 f1 h3 h4 h4) v + f8 h2 h2 h2 - f5 h2 h2 h4 + f2 h2 h4 h4 - f1 h4 h4 h4 = 0
+  let vs = calculateEquation5([
+    f6 * h1 * h1 * h1 - f3 * h1 * h1 * h3,
+    f7 * h1 * h1 * h1 + 3 * f6 * h1 * h1 * h2 - f4 * h1 * h1 * h3 - 2 * f3 * h1 * h2 * h3 - f3 * h1 * h1 * h4,
+    f8 * h1 * h1 * h1 + 3 * f7 * h1 * h1 * h2 + 3 * f6 * h1 * h2 * h2 + f2 * h1 * h3 * h3 - f5 * h1 * h1 * h3 - 2 * f4 * h1 * h2 * h3 - f3 * h2 * h2 * h3 - f1 * h3 * h3 * h3 - f4 * h1 * h1 * h4 - 2 * f3 * h1 * h2 * h4,
+    3 * f8 * h1 * h1 * h2 + 3 * f7 * h1 * h2 * h2 + f6 * h2 * h2 * h2 + f2 * h2 * h3 * h3 - 2 * f5 * h1 * h2 * h3 - f4 * h2 * h2 * h3 - f5 * h1 * h1 * h4 - 2 * f4 * h1 * h2 * h4 - f3 * h2 * h2 * h4 + 2 * f2 * h1 * h3 * h4 - 3 * f1 * h3 * h3 * h4,
+    3 * f8 * h1 * h2 * h2 + f7 * h2 * h2 * h2 - f5 * h2 * h2 * h3 - 2 * f5 * h1 * h2 * h4 - f4 * h2 * h2 * h4 + 2 * f2 * h2 * h3 * h4 + f2 * h1 * h4 * h4 - 3 * f1 * h3 * h4 * h4,
+    f8 * h2 * h2 * h2 - f5 * h2 * h2 * h4 + f2 * h2 * h4 * h4 - f1 * h4 * h4 * h4,
+  ], 0.5)
+  vs = vs.filter(v => isBetween(v, 0, 1))
+  const result: Tuple2<Position>[] = []
+  for (const v of vs) {
+    const u = -(h3 * v + h4) / (h1 * v + h2)
+    if (isBetween(u, 0, 1)) {
+      result.push([
+        getQuadraticCurvePointAtPercent(curve1.from, curve1.cp, curve1.to, u),
+        getQuadraticCurvePointAtPercent(curve2.from, curve2.cp, curve2.to, v),
+      ])
+    }
+  }
+  return result
+}
+
+export function getQuadraticCurveAndBezierCurveExtremumPoints(curve1: QuadraticCurve, curve2: BezierCurve): Tuple2<Position>[] {
+  const { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } } = curve1
+  const d1 = a6 - a5, d2 = a7 - a6 - d1, d3 = b6 - b5, d4 = b7 - b6 - d3
+  // x1 = d2 u u + 2 d1 u + a5
+  // y1 = d4 u u + 2 d3 u + b5
+  // x1' = 2 d2 u + 2 d1
+  // y1' = 2 d4 u + 2 d3
+
+  const { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } } = curve2
+  const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
+  const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
+  // x2 = c1 v v v + c2 v v + c3 v + a1
+  // y2 = c4 v v v + c5 v v + c6 v + b1
+  // x2' = 3 c1 v v + 2 c2 v + c3
+  // y2' = 3 c4 v v + 2 c5 v + c6
+
+  // y1'/x1' = y2'/x2'
+  // (d4 u + d3)(3 c1 v v + 2 c2 v + c3) - (3 c4 v v + 2 c5 v + c6)(d2 u + d1) = 0
+  // expand, group by u v: ((3 c1 d4 + -3 c4 d2) v v + (-2 c5 d2 + 2 c2 d4) v + -c6 d2 + c3 d4) u + (-3 c4 d1 + 3 c1 d3) v v + (-2 c5 d1 + 2 c2 d3) v + -c6 d1 + c3 d3 = 0
+  const e1 = 3 * c1 * d4 - 3 * c4 * d2, e2 = -2 * c5 * d2 + 2 * c2 * d4, e3 = -c6 * d2 + c3 * d4
+  const e4 = 3 * c4 * d1 - 3 * c1 * d3, e5 = 2 * c5 * d1 - 2 * c2 * d3, e6 = c6 * d1 - c3 * d3
+  // (e1 v v + e2 v + e3) u - e4 v v - e5 v - e6 = 0
+  // u = (e4 v v + e5 v + e6)/(e1 v v + e2 v + e3)
+
+  // y1'/x1'(y2 - y1)/(x2 - x1) = -1
+  // y1'(y2 - y1) + x1'(x2 - x1) = 0
+  // (d4 u + d3)(c4 v v v + c5 v v + c6 v + b1 - (d4 u u + 2 d3 u + b5)) + (d2 u + d1)(c1 v v v + c2 v v + c3 v + a1 - (d2 u u + 2 d1 u + a5)) = 0
+  // expand, group by u v: (-d2 d2 + -d4 d4) u u u + (-3 d1 d2 + -3 d3 d4) u u + ((c1 d2 + c4 d4) v v v + (c2 d2 + c5 d4) v v + (c3 d2 + c6 d4) v + -2 d1 d1 + a1 d2 + -a5 d2 + -2 d3 d3 + b1 d4 + -b5 d4) u + (c1 d1 + c4 d3) v v v + (c2 d1 + c5 d3) v v + (c3 d1 + c6 d3) v + a1 d1 + -a5 d1 + b1 d3 + -b5 d3 = 0
+  const f1 = -d2 * d2 - d4 * d4, f2 = -3 * d1 * d2 - 3 * d3 * d4, f3 = c1 * d2 + c4 * d4, f4 = c2 * d2 + c5 * d4, f5 = c3 * d2 + c6 * d4
+  const f6 = -2 * d1 * d1 + a1 * d2 - a5 * d2 - 2 * d3 * d3 + b1 * d4 - b5 * d4, f7 = c1 * d1 + c4 * d3, f8 = c2 * d1 + c5 * d3, f9 = c3 * d1 + c6 * d3, f0 = a1 * d1 - a5 * d1 + b1 * d3 - b5 * d3
+  // f1 u u u + f2 u u + (f3 v v v + f4 v v + f5 v + f6) u + f7 v v v + f8 v v + f9 v + f0 = 0
+  // replace u, group by v: (e1 e1 e4 f3 + e1 e1 e1 f7) v v v v v v v v v + (2 e1 e2 e4 f3 + e1 e1 e5 f3 + e1 e1 e4 f4 + 3 e1 e1 e2 f7 + e1 e1 e1 f8) v v v v v v v v + (e2 e2 e4 f3 + 2 e1 e3 e4 f3 + 2 e1 e2 e5 f3 + e1 e1 e6 f3 + 2 e1 e2 e4 f4 + e1 e1 e5 f4 + e1 e1 e4 f5 + 3 e1 e2 e2 f7 + 3 e1 e1 e3 f7 + 3 e1 e1 e2 f8 + e1 e1 e1 f9) v v v v v v v + (e1 e1 e1 f0 + e4 e4 e4 f1 + e1 e4 e4 f2 + 2 e2 e3 e4 f3 + e2 e2 e5 f3 + 2 e1 e3 e5 f3 + 2 e1 e2 e6 f3 + e2 e2 e4 f4 + 2 e1 e3 e4 f4 + 2 e1 e2 e5 f4 + e1 e1 e6 f4 + 2 e1 e2 e4 f5 + e1 e1 e5 f5 + e1 e1 e4 f6 + e2 e2 e2 f7 + 6 e1 e2 e3 f7 + 3 e1 e2 e2 f8 + 3 e1 e1 e3 f8 + 3 e1 e1 e2 f9) v v v v v v + (3 e1 e1 e2 f0 + 3 e4 e4 e5 f1 + e2 e4 e4 f2 + 2 e1 e4 e5 f2 + e3 e3 e4 f3 + 2 e2 e3 e5 f3 + e2 e2 e6 f3 + 2 e1 e3 e6 f3 + 2 e2 e3 e4 f4 + e2 e2 e5 f4 + 2 e1 e3 e5 f4 + 2 e1 e2 e6 f4 + e2 e2 e4 f5 + 2 e1 e3 e4 f5 + 2 e1 e2 e5 f5 + e1 e1 e6 f5 + 2 e1 e2 e4 f6 + e1 e1 e5 f6 + 3 e2 e2 e3 f7 + 3 e1 e3 e3 f7 + e2 e2 e2 f8 + 6 e1 e2 e3 f8 + 3 e1 e2 e2 f9 + 3 e1 e1 e3 f9) v v v v v + (3 e1 e2 e2 f0 + 3 e1 e1 e3 f0 + 3 e4 e5 e5 f1 + 3 e4 e4 e6 f1 + e3 e4 e4 f2 + 2 e2 e4 e5 f2 + e1 e5 e5 f2 + 2 e1 e4 e6 f2 + e3 e3 e5 f3 + 2 e2 e3 e6 f3 + e3 e3 e4 f4 + 2 e2 e3 e5 f4 + e2 e2 e6 f4 + 2 e1 e3 e6 f4 + 2 e2 e3 e4 f5 + e2 e2 e5 f5 + 2 e1 e3 e5 f5 + 2 e1 e2 e6 f5 + e2 e2 e4 f6 + 2 e1 e3 e4 f6 + 2 e1 e2 e5 f6 + e1 e1 e6 f6 + 3 e2 e3 e3 f7 + 3 e2 e2 e3 f8 + 3 e1 e3 e3 f8 + e2 e2 e2 f9 + 6 e1 e2 e3 f9) v v v v + (e2 e2 e2 f0 + 6 e1 e2 e3 f0 + e5 e5 e5 f1 + 6 e4 e5 e6 f1 + 2 e3 e4 e5 f2 + e2 e5 e5 f2 + 2 e2 e4 e6 f2 + 2 e1 e5 e6 f2 + e3 e3 e6 f3 + e3 e3 e5 f4 + 2 e2 e3 e6 f4 + e3 e3 e4 f5 + 2 e2 e3 e5 f5 + e2 e2 e6 f5 + 2 e1 e3 e6 f5 + 2 e2 e3 e4 f6 + e2 e2 e5 f6 + 2 e1 e3 e5 f6 + 2 e1 e2 e6 f6 + e3 e3 e3 f7 + 3 e2 e3 e3 f8 + 3 e2 e2 e3 f9 + 3 e1 e3 e3 f9) v v v + (3 e2 e2 e3 f0 + 3 e1 e3 e3 f0 + 3 e5 e5 e6 f1 + 3 e4 e6 e6 f1 + e3 e5 e5 f2 + 2 e3 e4 e6 f2 + 2 e2 e5 e6 f2 + e1 e6 e6 f2 + e3 e3 e6 f4 + e3 e3 e5 f5 + 2 e2 e3 e6 f5 + e3 e3 e4 f6 + 2 e2 e3 e5 f6 + e2 e2 e6 f6 + 2 e1 e3 e6 f6 + e3 e3 e3 f8 + 3 e2 e3 e3 f9) v v + (3 e2 e3 e3 f0 + 3 e5 e6 e6 f1 + 2 e3 e5 e6 f2 + e2 e6 e6 f2 + e3 e3 e6 f5 + e3 e3 e5 f6 + 2 e2 e3 e6 f6 + e3 e3 e3 f9) v + e3 e3 e3 f0 + e6 e6 e6 f1 + e3 e6 e6 f2 + e3 e3 e6 f6 = 0
+  let vs = calculateEquation5([
+    e1 * e1 * e4 * f3 + e1 * e1 * e1 * f7,
+    2 * e1 * e2 * e4 * f3 + e1 * e1 * e5 * f3 + e1 * e1 * e4 * f4 + 3 * e1 * e1 * e2 * f7 + e1 * e1 * e1 * f8,
+    e2 * e2 * e4 * f3 + 2 * e1 * e3 * e4 * f3 + 2 * e1 * e2 * e5 * f3 + e1 * e1 * e6 * f3 + 2 * e1 * e2 * e4 * f4 + e1 * e1 * e5 * f4 + e1 * e1 * e4 * f5 + 3 * e1 * e2 * e2 * f7 + 3 * e1 * e1 * e3 * f7 + 3 * e1 * e1 * e2 * f8 + e1 * e1 * e1 * f9,
+    e1 * e1 * e1 * f0 + e4 * e4 * e4 * f1 + e1 * e4 * e4 * f2 + 2 * e2 * e3 * e4 * f3 + e2 * e2 * e5 * f3 + 2 * e1 * e3 * e5 * f3 + 2 * e1 * e2 * e6 * f3 + e2 * e2 * e4 * f4 + 2 * e1 * e3 * e4 * f4 + 2 * e1 * e2 * e5 * f4 + e1 * e1 * e6 * f4 + 2 * e1 * e2 * e4 * f5 + e1 * e1 * e5 * f5 + e1 * e1 * e4 * f6 + e2 * e2 * e2 * f7 + 6 * e1 * e2 * e3 * f7 + 3 * e1 * e2 * e2 * f8 + 3 * e1 * e1 * e3 * f8 + 3 * e1 * e1 * e2 * f9,
+    3 * e1 * e1 * e2 * f0 + 3 * e4 * e4 * e5 * f1 + e2 * e4 * e4 * f2 + 2 * e1 * e4 * e5 * f2 + e3 * e3 * e4 * f3 + 2 * e2 * e3 * e5 * f3 + e2 * e2 * e6 * f3 + 2 * e1 * e3 * e6 * f3 + 2 * e2 * e3 * e4 * f4 + e2 * e2 * e5 * f4 + 2 * e1 * e3 * e5 * f4 + 2 * e1 * e2 * e6 * f4 + e2 * e2 * e4 * f5 + 2 * e1 * e3 * e4 * f5 + 2 * e1 * e2 * e5 * f5 + e1 * e1 * e6 * f5 + 2 * e1 * e2 * e4 * f6 + e1 * e1 * e5 * f6 + 3 * e2 * e2 * e3 * f7 + 3 * e1 * e3 * e3 * f7 + e2 * e2 * e2 * f8 + 6 * e1 * e2 * e3 * f8 + 3 * e1 * e2 * e2 * f9 + 3 * e1 * e1 * e3 * f9,
+    3 * e1 * e2 * e2 * f0 + 3 * e1 * e1 * e3 * f0 + 3 * e4 * e5 * e5 * f1 + 3 * e4 * e4 * e6 * f1 + e3 * e4 * e4 * f2 + 2 * e2 * e4 * e5 * f2 + e1 * e5 * e5 * f2 + 2 * e1 * e4 * e6 * f2 + e3 * e3 * e5 * f3 + 2 * e2 * e3 * e6 * f3 + e3 * e3 * e4 * f4 + 2 * e2 * e3 * e5 * f4 + e2 * e2 * e6 * f4 + 2 * e1 * e3 * e6 * f4 + 2 * e2 * e3 * e4 * f5 + e2 * e2 * e5 * f5 + 2 * e1 * e3 * e5 * f5 + 2 * e1 * e2 * e6 * f5 + e2 * e2 * e4 * f6 + 2 * e1 * e3 * e4 * f6 + 2 * e1 * e2 * e5 * f6 + e1 * e1 * e6 * f6 + 3 * e2 * e3 * e3 * f7 + 3 * e2 * e2 * e3 * f8 + 3 * e1 * e3 * e3 * f8 + e2 * e2 * e2 * f9 + 6 * e1 * e2 * e3 * f9,
+    e2 * e2 * e2 * f0 + 6 * e1 * e2 * e3 * f0 + e5 * e5 * e5 * f1 + 6 * e4 * e5 * e6 * f1 + 2 * e3 * e4 * e5 * f2 + e2 * e5 * e5 * f2 + 2 * e2 * e4 * e6 * f2 + 2 * e1 * e5 * e6 * f2 + e3 * e3 * e6 * f3 + e3 * e3 * e5 * f4 + 2 * e2 * e3 * e6 * f4 + e3 * e3 * e4 * f5 + 2 * e2 * e3 * e5 * f5 + e2 * e2 * e6 * f5 + 2 * e1 * e3 * e6 * f5 + 2 * e2 * e3 * e4 * f6 + e2 * e2 * e5 * f6 + 2 * e1 * e3 * e5 * f6 + 2 * e1 * e2 * e6 * f6 + e3 * e3 * e3 * f7 + 3 * e2 * e3 * e3 * f8 + 3 * e2 * e2 * e3 * f9 + 3 * e1 * e3 * e3 * f9,
+    3 * e2 * e2 * e3 * f0 + 3 * e1 * e3 * e3 * f0 + 3 * e5 * e5 * e6 * f1 + 3 * e4 * e6 * e6 * f1 + e3 * e5 * e5 * f2 + 2 * e3 * e4 * e6 * f2 + 2 * e2 * e5 * e6 * f2 + e1 * e6 * e6 * f2 + e3 * e3 * e6 * f4 + e3 * e3 * e5 * f5 + 2 * e2 * e3 * e6 * f5 + e3 * e3 * e4 * f6 + 2 * e2 * e3 * e5 * f6 + e2 * e2 * e6 * f6 + 2 * e1 * e3 * e6 * f6 + e3 * e3 * e3 * f8 + 3 * e2 * e3 * e3 * f9,
+    3 * e2 * e3 * e3 * f0 + 3 * e5 * e6 * e6 * f1 + 2 * e3 * e5 * e6 * f2 + e2 * e6 * e6 * f2 + e3 * e3 * e6 * f5 + e3 * e3 * e5 * f6 + 2 * e2 * e3 * e6 * f6 + e3 * e3 * e3 * f9,
+    e3 * e3 * e3 * f0 + e6 * e6 * e6 * f1 + e3 * e6 * e6 * f2 + e3 * e3 * e6 * f6,
+  ], 0.5)
+  vs = vs.filter(v => isBetween(v, 0, 1))
+  const result: Tuple2<Position>[] = []
+  for (const v of vs) {
+    const u = (e4 * v * v + e5 * v + e6) / (e1 * v * v + e2 * v + e3)
+    if (isBetween(u, 0, 1)) {
+      result.push([
+        getQuadraticCurvePointAtPercent(curve1.from, curve1.cp, curve1.to, u),
+        getBezierCurvePointAtPercent(curve2.from, curve2.cp1, curve2.cp2, curve2.to, v),
+      ])
+    }
+  }
+  return result
 }
