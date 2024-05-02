@@ -466,3 +466,16 @@ function getCommonDivisor(a: number, b: number): number {
   }
   return getCommonDivisor(a, b % a)
 }
+
+export function factorsToEquationParams(factors: Factor[], variableName: string): number[] | undefined {
+  const result: number[] = []
+  for (const factor of factors) {
+    if (factor.variables.some(f => f !== variableName)) return
+    const index = factor.variables.length
+    for (let i = result.length; i <= index; i++) {
+      result.push(0)
+    }
+    result[index] += factor.constant || 1
+  }
+  return result.reverse()
+}

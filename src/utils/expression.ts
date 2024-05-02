@@ -49,7 +49,7 @@ export function mathStyleExpressionToExpression(e: string) {
   return result;
 }
 
-export const mathFunctions = ['sin', 'cos', 'tan']
+export const mathFunctions = ['sin', 'cos', 'tan', 'ln']
 
 export function printMathStyleExpression(e: Expression2) {
   const print = (expression: Expression2 | SpreadElement2<Expression2>, priority = Number.MAX_SAFE_INTEGER): string => {

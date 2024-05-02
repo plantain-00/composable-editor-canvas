@@ -485,6 +485,30 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
             },
           }
         }
+      } else if (!expressionHasVariable(e.right, by)) {
+        return {
+          type: 'NumericLiteral',
+          value: 0,
+        }
+      } else {
+        return {
+          type: 'BinaryExpression',
+          operator: '*',
+          left: {
+            type: 'BinaryExpression',
+            operator: '*',
+            left: {
+              type: 'CallExpression',
+              callee: {
+                type: 'Identifier',
+                name: 'ln',
+              },
+              arguments: [e.left],
+            },
+            right: e,
+          },
+          right: deriveExpressionWith(e.right, by),
+        }
       }
     }
   }
@@ -561,6 +585,13 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
             },
             arguments: e.arguments,
           },
+        }
+      } else if (functionName === 'ln') {
+        return {
+          type: 'BinaryExpression',
+          operator: '/',
+          left: deriveExpressionWith(a, by),
+          right: a,
         }
       }
     }
