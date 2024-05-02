@@ -1260,6 +1260,26 @@ export function optimizeExpression(
               }
             }
           }
+        } else if (expression.callee.name === 'tan') {
+          if (expression.arguments.length === 1) {
+            const arg = expression.arguments[0]
+            if (arg.type === 'NumericLiteral') {
+              return {
+                type: 'NumericLiteral',
+                value: Math.tan(arg.value),
+              }
+            }
+          }
+        } else if (expression.callee.name === 'ln') {
+          if (expression.arguments.length === 1) {
+            const arg = expression.arguments[0]
+            if (arg.type === 'NumericLiteral') {
+              return {
+                type: 'NumericLiteral',
+                value: Math.log(arg.value),
+              }
+            }
+          }
         }
       }
     }

@@ -7,6 +7,7 @@ import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
 import { isBetween, isSameNumber, isZero, minimumBy } from "./math"
+import { getCircleAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints } from "./nurbs"
 import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
 import { Position, getPointByLengthAndDirection, getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint } from "./position"
 import { angleToRadian } from "./radian"
@@ -40,6 +41,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = [{ points: p, distance: getTwoPointsDistance(...p) }]
     } else if (line2.type === 'bezier curve') {
       results = getLineAndBezierCurveExtremumPoints(line, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'nurbs curve') {
+      results = getLineAndNurbsCurveExtremumPoints(line, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (Array.isArray(line2) || line2.type === 'ray') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
@@ -52,6 +55,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getCircleAndQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'bezier curve') {
       results = getCircleAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'nurbs curve') {
+      results = getCircleAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'arc') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)

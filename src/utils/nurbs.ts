@@ -1,12 +1,12 @@
 import * as verb from 'verb-nurbs-web'
 import * as twgl from 'twgl.js'
-import { delta2, delta3, isZero } from "./math"
+import { deduplicate, delta2, delta3, isBetween, isSameNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
-import { pointAndDirectionToGeneralFormLine } from "./line"
+import { GeneralFormLine, pointAndDirectionToGeneralFormLine } from "./line"
 import { getPointSideOfLine } from "./line"
 import { EllipseArc } from "./ellipse"
-import { Arc } from "./circle"
+import { Arc, Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
 import { pointIsOnEllipseArc } from "./ellipse"
 import { Validator, integer, minimum, number, optional } from "./validators"
 import { angleToRadian } from './radian'
@@ -14,7 +14,9 @@ import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { newtonIterate } from './equation-calculater'
 import { getParallelPolylinesByDistance } from './parallel'
-import { Vec2, Vec3 } from './types'
+import { Tuple2, Vec2, Vec3 } from './types'
+import { getPerpendicularPoint } from './perpendicular'
+import { reverseRadian } from './reverse'
 
 export interface Nurbs {
   points: Position[]
@@ -499,4 +501,67 @@ export function getNurbsCurveCurvatureAtParam(curve: NurbsCurve, param: number) 
   const [, [x1, y1], [x2, y2]] = nurbs.derivatives(param, 2)
   // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
   return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}
+
+export function getLineAndNurbsCurveExtremumPoints(line: GeneralFormLine, curve: NurbsCurve, delta = delta2): Tuple2<Position>[] {
+  const nurbs = toVerbNurbsCurve(curve)
+  const { a, b } = line
+  const f1 = (t: number) => {
+    const [, [x1, y1]] = nurbs.derivatives(t)
+    // a x + b y + c = 0
+    // y1 / x1 = -a/ b
+    // a x1 + b y1 = 0
+    // z = a x1 + b y1
+    return a * x1 + b * y1
+  }
+  const f2 = (t: number) => {
+    const [, , [x2, y2]] = nurbs.derivatives(t, 2)
+    // z' = a x2 + b y2
+    return a * x2 + b * y2
+  }
+  let ts: number[] = []
+  const maxParam = getNurbsMaxParam(curve)
+  for (let t0 = 0.5; t0 < maxParam; t0++) {
+    const t = newtonIterate(t0, f1, f2, delta)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, isSameNumber)
+  return ts.filter(v => isBetween(v, 0, maxParam)).map(t => {
+    const p2 = fromVerbPoint(nurbs.point(t))
+    const p1 = getPerpendicularPoint(p2, line)
+    return [p1, p2]
+  })
+}
+
+export function getCircleAndNurbsCurveExtremumPoints(circle: Circle, curve: NurbsCurve, delta = delta2): Tuple2<Position>[] {
+  const nurbs = toVerbNurbsCurve(curve)
+  const { x: a, y: b } = circle
+  const f1 = (t: number) => {
+    const [[x, y], [x1, y1]] = nurbs.derivatives(t)
+    // (y - b)/(x - a) y1/x1 = -1
+    // z = x1 (x - a) + y1 (y - b)
+    return x1 * (x - a) + y1 * (y - b)
+  }
+  const f2 = (t: number) => {
+    const [[x, y], [x1, y1], [x2, y2]] = nurbs.derivatives(t, 2)
+    // z' = x1 x' + x1' (x - a) + y1 y'+ y1' (y - b)
+    // z' = x1 x1 + x2 (x - a) + y1 y1 + y2 (y - b)
+    return x1 * x1 + x2 * (x - a) + y1 * y1 + y2 * (y - b)
+  }
+  let ts: number[] = []
+  const maxParam = getNurbsMaxParam(curve)
+  for (let t0 = 0.5; t0 < maxParam; t0++) {
+    const t = newtonIterate(t0, f1, f2, delta)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, isSameNumber)
+  return ts.filter(v => isBetween(v, 0, maxParam)).map(t => {
+    const p = fromVerbPoint(nurbs.point(t))
+    const t1 = getCircleRadian(p, circle)
+    return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
+  }).flat()
 }
