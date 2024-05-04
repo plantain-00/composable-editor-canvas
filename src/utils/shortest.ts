@@ -7,7 +7,7 @@ import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
 import { isBetween, isSameNumber, isZero, minimumBy } from "./math"
-import { getCircleAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints } from "./nurbs"
+import { getCircleAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints, getTwoNurbsCurveExtremumPoints } from "./nurbs"
 import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
 import { Position, getPointByLengthAndDirection, getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint } from "./position"
 import { angleToRadian } from "./radian"
@@ -67,6 +67,12 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getQuadraticCurveAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'quadratic curve') {
+    return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
+  } else if (line1.type === 'nurbs curve') {
+    if (line2.type === 'nurbs curve') {
+      results = getTwoNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    }
+  } else if (line2.type === 'nurbs curve') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
   }
   results = results.filter(r => pointIsOnGeometryLine(r.points[0], line1) && pointIsOnGeometryLine(r.points[1], line2))

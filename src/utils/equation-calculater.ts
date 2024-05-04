@@ -1,4 +1,6 @@
 import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./math"
+import { Matrix2, m2, v2 } from "./matrix"
+import { Vec2 } from "./types"
 
 /**
  * a x + b = 0
@@ -268,12 +270,32 @@ export function newtonIterate(
   let count = 0
   for (; ;) {
     const g = f1(x)
-    const d = Math.abs(g)
-    if (d < delta) break
+    if (Math.abs(g) < delta) break
     if (count > maxIteratorCount) {
       return
     }
     x = x - g / f2(x)
+    count++
+  }
+  return x
+}
+
+export function newtonIterate2(
+  x0: Vec2,
+  f1: (x: Vec2) => Vec2,
+  f2: (x: Vec2) => Matrix2,
+  delta: number,
+  maxIteratorCount = 100,
+) {
+  let x = x0
+  let count = 0
+  for (; ;) {
+    const g = f1(x)
+    if (g.every(d => Math.abs(d) < delta)) break
+    if (count > maxIteratorCount) {
+      return
+    }
+    x = v2.substract(x, m2.multipleVec2(m2.inverse(f2(x)), g))
     count++
   }
   return x

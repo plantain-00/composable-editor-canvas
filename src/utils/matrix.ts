@@ -1,6 +1,6 @@
 import { Position } from "./position";
 import { angleToRadian, radianToAngle } from "./radian";
-import { Vec3 } from "./types";
+import { Tuple4, Vec2, Vec3 } from "./types";
 
 /**
  * @public
@@ -130,6 +130,7 @@ export const m3 = {
 };
 
 export type Matrix = readonly [number, number, number, number, number, number, number, number, number]
+export type Matrix2 = Tuple4<number>
 
 export interface RotationOptions {
   angle: number
@@ -199,4 +200,43 @@ export function multiplyMatrix(a: Matrix | undefined, b: Matrix | undefined) {
   if (a === undefined) return b
   if (b === undefined) return a
   return m3.multiply(a, b)
+}
+
+export const m2 = {
+  inverse([a0, a1, a2, a3]: Matrix2): Matrix2 {
+    // a0 a1  b0 b1  1 0
+    // a2 a3  b2 b3  0 1
+
+    // F1: a0 b0 + a1 b2 - 1 = 0
+    // F2: a2 b0 + a3 b2 = 0
+    // F1*a3-F2*a1: (a0 b0 + a1 b2 - 1)a3 - (a2 b0 + a3 b2) a1 = 0
+    // expand, group by b0: (a0 a3 + -a1 a2) b0 + -a3 = 0
+    const c = a0 * a3 - a1 * a2
+    const b0 = a3 / c
+    // b2 = -a2 b0/a3
+    const b2 = -a2 / c
+
+    // F3: a0 b1 + a1 b3 = 0
+    // F4: a2 b1 + a3 b3 - 1 = 0
+    // F3*a3-F4*a1: (a0 b1 + a1 b3)a3 - (a2 b1 + a3 b3 - 1) a1 = 0
+    // expand, group by b1: (-a1 a2 + a0 a3) b1 + a1 = 0
+    const b1 = -a1 / c
+    // b3 = -a0 b1 / a1
+    const b3 = a0 / c
+    return [b0, b1, b2, b3]
+  },
+  multipleVec2([a0, a1, a2, a3]: Matrix2, [b0, b1]: Vec2): Vec2 {
+    // a0 a1  b0
+    // a2 a3  b1
+    return [a0 * b0 + a1 * b1, a2 * b0 + a3 * b1]
+  },
+}
+
+export const v2 = {
+  add([a0, a1]: Vec2, [b0, b1]: Vec2): Vec2 {
+    return [a0 + b0, a1 + b1]
+  },
+  substract([a0, a1]: Vec2, [b0, b1]: Vec2): Vec2 {
+    return [a0 - b0, a1 - b1]
+  },
 }
