@@ -593,6 +593,13 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
           left: deriveExpressionWith(a, by),
           right: a,
         }
+      } else if (functionName === 'exp') {
+        return {
+          type: 'BinaryExpression',
+          operator: '*',
+          left: e,
+          right: deriveExpressionWith(a, by),
+        }
       }
     }
   }

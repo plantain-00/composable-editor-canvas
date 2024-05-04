@@ -1,6 +1,6 @@
 import * as verb from 'verb-nurbs-web'
 import * as twgl from 'twgl.js'
-import { deduplicate, delta2, delta3, isBetween, isSameNumber, isZero } from "./math"
+import { deduplicate, deepEquals, delta2, delta3, isBetween, isSameNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { GeneralFormLine, pointAndDirectionToGeneralFormLine } from "./line"
@@ -12,11 +12,12 @@ import { Validator, integer, minimum, number, optional } from "./validators"
 import { angleToRadian } from './radian'
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
-import { newtonIterate } from './equation-calculater'
+import { newtonIterate, newtonIterate2 } from './equation-calculater'
 import { getParallelPolylinesByDistance } from './parallel'
 import { Tuple2, Vec2, Vec3 } from './types'
 import { getPerpendicularPoint } from './perpendicular'
 import { reverseRadian } from './reverse'
+import { Matrix2 } from './matrix'
 
 export interface Nurbs {
   points: Position[]
@@ -564,4 +565,46 @@ export function getCircleAndNurbsCurveExtremumPoints(circle: Circle, curve: Nurb
     const t1 = getCircleRadian(p, circle)
     return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
   }).flat()
+}
+
+export function getTwoNurbsCurveExtremumPoints(curve1: NurbsCurve, curve2: NurbsCurve, delta = delta2): Tuple2<Position>[] {
+  const nurbs1 = toVerbNurbsCurve(curve1)
+  const nurbs2 = toVerbNurbsCurve(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const [[x1, y1], [x11, y11]] = nurbs1.derivatives(t[0])
+    const [[x2, y2], [x21, y21]] = nurbs2.derivatives(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const [[x1, y1], [x11, y11], [x12, y12]] = nurbs1.derivatives(t[0], 2)
+    const [[x2, y2], [x21, y21], [x22, y22]] = nurbs2.derivatives(t[1], 2)
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  const maxParam1 = getNurbsMaxParam(curve1)
+  const maxParam2 = getNurbsMaxParam(curve2)
+  for (let t1 = 0.5; t1 < maxParam1; t1++) {
+    for (let t2 = 0.5; t2 < maxParam2; t2++) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isBetween(v[0], 0, maxParam1) && isBetween(v[1], 0, maxParam2)).map(t => {
+    return [fromVerbPoint(nurbs1.point(t[0])), fromVerbPoint(nurbs2.point(t[1]))]
+  })
 }

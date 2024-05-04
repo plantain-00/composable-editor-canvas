@@ -1280,6 +1280,16 @@ export function optimizeExpression(
               }
             }
           }
+        } else if (expression.callee.name === 'exp') {
+          if (expression.arguments.length === 1) {
+            const arg = expression.arguments[0]
+            if (arg.type === 'NumericLiteral') {
+              return {
+                type: 'NumericLiteral',
+                value: Math.exp(arg.value),
+              }
+            }
+          }
         }
       }
     }
