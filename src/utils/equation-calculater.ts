@@ -1,5 +1,5 @@
 import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./math"
-import { Matrix2, m2, v2 } from "./matrix"
+import { Matrix2, m2, matrix, v2, vector } from "./matrix"
 import { Vec2 } from "./types"
 
 /**
@@ -274,7 +274,9 @@ export function newtonIterate(
     if (count > maxIteratorCount) {
       return
     }
-    x = x - g / f2(x)
+    const m = f2(x)
+    if (isZero(m)) return
+    x = x - g / m
     count++
   }
   return x
@@ -295,7 +297,32 @@ export function newtonIterate2(
     if (count > maxIteratorCount) {
       return
     }
-    x = v2.substract(x, m2.multipleVec2(m2.inverse(f2(x)), g))
+    const m = m2.inverse(f2(x))
+    if (!m) return
+    x = v2.substract(x, m2.multipleVec2(m, g))
+    count++
+  }
+  return x
+}
+
+export function newtonIterates(
+  x0: number[],
+  f1: (x: number[]) => number[],
+  f2: (x: number[]) => number[][],
+  delta: number,
+  maxIteratorCount = 100,
+) {
+  let x = x0
+  let count = 0
+  for (; ;) {
+    const g = f1(x)
+    if (g.every(d => Math.abs(d) < delta)) break
+    if (count > maxIteratorCount) {
+      return
+    }
+    const m = matrix.inverse(f2(x))
+    if (!m) return
+    x = vector.substract(x, matrix.multipleVec(m, g))
     count++
   }
   return x
@@ -316,4 +343,41 @@ export function equationParamsToExpression(params: number[], variableName = 'x')
     }
   }
   return result
+}
+
+/**
+ * a[1,1] x1 + a[1,2] x2 + ... + a[1,n] xn + a[1,n+1] = 0
+ * ...
+ * a[n,1] x1 + a[n,2] x2 + ... + a[n,n] xn + a[n,n+1] = 0
+ */
+export function calculateEquationSet(params: number[][], delta?: number): number[] | undefined {
+  if (params.length === 0) return
+  if (params.length === 1) {
+    const param = params[0]
+    return calculateEquation1(param[0], param[1], delta)
+  }
+  const index = params.findIndex(p => !isZero(p[0], delta))
+  if (index < 0) return
+  const [b0, ...b] = params[index]
+  // F1: b0 x1 + b[1] x2 + ... + b[n - 1] xn + b[n] = 0
+  const newParams: number[][] = []
+  for (let i = 0; i < params.length; i++) {
+    if (i !== index) {
+      const [c0, ...c] = params[i]
+      // F2: c0 x1 + c[1] x2 + ... + c[2] xn + c[n] = 0
+      if (isZero(c0, delta)) {
+        newParams.push(c)
+      } else {
+        // F1*c0-F2*b0: (b[1] c - c[1] b) x2 + ... + (b[n-1] c - c[n-1] b) xn + (b[n] c - c[n] b) = 0
+        newParams.push(c.map((p, j) => b[j] * c0 - p * b0))
+      }
+    }
+  }
+  const newResult = calculateEquationSet(newParams, delta)
+  if (!newResult) return
+  // x1 = -(b[1] x2 + ... + b[n - 1] xn + b[n])/b0
+  return [
+    -b.reduce((p, c, i) => p + c * (newResult[i] || 1), 0) / b0,
+    ...newResult,
+  ]
 }

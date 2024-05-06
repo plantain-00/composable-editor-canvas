@@ -1,5 +1,5 @@
 import test from 'ava'
-import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPartOfBezierCurve, getPartOfQuadraticCurve, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToBezierCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
+import { getCircleBezierCurveIntersectionPoints, getCircleEllipseIntersectionPoints, getCircleQuadraticCurveIntersectionPoints, getEllipseBezierCurveIntersectionPoints, getEllipseQuadraticCurveIntersectionPoints, getLineBezierCurveIntersectionPoints, getLineQuadraticCurveIntersectionPoints, getPartOfBezierCurve, getPartOfQuadraticCurve, getPerpendicularPointRadiansToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToQuadraticCurve, getQuadraticCurveBezierCurveIntersectionPoints, getTangencyPointToBezierCurve, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve, getTwoBezierCurveIntersectionPoints, getTwoEllipseIntersectionPoints, getTwoQuadraticCurveIntersectionPoints } from '../src'
 
 test('getCircleEllipseIntersectionPoints', (t) => {
   t.snapshot(getCircleEllipseIntersectionPoints({ x: 1412, y: 122, r: 70 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
@@ -14,9 +14,9 @@ test('getTangencyPointToEllipse', (t) => {
   t.snapshot(getTangencyPointToEllipse({ x: 50, y: 100 }, { cx: 0, cy: 0, rx: 100, ry: 50, angle: 90 }))
 })
 
-test('getPerpendicularPointRadianToEllipse', (t) => {
-  t.snapshot(getPerpendicularPointRadianToEllipse({ x: 1294, y: 126 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
-  t.snapshot(getPerpendicularPointRadianToEllipse({ x: 50, y: 100 }, { cx: 0, cy: 0, rx: 100, ry: 50, angle: 90 }))
+test('getPerpendicularPointRadiansToEllipse', (t) => {
+  t.snapshot(getPerpendicularPointRadiansToEllipse({ x: 1294, y: 126 }, { cx: 1404, cy: 119, rx: 104, ry: 49, angle: 30 }))
+  t.snapshot(getPerpendicularPointRadiansToEllipse({ x: 50, y: 100 }, { cx: 0, cy: 0, rx: 100, ry: 50, angle: 90 }))
 })
 
 test('getLineQuadraticCurveIntersectionPoints', (t) => {
