@@ -1,3 +1,5 @@
+import { calculateEquationSet } from "./equation-calculater";
+import { isZero } from "./math";
 import { Position } from "./position";
 import { angleToRadian, radianToAngle } from "./radian";
 import { Tuple4, Vec2, Vec3 } from "./types";
@@ -203,7 +205,7 @@ export function multiplyMatrix(a: Matrix | undefined, b: Matrix | undefined) {
 }
 
 export const m2 = {
-  inverse([a0, a1, a2, a3]: Matrix2): Matrix2 {
+  inverse([a0, a1, a2, a3]: Matrix2): Matrix2 | undefined {
     // a0 a1  b0 b1  1 0
     // a2 a3  b2 b3  0 1
 
@@ -212,6 +214,7 @@ export const m2 = {
     // F1*a3-F2*a1: (a0 b0 + a1 b2 - 1)a3 - (a2 b0 + a3 b2) a1 = 0
     // expand, group by b0: (a0 a3 + -a1 a2) b0 + -a3 = 0
     const c = a0 * a3 - a1 * a2
+    if (isZero(c)) return
     const b0 = a3 / c
     // b2 = -a2 b0/a3
     const b2 = -a2 / c
@@ -238,5 +241,48 @@ export const v2 = {
   },
   substract([a0, a1]: Vec2, [b0, b1]: Vec2): Vec2 {
     return [a0 - b0, a1 - b1]
+  },
+}
+
+export const matrix = {
+  inverse(m: number[][]): number[][] | undefined {
+    // a[0,0] a[0,1]  x[0,0] x[0,1]  1 0
+    // a[1,0] a[1,1]  x[1,0] x[1,1]  0 1
+    const result: number[][] = []
+    for (let i = 0; i < m.length; i++) {
+      result.push([])
+    }
+    for (let i = 0; i < m.length; i++) {
+      const params = m.map((n, j) => [...n, j === i ? -1 : 0])
+      const r = calculateEquationSet(params)
+      if (!r) return
+      for (let j = 0; j < r.length; j++) {
+        result[j].push(r[j])
+      }
+    }
+    return result
+  },
+  multipleVec(m: number[][], vec: number[]): number[] {
+    // a[0,0] a[0,1]  b[0]
+    // a[1,0] a[1,1]  b[1]
+    const result: number[] = []
+    for (let i = 0; i < m.length; i++) {
+      const c = m[i]
+      let r = 0
+      for (let j = 0; j < c.length; j++) {
+        r += c[j] * vec[j]
+      }
+      result.push(r)
+    }
+    return result
+  },
+}
+
+export const vector = {
+  add(a: number[], b: number[]): number[] {
+    return a.map((c, i) => c + b[i])
+  },
+  substract(a: number[], b: number[]): number[] {
+    return a.map((c, i) => c - b[i])
   },
 }

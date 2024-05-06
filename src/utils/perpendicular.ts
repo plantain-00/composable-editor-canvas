@@ -1,5 +1,5 @@
 import { getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
-import { calculateEquation3, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
+import { calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
 import { minimumBy, delta2, isValidPercent, isBetween, deduplicate, isSameNumber, mirrorNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
@@ -15,7 +15,6 @@ import { pointIsOnLineSegment } from "./line"
 import { getEllipseArcStartAndEnd } from "./ellipse"
 import { getEllipsePointAtRadian } from "./ellipse"
 import { getCirclePointAtRadian, getArcStartAndEnd } from "./circle"
-import { getEllipseRadian } from "./ellipse"
 import { EllipseArc } from "./ellipse"
 import { Circle, Arc } from "./circle"
 import { Ellipse } from "./ellipse"
@@ -51,7 +50,7 @@ export function getPerpendicularPointToGeometryLine(point: Position, line: Geome
   if (line.type === 'arc') {
     p = getPerpendicularPointToCircle(point, line.curve).point
   } else if (line.type === 'ellipse arc') {
-    const radian = getPerpendicularPointRadianToEllipse(point, line.curve)
+    const radian = getPerpendicularPointRadiansToEllipse(point, line.curve)[0]
     if (radian !== undefined) {
       p = getEllipsePointAtRadian(line.curve, radian)
     }
@@ -148,25 +147,6 @@ export function getPerpendicularPointToCircle(position: Position, circle: Circle
   }
 }
 
-export function getPerpendicularPointRadianToEllipse(position: Position, ellipse: Ellipse, near = position, delta = delta2) {
-  const { rx, ry, cx, cy, angle } = ellipse
-  const r0 = getEllipseRadian(near, ellipse)
-  const radian = angleToRadian(angle)
-  const d1 = Math.sin(radian), d2 = Math.cos(radian)
-  const a0 = position.x - cx, a1 = position.y - cy
-  // x = d2 rx cos - d1 ry sin + cx
-  // y = d1 rx cos + d2 ry sin + cy
-  // d = (x - a0 - cx)^2 + (y - a1 - cy)^2
-  // replace x, y, group sin: d = ry ry sin(x) sin(x) + 2(a0 d1 + -d2 a1) ry sin(x) + rx rx cos(x) cos(x) - 2(a0 d2 + d1 a1) rx cos(x) + a0 a0 + a1 a1
-  const b1 = (a0 * d1 - d2 * a1) * ry, b2 = ry * ry - rx * rx, b3 = (a0 * d2 + d1 * a1) * rx
-  // d = ry ry sin(x) sin(x) + 2 b1 sin(x) + rx rx cos(x) cos(x) - 2 b3 cos(x) + a0 a0 + a1 a1
-  // d'/2 = b1 cos(x) + b2 cos(x) sin(x) + b3 sin(x)
-  // (d'/2)' = -b1 sin(x) + b2 (cos(x) cos(x) - sin(x) sin(x)) + b3 cos(x)
-  const f1 = (cos: number, sin: number) => b1 * cos + b2 * sin * cos + b3 * sin
-  const f2 = (cos: number, sin: number) => b1 * -sin + b2 * (cos * cos - sin * sin) + b3 * cos
-  return newtonIterate(r0, r => f1(Math.cos(r), Math.sin(r)), r => f2(Math.cos(r), Math.sin(r)), delta)
-}
-
 export function getPerpendicularPointRadiansToEllipse({ x: x1, y: y1 }: Position, ellipse: Ellipse, delta = delta2): number[] {
   const { rx, ry, angle, cx, cy } = ellipse
   const radian = angleToRadian(angle)
@@ -201,6 +181,11 @@ export function getPerpendicularPointRadiansToEllipse({ x: x1, y: y1 }: Position
     }
   }
   return deduplicate(result, isSameNumber)
+}
+
+export function getPerpendicularPointToEllipseArc(point: Position, ellipseArc: EllipseArc, delta = delta2) {
+  const radians = getPerpendicularPointRadiansToEllipse(point, ellipseArc, delta)
+  return radians.filter(u => angleInRange(radianToAngle(u), ellipseArc)).map(u => getEllipsePointAtRadian(ellipseArc, u))
 }
 
 export function getPerpendicularPercentToQuadraticCurve({ x: a0, y: b0 }: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, delta = delta2) {
@@ -325,16 +310,14 @@ export function getPointAndArcNearestPointAndDistance(position: Position, arc: A
 }
 
 export function getPointAndEllipseArcNearestPointAndDistance(position: Position, ellipseArc: EllipseArc, extend = false) {
-  const radian = getPerpendicularPointRadianToEllipse(position, ellipseArc)
-  if (radian !== undefined && (extend || angleInRange(radianToAngle(radian), ellipseArc))) {
-    const point = getEllipsePointAtRadian(ellipseArc, radian)
-    return {
-      point,
-      distance: getTwoPointsDistance(position, point),
-    }
+  let radians = getPerpendicularPointRadiansToEllipse(position, ellipseArc)
+  if (!extend) {
+    radians = radians.filter(u => angleInRange(radianToAngle(u), ellipseArc))
   }
+  const points = radians.map(radian => getEllipsePointAtRadian(ellipseArc, radian))
   const { start, end } = getEllipseArcStartAndEnd(ellipseArc)
-  return getPointAndPointsNearestPointAndDistance(position, [start, end])
+  points.push(start, end)
+  return getPointAndPointsNearestPointAndDistance(position, points)
 }
 
 export function getPointAndQuadraticCurveNearestPointAndDistance(position: Position, curve: QuadraticCurve, extend = false) {

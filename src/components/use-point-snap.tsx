@@ -7,11 +7,11 @@ import { Region, TwoPointsFormRegion, pointIsInRegion } from "../utils/region"
 import { Circle } from "../utils/circle"
 import { getTwoNumbersDistance } from "../utils/math"
 import { Ray, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "../utils/line"
-import { getPerpendicularPoint, getPerpendicularPointRadianToEllipse, getPerpendicularPointToBezierCurve, getPerpendicularPointToCircle, getPerpendicularPointToQuadraticCurve, getPointAndGeometryLineNearestPointAndDistance } from "../utils/perpendicular"
+import { getPerpendicularPoint, getPerpendicularPointToEllipseArc, getPerpendicularPointToBezierCurve, getPerpendicularPointToCircle, getPerpendicularPointToQuadraticCurve, getPointAndGeometryLineNearestPointAndDistance } from "../utils/perpendicular"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getTangencyParamToNurbsCurve } from "../utils/nurbs"
 import { angleInRange } from "../utils/angle"
 import { angleToRadian, getTwoPointsRadian, radianToAngle } from "../utils/radian"
-import { getEllipsePointAtRadian, getEllipseRadian } from "../utils/ellipse"
+import { getEllipseRadian } from "../utils/ellipse"
 import { getTangencyPointToBezierCurve, getTangencyPointToCircle, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve } from "../utils/tangency"
 
 /**
@@ -312,9 +312,8 @@ export function usePointSnap<T>(
                       })
                     }
                   } else if (line.type === 'ellipse arc') {
-                    const radian = getPerpendicularPointRadianToEllipse(lastPosition, line.curve, p)
-                    if (radian !== undefined && angleInRange(radianToAngle(radian), line.curve)) {
-                      const point = getEllipsePointAtRadian(line.curve, radian)
+                    const points = getPerpendicularPointToEllipseArc(lastPosition, line.curve)
+                    for (const point of points) {
                       if (getTwoPointsDistance(p, point) <= delta) {
                         saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
                         return transformResult(transformSnapPosition, {
