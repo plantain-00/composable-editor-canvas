@@ -303,3 +303,34 @@ export function applyToItems<T>(item1: T, items2: T[], operate: (item1: T, item2
 export function mirrorNumber(value: number, by: number) {
   return 2 * by - value
 }
+
+export function getContinuedFraction(n: number, max = 10): number[] {
+  const result: number[] = []
+  while (result.length < max) {
+    let a = Math.floor(n)
+    let b = n - a
+    if (isSameNumber(b, 1)) {
+      a++
+      b = 0
+    }
+    result.push(a)
+    if (isZero(b)) break
+    n = 1 / b
+  }
+  return result
+}
+
+/**
+ * PI -> 1146408/364913
+ * 0.14285714285714285 -> 1/7
+ */
+export function continuedFractionToFraction(fraction: number[]): [number, number] {
+  let result: [number, number] = [fraction[fraction.length - 1], 1]
+  for (let i = fraction.length - 2; i >= 0; i--) {
+    // f + 1 / (r0 / r1)
+    // f + r1 / r0
+    // (f r0 + r1) / r0
+    result = [fraction[i] * result[0] + result[1], result[0]]
+  }
+  return result
+}
