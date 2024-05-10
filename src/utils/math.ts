@@ -334,3 +334,11 @@ export function continuedFractionToFraction(fraction: number[]): [number, number
   }
   return result
 }
+
+export function getCommonDivisor(a: number, b: number): number {
+  return b === 0 ? a : getCommonDivisor(b, a % b)
+}
+
+export function getLeastCommonMultiple(a: number, b: number): number {
+  return a * b / getCommonDivisor(a, b)
+}
