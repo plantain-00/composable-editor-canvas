@@ -1,4 +1,4 @@
-import { rotatePositionByCenter } from "./position";
+import { getPointByLengthAndRadian, rotatePositionByCenter } from "./position";
 import { AngleRange } from "./angle";
 import { rotatePosition } from "./position";
 import { getDirectionByRadian } from "./radian";
@@ -230,4 +230,17 @@ export function getEllipseCurvatureAtRadian({ rx, ry }: Ellipse, t: number): num
 export function getEllipseArcCurvatureAtRadian(ellipse: EllipseArc, t: number): number {
   const result = getEllipseCurvatureAtRadian(ellipse, t)
   return ellipse.counterclockwise ? -result : result
+}
+
+export function getEllipseFocus(ellipse: Ellipse): Position[] {
+  const center = getEllipseCenter(ellipse)
+  if (isSameNumber(ellipse.rx, ellipse.ry)) {
+    return [center]
+  }
+  const c = Math.sqrt(Math.abs(ellipse.rx ** 2 - ellipse.ry ** 2))
+  const radian = angleToRadian((ellipse.angle || 0) + (ellipse.rx < ellipse.ry ? 90 : 0))
+  return [
+    getPointByLengthAndRadian(center, c, radian),
+    getPointByLengthAndRadian(center, -c, radian),
+  ]
 }

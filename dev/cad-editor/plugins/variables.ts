@@ -3248,6 +3248,7 @@ function getModel(ctx) {
       const right = ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content);
       const top = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content);
       const bottom = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content);
+      const focus = ctx.getEllipseFocus(content);
       return {
         lines: [{
           type: "ellipse arc",
@@ -3259,6 +3260,7 @@ function getModel(ctx) {
         right,
         top,
         bottom,
+        focus,
         bounding: ctx.getEllipseBounding(content),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -3277,6 +3279,7 @@ function getModel(ctx) {
       const points = ctx.ellipseArcToPolyline(content, (_a = content.angleDelta) != null ? _a : ctx.defaultAngleDelta);
       const lines = Array.from(ctx.iteratePolylineLines(points));
       const center = ctx.getEllipseCenter(content);
+      const focus = ctx.getEllipseFocus(content);
       const startRadian = ctx.angleToRadian(content.startAngle);
       const endRadian = ctx.angleToRadian(content.endAngle);
       const middleRadian = (startRadian + endRadian) / 2;
@@ -3287,6 +3290,7 @@ function getModel(ctx) {
         }],
         points,
         center,
+        focus,
         start: ctx.getEllipsePointAtRadian(content, startRadian),
         end: ctx.getEllipsePointAtRadian(content, endRadian),
         middle: ctx.getEllipsePointAtRadian(content, middleRadian),
@@ -3427,13 +3431,14 @@ function getModel(ctx) {
       });
     },
     getSnapPoints(content, contents) {
-      const { center, left, right, top, bottom } = getEllipseGeometries(content, contents);
+      const { center, left, right, top, bottom, focus } = getEllipseGeometries(content, contents);
       return ctx.getSnapPointsFromCache(content, () => [
         { ...center, type: "center" },
         { ...left, type: "endpoint" },
         { ...right, type: "endpoint" },
         { ...top, type: "endpoint" },
-        { ...bottom, type: "endpoint" }
+        { ...bottom, type: "endpoint" },
+        ...focus.map((p) => ({ ...p, type: "center" }))
       ]);
     },
     getGeometries: getEllipseGeometries,
@@ -3628,12 +3633,13 @@ function getModel(ctx) {
       },
       getSnapPoints(content, contents) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const { center, start, end, middle } = getEllipseArcGeometries(content, contents);
+          const { center, start, end, middle, focus } = getEllipseArcGeometries(content, contents);
           return [
             { ...center, type: "center" },
             { ...start, type: "endpoint" },
             { ...end, type: "endpoint" },
-            { ...middle, type: "midpoint" }
+            { ...middle, type: "midpoint" },
+            ...focus.map((p) => ({ ...p, type: "center" }))
           ];
         });
       },
@@ -5954,6 +5960,64 @@ export {
   getCommand,
   getModel,
   isLeadContent
+};
+`,
+`// dev/cad-editor/plugins/light.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "50", cy: "50", r: "30", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "50,20 50,0", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "29,29 15,15", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "20,50 0,50", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "29,71 15,85", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "50,80 50,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "71,29 85,15", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "71,71 85,85", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "80,50 100,50", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "light",
+    useCommand({ type, getContentsInRange, contents }) {
+      const [startPosition, setStartPosition] = React.useState();
+      const [path, setPath] = React.useState();
+      const reset = () => {
+        setStartPosition(void 0);
+        setPath(void 0);
+      };
+      const assistentContents = [];
+      if (path) {
+        assistentContents.push({ type: "geometry lines", lines: path, strokeColor: 16711680 });
+      }
+      return {
+        onStart(s) {
+          if (!type)
+            return;
+          setStartPosition(s);
+        },
+        reset,
+        onMove(p) {
+          if (!type)
+            return;
+          if (!startPosition)
+            return;
+          setPath(ctx.getLightPath(
+            { x: startPosition.x, y: startPosition.y, angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p, startPosition)) },
+            (line) => {
+              var _a, _b;
+              const result = [];
+              const region = ctx.getGeometryLineBoundingFromCache(line);
+              for (const content of getContentsInRange(region)) {
+                if (content) {
+                  const geometries = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents);
+                  if (geometries) {
+                    result.push(geometries);
+                  }
+                }
+              }
+              return result;
+            }
+          ));
+        },
+        assistentContents
+      };
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand
 };
 `,
 `// dev/cad-editor/plugins/circle-arc.plugin.tsx
