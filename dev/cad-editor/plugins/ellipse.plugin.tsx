@@ -11,8 +11,8 @@ export function getModel(ctx: PluginContext) {
   const EllipseContent = ctx.and(ctx.BaseContent('ellipse'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.Ellipse)
   const EllipseArcContent = ctx.and(ctx.BaseContent('ellipse arc'), ctx.StrokeFields, ctx.FillFields, ctx.AngleDeltaFields, ctx.EllipseArc)
   const getRefIds = (content: model.StrokeFields & model.FillFields): model.RefId[] => ctx.getStrokeAndFillRefIds(content)
-  const ellipseGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position }>>()
-  const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], center: core.Position, start: core.Position, end: core.Position, middle: core.Position }>>()
+  const ellipseGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], left: core.Position, right: core.Position, top: core.Position, bottom: core.Position, center: core.Position, focus: core.Position[] }>>()
+  const ellipseArcGeometriesCache = new ctx.WeakmapValuesCache<Omit<EllipseArcContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[], center: core.Position, focus: core.Position[], start: core.Position, end: core.Position, middle: core.Position }>>()
   function getEllipseGeometries(content: Omit<EllipseContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return ellipseGeometriesCache.get(content, refs, () => {
@@ -24,6 +24,7 @@ export function getModel(ctx: PluginContext) {
       const right = ctx.rotatePositionByEllipseCenter({ x: content.cx + content.rx, y: content.cy }, content)
       const top = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy - content.ry }, content)
       const bottom = ctx.rotatePositionByEllipseCenter({ x: content.cx, y: content.cy + content.ry }, content)
+      const focus = ctx.getEllipseFocus(content)
       return {
         lines: [{
           type: 'ellipse arc' as const,
@@ -31,6 +32,7 @@ export function getModel(ctx: PluginContext) {
         }],
         points,
         center, left, right, top, bottom,
+        focus,
         bounding: ctx.getEllipseBounding(content),
         renderingLines: ctx.dashedPolylineToLines(polylinePoints, content.dashArray),
         regions: ctx.hasFill(content) ? [
@@ -48,6 +50,7 @@ export function getModel(ctx: PluginContext) {
       const points = ctx.ellipseArcToPolyline(content, content.angleDelta ?? ctx.defaultAngleDelta)
       const lines = Array.from(ctx.iteratePolylineLines(points))
       const center = ctx.getEllipseCenter(content)
+      const focus = ctx.getEllipseFocus(content)
       const startRadian = ctx.angleToRadian(content.startAngle)
       const endRadian = ctx.angleToRadian(content.endAngle)
       const middleRadian = (startRadian + endRadian) / 2
@@ -58,6 +61,7 @@ export function getModel(ctx: PluginContext) {
         }],
         points,
         center,
+        focus,
         start: ctx.getEllipsePointAtRadian(content, startRadian),
         end: ctx.getEllipsePointAtRadian(content, endRadian),
         middle: ctx.getEllipsePointAtRadian(content, middleRadian),
@@ -197,13 +201,14 @@ export function getModel(ctx: PluginContext) {
       })
     },
     getSnapPoints(content, contents) {
-      const { center, left, right, top, bottom } = getEllipseGeometries(content, contents)
+      const { center, left, right, top, bottom, focus } = getEllipseGeometries(content, contents)
       return ctx.getSnapPointsFromCache(content, () => [
         { ...center, type: 'center' },
         { ...left, type: 'endpoint' },
         { ...right, type: 'endpoint' },
         { ...top, type: 'endpoint' },
         { ...bottom, type: 'endpoint' },
+        ...focus.map(p => ({ ...p, type: 'center' as const }))
       ])
     },
     getGeometries: getEllipseGeometries,
@@ -369,12 +374,13 @@ export function getModel(ctx: PluginContext) {
       },
       getSnapPoints(content, contents) {
         return ctx.getSnapPointsFromCache(content, () => {
-          const { center, start, end, middle } = getEllipseArcGeometries(content, contents)
+          const { center, start, end, middle, focus } = getEllipseArcGeometries(content, contents)
           return [
             { ...center, type: 'center' },
             { ...start, type: 'endpoint' },
             { ...end, type: 'endpoint' },
             { ...middle, type: 'midpoint' },
+            ...focus.map(p => ({ ...p, type: 'center' as const }))
           ]
         })
       },
