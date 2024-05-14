@@ -1,6 +1,6 @@
-import { BezierCurve, QuadraticCurve, getBezierCurveDerivatives, getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent } from "./bezier"
+import { BezierCurve, QuadraticCurve, getBezierCurveDerivatives, getBezierCurvePointAtPercent, getQuadraticCurveDerivatives, getQuadraticCurvePointAtPercent } from "./bezier"
 import { Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
-import { Ellipse, getEllipsePointAtRadian } from "./ellipse"
+import { Ellipse, getEllipseDerivatives, getEllipsePointAtRadian } from "./ellipse"
 import { calculateEquation2, calculateEquation5, newtonIterate2 } from "./equation-calculater"
 import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lineSegmentOrRayToGeneralFormLine, pointIsOnGeometryLine } from "./geometry-line"
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
@@ -62,7 +62,13 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
   } else if (line2.type === 'arc') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
   } else if (line1.type === 'ellipse arc') {
-    if (line2.type === 'nurbs curve') {
+    if (line2.type === 'ellipse arc') {
+      results = getTwoEllipseExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'quadratic curve') {
+      results = getEllipseQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'bezier curve') {
+      results = getEllipseBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'nurbs curve') {
       results = getEllipseAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'ellipse arc') {
@@ -235,76 +241,137 @@ export function getCircleAndBezierCurveExtremumPoints(circle: Circle, curve: Bez
   }).flat()
 }
 
-// export function getTwoEllipseExtremumPoints(ellipse1: Ellipse, ellipse2: Ellipse): Tuple2<Position>[] {
-//   const { rx: rx1, ry: ry1, angle: angle1, cx: cx1, cy: cy1 } = ellipse1
-//   const radian1 = angleToRadian(angle1)
-//   const d1 = Math.sin(radian1), d2 = Math.cos(radian1)
-//   const { rx: rx2, ry: ry2, angle: angle2, cx: cx2, cy: cy2 } = ellipse2
-//   const radian2 = angleToRadian(angle2)
-//   const d3 = Math.sin(radian2), d4 = Math.cos(radian2)
-//   // x1 = d2 rx1 cos(u) - d1 ry1 sin(u) + cx1
-//   // y1 = d1 rx1 cos(u) + d2 ry1 sin(u) + cy1
-//   // x2 = d4 rx2 cos(v) - d3 ry2 sin(v) + cx2
-//   // y2 = d3 rx2 cos(v) + d4 ry2 sin(v) + cy2
-//   // x1' = -cos(u) d1 ry1 + -d2 rx1 sin(u)
-//   // y1' = cos(u) d2 ry1 + -d1 rx1 sin(u)
-//   // x2' = -cos(v) d3 ry2 + -d4 rx2 sin(v)
-//   // y2' = cos(v) d4 ry2 + -d3 rx2 sin(v)
+export function getTwoEllipseExtremumPoints(ellipse1: Ellipse, ellipse2: Ellipse): Tuple2<Position>[] {
+  const [p1, d1, d2] = getEllipseDerivatives(ellipse1)
+  const [p2, e1, e2] = getEllipseDerivatives(ellipse2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    for (const t2 of [-Math.PI / 2, Math.PI / 2]) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta2)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.map(t => [p1(t[0]), p2(t[1])])
+}
 
-//   // y1'/x1' = y2'/x2'
-//   // (cos(u) d2 ry1 + -d1 rx1 sin(u))(-cos(v) d3 ry2 + -d4 rx2 sin(v)) - (cos(v) d4 ry2 + -d3 rx2 sin(v))(-cos(u) d1 ry1 + -d2 rx1 sin(u)) = 0
-//   // expand: (d1 d4 - d2 d3) ry1 ry2 cos(u) cos(v) + (d1 d3 + d2 d4) rx1 ry2 sin(u) cos(v) + -(d1 d3 + d2 d4) rx2 ry1 cos(u) sin(v) + (d1 d4 - d2 d3) rx1 rx2 sin(u) sin(v) = 0
-//   const e1 = d1 * d4 - d2 * d3, e2 = d1 * d3 + d2 * d4
-//   const e3 = ry1 * ry2, e4 = rx1 * ry2, e5 = rx2 * ry1, e6 = rx1 * rx2
-//   // e1 e3 cos(u) cos(v) + e2 e4 sin(u) cos(v) + -e2 e5 cos(u) sin(v) + e1 e6 sin(u) sin(v) = 0
-//   // /cos(u)/cos(v): e1 e3 + e2 e4 tan(u) + -e2 e5 tan(v) + e1 e6 tan(u) tan(v) = 0
-//   // tan(u) = (e2 e5 tan(v) - e1 e3)/(e2 e4 + e1 e6 tan(v))
+export function getEllipseQuadraticCurveExtremumPoints(ellipse: Ellipse, curve: QuadraticCurve): Tuple2<Position>[] {
+  const [p1, d1, d2] = getEllipseDerivatives(ellipse)
+  const [p2, e1, e2] = getQuadraticCurveDerivatives(curve)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    for (const t2 of [0.25, 0.75]) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta2)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isBetween(v[1], 0, 1)).map(t => [p1(t[0]), p2(t[1])])
+}
 
-//   // y1'/x1'(y2 - y1)/(x2 - x1) = -1
-//   // y1'(y2 - y1) + x1'(x2 - x1) = 0
-//   // (cos(u) d2 ry1 + -d1 rx1 sin(u))(d3 rx2 cos(v) + d4 ry2 sin(v) + cy2 - (d1 rx1 cos(u) + d2 ry1 sin(u) + cy1)) + (-cos(u) d1 ry1 + -d2 rx1 sin(u))(d4 rx2 cos(v) - d3 ry2 sin(v) + cx2 - (d2 rx1 cos(u) - d1 ry1 sin(u) + cx1)) = 0
-//   // expand: -e1 e5 cos(u) cos(v) + (rx1 rx1 - ry1 ry1) sin(u) cos(u) - e2 e6 sin(u) cos(v) + ((cx1 - cx2) d1 +(cy2 - cy1) d2) ry1 cos(u) + e2 e3 cos(u) sin(v) - e1 e4 sin(u) sin(v) + ((cy1 - cy2) d1 + (cx1 - cx2) d2) rx1 sin(u) = 0
-//   const f1 = rx1 * rx1 - ry1 * ry1, f2 = ((cx1 - cx2) * d1 + (cy2 - cy1) * d2) * ry1, f3 = ((cy1 - cy2) * d1 + (cx1 - cx2) * d2) * rx1
-//   // -e1 e5 cos(u) cos(v) + f1 sin(u) cos(u) - e2 e6 sin(u) cos(v) + f2 cos(u) + e2 e3 cos(u) sin(v) - e1 e4 sin(u) sin(v) + f3 sin(u) = 0
-//   // /cos(u): -e1 e5 cos(v) + f1 sin(u) - e2 e6 tan(u) cos(v) + f2 + e2 e3 sin(v) - e1 e4 tan(u) sin(v) + f3 tan(u) = 0
-//   // -e1 e5 cos(v) + f1 sin(u) + f2 + e2 e3 sin(v) + (f3  - e2 e6 cos(v) - e1 e4 sin(v)) tan(u) = 0
-//   // replace tan(u): (-e1 e5 cos(v) + f1 sin(u) + f2 + e2 e3 sin(v))(e2 e4 + e1 e6 tan(v)) + (f3  - e2 e6 cos(v) - e1 e4 sin(v))(e2 e5 tan(v) - e1 e3) = 0
-//   // sin(u) = (e1 e5 cos(v) - (f3  - e2 e6 cos(v) - e1 e4 sin(v))(e2 e5 tan(v) - e1 e3)/(e2 e4 + e1 e6 tan(v)) - f2 + e2 e3 sin(v))/f1
-//   // cos(u) = sin(u)/tan(u) = (e1 e5 cos(v) - (f3  - e2 e6 cos(v) - e1 e4 sin(v))(e2 e5 tan(v) - e1 e3)/(e2 e4 + e1 e6 tan(v)) - f2 + e2 e3 sin(v))/f1/(e2 e5 tan(v) - e1 e3)/(e2 e4 + e1 e6 tan(v))
-//   // sin(u)**2 + cos(u)**2 = 1
-// }
-
-// export function getEllipseQuadraticCurveExtremumPoints(ellipse: Ellipse, curve: QuadraticCurve): Tuple2<Position>[] {
-//   const { rx, ry, angle, cx, cy } = ellipse
-//   const radian = angleToRadian(angle)
-//   const d1 = Math.sin(radian), d2 = Math.cos(radian)
-//   // x1 = d2 rx cos(u) - d1 ry sin(u) + cx
-//   // y1 = d1 rx cos(u) + d2 ry sin(u) + cy
-//   // x1' = -cos(u) d1 ry + -d2 rx sin(u)
-//   // y1' = cos(u) d2 ry + -d1 rx sin(u)
-
-//   const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve
-//   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
-//   // x2 = c2 v v + 2 c1 v + a1
-//   // y2 = c4 v v + 2 c3 v + b1
-//   // x2' = 2 c2 v + 2 c1
-//   // y2' = 2 c4 v + 2 c3
-
-//   // y1'/x1' = y2'/x2'
-//   // (cos(u) d2 ry + -d1 rx sin(u))(c2 v + c1) - ( -cos(u) d1 ry + -d2 rx sin(u))(c4 v + c3) = 0
-//   // /cos(u): (d2 ry + -d1 rx tan(u))(c2 v + c1) - ( -d1 ry + -d2 rx tan(u))(c4 v + c3) = 0
-//   // let w = tan(u)
-//   // (d2 ry + -d1 rx w)(c2 v + c1) - ( -d1 ry + -d2 rx w)(c4 v + c3) = 0
-//   // expand: -c2 d1 rx v w + c4 d2 rx v w + c4 d1 ry v + -c1 d1 rx w + c3 d2 rx w + c3 d1 ry + c1 d2 ry + c2 d2 ry v
-//   // (c4 d2 - c2 d1) rx v w + (c4 d1 + c2 d2) ry v + (c3 d2 - c1 d1) rx w + (c3 d1 + c1 d2) ry = 0
-//   const e1 = (c4 * d2 - c2 * d1) * rx, e2 = (c4 * d1 + c2 * d2) * ry, e3 = (c3 * d2 - c1 * d1) * rx, e4 = (c3 * d1 + c1 * d2) * ry
-//   // e1 v w + e2 v + e3 w + e4 = 0
-//   // w = -(e2 v + e4)/(e1 v + e3)
-
-//   // y2'/x2'(y2 - y1)/(x2 - x1) = -1
-//   // y2'(y2 - y1) + x2'(x2 - x1) = 0
-//   // (c4 v + c3)(c4 v v + 2 c3 v + b1 - (d1 rx cos(u) + d2 ry sin(u) + cy)) + (c2 v + c1)(c2 v v + 2 c1 v + a1 - (d2 rx cos(u) - d1 ry sin(u) + cx)) = 0
-// }
+export function getEllipseBezierCurveExtremumPoints(ellipse: Ellipse, curve: BezierCurve): Tuple2<Position>[] {
+  const [p1, d1, d2] = getEllipseDerivatives(ellipse)
+  const [p2, e1, e2] = getBezierCurveDerivatives(curve)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    for (const t2 of [0.25, 0.75]) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta2)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isBetween(v[1], 0, 1)).map(t => [p1(t[0]), p2(t[1])])
+}
 
 export function getTwoQuadraticCurveExtremumPoints(curve1: QuadraticCurve, curve2: QuadraticCurve): Tuple2<Position>[] {
   const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
