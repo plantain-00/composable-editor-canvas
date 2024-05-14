@@ -643,10 +643,12 @@ export function getQuadraticCurveAndNurbsCurveExtremumPoints(curve1: QuadraticCu
   }
   let ts: Vec2[] = []
   const maxParam2 = getNurbsMaxParam(curve2)
-  for (let t2 = 0.5; t2 < maxParam2; t2++) {
-    const t = newtonIterate2([0.5, t2], f1, f2, delta)
-    if (t !== undefined) {
-      ts.push(t)
+  for (const t1 of [0.25, 0.75]) {
+    for (let t2 = 0.5; t2 < maxParam2; t2++) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta)
+      if (t !== undefined) {
+        ts.push(t)
+      }
     }
   }
   ts = deduplicate(ts, deepEquals)
