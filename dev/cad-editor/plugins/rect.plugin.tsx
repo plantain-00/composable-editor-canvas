@@ -18,12 +18,7 @@ export function getModel(ctx: PluginContext): model.Model<RectContent> {
   function getRectGeometries(content: Omit<RectContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
-      const points = [
-        { x: content.x - content.width / 2, y: content.y - content.height / 2 },
-        { x: content.x + content.width / 2, y: content.y - content.height / 2 },
-        { x: content.x + content.width / 2, y: content.y + content.height / 2 },
-        { x: content.x - content.width / 2, y: content.y + content.height / 2 },
-      ].map((p) => ctx.rotatePositionByCenter(p, content, -content.angle))
+      const points = ctx.getPolygonFromRegion(content).map((p) => ctx.rotatePositionByCenter(p, content, -content.angle))
       const lines = Array.from(ctx.iteratePolygonLines(points))
       return {
         lines,

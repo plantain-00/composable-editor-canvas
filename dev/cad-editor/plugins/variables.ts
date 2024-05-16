@@ -798,6 +798,72 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/brush.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 1024 1024", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("path", { d: "m199.04 672.64 193.984 112 224-387.968-193.92-112-224 388.032zm-23.872 60.16 32.896 148.288 144.896-45.696L175.168 732.8zM455.04 229.248l193.92 112 56.704-98.112-193.984-112-56.64 98.112zM104.32 708.8l384-665.024 304.768 175.936L409.152 884.8h.064l-248.448 78.336L104.32 708.8z", fill: "currentColor" }), /* @__PURE__ */ React.createElement("rect", { x: "600", y: "600", width: "400", height: "400", fill: "currentColor" }));
+  return {
+    name: "brush",
+    useCommand({ onEnd, type, fillStyleId }) {
+      const [hatch, setHatch] = React.useState();
+      const [preview, setPreview] = React.useState();
+      const [inputType, setInputType] = React.useState("circle");
+      const assistentContents = [];
+      const reset = () => {
+        setHatch(void 0);
+        setPreview(void 0);
+      };
+      if (hatch) {
+        assistentContents.push({ type: "hatch", border: hatch.border, holes: hatch.holes, fillStyleId });
+      }
+      if (preview) {
+        assistentContents.push({ type: "hatch", border: preview.border, holes: preview.holes, fillStyleId });
+      }
+      return {
+        onMouseDown() {
+          if (!type)
+            return;
+          if (!hatch) {
+            setHatch(preview);
+          }
+        },
+        onMove(p) {
+          if (!type)
+            return;
+          let h;
+          if (inputType === "circle") {
+            h = { border: [{ type: "arc", curve: ctx.circleToArc({ x: Math.round(p.x), y: Math.round(p.y), r: 10 }) }], holes: [] };
+          } else {
+            h = { border: Array.from(ctx.iteratePolygonLines(ctx.getPolygonFromRegion({ x: Math.round(p.x), y: Math.round(p.y), width: 20, height: 20 }))), holes: [] };
+          }
+          if (hatch) {
+            setHatch(ctx.getHatchesUnion(hatch, [h])[0]);
+          }
+          setPreview(h);
+        },
+        onMouseUp() {
+          if (!type)
+            return;
+          if (hatch) {
+            onEnd({
+              updateContents: (contents) => contents.push({ type: "hatch", border: hatch.border, holes: hatch.holes, fillStyleId })
+            });
+            reset();
+          }
+        },
+        assistentContents,
+        subcommand: type === "brush" ? /* @__PURE__ */ React.createElement("span", null, ["circle", "rect"].map((m) => /* @__PURE__ */ React.createElement("button", { key: m, onClick: () => setInputType(m), style: { position: "relative" } }, m))) : void 0,
+        reset
+      };
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/line-polyline.plugin.tsx
 function isLineContent(content) {
   return content.type === "line";
@@ -10203,12 +10269,7 @@ function getModel(ctx) {
   function getRectGeometries(content, contents) {
     const refs = new Set(ctx.iterateRefContents(getRefIds(content), contents, [content]));
     return geometriesCache.get(content, refs, () => {
-      const points = [
-        { x: content.x - content.width / 2, y: content.y - content.height / 2 },
-        { x: content.x + content.width / 2, y: content.y - content.height / 2 },
-        { x: content.x + content.width / 2, y: content.y + content.height / 2 },
-        { x: content.x - content.width / 2, y: content.y + content.height / 2 }
-      ].map((p) => ctx.rotatePositionByCenter(p, content, -content.angle));
+      const points = ctx.getPolygonFromRegion(content).map((p) => ctx.rotatePositionByCenter(p, content, -content.angle));
       const lines = Array.from(ctx.iteratePolygonLines(points));
       return {
         lines,
