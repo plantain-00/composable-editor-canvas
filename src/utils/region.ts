@@ -59,6 +59,15 @@ export function getPolygonFromTwoPointsFormRegion(region: TwoPointsFormRegion) {
   ]
 }
 
+export function getPolygonFromRegion(region: Region) {
+  return [
+    { x: region.x - region.width / 2, y: region.y - region.height / 2 },
+    { x: region.x + region.width / 2, y: region.y - region.height / 2 },
+    { x: region.x + region.width / 2, y: region.y + region.height / 2 },
+    { x: region.x - region.width / 2, y: region.y + region.height / 2 },
+  ]
+}
+
 export function getPointAndRegionMaximumDistance(position: Position, region: TwoPointsFormRegion) {
   return getPointAndPolygonMaximumDistance(position, getPolygonFromTwoPointsFormRegion(region));
 }

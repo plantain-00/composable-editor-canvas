@@ -323,6 +323,7 @@ export function getContinuedFraction(n: number, max = 10): number[] {
 /**
  * PI -> 1146408/364913
  * 0.14285714285714285 -> 1/7
+ * 0.30000000000000004 -> 3/10
  */
 export function continuedFractionToFraction(fraction: number[]): [number, number] {
   let result: [number, number] = [fraction[fraction.length - 1], 1]
