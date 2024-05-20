@@ -14,7 +14,7 @@ export function getCommand(ctx: PluginContext): Command {
   )
   return {
     name: 'extend',
-    useCommand({ onEnd, selected, contents, backgroundColor, setSelected }) {
+    useCommand({ onEnd, selected, contents, backgroundColor, setSelected, contentVisible }) {
       const [hovering, setHovering] = React.useState<{ content: model.BaseContent, point: core.Position, path: core.ContentPath }>()
       const [trimHovering, setTrimHovering] = React.useState<{ content: model.BaseContent, path: core.ContentPath }>()
       const [shift, setShift] = React.useState(false)
@@ -87,22 +87,53 @@ export function getCommand(ctx: PluginContext): Command {
         },
         onMove(p) {
           for (const s of selected) {
+            if (!contentVisible(s.content)) continue
             const lines = ctx.getContentModel(s.content)?.getGeometries?.(s.content, contents)?.lines
-            if (lines?.some(line => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5)) {
+            if (!lines) continue
+            if (!shift && ctx.isGeometryLinesClosed(lines)) continue
+            const lineIndex = lines.findIndex(line => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5)
+            if (lineIndex >= 0) {
+              let direction: 'head' | 'tail' | undefined
+              if (!shift) {
+                if (lineIndex === 0) {
+                  if (lines.length === 1) {
+                    const { start, end } = ctx.getGeometryLineStartAndEnd(lines[0])
+                    if (!start) {
+                      direction = 'tail'
+                    } else if (!end) {
+                      direction = 'head'
+                    } else {
+                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, start) ? 'head' : 'tail'
+                    }
+                  } else {
+                    direction = 'head'
+                  }
+                } else if (lineIndex === lines.length - 1) {
+                  direction = 'tail'
+                }
+              }
               let points: core.Position[] = []
-              for (const c of selected) {
-                if (c !== s) {
+              if (shift) {
+                for (const c of selected) {
+                  if (c === s) continue
+                  if (!contentVisible(c.content)) continue
                   const lines2 = ctx.getContentModel(c.content)?.getGeometries?.(c.content, contents)?.lines
                   if (lines2) {
                     for (let i = 0; i < lines.length; i++) {
-                      const extend = i === 0 || i === lines.length - 1
                       for (const line of lines2) {
-                        if (shift) {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line))
-                        } else {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter(p => !ctx.pointIsOnGeometryLines(p, lines)))
-                        }
+                        points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line))
                       }
+                    }
+                  }
+                }
+              } else if (direction) {
+                for (const c of selected) {
+                  if (c === s) continue
+                  if (!contentVisible(c.content)) continue
+                  const lines2 = ctx.getContentModel(c.content)?.getGeometries?.(c.content, contents)?.lines
+                  if (lines2) {
+                    for (const line of lines2) {
+                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, { body: true }]))
                     }
                   }
                 }
@@ -121,8 +152,8 @@ export function getCommand(ctx: PluginContext): Command {
                   })
                   return
                 }
-              } else if (points.length > 0) {
-                const point = ctx.minimumBy(points, n => ctx.getTwoPointsDistanceSquare(p, n))
+              } else if (points.length > 0 && direction) {
+                const point = ctx.minimumBy(points, n => ctx.getTwoPointsDistanceSquare(n, p))
                 setHovering({
                   ...s,
                   point,

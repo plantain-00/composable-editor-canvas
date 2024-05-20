@@ -4286,7 +4286,7 @@ function getCommand(ctx) {
   const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "-0,0 101,0", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "56,-0 43,57", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "43,57 35,100", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
   return {
     name: "extend",
-    useCommand({ onEnd, selected, contents, backgroundColor, setSelected }) {
+    useCommand({ onEnd, selected, contents, backgroundColor, setSelected, contentVisible }) {
       var _a;
       const [hovering, setHovering] = React.useState();
       const [trimHovering, setTrimHovering] = React.useState();
@@ -4361,24 +4361,62 @@ function getCommand(ctx) {
           reset();
         },
         onMove(p) {
-          var _a2, _b, _c, _d, _e, _f, _g, _h;
+          var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
           for (const s of selected) {
+            if (!contentVisible(s.content))
+              continue;
             const lines = (_c = (_b = (_a2 = ctx.getContentModel(s.content)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b.call(_a2, s.content, contents)) == null ? void 0 : _c.lines;
-            if (lines == null ? void 0 : lines.some((line) => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5)) {
+            if (!lines)
+              continue;
+            if (!shift && ctx.isGeometryLinesClosed(lines))
+              continue;
+            const lineIndex = lines.findIndex((line) => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5);
+            if (lineIndex >= 0) {
+              let direction;
+              if (!shift) {
+                if (lineIndex === 0) {
+                  if (lines.length === 1) {
+                    const { start, end } = ctx.getGeometryLineStartAndEnd(lines[0]);
+                    if (!start) {
+                      direction = "tail";
+                    } else if (!end) {
+                      direction = "head";
+                    } else {
+                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, start) ? "head" : "tail";
+                    }
+                  } else {
+                    direction = "head";
+                  }
+                } else if (lineIndex === lines.length - 1) {
+                  direction = "tail";
+                }
+              }
               let points = [];
-              for (const c of selected) {
-                if (c !== s) {
+              if (shift) {
+                for (const c of selected) {
+                  if (c === s)
+                    continue;
+                  if (!contentVisible(c.content))
+                    continue;
                   const lines2 = (_f = (_e = (_d = ctx.getContentModel(c.content)) == null ? void 0 : _d.getGeometries) == null ? void 0 : _e.call(_d, c.content, contents)) == null ? void 0 : _f.lines;
                   if (lines2) {
                     for (let i = 0; i < lines.length; i++) {
-                      const extend = i === 0 || i === lines.length - 1;
                       for (const line of lines2) {
-                        if (shift) {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line));
-                        } else {
-                          points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line, extend).filter((p2) => !ctx.pointIsOnGeometryLines(p2, lines)));
-                        }
+                        points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[i], line));
                       }
+                    }
+                  }
+                }
+              } else if (direction) {
+                for (const c of selected) {
+                  if (c === s)
+                    continue;
+                  if (!contentVisible(c.content))
+                    continue;
+                  const lines2 = (_i = (_h = (_g = ctx.getContentModel(c.content)) == null ? void 0 : _g.getGeometries) == null ? void 0 : _h.call(_g, c.content, contents)) == null ? void 0 : _i.lines;
+                  if (lines2) {
+                    for (const line of lines2) {
+                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, { body: true }]));
                     }
                   }
                 }
@@ -4387,7 +4425,7 @@ function getCommand(ctx) {
               if (shift) {
                 let parts = [s.content];
                 if (points.length > 0) {
-                  parts = ((_h = (_g = ctx.getContentModel(s.content)) == null ? void 0 : _g.break) == null ? void 0 : _h.call(_g, s.content, points, contents)) || [s.content];
+                  parts = ((_k = (_j = ctx.getContentModel(s.content)) == null ? void 0 : _j.break) == null ? void 0 : _k.call(_j, s.content, points, contents)) || [s.content];
                 }
                 const content = parts.length === 1 ? parts[0] : parts.find((f) => {
                   var _a3, _b2, _c2;
@@ -4400,8 +4438,8 @@ function getCommand(ctx) {
                   });
                   return;
                 }
-              } else if (points.length > 0) {
-                const point = ctx.minimumBy(points, (n) => ctx.getTwoPointsDistanceSquare(p, n));
+              } else if (points.length > 0 && direction) {
+                const point = ctx.minimumBy(points, (n) => ctx.getTwoPointsDistanceSquare(n, p));
                 setHovering({
                   ...s,
                   point,
@@ -8602,8 +8640,8 @@ function getModel(ctx) {
         }
       } else if (last.type === "arc") {
         if (ctx.pointIsOnCircle(point, last.curve)) {
-          content.points[0].point = point;
-          content.points[0].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, void 0, point);
+          content.points[content.points.length - 1].point = point;
+          content.points[content.points.length - 2].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, void 0, point);
         }
       }
     },

@@ -1,6 +1,6 @@
 import { AngleRange, getLargeArc } from "./angle";
 import { getTwoPointsRadian } from "./radian";
-import { isZero } from "./math";
+import { ExtendType, isZero } from "./math";
 import { getTwoPointCenter, isSamePoint } from "./position";
 import { getPointByLengthAndRadian } from "./position";
 import { getAngleRange } from "./angle";
@@ -15,9 +15,14 @@ import { twoPointLineToGeneralFormLine } from "./line";
 import { getPerpendicularLine } from "./perpendicular";
 import { Tuple5 } from "./types";
 
-export function pointIsOnArc(p: Position, arc: Arc) {
+export function pointIsOnArc(p: Position, arc: Arc, extend: ExtendType = { body: true }) {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
   const radian = getCircleRadian(p, arc)
-  return angleInRange(radianToAngle(radian), arc)
+  const inRange = angleInRange(radianToAngle(radian), arc)
+  if (extend.body && inRange) return true
+  if ((extend.head || extend.tail) && !inRange) return true
+  return false
 }
 
 export function pointIsOnCircle(p: Position, circle: Circle) {

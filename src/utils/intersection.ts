@@ -2,7 +2,7 @@ import { BezierCurve, getBezierCurvePercentsAtBezierCurve, getQuadraticCurvePerc
 import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { delta2, getNumberRangeIntersection, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
+import { ExtendType, delta2, getNumberRangeIntersection, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
 import { Position, isSamePoint } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
@@ -77,164 +77,119 @@ export function* iterateGeometryLinesSelfIntersectionPoints(lines: GeometryLine[
 /**
  * @public
  */
-export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position) {
+export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
   const result = getTwoLinesIntersectionPoint(p1Start, p1End, p2Start, p2End)
-  if (result && pointIsOnLineSegment(result, p1Start, p1End) && pointIsOnLineSegment(result, p2Start, p2End)) {
+  if (result && pointIsOnLineSegment(result, p1Start, p1End, extend1) && pointIsOnLineSegment(result, p2Start, p2End, extend2)) {
     return result
   }
-  if (!result) {
+  if (!result && extend1.body && extend2.body) {
     if (isSamePoint(p1Start, p2Start) || isSamePoint(p1Start, p2End)) return p1Start
     if (isSamePoint(p1End, p2Start) || isSamePoint(p1End, p2End)) return p1End
   }
   return undefined
 }
 
-export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend = false, delta = delta2): Position[] {
+export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend: boolean | [ExtendType, ExtendType] = false, delta = delta2): Position[] {
+  const extend1 = extend === true ? { head: true, body: true, tail: true } : extend === false ? { body: true } : extend[0]
+  const extend2 = extend === true ? { head: true, body: true, tail: true } : extend === false ? { body: true } : extend[1]
   if (Array.isArray(line1)) {
     if (Array.isArray(line2)) {
-      const point = extend
-        ? getTwoLinesIntersectionPoint(...line1, ...line2)
-        : getTwoLineSegmentsIntersectionPoint(...line1, ...line2)
+      const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2, extend1, extend2)
       if (point) {
         return [point]
       }
       return []
     }
     if (line2.type === 'arc') {
-      if (extend) {
-        return getLineCircleIntersectionPoints(...line1, line2.curve, delta)
-      }
-      return getLineSegmentArcIntersectionPoints(...line1, line2.curve)
+      return getLineSegmentArcIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     if (line2.type === 'ellipse arc') {
-      if (extend) {
-        return getLineEllipseIntersectionPoints(...line1, line2.curve)
-      }
-      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.curve)
+      return getLineSegmentEllipseArcIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     if (line2.type === 'quadratic curve') {
-      if (extend) {
-        return getLineQuadraticCurveIntersectionPoints(...line1, line2.curve, true)
-      }
-      return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve)
+      return getLineSegmentQuadraticCurveIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     if (line2.type === 'bezier curve') {
-      if (extend) {
-        return getLineBezierCurveIntersectionPoints(...line1, line2.curve, true)
-      }
-      return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve)
+      return getLineSegmentBezierCurveIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     if (line2.type === 'ray') {
       const generalFormLine1 = twoPointLineToGeneralFormLine(...line1)
       if (!generalFormLine1) return []
       const point = getTwoGeneralFormLinesIntersectionPoint(generalFormLine1, pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
-      if (point && (extend || (pointIsOnLineSegment(point, ...line1) && pointIsOnRay(point, line2.line)))) {
+      if (point && pointIsOnLineSegment(point, ...line1, extend1) && pointIsOnRay(point, line2.line, extend2)) {
         return [point]
       }
       return []
     }
     return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
-  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   if (line1.type === 'arc') {
     if (line2.type === 'arc') {
-      if (extend) {
-        return getTwoCircleIntersectionPoints(line1.curve, line2.curve)
-      }
-      return getTwoArcIntersectionPoints(line1.curve, line2.curve)
+      return getTwoArcIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'ellipse arc') {
-      if (extend) {
-        return getCircleEllipseIntersectionPoints(line1.curve, line2.curve)
-      }
-      return getArcEllipseArcIntersectionPoints(line1.curve, line2.curve)
+      return getArcEllipseArcIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'quadratic curve') {
-      if (extend) {
-        return getCircleQuadraticCurveIntersectionPoints(line1.curve, line2.curve, true)
-      }
-      return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+      return getArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'bezier curve') {
-      if (extend) {
-        return getCircleBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
-      }
-      return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
+      return getArcBezierCurveIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'ray') {
-      let points = getLineCircleIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, delta)
-      if (!extend) {
-        points = points.filter(p => pointIsOnArc(p, line1.curve) && pointIsOnRay(p, line2.line))
-      }
-      return points
+      const points = getLineCircleIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, delta)
+      return points.filter(p => pointIsOnArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
-    return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
+    return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
-  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   if (line1.type === 'ellipse arc') {
     if (line2.type === 'ellipse arc') {
-      if (extend) {
-        return getTwoEllipseIntersectionPoints(line1.curve, line2.curve)
-      }
-      return getTwoEllipseArcIntersectionPoints(line1.curve, line2.curve)
+      return getTwoEllipseArcIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'quadratic curve') {
-      if (extend) {
-        return getEllipseQuadraticCurveIntersectionPoints(line1.curve, line2.curve, true)
-      }
-      return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve)
+      return getEllipseArcQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'bezier curve') {
-      if (extend) {
-        return getEllipseBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, true)
-      }
-      return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve)
+      return getEllipseArcBezierCurveIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'ray') {
-      let points = getLineEllipseIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve)
-      if (!extend) {
-        points = points.filter(p => pointIsOnEllipseArc(p, line1.curve) && pointIsOnRay(p, line2.line))
-      }
-      return points
+      const points = getLineEllipseIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve)
+      return points.filter(p => pointIsOnEllipseArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
-    return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve)
+    return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
-  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   if (line1.type === 'quadratic curve') {
     if (line2.type === 'quadratic curve') {
-      return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend)
+      return getTwoQuadraticCurveIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     if (line2.type === 'bezier curve') {
-      return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+      return getQuadraticCurveBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend1, extend2)
     }
     if (line2.type === 'ray') {
-      let points = getLineQuadraticCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend)
-      if (!extend) {
-        points = points.filter(p => pointIsOnRay(p, line2.line))
-      }
-      return points
+      const points = getLineQuadraticCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
+      return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
     return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
-  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   if (line1.type === 'bezier curve') {
     if (line2.type === 'bezier curve') {
-      return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend)
+      return getTwoBezierCurveIntersectionPoints(line1.curve, line2.curve, undefined, extend1, extend2)
     }
     if (line2.type === 'ray') {
-      let points = getLineBezierCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend)
-      if (!extend) {
-        points = points.filter(p => pointIsOnRay(p, line2.line))
-      }
-      return points
+      const points = getLineBezierCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
+      return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
     return getBezierCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
-  if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   if (line1.type === 'ray') {
     if (line2.type === 'ray') {
       const point = getTwoGeneralFormLinesIntersectionPoint(pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle)), pointAndDirectionToGeneralFormLine(line2.line, angleToRadian(line2.line.angle)))
-      if (point && (extend || (pointIsOnRay(point, line1.line) && pointIsOnRay(point, line2.line)))) {
+      if (point && pointIsOnRay(point, line1.line, extend1) && pointIsOnRay(point, line2.line, extend2)) {
         return [point]
       }
       return []
@@ -248,7 +203,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     }
     return []
   }
-  if (line2.type === 'ray') return getTwoGeometryLinesIntersectionPoint(line2, line1, extend)
+  if (line2.type === 'ray') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   return getTwoNurbsCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
@@ -376,16 +331,18 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
 /**
  * @public
  */
-export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle) {
-  return getLineCircleIntersectionPoints(start, end, circle).filter((p) => pointIsOnLineSegment(p, start, end))
+export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle, extend: ExtendType = { body: true }) {
+  const result = getLineCircleIntersectionPoints(start, end, circle)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend))
 }
 
-export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc) {
-  return getLineSegmentCircleIntersectionPoints(start, end, arc).filter((p) => pointIsOnArc(p, arc))
+export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getLineSegmentCircleIntersectionPoints(start, end, arc, extend1)
+  return result.filter((p) => pointIsOnArc(p, arc, extend2))
 }
 
-export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc) {
-  return getTwoCircleIntersectionPoints(arc1, arc2).filter((p) => pointIsOnArc(p, arc1) && pointIsOnArc(p, arc2))
+export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  return getTwoCircleIntersectionPoints(arc1, arc2).filter((p) => pointIsOnArc(p, arc1, extend1) && pointIsOnArc(p, arc2, extend2))
 }
 
 /**
@@ -614,12 +571,14 @@ export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x
   ]
 }
 
-export function getLineSegmentEllipseIntersectionPoints(start: Position, end: Position, ellipse: Ellipse) {
-  return getLineEllipseIntersectionPoints(start, end, ellipse).filter((p) => pointIsOnLineSegment(p, start, end))
+export function getLineSegmentEllipseIntersectionPoints(start: Position, end: Position, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+  const result = getLineEllipseIntersectionPoints(start, end, ellipse)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend))
 }
 
-export function getLineSegmentEllipseArcIntersectionPoints(start: Position, end: Position, ellipseArc: EllipseArc) {
-  return getLineSegmentEllipseIntersectionPoints(start, end, ellipseArc).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+export function getLineSegmentEllipseArcIntersectionPoints(start: Position, end: Position, ellipseArc: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getLineSegmentEllipseIntersectionPoints(start, end, ellipseArc, extend1)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend2))
 }
 
 export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { rx, ry, cx, cy, angle }: Ellipse) {
@@ -670,12 +629,14 @@ export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circ
   })
 }
 
-export function getArcEllipseIntersectionPoints(arc: Arc, ellipse: Ellipse) {
-  return getCircleEllipseIntersectionPoints(arc, ellipse).filter((p) => pointIsOnArc(p, arc))
+export function getArcEllipseIntersectionPoints(arc: Arc, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+  const result = getCircleEllipseIntersectionPoints(arc, ellipse)
+  return result.filter((p) => pointIsOnArc(p, arc, extend))
 }
 
-export function getArcEllipseArcIntersectionPoints(arc: Arc, ellipseArc: EllipseArc) {
-  return getArcEllipseIntersectionPoints(arc, ellipseArc).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+export function getArcEllipseArcIntersectionPoints(arc: Arc, ellipseArc: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getArcEllipseIntersectionPoints(arc, ellipseArc, extend1)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend2))
 }
 
 export function getTwoEllipseIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { rx: rx2, ry: ry2, cx: cx2, cy: cy2, angle: angle2 }: Ellipse) {
@@ -729,19 +690,21 @@ export function getTwoEllipseIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy:
   })
 }
 
-export function getEllipseArcEllipseIntersectionPoints(ellipseArc: EllipseArc, ellipse: Ellipse) {
-  return getTwoEllipseIntersectionPoints(ellipseArc, ellipse).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+export function getEllipseArcEllipseIntersectionPoints(ellipseArc: EllipseArc, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+  const result = getTwoEllipseIntersectionPoints(ellipseArc, ellipse)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend))
 }
 
-export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, ellipseArc2: EllipseArc) {
-  return getEllipseArcEllipseIntersectionPoints(ellipseArc1, ellipseArc2).filter((p) => pointIsOnEllipseArc(p, ellipseArc2))
+export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, ellipseArc2: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getEllipseArcEllipseIntersectionPoints(ellipseArc1, ellipseArc2, extend1)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc2, extend2))
 }
 
 export function getLineQuadraticCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -752,23 +715,22 @@ export function getLineQuadraticCurveIntersectionPoints(
   // (x - x1) e2 - (y - y1) e1 = 0
   // replace x, y, group t: (-c4 e1 + c2 e2) t t + (-2 c3 e1 + 2 c1 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation2(-1 * c4 * e1 + c2 * e2, -2 * c3 * e1 + 2 * c1 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
 }
 
-export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, end: Position, curve: QuadraticCurve) {
-  return getLineQuadraticCurveIntersectionPoints(start, end, curve).filter((p) => pointIsOnLineSegment(p, start, end))
+export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, end: Position, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getLineQuadraticCurveIntersectionPoints(start, end, curve, extend2)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
 
 export function getCircleQuadraticCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -783,23 +745,22 @@ export function getCircleQuadraticCurveIntersectionPoints(
     4 * (a1 * c1 + b1 * c3 + -1 * c1 * x1 + -1 * c3 * y1),
     a1 * a1 + b1 * b1 + -r1 * r1 + -2 * a1 * x1 + x1 * x1 + -2 * b1 * y1 + y1 * y1,
   )
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
 }
 
-export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: QuadraticCurve) {
-  return getCircleQuadraticCurveIntersectionPoints(arc, curve).filter((p) => pointIsOnArc(p, arc))
+export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getCircleQuadraticCurveIntersectionPoints(arc, curve, extend2)
+  return result.filter((p) => pointIsOnArc(p, arc, extend1))
 }
 
 export function getEllipseQuadraticCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -820,23 +781,23 @@ export function getEllipseQuadraticCurveIntersectionPoints(
     4 * (d7 * e4 + d8 * e3),
     (d2 * d5 + d1 * d6) ** 2 * d3 + (d1 * d5 + - d2 * d6) ** 2 * d4 + -1
   )
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c2 * t * t + 2 * c1 * t + a1,
     y: c4 * t * t + 2 * c3 * t + b1,
   }))
 }
 
-export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: EllipseArc, curve: QuadraticCurve) {
-  return getEllipseQuadraticCurveIntersectionPoints(ellipseArc, curve).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: EllipseArc, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getEllipseQuadraticCurveIntersectionPoints(ellipseArc, curve, extend2)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend1))
 }
 
 export function getTwoQuadraticCurveIntersectionPoints(
   curve1: QuadraticCurve,
   { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } }: QuadraticCurve,
-  extend = false,
+  extend1: ExtendType = { body: true },
+  extend2 = extend1,
 ) {
   const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
@@ -867,16 +828,12 @@ export function getTwoQuadraticCurveIntersectionPoints(
     -e3 * f3 + 2 * f3 * f4 + -e7,
     e1 + -e3 * f4 + f4 * f4
   )
-  if (!extend) {
-    vs = vs.filter(v => isValidPercent(v))
-  }
+  vs = vs.filter(v => isValidPercent(v, extend2))
   let result = vs.map(v => ({
     x: d2 * v * v + 2 * d1 * v + a4,
     y: d4 * v * v + 2 * d3 * v + b4,
   }))
-  if (!extend) {
-    result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p)))
-  }
+  result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
 
@@ -884,7 +841,7 @@ export function getLineBezierCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -896,24 +853,23 @@ export function getLineBezierCurveIntersectionPoints(
   // (x - x1) e2 - (y - y1) e1 = 0
   // replace x, y, group t: (-d1 e1 + c1 e2) t t t + (-d2 e1 + c2 e2) t t + (-d3 e1 + c3 e2) t + -b1 e1 + a1 e2 + -e2 x1 + e1 y1
   let ts = calculateEquation3(-d1 * e1 + c1 * e2, -d2 * e1 + c2 * e2, -d3 * e1 + c3 * e2, -b1 * e1 + a1 * e2 + -e2 * x1 + e1 * y1)
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
   }))
 }
 
-export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end: Position, curve: BezierCurve) {
-  return getLineBezierCurveIntersectionPoints(start, end, curve).filter((p) => pointIsOnLineSegment(p, start, end))
+export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end: Position, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getLineBezierCurveIntersectionPoints(start, end, curve, extend2)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
 
 export function getCircleBezierCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -927,24 +883,24 @@ export function getCircleBezierCurveIntersectionPoints(
   const e4 = c1 * c1 + d1 * d1, e5 = c1 * c2 + d1 * d2, e6 = c2 * c2 + 2 * c1 * c3 + d2 * d2 + 2 * d1 * d3
   const e7 = c2 * c3 + c1 * e1 + d2 * d3 + d1 * e2, e8 = c3 * c3 + 2 * c2 * e1 + d3 * d3 + 2 * d2 * e2, e9 = 2 * (c3 * e1 + d3 * e2)
   let ts = calculateEquation5([e4, 2 * e5, e6, 2 * e7, e8, e9, e1 * e1 + e2 * e2 - e3], 0.5, delta)
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: d1 * t * t * t + d2 * t * t + d3 * t + b1,
   }))
 }
 
-export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve) {
-  return getCircleBezierCurveIntersectionPoints(arc, curve).filter((p) => pointIsOnArc(p, arc))
+export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  let result = getCircleBezierCurveIntersectionPoints(arc, curve, undefined, extend2)
+  result = result.filter((p) => pointIsOnArc(p, arc, extend1))
+  return result
 }
 
 export function getEllipseBezierCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend = false,
+  extend: ExtendType = { body: true },
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
@@ -971,24 +927,24 @@ export function getEllipseBezierCurveIntersectionPoints(
       f3 * g6 + f4 * g5 - 1,
     ], 0.5, delta,
   )
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend))
   return ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
 }
 
-export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseArc, curve: BezierCurve) {
-  return getEllipseBezierCurveIntersectionPoints(ellipseArc, curve).filter((p) => pointIsOnEllipseArc(p, ellipseArc))
+export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseArc, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+  const result = getEllipseBezierCurveIntersectionPoints(ellipseArc, curve, undefined, extend2)
+  return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend1))
 }
 
 export function getQuadraticCurveBezierCurveIntersectionPoints(
   curve1: QuadraticCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend = false,
+  extend1: ExtendType = { body: true },
+  extend2 = extend1,
 ) {
   const { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } } = curve1
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
@@ -1025,16 +981,12 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
       f1 * f3 * f3 + -e1 * f3 * f7 + f7 * f7,
     ], 0.5, delta,
   )
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
+  ts = ts.filter(t => isValidPercent(t, extend2))
   let result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
-  if (!extend) {
-    result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p)))
-  }
+  result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
 
@@ -1042,7 +994,8 @@ export function getTwoBezierCurveIntersectionPoints(
   curve1: BezierCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend = false,
+  extend1: ExtendType = { body: true },
+  extend2 = extend1,
 ) {
   const { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } } = curve1
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
@@ -1095,17 +1048,12 @@ export function getTwoBezierCurveIntersectionPoints(
       h8 * h8 + -g7 * h4 * h4,
     ], 0.5, delta,
   )
-  if (!extend) {
-    ts = ts.filter(t => isValidPercent(t))
-  }
-  let result = ts.map(t => ({
+  ts = ts.filter(t => isValidPercent(t, extend2))
+  const result = ts.map(t => ({
     x: c1 * t * t * t + c2 * t * t + c3 * t + a1,
     y: c4 * t * t * t + c5 * t * t + c6 * t + b1,
   }))
-  if (!extend) {
-    result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p)))
-  }
-  return result
+  return result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p), extend1))
 }
 
 export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: GeometryLine): GeometryLine[] | undefined {

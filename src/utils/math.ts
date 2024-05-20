@@ -24,8 +24,13 @@ export function lessOrEqual(value1: number, value2: number, delta?: number) {
   return value1 < value2 || isSameNumber(value1, value2, delta)
 }
 
-export function isValidPercent(t: number) {
-  return largerOrEqual(t, 0) && lessOrEqual(t, 1)
+export function isValidPercent(t: number, extend: ExtendType = { body: true }) {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
+  if (extend.body && largerOrEqual(t, 0) && lessOrEqual(t, 1)) return true
+  if (extend.head && lessThan(t, 0)) return true
+  if (extend.tail && largerThan(t, 1)) return true
+  return false
 }
 
 export function sqrt3(value: number) {
@@ -82,8 +87,27 @@ export function getTwoNumberCenter(p1: number, p2: number) {
   return (p1 + p2) / 2
 }
 
-export function isBetween(target: number, a: number, b: number) {
-  return lessOrEqual(target, Math.max(a, b)) && largerOrEqual(target, Math.min(a, b))
+export interface ExtendType {
+  head?: boolean
+  body?: boolean
+  tail?: boolean
+}
+
+export function isBetween(target: number, a: number, b: number, extend: ExtendType = { body: true }) {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
+  if (extend.body && lessOrEqual(target, Math.max(a, b)) && largerOrEqual(target, Math.min(a, b))) return true
+  if (extend.head && isBefore(target, a, b)) return true
+  if (extend.tail && isAfter(target, a, b)) return true
+  return false
+}
+
+export function isBefore(target: number, a: number, b: number) {
+  return largerThan(a, b) ? largerThan(target, a) : lessThan(a, b) ? lessThan(target, a) : false
+}
+
+export function isAfter(target: number, a: number, b: number) {
+  return largerThan(a, b) ? lessThan(target, b) : lessThan(a, b) ? largerThan(target, b) : false
 }
 
 export function getNumberRangeIntersection(range1: [number, number], range2: [number, number]): [number, number] | undefined {

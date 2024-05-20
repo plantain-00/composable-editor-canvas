@@ -133,8 +133,8 @@ export function getModel(ctx: PluginContext) {
         }
       } else if (last.type === 'arc') {
         if (ctx.pointIsOnCircle(point, last.curve)) {
-          content.points[0].point = point
-          content.points[0].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, undefined, point)
+          content.points[content.points.length - 1].point = point
+          content.points[content.points.length - 2].bulge = ctx.getArcBulge({ ...last.curve, endAngle: ctx.radianToAngle(ctx.getCircleRadian(point, last.curve)) }, undefined, point)
         }
       }
     },
