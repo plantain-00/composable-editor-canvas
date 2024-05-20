@@ -285,25 +285,6 @@ export const CADEditor = React.forwardRef((props: {
     setScaleOffset(1)
   })
 
-  const selectedContents: { content: BaseContent, path: ContentPath }[] = []
-  editingContent.forEach((s, i) => {
-    if (!s) {
-      return
-    }
-    if (isSelected([i])) {
-      selectedContents.push({ content: s, path: [i] })
-    } else {
-      for (const f of selected) {
-        if (f.length === 2 && f[0] === i) {
-          const line = getContentModel(s)?.getGeometries?.(s, editingContent)?.lines?.[f[1]]
-          if (line) {
-            selectedContents.push({ content: model.geometryLineToContent(line), path: f })
-          }
-        }
-      }
-    }
-  })
-
   const acquirePoint = (handle: (point: Position, target?: model.SnapTarget | undefined) => void) => {
     acquirePointHandler.current = p => {
       handle(p.position, p.target)
@@ -380,6 +361,25 @@ export const CADEditor = React.forwardRef((props: {
   const bounding = getPointsBoundingUnsafe(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: width, y: height } }).map(p => reverseTransform(p)))
   const searchResult = new Set(getContentsInRange(bounding))
   const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
+
+  const selectedContents: { content: BaseContent, path: ContentPath }[] = []
+  editingContent.forEach((s, i) => {
+    if (!s || !searchResult.has(s)) {
+      return
+    }
+    if (isSelected([i])) {
+      selectedContents.push({ content: s, path: [i] })
+    } else {
+      for (const f of selected) {
+        if (f.length === 2 && f[0] === i) {
+          const line = getContentModel(s)?.getGeometries?.(s, editingContent)?.lines?.[f[1]]
+          if (line) {
+            selectedContents.push({ content: model.geometryLineToContent(line), path: f })
+          }
+        }
+      }
+    }
+  })
 
   // commands
   const { commandMask, commandUpdateSelectedContent, startCommand, onCommandMouseDown, onCommandMouseUp, onCommandKeyDown, onCommandKeyUp, commandInput, commandButtons, commandPanel, onCommandMouseMove, commandAssistentContents, commandSelected, commandHovering, getCommandByHotkey, commandLastPosition, resetCommand } = useCommands(
@@ -554,10 +554,12 @@ export const CADEditor = React.forwardRef((props: {
   if (result) {
     assistentContents.push(...updateReferencedContents(result.content, result.result, editingContent))
   }
-  for (const { content, path } of selectedContents) {
-    if (path.length === 1) {
-      const c = editPoint && isSamePath(editPoint.path, path) ? result?.result : result?.relatedEditPointResults.get(content)
-      assistentContents.push(...getEditAssistentContents(c ?? content, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
+  if (selectedContents.length < 100) {
+    for (const { content, path } of selectedContents) {
+      if (path.length === 1) {
+        const c = editPoint && isSamePath(editPoint.path, path) ? result?.result : result?.relatedEditPointResults.get(content)
+        assistentContents.push(...getEditAssistentContents(c ?? content, (rect) => ({ type: 'rect', ...rect, fillColor: 0xffffff, angle: 0 } as RectContent)))
+      }
     }
   }
 
@@ -1104,7 +1106,7 @@ export const CADEditor = React.forwardRef((props: {
     applyPatchFromSelf(prependPatchPath(patches[0]), prependPatchPath(patches[1]))
   }
   let panel: JSX.Element | undefined
-  if (props.panelVisible && selectedContents.length > 0) {
+  if (props.panelVisible && selectedContents.length > 0 && selectedContents.length < 100) {
     const propertyPanels: Record<string, JSX.Element | JSX.Element[]> = {}
     const types = new Set<string>()
     const ids: number[] = []
@@ -1207,7 +1209,7 @@ export const CADEditor = React.forwardRef((props: {
           contents={editingContent}
           previewPatches={previewPatches.length === 0 ? undefined : previewPatches}
           assistentContents={assistentContents.length === 0 ? undefined : assistentContents}
-          selected={selected}
+          selected={selected.filter(s => searchResult.has(editingContent[s[0]]))}
           othersSelectedContents={othersSelectedContents}
           hovering={hovering}
           assistentSelected={commandSelected}

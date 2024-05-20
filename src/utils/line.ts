@@ -1,6 +1,6 @@
 import { getPointByLengthAndRadian } from "./position";
 import { angleToRadian, getTwoPointsRadian } from "./radian";
-import { deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
+import { ExtendType, deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
 import { isSamePoint } from "./position";
 import { getTwoPointsDistance } from "./position";
 import { getPointByLengthAndDirection } from "./position";
@@ -11,7 +11,7 @@ import { rotatePositionByCenter } from "./position";
 import { and, boolean, number, optional } from "./validators";
 import { RenderTransform, Transform, reverseTransformPosition } from "./transform";
 import { Matrix, m3 } from "./matrix";
-import { reverseAngle } from "./reverse";
+import { reverseAngle, reverseRadian } from "./reverse";
 
 export interface GeneralFormLine {
   a: number
@@ -31,12 +31,14 @@ export const Ray = /* @__PURE__ */ and(Position, {
   reversed: /* @__PURE__ */ optional(boolean),
 })
 
-export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position) {
-  if (!isSameNumber(point1.x, point2.x) && isBetween(p.x, point1.x, point2.x)) {
-    return true
+export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position, extend: ExtendType = { body: true }) {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
+  if (!isSameNumber(point1.x, point2.x)) {
+    return isBetween(p.x, point1.x, point2.x, extend)
   }
-  if (!isSameNumber(point1.y, point2.y) && isBetween(p.y, point1.y, point2.y)) {
-    return true
+  if (!isSameNumber(point1.y, point2.y)) {
+    return isBetween(p.y, point1.y, point2.y, extend)
   }
   return false
 }
@@ -51,12 +53,18 @@ export function pointIsOnGeneralFormLine(p: Position, { a, b, c }: GeneralFormLi
   return isZero(a * p.x + b * p.y + c)
 }
 
-export function pointIsOnRay(p: Position, ray: Ray) {
+export function pointIsOnRay(p: Position, ray: Ray, extend: ExtendType = { body: true }): boolean {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
   const radian = angleToRadian(ray.angle)
   if (ray.bidirectional) {
-    return pointIsOnGeneralFormLine(p, pointAndDirectionToGeneralFormLine(p, radian))
+    return !!extend.body && pointIsOnGeneralFormLine(p, pointAndDirectionToGeneralFormLine(p, radian))
   }
-  return isSamePoint(p, ray) || isSameNumber(radian, getTwoPointsRadian(p, ray))
+  if (extend.body && isSamePoint(p, ray)) return true
+  const r = getTwoPointsRadian(p, ray)
+  if (extend.body && isSameNumber(radian, r)) return true
+  if (extend.head && isSameNumber(radian, reverseRadian(r))) return true
+  return false
 }
 
 export function isSameLine(line1: GeneralFormLine, line2: GeneralFormLine): boolean {
