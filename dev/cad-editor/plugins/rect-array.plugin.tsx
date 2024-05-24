@@ -230,13 +230,14 @@ export function getCommand(ctx: PluginContext): Command {
       const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents))
       const bounding = ctx.getContentsBounding(target, contents)
       if (!bounding) return
+      const size = ctx.getTwoPointsFormRegionSize(bounding)
       const newContent: RectArrayContent = {
         type: 'rect array',
         contents: target,
         rowCount: 3,
-        rowSpacing: -(bounding.end.y - bounding.start.y) * 1.5,
+        rowSpacing: -size.height * 1.5,
         columnCount: 4,
-        columnSpacing: (bounding.end.x - bounding.start.x) * 1.5,
+        columnSpacing: size.width * 1.5,
       }
       ctx.deleteSelectedContents(contents, selected.map(c => c[0]))
       contents.push(newContent)
