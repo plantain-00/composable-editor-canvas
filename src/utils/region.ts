@@ -46,6 +46,13 @@ export function getRegion(p1: Position, p2: Position): Region {
   }
 }
 
+export function getTwoPointsFormRegionSize(region: TwoPointsFormRegion): Size {
+  return {
+    width: getTwoNumbersDistance(region.start.x, region.end.x),
+    height: getTwoNumbersDistance(region.start.y, region.end.y),
+  }
+}
+
 export function pointIsInRegion(point: Position, region: TwoPointsFormRegion) {
   return largerOrEqual(point.x, region.start.x) && largerOrEqual(point.y, region.start.y) && lessOrEqual(point.x, region.end.x) && lessOrEqual(point.y, region.end.y)
 }

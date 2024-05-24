@@ -57,7 +57,8 @@ export function getCommand(ctx: PluginContext): Command {
             }
             const bounding = ctx.mergeBoundings(boundings)
             if (bounding) {
-              setData({ center: s, size: Math.max(bounding.end.x - bounding.start.x, bounding.end.y - bounding.start.y) })
+              const size = ctx.getTwoPointsFormRegionSize(bounding)
+              setData({ center: s, size: Math.max(size.width, size.height) })
             }
           } else {
             onEnd()

@@ -367,3 +367,9 @@ export function getCommonDivisor(a: number, b: number): number {
 export function getLeastCommonMultiple(a: number, b: number): number {
   return a * b / getCommonDivisor(a, b)
 }
+
+export function setArrayItems<T>(array: { [index: number]: T }, startIndex: number, items: { [index: number]: T, readonly length: number }) {
+  for (let i = 0; i < items.length; i++) {
+    array[startIndex + i] = items[i]
+  }
+}

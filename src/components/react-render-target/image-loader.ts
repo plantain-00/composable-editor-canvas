@@ -1,18 +1,4 @@
-function loadImage(url: string, crossOrigin?: "anonymous" | "use-credentials" | "") {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image()
-    if (crossOrigin !== undefined) {
-      image.crossOrigin = crossOrigin
-    }
-    image.onload = () => {
-      resolve(image)
-    }
-    image.onerror = () => {
-      reject()
-    }
-    image.src = url
-  })
-}
+import { dataUrlToImage } from "../../utils/blob"
 
 const images = new Map<string, ImageBitmap | (() => void)[]>()
 
@@ -27,7 +13,7 @@ export function getImageFromCache(
   const image = images.get(url)
   if (!image) {
     images.set(url, [])
-    loadImage(url, options?.crossOrigin).then(image => {
+    dataUrlToImage(url, options?.crossOrigin).then(image => {
       createImageBitmap(image).then(imageBitmap => {
         const listeners = images.get(url)
         images.set(url, imageBitmap)

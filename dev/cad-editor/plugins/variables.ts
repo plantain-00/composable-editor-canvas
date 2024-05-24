@@ -10276,13 +10276,14 @@ function getCommand(ctx) {
       const bounding = ctx.getContentsBounding(target, contents);
       if (!bounding)
         return;
+      const size = ctx.getTwoPointsFormRegionSize(bounding);
       const newContent = {
         type: "rect array",
         contents: target,
         rowCount: 3,
-        rowSpacing: -(bounding.end.y - bounding.start.y) * 1.5,
+        rowSpacing: -size.height * 1.5,
         columnCount: 4,
-        columnSpacing: (bounding.end.x - bounding.start.x) * 1.5
+        columnSpacing: size.width * 1.5
       };
       ctx.deleteSelectedContents(contents, selected.map((c) => c[0]));
       contents.push(newContent);
@@ -11375,7 +11376,8 @@ function getCommand(ctx) {
             }
             const bounding = ctx.mergeBoundings(boundings);
             if (bounding) {
-              setData({ center: s, size: Math.max(bounding.end.x - bounding.start.x, bounding.end.y - bounding.start.y) });
+              const size = ctx.getTwoPointsFormRegionSize(bounding);
+              setData({ center: s, size: Math.max(size.width, size.height) });
             }
           } else {
             onEnd();
@@ -11522,7 +11524,8 @@ function getCommand(ctx) {
             }
             const bounding = ctx.mergeBoundings(boundings);
             if (bounding) {
-              setData({ center: s, size: Math.max(bounding.end.x - bounding.start.x, bounding.end.y - bounding.start.y) });
+              const size = ctx.getTwoPointsFormRegionSize(bounding);
+              setData({ center: s, size: Math.max(size.width, size.height) });
             }
           } else {
             onEnd();

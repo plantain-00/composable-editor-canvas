@@ -10,6 +10,7 @@ import { getColorString } from "../../utils/color"
 import { angleToRadian } from "../../utils/radian"
 import { defaultLineCap, defaultLineJoin, defaultMiterLimit } from "../../utils/triangles"
 import { Position } from "../../utils/position"
+import { createCanvasContext } from "../../utils/blob"
 
 /**
  * @public
@@ -336,13 +337,10 @@ function getPattern(
   transform?: RenderTransform,
   matrix?: Matrix,
 ) {
-  const canvas = document.createElement("canvas")
-  canvas.width = pattern.width
-  canvas.height = pattern.height
-  const patternCtx = canvas.getContext('2d')
+  const patternCtx = createCanvasContext(pattern)
   if (patternCtx) {
     pattern.pattern()(patternCtx, scale, rerender, width, height, transform, matrix)
-    const result = ctx.createPattern(canvas, null)
+    const result = ctx.createPattern(patternCtx.canvas, null)
     if (result) {
       // if (pattern.rotate) {
       //   const rotate = angleToRadian(pattern.rotate)

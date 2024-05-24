@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { useCursorInput } from ".."
-import { Position, Image } from "../../utils"
+import { Position, Image, blobToDataUrl } from "../../utils"
 import { getImageFromCache } from "../react-render-target/image-loader"
 
 /**
@@ -66,25 +66,19 @@ export function useImageClickCreate(
           onChange={(e) => {
             const file = e.currentTarget.files?.item(0)
             if (file) {
-              const reader = new FileReader()
-              reader.onloadend = () => {
-                const base64 = reader.result
-                if (typeof base64 === 'string') {
-                  getImageFromCache(base64, {
-                    callback(image) {
-                      setImage({
-                        x: 0,
-                        y: 0,
-                        width: image.width,
-                        height: image.height,
-                        url: base64,
-                      })
-                    },
+              blobToDataUrl(file).then(base64 => {
+                getImageFromCache(base64, {
+                  callback(image) {
+                    setImage({
+                      x: 0,
+                      y: 0,
+                      width: image.width,
+                      height: image.height,
+                      url: base64,
+                    })
                   },
-                  )
-                }
-              }
-              reader.readAsDataURL(file)
+                })
+              })
             }
             (e.target.value as string | null) = null
           }}

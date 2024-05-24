@@ -1,7 +1,7 @@
 import { isSameNumber, getTwoNumberCenter } from "./math"
 import { Position, rotatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
-import { Size, TwoPointsFormRegion } from "./region"
+import { Size, TwoPointsFormRegion, getTwoPointsFormRegionSize } from "./region"
 import { getTwoPointCenter } from "./position"
 
 /**
@@ -53,7 +53,8 @@ export function zoomToFit(
   paddingScale = 0.8,
 ) {
   if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
-    const scale = Math.min(width / Math.abs(bounding.end.x - bounding.start.x), height / Math.abs(bounding.end.y - bounding.start.y)) * paddingScale
+    const size = getTwoPointsFormRegionSize(bounding)
+    const scale = Math.min(width / size.width, height / size.height) * paddingScale
     return {
       scale,
       x: (center.x - getTwoNumberCenter(bounding.start.x, bounding.end.x)) * scale,
@@ -72,17 +73,14 @@ export function zoomToFitPoints(
 ) {
   const bounding = getPointsBoundingUnsafe(points)
   if (bounding && !isSameNumber(bounding.start.x, bounding.end.x) && !isSameNumber(bounding.start.y, bounding.end.y)) {
-    let boundingWidth: number
-    let boundingHeight: number
+    let boundingSize: Size
     if (rotate) {
       const region = getPointsBoundingUnsafe(points.map(p => rotatePosition(p, { x: 0, y: 0 }, rotate)))
-      boundingWidth = Math.abs(region.end.x - region.start.x)
-      boundingHeight = Math.abs(region.end.y - region.start.y)
+      boundingSize = getTwoPointsFormRegionSize(region)
     } else {
-      boundingWidth = Math.abs(bounding.end.x - bounding.start.x)
-      boundingHeight = Math.abs(bounding.end.y - bounding.start.y)
+      boundingSize = getTwoPointsFormRegionSize(bounding)
     }
-    const scale = Math.min(width / boundingWidth, height / boundingHeight) * paddingScale
+    const scale = Math.min(width / boundingSize.width, height / boundingSize.height) * paddingScale
     let boundingCenter = getTwoPointCenter(bounding.start, bounding.end)
     if (rotate) {
       boundingCenter = rotatePosition(boundingCenter, { x: 0, y: 0 }, rotate)
