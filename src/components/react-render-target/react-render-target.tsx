@@ -15,9 +15,7 @@ export interface ReactRenderTarget<T = JSX.Element, V = JSX.Element> {
     width: number,
     height: number,
     options?: Partial<{
-      attributes: Partial<React.DOMAttributes<HTMLOrSVGElement> & {
-        style: React.CSSProperties
-      }>,
+      attributes: Partial<React.HTMLAttributes<HTMLOrSVGElement>>,
       transform: RenderTransform
       backgroundColor: number
       debug: boolean

@@ -12,7 +12,6 @@ export function useImageClickCreate(
   onEnd: (image: Image) => void,
 ) {
   const [image, setImage] = React.useState<Image>()
-  const ref = React.useRef<HTMLInputElement | null>(null)
 
   let message = ''
   if (enabled) {
@@ -20,6 +19,21 @@ export function useImageClickCreate(
   }
 
   const { input, setInputPosition } = useCursorInput(message)
+  const { start, ui } = useChooseFile(file => {
+    blobToDataUrl(file).then(base64 => {
+      getImageFromCache(base64, {
+        callback(image) {
+          setImage({
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height,
+            url: base64,
+          })
+        },
+      })
+    })
+  })
 
   const reset = () => {
     setImage(undefined)
@@ -27,7 +41,7 @@ export function useImageClickCreate(
 
   React.useEffect(() => {
     if (enabled) {
-      ref.current?.click()
+      start()
     }
   }, [enabled])
 
@@ -39,7 +53,7 @@ export function useImageClickCreate(
         return
       }
       if (!image) {
-        ref.current?.click()
+        start()
         return
       }
       setInputPosition(p)
@@ -58,33 +72,33 @@ export function useImageClickCreate(
     },
     input: (
       <>
-        <input
-          type='file'
-          ref={ref}
-          accept='image/*'
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.currentTarget.files?.item(0)
-            if (file) {
-              blobToDataUrl(file).then(base64 => {
-                getImageFromCache(base64, {
-                  callback(image) {
-                    setImage({
-                      x: 0,
-                      y: 0,
-                      width: image.width,
-                      height: image.height,
-                      url: base64,
-                    })
-                  },
-                })
-              })
-            }
-            (e.target.value as string | null) = null
-          }}
-        />
+        {ui}
         {input}
       </>
     ),
+  }
+}
+
+export function useChooseFile(onChoose: (file: File) => void) {
+  const ref = React.useRef<HTMLInputElement | null>(null)
+  return {
+    start() {
+      ref.current?.click()
+    },
+    ui: (
+      <input
+        type='file'
+        ref={ref}
+        accept='image/*'
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.currentTarget.files?.item(0)
+          if (file) {
+            onChoose(file)
+          }
+          (e.target.value as string | null) = null
+        }}
+      />
+    )
   }
 }
