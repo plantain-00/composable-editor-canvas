@@ -5433,6 +5433,32 @@ function getModel(ctx) {
         ...ctx.getClipContentPropertyPanel(content, contents, acquireContent, update)
       };
     },
+    editPanel(content, _scale, update, _contents, cancel) {
+      const y = 100;
+      return /* @__PURE__ */ React.createElement(
+        ctx.ImageEditor,
+        {
+          style: {
+            zIndex: 11
+          },
+          y,
+          onCancel: cancel,
+          src: content.url,
+          width: window.innerWidth,
+          height: window.innerHeight - y,
+          onCpmplete: (url, width, height) => {
+            update((c) => {
+              if (isImageContent(c)) {
+                c.url = url;
+                c.width = width;
+                c.height = height;
+                cancel();
+              }
+            });
+          }
+        }
+      );
+    },
     isValid: (c, p) => ctx.validate(c, ImageContent, p)
   };
 }

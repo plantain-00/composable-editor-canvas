@@ -6,7 +6,6 @@ import { useWheelScroll } from "./use-wheel-scroll"
 import { useWheelZoom } from "./use-wheel-zoom"
 import { Transform, reverseTransformPosition, scaleByCursorPosition, zoomToFitPoints } from "../utils/transform"
 import { bindMultipleRefs } from "../utils/ref"
-import { useGlobalKeyDown } from "./use-global-keydown"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useZoom } from "./use-zoom"
 import { useDragSelect } from "./use-drag-select"
@@ -18,22 +17,39 @@ import { getPointsBounding } from "../utils/bounding"
 import { setArrayItems } from "../utils/math"
 import { useChooseFile } from "./use-create/use-image-click-create"
 import { useUndoRedo } from "./use-undo-redo"
+import { Cursor } from "./cursor"
 
 export function ImageEditor(props: {
   src: string
+  x?: number
+  y?: number
   width: number
+  height: number
+  onCancel?: () => void
+  onCpmplete?: (url: string, wdith: number, height: number) => void
+  style?: React.CSSProperties
 }) {
-  const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, canvasHeight: number } | undefined>(undefined)
+  const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
   const [status, setStatus] = React.useState<'select' | 'move' | 'paste'>('select')
   const [selection, setSelection] = React.useState<Position[]>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
+  const ref = React.useRef<HTMLInputElement | null>(null)
 
+  const focus = () => {
+    setTimeout(() => {
+      ref.current?.focus()
+    })
+  }
   const loadUrl = async (url: string) => {
     const imageElement = await dataUrlToImage(url, 'anonymous')
-    const height = props.width / imageElement.width * imageElement.height
-    const result = zoomToFitPoints(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: imageElement.width, y: imageElement.height } }), { width: props.width, height: height }, { x: props.width / 2, y: height / 2 }, 1)
+    const rate = Math.min(props.width / imageElement.width, props.height / imageElement.height)
+    const width = imageElement.width * rate
+    const height = imageElement.height * rate
+    const x = (props.width - width) / 2 + (props.x ?? 0)
+    const y = (props.height - height) / 2 + (props.y ?? 0)
+    const result = zoomToFitPoints(getPolygonFromTwoPointsFormRegion({ start: { x: 0, y: 0 }, end: { x: imageElement.width, y: imageElement.height } }), { width, height }, { x: width / 2, y: height / 2 }, 1)
     if (result) {
       setScale(result.scale)
       setX(result.x)
@@ -45,8 +61,12 @@ export function ImageEditor(props: {
       resetHistory({
         url,
         ctx,
+        x,
+        y,
+        canvasWidth: width,
         canvasHeight: height,
       })
+      focus()
     }
   }
   React.useEffect(() => {
@@ -56,7 +76,7 @@ export function ImageEditor(props: {
   const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>({
     onChange(oldScale, newScale, cursor) {
       if (!image) return
-      const result = scaleByCursorPosition({ width: props.width, height: image.canvasHeight }, newScale / oldScale, cursor)
+      const result = scaleByCursorPosition({ width: image.canvasWidth, height: image.canvasHeight }, newScale / oldScale, cursor)
       setX(result.setX)
       setY(result.setY)
     }
@@ -66,16 +86,22 @@ export function ImageEditor(props: {
     setX((v) => v + offset.x)
     setY((v) => v + offset.y)
     setStatus('select')
+    closeContextMenu()
   })
   const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end) => {
     if (end) {
       const points = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
       setSelection(points)
+      focus()
     }
   })
+  const closeContextMenu = () => {
+    setContextMenu(undefined)
+    focus()
+  }
   const reset = () => {
     setStatus('select')
-    setContextMenu(undefined)
+    closeContextMenu()
     resetDragMove()
     resetDragSelect()
     setSelection(undefined)
@@ -86,17 +112,20 @@ export function ImageEditor(props: {
     const base64 = await blobToDataUrl(file)
     await loadUrl(base64)
   })
-  useGlobalKeyDown(e => {
+  const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    e.stopPropagation()
     if (metaKeyIfMacElseCtrlKey(e)) {
       if (e.code === 'Minus') {
         zoomOut(e)
       } else if (e.code === 'Equal') {
         zoomIn(e)
       } else if (e.key === 'ArrowLeft') {
-        setX((v) => v + props.width / 10)
+        if (!image) return
+        setX((v) => v + image.canvasWidth / 10)
         e.preventDefault()
       } else if (e.key === 'ArrowRight') {
-        setX((v) => v - props.width / 10)
+        if (!image) return
+        setX((v) => v - image.canvasWidth / 10)
         e.preventDefault()
       } else if (e.key === 'ArrowUp') {
         if (!image) return
@@ -128,12 +157,18 @@ export function ImageEditor(props: {
           copySelection()
           deleteSelection()
           e.preventDefault()
+        } else if (e.code === 'KeyS') {
+          if (image) {
+            props.onCpmplete?.(image.url, image.canvasWidth, image.canvasHeight)
+          }
+          e.preventDefault()
         }
       }
     } else if (e.key === 'Escape') {
       reset()
+      props.onCancel?.()
     }
-  })
+  }
 
   if (!image) return null
   const transform: Transform = {
@@ -141,13 +176,20 @@ export function ImageEditor(props: {
     y,
     scale,
     center: {
-      x: props.width / 2,
+      x: image.canvasWidth / 2,
       y: image.canvasHeight / 2,
     },
   }
   transform.x += offset.x
   transform.y += offset.y
+  const transformOffset = (p: Position) => {
+    return {
+      x: p.x - image.x,
+      y: p.y - image.y,
+    }
+  }
   const reverseTransform = (p: Position) => {
+    p = transformOffset(p)
     p = reverseTransformPosition(p, transform)
     return p
   }
@@ -231,7 +273,7 @@ export function ImageEditor(props: {
   return (
     <div
       ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
-      style={{ cursor: status === 'move' ? 'grab' : 'crosshair', position: 'absolute', inset: '0px', overflow: 'hidden' }}
+      style={{ cursor: status === 'move' ? 'grab' : 'crosshair', position: 'absolute', inset: '0px', left: image.x + 'px', top: image.y + 'px', overflow: 'hidden' }}
       onMouseMove={e => {
         if (previewImage && status === 'paste') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
@@ -239,7 +281,7 @@ export function ImageEditor(props: {
         }
       }}
     >
-      {target.renderResult(children, props.width, image.canvasHeight, {
+      {target.renderResult(children, image.canvasWidth, image.canvasHeight, {
         attributes: {
           onMouseDown(e) {
             if (status === 'move') {
@@ -283,17 +325,35 @@ export function ImageEditor(props: {
           },
           onContextMenu(e) {
             e.preventDefault()
-            const viewportPosition = { x: e.clientX, y: e.clientY }
+            const viewportPosition = transformOffset({ x: e.clientX, y: e.clientY })
             if (contextMenu) {
-              setContextMenu(undefined)
+              closeContextMenu()
               return
             }
             const items: MenuItem[] = []
+            if (props.onCpmplete) {
+              items.push({
+                title: 'complete',
+                onClick() {
+                  props.onCpmplete?.(image.url, image.canvasWidth, image.canvasHeight)
+                  closeContextMenu()
+                },
+              })
+            }
+            if (props.onCancel) {
+              items.push({
+                title: 'cancel',
+                onClick() {
+                  props.onCancel?.()
+                  closeContextMenu()
+                },
+              })
+            }
             items.push({
               title: 'open',
               onClick() {
                 chooseFile()
-                setContextMenu(undefined)
+                closeContextMenu()
               },
             })
             if (canUndo) {
@@ -301,7 +361,7 @@ export function ImageEditor(props: {
                 title: 'undo',
                 onClick() {
                   undo()
-                  setContextMenu(undefined)
+                  closeContextMenu()
                 },
               })
             }
@@ -310,7 +370,7 @@ export function ImageEditor(props: {
                 title: 'redo',
                 onClick() {
                   redo()
-                  setContextMenu(undefined)
+                  closeContextMenu()
                 },
               })
             }
@@ -318,7 +378,7 @@ export function ImageEditor(props: {
               title: 'move',
               onClick: () => {
                 setStatus('move')
-                setContextMenu(undefined)
+                closeContextMenu()
               },
             })
             if (selection) {
@@ -326,7 +386,7 @@ export function ImageEditor(props: {
                 title: 'delete',
                 onClick() {
                   deleteSelection()
-                  setContextMenu(undefined)
+                  closeContextMenu()
                 },
               })
               items.push({
@@ -334,14 +394,14 @@ export function ImageEditor(props: {
                 onClick() {
                   copySelection()
                   deleteSelection()
-                  setContextMenu(undefined)
+                  closeContextMenu()
                 },
               })
               items.push({
                 title: 'copy',
                 onClick() {
                   copySelection()
-                  setContextMenu(undefined)
+                  closeContextMenu()
                 },
               })
             }
@@ -349,7 +409,7 @@ export function ImageEditor(props: {
               title: 'paste',
               async onClick() {
                 await paste()
-                setContextMenu(undefined)
+                closeContextMenu()
               },
             })
             items.push({
@@ -360,7 +420,7 @@ export function ImageEditor(props: {
                     navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
                   }
                 })
-                setContextMenu(undefined)
+                closeContextMenu()
                 setSelection(undefined)
               }
             })
@@ -374,6 +434,7 @@ export function ImageEditor(props: {
               />
             )
           },
+          style: props.style,
         },
         transform,
       })}
@@ -381,6 +442,7 @@ export function ImageEditor(props: {
       {dragSelectMask}
       {moveCanvasMask}
       {chooseFileUI}
+      <Cursor ref={ref} onKeyDown={onKeyDown} />
     </div>
   )
 }
