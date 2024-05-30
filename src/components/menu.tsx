@@ -65,7 +65,7 @@ export function Menu(props: {
 
 export interface MenuItem {
   type?: 'item'
-  title: string
+  title: string | JSX.Element
   onClick?: React.MouseEventHandler<HTMLElement>
   children?: (MenuItem | MenuDivider)[]
   disabled?: boolean
