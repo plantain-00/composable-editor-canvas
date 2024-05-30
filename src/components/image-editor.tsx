@@ -10,14 +10,18 @@ import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useZoom } from "./use-zoom"
 import { useDragSelect } from "./use-drag-select"
 import { Position } from "../utils/position"
-import { getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
+import { getPolygonFromRegion, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
 import { blobToDataUrl, dataUrlToImage, createCanvasContext } from "../utils/blob"
-import { pointInPolygon } from "../utils/line"
+import { iteratePolygonLines, pointInPolygon } from "../utils/line"
 import { getPointsBounding } from "../utils/bounding"
 import { setArrayItems } from "../utils/math"
 import { useChooseFile } from "./use-create/use-image-click-create"
 import { useUndoRedo } from "./use-undo-redo"
 import { Cursor } from "./cursor"
+import { Hatch, getGeometryLinesPoints, getHatchesUnion } from "../utils/hatch"
+import { NumberEditor } from "./react-composable-json-editor"
+import { Vec4 } from "../utils/types"
+import { colorNumberToPixelColor } from "../utils/color"
 
 export function ImageEditor(props: {
   src: string
@@ -32,9 +36,11 @@ export function ImageEditor(props: {
   const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [status, setStatus] = React.useState<'select' | 'move' | 'paste'>('select')
+  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush'>('select')
   const [selection, setSelection] = React.useState<Position[]>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
+  const [hatch, setHatch] = React.useState<Hatch>()
+  const [preview, setPreview] = React.useState<Hatch>()
   const ref = React.useRef<HTMLInputElement | null>(null)
 
   const focus = () => {
@@ -107,6 +113,8 @@ export function ImageEditor(props: {
     setSelection(undefined)
     setPreviewImage(undefined)
     setPreviewOffset(undefined)
+    setHatch(undefined)
+    setPreview(undefined)
   }
   const { start: chooseFile, ui: chooseFileUI } = useChooseFile(async file => {
     const base64 = await blobToDataUrl(file)
@@ -202,13 +210,22 @@ export function ImageEditor(props: {
   if (selection) {
     children.push(target.renderPolygon(selection, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
   }
-  const deleteSelection = () => {
+  if (hatch) {
+    const borderPoints = getGeometryLinesPoints(hatch.border)
+    children.push(target.renderPath([borderPoints], { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+  }
+  if (preview) {
+    const borderPoints = getGeometryLinesPoints(preview.border)
+    children.push(target.renderPath([borderPoints], { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+  }
+  const setSelectionValue = (getValue: (v: Uint8ClampedArray) => Vec4) => {
     if (selection) {
       const imageData = image.ctx.getImageData(0, 0, image.ctx.canvas.width, image.ctx.canvas.height)
       for (let i = 0; i < image.ctx.canvas.width; i++) {
         for (let j = 0; j < image.ctx.canvas.height; j++) {
           if (pointInPolygon({ x: i, y: j }, selection)) {
-            setArrayItems(imageData.data, (i + j * imageData.width) * 4, [0, 0, 0, 0])
+            const index = (i + j * imageData.width) * 4
+            setArrayItems(imageData.data, index, getValue(imageData.data.slice(index, index + 4)))
           }
         }
       }
@@ -220,6 +237,9 @@ export function ImageEditor(props: {
       })
     }
     setSelection(undefined)
+  }
+  const deleteSelection = () => {
+    setSelectionValue(() => [0, 0, 0, 0])
   }
   const copySelection = () => {
     if (selection) {
@@ -275,6 +295,14 @@ export function ImageEditor(props: {
       ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
       style={{ cursor: status === 'move' ? 'grab' : 'crosshair', position: 'absolute', inset: '0px', left: image.x + 'px', top: image.y + 'px', overflow: 'hidden' }}
       onMouseMove={e => {
+        if (status === 'brush') {
+          const p = reverseTransform({ x: e.clientX, y: e.clientY })
+          const h: Hatch = { border: Array.from(iteratePolygonLines(getPolygonFromRegion({ x: Math.round(p.x), y: Math.round(p.y), width: 20, height: 20 }))), holes: [] }
+          if (hatch) {
+            setHatch(getHatchesUnion(hatch, [h])[0])
+          }
+          setPreview(h)
+        }
         if (previewImage && status === 'paste') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
           setPreviewOffset({ x: p.x - previewImage.ctx.canvas.width / 2, y: p.y - previewImage.ctx.canvas.height / 2 })
@@ -288,6 +316,10 @@ export function ImageEditor(props: {
               onStartMoveCanvas({ x: e.clientX, y: e.clientY })
             } else if (e.buttons === 4) {
               onStartMoveCanvas({ x: e.clientX, y: e.clientY })
+            } else if (status === 'brush') {
+              if (!hatch) {
+                setHatch(preview)
+              }
             }
           },
           onClick(e) {
@@ -318,6 +350,10 @@ export function ImageEditor(props: {
                 }
               })
               reset()
+            } else if (status === 'brush' && hatch) {
+              const borderPoints = getGeometryLinesPoints(hatch.border)
+              reset()
+              setSelection(borderPoints)
             }
           },
           onDoubleClick(e) {
@@ -381,6 +417,13 @@ export function ImageEditor(props: {
                 closeContextMenu()
               },
             })
+            items.push({
+              title: 'brush',
+              onClick: () => {
+                setStatus('brush')
+                closeContextMenu()
+              },
+            })
             if (selection) {
               items.push({
                 title: 'delete',
@@ -388,6 +431,39 @@ export function ImageEditor(props: {
                   deleteSelection()
                   closeContextMenu()
                 },
+              })
+              items.push({
+                title: (
+                  <>
+                    color
+                    <NumberEditor
+                      value={-1}
+                      type='color'
+                      style={{ width: '50px' }}
+                      setValue={v => {
+                        const vec = colorNumberToPixelColor(v)
+                        setSelectionValue(v => [vec[0], vec[1], vec[2], v[3]])
+                        closeContextMenu()
+                      }}
+                    />
+                  </>
+                ),
+              })
+              items.push({
+                title: (
+                  <>
+                    opacity
+                    <NumberEditor
+                      value={100}
+                      style={{ width: '50px' }}
+                      setValue={v => {
+                        const opacity = Math.round(v / 100 * 255)
+                        setSelectionValue(v => [v[0], v[1], v[2], opacity])
+                        closeContextMenu()
+                      }}
+                    />
+                  </>
+                ),
               })
               items.push({
                 title: 'cut',
