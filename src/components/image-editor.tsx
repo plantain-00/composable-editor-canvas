@@ -1,4 +1,5 @@
 import React from "react"
+import { produce } from 'immer'
 import { ReactRenderTarget, reactCanvasRenderTarget } from "./react-render-target"
 import { Menu, MenuItem, getMenuHeight } from "./menu"
 import { useDragMove } from "./use-drag-move"
@@ -10,16 +11,15 @@ import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useZoom } from "./use-zoom"
 import { useDragSelect } from "./use-drag-select"
 import { Position } from "../utils/position"
-import { getPolygonFromRegion, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
+import { TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
 import { blobToDataUrl, dataUrlToImage, createCanvasContext } from "../utils/blob"
-import { iteratePolygonLines, pointInPolygon } from "../utils/line"
+import { pointInPolygon } from "../utils/line"
 import { getPointsBounding } from "../utils/bounding"
-import { setArrayItems } from "../utils/math"
+import { getNumberRangeUnion, isBetween, mergeItems, setArrayItems } from "../utils/math"
 import { useChooseFile } from "./use-create/use-image-click-create"
 import { useUndoRedo } from "./use-undo-redo"
 import { Cursor } from "./cursor"
-import { Hatch, getGeometryLinesPoints, getHatchesUnion } from "../utils/hatch"
-import { NumberEditor } from "./react-composable-json-editor"
+import { Button, NumberEditor } from "./react-composable-json-editor"
 import { Vec4 } from "../utils/types"
 import { colorNumberToPixelColor } from "../utils/color"
 
@@ -37,11 +37,12 @@ export function ImageEditor(props: {
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
   const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush'>('select')
-  const [selection, setSelection] = React.useState<Position[]>()
+  const [selection, setSelection] = React.useState<Selection>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
-  const [hatch, setHatch] = React.useState<Hatch>()
-  const [preview, setPreview] = React.useState<Hatch>()
   const ref = React.useRef<HTMLInputElement | null>(null)
+  const [brushSize, setBrushSize] = React.useState(10)
+  const colorRef = React.useRef(0)
+  const opacityRef = React.useRef(50)
 
   const focus = () => {
     setTimeout(() => {
@@ -97,7 +98,7 @@ export function ImageEditor(props: {
   const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end) => {
     if (end) {
       const points = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
-      setSelection(points)
+      setSelection({ type: 'polygon', points })
       focus()
     }
   })
@@ -113,8 +114,6 @@ export function ImageEditor(props: {
     setSelection(undefined)
     setPreviewImage(undefined)
     setPreviewOffset(undefined)
-    setHatch(undefined)
-    setPreview(undefined)
   }
   const { start: chooseFile, ui: chooseFileUI } = useChooseFile(async file => {
     const base64 = await blobToDataUrl(file)
@@ -153,7 +152,7 @@ export function ImageEditor(props: {
         if (e.code === 'KeyA') {
           if (!image) return
           const points = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion({ x: 0, y: 0 }, { x: image.ctx.canvas.width, y: image.ctx.canvas.height }))
-          setSelection(points)
+          setSelection({ type: 'polygon', points })
           e.preventDefault()
         } else if (e.code === 'KeyC') {
           copySelection()
@@ -199,6 +198,8 @@ export function ImageEditor(props: {
   const reverseTransform = (p: Position) => {
     p = transformOffset(p)
     p = reverseTransformPosition(p, transform)
+    p.x = Math.floor(p.x)
+    p.y = Math.floor(p.y)
     return p
   }
   const target: ReactRenderTarget<unknown> = reactCanvasRenderTarget
@@ -207,23 +208,36 @@ export function ImageEditor(props: {
   if (previewImage && previewOffset) {
     children.push(target.renderImage(previewImage.url, previewOffset.x, previewOffset.y, previewImage.ctx.canvas.width, previewImage.ctx.canvas.height))
   }
-  if (selection) {
-    children.push(target.renderPolygon(selection, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+  if (selection?.type === 'polygon') {
+    children.push(target.renderPolygon(selection.points, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
   }
-  if (hatch) {
-    const borderPoints = getGeometryLinesPoints(hatch.border)
-    children.push(target.renderPath([borderPoints], { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
-  }
-  if (preview) {
-    const borderPoints = getGeometryLinesPoints(preview.border)
-    children.push(target.renderPath([borderPoints], { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+  if (selection?.type === 'range') {
+    for (const range of selection.ranges) {
+      for (const y of range.ys) {
+        children.push(target.renderRect(range.x, y[0], 1, y[1] - y[0] + 1, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+      }
+    }
+  } else if (status === 'brush' && previewOffset) {
+    children.push(target.renderRect(previewOffset.x, previewOffset.y, 2 * brushSize + 1, 2 * brushSize + 1, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
   }
   const setSelectionValue = (getValue: (v: Uint8ClampedArray) => Vec4) => {
-    if (selection) {
+    let inRange: ((x: number) => ((y: number) => boolean | undefined) | undefined) | undefined
+    if (selection?.type === 'polygon') {
+      inRange = x => y => pointInPolygon({ x, y }, selection.points)
+    } else if (selection?.type === 'range') {
+      inRange = x => {
+        const range = selection.ranges.find(r => r.x === x)
+        if (!range) return
+        return y => range.ys.some(c => isBetween(y, ...c))
+      }
+    }
+    if (inRange) {
       const imageData = image.ctx.getImageData(0, 0, image.ctx.canvas.width, image.ctx.canvas.height)
       for (let i = 0; i < image.ctx.canvas.width; i++) {
+        const range = inRange(i)
+        if (!range) continue
         for (let j = 0; j < image.ctx.canvas.height; j++) {
-          if (pointInPolygon({ x: i, y: j }, selection)) {
+          if (range(j)) {
             const index = (i + j * imageData.width) * 4
             setArrayItems(imageData.data, index, getValue(imageData.data.slice(index, index + 4)))
           }
@@ -242,20 +256,50 @@ export function ImageEditor(props: {
     setSelectionValue(() => [0, 0, 0, 0])
   }
   const copySelection = () => {
-    if (selection) {
-      const bounding = getPointsBounding(selection)
+    let selectionData: { bounding?: TwoPointsFormRegion, inRange: (x: number) => ((y: number) => boolean | undefined) | undefined } | undefined
+    if (selection?.type === 'polygon') {
+      selectionData = {
+        bounding: getPointsBounding(selection.points),
+        inRange: x => y => pointInPolygon({ x, y }, selection.points),
+      }
+    } else if (selection?.type === 'range') {
+      const rows = selection.ranges.map(r => r.x)
+      selectionData = {
+        bounding: {
+          start: {
+            x: Math.min(...rows),
+            y: Math.min(...selection.ranges.map(r => r.ys.map(c => c[0])).flat()),
+          },
+          end: {
+            x: Math.max(...rows),
+            y: Math.max(...selection.ranges.map(r => r.ys.map(c => c[1])).flat()),
+          },
+        },
+        inRange: x => {
+          const range = selection.ranges.find(r => r.x === x)
+          if (!range) return
+          return y => range.ys.some(c => isBetween(y, ...c))
+        },
+      }
+    }
+    if (selectionData) {
+      const bounding = selectionData.bounding
       if (bounding) {
         const size = getTwoPointsFormRegionSize(bounding)
+        size.width++
+        size.height++
         const ctx = createCanvasContext(size)
         if (ctx) {
           const imageData = ctx.createImageData(size.width, size.height)
-          const minX = Math.round(bounding.start.x), minY = Math.round(bounding.start.y)
+          const minX = bounding.start.x, minY = bounding.start.y
           const oldImageData = image.ctx.getImageData(0, 0, image.ctx.canvas.width, image.ctx.canvas.height)
           for (let i = 0; i < imageData.width; i++) {
             const x = i + minX
+            const range = selectionData.inRange(x)
+            if (!range) continue
             for (let j = 0; j < imageData.height; j++) {
               const y = j + minY
-              if (pointInPolygon({ x, y }, selection)) {
+              if (range(y)) {
                 const k = (x + y * oldImageData.width) * 4
                 setArrayItems(imageData.data, (i + j * imageData.width) * 4, oldImageData.data.slice(k, k + 4))
               }
@@ -297,15 +341,28 @@ export function ImageEditor(props: {
       onMouseMove={e => {
         if (status === 'brush') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
-          const h: Hatch = { border: Array.from(iteratePolygonLines(getPolygonFromRegion({ x: Math.round(p.x), y: Math.round(p.y), width: 20, height: 20 }))), holes: [] }
-          if (hatch) {
-            setHatch(getHatchesUnion(hatch, [h])[0])
+          if (selection?.type === 'range') {
+            const ranges = getBrushRectRanges(p, brushSize)
+            setSelection({
+              type: 'range',
+              ranges: produce(selection.ranges, draft => {
+                for (const range of ranges) {
+                  const oldRange = draft.find(d => d.x === range.x)
+                  if (oldRange) {
+                    oldRange.ys = mergeItems([...range.ys, ...oldRange.ys], getNumberRangeUnion)
+                  } else {
+                    draft.push(range)
+                  }
+                }
+              }),
+            })
+          } else {
+            setPreviewOffset({ x: p.x - brushSize, y: p.y - brushSize })
           }
-          setPreview(h)
         }
         if (previewImage && status === 'paste') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
-          setPreviewOffset({ x: p.x - previewImage.ctx.canvas.width / 2, y: p.y - previewImage.ctx.canvas.height / 2 })
+          setPreviewOffset({ x: Math.floor(p.x - previewImage.ctx.canvas.width / 2), y: Math.floor(p.y - previewImage.ctx.canvas.height / 2) })
         }
       }}
     >
@@ -317,8 +374,10 @@ export function ImageEditor(props: {
             } else if (e.buttons === 4) {
               onStartMoveCanvas({ x: e.clientX, y: e.clientY })
             } else if (status === 'brush') {
-              if (!hatch) {
-                setHatch(preview)
+              if (selection?.type !== 'range') {
+                const p = reverseTransform({ x: e.clientX, y: e.clientY })
+                const ranges = getBrushRectRanges(p, brushSize)
+                setSelection({ type: 'range', ranges })
               }
             }
           },
@@ -328,7 +387,7 @@ export function ImageEditor(props: {
             } else if (status === 'paste' && previewImage && previewOffset) {
               const imageData = image.ctx.getImageData(0, 0, image.ctx.canvas.width, image.ctx.canvas.height)
               const previewImageData = previewImage.ctx.getImageData(0, 0, previewImage.ctx.canvas.width, previewImage.ctx.canvas.height)
-              const x0 = Math.round(previewOffset.x), y0 = Math.round(previewOffset.y)
+              const x0 = Math.floor(previewOffset.x), y0 = Math.floor(previewOffset.y)
               const xMin = Math.max(x0, 0)
               const xMax = Math.min(x0 + previewImage.ctx.canvas.width, image.ctx.canvas.width)
               const yMin = Math.max(y0, 0)
@@ -350,10 +409,10 @@ export function ImageEditor(props: {
                 }
               })
               reset()
-            } else if (status === 'brush' && hatch) {
-              const borderPoints = getGeometryLinesPoints(hatch.border)
+            } else if (status === 'brush' && selection?.type === 'range') {
+              const ranges = selection.ranges
               reset()
-              setSelection(borderPoints)
+              setSelection({ type: 'range', ranges })
             }
           },
           onDoubleClick(e) {
@@ -418,11 +477,22 @@ export function ImageEditor(props: {
               },
             })
             items.push({
-              title: 'brush',
-              onClick: () => {
-                setStatus('brush')
-                closeContextMenu()
-              },
+              title: (
+                <>
+                  <NumberEditor
+                    value={brushSize}
+                    style={{ width: '50px' }}
+                    setValue={setBrushSize}
+                  />
+                  <Button
+                    onClick={() => {
+                      setStatus('brush')
+                      closeContextMenu()
+                      setSelection(undefined)
+                    }}
+                  >brush</Button>
+                </>
+              ),
             })
             if (selection) {
               items.push({
@@ -435,33 +505,37 @@ export function ImageEditor(props: {
               items.push({
                 title: (
                   <>
-                    color
                     <NumberEditor
-                      value={-1}
+                      value={colorRef.current}
                       type='color'
                       style={{ width: '50px' }}
-                      setValue={v => {
-                        const vec = colorNumberToPixelColor(v)
+                      setValue={v => colorRef.current = v}
+                    />
+                    <Button
+                      onClick={() => {
+                        const vec = colorNumberToPixelColor(colorRef.current)
                         setSelectionValue(v => [vec[0], vec[1], vec[2], v[3]])
                         closeContextMenu()
                       }}
-                    />
+                    >color</Button>
                   </>
                 ),
               })
               items.push({
                 title: (
                   <>
-                    opacity
                     <NumberEditor
-                      value={100}
+                      value={opacityRef.current}
                       style={{ width: '50px' }}
-                      setValue={v => {
-                        const opacity = Math.round(v / 100 * 255)
+                      setValue={v => opacityRef.current = v}
+                    />
+                    <Button
+                      onClick={() => {
+                        const opacity = Math.round(opacityRef.current / 100 * 255)
                         setSelectionValue(v => [v[0], v[1], v[2], opacity])
                         closeContextMenu()
                       }}
-                    />
+                    >opacity</Button>
                   </>
                 ),
               })
@@ -521,4 +595,25 @@ export function ImageEditor(props: {
       <Cursor ref={ref} onKeyDown={onKeyDown} />
     </div>
   )
+}
+
+function getBrushRectRanges({ x, y }: Position, size: number) {
+  const ranges: SelectionRange[] = []
+  for (let i = -size; i <= size; i++) {
+    ranges.push({ x: x + i, ys: [[y - size, y + size]] })
+  }
+  return ranges
+}
+
+type Selection = {
+  type: 'polygon'
+  points: Position[]
+} | {
+  type: 'range'
+  ranges: SelectionRange[]
+}
+
+interface SelectionRange {
+  x: number
+  ys: [number, number][]
 }
