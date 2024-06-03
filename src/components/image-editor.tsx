@@ -1,6 +1,6 @@
 import React from "react"
 import { produce } from 'immer'
-import { ReactRenderTarget, reactCanvasRenderTarget } from "./react-render-target"
+import { PathOptions, ReactRenderTarget, reactCanvasRenderTarget } from "./react-render-target"
 import { Menu, MenuItem, getMenuHeight } from "./menu"
 import { useDragMove } from "./use-drag-move"
 import { useWheelScroll } from "./use-wheel-scroll"
@@ -22,6 +22,12 @@ import { Cursor } from "./cursor"
 import { Button, NumberEditor } from "./react-composable-json-editor"
 import { Vec4 } from "../utils/types"
 import { colorNumberToPixelColor } from "../utils/color"
+import { useCircleClickCreate } from "./use-create/use-circle-click-create"
+import { arcToPolyline, circleToArc } from "../utils/circle"
+import { useEllipseClickCreate } from "./use-create/use-ellipse-click-create"
+import { ellipseArcToPolyline, ellipseToEllipseArc } from "../utils/ellipse"
+import { useLineClickCreate } from "./use-create/use-line-click-create"
+import { usePenClickCreate } from "./use-create/use-pen-click-create"
 
 export function ImageEditor(props: {
   src: string
@@ -36,7 +42,7 @@ export function ImageEditor(props: {
   const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush'>('select')
+  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select'>('select')
   const [selection, setSelection] = React.useState<Selection>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
   const ref = React.useRef<HTMLInputElement | null>(null)
@@ -114,10 +120,36 @@ export function ImageEditor(props: {
     setSelection(undefined)
     setPreviewImage(undefined)
     setPreviewOffset(undefined)
+    resetCircle()
+    resetEllipse()
+    resetPolygon(true)
+    resetPen()
   }
   const { start: chooseFile, ui: chooseFileUI } = useChooseFile(async file => {
     const base64 = await blobToDataUrl(file)
     await loadUrl(base64)
+  })
+  const { circle, onClick: onCircleClick, onMove: onCircleMove, reset: resetCircle } = useCircleClickCreate(status === 'circle select' ? 'center radius' : undefined, c => {
+    const points = arcToPolyline(circleToArc(c), 10).map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
+    setSelection({ type: 'polygon', points })
+    focus()
+  })
+  const { ellipse, onClick: onEllipseClick, onMove: onEllipseMove, reset: resetEllipse } = useEllipseClickCreate(status === 'ellipse select' ? 'ellipse center' : undefined, c => {
+    const points = ellipseArcToPolyline(ellipseToEllipseArc(c), 10).map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
+    setSelection({ type: 'polygon', points })
+    focus()
+  })
+  const { line: polygon, onClick: onPolygonClick, onMove: onPolygonMove, reset: resetPolygon } = useLineClickCreate(status === 'polygon select', c => {
+    if (c.length > 2) {
+      const points = c.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
+      setSelection({ type: 'polygon', points })
+    }
+    focus()
+  })
+  const { points: pen, onClick: onPenClick, onMove: onPenMove, reset: resetPen } = usePenClickCreate(status === 'pen select', () => {
+    const points = pen.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
+    setSelection({ type: 'polygon', points })
+    focus()
   })
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     e.stopPropagation()
@@ -208,17 +240,30 @@ export function ImageEditor(props: {
   if (previewImage && previewOffset) {
     children.push(target.renderImage(previewImage.url, previewOffset.x, previewOffset.y, previewImage.ctx.canvas.width, previewImage.ctx.canvas.height))
   }
+  const pathOptions: Partial<PathOptions<unknown>> = { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }
   if (selection?.type === 'polygon') {
-    children.push(target.renderPolygon(selection.points, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+    children.push(target.renderPolygon(selection.points, pathOptions))
   }
   if (selection?.type === 'range') {
     for (const range of selection.ranges) {
       for (const y of range.ys) {
-        children.push(target.renderRect(range.x, y[0], 1, y[1] - y[0] + 1, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+        children.push(target.renderRect(range.x, y[0], 1, y[1] - y[0] + 1, pathOptions))
       }
     }
   } else if (status === 'brush' && previewOffset) {
-    children.push(target.renderRect(previewOffset.x, previewOffset.y, 2 * brushSize + 1, 2 * brushSize + 1, { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }))
+    children.push(target.renderRect(previewOffset.x, previewOffset.y, 2 * brushSize + 1, 2 * brushSize + 1, pathOptions))
+  }
+  if (circle) {
+    children.push(target.renderCircle(circle.x, circle.y, circle.r, pathOptions))
+  }
+  if (ellipse) {
+    children.push(target.renderEllipse(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, { ...pathOptions, angle: ellipse.angle }))
+  }
+  if (polygon && polygon.length > 2) {
+    children.push(target.renderPolygon(polygon, pathOptions))
+  }
+  if (pen && pen.length > 2) {
+    children.push(target.renderPolygon(pen, pathOptions))
   }
   const setSelectionValue = (getValue: (v: Uint8ClampedArray) => Vec4) => {
     let inRange: ((x: number) => ((y: number) => boolean | undefined) | undefined) | undefined
@@ -363,6 +408,14 @@ export function ImageEditor(props: {
         if (previewImage && status === 'paste') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
           setPreviewOffset({ x: Math.floor(p.x - previewImage.ctx.canvas.width / 2), y: Math.floor(p.y - previewImage.ctx.canvas.height / 2) })
+        } else if (status === 'circle select') {
+          onCircleMove(reverseTransform({ x: e.clientX, y: e.clientY }))
+        } else if (status === 'ellipse select') {
+          onEllipseMove(reverseTransform({ x: e.clientX, y: e.clientY }))
+        } else if (status === 'polygon select') {
+          onPolygonMove(reverseTransform({ x: e.clientX, y: e.clientY }))
+        } else if (status === 'pen select') {
+          onPenMove(reverseTransform({ x: e.clientX, y: e.clientY }))
         }
       }}
     >
@@ -413,6 +466,15 @@ export function ImageEditor(props: {
               const ranges = selection.ranges
               reset()
               setSelection({ type: 'range', ranges })
+            } else if (status === 'circle select') {
+              onCircleClick(reverseTransform({ x: e.clientX, y: e.clientY }))
+            } else if (status === 'ellipse select') {
+              onEllipseClick(reverseTransform({ x: e.clientX, y: e.clientY }))
+            } else if (status === 'polygon select') {
+              onPolygonClick(reverseTransform({ x: e.clientX, y: e.clientY }))
+              focus()
+            } else if (status === 'pen select') {
+              onPenClick(reverseTransform({ x: e.clientX, y: e.clientY }))
             }
           },
           onDoubleClick(e) {
@@ -493,6 +555,39 @@ export function ImageEditor(props: {
                   >brush</Button>
                 </>
               ),
+            })
+            items.push({
+              title: 'select',
+              children: [
+                {
+                  title: 'circle select',
+                  onClick: () => {
+                    setStatus('circle select')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'ellipse select',
+                  onClick: () => {
+                    setStatus('ellipse select')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'polygon select',
+                  onClick: () => {
+                    setStatus('polygon select')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'pen select',
+                  onClick: () => {
+                    setStatus('pen select')
+                    closeContextMenu()
+                  },
+                },
+              ]
             })
             if (selection) {
               items.push({
