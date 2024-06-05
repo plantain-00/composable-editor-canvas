@@ -5,13 +5,13 @@ import { Menu, MenuItem, getMenuHeight } from "./menu"
 import { useDragMove } from "./use-drag-move"
 import { useWheelScroll } from "./use-wheel-scroll"
 import { useWheelZoom } from "./use-wheel-zoom"
-import { Transform, reverseTransformPosition, scaleByCursorPosition, zoomToFitPoints } from "../utils/transform"
+import { Transform, reverseTransformPosition, scaleByCursorPosition, transformPosition, zoomToFitPoints } from "../utils/transform"
 import { bindMultipleRefs } from "../utils/ref"
 import { metaKeyIfMacElseCtrlKey } from "../utils/key"
 import { useZoom } from "./use-zoom"
 import { useDragSelect } from "./use-drag-select"
 import { Position } from "../utils/position"
-import { TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
+import { Region, TwoPointsFormRegion, getPolygonFromTwoPointsFormRegion, getTwoPointsFormRegion, getTwoPointsFormRegionSize } from "../utils/region"
 import { blobToDataUrl, dataUrlToImage, createCanvasContext } from "../utils/blob"
 import { pointInPolygon } from "../utils/line"
 import { getPointsBounding } from "../utils/bounding"
@@ -21,13 +21,17 @@ import { useUndoRedo } from "./use-undo-redo"
 import { Cursor } from "./cursor"
 import { Button, NumberEditor } from "./react-composable-json-editor"
 import { Vec4 } from "../utils/types"
-import { colorNumberToPixelColor } from "../utils/color"
+import { colorNumberToPixelColor, getColorString } from "../utils/color"
 import { useCircleClickCreate } from "./use-create/use-circle-click-create"
 import { arcToPolyline, circleToArc } from "../utils/circle"
 import { useEllipseClickCreate } from "./use-create/use-ellipse-click-create"
 import { ellipseArcToPolyline, ellipseToEllipseArc } from "../utils/ellipse"
 import { useLineClickCreate } from "./use-create/use-line-click-create"
 import { usePenClickCreate } from "./use-create/use-pen-click-create"
+import { SimpleTextEditor } from "./simple-text-editor"
+import { flowLayout } from "../utils/flow-layout"
+import { getTextSizeFromCache, getTextStyleFont, isWordCharactor } from "../utils/text"
+import { getTextComposition } from "./use-flow-layout-text-editor"
 
 export function ImageEditor(props: {
   src: string
@@ -42,13 +46,14 @@ export function ImageEditor(props: {
   const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select'>('select')
+  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select' | 'add image' | 'add text'>('select')
   const [selection, setSelection] = React.useState<Selection>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [brushSize, setBrushSize] = React.useState(10)
   const colorRef = React.useRef(0)
   const opacityRef = React.useRef(50)
+  const [text, setText] = React.useState<{ text: string, fontSize: number } & Region>()
 
   const focus = () => {
     setTimeout(() => {
@@ -103,7 +108,19 @@ export function ImageEditor(props: {
   })
   const { onStartSelect, dragSelectMask, endDragSelect, resetDragSelect } = useDragSelect((start, end) => {
     if (end) {
-      const points = getPolygonFromTwoPointsFormRegion(getTwoPointsFormRegion(start, end)).map(p => reverseTransform(p))
+      start = reverseTransform(start)
+      end = reverseTransform(end)
+      const region = getTwoPointsFormRegion(start, end)
+      if (status === 'add text') {
+        setText({
+          ...region.start,
+          ...getTwoPointsFormRegionSize(region),
+          text: '',
+          fontSize: 20,
+        })
+        return
+      }
+      const points = getPolygonFromTwoPointsFormRegion(region)
       setSelection({ type: 'polygon', points })
       focus()
     }
@@ -124,9 +141,20 @@ export function ImageEditor(props: {
     resetEllipse()
     resetPolygon(true)
     resetPen()
+    setText(undefined)
   }
   const { start: chooseFile, ui: chooseFileUI } = useChooseFile(async file => {
     const base64 = await blobToDataUrl(file)
+    if (status === 'add image') {
+      const imageElement = await dataUrlToImage(base64, 'anonymous')
+      const ctx = createCanvasContext(imageElement)
+      if (ctx) {
+        ctx.drawImage(imageElement, 0, 0, imageElement.width, imageElement.height)
+        setPreviewImage({ url: base64, ctx })
+      }
+      setStatus('paste')
+      return
+    }
     await loadUrl(base64)
   })
   const { circle, onClick: onCircleClick, onMove: onCircleMove, reset: resetCircle } = useCircleClickCreate(status === 'circle select' ? 'center radius' : undefined, c => {
@@ -265,6 +293,7 @@ export function ImageEditor(props: {
   if (pen && pen.length > 2) {
     children.push(target.renderPolygon(pen, pathOptions))
   }
+  children.push(target.renderRect(0, 0, image.ctx.canvas.width, image.ctx.canvas.height, { strokeOpacity: 0.3, dashArray: [4] }))
   const setSelectionValue = (getValue: (v: Uint8ClampedArray) => Vec4) => {
     let inRange: ((x: number) => ((y: number) => boolean | undefined) | undefined) | undefined
     if (selection?.type === 'polygon') {
@@ -281,7 +310,9 @@ export function ImageEditor(props: {
       for (let i = 0; i < image.ctx.canvas.width; i++) {
         const range = inRange(i)
         if (!range) continue
+        if (!isBetween(i, 0, imageData.width)) continue
         for (let j = 0; j < image.ctx.canvas.height; j++) {
+          if (!isBetween(j, 0, imageData.height)) continue
           if (range(j)) {
             const index = (i + j * imageData.width) * 4
             setArrayItems(imageData.data, index, getValue(imageData.data.slice(index, index + 4)))
@@ -342,8 +373,10 @@ export function ImageEditor(props: {
             const x = i + minX
             const range = selectionData.inRange(x)
             if (!range) continue
+            if (!isBetween(x, 0, oldImageData.width)) continue
             for (let j = 0; j < imageData.height; j++) {
               const y = j + minY
+              if (!isBetween(y, 0, oldImageData.height)) continue
               if (range(y)) {
                 const k = (x + y * oldImageData.width) * 4
                 setArrayItems(imageData.data, (i + j * imageData.width) * 4, oldImageData.data.slice(k, k + 4))
@@ -378,7 +411,38 @@ export function ImageEditor(props: {
       }
     }
   }
+  const openClipboardImage = async () => {
+    const items = await navigator.clipboard.read()
+    for (const item of items) {
+      if (item.types.includes('image/png')) {
+        const blob = await item.getType('image/png')
+        const base64 = await blobToDataUrl(blob)
+        await loadUrl(base64)
+        break
+      }
+    }
+  }
 
+  let textEditor: JSX.Element | undefined
+  if (status === 'add text' && text) {
+    const p = transformPosition(text, transform)
+    textEditor = (
+      <SimpleTextEditor
+        fontSize={text.fontSize * scale}
+        width={text.width * scale}
+        height={text.height * scale}
+        color={0x000000}
+        fontFamily={'monospace'}
+        onCancel={reset}
+        x={p.x}
+        y={p.y}
+        value={text.text}
+        setValue={v => {
+          text.text = v
+        }}
+      />
+    )
+  }
   return (
     <div
       ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
@@ -475,6 +539,38 @@ export function ImageEditor(props: {
               focus()
             } else if (status === 'pen select') {
               onPenClick(reverseTransform({ x: e.clientX, y: e.clientY }))
+            } else if (status === 'add text') {
+              if (!text) {
+                onStartSelect(e)
+              } else if (text.text) {
+                const state = text.text.split('')
+                const textStyleContent = { fontSize: text.fontSize, fontFamily: 'monospace' }
+                const getTextWidth = (text: string) => getTextSizeFromCache(getTextStyleFont(textStyleContent), text)?.width ?? 0
+                const { layoutResult } = flowLayout({
+                  state,
+                  width: text.width,
+                  lineHeight: text.fontSize * 1.2,
+                  getWidth: getTextWidth,
+                  endContent: '',
+                  isNewLineContent: c => c === '\n',
+                  isPartOfComposition: c => isWordCharactor(c),
+                  getComposition: (index: number) => getTextComposition(index, state, getTextWidth, c => c),
+                })
+                image.ctx.font = getTextStyleFont(textStyleContent)
+                image.ctx.textAlign = 'center'
+                image.ctx.textBaseline = 'alphabetic'
+                image.ctx.fillStyle = getColorString(0x000000)
+                for (const { x, y, content } of layoutResult) {
+                  const textWidth = getTextWidth(content)
+                  image.ctx.fillText(content, text.x + x + textWidth / 2, text.y + y + textStyleContent.fontSize)
+                }
+                setState(draft => {
+                  if (draft) {
+                    draft.url = image.ctx.canvas.toDataURL()
+                  }
+                })
+                reset()
+              }
             }
           },
           onDoubleClick(e) {
@@ -508,10 +604,22 @@ export function ImageEditor(props: {
             }
             items.push({
               title: 'open',
-              onClick() {
-                chooseFile()
-                closeContextMenu()
-              },
+              children: [
+                {
+                  title: 'file',
+                  onClick() {
+                    chooseFile()
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'clipboard image',
+                  async onClick() {
+                    await openClipboardImage()
+                    closeContextMenu()
+                  },
+                },
+              ]
             })
             if (canUndo) {
               items.push({
@@ -658,6 +766,26 @@ export function ImageEditor(props: {
               },
             })
             items.push({
+              title: 'add',
+              children: [
+                {
+                  title: 'image',
+                  onClick() {
+                    setStatus('add image')
+                    chooseFile()
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'text',
+                  onClick() {
+                    setStatus('add text')
+                    closeContextMenu()
+                  },
+                },
+              ]
+            })
+            items.push({
               title: 'save to clipboard',
               onClick() {
                 image.ctx.canvas.toBlob(blob => {
@@ -683,6 +811,7 @@ export function ImageEditor(props: {
         },
         transform,
       })}
+      {textEditor}
       {contextMenu}
       {dragSelectMask}
       {moveCanvasMask}
