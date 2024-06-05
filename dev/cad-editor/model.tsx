@@ -1,7 +1,7 @@
 import { evaluateExpression, Expression, parseExpression, tokenizeExpression } from 'expression-engine'
 import { produce, Patch } from 'immer'
 import React from 'react'
-import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, JsonEditorProps, useUndoRedo, useFlowLayoutTextEditor, controlStyle, reactCanvasRenderTarget, metaKeyIfMacElseCtrlKey, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding, getArcPointAtAngle, getArcBulge, WeakmapValuesCache, getTwoPointsFormRegionSize } from '../../src'
+import { ArrayEditor, BooleanEditor, EnumEditor, getArrayEditorProps, NumberEditor, ObjectArrayEditor, ObjectEditor, and, boolean, breakPolylineToPolylines, EditPoint, exclusiveMinimum, GeneralFormLine, getColorString, getPointsBounding, isRecord, isSamePoint, iterateIntersectionPoints, MapCache3, minimum, Nullable, number, optional, or, Path, Pattern, Position, ReactRenderTarget, Region, Size, string, TwoPointsFormRegion, ValidationResult, Validator, WeakmapCache, WeakmapCache2, record, StringEditor, MapCache, getArrow, isZero, SnapTarget as CoreSnapTarget, mergePolylinesToPolyline, getTwoLineSegmentsIntersectionPoint, deduplicatePosition, iteratePolylineLines, zoomToFitPoints, Align, VerticalAlign, TextStyle, aligns, verticalAligns, rotatePosition, m3, GeometryLine, getPointAndGeometryLineMinimumDistance, breakGeometryLines, geometryLineToPathCommands, getGeometryLinesPointAtParam, PathOptions, maximum, ContentPath, Button, getGeometryLinesPoints, mergeBoundingsUnsafe, getPolygonFromTwoPointsFormRegion, HatchGeometries, defaultLineJoin, defaultLineCap, defaultMiterLimit, LineJoin, LineCap, getGeometryLineBounding, getArcPointAtAngle, getArcBulge, WeakmapValuesCache, getTwoPointsFormRegionSize } from '../../src'
 import type { LineContent } from './plugins/line-polyline.plugin'
 import type { TextContent } from './plugins/text.plugin'
 import type { ArcContent } from './plugins/circle-arc.plugin'
@@ -1702,64 +1702,6 @@ export function trimOffsetResult(points: Position[], point: Position, closed: bo
     return newLines.map(line => line.points)
   }
   return [points]
-}
-
-export function TextEditor(props: JsonEditorProps<string> & Position & {
-  width: number
-  height?: number
-  fontSize: number
-  color: number
-  fontFamily: string
-  align?: Align
-  verticalAlign?: VerticalAlign
-  borderWidth?: number
-  lineHeight?: number
-}) {
-  const { state, setState, undo, redo } = useUndoRedo(props.value.split(''))
-  const { renderEditor } = useFlowLayoutTextEditor({
-    state,
-    setState,
-    width: props.width,
-    height: props.height ?? 100,
-    fontSize: props.fontSize,
-    fontFamily: props.fontFamily,
-    lineHeight: props.lineHeight ?? props.fontSize * 1.2,
-    processInput(e) {
-      if (e.key === 'Escape') {
-        props.onCancel?.()
-        return true
-      }
-      e.stopPropagation()
-      if (metaKeyIfMacElseCtrlKey(e)) {
-        if (e.key === 'z') {
-          e.shiftKey ? redo(e) : undo(e)
-          return true
-        }
-      }
-      return false
-    },
-    autoHeight: true,
-    autoFocus: true,
-    onBlur: () => {
-      setTimeout(() => {
-        if (!props.readOnly && props.setValue) {
-          const value = state.join('')
-          if (value !== props.value) {
-            props.setValue(value)
-          }
-        }
-      }, 0)
-    },
-    align: props.align,
-    verticalAlign: props.verticalAlign,
-    style: { border: 'unset' },
-  })
-  const borderWidth = props.borderWidth ?? 1
-  return (
-    <div style={{ position: 'absolute', zIndex: 10, ...controlStyle, padding: '0px', left: `${props.x - borderWidth}px`, top: `${props.y - borderWidth}px`, borderWidth: `${borderWidth}px` }}>
-      {renderEditor({ target: reactCanvasRenderTarget, getTextColors: () => ({ color: props.color }) })}
-    </div>
-  )
 }
 
 export function getViewportMatrix(p: ViewportContent) {

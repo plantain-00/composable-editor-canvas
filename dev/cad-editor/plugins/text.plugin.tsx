@@ -227,7 +227,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
       const textStyleContent = ctx.getTextStyleContent(content, contents)
       const fontSize = textStyleContent.fontSize * scale
       if (content.width) {
-        return <ctx.TextEditor
+        return <ctx.SimpleTextEditor
           fontSize={fontSize}
           width={content.width * scale}
           color={textStyleContent.color}
@@ -293,7 +293,7 @@ export function getCommand(ctx: PluginContext): Command {
           const textStyleContent = ctx.getTextStyleContent(text, contents)
           const fontSize = textStyleContent.fontSize * scale
           if (text.width) {
-            panel = <ctx.TextEditor
+            panel = <ctx.SimpleTextEditor
               fontSize={fontSize}
               width={text.width * scale}
               color={textStyleContent.color}

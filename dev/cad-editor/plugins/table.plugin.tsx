@@ -315,7 +315,7 @@ export function getModel(ctx: PluginContext): model.Model<TableContent>[] {
       if (!child) return <></>
       const textStyleContent = ctx.getTextStyleContent(cell, contents)
       const fontSize = textStyleContent.fontSize * scale
-      return <ctx.TextEditor
+      return <ctx.SimpleTextEditor
         fontSize={fontSize}
         width={child.width * scale}
         height={child.height * scale}

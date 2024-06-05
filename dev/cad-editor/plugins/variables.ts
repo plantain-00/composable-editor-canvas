@@ -12694,7 +12694,7 @@ function getModel(ctx) {
       const textStyleContent = ctx.getTextStyleContent(cell, contents);
       const fontSize = textStyleContent.fontSize * scale;
       return /* @__PURE__ */ React.createElement(
-        ctx.TextEditor,
+        ctx.SimpleTextEditor,
         {
           fontSize,
           width: child.width * scale,
@@ -13335,7 +13335,7 @@ function getModel(ctx) {
       const fontSize = textStyleContent.fontSize * scale;
       if (content.width) {
         return /* @__PURE__ */ React.createElement(
-          ctx.TextEditor,
+          ctx.SimpleTextEditor,
           {
             fontSize,
             width: content.width * scale,
@@ -13405,7 +13405,7 @@ function getCommand(ctx) {
           const fontSize = textStyleContent.fontSize * scale;
           if (text.width) {
             panel = /* @__PURE__ */ React.createElement(
-              ctx.TextEditor,
+              ctx.SimpleTextEditor,
               {
                 fontSize,
                 width: text.width * scale,
