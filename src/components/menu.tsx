@@ -16,7 +16,7 @@ export function Menu(props: {
         padding: '0.5em 0',
         ...props.style,
       }}
-      onMouseLeave={() => setHovering(-1)}
+      // onMouseLeave={() => setHovering(-1)}
     >
       {props.items.map((item, i) => {
         if (item.type === 'divider') {
