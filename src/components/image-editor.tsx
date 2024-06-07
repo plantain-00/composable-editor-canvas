@@ -19,7 +19,7 @@ import { getNumberRangeUnion, isBetween, mergeItems, setArrayItems } from "../ut
 import { useChooseFile } from "./use-create/use-image-click-create"
 import { useUndoRedo } from "./use-undo-redo"
 import { Cursor } from "./cursor"
-import { Button, NumberEditor } from "./react-composable-json-editor"
+import { Button, NumberEditor, StringEditor } from "./react-composable-json-editor"
 import { Vec4 } from "../utils/types"
 import { colorNumberToPixelColor, getColorString } from "../utils/color"
 import { useCircleClickCreate } from "./use-create/use-circle-click-create"
@@ -46,14 +46,17 @@ export function ImageEditor(props: {
   const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select' | 'add image' | 'add text'>('select')
+  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select' | 'add image' | 'add text' | 'add polyline'>('select')
   const [selection, setSelection] = React.useState<Selection>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
   const ref = React.useRef<HTMLInputElement | null>(null)
   const [brushSize, setBrushSize] = React.useState(10)
   const colorRef = React.useRef(0)
-  const opacityRef = React.useRef(50)
-  const [text, setText] = React.useState<{ text: string, fontSize: number } & Region>()
+  const opacityRef = React.useRef(0.5)
+  const fontSizeRef = React.useRef(20)
+  const fontFamilyRef = React.useRef('monospace')
+  const strokeWidthRef = React.useRef(1)
+  const [text, setText] = React.useState<{ text: string } & Region>()
 
   const focus = () => {
     setTimeout(() => {
@@ -116,7 +119,6 @@ export function ImageEditor(props: {
           ...region.start,
           ...getTwoPointsFormRegionSize(region),
           text: '',
-          fontSize: 20,
         })
         return
       }
@@ -129,7 +131,7 @@ export function ImageEditor(props: {
     setContextMenu(undefined)
     focus()
   }
-  const reset = () => {
+  const reset = (saveCurrent = true) => {
     setStatus('select')
     closeContextMenu()
     resetDragMove()
@@ -139,7 +141,7 @@ export function ImageEditor(props: {
     setPreviewOffset(undefined)
     resetCircle()
     resetEllipse()
-    resetPolygon(true)
+    resetPolygon(saveCurrent)
     resetPen()
     setText(undefined)
   }
@@ -167,7 +169,19 @@ export function ImageEditor(props: {
     setSelection({ type: 'polygon', points })
     focus()
   })
-  const { line: polygon, onClick: onPolygonClick, onMove: onPolygonMove, reset: resetPolygon } = useLineClickCreate(status === 'polygon select', c => {
+  const { line: polygon, onClick: onPolygonClick, onMove: onPolygonMove, reset: resetPolygon } = useLineClickCreate(status === 'polygon select' || status === 'add polyline', c => {
+    if (status === 'add polyline') {
+      drawStroke(ctx => {
+        for (let i = 0; i < c.length; i++) {
+          if (i === 0) {
+            ctx.moveTo(c[i].x, c[i].y)
+          } else {
+            ctx.lineTo(c[i].x, c[i].y)
+          }
+        }
+      })
+      return
+    }
     if (c.length > 2) {
       const points = c.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
       setSelection({ type: 'polygon', points })
@@ -287,8 +301,12 @@ export function ImageEditor(props: {
   if (ellipse) {
     children.push(target.renderEllipse(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, { ...pathOptions, angle: ellipse.angle }))
   }
-  if (polygon && polygon.length > 2) {
-    children.push(target.renderPolygon(polygon, pathOptions))
+  if (polygon) {
+    if (status === 'add polyline' && polygon.length > 1) {
+      children.push(target.renderPolyline(polygon, { strokeWidth: strokeWidthRef.current, strokeColor: colorRef.current, strokeOpacity: opacityRef.current }))
+    } else if (status === 'polygon select' && polygon.length > 2) {
+      children.push(target.renderPolygon(polygon, pathOptions))
+    }
   }
   if (pen && pen.length > 2) {
     children.push(target.renderPolygon(pen, pathOptions))
@@ -422,17 +440,32 @@ export function ImageEditor(props: {
       }
     }
   }
+  const drawStroke = (setPath: (ctx: CanvasRenderingContext2D) => void) => {
+    image.ctx.save()
+    image.ctx.beginPath()
+    setPath(image.ctx)
+    image.ctx.lineWidth = strokeWidthRef.current
+    image.ctx.strokeStyle = getColorString(colorRef.current, opacityRef.current)
+    image.ctx.stroke()
+    image.ctx.restore()
+    setState(draft => {
+      if (draft) {
+        draft.url = image.ctx.canvas.toDataURL()
+      }
+    })
+    reset(false)
+  }
 
   let textEditor: JSX.Element | undefined
   if (status === 'add text' && text) {
     const p = transformPosition(text, transform)
     textEditor = (
       <SimpleTextEditor
-        fontSize={text.fontSize * scale}
+        fontSize={fontSizeRef.current * scale}
         width={text.width * scale}
         height={text.height * scale}
-        color={0x000000}
-        fontFamily={'monospace'}
+        color={colorRef.current}
+        fontFamily={fontFamilyRef.current}
         onCancel={reset}
         x={p.x}
         y={p.y}
@@ -476,7 +509,7 @@ export function ImageEditor(props: {
           onCircleMove(reverseTransform({ x: e.clientX, y: e.clientY }))
         } else if (status === 'ellipse select') {
           onEllipseMove(reverseTransform({ x: e.clientX, y: e.clientY }))
-        } else if (status === 'polygon select') {
+        } else if (status === 'polygon select' || status === 'add polyline') {
           onPolygonMove(reverseTransform({ x: e.clientX, y: e.clientY }))
         } else if (status === 'pen select') {
           onPenMove(reverseTransform({ x: e.clientX, y: e.clientY }))
@@ -534,7 +567,7 @@ export function ImageEditor(props: {
               onCircleClick(reverseTransform({ x: e.clientX, y: e.clientY }))
             } else if (status === 'ellipse select') {
               onEllipseClick(reverseTransform({ x: e.clientX, y: e.clientY }))
-            } else if (status === 'polygon select') {
+            } else if (status === 'polygon select' || status === 'add polyline') {
               onPolygonClick(reverseTransform({ x: e.clientX, y: e.clientY }))
               focus()
             } else if (status === 'pen select') {
@@ -544,26 +577,28 @@ export function ImageEditor(props: {
                 onStartSelect(e)
               } else if (text.text) {
                 const state = text.text.split('')
-                const textStyleContent = { fontSize: text.fontSize, fontFamily: 'monospace' }
-                const getTextWidth = (text: string) => getTextSizeFromCache(getTextStyleFont(textStyleContent), text)?.width ?? 0
+                const font = getTextStyleFont({ fontSize: fontSizeRef.current, fontFamily: fontFamilyRef.current })
+                const getTextWidth = (text: string) => getTextSizeFromCache(font, text)?.width ?? 0
                 const { layoutResult } = flowLayout({
                   state,
                   width: text.width,
-                  lineHeight: text.fontSize * 1.2,
+                  lineHeight: fontSizeRef.current * 1.2,
                   getWidth: getTextWidth,
                   endContent: '',
                   isNewLineContent: c => c === '\n',
                   isPartOfComposition: c => isWordCharactor(c),
                   getComposition: (index: number) => getTextComposition(index, state, getTextWidth, c => c),
                 })
-                image.ctx.font = getTextStyleFont(textStyleContent)
+                image.ctx.save()
+                image.ctx.font = font
                 image.ctx.textAlign = 'center'
                 image.ctx.textBaseline = 'alphabetic'
-                image.ctx.fillStyle = getColorString(0x000000)
+                image.ctx.fillStyle = getColorString(colorRef.current)
                 for (const { x, y, content } of layoutResult) {
                   const textWidth = getTextWidth(content)
-                  image.ctx.fillText(content, text.x + x + textWidth / 2, text.y + y + textStyleContent.fontSize)
+                  image.ctx.fillText(content, text.x + x + textWidth / 2, text.y + y + fontSizeRef.current)
                 }
+                image.ctx.restore()
                 setState(draft => {
                   if (draft) {
                     draft.url = image.ctx.canvas.toDataURL()
@@ -621,8 +656,9 @@ export function ImageEditor(props: {
                 },
               ]
             })
+            const edits: MenuItem[] = []
             if (canUndo) {
-              items.push({
+              edits.push({
                 title: 'undo',
                 onClick() {
                   undo()
@@ -631,7 +667,7 @@ export function ImageEditor(props: {
               })
             }
             if (canRedo) {
-              items.push({
+              edits.push({
                 title: 'redo',
                 onClick() {
                   redo()
@@ -639,7 +675,7 @@ export function ImageEditor(props: {
                 },
               })
             }
-            items.push({
+            edits.push({
               title: 'move',
               onClick: () => {
                 setStatus('move')
@@ -647,26 +683,26 @@ export function ImageEditor(props: {
               },
             })
             items.push({
-              title: (
-                <>
-                  <NumberEditor
-                    value={brushSize}
-                    style={{ width: '50px' }}
-                    setValue={setBrushSize}
-                  />
-                  <Button
-                    onClick={() => {
-                      setStatus('brush')
-                      closeContextMenu()
-                      setSelection(undefined)
-                    }}
-                  >brush</Button>
-                </>
-              ),
-            })
-            items.push({
               title: 'select',
               children: [
+                {
+                  title: (
+                    <>
+                      <NumberEditor
+                        value={brushSize}
+                        style={{ width: '50px' }}
+                        setValue={setBrushSize}
+                      />
+                      <Button
+                        onClick={() => {
+                          setStatus('brush')
+                          closeContextMenu()
+                          setSelection(undefined)
+                        }}
+                      >brush select</Button>
+                    </>
+                  ),
+                },
                 {
                   title: 'circle select',
                   onClick: () => {
@@ -698,76 +734,82 @@ export function ImageEditor(props: {
               ]
             })
             if (selection) {
-              items.push({
-                title: 'delete',
-                onClick() {
-                  deleteSelection()
-                  closeContextMenu()
+              edits.push(
+                {
+                  title: 'delete',
+                  onClick() {
+                    deleteSelection()
+                    closeContextMenu()
+                  },
                 },
-              })
-              items.push({
-                title: (
-                  <>
-                    <NumberEditor
-                      value={colorRef.current}
-                      type='color'
-                      style={{ width: '50px' }}
-                      setValue={v => colorRef.current = v}
-                    />
-                    <Button
-                      onClick={() => {
-                        const vec = colorNumberToPixelColor(colorRef.current)
-                        setSelectionValue(v => [vec[0], vec[1], vec[2], v[3]])
-                        closeContextMenu()
-                      }}
-                    >color</Button>
-                  </>
-                ),
-              })
-              items.push({
-                title: (
-                  <>
-                    <NumberEditor
-                      value={opacityRef.current}
-                      style={{ width: '50px' }}
-                      setValue={v => opacityRef.current = v}
-                    />
-                    <Button
-                      onClick={() => {
-                        const opacity = Math.round(opacityRef.current / 100 * 255)
-                        setSelectionValue(v => [v[0], v[1], v[2], opacity])
-                        closeContextMenu()
-                      }}
-                    >opacity</Button>
-                  </>
-                ),
-              })
-              items.push({
-                title: 'cut',
-                onClick() {
-                  copySelection()
-                  deleteSelection()
-                  closeContextMenu()
+                {
+                  title: (
+                    <>
+                      <NumberEditor
+                        value={colorRef.current}
+                        type='color'
+                        style={{ width: '50px' }}
+                        setValue={v => colorRef.current = v}
+                      />
+                      <Button
+                        onClick={() => {
+                          const vec = colorNumberToPixelColor(colorRef.current)
+                          setSelectionValue(v => [vec[0], vec[1], vec[2], v[3]])
+                          closeContextMenu()
+                        }}
+                      >apply color</Button>
+                    </>
+                  ),
                 },
-              })
-              items.push({
-                title: 'copy',
-                onClick() {
-                  copySelection()
-                  closeContextMenu()
+                {
+                  title: (
+                    <>
+                      <NumberEditor
+                        value={opacityRef.current * 100}
+                        style={{ width: '50px' }}
+                        setValue={v => opacityRef.current = v * 0.01}
+                      />
+                      <Button
+                        onClick={() => {
+                          const opacity = Math.round(opacityRef.current * 255)
+                          setSelectionValue(v => [v[0], v[1], v[2], opacity])
+                          closeContextMenu()
+                        }}
+                      >apply opacity</Button>
+                    </>
+                  ),
                 },
-              })
+                {
+                  title: 'cut',
+                  onClick() {
+                    copySelection()
+                    deleteSelection()
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'copy',
+                  onClick() {
+                    copySelection()
+                    closeContextMenu()
+                  },
+                },
+              )
             }
             items.push({
-              title: 'paste',
-              async onClick() {
-                await paste()
-                closeContextMenu()
-              },
+              title: 'edit',
+              children: edits,
             })
             items.push({
               title: 'add',
               children: [
+                {
+                  title: 'paste',
+                  async onClick() {
+                    await paste()
+                    closeContextMenu()
+                  },
+                },
                 {
                   title: 'image',
                   onClick() {
@@ -777,25 +819,75 @@ export function ImageEditor(props: {
                   },
                 },
                 {
-                  title: 'text',
-                  onClick() {
-                    setStatus('add text')
-                    closeContextMenu()
-                  },
+                  title: <>
+                    <NumberEditor
+                      value={colorRef.current}
+                      type='color'
+                      style={{ width: '50px' }}
+                      setValue={v => colorRef.current = v}
+                    />
+                    <NumberEditor
+                      value={fontSizeRef.current}
+                      style={{ width: '40px' }}
+                      setValue={v => fontSizeRef.current = v}
+                    />
+                    <StringEditor
+                      value={fontFamilyRef.current}
+                      style={{ width: '100px' }}
+                      setValue={v => fontFamilyRef.current = v}
+                    />
+                    <Button
+                      onClick={() => {
+                        setStatus('add text')
+                        closeContextMenu()
+                      }}
+                    >text</Button>
+                  </>,
+                },
+                {
+                  title: <>
+                    <NumberEditor
+                      value={colorRef.current}
+                      type='color'
+                      style={{ width: '50px' }}
+                      setValue={v => colorRef.current = v}
+                    />
+                    <NumberEditor
+                      value={opacityRef.current * 100}
+                      style={{ width: '50px' }}
+                      setValue={v => opacityRef.current = v * 0.01}
+                    />
+                    <NumberEditor
+                      value={strokeWidthRef.current}
+                      style={{ width: '40px' }}
+                      setValue={v => strokeWidthRef.current = v}
+                    />
+                    <Button
+                      onClick={() => {
+                        setStatus('add polyline')
+                        closeContextMenu()
+                      }}
+                    >polyline</Button>
+                  </>,
                 },
               ]
             })
             items.push({
-              title: 'save to clipboard',
-              onClick() {
-                image.ctx.canvas.toBlob(blob => {
-                  if (blob) {
-                    navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+              title: 'export',
+              children: [
+                {
+                  title: 'to clipboard',
+                  onClick() {
+                    image.ctx.canvas.toBlob(blob => {
+                      if (blob) {
+                        navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+                      }
+                    })
+                    closeContextMenu()
+                    setSelection(undefined)
                   }
-                })
-                closeContextMenu()
-                setSelection(undefined)
-              }
+                }
+              ],
             })
             setContextMenu(
               <Menu
