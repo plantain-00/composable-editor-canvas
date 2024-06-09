@@ -1029,7 +1029,7 @@ export const CADEditor = React.forwardRef((props: {
         setContextMenu(undefined)
       }
     })
-    setContextMenu(<Menu items={items} style={{ left: viewportPosition.x + 'px', top: Math.min(viewportPosition.y, height - core.getMenuHeight(items, 16)) + 'px' }} />)
+    setContextMenu(<Menu items={items} y={viewportPosition.y} height={height} style={{ left: viewportPosition.x + 'px' }} />)
   })
 
   const rebuildRTree = (contents: readonly Nullable<BaseContent>[]) => {
