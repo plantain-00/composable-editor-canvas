@@ -1,7 +1,7 @@
 import React from "react"
 import { produce } from 'immer'
 import { PathOptions, ReactRenderTarget, reactCanvasRenderTarget } from "./react-render-target"
-import { Menu, MenuItem, getMenuHeight } from "./menu"
+import { Menu, MenuItem } from "./menu"
 import { useDragMove } from "./use-drag-move"
 import { useWheelScroll } from "./use-wheel-scroll"
 import { useWheelZoom } from "./use-wheel-zoom"
@@ -32,6 +32,7 @@ import { SimpleTextEditor } from "./simple-text-editor"
 import { flowLayout } from "../utils/flow-layout"
 import { getTextSizeFromCache, getTextStyleFont, isWordCharactor } from "../utils/text"
 import { getTextComposition } from "./use-flow-layout-text-editor"
+import { angleToRadian } from "../utils/radian"
 
 export function ImageEditor(props: {
   src: string
@@ -46,7 +47,7 @@ export function ImageEditor(props: {
   const { state: image, setState, resetHistory, undo, redo, canRedo, canUndo } = useUndoRedo<{ url: string, ctx: CanvasRenderingContext2D, x: number, y: number, canvasWidth: number, canvasHeight: number } | undefined>(undefined)
   const [previewImage, setPreviewImage] = React.useState<{ url: string, ctx: CanvasRenderingContext2D }>()
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select' | 'add image' | 'add text' | 'add polyline'>('select')
+  const [status, setStatus] = React.useState<'select' | 'move' | 'paste' | 'brush' | 'circle select' | 'ellipse select' | 'polygon select' | 'pen select' | 'add image' | 'add text' | 'add circle' | 'add ellipse' | 'add polyline' | 'add pen' | 'add rect'>('select')
   const [selection, setSelection] = React.useState<Selection>()
   const [previewOffset, setPreviewOffset] = React.useState<Position>()
   const ref = React.useRef<HTMLInputElement | null>(null)
@@ -159,17 +160,29 @@ export function ImageEditor(props: {
     }
     await loadUrl(base64)
   })
-  const { circle, onClick: onCircleClick, onMove: onCircleMove, reset: resetCircle } = useCircleClickCreate(status === 'circle select' ? 'center radius' : undefined, c => {
+  const { circle, onClick: onCircleClick, onMove: onCircleMove, reset: resetCircle } = useCircleClickCreate(status === 'circle select' || status === 'add circle' ? 'center radius' : undefined, c => {
+    if (status === 'add circle') {
+      drawStroke(ctx => {
+        ctx.arc(c.x, c.y, c.r, 0, 2 * Math.PI)
+      })
+      return
+    }
     const points = arcToPolyline(circleToArc(c), 10).map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
     setSelection({ type: 'polygon', points })
     focus()
   })
-  const { ellipse, onClick: onEllipseClick, onMove: onEllipseMove, reset: resetEllipse } = useEllipseClickCreate(status === 'ellipse select' ? 'ellipse center' : undefined, c => {
+  const { ellipse, onClick: onEllipseClick, onMove: onEllipseMove, reset: resetEllipse } = useEllipseClickCreate(status === 'ellipse select' || status === 'add ellipse' ? 'ellipse center' : undefined, c => {
+    if (status === 'add ellipse') {
+      drawStroke(ctx => {
+        ctx.ellipse(c.cx, c.cy, c.rx, c.ry, angleToRadian(c.angle), 0, 2 * Math.PI)
+      })
+      return
+    }
     const points = ellipseArcToPolyline(ellipseToEllipseArc(c), 10).map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
     setSelection({ type: 'polygon', points })
     focus()
   })
-  const { line: polygon, onClick: onPolygonClick, onMove: onPolygonMove, reset: resetPolygon } = useLineClickCreate(status === 'polygon select' || status === 'add polyline', c => {
+  const { line: polygon, onClick: onPolygonClick, onMove: onPolygonMove, reset: resetPolygon } = useLineClickCreate(status === 'polygon select' || status === 'add polyline' || status === 'add rect', c => {
     if (status === 'add polyline') {
       drawStroke(ctx => {
         for (let i = 0; i < c.length; i++) {
@@ -182,13 +195,33 @@ export function ImageEditor(props: {
       })
       return
     }
+    if (status === 'add rect') {
+      const region = getTwoPointsFormRegion(c[0], c[1])
+      const size = getTwoPointsFormRegionSize(region)
+      drawStroke(ctx => {
+        ctx.rect(region.start.x, region.start.y, size.width, size.height)
+      })
+      return
+    }
     if (c.length > 2) {
       const points = c.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
       setSelection({ type: 'polygon', points })
     }
     focus()
-  })
-  const { points: pen, onClick: onPenClick, onMove: onPenMove, reset: resetPen } = usePenClickCreate(status === 'pen select', () => {
+  }, { once: status === 'add rect' })
+  const { points: pen, onClick: onPenClick, onMove: onPenMove, reset: resetPen } = usePenClickCreate(status === 'pen select' || status === 'add pen', () => {
+    if (status === 'add pen') {
+      drawStroke(ctx => {
+        for (let i = 0; i < pen.length; i++) {
+          if (i === 0) {
+            ctx.moveTo(pen[i].x, pen[i].y)
+          } else {
+            ctx.lineTo(pen[i].x, pen[i].y)
+          }
+        }
+      })
+      return
+    }
     const points = pen.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }))
     setSelection({ type: 'polygon', points })
     focus()
@@ -283,6 +316,7 @@ export function ImageEditor(props: {
     children.push(target.renderImage(previewImage.url, previewOffset.x, previewOffset.y, previewImage.ctx.canvas.width, previewImage.ctx.canvas.height))
   }
   const pathOptions: Partial<PathOptions<unknown>> = { strokeWidth: 0, fillColor: 0x000000, fillOpacity: 0.3 }
+  const strokePathOptions: Partial<PathOptions<unknown>> = { strokeWidth: strokeWidthRef.current, strokeColor: colorRef.current, strokeOpacity: opacityRef.current }
   if (selection?.type === 'polygon') {
     children.push(target.renderPolygon(selection.points, pathOptions))
   }
@@ -296,20 +330,28 @@ export function ImageEditor(props: {
     children.push(target.renderRect(previewOffset.x, previewOffset.y, 2 * brushSize + 1, 2 * brushSize + 1, pathOptions))
   }
   if (circle) {
-    children.push(target.renderCircle(circle.x, circle.y, circle.r, pathOptions))
+    children.push(target.renderCircle(circle.x, circle.y, circle.r, status === 'add circle' ? strokePathOptions : pathOptions))
   }
   if (ellipse) {
-    children.push(target.renderEllipse(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, { ...pathOptions, angle: ellipse.angle }))
+    children.push(target.renderEllipse(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, { ...(status === 'add ellipse' ? strokePathOptions : pathOptions), angle: ellipse.angle }))
   }
   if (polygon) {
     if (status === 'add polyline' && polygon.length > 1) {
-      children.push(target.renderPolyline(polygon, { strokeWidth: strokeWidthRef.current, strokeColor: colorRef.current, strokeOpacity: opacityRef.current }))
+      children.push(target.renderPolyline(polygon, strokePathOptions))
+    } else if (status === 'add rect' && polygon.length > 1) {
+      const region = getTwoPointsFormRegion(polygon[0], polygon[1])
+      const size = getTwoPointsFormRegionSize(region)
+      children.push(target.renderRect(region.start.x, region.start.y, size.width, size.height, strokePathOptions))
     } else if (status === 'polygon select' && polygon.length > 2) {
       children.push(target.renderPolygon(polygon, pathOptions))
     }
   }
-  if (pen && pen.length > 2) {
-    children.push(target.renderPolygon(pen, pathOptions))
+  if (pen) {
+    if (status === 'add pen' && pen.length > 1) {
+      children.push(target.renderPolyline(pen, strokePathOptions))
+    } else if (status === 'pen select' && pen.length > 2) {
+      children.push(target.renderPolygon(pen, pathOptions))
+    }
   }
   children.push(target.renderRect(0, 0, image.ctx.canvas.width, image.ctx.canvas.height, { strokeOpacity: 0.3, dashArray: [4] }))
   const setSelectionValue = (getValue: (v: Uint8ClampedArray) => Vec4) => {
@@ -505,13 +547,13 @@ export function ImageEditor(props: {
         if (previewImage && status === 'paste') {
           const p = reverseTransform({ x: e.clientX, y: e.clientY })
           setPreviewOffset({ x: Math.floor(p.x - previewImage.ctx.canvas.width / 2), y: Math.floor(p.y - previewImage.ctx.canvas.height / 2) })
-        } else if (status === 'circle select') {
+        } else if (status === 'circle select' || status === 'add circle') {
           onCircleMove(reverseTransform({ x: e.clientX, y: e.clientY }))
-        } else if (status === 'ellipse select') {
+        } else if (status === 'ellipse select' || status === 'add ellipse') {
           onEllipseMove(reverseTransform({ x: e.clientX, y: e.clientY }))
-        } else if (status === 'polygon select' || status === 'add polyline') {
+        } else if (status === 'polygon select' || status === 'add polyline' || status === 'add rect') {
           onPolygonMove(reverseTransform({ x: e.clientX, y: e.clientY }))
-        } else if (status === 'pen select') {
+        } else if (status === 'pen select' || status === 'add pen') {
           onPenMove(reverseTransform({ x: e.clientX, y: e.clientY }))
         }
       }}
@@ -563,14 +605,14 @@ export function ImageEditor(props: {
               const ranges = selection.ranges
               reset()
               setSelection({ type: 'range', ranges })
-            } else if (status === 'circle select') {
+            } else if (status === 'circle select' || status === 'add circle') {
               onCircleClick(reverseTransform({ x: e.clientX, y: e.clientY }))
-            } else if (status === 'ellipse select') {
+            } else if (status === 'ellipse select' || status === 'add ellipse') {
               onEllipseClick(reverseTransform({ x: e.clientX, y: e.clientY }))
-            } else if (status === 'polygon select' || status === 'add polyline') {
+            } else if (status === 'polygon select' || status === 'add polyline' || status === 'add rect') {
               onPolygonClick(reverseTransform({ x: e.clientX, y: e.clientY }))
               focus()
-            } else if (status === 'pen select') {
+            } else if (status === 'pen select' || status === 'add pen') {
               onPenClick(reverseTransform({ x: e.clientX, y: e.clientY }))
             } else if (status === 'add text') {
               if (!text) {
@@ -702,6 +744,7 @@ export function ImageEditor(props: {
                       >brush select</Button>
                     </>
                   ),
+                  height: 41,
                 },
                 {
                   title: 'circle select',
@@ -760,6 +803,7 @@ export function ImageEditor(props: {
                       >apply color</Button>
                     </>
                   ),
+                  height: 33,
                 },
                 {
                   title: (
@@ -778,6 +822,7 @@ export function ImageEditor(props: {
                       >apply opacity</Button>
                     </>
                   ),
+                  height: 41,
                 },
                 {
                   title: 'cut',
@@ -821,12 +866,6 @@ export function ImageEditor(props: {
                 {
                   title: <>
                     <NumberEditor
-                      value={colorRef.current}
-                      type='color'
-                      style={{ width: '50px' }}
-                      setValue={v => colorRef.current = v}
-                    />
-                    <NumberEditor
                       value={fontSizeRef.current}
                       style={{ width: '40px' }}
                       setValue={v => fontSizeRef.current = v}
@@ -843,6 +882,7 @@ export function ImageEditor(props: {
                       }}
                     >text</Button>
                   </>,
+                  height: 41,
                 },
                 {
                   title: <>
@@ -862,13 +902,43 @@ export function ImageEditor(props: {
                       style={{ width: '40px' }}
                       setValue={v => strokeWidthRef.current = v}
                     />
-                    <Button
-                      onClick={() => {
-                        setStatus('add polyline')
-                        closeContextMenu()
-                      }}
-                    >polyline</Button>
                   </>,
+                  height: 41,
+                },
+                {
+                  title: 'polyline',
+                  onClick() {
+                    setStatus('add polyline')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'pen',
+                  onClick() {
+                    setStatus('add pen')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'circle',
+                  onClick() {
+                    setStatus('add circle')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'ellipse',
+                  onClick() {
+                    setStatus('add ellipse')
+                    closeContextMenu()
+                  },
+                },
+                {
+                  title: 'rect',
+                  onClick() {
+                    setStatus('add rect')
+                    closeContextMenu()
+                  },
                 },
               ]
             })
@@ -892,9 +962,10 @@ export function ImageEditor(props: {
             setContextMenu(
               <Menu
                 items={items}
+                y={viewportPosition.y}
+                height={image.canvasHeight}
                 style={{
                   left: viewportPosition.x + 'px',
-                  top: Math.min(viewportPosition.y, image.canvasHeight - getMenuHeight(items, 16)) + 'px',
                 }}
               />
             )
