@@ -13,6 +13,13 @@ declare module 'verb-nurbs-web' {
       point(u: number, v: number): core.Data.Point
       normal(u: number, v: number): core.Data.Point
       tessellate() : core.Data.MeshData
+      asNurbs(): core.Data.NurbsSurfaceData;
+      domainU(): core.Data.Interval<number>
+      domainV(): core.Data.Interval<number>;
+      degreeU: number;
+      degreeV: number;
+      serialize(): string;
+      derivatives(u: number, v: number, numDerivs?: number): Array<Array<core.Data.Vector>>;
     }
   }
 }
