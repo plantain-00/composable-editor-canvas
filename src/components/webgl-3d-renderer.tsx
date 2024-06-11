@@ -1,10 +1,12 @@
 import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
+import * as verb from 'verb-nurbs-web'
 import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
+import { maximumBy } from '../utils/math'
 
 export interface Camera {
   eye: Vec3
@@ -42,6 +44,7 @@ export interface TrianglesGeometry {
 export interface VerticesGeometry {
   type: 'vertices'
   vertices: Record<string, twgl.primitives.TypedArray>
+  nurbs?: verb.geom.NurbsSurface
 }
 
 export interface PolygonGeometry {
@@ -249,6 +252,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       } else {
         programInfo = primaryProgramInfo.instance
       }
+      const projection = m4.multiply(viewProjection, world)
       const drawObject: twgl.DrawObject = {
         programInfo,
         bufferInfo: bufferInfoCache.get(g.geometry, () => {
@@ -288,7 +292,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           u_diffuseMult: g.color,
           u_world: world,
           u_worldInverseTranspose: m4.transpose(m4.inverse(world)),
-          u_worldViewProjection: m4.multiply(viewProjection, world),
+          u_worldViewProjection: projection,
           u_pickColor: colorNumberToRec(i),
         },
       }
@@ -300,6 +304,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           ...drawObject,
           programInfo: pickingProgramInfo.instance,
         },
+        reversedProjection: m4.inverse(projection),
       })
     })
 
@@ -331,9 +336,34 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     return index === 0xffffff ? undefined : index
   }
 
+  const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number): Vec3 | undefined => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
+    const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
+    for (const info of pickingDrawObjectsInfo) {
+      if (info && info.graphic.geometry.type === 'vertices' && info.graphic.geometry.nurbs) {
+        const a = m4.transformPoint(info.reversedProjection, [x, y, 1])
+        const b = (z - eye[2]) / (a[2] - eye[2])
+        const target: Vec3 = [
+          eye[0] + (a[0] - eye[0]) * b,
+          eye[1] + (a[1] - eye[1]) * b,
+          z,
+        ]
+        const line = new verb.geom.Line(eye, target)
+        const intersections = verb.geom.Intersect.curveAndSurface(line, info.graphic.geometry.nurbs, 1e-3)
+        if (intersections.length > 0) {
+          const p = maximumBy(intersections, p => p.surfacePoint[2]).surfacePoint
+          return [p[0], p[1], p[2]]
+        }
+      }
+    }
+    return
+  }
+
   return {
     render,
     pick,
+    pickPoint,
   }
 }
 
@@ -341,6 +371,7 @@ interface PickingObjectInfo {
   graphic: Graphic3d
   index: number
   drawObject: twgl.DrawObject
+  reversedProjection: m4.Mat4
 }
 
 export function get3dPolygonTriangles(vertices: number[]) {
