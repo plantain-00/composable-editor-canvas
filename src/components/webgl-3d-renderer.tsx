@@ -44,7 +44,8 @@ export interface TrianglesGeometry {
 export interface VerticesGeometry {
   type: 'vertices'
   vertices: Record<string, twgl.primitives.TypedArray>
-  nurbs?: verb.geom.NurbsSurface
+  nurbs: verb.geom.NurbsSurface
+  points: Vec3[][]
 }
 
 export interface PolygonGeometry {
@@ -336,12 +337,14 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     return index === 0xffffff ? undefined : index
   }
 
-  const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number): Vec3 | undefined => {
+  const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number, filter: (graphic: Graphic3d, index: number) => boolean = () => true): Vec3 | undefined => {
     const rect = canvas.getBoundingClientRect();
     const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
     const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
-    for (const info of pickingDrawObjectsInfo) {
-      if (info && info.graphic.geometry.type === 'vertices' && info.graphic.geometry.nurbs) {
+    const index = pick(inputX, inputY, filter)
+    if (index !== undefined) {
+      const info = pickingDrawObjectsInfo.find(p => p && p.index === index)
+      if (info && info.graphic.geometry.type === 'vertices') {
         const a = m4.transformPoint(info.reversedProjection, [x, y, 1])
         const b = (z - eye[2]) / (a[2] - eye[2])
         const target: Vec3 = [
