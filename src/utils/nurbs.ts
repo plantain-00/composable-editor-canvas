@@ -255,7 +255,7 @@ export function getNurbsSurfaceVertices(
   degreeV = degreeU,
   knotsV = getDefaultNurbsKnots(points[0].length, degreeU),
   weights?: number[][],
-): { vertices: Record<string, twgl.primitives.TypedArray>, nurbs: verb.geom.NurbsSurface } {
+): { vertices: Record<string, twgl.primitives.TypedArray>, nurbs: verb.geom.NurbsSurface, points: Vec3[][] } {
   const nurbs = verb.geom.NurbsSurface.byKnotsControlPointsWeights(degreeU, degreeV, knotsU, knotsV, points, weights)
   const mesh = nurbs.tessellate()
   const positions = twgl.primitives.createAugmentedTypedArray(3, mesh.points.length)
@@ -276,6 +276,7 @@ export function getNurbsSurfaceVertices(
   return {
     vertices,
     nurbs,
+    points,
   }
 }
 
