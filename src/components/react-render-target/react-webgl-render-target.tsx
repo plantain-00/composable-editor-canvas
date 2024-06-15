@@ -230,7 +230,7 @@ function WebglDrawCanvas(props: {
     }
   }, [props.width, props.height])
   React.useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || render.current) {
       return
     }
     const renderer = createWebglRenderer(ref.current)

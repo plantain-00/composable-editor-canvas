@@ -20,6 +20,7 @@ declare module 'verb-nurbs-web' {
       degreeV: number;
       serialize(): string;
       derivatives(u: number, v: number, numDerivs?: number): Array<Array<core.Data.Vector>>;
+      isocurve(u : number, useV : boolean) : NurbsCurve
     }
   }
 }

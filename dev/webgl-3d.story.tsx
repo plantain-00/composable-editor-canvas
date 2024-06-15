@@ -97,7 +97,7 @@ export default () => {
   ])
 
   React.useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || renderer.current) {
       return
     }
     renderer.current = createWebgl3DRenderer(ref.current)

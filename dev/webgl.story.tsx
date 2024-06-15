@@ -114,7 +114,7 @@ export default () => {
   const [graphics, setGraphics] = React.useState(generateGraphics())
 
   React.useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || render.current) {
       return
     }
     const canvas = ref.current

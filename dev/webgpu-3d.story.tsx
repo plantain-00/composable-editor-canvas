@@ -98,7 +98,7 @@ export default () => {
   ])
 
   React.useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || renderer.current) {
       return
     }
     createWebgpu3DRenderer(ref.current).then(r => {

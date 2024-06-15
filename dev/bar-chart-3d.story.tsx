@@ -20,7 +20,7 @@ export default () => {
   const getXLabel = (x: number) => Intl.DateTimeFormat('zh', { month: 'long' }).format(new Date(x.toString()))
 
   React.useEffect(() => {
-    if (!ref.current) return
+    if (!ref.current || renderer.current) return
     renderer.current = createWebgl3DRenderer(ref.current)
   }, [ref.current])
   useGlobalKeyDown(e => {
