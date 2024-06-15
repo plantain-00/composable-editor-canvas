@@ -64,7 +64,7 @@ export function WebgpuDrawCanvas(props: {
     }
   }, [props.width, props.height])
   React.useEffect(() => {
-    if (!ref.current) {
+    if (!ref.current || render.current) {
       return
     }
     createWebgpuRenderer(ref.current).then(renderer => {
