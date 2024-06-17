@@ -337,21 +337,25 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     return index === 0xffffff ? undefined : index
   }
 
-  const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number, filter: (graphic: Graphic3d, index: number) => boolean = () => true): Vec3 | undefined => {
-    const rect = canvas.getBoundingClientRect();
+  const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number, reversedProjection: m4.Mat4): Vec3 => {
+    const rect = canvas.getBoundingClientRect()
     const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
     const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
+    const a = m4.transformPoint(reversedProjection, [x, y, 1])
+    const b = (z - eye[2]) / (a[2] - eye[2])
+    return [
+      eye[0] + (a[0] - eye[0]) * b,
+      eye[1] + (a[1] - eye[1]) * b,
+      z,
+    ]
+  }
+
+  const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number, filter: (graphic: Graphic3d, index: number) => boolean = () => true): Vec3 | undefined => {
     const index = pick(inputX, inputY, filter)
     if (index !== undefined) {
       const info = pickingDrawObjectsInfo.find(p => p && p.index === index)
       if (info && info.graphic.geometry.type === 'vertices') {
-        const a = m4.transformPoint(info.reversedProjection, [x, y, 1])
-        const b = (z - eye[2]) / (a[2] - eye[2])
-        const target: Vec3 = [
-          eye[0] + (a[0] - eye[0]) * b,
-          eye[1] + (a[1] - eye[1]) * b,
-          z,
-        ]
+        const target = getTarget(inputX, inputY, eye, z, info.reversedProjection)
         const line = new verb.geom.Line(eye, target)
         const intersections = verb.geom.Intersect.curveAndSurface(line, info.graphic.geometry.nurbs, 1e-3)
         if (intersections.length > 0) {
@@ -367,6 +371,10 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     render,
     pick,
     pickPoint,
+    getTarget,
+    get pickingDrawObjectsInfo() {
+      return pickingDrawObjectsInfo
+    },
   }
 }
 
