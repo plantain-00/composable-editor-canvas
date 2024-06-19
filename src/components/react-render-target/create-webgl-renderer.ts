@@ -3,7 +3,7 @@ import earcut from 'earcut'
 import type * as React from "react"
 import { getImageFromCache } from './image-loader'
 import { Filter, LinearGradient, PathLineStyleOptions, RadialGradient } from './react-render-target'
-import { colorNumberToRec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
+import { colorNumberToVec, getColorString, mergeOpacities, mergeOpacityToColor } from '../../utils/color'
 import { m3, Matrix } from '../../utils/matrix'
 import { isSameNumber, isZero } from '../../utils/math'
 import { Position } from "../../utils/position"
@@ -641,7 +641,7 @@ export function getTextGraphic(
       type: 'texture',
       x: x1,
       y: y1,
-      color: colorNumberToRec(options.strokeColor, options.strokeOpacity),
+      color: colorNumberToVec(options.strokeColor, options.strokeOpacity),
       src: imageData,
       canvas,
     }
@@ -659,7 +659,7 @@ export function getTextGraphic(
     type: 'texture',
     x: x1,
     y: y1,
-    color: colorNumberToRec(fill, options?.fillOpacity),
+    color: colorNumberToVec(fill, options?.fillOpacity),
     src: imageData,
     canvas,
   }
@@ -678,7 +678,7 @@ export function getPathGraphics(
   const lineCapWithClosed = options?.closed ? true : (options?.lineCap ?? defaultLineCap)
   const lineJoin = options?.lineJoin ?? defaultLineJoin
   const lineJoinWithLimit = lineJoin === 'miter' ? options?.miterLimit ?? defaultMiterLimit : lineJoin
-  const strokeColor = colorNumberToRec(options?.strokeColor ?? 0, options?.strokeOpacity)
+  const strokeColor = colorNumberToVec(options?.strokeColor ?? 0, options?.strokeOpacity)
   const graphics: Graphic[] = []
   if (strokeWidth) {
     if (options?.dashArray) {
@@ -781,19 +781,19 @@ export function getPathGraphics(
     let pattern: PatternGraphic | undefined
     let color: Vec4 | undefined
     if (options.fillPattern !== undefined) {
-      color = options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0]
+      color = options.fillColor ? colorNumberToVec(options.fillColor) : [0, 0, 0, 0]
       pattern = options.fillPattern
     } else if (options.fillColor !== undefined) {
-      color = colorNumberToRec(options.fillColor, options.fillOpacity)
+      color = colorNumberToVec(options.fillColor, options.fillOpacity)
     } else if (options.fillLinearGradient !== undefined) {
-      color = options.fillColor ? colorNumberToRec(options.fillColor) : [0, 0, 0, 0]
+      color = options.fillColor ? colorNumberToVec(options.fillColor) : [0, 0, 0, 0]
       pattern = {
         graphics: [
           getLinearGradientGraphic(options.fillLinearGradient, points[0])
         ],
       }
     } else if (options.fillRadialGradient !== undefined) {
-      color = options.fillColor ? colorNumberToRec(options.fillColor, options.fillOpacity) : [0, 0, 0, 0]
+      color = options.fillColor ? colorNumberToVec(options.fillColor, options.fillOpacity) : [0, 0, 0, 0]
       pattern = {
         graphics: [
           getRadialGradientGraphic(options.fillRadialGradient, points[0])
@@ -1048,7 +1048,7 @@ function getLinearGradientGraphic(linearGradient: LinearGradient, points: Positi
     const p = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset }
     const p1 = getPerpendicularPoint(p, line1)
     const p2 = getPerpendicularPoint(p, line2)
-    const color = colorNumberToRec(s.color, s.opacity)
+    const color = colorNumberToVec(s.color, s.opacity)
     fillTriangles.push(p1.x, p1.y, p2.x, p2.y)
     fillColors.push(...color, ...color)
   })
@@ -1071,7 +1071,7 @@ function getRadialGradientGraphic(radialGradient: RadialGradient, points: Positi
   const stopPoints = stops.slice(0).sort((a, b) => a.offset - b.offset).map(s => {
     const circle = { x: start.x + offset.x * s.offset, y: start.y + offset.y * s.offset, r: start.r + offset.r * s.offset }
     return {
-      color: colorNumberToRec(s.color, s.opacity),
+      color: colorNumberToVec(s.color, s.opacity),
       points: arcToPolyline(circleToArc(circle), 5),
     }
   })

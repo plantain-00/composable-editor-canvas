@@ -2,7 +2,7 @@ import { m4, v3 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import earcut from 'earcut'
 import * as verb from 'verb-nurbs-web'
-import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
+import { colorNumberToVec, pixelColorToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
@@ -294,7 +294,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
           u_world: world,
           u_worldInverseTranspose: m4.transpose(m4.inverse(world)),
           u_worldViewProjection: projection,
-          u_pickColor: colorNumberToRec(i),
+          u_pickColor: colorNumberToVec(i),
         },
       }
       drawObjects.push(drawObject)

@@ -12,7 +12,7 @@ import { getPathCommandsPoints } from "../../utils/path"
 import { pathCommandPointsToPath } from "../../utils/path"
 import { createWebglRenderer, getImageGraphic, getPathGraphics, getTextGraphic, Graphic, PatternGraphic } from "./create-webgl-renderer"
 import { Matrix, getRenderOptionsMatrix, multiplyMatrix } from "../../utils/matrix"
-import { colorNumberToRec } from "../../utils/color"
+import { colorNumberToVec } from "../../utils/color"
 import { Vec4 } from "../../utils/types"
 import { angleToRadian, radianToAngle } from "../../utils/radian"
 import { multiplyOpacity } from "../../utils/math"
@@ -253,7 +253,7 @@ function WebglDrawCanvas(props: {
       const x = props.transform?.x ?? 0
       const y = props.transform?.y ?? 0
       const scale = props.transform?.scale ?? 1
-      const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
+      const color = colorNumberToVec(props.backgroundColor ?? 0xffffff)
       const strokeWidthFixed = props.strokeWidthFixed ?? false
       render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.width, props.height, props.transform)
       props.onRender?.()

@@ -2,7 +2,7 @@ import * as React from "react"
 import { ReactRenderTarget } from "./react-render-target"
 import { RenderTransform } from "../../utils/transform"
 import { Graphic } from "./create-webgl-renderer"
-import { colorNumberToRec } from "../../utils/color"
+import { colorNumberToVec } from "../../utils/color"
 import { Vec4 } from "../../utils/types"
 import { createWebgpuRenderer } from "./create-webgpu-renderer"
 import { WebglDraw, reactWebglRenderTarget } from "./react-webgl-render-target"
@@ -88,7 +88,7 @@ export function WebgpuDrawCanvas(props: {
       const x = props.transform?.x ?? 0
       const y = props.transform?.y ?? 0
       const scale = props.transform?.scale ?? 1
-      const color = colorNumberToRec(props.backgroundColor ?? 0xffffff)
+      const color = colorNumberToVec(props.backgroundColor ?? 0xffffff)
       const strokeWidthFixed = props.strokeWidthFixed ?? false
       render.current(props.graphics, color, x, y, scale, strokeWidthFixed, props.width, props.height, props.transform)
       props.onRender?.()
