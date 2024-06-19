@@ -1,6 +1,6 @@
 import React from 'react';
 import { v3 } from 'twgl.js'
-import { getAxesGraphics, colorNumberToRec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache, angleToRadian } from '../../src';
+import { getAxesGraphics, colorNumberToVec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache, angleToRadian } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
@@ -33,7 +33,7 @@ export const Renderer3d = React.forwardRef((props: {
     const { position, up } = updateCamera(-props.x, props.y, 1000 / props.scale, -0.3 * props.rotateX, -0.3 * props.rotateY)
     props.contents.forEach((content, i) => {
       if (content && isSphereContent(content)) {
-        const color = colorNumberToRec(content.color)
+        const color = colorNumberToVec(content.color)
         if (props.hovering === i || props.selected === i) {
           color[3] = 0.5
         }

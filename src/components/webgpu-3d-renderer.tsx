@@ -5,7 +5,7 @@ import { Nullable, OptionalField, Vec4 } from '../utils/types'
 import { Camera, Graphic3d, Light, get3dPolygonTriangles } from './webgl-3d-renderer'
 import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
-import { colorNumberToRec, pixelColorToColorNumber } from '../utils/color'
+import { colorNumberToVec, pixelColorToColorNumber } from '../utils/color'
 
 export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return
@@ -299,7 +299,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
             { type: 'number', value: light.shininess },
             { type: 'vec4', value: light.specular },
             { type: 'number', value: light.specularFactor },
-            { type: 'vec4', value: colorNumberToRec(i) },
+            { type: 'vec4', value: colorNumberToVec(i) },
             { type: 'number', value: 0.1 },
           ])
         },

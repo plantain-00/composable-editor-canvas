@@ -20,7 +20,7 @@ export function getColorString(color: number, alpha?: number): string {
   return `#${'0'.repeat(6 - s.length)}${s}${a}`
 }
 
-export function colorNumberToRec(n: number, alpha = 1): Vec4 {
+export function colorNumberToVec(n: number, alpha = 1): Vec4 {
   const [r, g, b] = colorNumberToPixelColor(n)
   return [r / 255, g / 255, b / 255, alpha]
 }
