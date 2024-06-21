@@ -1,8 +1,8 @@
 import test, { ExecutionContext } from 'ava'
-import { colorNumberToPixelColor, colorNumberToVec, pixelColorToColorNumber, recToColorNumber } from '../src'
+import { colorNumberToPixelColor, colorNumberToVec, pixelColorToColorNumber, vecToColorNumber } from '../src'
 
 function check(t: ExecutionContext<unknown>, color: number) {
-  t.deepEqual(recToColorNumber(colorNumberToVec(color)), color)
+  t.deepEqual(vecToColorNumber(colorNumberToVec(color)), color)
   t.deepEqual(pixelColorToColorNumber(colorNumberToPixelColor(color)), color)
 }
 

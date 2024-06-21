@@ -1,7 +1,7 @@
 import { m4 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import { MapCache, WeakmapCache } from '../utils/weakmap-cache'
-import { Nullable, OptionalField, Vec4 } from '../utils/types'
+import { Nullable, OptionalField, Vec3, Vec4 } from '../utils/types'
 import { Camera, Graphic3d, Light, get3dPolygonTriangles } from './webgl-3d-renderer'
 import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
@@ -286,10 +286,11 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
         })
       })
       passEncoder.setPipeline(pipeline);
+      const projection = m4.multiply(viewProjection, world)
       const bindGroupEntries: GPUBindGroupEntry[] = [{
         binding: 0, resource: {
           buffer: createUniformsBuffer(device, [
-            { type: 'mat4x4', value: m4.multiply(viewProjection, world) },
+            { type: 'mat4x4', value: projection },
             { type: 'vec3', value: light.position },
             { type: 'mat4x4', value: world },
             { type: 'mat4x4', value: camera },
@@ -357,6 +358,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
         positionBuffer,
         primaryBuffers,
         count,
+        reversedProjection: m4.inverse(projection),
       })
     })
 
@@ -461,9 +463,26 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     return index === 0xffffff ? undefined : index
   }
 
+  const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number, reversedProjection: m4.Mat4): Vec3 => {
+    const rect = canvas.getBoundingClientRect()
+    const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
+    const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
+    const a = m4.transformPoint(reversedProjection, [x, y, 1])
+    const b = (z - eye[2]) / (a[2] - eye[2])
+    return [
+      eye[0] + (a[0] - eye[0]) * b,
+      eye[1] + (a[1] - eye[1]) * b,
+      z,
+    ]
+  }
+
   return {
     render,
     pick,
+    getTarget,
+    get pickingDrawObjectsInfo() {
+      return pickingDrawObjectsInfo
+    },
   }
 }
 
@@ -478,6 +497,7 @@ interface PickingObjectInfo {
     texcoordBuffer: GPUBuffer;
     indicesBuffer: GPUBuffer;
   }
+  reversedProjection: m4.Mat4
 }
 
 function createVertexBuffer(device: GPUDevice, data: twgl.primitives.TypedArray) {
