@@ -25,7 +25,7 @@ export function colorNumberToVec(n: number, alpha = 1): Vec4 {
   return [r / 255, g / 255, b / 255, alpha]
 }
 
-export function recToColorNumber(color: Vec4) {
+export function vecToColorNumber(color: Vec4) {
   return pixelColorToColorNumber([
     Math.round(color[0] * 255),
     Math.round(color[1] * 255),
