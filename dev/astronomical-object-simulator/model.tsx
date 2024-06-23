@@ -1,4 +1,4 @@
-import { getArrow, getPointByLengthAndRadian, getTwoPointsDistance, Position, ReactRenderTarget } from "../../src";
+import { getArrow, getPointByLengthAndRadian, getTwoPointsDistance, Position3D, ReactRenderTarget } from "../../src";
 
 export interface BaseContent<T extends string = string> {
   type: T
@@ -13,10 +13,6 @@ export interface RenderContext<V> {
 export type Model<T> = {
   type: string
   render?<V>(content: T, ctx: RenderContext<V>): V
-}
-
-export interface Position3D extends Position {
-  z: number
 }
 
 export type SphereContent = BaseContent<'sphere'> & Position3D & {

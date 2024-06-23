@@ -3,7 +3,7 @@ import { deduplicate } from "./math";
 import { isSameNumber } from "./math";
 import { isZero } from "./math";
 import { angleToRadian, getDirectionByRadian } from "./radian";
-import { number } from "./validators";
+import { and, number } from "./validators";
 
 export interface Position {
   x: number
@@ -14,6 +14,15 @@ export const Position = {
   x: number,
   y: number,
 }
+
+
+export interface Position3D extends Position {
+  z: number
+}
+
+export const Position3D = /* @__PURE__ */ and(Position, {
+  z: number,
+})
 
 export function getPointByLengthAndDirection(
   startPoint: Position,

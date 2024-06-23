@@ -19,6 +19,12 @@ export interface GeneralFormLine {
   c: number
 }
 
+export const GeneralFormLine = {
+  a: number,
+  b: number,
+  c: number,
+}
+
 export interface Ray extends Position {
   angle: number
   bidirectional?: boolean

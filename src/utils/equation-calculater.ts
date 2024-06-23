@@ -356,14 +356,20 @@ export function calculateEquationSet(params: number[][], delta?: number): number
     const param = params[0]
     return calculateEquation1(param[0], param[1], delta)
   }
-  const index = params.findIndex(p => !isZero(p[0], delta))
+  params = params.map(param => ({
+    param,
+    count: param.reduce((p, c, i) => p + (i < params.length && isZero(c, delta) ? 1 : 0), 0),
+  })).sort((a, b) => b.count - a.count).map(p => p.param)
+  const index = params[0].findIndex(p => !isZero(p, delta))
   if (index < 0) return
-  const [b0, ...b] = params[index]
+  const b0 = params[0][index]
+  const b = [...params[0].slice(0, index), ...params[0].slice(index + 1)]
   // F1: b0 x1 + b[1] x2 + ... + b[n - 1] xn + b[n] = 0
   const newParams: number[][] = []
   for (let i = 0; i < params.length; i++) {
-    if (i !== index) {
-      const [c0, ...c] = params[i]
+    if (i > 0) {
+      const c0 = params[i][index]
+      const c = [...params[i].slice(0, index), ...params[i].slice(index + 1)]
       // F2: c0 x1 + c[1] x2 + ... + c[2] xn + c[n] = 0
       if (isZero(c0, delta)) {
         newParams.push(c)
@@ -377,7 +383,8 @@ export function calculateEquationSet(params: number[][], delta?: number): number
   if (!newResult) return
   // x1 = -(b[1] x2 + ... + b[n - 1] xn + b[n])/b0
   return [
+    ...newResult.slice(0, index),
     -b.reduce((p, c, i) => p + c * (newResult[i] || 1), 0) / b0,
-    ...newResult,
+    ...newResult.slice(index),
   ]
 }
