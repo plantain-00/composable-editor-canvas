@@ -12,4 +12,4 @@ use-drag-resize: 6.71e+3
 use-drag-rotate: 2.75e+3
 equation-renderer: 1.21e+4
 equation-solver: 7.49e+4
-equation-calculater: 1.05e+4
+equation-calculater: 1.09e+4

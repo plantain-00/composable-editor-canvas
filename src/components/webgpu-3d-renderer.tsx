@@ -2,10 +2,11 @@ import { m4 } from 'twgl.js'
 import * as twgl from 'twgl.js'
 import { MapCache, WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, OptionalField, Vec3, Vec4 } from '../utils/types'
-import { Camera, Graphic3d, Light, get3dPolygonTriangles } from './webgl-3d-renderer'
+import { Camera, Graphic3d, Light, get3dPolygonTriangles, reverse3dPosition } from './webgl-3d-renderer'
 import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
 import { colorNumberToVec, pixelColorToColorNumber } from '../utils/color'
+import { getLineAndZPlaneIntersectionPoint } from '../utils/plane'
 
 export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return
@@ -464,16 +465,8 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   }
 
   const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number, reversedProjection: m4.Mat4): Vec3 => {
-    const rect = canvas.getBoundingClientRect()
-    const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
-    const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
-    const a = m4.transformPoint(reversedProjection, [x, y, 1])
-    const b = (z - eye[2]) / (a[2] - eye[2])
-    return [
-      eye[0] + (a[0] - eye[0]) * b,
-      eye[1] + (a[1] - eye[1]) * b,
-      z,
-    ]
+    const p = reverse3dPosition(inputX, inputY, canvas, reversedProjection)
+    return getLineAndZPlaneIntersectionPoint([eye, p], z)
   }
 
   return {

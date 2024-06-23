@@ -7,6 +7,7 @@ import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
 import { maximumBy } from '../utils/math'
+import { getLineAndZPlaneIntersectionPoint } from '../utils/plane'
 
 export interface Camera {
   eye: Vec3
@@ -338,16 +339,8 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
   }
 
   const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number, reversedProjection: m4.Mat4): Vec3 => {
-    const rect = canvas.getBoundingClientRect()
-    const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
-    const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
-    const a = m4.transformPoint(reversedProjection, [x, y, 1])
-    const b = (z - eye[2]) / (a[2] - eye[2])
-    return [
-      eye[0] + (a[0] - eye[0]) * b,
-      eye[1] + (a[1] - eye[1]) * b,
-      z,
-    ]
+    const p = reverse3dPosition(inputX, inputY, canvas, reversedProjection)
+    return getLineAndZPlaneIntersectionPoint([eye, p], z)
   }
 
   const pickPoint = (inputX: number, inputY: number, eye: Vec3, z: number, filter: (graphic: Graphic3d, index: number) => boolean = () => true): Vec3 | undefined => {
@@ -376,6 +369,18 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       return pickingDrawObjectsInfo
     },
   }
+}
+
+export function reverse3dPosition(inputX: number, inputY: number, canvas: HTMLCanvasElement, reversedProjection: m4.Mat4): Vec3 {
+  const rect = canvas.getBoundingClientRect()
+  const x = (inputX - rect.left) / canvas.clientWidth * 2 - 1
+  const y = -((inputY - rect.top) / canvas.clientHeight * 2 - 1)
+  const a = m4.transformPoint(reversedProjection, [x, y, 1])
+  return [
+    a[0],
+    a[1],
+    a[2],
+  ]
 }
 
 interface PickingObjectInfo {
