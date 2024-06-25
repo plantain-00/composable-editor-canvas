@@ -821,15 +821,13 @@ function getCommand(ctx) {
       }
       return {
         onMouseDown() {
-          if (!type)
-            return;
+          if (!type) return;
           if (!hatch) {
             setHatch(preview);
           }
         },
         onMove(p) {
-          if (!type)
-            return;
+          if (!type) return;
           let h;
           if (inputType === "circle") {
             h = { border: [{ type: "arc", curve: ctx.circleToArc({ x: Math.round(p.x), y: Math.round(p.y), r: 10 }) }], holes: [] };
@@ -842,8 +840,7 @@ function getCommand(ctx) {
           setPreview(h);
         },
         onMouseUp() {
-          if (!type)
-            return;
+          if (!type) return;
           if (hatch) {
             onEnd({
               updateContents: (contents) => contents.push({ type: "hatch", border: hatch.border, holes: hatch.holes, fillStyleId })
@@ -1902,8 +1899,7 @@ function getCommand(ctx) {
         border.current = void 0;
       };
       React.useEffect(() => {
-        if (!type)
-          return;
+        if (!type) return;
         if (!target.current) {
           target.current = selected[0].path;
           acquireContent(
@@ -1912,11 +1908,9 @@ function getCommand(ctx) {
               selectable: (v) => {
                 var _a, _b;
                 const content = ctx.getContentByIndex(contents, v);
-                if (!content)
-                  return false;
+                if (!content) return false;
                 const geometries = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents);
-                if (!geometries)
-                  return false;
+                if (!geometries) return false;
                 return geometries.lines.length > 0;
               }
             },
@@ -2645,20 +2639,17 @@ function getCommand(ctx) {
         result.push(...ctx.getCirclesTangentTo2Circles(content1, content2, radius));
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         result.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius));
       }
     } else if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
-      if (!line1)
-        return [];
+      if (!line1) return [];
       if (isCircleContent(content2) || isArcContent(content2)) {
         result.push(...ctx.getCirclesTangentToLineAndCircle(line1, content2, radius));
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         result.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius));
       }
     }
@@ -2759,8 +2750,7 @@ function getCommand(ctx) {
           selected.push(second.path);
         }
         const getCandidate = (radius) => {
-          if (!first || !second)
-            return;
+          if (!first || !second) return;
           const candidates = getTangentTangentRadiusCircles(first.content, second.content, radius);
           return ctx.minimumBy(candidates, (c) => ctx.getTwoPointsDistanceSquare(c, first.point) + ctx.getTwoPointsDistanceSquare(c, second.point));
         };
@@ -2769,8 +2759,7 @@ function getCommand(ctx) {
             const radius = +text;
             if (!isNaN(radius) && first && second) {
               const candidate = getCandidate(radius);
-              if (!candidate)
-                return;
+              if (!candidate) return;
               onEnd({
                 updateContents: (contents2) => {
                   contents2.push({ type: "circle", ...candidate });
@@ -2869,16 +2858,13 @@ function getCommand(ctx) {
     const result = [];
     if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
-      if (!line1)
-        return [];
+      if (!line1) return [];
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
-          if (!line3)
-            return [];
+          if (!line3) return [];
           result.push(...ctx.getCirclesTangentTo3Lines(line1, line2, line3));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line2, content3));
@@ -2886,8 +2872,7 @@ function getCommand(ctx) {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
-          if (!line3)
-            return [];
+          if (!line3) return [];
           result.push(...ctx.getCirclesTangentToLineLineCircle(line1, line3, content2));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line1, content2, content3));
@@ -2896,12 +2881,10 @@ function getCommand(ctx) {
     } else if (isCircleContent(content1) || isArcContent(content1)) {
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
-          if (!line3)
-            return [];
+          if (!line3) return [];
           result.push(...ctx.getCirclesTangentToLineLineCircle(line2, line3, content1));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line2, content1, content3));
@@ -2909,8 +2892,7 @@ function getCommand(ctx) {
       } else if (isCircleContent(content2) || isArcContent(content2)) {
         if (isLineContent(content3)) {
           const line3 = ctx.twoPointLineToGeneralFormLine(content3.points[0], content3.points[1]);
-          if (!line3)
-            return [];
+          if (!line3) return [];
           result.push(...ctx.getCirclesTangentToLineCircleCircle(line3, content1, content2));
         } else if (isCircleContent(content3) || isArcContent(content3)) {
           result.push(...ctx.getCirclesTangentTo3Circles(content1, content2, content3));
@@ -3226,17 +3208,13 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       var _a, _b, _c, _d;
       const first = contents[selected[0][0]];
-      if (!first)
-        return;
+      if (!first) return;
       const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
-      if (!firstGeometries)
-        return;
+      if (!firstGeometries) return;
       const second = contents[selected[1][0]];
-      if (!second)
-        return;
+      if (!second) return;
       const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
-      if (!secondGeometries)
-        return;
+      if (!secondGeometries) return;
       if (firstGeometries.regions && secondGeometries.regions) {
         const result = firstGeometries.regions.map((r) => ctx.getHatchesDifference({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
         ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
@@ -4259,8 +4237,7 @@ function getCommand(ctx) {
       });
       const width = window.innerWidth, height = window.innerHeight;
       const transform = ctx.zoomContentsToFit(width, height, targets, state, 0.8);
-      if (!transform)
-        return;
+      if (!transform) return;
       const container = document.createElement("div");
       ctx.createRoot(container).render(/* @__PURE__ */ React.createElement(ctx.CanvasDrawCanvas, { width, height, draws, transform, onRender: () => {
         const child = container.children.item(0);
@@ -4363,13 +4340,10 @@ function getCommand(ctx) {
         onMove(p) {
           var _a2, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
           for (const s of selected) {
-            if (!contentVisible(s.content))
-              continue;
+            if (!contentVisible(s.content)) continue;
             const lines = (_c = (_b = (_a2 = ctx.getContentModel(s.content)) == null ? void 0 : _a2.getGeometries) == null ? void 0 : _b.call(_a2, s.content, contents)) == null ? void 0 : _c.lines;
-            if (!lines)
-              continue;
-            if (!shift && ctx.isGeometryLinesClosed(lines))
-              continue;
+            if (!lines) continue;
+            if (!shift && ctx.isGeometryLinesClosed(lines)) continue;
             const lineIndex = lines.findIndex((line) => ctx.getPointAndGeometryLineMinimumDistance(p, line) < 5);
             if (lineIndex >= 0) {
               let direction;
@@ -4394,10 +4368,8 @@ function getCommand(ctx) {
               let points = [];
               if (shift) {
                 for (const c of selected) {
-                  if (c === s)
-                    continue;
-                  if (!contentVisible(c.content))
-                    continue;
+                  if (c === s) continue;
+                  if (!contentVisible(c.content)) continue;
                   const lines2 = (_f = (_e = (_d = ctx.getContentModel(c.content)) == null ? void 0 : _d.getGeometries) == null ? void 0 : _e.call(_d, c.content, contents)) == null ? void 0 : _f.lines;
                   if (lines2) {
                     for (let i = 0; i < lines.length; i++) {
@@ -4409,10 +4381,8 @@ function getCommand(ctx) {
                 }
               } else if (direction) {
                 for (const c of selected) {
-                  if (c === s)
-                    continue;
-                  if (!contentVisible(c.content))
-                    continue;
+                  if (c === s) continue;
+                  if (!contentVisible(c.content)) continue;
                   const lines2 = (_i = (_h = (_g = ctx.getContentModel(c.content)) == null ? void 0 : _g.getGeometries) == null ? void 0 : _h.call(_g, c.content, contents)) == null ? void 0 : _i.lines;
                   if (lines2) {
                     for (const line of lines2) {
@@ -4658,12 +4628,10 @@ function getCommand(ctx) {
     const circles = [];
     if (isLineContent(content1)) {
       const line1 = ctx.twoPointLineToGeneralFormLine(content1.points[0], content1.points[1]);
-      if (!line1)
-        return [];
+      if (!line1) return [];
       if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         circles.push(...ctx.getCirclesTangentTo2Lines(line1, line2, radius).map((c) => ({
           center: c,
           foot1: ctx.getPerpendicularPoint(c, line1),
@@ -4685,8 +4653,7 @@ function getCommand(ctx) {
         })));
       } else if (isLineContent(content2)) {
         const line2 = ctx.twoPointLineToGeneralFormLine(content2.points[0], content2.points[1]);
-        if (!line2)
-          return [];
+        if (!line2) return [];
         circles.push(...ctx.getCirclesTangentToLineAndCircle(line2, content1, radius).map((c) => ({
           center: c,
           foot1: ctx.getPerpendicularPoint(c, line2),
@@ -4860,11 +4827,9 @@ function getModel(ctx) {
     join(content, target, contents) {
       var _a, _b, _c;
       const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target, contents)) == null ? void 0 : _c.lines;
-      if (!line2)
-        return;
+      if (!line2) return;
       const newLines = ctx.mergeGeometryLines(content.lines, line2);
-      if (!newLines)
-        return;
+      if (!newLines) return;
       return { ...content, lines: newLines };
     },
     extend(content, point) {
@@ -5272,8 +5237,7 @@ function getCommand(ctx) {
           },
           onMove(p) {
             const lineSegment = ctx.getRayTransformedLineSegment({ x: p.x, y: p.y, angle: 0 }, width, height, { x, y, scale, rotate });
-            if (!lineSegment)
-              return;
+            if (!lineSegment) return;
             const getGeometriesInRange = (region) => getContentsInRange(region).map((c) => ctx.getContentHatchGeometries(c, contents));
             const border = ctx.getHatchByPosition(p, (line) => getGeometriesInRange(ctx.getGeometryLineBoundingFromCache(line)), lineSegment[1].x);
             if (border) {
@@ -5515,17 +5479,13 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       var _a, _b, _c, _d;
       const first = contents[selected[0][0]];
-      if (!first)
-        return;
+      if (!first) return;
       const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
-      if (!firstGeometries)
-        return;
+      if (!firstGeometries) return;
       const second = contents[selected[1][0]];
-      if (!second)
-        return;
+      if (!second) return;
       const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
-      if (!secondGeometries)
-        return;
+      if (!secondGeometries) return;
       if (firstGeometries.regions && secondGeometries.regions) {
         const result = firstGeometries.regions.map((r) => ctx.getHatchesIntersection({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
         ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
@@ -6040,8 +6000,7 @@ function getCommand(ctx) {
       return {
         input,
         onStart: (p, target) => {
-          if (!type)
-            return;
+          if (!type) return;
           if (!lead) {
             setLead({
               type: "lead",
@@ -6066,10 +6025,8 @@ function getCommand(ctx) {
           }
         },
         onMove(p, viewportPosition) {
-          if (!type)
-            return;
-          if (editText)
-            return;
+          if (!type) return;
+          if (editText) return;
           setInputPosition(viewportPosition || p);
           setCursorPosition(p);
           if (lead) {
@@ -6111,16 +6068,13 @@ function getCommand(ctx) {
       }
       return {
         onStart(s) {
-          if (!type)
-            return;
+          if (!type) return;
           setStartPosition(s);
         },
         reset,
         onMove(p) {
-          if (!type)
-            return;
-          if (!startPosition)
-            return;
+          if (!type) return;
+          if (!startPosition) return;
           setPath(ctx.getLightPath(
             { x: startPosition.x, y: startPosition.y, angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p, startPosition)) },
             (line) => {
@@ -7073,8 +7027,7 @@ function getCommand(ctx) {
           if (startPosition && offset && (offset.x !== 0 || offset.y !== 0)) {
             const end = { x: startPosition.x + offset.x, y: startPosition.y + offset.y };
             const line = ctx.twoPointLineToGeneralFormLine(startPosition, end);
-            if (!line)
-              return {};
+            if (!line) return {};
             const angle = ctx.radianToAngle(ctx.getTwoPointsRadian(end, startPosition));
             if (changeOriginal) {
               const [newContent, ...patches] = ctx.produceWithPatches(content, (draft) => {
@@ -7671,13 +7624,11 @@ function getModel(ctx) {
   const allContentsCache = new ctx.WeakmapCache2();
   const getAllContentsFromCache = (content, contents) => {
     const path = ctx.getRefPart(content.path, contents, (c) => !ctx.shallowEquals(c, content));
-    if (!path)
-      return [];
+    if (!path) return [];
     return allContentsCache.get(content, path, () => {
       var _a, _b, _c, _d;
       const lines = (_b = (_a = ctx.getContentModel(path)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, path, contents).lines;
-      if (!lines)
-        return [];
+      if (!lines) return [];
       const boundings = [];
       for (const child of content.contents) {
         if (child) {
@@ -7697,17 +7648,13 @@ function getModel(ctx) {
         if (r) {
           result.push(...content.contents.map((child) => {
             var _a2, _b2;
-            if (!child)
-              return;
+            if (!child) return;
             const model = ctx.getContentModel(child);
-            if (!model)
-              return;
+            if (!model) return;
             const bounding2 = (_b2 = (_a2 = model.getGeometries) == null ? void 0 : _a2.call(model, child, contents)) == null ? void 0 : _b2.bounding;
-            if (!bounding2)
-              return;
+            if (!bounding2) return;
             const move = model.move;
-            if (!move)
-              return;
+            if (!move) return;
             return ctx.produce(child, (draft) => {
               var _a3;
               move(draft, { x: -center.x + r.point.x, y: -center.y + r.point.y });
@@ -7786,11 +7733,9 @@ function isPathArrayContent(content) {
 }
 function pathContentSelectable(ctx, content, contents) {
   var _a, _b;
-  if (!content)
-    return false;
+  if (!content) return false;
   const geometries = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents);
-  if (!geometries)
-    return false;
+  if (!geometries) return false;
   return geometries.lines.length > 0;
 }
 function getCommand(ctx) {
@@ -7809,8 +7754,7 @@ function getCommand(ctx) {
         path.current = void 0;
       };
       React.useEffect(() => {
-        if (!type)
-          return;
+        if (!type) return;
         if (!target.current) {
           target.current = selected.map((s) => s.path);
           acquireContent(
@@ -7818,8 +7762,7 @@ function getCommand(ctx) {
               count: 1,
               selectable: (v) => {
                 const content = ctx.getContentByIndex(contents, v);
-                if (!content)
-                  return false;
+                if (!content) return false;
                 return pathContentSelectable(ctx, content, contents);
               }
             },
@@ -8638,16 +8581,13 @@ function getModel(ctx) {
       var _a, _b, _c;
       const { lines } = getPlineGeometries(content, contents);
       const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target, contents)) == null ? void 0 : _c.lines;
-      if (!line2)
-        return;
+      if (!line2) return;
       const newLines = ctx.mergeGeometryLines(lines, line2);
-      if (!newLines)
-        return;
+      if (!newLines) return;
       return ctx.geometryLinesToPline(newLines);
     },
     extend(content, point, contents) {
-      if (content.closed)
-        return;
+      if (content.closed) return;
       const { lines } = getPlineGeometries(content, contents);
       const first = lines[0], last = lines[lines.length - 1];
       if (Array.isArray(first)) {
@@ -9073,8 +9013,7 @@ function getCommand(ctx) {
             });
           },
           onMove(p) {
-            if (!type)
-              return;
+            if (!type) return;
             setPoint(p);
           },
           assistentContents,
@@ -9105,8 +9044,7 @@ function getModel(ctx) {
     return ctx.allContentsCache.get(content, () => {
       const result = [];
       const bounding = ctx.getContentsBounding(content.contents, contents);
-      if (!bounding)
-        return result;
+      if (!bounding) return result;
       const base = {
         x: ctx.getTwoNumberCenter(bounding.start.x, bounding.end.x),
         y: ctx.getTwoNumberCenter(bounding.start.y, bounding.end.y)
@@ -9118,15 +9056,12 @@ function getModel(ctx) {
             result.push(...content.contents);
           } else {
             result.push(...content.contents.map((c) => {
-              if (!c)
-                return;
+              if (!c) return;
               const model = ctx.getContentModel(c);
               const rotate = model == null ? void 0 : model.rotate;
-              if (!rotate)
-                return;
+              if (!rotate) return;
               const move = model.move;
-              if (!move)
-                return;
+              if (!move) return;
               return ctx.produce(c, (draft) => {
                 if (i !== 0) {
                   const center = ctx.getPointByLengthAndDirection(base, -i * content.rowSpacing, content.center);
@@ -9157,8 +9092,7 @@ function getModel(ctx) {
       ctx.rotatePoint(content.center, center, angle);
       content.contents.forEach((c) => {
         var _a, _b;
-        if (!c)
-          return;
+        if (!c) return;
         (_b = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.rotate) == null ? void 0 : _b.call(_a, c, center, angle, contents);
       });
     },
@@ -9369,8 +9303,7 @@ function getCommand(ctx) {
             updateContents: (contents2, selected) => {
               const target = contents2.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents2));
               const bounding = ctx.getContentsBounding(target, contents2);
-              if (!bounding)
-                return;
+              if (!bounding) return;
               const newContent = {
                 type: "polar array",
                 center: p,
@@ -9398,8 +9331,7 @@ function getCommand(ctx) {
           var _a, _b;
           if (cursorPosition) {
             const bounding = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents).bounding;
-            if (!bounding)
-              return {};
+            if (!bounding) return {};
             const base = {
               x: ctx.getTwoNumberCenter(bounding.start.x, bounding.end.x),
               y: ctx.getTwoNumberCenter(bounding.start.y, bounding.end.y)
@@ -10092,11 +10024,9 @@ function getModel(ctx) {
           } else {
             result.push(...content.contents.map((c) => {
               var _a;
-              if (!c)
-                return;
+              if (!c) return;
               const move = (_a = ctx.getContentModel(c)) == null ? void 0 : _a.move;
-              if (!move)
-                return;
+              if (!move) return;
               return ctx.produce(c, (draft) => {
                 move(draft, { x, y });
               });
@@ -10118,11 +10048,9 @@ function getModel(ctx) {
       const y = content.rowSpacing * (content.rowCount - 1) * 0.5;
       content.contents.forEach((c) => {
         var _a, _b, _c;
-        if (!c)
-          return;
+        if (!c) return;
         const m = ctx.getContentModel(c);
-        if (!m)
-          return;
+        if (!m) return;
         (_a = m.move) == null ? void 0 : _a.call(m, c, { x, y });
         (_b = m.rotate) == null ? void 0 : _b.call(m, c, center, angle, contents);
         (_c = m.move) == null ? void 0 : _c.call(m, c, { x: -x, y: -y });
@@ -10300,8 +10228,7 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       const target = contents.filter((c, i) => c && ctx.isSelected([i], selected) && contentSelectable(c, contents));
       const bounding = ctx.getContentsBounding(target, contents);
-      if (!bounding)
-        return;
+      if (!bounding) return;
       const size = ctx.getTwoPointsFormRegionSize(bounding);
       const newContent = {
         type: "rect array",
@@ -11390,8 +11317,7 @@ function getCommand(ctx) {
       return {
         onStart(s) {
           var _a, _b, _c;
-          if (!type)
-            return;
+          if (!type) return;
           if (!data) {
             const boundings = [];
             for (const c of selected) {
@@ -11411,8 +11337,7 @@ function getCommand(ctx) {
           }
         },
         onMove(p, c) {
-          if (!type)
-            return;
+          if (!type) return;
           setInputPosition(c || p);
           setCursorPosition(c || p);
           if (data) {
@@ -11469,17 +11394,13 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       var _a, _b, _c, _d;
       const first = contents[selected[0][0]];
-      if (!first)
-        return;
+      if (!first) return;
       const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
-      if (!firstGeometries)
-        return;
+      if (!firstGeometries) return;
       const second = contents[selected[1][0]];
-      if (!second)
-        return;
+      if (!second) return;
       const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
-      if (!secondGeometries)
-        return;
+      if (!secondGeometries) return;
       const result = ctx.getShortestDistanceOfTwoGeometryLines(firstGeometries.lines, secondGeometries.lines);
       if (result && ctx.largerThan(result.distance, 0)) {
         contents.push({ type: "line", points: result.points });
@@ -11538,8 +11459,7 @@ function getCommand(ctx) {
       return {
         onStart(s) {
           var _a, _b, _c;
-          if (!type)
-            return;
+          if (!type) return;
           if (!data) {
             const boundings = [];
             for (const c of selected) {
@@ -11559,8 +11479,7 @@ function getCommand(ctx) {
           }
         },
         onMove(p, c) {
-          if (!type)
-            return;
+          if (!type) return;
           setInputPosition(c || p);
           setCursorPosition(c || p);
           if (data) {
@@ -12515,8 +12434,7 @@ function getModel(ctx) {
         (_a = row.cells) == null ? void 0 : _a.forEach((cell) => {
           var _a2, _b;
           const child = geometries.children.find((f) => f.row === i && f.column === cell.column);
-          if (!child)
-            return;
+          if (!child) return;
           const { width, height } = child;
           const textStyleContent = ctx.getTextStyleContent(cell, renderCtx.contents);
           const textLayout = textLayoutResultCache.get(cell, textStyleContent, width, height, () => {
@@ -12681,16 +12599,13 @@ function getModel(ctx) {
     editPanel(content, scale, update, contents, cancel, transformPosition, activeChild) {
       var _a, _b, _c;
       const p = transformPosition(content);
-      if (!activeChild)
-        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      if (!activeChild) return /* @__PURE__ */ React.createElement(React.Fragment, null);
       const [row, column] = activeChild;
       const cell = (_a = content.rows[row].cells) == null ? void 0 : _a.find((c) => c.column === column);
-      if (!cell)
-        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      if (!cell) return /* @__PURE__ */ React.createElement(React.Fragment, null);
       const { children } = getGeometries(content, contents);
       const child = children.find((f) => f.row === row && f.column === column);
-      if (!child)
-        return /* @__PURE__ */ React.createElement(React.Fragment, null);
+      if (!child) return /* @__PURE__ */ React.createElement(React.Fragment, null);
       const textStyleContent = ctx.getTextStyleContent(cell, contents);
       const fontSize = textStyleContent.fontSize * scale;
       return /* @__PURE__ */ React.createElement(
@@ -12856,29 +12771,25 @@ function deleteTableRow(c, i) {
   }
 }
 function setTableRowSpan(c, row, column, v) {
-  if (!c.mergedCells)
-    c.mergedCells = [];
+  if (!c.mergedCells) c.mergedCells = [];
   const index = c.mergedCells.findIndex((m) => m.row[0] === row && m.column[0] === column);
   if (index < 0) {
     c.mergedCells.push({ row: [row, v], column: [column, 1] });
   } else if (v <= 1 && c.mergedCells[index].column[1] <= 1) {
     c.mergedCells.splice(index, 1);
-    if (c.mergedCells.length === 0)
-      c.mergedCells = void 0;
+    if (c.mergedCells.length === 0) c.mergedCells = void 0;
   } else {
     c.mergedCells[index].row[1] = v;
   }
 }
 function setTableColumnSpan(c, row, column, v) {
-  if (!c.mergedCells)
-    c.mergedCells = [];
+  if (!c.mergedCells) c.mergedCells = [];
   const index = c.mergedCells.findIndex((m) => m.row[0] === row && m.column[0] === column);
   if (index < 0) {
     c.mergedCells.push({ row: [row, 1], column: [column, v] });
   } else if (v <= 1 && c.mergedCells[index].row[1] <= 1) {
     c.mergedCells.splice(index, 1);
-    if (c.mergedCells.length === 0)
-      c.mergedCells = void 0;
+    if (c.mergedCells.length === 0) c.mergedCells = void 0;
   } else {
     c.mergedCells[index].column[1] = v;
   }
@@ -13455,8 +13366,7 @@ function getCommand(ctx) {
       }
       return {
         onStart: (p) => {
-          if (!type)
-            return;
+          if (!type) return;
           if (text) {
             onEnd({ updateContents: (contents2) => contents2.push(text) });
             reset();
@@ -13479,8 +13389,7 @@ function getCommand(ctx) {
           }
         },
         onMove: (p) => {
-          if (!type)
-            return;
+          if (!type) return;
           setCursor(p);
         },
         assistentContents,
@@ -13843,8 +13752,7 @@ function getCommand(ctx) {
               undo(e);
             }
           } else if (e.key === "Enter") {
-            if (!type)
-              return;
+            if (!type) return;
             const removedIndexes = [];
             const newContents = [];
             for (const { content, children } of state) {
@@ -13950,17 +13858,13 @@ function getCommand(ctx) {
     execute({ contents, selected }) {
       var _a, _b, _c, _d;
       const first = contents[selected[0][0]];
-      if (!first)
-        return;
+      if (!first) return;
       const firstGeometries = (_b = (_a = ctx.getContentModel(first)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, first, contents);
-      if (!firstGeometries)
-        return;
+      if (!firstGeometries) return;
       const second = contents[selected[1][0]];
-      if (!second)
-        return;
+      if (!second) return;
       const secondGeometries = (_d = (_c = ctx.getContentModel(second)) == null ? void 0 : _c.getGeometries) == null ? void 0 : _d.call(_c, second, contents);
-      if (!secondGeometries)
-        return;
+      if (!secondGeometries) return;
       if (firstGeometries.regions && secondGeometries.regions) {
         const result = firstGeometries.regions.map((r) => ctx.getHatchesUnion({ border: r.lines, holes: r.holes || [] }, (secondGeometries.regions || []).map((g) => ({ border: g.lines, holes: g.holes || [] })))).flat();
         ctx.deleteSelectedContents(contents, selected.map((s) => s[0]));
@@ -14052,8 +13956,7 @@ function getModel(ctx) {
     getEditPoints(content, contents) {
       var _a, _b;
       const editPoints = (_b = (_a = ctx.getContentModel(content.border)) == null ? void 0 : _a.getEditPoints) == null ? void 0 : _b.call(_a, content.border, contents);
-      if (!editPoints)
-        return;
+      if (!editPoints) return;
       return ctx.getEditPointsFromCache(content, () => {
         return {
           ...editPoints,
@@ -14150,8 +14053,7 @@ function getCommand(ctx) {
         var _a, _b;
         if (content && ctx.isSelected([index], selected) && ((_b = (_a = this.contentSelectable) == null ? void 0 : _a.call(this, content, contents)) != null ? _b : true)) {
           const viewport = ctx.getDefaultViewport(content, contents);
-          if (!viewport)
-            return;
+          if (!viewport) return;
           const result = {
             type: "viewport",
             border: content,
@@ -14183,8 +14085,7 @@ function getModel(ctx) {
     const lines = Array.from(ctx.iteratePolylineLines(content.points));
     const wires = [];
     for (const c of ctx.getSortedContents(contents).contents) {
-      if (!c)
-        continue;
+      if (!c) continue;
       if (ctx.shallowEquals(c, content)) {
         return wires;
       }
@@ -14218,8 +14119,7 @@ function getModel(ctx) {
               continue;
             }
             const radian = ctx.getGeometryLinesTangentRadianAtParam(param, lines);
-            if (radian === void 0)
-              continue;
+            if (radian === void 0) continue;
             const angle = ctx.radianToAngle(radian);
             const radius = 5;
             const startPoint = ctx.getPointByLengthAndRadian(intersection, -radius, radian);
@@ -14363,8 +14263,7 @@ function getModel(ctx) {
                     var _a, _b;
                     for (let i = 0; i < draft.length; i++) {
                       const c2 = draft[i];
-                      if (!c2)
-                        continue;
+                      if (!c2) continue;
                       if (i === targetIndex && isWireContent(c2)) {
                         if (!c2.refs.includes(index)) {
                           c2.refs.push(index);
@@ -14463,8 +14362,7 @@ function getCommand(ctx) {
             });
           },
           onMove(p, _, target) {
-            if (!type)
-              return;
+            if (!type) return;
             setWireId(target == null ? void 0 : target.id);
             setLamp({ x: p.x, y: p.y, size: 5, strokeStyleId, type: "lamp" });
           },
