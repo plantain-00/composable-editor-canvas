@@ -126,5 +126,7 @@ function escapeQuote(str: string) {
 }
 
 function isValidIdentifier(identifier: string) {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore 1501
   return /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(identifier)
 }
