@@ -244,6 +244,25 @@ export const v2 = {
   },
 }
 
+export const v3 = {
+  cross(a: Vec3, b: Vec3): Vec3 {
+    return [
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+    ]
+  },
+  dot(a: Vec3, b: Vec3): number {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+  },
+  add(a: Vec3, b: Vec3): Vec3 {
+    return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+  },
+  substract(a: Vec3, b: Vec3): Vec3 {
+    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+  },
+}
+
 export const matrix = {
   inverse(m: number[][]): number[][] | undefined {
     // a[0,0] a[0,1]  x[0,0] x[0,1]  1 0
