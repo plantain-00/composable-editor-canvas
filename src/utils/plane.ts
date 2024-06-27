@@ -1,6 +1,7 @@
 import { calculateEquationSet } from "./equation-calculater";
 import { GeneralFormLine } from "./line";
 import { isZero } from "./math";
+import { v3 } from "./matrix";
 import { Vec3 } from "./types";
 import { and, number } from "./validators";
 
@@ -70,4 +71,29 @@ export function getThreePointPlane([x1, y1, z1]: Vec3, [x2, y2, z2]: Vec3, [x3, 
   }
   const d = -(a * x1 + b * y1 + c * z1)
   return { a, b, c, d }
+}
+
+export function pointInTriangle(p: Vec3, a: Vec3, b: Vec3, c: Vec3): boolean {
+  // p = a + u(c - a) + v(b - a)
+  const v0 = v3.substract(c, a)
+  const v1 = v3.substract(b, a)
+  const v2 = v3.substract(p, a)
+  // v2 = u v0 + v v1
+  // *v0: v2 v0 = (u v0 + v v1) v0 = u v0 v0 + v v1 v0
+  // *v1: v2 v1 = (u v0 + v v1) v1 = u v0 v1 + v v1 v1
+  const e1 = v3.dot(v0, v0)
+  const e2 = v3.dot(v0, v1)
+  const e3 = v3.dot(v0, v2)
+  const e4 = v3.dot(v1, v1)
+  const e5 = v3.dot(v1, v2)
+  // F1: e3 = u e1 + v e2
+  // F2: e5 = u e2 + v e4
+  // F1 e2 - F2 e1: (e1 e4 - e2 e2)v = e1 e5 - e2 e3
+  // F1 e4 - F2 e2: (e1 e4 - e2 e2)u = e3 e4 - e2 e5
+  const d = e1 * e4 - e2 * e2
+  const u = (e3 * e4 - e2 * e5) / d
+  if (u < 0 || u > 1) return false
+  const v = (e1 * e5 - e2 * e3) / d
+  if (v < 0 || v > 1) return false
+  return u + v <= 1
 }

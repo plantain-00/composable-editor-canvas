@@ -1,5 +1,5 @@
 import * as React from "react"
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, Position, WeakmapCache } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -9,7 +9,8 @@ export default () => {
   const height = size.height
   const eye: Vec3 = [0, -90, 90]
   const [status, setStatus] = React.useState<'cube' | 'sphere'>()
-  const { state, setState, undo, redo } = useUndoRedo<Graphic3d[]>([
+  const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
+  const land = React.useRef<Graphic3d>(
     {
       geometry: {
         type: 'triangle strip',
@@ -18,9 +19,10 @@ export default () => {
       color: [0.6, 0.6, 0.6, 1],
       position: [0, 0, 0],
     },
-  ])
+  )
+  const { state, setState, undo, redo } = useUndoRedo<State[]>([])
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
-  const [preview, setPreview] = React.useState<Graphic3d>()
+  const [preview, setPreview] = React.useState<State>()
   const colorRef = React.useRef(0xff0000)
   const opacityRef = React.useRef(1)
   const sizeRef = React.useRef(5)
@@ -50,7 +52,7 @@ export default () => {
       setHovering(undefined)
       setSelected(undefined)
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (selected) {
+      if (selected !== undefined) {
         setState(draft => {
           draft.splice(selected, 1)
         })
@@ -79,38 +81,41 @@ export default () => {
       [1, 1, 1, 1],
     )
   }
+  const getGraphic = (s: State): Graphic3d => graphicCache.current.get(s, () => {
+    let z = 0
+    if (s.geometry.type === 'cube') {
+      z = sizeRef.current / 2
+    } else if (s.geometry.type === 'sphere') {
+      z = sizeRef.current
+    }
+    return {
+      geometry: s.geometry,
+      color: s.color,
+      position: [s.position.x, s.position.y, z],
+    }
+  })
 
   React.useEffect(() => {
-    const graphics = [...state]
+    const graphics = [land.current, ...state.map(s => getGraphic(s))]
     if (preview) {
-      graphics.push(preview)
+      graphics.push(getGraphic(preview))
     }
     const items = new Set([hovering, selected])
     for (const item of items) {
-      if (!item) continue
+      if (item === undefined) continue
       const g = state[item]
       if (!g) continue
+      let radius: number | undefined
       if (g.geometry.type === 'sphere') {
-        const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: g.geometry.radius }), 5)
-        const result: number[] = []
-        const z = 1 - g.geometry.radius
-        for (let i = 1; i < points.length; i++) {
-          result.push(points[i - 1].x, points[i - 1].y, z, points[i].x, points[i].y, z)
-        }
-        graphics.push({
-          geometry: {
-            type: 'lines',
-            points: result,
-          },
-          color: [0, 1, 0, 1],
-          position: g.position,
-        })
+        radius = g.geometry.radius
       } else if (g.geometry.type === 'cube') {
-        const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: g.geometry.size * Math.SQRT1_2 }), 5)
+        radius = g.geometry.size * Math.SQRT1_2
+      }
+      if (radius) {
+        const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: radius }), 5)
         const result: number[] = []
-        const z = 1 - g.geometry.size / 2
         for (let i = 1; i < points.length; i++) {
-          result.push(points[i - 1].x, points[i - 1].y, z, points[i].x, points[i].y, z)
+          result.push(points[i - 1].x, points[i - 1].y, 0, points[i].x, points[i].y, 0)
         }
         graphics.push({
           geometry: {
@@ -118,7 +123,7 @@ export default () => {
             points: result,
           },
           color: [0, 1, 0, 1],
-          position: g.position,
+          position: [g.position.x, g.position.y, 1],
         })
       }
     }
@@ -138,7 +143,8 @@ export default () => {
         height={height}
         onMouseMove={e => {
           if (!status) {
-            setHovering(renderer.current?.pick(e.clientX, e.clientY))
+            const index = renderer.current?.pick(e.clientX, e.clientY)
+            setHovering(index ? index - 1 : undefined)
             return
           }
           if (renderer.current) {
@@ -153,7 +159,7 @@ export default () => {
                     size: sizeRef.current,
                   },
                   color,
-                  position: [target[0], target[1], sizeRef.current / 2],
+                  position: { x: target[0], y: target[1] },
                 })
               } else if (status === 'sphere') {
                 setPreview({
@@ -162,7 +168,7 @@ export default () => {
                     radius: sizeRef.current,
                   },
                   color,
-                  position: [target[0], target[1], sizeRef.current],
+                  position: { x: target[0], y: target[1] },
                 })
               }
             }
@@ -170,7 +176,7 @@ export default () => {
         }}
         onMouseDown={() => {
           if (!status) {
-            if (hovering) {
+            if (hovering !== undefined) {
               setSelected(hovering)
             }
             return
@@ -191,7 +197,7 @@ export default () => {
           }
           const items: MenuItem[] = []
           let size: number | undefined
-          if (selected) {
+          if (selected !== undefined) {
             items.push({
               title: 'delete',
               onClick() {
@@ -217,11 +223,11 @@ export default () => {
                   title: (
                     <>
                       <NumberEditor
-                        value={selected ? vecToColorNumber(state[selected].color) : colorRef.current}
+                        value={selected !== undefined ? vecToColorNumber(state[selected].color) : colorRef.current}
                         type='color'
                         style={{ width: '50px' }}
                         setValue={v => {
-                          if (selected) {
+                          if (selected !== undefined) {
                             const color = state[selected].color
                             setState(draft => {
                               draft[selected].color = colorNumberToVec(v, color[3])
@@ -239,10 +245,10 @@ export default () => {
                   title: (
                     <>
                       <NumberEditor
-                        value={(selected ? state[selected].color[3] : opacityRef.current) * 100}
+                        value={(selected !== undefined ? state[selected].color[3] : opacityRef.current) * 100}
                         style={{ width: '50px' }}
                         setValue={v => {
-                          if (selected) {
+                          if (selected !== undefined) {
                             setState(draft => {
                               draft[selected].color[3] = v * 0.01
                             })
@@ -261,19 +267,13 @@ export default () => {
                       value={size ?? sizeRef.current}
                       style={{ width: '40px' }}
                       setValue={v => {
-                        if (selected) {
+                        if (selected !== undefined) {
                           setState(draft => {
                             const graphic = draft[selected]
                             if (graphic.geometry.type === 'cube') {
                               graphic.geometry.size = v
-                              if (graphic.position) {
-                                graphic.position[2] = v / 2
-                              }
                             } else if (graphic.geometry.type === 'sphere') {
                               graphic.geometry.radius = v
-                              if (graphic.position) {
-                                graphic.position[2] = v
-                              }
                             }
                           })
                           setContextMenu(undefined)
@@ -311,4 +311,10 @@ export default () => {
       {contextMenu}
     </div>
   )
+}
+
+interface State {
+  geometry: SphereGeometry | CubeGeometry
+  color: Vec4
+  position: Position
 }
