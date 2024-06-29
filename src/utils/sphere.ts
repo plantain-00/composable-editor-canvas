@@ -1,5 +1,6 @@
 import { calculateEquation2 } from "./equation-calculater"
-import { Position3D } from "./position"
+import { isZero } from "./math"
+import { Position3D, getPointByLengthAndDirection3D } from "./position"
 import { Vec3 } from "./types"
 import { and, number } from "./validators"
 
@@ -36,4 +37,26 @@ export function getLineAndSphereIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]:
     e2 * t + b2 + y0,
     e3 * t + b3 + z0,
   ])
+}
+
+export function getPerpendicularPointsToSphere(p: Vec3, sphere: Sphere): [Vec3, Vec3] {
+  const direction: Vec3 = [
+    p[0] - sphere.x,
+    p[1] - sphere.y,
+    p[2] - sphere.z,
+  ]
+  return [
+    getPointByLengthAndDirection3D(p, sphere.radius, direction),
+    getPointByLengthAndDirection3D(p, -sphere.radius, direction),
+  ]
+}
+
+export function getParallelSpheresByDistance(sphere: Sphere, distance: number): [Sphere, Sphere] {
+  if (isZero(distance)) {
+    return [sphere, sphere]
+  }
+  return [
+    { ...sphere, radius: sphere.radius - distance },
+    { ...sphere, radius: sphere.radius + distance },
+  ]
 }

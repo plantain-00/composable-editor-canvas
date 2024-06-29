@@ -1,4 +1,3 @@
-import { calculateEquationSet } from "./equation-calculater";
 import { GeneralFormLine } from "./line";
 import { isZero } from "./math";
 import { v3 } from "./matrix";
@@ -13,22 +12,25 @@ export const GeneralFormPlane = /* @__PURE__ */ and(GeneralFormLine, {
   d: number,
 })
 
-export function getLineAndPlaneIntersectionPoint([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], { a, b, c, d }: GeneralFormPlane): Vec3 | undefined {
+export function getLineAndPlaneIntersectionPoint([p1, p2]: [Vec3, Vec3], plane: GeneralFormPlane): Vec3 | undefined {
+  const direction = v3.substract(p2, p1)
+  return getPointAndDirectionLineAndPlaneIntersectionPoint(p1, direction, plane)
+}
+
+export function getPointAndDirectionLineAndPlaneIntersectionPoint([x1, y1, z1]: Vec3, [e1, e2, e3]: Vec3, { a, b, c, d }: GeneralFormPlane): Vec3 | undefined {
   // a x + b y + c z + d = 0
-  // (x,y,z) (x1,y1,z1) (x2,y2,z2)
-  const e1 = x2 - x1, e2 = y2 - y1, e3 = z2 - z1
-  // e2(x - x1) - e1(y - y1) = 0
-  // e3(x - x1) - e1(z - z1) = 0
-  const result = calculateEquationSet([
-    [a, b, c, d],
-    [e2, -e1, 0, e1 * y1 - e2 * x1],
-    [e3, 0, -e1, e1 * z1 - e3 * x1],
-  ])
-  if (!result) return
+  // x = x1 + e1 t
+  // y = y1 + e2 t
+  // z = z1 + e3 t
+  // a(x1 + e1 t) + b(y1 + e2 t) + c(z1 + e3 t) + d = 0
+  // (a e1 + b e2 + c e3) t + a x1 + b y1 + c z1 + d = 0
+  const f = a * e1 + b * e2 + c * e3
+  if (isZero(f)) return
+  const t = -(a * x1 + b * y1 + c * z1 + d) / f
   return [
-    result[0],
-    result[1],
-    result[2],
+    x1 + e1 * t,
+    y1 + e2 * t,
+    z1 + e3 * t,
   ]
 }
 
@@ -96,4 +98,40 @@ export function pointInTriangle(p: Vec3, a: Vec3, b: Vec3, c: Vec3): boolean {
   const v = (e1 * e5 - e2 * e3) / d
   if (v < 0 || v > 1) return false
   return u + v <= 1
+}
+
+export function getPlaneNormal(plane: GeneralFormPlane): Vec3 {
+  return [plane.a, plane.b, plane.c]
+}
+
+export function getPerpendicularPointToPlane([x1, y1, z1]: Vec3, { a, b, c, d }: GeneralFormPlane): Vec3 {
+  // a x + b y + c z + d = 0
+  // x = x1 + a t
+  // y = y1 + b t
+  // z = z1 + c t
+  // a(x1 + a t) + b(y1 + b t) + c(z1 + c t) + d = 0
+  // (a a + b b + c c) t + a x1 + b y1 + c z1 + d = 0
+  const t = -(a * x1 + b * y1 + c * z1 + d) / (a * a + b * b + c * c)
+  return [
+    x1 + a * t,
+    y1 + b * t,
+    z1 + c * t,
+  ]
+}
+
+export function getParallelPlanesByDistance({ a, b, c, d }: GeneralFormPlane, distance: number): [GeneralFormPlane, GeneralFormPlane] {
+  // a x + b y + c z + d = 0
+  // a x + b y + c z + e = 0
+  // [0,0,0]
+  // t1 = -d / (a a + b b + c c)
+  // t2 = -e / (a a + b b + c c)
+  const f = a * a + b * b + c * c
+  // distance^2 = (a t1 - a t2)^2 + (b t1 - b t2)^2 + (c t1 - c t2)^2)
+  // distance^2 = (a a + b b + c c)(t1 - t2)^2
+  // distance^2 = f(d - e)^2/f/f = (d - e)^2/f
+  const g = distance * Math.sqrt(f)
+  return [
+    { a, b, c, d: d + g },
+    { a, b, c, d: d - g },
+  ]
 }
