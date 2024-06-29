@@ -261,6 +261,12 @@ export const v3 = {
   substract(a: Vec3, b: Vec3): Vec3 {
     return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
   },
+  length(a: Vec3): number {
+    return Math.sqrt(a[0] ** 2 + a[1] ** 2 + a[2] ** 2)
+  },
+  multipleScalar(a: Vec3, b: number): Vec3 {
+    return [a[0] + b, a[1] + b, a[2] + b]
+  },
 }
 
 export const matrix = {

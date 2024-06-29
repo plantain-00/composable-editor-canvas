@@ -1,4 +1,4 @@
-import { getPointByLengthAndRadian } from "./position";
+import { getPointByLengthAndRadian, isSameDirection3D } from "./position";
 import { angleToRadian, getTwoPointsRadian } from "./radian";
 import { ExtendType, deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
 import { isSamePoint } from "./position";
@@ -10,8 +10,9 @@ import { Position } from "./position";
 import { rotatePositionByCenter } from "./position";
 import { and, boolean, number, optional } from "./validators";
 import { RenderTransform, Transform, reverseTransformPosition } from "./transform";
-import { Matrix, m3 } from "./matrix";
+import { Matrix, m3, v3 } from "./matrix";
 import { reverseAngle, reverseRadian } from "./reverse";
+import { Vec3 } from "./types";
 
 export interface GeneralFormLine {
   a: number
@@ -475,4 +476,9 @@ export function getRayParamAtPoint(ray: Ray, point: Position) {
 
 export function getRayAngle(ray: Ray): number {
   return ray.reversed ? reverseAngle(ray.angle) : ray.angle
+}
+
+export function pointIsOnLine3D(p: Vec3, p1: Vec3, direction: Vec3): boolean {
+  const d = v3.substract(p, p1)
+  return isSameDirection3D(d, direction)
 }

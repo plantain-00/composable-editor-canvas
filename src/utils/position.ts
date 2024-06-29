@@ -1,8 +1,10 @@
-import { getTwoNumberCenter } from "./math";
+import { equals, getTwoNumberCenter } from "./math";
 import { deduplicate } from "./math";
 import { isSameNumber } from "./math";
 import { isZero } from "./math";
+import { v3 } from "./matrix";
 import { angleToRadian, getDirectionByRadian } from "./radian";
+import { Vec3 } from "./types";
 import { and, number } from "./validators";
 
 export interface Position {
@@ -128,4 +130,17 @@ export function rotatePosition(position: Position, center: Position, radian: num
     x: cos * offsetX - sin * offsetY + center.x,
     y: sin * offsetX + cos * offsetY + center.y,
   }
+}
+
+export function isSameDirection(d1: Position, d2: Position): boolean {
+  return equals(d1.x * d2.y, d1.y * d2.x)
+}
+
+export function isSameDirection3D(d1: Vec3, d2: Vec3): boolean {
+  return isSameDirection({ x: d1[0], y: d1[1] }, { x: d2[0], y: d2[1] }) && isSameDirection({ x: d1[0], y: d1[2] }, { x: d2[0], y: d2[2] })
+}
+
+export function getPointByLengthAndDirection3D(startPoint: Vec3, length: number, direction: Vec3): Vec3 {
+  const rate = length / v3.length(direction)
+  return v3.add(startPoint, v3.multipleScalar(direction, rate))
 }
