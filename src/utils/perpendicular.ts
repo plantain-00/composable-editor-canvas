@@ -23,6 +23,7 @@ import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
+import { Vec3 } from "./types"
 
 export function getPerpendicularLine(point: Position, line: GeneralFormLine): GeneralFormLine {
   return {
@@ -118,6 +119,22 @@ export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine)
     x: (e * p.x + g * p.y - a * c) / f,
     y: (g * p.x + d * p.y - b * c) / f,
   }
+}
+
+export function getPerpendicularPoint3D([x0, y0, z0]: Vec3, [x1, y1, z1]: Vec3, [a, b, c]: Vec3): Vec3 {
+  // a x + b y + c z + d = 0
+  // d = -(a x0 + b y0 + c z0)
+  // x = x1 + a t
+  // y = y1 + b t
+  // z = z1 + c t
+  // a(x1 + a t) + b(y1 + b t) + c(z1 + c t) - (a x0 + b y0 + c z0) = 0
+  // (a a + b b + c c) t + -a x0 + a x1 + -b y0 + b y1 + -c z0 + c z1 = 0
+  const t = -(a * (x1 - x0) + b * (y1 - y0) + c * (z1 - z0)) / (a * a + b * b + c * c)
+  return [
+    x1 + a * t,
+    y1 + b * t,
+    z1 + c * t,
+  ]
 }
 
 export function getPerpendicularDistance({ x, y }: Position, { a, b, c }: GeneralFormLine): number {
