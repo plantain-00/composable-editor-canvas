@@ -1,5 +1,5 @@
 import * as React from "react"
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, Position, WeakmapCache } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -8,7 +8,7 @@ export default () => {
   const width = size.width / 2
   const height = size.height
   const eye: Vec3 = [0, -90, 90]
-  const [status, setStatus] = React.useState<'cube' | 'sphere'>()
+  const [status, setStatus] = React.useState<'cube' | 'sphere' | 'line start' | 'line end'>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
   const land = React.useRef<Graphic3d>(
     {
@@ -20,7 +20,12 @@ export default () => {
       position: [0, 0, 0],
     },
   )
-  const { state, setState, undo, redo } = useUndoRedo<State[]>([])
+  const [, onChange, initialState] = useLocalStorageState<readonly State[]>('webgl-3d-put-data', [])
+  const { state, setState, undo, redo } = useUndoRedo<readonly State[]>(initialState, {
+    onChange: (({ newState }) => {
+      onChange(newState)
+    })
+  })
   const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
   const [preview, setPreview] = React.useState<State>()
   const colorRef = React.useRef(0xff0000)
@@ -28,6 +33,7 @@ export default () => {
   const sizeRef = React.useRef(5)
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
+  const [lineStart, setLineStart] = React.useState<Position3D>()
 
   React.useEffect(() => {
     if (!ref.current || renderer.current) {
@@ -51,6 +57,7 @@ export default () => {
       setPreview(undefined)
       setHovering(undefined)
       setSelected(undefined)
+      setLineStart(undefined)
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       if (selected !== undefined) {
         setState(draft => {
@@ -82,11 +89,20 @@ export default () => {
     )
   }
   const getGraphic = (s: State): Graphic3d => graphicCache.current.get(s, () => {
-    let z = 0
+    let z = s.position.z
     if (s.geometry.type === 'cube') {
-      z = sizeRef.current / 2
+      z += sizeRef.current / 2
     } else if (s.geometry.type === 'sphere') {
-      z = sizeRef.current
+      z += sizeRef.current
+    } else if (s.geometry.type === 'point') {
+      return {
+        geometry: {
+          type: 'lines',
+          points: [s.position.x, s.position.y, s.position.z, s.geometry.position.x, s.geometry.position.y, s.geometry.position.z],
+        },
+        color: s.color,
+        position: [0, 0, 1],
+      }
     }
     return {
       geometry: s.geometry,
@@ -110,6 +126,15 @@ export default () => {
         radius = g.geometry.radius
       } else if (g.geometry.type === 'cube') {
         radius = g.geometry.size * Math.SQRT1_2
+      } else if (g.geometry.type === 'point') {
+        graphics.push({
+          geometry: {
+            type: 'lines',
+            points: [g.position.x, g.position.y, g.position.z, g.geometry.position.x, g.geometry.position.y, g.geometry.position.z],
+          },
+          color: [0, 1, 0, 1],
+          position: [0, 0, 1.5],
+        })
       }
       if (radius) {
         const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: radius }), 5)
@@ -152,6 +177,7 @@ export default () => {
             if (info) {
               const target = renderer.current.getTarget(e.clientX, e.clientY, eye, 0, info.reversedProjection)
               const color = colorNumberToVec(colorRef.current, opacityRef.current)
+              const position = { x: target[0], y: target[1], z: 0 }
               if (status === 'cube') {
                 setPreview({
                   geometry: {
@@ -159,7 +185,7 @@ export default () => {
                     size: sizeRef.current,
                   },
                   color,
-                  position: { x: target[0], y: target[1] },
+                  position,
                 })
               } else if (status === 'sphere') {
                 setPreview({
@@ -168,7 +194,18 @@ export default () => {
                     radius: sizeRef.current,
                   },
                   color,
-                  position: { x: target[0], y: target[1] },
+                  position,
+                })
+              } else if (status === 'line start') {
+                setLineStart(position)
+              } else if (status === 'line end' && lineStart) {
+                setPreview({
+                  geometry: {
+                    type: 'point',
+                    position: lineStart,
+                  },
+                  color,
+                  position,
                 })
               }
             }
@@ -186,6 +223,12 @@ export default () => {
               draft.push(preview)
             })
             setPreview(undefined)
+            if (lineStart) {
+              setLineStart(undefined)
+              setStatus(undefined)
+            }
+          } else if (lineStart) {
+            setStatus('line end')
           }
         }}
         onContextMenu={e => {
@@ -213,7 +256,51 @@ export default () => {
               size = geometry.size
             } else if (geometry.type === 'sphere') {
               size = geometry.radius
+            } else if (geometry.type === 'point') {
+              items.push(
+                ...(['x', 'y', 'z'] as const).map(f => ({
+                  title: (
+                    <>
+                      start {f}
+                      <NumberEditor
+                        value={geometry.position[f]}
+                        style={{ width: '100px' }}
+                        setValue={v => {
+                          setState(draft => {
+                            const g = draft[selected].geometry
+                            if (g.type === 'point') {
+                              g.position[f] = v
+                            }
+                          })
+                          setContextMenu(undefined)
+                        }}
+                      />
+                    </>
+                  ),
+                  height: 33,
+                })),
+              )
             }
+            items.push(
+              ...(['x', 'y', 'z'] as const).map(f => ({
+                title: (
+                  <>
+                    {f}
+                    <NumberEditor
+                      value={state[selected].position[f]}
+                      style={{ width: '100px' }}
+                      setValue={v => {
+                        setState(draft => {
+                          draft[selected].position[f] = v
+                        })
+                        setContextMenu(undefined)
+                      }}
+                    />
+                  </>
+                ),
+                height: 33,
+              })),
+            )
           }
           setContextMenu(
             <Menu
@@ -298,6 +385,13 @@ export default () => {
                     setContextMenu(undefined)
                   },
                 },
+                {
+                  title: 'line',
+                  onClick() {
+                    setStatus('line start')
+                    setContextMenu(undefined)
+                  },
+                },
               ]}
               y={viewportPosition.y}
               height={height}
@@ -314,7 +408,10 @@ export default () => {
 }
 
 interface State {
-  geometry: SphereGeometry | CubeGeometry
+  geometry: SphereGeometry | CubeGeometry | {
+    type: 'point'
+    position: Position3D
+  }
   color: Vec4
-  position: Position
+  position: Position3D
 }
