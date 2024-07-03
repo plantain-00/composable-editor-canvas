@@ -4,7 +4,12 @@ import { produce, castDraft, Draft } from "immer"
 /**
  * @public
  */
-export function useUndoRedo<T>(defaultState: T) {
+export function useUndoRedo<T>(
+  defaultState: T,
+  options?: Partial<{
+    onChange: (data: { oldState: Readonly<T>, newState: Readonly<T> }) => void
+  }>,
+) {
   const [history, setHistory] = React.useState({
     states: [defaultState] as readonly T[],
     stateIndex: 0,
@@ -23,6 +28,7 @@ export function useUndoRedo<T>(defaultState: T) {
       if (s === state) {
         return state
       }
+      options?.onChange?.({ oldState: state, newState: s })
       const newStateIndex = stateIndex + 1
       setHistory(produce(history, (draft) => {
         draft.states.splice(newStateIndex, draft.states.length, castDraft(s))
