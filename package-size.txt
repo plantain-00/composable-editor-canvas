@@ -1,6 +1,6 @@
 composable-type-validator: 5.24e+3
 react-render-target: 1.63e+5
-use-undo-redo: 1.45e+3
+use-undo-redo: 1.61e+3
 use-patch-based-undo-redo: 4.10e+3
 react-composable-json-editor: 2.00e+4
 react-composable-expression-editor: 3.87e+4

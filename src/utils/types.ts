@@ -38,3 +38,7 @@ export type Tuple2<T> = [T, T]
 export type Tuple3<T> = [T, T, T]
 export type Tuple4<T> = [T, T, T, T]
 export type Tuple5<T> = [T, T, T, T, T]
+
+export function slice3<T>(array: T[], start = 0): Tuple3<T> {
+  return [array[start], array[start + 1], array[start + 2]]
+}

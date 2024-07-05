@@ -1,6 +1,6 @@
 import React from 'react';
 import { v3 } from 'twgl.js'
-import { getAxesGraphics, colorNumberToVec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache, angleToRadian } from '../../src';
+import { getAxesGraphics, colorNumberToVec, createWebgl3DRenderer, getDashedLine, Graphic3d, MapCache, Nullable, Position, updateCamera, WeakmapCache, angleToRadian, position3DToVec3 } from '../../src';
 import { BaseContent, isSphereContent, SphereContent } from './model';
 
 export const Renderer3d = React.forwardRef((props: {
@@ -43,7 +43,7 @@ export const Renderer3d = React.forwardRef((props: {
             radius: content.radius,
           })),
           color,
-          position: [content.x, content.y, content.z],
+          position: position3DToVec3(content),
         })
         const start = v3.create(content.x, content.y, content.z)
         const speed = v3.create(content.speed.x, content.speed.y, content.speed.z)
@@ -74,8 +74,8 @@ export const Renderer3d = React.forwardRef((props: {
     renderer.current.render(
       graphics,
       {
-        eye: [position.x, position.y, position.z],
-        up: [up.x, up.y, up.z],
+        eye: position3DToVec3(position),
+        up: position3DToVec3(up),
         target: [-props.x, props.y, 0],
         fov: angleToRadian(60),
         near: 0.1,
