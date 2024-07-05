@@ -26,6 +26,18 @@ export const Position3D = /* @__PURE__ */ and(Position, {
   z: number,
 })
 
+export function position3DToVec3(p: Position3D): Vec3 {
+  return [p.x, p.y, p.z]
+}
+
+export function vec3ToPosition3D(vec: Vec3): Position3D {
+  return {
+    x: vec[0],
+    y: vec[1],
+    z: vec[2],
+  }
+}
+
 export function getPointByLengthAndDirection(
   startPoint: Position,
   length: number,
@@ -98,6 +110,14 @@ export function getTwoPointsDistance(point1: Position, point2: Position = { x: 0
 
 export function getTwoPointsDistanceSquare(point1: Position, point2: Position = { x: 0, y: 0 }) {
   return (point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2
+}
+
+export function getTwoPointsDistance3D(point1: Position3D, point2: Position3D = { x: 0, y: 0, z: 0 }) {
+  return Math.sqrt(getTwoPointsDistance3DSquare(point1, point2))
+}
+
+export function getTwoPointsDistance3DSquare(point1: Position3D, point2: Position3D = { x: 0, y: 0, z: 0 }) {
+  return (point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2 + (point1.z - point2.z) ** 2
 }
 
 export function getTwoPointCenter(p1: Position, p2: Position) {

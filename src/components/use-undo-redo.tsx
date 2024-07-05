@@ -41,6 +41,7 @@ export function useUndoRedo<T>(
     undo: (e?: { preventDefault(): void }) => {
       e?.preventDefault()
       if (canUndo) {
+        options?.onChange?.({ oldState: state, newState: states[stateIndex - 1] })
         setHistory(produce(history, (draft) => {
           draft.stateIndex = stateIndex - 1
         }))
@@ -49,6 +50,7 @@ export function useUndoRedo<T>(
     redo: (e?: { preventDefault(): void }) => {
       e?.preventDefault()
       if (canRedo) {
+        options?.onChange?.({ oldState: state, newState: states[stateIndex + 1] })
         setHistory(produce(history, (draft) => {
           draft.stateIndex = stateIndex + 1
         }))

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { bindMultipleRefs, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine, useGlobalKeyDown, getNurbsSurfaceVertices } from "../src"
+import { bindMultipleRefs, Graphic3d, metaKeyIfMacElseCtrlKey, updateCamera, useDragMove, useWheelScroll, useWheelZoom, useWindowSize, angleToRadian, createWebgpu3DRenderer, getAxesGraphics, getDashedLine, useGlobalKeyDown, getNurbsSurfaceVertices, position3DToVec3 } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -115,8 +115,8 @@ export default () => {
     renderer.current?.render?.(
       graphics.current,
       {
-        eye: [position.x, position.y, position.z],
-        up: [up.x, up.y, up.z],
+        eye: position3DToVec3(position),
+        up: position3DToVec3(up),
         target: [-x, y, 0],
         fov: angleToRadian(60),
         near: 0.1,
