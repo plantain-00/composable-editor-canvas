@@ -8,7 +8,7 @@ export default () => {
   const width = size.width / 2
   const height = size.height
   const eye: Vec3 = [0, -90, 90]
-  const [status, setStatus] = React.useState<'cube' | 'sphere' | 'line start' | 'line end' | 'intersect'>()
+  const [status, setStatus] = React.useState<'cube' | 'sphere' | 'line start' | 'line end' | 'intersect' | 'plane 1st point' | 'plane 2nd point' | 'plane 3rd point'>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
   const land = React.useRef<Graphic3d>(
     {
@@ -35,6 +35,8 @@ export default () => {
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
   const [lineStart, setLineStart] = React.useState<Position3D>()
+  const [planePoint1, setPlanePoint1] = React.useState<Position3D>()
+  const [planePoint2, setPlanePoint2] = React.useState<Position3D>()
 
   React.useEffect(() => {
     if (!ref.current || renderer.current) {
@@ -59,6 +61,8 @@ export default () => {
       setHovering(undefined)
       setSelected(undefined)
       setLineStart(undefined)
+      setPlanePoint1(undefined)
+      setPlanePoint2(undefined)
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       if (selected !== undefined) {
         setState(draft => {
@@ -104,6 +108,15 @@ export default () => {
         color: s.color,
         position: [0, 0, 0],
       }
+    } else if (s.geometry.type === 'triangle') {
+      return {
+        geometry: {
+          type: 'triangles',
+          points: [...position3DToVec3(s.position), ...position3DToVec3(s.geometry.p1), ...position3DToVec3(s.geometry.p2)],
+        },
+        color: s.color,
+        position: [0, 0, 0],
+      }
     }
     return {
       geometry: s.geometry,
@@ -132,6 +145,15 @@ export default () => {
           geometry: {
             type: 'lines',
             points: [...position3DToVec3(g.position), ...position3DToVec3(g.geometry.position)],
+          },
+          color: [0, 1, 0, 1],
+          position: [0, 0, 0.5],
+        })
+      } else if (g.geometry.type === 'triangle') {
+        graphics.push({
+          geometry: {
+            type: 'line strip',
+            points: [...position3DToVec3(g.position), ...position3DToVec3(g.geometry.p1), ...position3DToVec3(g.geometry.p2), ...position3DToVec3(g.position)],
           },
           color: [0, 1, 0, 1],
           position: [0, 0, 0.5],
@@ -208,6 +230,32 @@ export default () => {
                   color,
                   position,
                 })
+              } else if (status === 'plane 1st point') {
+                setPlanePoint1(position)
+              } else if (status === 'plane 2nd point') {
+                setPlanePoint2(position)
+                if (planePoint1) {
+                  setPreview({
+                    geometry: {
+                      type: 'point',
+                      position: planePoint1,
+                    },
+                    color,
+                    position,
+                  })
+                }
+              } else if (status === 'plane 3rd point') {
+                if (planePoint1 && planePoint2) {
+                  setPreview({
+                    geometry: {
+                      type: 'triangle',
+                      p1: planePoint1,
+                      p2: planePoint2,
+                    },
+                    color,
+                    position,
+                  })
+                }
               }
             }
           }
@@ -219,6 +267,10 @@ export default () => {
             }
             return
           }
+          if (status === 'plane 2nd point') {
+            setStatus('plane 3rd point')
+            return
+          }
           if (preview) {
             setState(draft => {
               draft.push(preview)
@@ -228,8 +280,15 @@ export default () => {
               setLineStart(undefined)
               setStatus(undefined)
             }
+            if (status === 'plane 3rd point') {
+              setPlanePoint1(undefined)
+              setPlanePoint2(undefined)
+              setStatus(undefined)
+            }
           } else if (lineStart) {
             setStatus('line end')
+          } else if (planePoint1) {
+            setStatus('plane 2nd point')
           } else if (status === 'intersect') {
             if (
               hovering !== undefined &&
@@ -332,6 +391,32 @@ export default () => {
                   height: 33,
                 })),
               )
+            } else if (geometry.type === 'triangle') {
+              for (const e of ['p1', 'p2'] as const) {
+                items.push(
+                  ...(['x', 'y', 'z'] as const).map(f => ({
+                    title: (
+                      <>
+                        {e} {f}
+                        <NumberEditor
+                          value={geometry[e][f]}
+                          style={{ width: '100px' }}
+                          setValue={v => {
+                            setState(draft => {
+                              const g = draft[selected].geometry
+                              if (g.type === 'triangle') {
+                                g[e][f] = v
+                              }
+                            })
+                            setContextMenu(undefined)
+                          }}
+                        />
+                      </>
+                    ),
+                    height: 33,
+                  })),
+                )
+              }
             }
             items.push(
               ...(['x', 'y', 'z'] as const).map(f => ({
@@ -460,6 +545,13 @@ export default () => {
                     setContextMenu(undefined)
                   },
                 },
+                {
+                  title: 'plane',
+                  onClick() {
+                    setStatus('plane 1st point')
+                    setContextMenu(undefined)
+                  },
+                },
               ]}
               y={viewportPosition.y}
               height={height}
@@ -479,6 +571,10 @@ interface State {
   geometry: SphereGeometry | CubeGeometry | {
     type: 'point'
     position: Position3D
+  } | {
+    type: 'triangle'
+    p1: Position3D
+    p2: Position3D
   }
   color: Vec4
   position: Position3D
