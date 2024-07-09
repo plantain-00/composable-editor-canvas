@@ -34,8 +34,10 @@ export function getPointAndDirectionLineAndPlaneIntersectionPoint([x1, y1, z1]: 
   ]
 }
 
-export function getLineAndZPlaneIntersectionPoint([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], z: number): Vec3 {
-  const b = (z - z1) / (z2 - z1)
+export function getLineAndZPlaneIntersectionPoint([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], z: number): Vec3 | undefined {
+  const f = z2 - z1
+  if (isZero(f)) return
+  const b = (z - z1) / f
   return [
     x1 + (x2 - x1) * b,
     y1 + (y2 - y1) * b,

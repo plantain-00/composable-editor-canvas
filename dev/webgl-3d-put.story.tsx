@@ -1,5 +1,6 @@
 import * as React from "react"
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D } from "../src"
+import { produce } from 'immer'
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -8,7 +9,7 @@ export default () => {
   const width = size.width / 2
   const height = size.height
   const eye: Vec3 = [0, -90, 90]
-  const [status, setStatus] = React.useState<'cube' | 'sphere' | 'line start' | 'line end' | 'intersect' | 'plane 1st point' | 'plane 2nd point' | 'plane 3rd point'>()
+  const [status, setStatus] = React.useState<Status>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
   const land = React.useRef<Graphic3d>(
     {
@@ -198,9 +199,19 @@ export default () => {
           if (renderer.current) {
             const info = renderer.current.pickingDrawObjectsInfo[0]
             if (info) {
+              if (typeof status !== 'string') {
+                if (status.type === 'update point') {
+                  const target = renderer.current.getTarget(e.clientX, e.clientY, eye, status.plane, info.reversedProjection)
+                  if (target) {
+                    status.updatePoint(vec3ToPosition3D(target))
+                  }
+                }
+                return
+              }
               const target = renderer.current.getTarget(e.clientX, e.clientY, eye, zRef.current, info.reversedProjection)
+              if (!target) return
               const color = colorNumberToVec(colorRef.current, opacityRef.current)
-              const position = { x: target[0], y: target[1], z: zRef.current }
+              const position = vec3ToPosition3D(target)
               if (status === 'cube') {
                 setPreview({
                   geometry: {
@@ -272,9 +283,19 @@ export default () => {
             return
           }
           if (preview) {
-            setState(draft => {
-              draft.push(preview)
-            })
+            if (
+              typeof status !== 'string' &&
+              status.type === 'update point' &&
+              selected !== undefined) {
+              setState(draft => {
+                draft[selected] = preview
+              })
+              setStatus(undefined)
+            } else {
+              setState(draft => {
+                draft.push(preview)
+              })
+            }
             setPreview(undefined)
             if (lineStart) {
               setLineStart(undefined)
@@ -386,6 +407,25 @@ export default () => {
                           setContextMenu(undefined)
                         }}
                       />
+                      <Button onClick={() => {
+                        setStatus({
+                          type: 'update point',
+                          plane: {
+                            a: f === 'x' ? 1 : 0,
+                            b: f === 'y' ? 1 : 0,
+                            c: f === 'z' ? 1 : 0,
+                            d: -geometry.position[f],
+                          },
+                          updatePoint(p) {
+                            setPreview(produce(state[selected], draft => {
+                              if (draft.geometry.type === 'point') {
+                                draft.geometry.position = p
+                              }
+                            }))
+                          },
+                        })
+                        setContextMenu(undefined)
+                      }}>update</Button>
                     </>
                   ),
                   height: 33,
@@ -411,6 +451,25 @@ export default () => {
                             setContextMenu(undefined)
                           }}
                         />
+                        <Button onClick={() => {
+                          setStatus({
+                            type: 'update point',
+                            plane: {
+                              a: f === 'x' ? 1 : 0,
+                              b: f === 'y' ? 1 : 0,
+                              c: f === 'z' ? 1 : 0,
+                              d: -geometry[e][f],
+                            },
+                            updatePoint(p) {
+                              setPreview(produce(state[selected], draft => {
+                                if (draft.geometry.type === 'triangle') {
+                                  draft.geometry[e] = p
+                                }
+                              }))
+                            },
+                          })
+                          setContextMenu(undefined)
+                        }}>update</Button>
                       </>
                     ),
                     height: 33,
@@ -433,6 +492,23 @@ export default () => {
                         setContextMenu(undefined)
                       }}
                     />
+                    <Button onClick={() => {
+                      setStatus({
+                        type: 'update point',
+                        plane: {
+                          a: f === 'x' ? 1 : 0,
+                          b: f === 'y' ? 1 : 0,
+                          c: f === 'z' ? 1 : 0,
+                          d: -state[selected].position[f],
+                        },
+                        updatePoint(p) {
+                          setPreview(produce(state[selected], draft => {
+                            draft.position = p
+                          }))
+                        },
+                      })
+                      setContextMenu(undefined)
+                    }}>update</Button>
                   </>
                 ),
                 height: 33,
@@ -565,6 +641,12 @@ export default () => {
       {contextMenu}
     </div>
   )
+}
+
+type Status = 'cube' | 'sphere' | 'line start' | 'line end' | 'intersect' | 'plane 1st point' | 'plane 2nd point' | 'plane 3rd point' | {
+  type: 'update point'
+  plane: GeneralFormPlane
+  updatePoint: (p: Position3D) => void
 }
 
 interface State {
