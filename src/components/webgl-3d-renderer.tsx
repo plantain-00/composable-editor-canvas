@@ -7,7 +7,7 @@ import { WeakmapCache } from '../utils/weakmap-cache'
 import { Nullable, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
 import { maximumBy } from '../utils/math'
-import { getLineAndZPlaneIntersectionPoint } from '../utils/plane'
+import { GeneralFormPlane, getLineAndPlaneIntersectionPoint, getLineAndZPlaneIntersectionPoint } from '../utils/plane'
 
 export interface Camera {
   eye: Vec3
@@ -338,8 +338,11 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     return index === 0xffffff ? undefined : index
   }
 
-  const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number, reversedProjection: m4.Mat4): Vec3 => {
+  const getTarget = (inputX: number, inputY: number, eye: Vec3, z: number | GeneralFormPlane, reversedProjection: m4.Mat4): Vec3 | undefined => {
     const p = reverse3dPosition(inputX, inputY, canvas, reversedProjection)
+    if (typeof z !== 'number') {
+      return getLineAndPlaneIntersectionPoint([eye, p], z)
+    }
     return getLineAndZPlaneIntersectionPoint([eye, p], z)
   }
 
@@ -349,6 +352,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       const info = pickingDrawObjectsInfo.find(p => p && p.index === index)
       if (info && info.graphic.geometry.type === 'vertices') {
         const target = getTarget(inputX, inputY, eye, z, info.reversedProjection)
+        if (!target) return
         const line = new verb.geom.Line(eye, target)
         const intersections = verb.geom.Intersect.curveAndSurface(line, info.graphic.geometry.nurbs, 1e-3)
         if (intersections.length > 0) {
