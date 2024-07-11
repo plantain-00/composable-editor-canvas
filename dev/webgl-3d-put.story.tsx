@@ -1,6 +1,6 @@
 import * as React from "react"
 import { produce } from 'immer'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -35,9 +35,6 @@ export default () => {
   const zRef = React.useRef(0)
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
-  const [lineStart, setLineStart] = React.useState<Position3D>()
-  const [planePoint1, setPlanePoint1] = React.useState<Position3D>()
-  const [planePoint2, setPlanePoint2] = React.useState<Position3D>()
 
   React.useEffect(() => {
     if (!ref.current || renderer.current) {
@@ -61,9 +58,6 @@ export default () => {
       setPreview(undefined)
       setHovering(undefined)
       setSelected(undefined)
-      setLineStart(undefined)
-      setPlanePoint1(undefined)
-      setPlanePoint2(undefined)
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       if (selected !== undefined) {
         setState(draft => {
@@ -99,6 +93,8 @@ export default () => {
     if (s.geometry.type === 'cube') {
       z += s.geometry.size / 2
     } else if (s.geometry.type === 'sphere') {
+      z += s.geometry.radius
+    } else if (s.geometry.type === 'cylinder') {
       z += s.geometry.radius
     } else if (s.geometry.type === 'point') {
       return {
@@ -141,6 +137,8 @@ export default () => {
         radius = g.geometry.radius
       } else if (g.geometry.type === 'cube') {
         radius = g.geometry.size * Math.SQRT1_2
+      } else if (g.geometry.type === 'cylinder') {
+        radius = g.geometry.radius
       } else if (g.geometry.type === 'point') {
         graphics.push({
           geometry: {
@@ -205,8 +203,8 @@ export default () => {
                   if (target) {
                     status.updatePoint(vec3ToPosition3D(target))
                   }
+                  return
                 }
-                return
               }
               const target = renderer.current.getTarget(e.clientX, e.clientY, eye, zRef.current, info.reversedProjection)
               if (!target) return
@@ -230,38 +228,50 @@ export default () => {
                   color,
                   position,
                 })
-              } else if (status === 'line start') {
-                setLineStart(position)
-              } else if (status === 'line end' && lineStart) {
+              } else if (status === 'cylinder') {
                 setPreview({
                   geometry: {
-                    type: 'point',
-                    position: lineStart,
+                    type: 'cylinder',
+                    radius: sizeRef.current,
+                    height: sizeRef.current,
                   },
                   color,
                   position,
                 })
-              } else if (status === 'plane 1st point') {
-                setPlanePoint1(position)
-              } else if (status === 'plane 2nd point') {
-                setPlanePoint2(position)
-                if (planePoint1) {
+              }
+              if (typeof status === 'string') return
+              if (status.type === 'line start') {
+                setStatus({ ...status, position })
+              } else if (status.type === 'line end') {
+                setPreview({
+                  geometry: {
+                    type: 'point',
+                    position: status.position,
+                  },
+                  color,
+                  position,
+                })
+              } else if (status.type === 'plane 1st point') {
+                setStatus({ ...status, p1: position })
+              } else if (status.type === 'plane 2nd point') {
+                setStatus({ ...status, p2: position })
+                {
                   setPreview({
                     geometry: {
                       type: 'point',
-                      position: planePoint1,
+                      position: status.p1,
                     },
                     color,
                     position,
                   })
                 }
-              } else if (status === 'plane 3rd point') {
-                if (planePoint1 && planePoint2) {
+              } else if (status.type === 'plane 3rd point') {
+                {
                   setPreview({
                     geometry: {
                       type: 'triangle',
-                      p1: planePoint1,
-                      p2: planePoint2,
+                      p1: status.p1,
+                      p2: status.p2,
                     },
                     color,
                     position,
@@ -278,8 +288,12 @@ export default () => {
             }
             return
           }
-          if (status === 'plane 2nd point') {
-            setStatus('plane 3rd point')
+          if (typeof status !== 'string' && status.type === 'plane 2nd point' && status.p2) {
+            setStatus({
+              type: 'plane 3rd point',
+              p1: status.p1,
+              p2: status.p2,
+            })
             return
           }
           if (preview) {
@@ -297,27 +311,29 @@ export default () => {
               })
             }
             setPreview(undefined)
-            if (lineStart) {
-              setLineStart(undefined)
+            if (typeof status !== 'string' && (status.type === 'line end' || status.type === 'plane 3rd point')) {
               setStatus(undefined)
             }
-            if (status === 'plane 3rd point') {
-              setPlanePoint1(undefined)
-              setPlanePoint2(undefined)
-              setStatus(undefined)
-            }
-          } else if (lineStart) {
-            setStatus('line end')
-          } else if (planePoint1) {
-            setStatus('plane 2nd point')
+          } else if (typeof status !== 'string' && status.type === 'line start' && status.position) {
+            setStatus({
+              type: 'line end',
+              position: status.position
+            })
+          } else if (typeof status !== 'string' && status.type === 'plane 1st point' && status.p1) {
+            setStatus({
+              type: 'plane 2nd point',
+              p1: status.p1
+            })
           } else if (status === 'intersect') {
             if (
               hovering !== undefined &&
               selected !== undefined &&
               hovering !== selected
             ) {
-              const target1 = getGraphic(state[hovering])
-              const target2 = getGraphic(state[selected])
+              const state1 = state[hovering]
+              const state2 = state[selected]
+              const target1 = getGraphic(state1)
+              const target2 = getGraphic(state2)
               let points: Vec3[] | undefined
               if (target1.geometry.type === 'lines') {
                 if (target2.geometry.type === 'sphere') {
@@ -328,6 +344,27 @@ export default () => {
                       ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
                     }
                   )
+                } else if (target2.geometry.type === 'cylinder') {
+                  points = getLineAndCylinderIntersectionPoints(
+                    [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
+                    {
+                      base: target2.position || [0, 0, 0],
+                      radius: target2.geometry.radius,
+                      direction: [0, 1, 0],
+                    }
+                  )
+                } else if (state2.geometry.type === 'triangle') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state2.position),
+                    position3DToVec3(state2.geometry.p1),
+                    position3DToVec3(state2.geometry.p2),
+                  )
+                  if (plane) {
+                    const p = getLineAndPlaneIntersectionPoint([slice3(target1.geometry.points), slice3(target1.geometry.points, 3)], plane)
+                    if (p) {
+                      points = [p]
+                    }
+                  }
                 }
               } else if (target1.geometry.type === 'sphere') {
                 if (target2.geometry.type === 'lines') {
@@ -338,6 +375,31 @@ export default () => {
                       ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
                     }
                   )
+                }
+              } else if (target1.geometry.type === 'cylinder') {
+                if (target2.geometry.type === 'lines') {
+                  points = getLineAndCylinderIntersectionPoints(
+                    [slice3(target2.geometry.points), slice3(target2.geometry.points, 3)],
+                    {
+                      base: target1.position || [0, 0, 0],
+                      radius: target1.geometry.radius,
+                      direction: [0, 1, 0],
+                    }
+                  )
+                }
+              } else if (state1.geometry.type === 'triangle') {
+                if (target2.geometry.type === 'lines') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state1.position),
+                    position3DToVec3(state1.geometry.p1),
+                    position3DToVec3(state1.geometry.p2),
+                  )
+                  if (plane) {
+                    const p = getLineAndPlaneIntersectionPoint([slice3(target2.geometry.points), slice3(target2.geometry.points, 3)], plane)
+                    if (p) {
+                      points = [p]
+                    }
+                  }
                 }
               }
               if (points && points.length > 0) {
@@ -387,6 +449,8 @@ export default () => {
             if (geometry.type === 'cube') {
               size = geometry.size
             } else if (geometry.type === 'sphere') {
+              size = geometry.radius
+            } else if (geometry.type === 'cylinder') {
               size = geometry.radius
             } else if (geometry.type === 'point') {
               items.push(
@@ -590,6 +654,9 @@ export default () => {
                               graphic.geometry.size = v
                             } else if (graphic.geometry.type === 'sphere') {
                               graphic.geometry.radius = v
+                            } else if (graphic.geometry.type === 'cylinder') {
+                              graphic.geometry.radius = v
+                              graphic.geometry.height = v
                             }
                           })
                           setContextMenu(undefined)
@@ -615,16 +682,23 @@ export default () => {
                   },
                 },
                 {
+                  title: 'cylinder',
+                  onClick() {
+                    setStatus('cylinder')
+                    setContextMenu(undefined)
+                  },
+                },
+                {
                   title: 'line',
                   onClick() {
-                    setStatus('line start')
+                    setStatus({ type: 'line start' })
                     setContextMenu(undefined)
                   },
                 },
                 {
                   title: 'plane',
                   onClick() {
-                    setStatus('plane 1st point')
+                    setStatus({ type: 'plane 1st point' })
                     setContextMenu(undefined)
                   },
                 },
@@ -643,14 +717,31 @@ export default () => {
   )
 }
 
-type Status = 'cube' | 'sphere' | 'line start' | 'line end' | 'intersect' | 'plane 1st point' | 'plane 2nd point' | 'plane 3rd point' | {
+type Status = 'cube' | 'sphere' | 'cylinder' | {
+  type: 'line start'
+  position?: Position3D
+} | {
+  type: 'line end'
+  position: Position3D
+} | 'intersect' | {
+  type: 'plane 1st point'
+  p1?: Position3D
+} | {
+  type: 'plane 2nd point'
+  p1: Position3D
+  p2?: Position3D
+} | {
+  type: 'plane 3rd point'
+  p1: Position3D
+  p2: Position3D
+} | {
   type: 'update point'
   plane: GeneralFormPlane
   updatePoint: (p: Position3D) => void
 }
 
 interface State {
-  geometry: SphereGeometry | CubeGeometry | {
+  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | {
     type: 'point'
     position: Position3D
   } | {
