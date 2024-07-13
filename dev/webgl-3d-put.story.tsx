@@ -1,6 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints } from "../src"
+import * as twgl from 'twgl.js'
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -96,6 +97,8 @@ export default () => {
       z += s.geometry.radius
     } else if (s.geometry.type === 'cylinder') {
       z += s.geometry.radius
+    } else if (s.geometry.type === 'cone') {
+      z += s.geometry.bottomRadius
     } else if (s.geometry.type === 'point') {
       return {
         geometry: {
@@ -139,6 +142,8 @@ export default () => {
         radius = g.geometry.size * Math.SQRT1_2
       } else if (g.geometry.type === 'cylinder') {
         radius = g.geometry.radius
+      } else if (g.geometry.type === 'cone') {
+        radius = g.geometry.bottomRadius
       } else if (g.geometry.type === 'point') {
         graphics.push({
           geometry: {
@@ -234,6 +239,17 @@ export default () => {
                     type: 'cylinder',
                     radius: sizeRef.current,
                     height: sizeRef.current,
+                  },
+                  color,
+                  position,
+                })
+              } else if (status === 'cone') {
+                setPreview({
+                  geometry: {
+                    type: 'cone',
+                    topRadius: 0,
+                    bottomRadius: sizeRef.current,
+                    height: sizeRef.current * 2,
                   },
                   color,
                   position,
@@ -336,7 +352,17 @@ export default () => {
               const target2 = getGraphic(state2)
               let points: Vec3[] | undefined
               if (target1.geometry.type === 'lines') {
-                if (target2.geometry.type === 'sphere') {
+                if (target2.geometry.type === 'lines') {
+                  const p1 = slice3(target1.geometry.points)
+                  const p2 = slice3(target2.geometry.points)
+                  const p = getTwoLine3DIntersectionPoint(
+                    p1, v3.substract(slice3(target1.geometry.points, 3), p1),
+                    p2, v3.substract(slice3(target2.geometry.points, 3), p2),
+                  )
+                  if (p) {
+                    points = [p]
+                  }
+                } else if (target2.geometry.type === 'sphere') {
                   points = getLineAndSphereIntersectionPoints(
                     [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
                     {
@@ -365,6 +391,9 @@ export default () => {
                       points = [p]
                     }
                   }
+                } else if (target2.geometry.type === 'cube') {
+                  const triangles = getVerticesTriangles(twgl.primitives.createCubeVertices(target2.geometry.size), target2.position)
+                  points = getLineAndTrianglesIntersectionPoint([slice3(target1.geometry.points), slice3(target1.geometry.points, 3)], triangles)
                 }
               } else if (target1.geometry.type === 'sphere') {
                 if (target2.geometry.type === 'lines') {
@@ -400,6 +429,11 @@ export default () => {
                       points = [p]
                     }
                   }
+                }
+              } else if (target1.geometry.type === 'cube') {
+                if (target2.geometry.type === 'lines') {
+                  const triangles = getVerticesTriangles(twgl.primitives.createCubeVertices(target1.geometry.size), target1.position)
+                  points = getLineAndTrianglesIntersectionPoint([slice3(target2.geometry.points), slice3(target2.geometry.points, 3)], triangles)
                 }
               }
               if (points && points.length > 0) {
@@ -452,6 +486,8 @@ export default () => {
               size = geometry.radius
             } else if (geometry.type === 'cylinder') {
               size = geometry.radius
+            } else if (geometry.type === 'cone') {
+              size = geometry.bottomRadius
             } else if (geometry.type === 'point') {
               items.push(
                 ...(['x', 'y', 'z'] as const).map(f => ({
@@ -657,6 +693,9 @@ export default () => {
                             } else if (graphic.geometry.type === 'cylinder') {
                               graphic.geometry.radius = v
                               graphic.geometry.height = v
+                            } else if (graphic.geometry.type === 'cone') {
+                              graphic.geometry.bottomRadius = v
+                              graphic.geometry.height = v * 2
                             }
                           })
                           setContextMenu(undefined)
@@ -689,6 +728,13 @@ export default () => {
                   },
                 },
                 {
+                  title: 'cone',
+                  onClick() {
+                    setStatus('cone')
+                    setContextMenu(undefined)
+                  },
+                },
+                {
                   title: 'line',
                   onClick() {
                     setStatus({ type: 'line start' })
@@ -717,7 +763,7 @@ export default () => {
   )
 }
 
-type Status = 'cube' | 'sphere' | 'cylinder' | {
+type Status = 'cube' | 'sphere' | 'cylinder' | 'cone' | {
   type: 'line start'
   position?: Position3D
 } | {
@@ -741,7 +787,7 @@ type Status = 'cube' | 'sphere' | 'cylinder' | {
 }
 
 interface State {
-  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | {
+  geometry: SphereGeometry | CubeGeometry | CylinderGeometry | ConeGeometry | {
     type: 'point'
     position: Position3D
   } | {
