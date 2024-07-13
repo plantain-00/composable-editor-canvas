@@ -1,7 +1,7 @@
 import { GeneralFormLine } from "./line";
 import { isZero } from "./math";
 import { v3 } from "./matrix";
-import { Vec3 } from "./types";
+import { Tuple3, Vec3 } from "./types";
 import { and, number } from "./validators";
 
 export interface GeneralFormPlane extends GeneralFormLine {
@@ -136,4 +136,18 @@ export function getParallelPlanesByDistance({ a, b, c, d }: GeneralFormPlane, di
     { a, b, c, d: d + g },
     { a, b, c, d: d - g },
   ]
+}
+
+export function getLineAndTrianglesIntersectionPoint(line: [Vec3, Vec3], triangles: Tuple3<Vec3>[]): Vec3[] {
+  const points: Vec3[] = []
+  for (const triangle of triangles) {
+    const plane = getThreePointPlane(...triangle)
+    if (plane) {
+      const p = getLineAndPlaneIntersectionPoint(line, plane)
+      if (p && pointInTriangle(p, ...triangle)) {
+        points.push(p)
+      }
+    }
+  }
+  return points
 }

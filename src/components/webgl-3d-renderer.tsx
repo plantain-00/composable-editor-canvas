@@ -4,7 +4,7 @@ import earcut from 'earcut'
 import * as verb from 'verb-nurbs-web'
 import { colorNumberToVec, pixelColorToColorNumber } from '../utils/color'
 import { WeakmapCache } from '../utils/weakmap-cache'
-import { Nullable, Vec3, Vec4 } from '../utils/types'
+import { Nullable, slice3, Tuple3, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
 import { maximumBy } from '../utils/math'
 import { GeneralFormPlane, getLineAndPlaneIntersectionPoint, getLineAndZPlaneIntersectionPoint } from '../utils/plane'
@@ -455,3 +455,16 @@ export const getAxesGraphics = (length = 100): Graphic3d[] => [
     color: [0, 0, 1, 1],
   },
 ]
+
+export function getVerticesTriangles(vertices: { [key: string]: twgl.primitives.TypedArray }, position?: Vec3) {
+  const triangles: Tuple3<Vec3>[] = []
+  const positions = position ? vertices.position.map((p, i) => p + position[i % 3]) : vertices.position
+  for (let i = 0; i < vertices.indices.length; i += 3) {
+    triangles.push([
+      slice3(positions, vertices.indices[i] * 3),
+      slice3(positions, vertices.indices[i + 1] * 3),
+      slice3(positions, vertices.indices[i + 2] * 3),
+    ])
+  }
+  return triangles
+}

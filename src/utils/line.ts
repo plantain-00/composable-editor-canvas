@@ -13,6 +13,7 @@ import { RenderTransform, Transform, reverseTransformPosition } from "./transfor
 import { Matrix, m3, v3 } from "./matrix";
 import { reverseAngle, reverseRadian } from "./reverse";
 import { Vec3 } from "./types";
+import { calculateEquationSet } from "./equation-calculater";
 
 export interface GeneralFormLine {
   a: number
@@ -482,3 +483,28 @@ export function pointIsOnLine3D(p: Vec3, p1: Vec3, direction: Vec3): boolean {
   const d = v3.substract(p, p1)
   return isSameDirection3D(d, direction)
 }
+
+export function getTwoLine3DIntersectionPoint([x1, y1, z1]: Vec3, [e1, e2, e3]: Vec3, [x2, y2, z2]: Vec3, [f1, f2, f3]: Vec3): Vec3 | undefined {
+  // x = x1 + e1 u
+  // y = y1 + e2 u
+  // z = z1 + e3 u
+  // x = x2 + f1 v
+  // y = y2 + f2 v
+  // z = z2 + f3 v
+
+  // e1 u - f1 v + x1 - x2 = 0
+  // e2 u - f2 v + y1 - y2 = 0
+  // e3 u + f3 v + z1 - z2 = 0
+  const r = calculateEquationSet([
+    [e1, -f1, x1 - x2],
+    [e2, -f2, y1 - y2]
+  ])
+  if (!r) return
+  const [u, v] = r
+  if (!isZero(e3 * u + f3 * v + z1 - z2)) return
+  return [
+    x1 + e1 * u,
+    y1 + e2 * u,
+    z1 + e3 * u,
+  ]
+} 
