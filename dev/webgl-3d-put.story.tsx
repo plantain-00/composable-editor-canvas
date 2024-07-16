@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -59,7 +59,7 @@ export default () => {
       setPreview(undefined)
       setHovering(undefined)
       setSelected(undefined)
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    } else if (e.key === 'Delete' || e.key === 'Backspace' || e.code === 'KeyE') {
       if (selected !== undefined) {
         setState(draft => {
           draft.splice(selected, 1)
@@ -97,8 +97,6 @@ export default () => {
       z += s.geometry.radius
     } else if (s.geometry.type === 'cylinder') {
       z += s.geometry.radius
-    } else if (s.geometry.type === 'cone') {
-      z += s.geometry.bottomRadius
     } else if (s.geometry.type === 'point') {
       return {
         geometry: {
@@ -379,6 +377,15 @@ export default () => {
                       direction: [0, 1, 0],
                     }
                   )
+                } else if (state2.geometry.type === 'cone') {
+                  points = getLineAndConeIntersectionPoints(
+                    [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
+                    {
+                      base: [state2.position.x, state2.position.y + state2.geometry.height / 2, state2.position.z],
+                      radiusHeightRate: state2.geometry.bottomRadius / state2.geometry.height,
+                      direction: [0, 1, 0],
+                    }
+                  )
                 } else if (state2.geometry.type === 'triangle') {
                   const plane = getThreePointPlane(
                     position3DToVec3(state2.position),
@@ -412,6 +419,17 @@ export default () => {
                     {
                       base: target1.position || [0, 0, 0],
                       radius: target1.geometry.radius,
+                      direction: [0, 1, 0],
+                    }
+                  )
+                }
+              } else if (state1.geometry.type === 'cone') {
+                if (target2.geometry.type === 'lines') {
+                  points = getLineAndConeIntersectionPoints(
+                    [slice3(target2.geometry.points), slice3(target2.geometry.points, 3)],
+                    {
+                      base: [state1.position.x, state1.position.y + state1.geometry.height / 2, state1.position.z],
+                      radiusHeightRate: state1.geometry.bottomRadius / state1.geometry.height,
                       direction: [0, 1, 0],
                     }
                   )
