@@ -1,5 +1,5 @@
 import { calculateEquation2 } from "./equation-calculater";
-import { isZero } from "./math";
+import { equals, isZero } from "./math";
 import { v3 } from "./matrix";
 import { getPerpendicularPoint3D } from "./perpendicular";
 import { getPointByLengthAndDirection3D } from "./position";
@@ -55,6 +55,11 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
   ])
 }
 
+export function pointIsOnCylinder(p: Vec3, cylinder: Cylinder) {
+  const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
+  return equals(v3.length(v3.substract(p, point)), cylinder.radius)
+}
+
 export function getPerpendicularPointsToCylinder(p: Vec3, cylinder: Cylinder): [Vec3, Vec3] {
   const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
   const direction = v3.substract(point, p)
@@ -72,4 +77,9 @@ export function getParallelCylindersByDistance(cylinder: Cylinder, distance: num
     { ...cylinder, radius: cylinder.radius - distance },
     { ...cylinder, radius: cylinder.radius + distance },
   ]
+}
+
+export function getCylinderNormalAtPoint(cylinder: Cylinder, p: Vec3): Vec3 {
+  const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
+  return v3.substract(p, point)
 }

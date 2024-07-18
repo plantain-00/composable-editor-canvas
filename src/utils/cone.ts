@@ -1,5 +1,8 @@
 import { calculateEquation2 } from "./equation-calculater"
-import { isZero } from "./math"
+import { equals, isZero } from "./math"
+import { v3 } from "./matrix"
+import { getPerpendicularPoint3D } from "./perpendicular"
+import { getPlaneByPointAndNormal, getPointAndDirectionLineAndPlaneIntersectionPoint, getPointAndTwoDirectionsPlane, rotateDirectionByRadianOnPlane } from "./plane"
 import { getPointByLengthAndDirection3D } from "./position"
 import { Vec3 } from "./types"
 import { number, Validator } from "./validators"
@@ -58,6 +61,21 @@ export function getLineAndConeIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [
   ])
 }
 
+export function pointIsOnCone(p: Vec3, cone: Cone) {
+  const point = getPerpendicularPoint3D(p, cone.base, cone.direction)
+  const height = v3.length(v3.substract(point, cone.base))
+  const radius = v3.length(v3.substract(point, p))
+  return equals(radius, cone.radiusHeightRate * height)
+}
+
+export function getPerpendicularPointsToCone(p: Vec3, cone: Cone): Vec3[] | undefined {
+  const plane = getPointAndTwoDirectionsPlane(cone.base, cone.direction, v3.substract(p, cone.base))
+  if (!plane) return
+  const radian = Math.atan(cone.radiusHeightRate)
+  const directions = rotateDirectionByRadianOnPlane(cone.direction, radian, plane)
+  return directions.map(d => getPerpendicularPoint3D(p, cone.base, d))
+}
+
 export function getParallelConesByDistance(cone: Cone, distance: number): [Cone, Cone] {
   if (isZero(distance)) {
     return [cone, cone]
@@ -67,4 +85,11 @@ export function getParallelConesByDistance(cone: Cone, distance: number): [Cone,
     { ...cone, base: getPointByLengthAndDirection3D(cone.base, length, cone.direction) },
     { ...cone, base: getPointByLengthAndDirection3D(cone.base, -length, cone.direction) },
   ]
+}
+
+export function getConeNormalAtPoint(cone: Cone, p: Vec3): Vec3 | undefined {
+  const plane = getPlaneByPointAndNormal(p, v3.substract(p, cone.base))
+  const point = getPointAndDirectionLineAndPlaneIntersectionPoint(cone.base, cone.direction, plane)
+  if (!point) return
+  return v3.substract(p, point)
 }
