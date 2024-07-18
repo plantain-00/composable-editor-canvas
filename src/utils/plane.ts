@@ -1,3 +1,4 @@
+import { calculateEquation2 } from "./equation-calculater";
 import { GeneralFormLine } from "./line";
 import { isZero } from "./math";
 import { v3 } from "./matrix";
@@ -49,32 +50,47 @@ export function pointIsOnPlane([x, y, z]: Vec3, { a, b, c, d }: GeneralFormPlane
   return isZero(a * x + b * y + c * z + d)
 }
 
-export function getThreePointPlane([x1, y1, z1]: Vec3, [x2, y2, z2]: Vec3, [x3, y3, z3]: Vec3): GeneralFormPlane | undefined {
+export function directionIsOnPlane([x, y, z]: Vec3, { a, b, c }: GeneralFormPlane) {
+  // a x0 + b y0 + c z0 + d = 0
+  // a (x0 + x) + b (y0 + y) + c (z0 + z) + d = 0
+  // a x + b y + c z = 0
+  return isZero(a * x + b * y + c * z)
+}
+
+export function getThreePointPlane(p1: Vec3, p2: Vec3, p3: Vec3): GeneralFormPlane | undefined {
+  return getPointAndTwoDirectionsPlane(p1, v3.substract(p2, p1), v3.substract(p3, p1))
+}
+
+export function getPointAndTwoDirectionsPlane([x1, y1, z1]: Vec3, [e1, f1, g1]: Vec3, [e2, f2, g2]: Vec3): GeneralFormPlane | undefined {
   // a x1 + b y1 + c z1 + d = 0
-  // a x2 + b y2 + c z2 + d = 0
-  // a x3 + b y3 + c z3 + d = 0
-  const e1 = x1 - x2, e2 = x1 - x3
-  const f1 = y1 - y2, f2 = y1 - y3
-  const g1 = z1 - z2, g2 = z1 - z3
+  // a(x1 + e1) + b(y1 + f1) + c(z1 + g1) + d = 0
+  // a(x1 + e2) + b(y1 + f2) + c(z1 + g2) + d = 0
+
   // a e1 + b f1 + c g1 = 0
   // a e2 + b f2 + c g2 = 0
 
   // a e1 g2 + b f1 g2 + c g1 g2 = 0
   // a e2 g1 + b f2 g1 + c g1 g2 = 0
+  // a(e2 g1 - e1 g2) - b(f1 g2 - f2 g1) = 0
 
-  // a (e1 g2 - e2 g1) + b (f1 g2 - f2 g1) = 0
+  // a e1 f2 + b f1 f2 + c f2 g1 = 0
+  // a e2 f1 + b f1 f2 + c f1 g2 = 0
+  // a(e1 f2 - e2 f1) - c(f1 g2 - f2 g1) = 0
+
   const a = f1 * g2 - f2 * g1
   const b = e2 * g1 - e1 * g2
-  let c: number
-  if (!isZero(g1)) {
-    c = -(a * e1 + b * f1) / g1
-  } else if (!isZero(g2)) {
-    c = -(a * e2 + b * f2) / g2
-  } else {
-    return { a: 0, b: 0, c: 1, d: -z1 }
-  }
+  const c = e1 * f2 - e2 * f1
   const d = -(a * x1 + b * y1 + c * z1)
   return { a, b, c, d }
+}
+
+export function getPlaneByPointAndNormal([x, y, z]: Vec3, [a, b, c]: Vec3): GeneralFormPlane {
+  return {
+    a,
+    b,
+    c,
+    d: -(a * x + b * y + c * z),
+  }
 }
 
 export function pointInTriangle(p: Vec3, a: Vec3, b: Vec3, c: Vec3): boolean {
@@ -150,4 +166,39 @@ export function getLineAndTrianglesIntersectionPoint(line: [Vec3, Vec3], triangl
     }
   }
   return points
+}
+
+export function rotateDirectionByRadianOnPlane(direction: Vec3, radian: number, { a, b, c }: GeneralFormPlane): Vec3[] {
+  const [d1, d2, d3] = direction
+  const e = Math.cos(radian)
+  const f = v3.lengthSquare(direction)
+  // a x + b y + c z = 0
+  // x^2 + y^2 + z^2 = f
+  // d1 x + d2 y + d3 z = f e
+
+  // a d3 x + b d3 y + c d3 z = 0
+  // c d1 x + c d2 y + c d3 z = c f e
+  // (c d1 - a d3) x + (c d2 - b d3) y = c f e
+  const g1 = c * d1 - a * d3, g2 = c * d2 - b * d3, g3 = c * f * e
+  // g1 x + g2 y - g3 = 0
+  // g2 y = g3 - g1 x
+
+  // c z = -(a x + b y)
+  // c c x^2 + c c y^2 + c c z^2 = c c f
+  // c c x^2 + c c y^2 + (a x + b y)^2 - c c f = 0
+  // (a a + c c) x x + 2 a b x y + (b b + c c) y y - c c f = 0
+  const h1 = a * a + c * c, h2 = b * b + c * c, h3 = c * c * f
+  // h1 x x + 2 a b x y + h2 y y - h3 = 0
+  // *g2 g2: g2 g2 h1 x x + 2 a b g2 g2 x y + g2 g2 h2 y y - g2 g2 h3 = 0
+  // g2 g2 h1 x x + 2 a b g2 x(g3 - g1 x) + h2(g3 - g1 x)^2 - g2 g2 h3 = 0
+  // (-2 a b g1 g2 + g2 g2 h1 + g1 g1 h2) x x + (2 a b g2 g3 + -2 g1 g3 h2) x + g3 g3 h2 + -g2 g2 h3 = 0
+  const xs = calculateEquation2(
+    -2 * a * b * g1 * g2 + g2 * g2 * h1 + g1 * g1 * h2,
+    2 * a * b * g2 * g3 + -2 * g1 * g3 * h2,
+    g3 * g3 * h2 + -1 * g2 * g2 * h3
+  )
+  return xs.map(x => {
+    const y = (g3 - g1 * x) / g2
+    return [x, y, -(a * x + b * y) / c]
+  })
 }
