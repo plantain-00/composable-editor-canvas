@@ -161,6 +161,10 @@ export function isSameDirection3D(d1: Vec3, d2: Vec3): boolean {
 }
 
 export function getPointByLengthAndDirection3D(startPoint: Vec3, length: number, direction: Vec3): Vec3 {
-  const rate = length / v3.length(direction)
-  return v3.add(startPoint, v3.multipleScalar(direction, rate))
+  const param = length / v3.length(direction)
+  return getPointByParamAndDirection3D(startPoint, param, direction)
+}
+
+export function getPointByParamAndDirection3D(startPoint: Vec3, param: number, direction: Vec3): Vec3 {
+  return v3.add(startPoint, v3.multipleScalar(direction, param))
 }

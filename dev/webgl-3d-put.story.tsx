@@ -375,6 +375,8 @@ export default () => {
                       base: target2.position || [0, 0, 0],
                       radius: target2.geometry.radius,
                       direction: [0, 1, 0],
+                      height1: -target2.geometry.height / 2,
+                      height2: target2.geometry.height / 2,
                     }
                   )
                 } else if (state2.geometry.type === 'cone') {
@@ -384,6 +386,8 @@ export default () => {
                       base: [state2.position.x, state2.position.y + state2.geometry.height / 2, state2.position.z],
                       radiusHeightRate: state2.geometry.bottomRadius / state2.geometry.height,
                       direction: [0, 1, 0],
+                      height1: 0,
+                      height2: state2.geometry.height,
                     }
                   )
                 } else if (state2.geometry.type === 'triangle') {
@@ -420,6 +424,8 @@ export default () => {
                       base: target1.position || [0, 0, 0],
                       radius: target1.geometry.radius,
                       direction: [0, 1, 0],
+                      height1: -target1.geometry.height / 2,
+                      height2: target1.geometry.height / 2,
                     }
                   )
                 }
@@ -431,6 +437,8 @@ export default () => {
                       base: [state1.position.x, state1.position.y + state1.geometry.height / 2, state1.position.z],
                       radiusHeightRate: state1.geometry.bottomRadius / state1.geometry.height,
                       direction: [0, 1, 0],
+                      height1: 0,
+                      height2: state1.geometry.height,
                     }
                   )
                 }
