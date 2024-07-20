@@ -1,8 +1,8 @@
 import { calculateEquation2 } from "./equation-calculater";
-import { equals, isZero } from "./math";
+import { equals, isBetween, isZero } from "./math";
 import { v3 } from "./matrix";
-import { getPerpendicularPoint3D } from "./perpendicular";
-import { getPointByLengthAndDirection3D } from "./position";
+import { getPerpendicularParam3D, getPerpendicularPoint3D } from "./perpendicular";
+import { getPointByLengthAndDirection3D, getPointByParamAndDirection3D } from "./position";
 import { Vec3 } from "./types";
 import { Validator, number } from "./validators";
 
@@ -10,6 +10,8 @@ export interface Cylinder {
   base: Vec3
   direction: Vec3
   radius: number
+  height1: number
+  height2: number
 }
 
 export const Cylinder: Validator = {
@@ -18,7 +20,7 @@ export const Cylinder: Validator = {
   radius: number,
 }
 
-export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], { base: [x0, y0, z0], direction: [a, b, c], radius }: Cylinder): Vec3[] {
+export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], { base: [x0, y0, z0], direction: [a, b, c], radius, height1, height2 }: Cylinder, extend?: boolean): Vec3[] {
   // (x,y,z) (x1,y1,z1) (x2,y2,z2)
   const e1 = x2 - x1, e2 = y2 - y1, e3 = z2 - z1
   // (x,y,z) = u (e1,e2,e3) + (x1,y1,z1)
@@ -43,11 +45,17 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
   const j1 = a * h1 - e1, j2 = a * h2 - g1, j3 = b * h1 - e2, j4 = b * h2 - g2, j5 = c * h1 - e3, j6 = c * h2 - g3
   // (j1 u + j2)^2 + (j3 u + j4)^2 + (j5 u + j6)^2 - radius^2 = 0
   // expand, group by u: (j1 j1 + j3 j3 + j5 j5) u u + (2 j1 j2 + 2 j3 j4 + 2 j5 j6) u + j2 j2 + j4 j4 + j6 j6 - radius radius = 0
-  const us = calculateEquation2(
+  let us = calculateEquation2(
     j1 * j1 + j3 * j3 + j5 * j5,
     2 * j1 * j2 + 2 * j3 * j4 + 2 * j5 * j6,
     j2 * j2 + j4 * j4 + j6 * j6 - radius * radius,
   )
+  if (!extend && us.length > 0) {
+    const length = v3.length([e1, e2, e3])
+    const minT = height1 / length
+    const maxT = height2 / length
+    us = us.filter(u => isBetween(h1 * u + h2, minT, maxT))
+  }
   return us.map(u => [
     u * e1 + x1,
     u * e2 + y1,
@@ -56,7 +64,12 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
 }
 
 export function pointIsOnCylinder(p: Vec3, cylinder: Cylinder) {
-  const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
+  const param = getPerpendicularParam3D(p, cylinder.base, cylinder.direction)
+  const length = v3.length(cylinder.direction)
+  const minParam = cylinder.height1 / length
+  const maxParam = cylinder.height2 / length
+  if (!isBetween(param, minParam, maxParam)) return false
+  const point = getPointByParamAndDirection3D(cylinder.base, param, cylinder.direction)
   return equals(v3.length(v3.substract(p, point)), cylinder.radius)
 }
 

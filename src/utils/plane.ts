@@ -1,4 +1,4 @@
-import { calculateEquation2 } from "./equation-calculater";
+import { calculateEquation2, calculateEquationSet } from "./equation-calculater";
 import { GeneralFormLine } from "./line";
 import { isZero } from "./math";
 import { v3 } from "./matrix";
@@ -168,34 +168,95 @@ export function getLineAndTrianglesIntersectionPoint(line: [Vec3, Vec3], triangl
   return points
 }
 
-export function rotateDirectionByRadianOnPlane(direction: Vec3, radian: number, { a, b, c }: GeneralFormPlane): Vec3[] {
-  const [d1, d2, d3] = direction
+export function rotateDirectionByRadianOnPlane(direction: Vec3, radian: number, plane: GeneralFormPlane): Vec3[] {
+  const [d1, d2, d3] = v3.normalize(direction)
+  const [a, b, c] = v3.normalize([plane.a, plane.b, plane.c])
   const e = Math.cos(radian)
-  const f = v3.lengthSquare(direction)
+  // a d1 + b d2 + c d3 = 0
+  // d1^2 + d2^2 + d3^2 = 1
+  // a^2 + b^2 + c^2 = 1
   // a x + b y + c z = 0
-  // x^2 + y^2 + z^2 = f
-  // d1 x + d2 y + d3 z = f e
+  // x^2 + y^2 + z^2 = 1
+  // d1 x + d2 y + d3 z = e
 
-  // a d3 x + b d3 y + c d3 z = 0
-  // c d1 x + c d2 y + c d3 z = c f e
-  // (c d1 - a d3) x + (c d2 - b d3) y = c f e
-  const g1 = c * d1 - a * d3, g2 = c * d2 - b * d3, g3 = c * f * e
-  // g1 x + g2 y - g3 = 0
-  // g2 y = g3 - g1 x
+  if (isZero(c)) {
+    if (isZero(d3)) {
+      const xy = calculateEquationSet([
+        [a, b, 0],
+        [d1, d2, -e],
+      ])
+      if (!xy) return []
+      const [x, y] = xy
+      return [[x, y, Math.sqrt(1 - x ** 2 + y ** 2)]]
+    }
+    // d3 z = e - d1 x - d2 y
+    // d3 d3 x^2 + d3 d3 y^2 + d3 d3 z^2 = d3 d3
+    // d3 d3 x^2 + d3 d3 y^2 + (e - d1 x - d2 y)^2 - d3 d3 = 0
+    // (d3 d3 + d1 d1) x x + (2 d1 d2 y + -2 d1 e) x + (d3 d3 + d2 d2) y y + -2 d2 e y + e e + -d3 d3 = 0
+    // (1 - d2 d2) x x + (2 d1 d2 y + -2 d1 e) x + (1 - d1 d1) y y + -2 d2 e y + e e + -d3 d3 = 0
+    // y = -a / b x
+    if (isZero(b)) return []
+    const g1 = -a / b
+    // (1 + -d1 d1 g1 g1 + 2 d1 d2 g1 + -d2 d2 + g1 g1) x x + (-2 d2 e g1 + -2 d1 e) x + e e - d3 d3 = 0
+    const xs = calculateEquation2(
+      1 - d1 * d1 * g1 * g1 + 2 * d1 * d2 * g1 - d2 * d2 + g1 * g1,
+      -2 * d2 * e * g1 - 2 * d1 * e,
+      e * e - d3 * d3,
+    )
+    return xs.map(x => {
+      const y = g1 * x
+      return [x, y, (e - d1 * x - d2 * y) / d3]
+    })
+  }
 
   // c z = -(a x + b y)
-  // c c x^2 + c c y^2 + c c z^2 = c c f
-  // c c x^2 + c c y^2 + (a x + b y)^2 - c c f = 0
-  // (a a + c c) x x + 2 a b x y + (b b + c c) y y - c c f = 0
-  const h1 = a * a + c * c, h2 = b * b + c * c, h3 = c * c * f
-  // h1 x x + 2 a b x y + h2 y y - h3 = 0
-  // *g2 g2: g2 g2 h1 x x + 2 a b g2 g2 x y + g2 g2 h2 y y - g2 g2 h3 = 0
+  // c c x^2 + c c y^2 + c c z^2 = c c
+  // c c x^2 + c c y^2 + (a x + b y)^2 - c c = 0
+  // (a a + c c) x x + 2 a b x y + (b b + c c) y y - c c = 0
+  const h1 = a * a + c * c, h2 = b * b + c * c, h3 = c * c
+  // F1: h1 x x + 2 a b x y + h2 y y - h3 = 0
+
+  // a d3 x + b d3 y + c d3 z = 0
+  // c d1 x + c d2 y + c d3 z = c e
+  // (c d1 - a d3) x + (c d2 - b d3) y = c e
+  const g1 = c * d1 - a * d3, g2 = c * d2 - b * d3, g3 = c * e
+  // g1 x + g2 y - g3 = 0
+
+  if (isZero(g2)) {
+    if (isZero(g1)) return []
+    const x = g3 / g1
+    const ys = calculateEquation2(
+      h2,
+      2 * a * b * x,
+      h1 * x * x - h3,
+    )
+    return ys.map(y => {
+      return [x, y, -(a * x + b * y) / c]
+    })
+  }
+
+  // g2 y = g3 - g1 x
+  // F1*g2 g2: g2 g2 h1 x x + 2 a b g2 g2 x y + g2 g2 h2 y y - g2 g2 h3 = 0
   // g2 g2 h1 x x + 2 a b g2 x(g3 - g1 x) + h2(g3 - g1 x)^2 - g2 g2 h3 = 0
   // (-2 a b g1 g2 + g2 g2 h1 + g1 g1 h2) x x + (2 a b g2 g3 + -2 g1 g3 h2) x + g3 g3 h2 + -g2 g2 h3 = 0
+  // A: c c (b b d1 d1 + c c d1 d1 + -2 a b d1 d2 + a a d2 d2 + c c d2 d2 + -2 a c d1 d3 + -2 b c d2 d3 + a a d3 d3 + b b d3 d3)
+  // A: b b d1 d1 + c c d1 d1 + -2 a b d1 d2 + a a d2 d2 + c c d2 d2 + -2 a c d1 d3 + -2 b c d2 d3 + a a d3 d3 + b b d3 d3
+  // A: (1 - a a) d1 d1 + -2 a b d1 d2 + (1 - b b) d2 d2 + -2 a c d1 d3 + -2 b c d2 d3 + (1 - c c) d3 d3
+  // A: (d1 d1 + d2 d2 + d3 d3) + (-a a d1 d1 + -2 a b d1 d2 + -b b d2 d2) + -2 a c d1 d3 + -2 b c d2 d3 + -c c d3 d3
+  // A: 1 - (a d1 + b d2)^2 + -2 a c d1 d3 + -2 b c d2 d3 + -c c d3 d3
+  // A: 1 - c c d3 d3 + -2 a c d1 d3 + -2 b c d2 d3 + -c c d3 d3
+  // A: 1 - 2 (a d1 + b d2 + c d3) c d3
+  // A: 1
+  // B: 2 c c e (-b b d1 + -c c d1 + a b d2 + a c d3)
+  // B: 2 e (-b b d1 + -c c d1 - a a d1)
+  // B: -2 e d1
+  // C: g3 g3 h2 + -g2 g2 h3
+  // C: c c e e(1 - a a) - g2 g2 c c
+  // C: c c (e e(1 - a a) - g2 g2)
   const xs = calculateEquation2(
-    -2 * a * b * g1 * g2 + g2 * g2 * h1 + g1 * g1 * h2,
-    2 * a * b * g2 * g3 + -2 * g1 * g3 * h2,
-    g3 * g3 * h2 + -1 * g2 * g2 * h3
+    1,
+    -2 * e * d1,
+    e * e * (1 - a * a) - g2 * g2,
   )
   return xs.map(x => {
     const y = (g3 - g1 * x) / g2

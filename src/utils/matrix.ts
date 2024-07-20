@@ -270,6 +270,9 @@ export const v3 = {
   multipleScalar(a: Vec3, b: number): Vec3 {
     return [a[0] + b, a[1] + b, a[2] + b]
   },
+  normalize(a: Vec3): Vec3 {
+    return v3.multipleScalar(a, 1 / v3.length(a))
+  },
 }
 
 export const matrix = {
