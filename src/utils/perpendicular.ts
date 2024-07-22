@@ -24,6 +24,7 @@ import { BezierCurve } from "./bezier"
 import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointAndNurbsCurveNearestPointAndDistance } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 import { Vec3 } from "./types"
+import { v3 } from "./matrix"
 
 export function getPerpendicularLine(point: Position, line: GeneralFormLine): GeneralFormLine {
   return {
@@ -121,7 +122,10 @@ export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine)
   }
 }
 
-export function getPerpendicularParam3D([x0, y0, z0]: Vec3, [x1, y1, z1]: Vec3, [a, b, c]: Vec3): number {
+export function getPerpendicularParamToLine(p: Vec3, start: Vec3, direction: Vec3): number {
+  // let [x0, y0, z0] = p
+  // let [x1, y1, z1] = start
+  // let [a, b, c] = direction
   // a x + b y + c z + d = 0
   // d = -(a x0 + b y0 + c z0)
   // x = x1 + a t
@@ -129,12 +133,13 @@ export function getPerpendicularParam3D([x0, y0, z0]: Vec3, [x1, y1, z1]: Vec3, 
   // z = z1 + c t
   // a(x1 + a t) + b(y1 + b t) + c(z1 + c t) - (a x0 + b y0 + c z0) = 0
   // (a a + b b + c c) t + -a x0 + a x1 + -b y0 + b y1 + -c z0 + c z1 = 0
-  return -(a * (x1 - x0) + b * (y1 - y0) + c * (z1 - z0)) / (a * a + b * b + c * c)
+  // t = (a (x0 - x1) + b (y0 - y1) + c (z0 - z1)) / (a a + b b + c c)
+  return v3.dot(direction, v3.substract(p, start)) / v3.lengthSquare(direction)
 }
 
-export function getPerpendicularPoint3D(p0: Vec3, p1: Vec3, direction: Vec3): Vec3 {
-  const t = getPerpendicularParam3D(p0, p1, direction)
-  return getPointByParamAndDirection3D(p1, t, direction)
+export function getPerpendicularPointToLine3D(point: Vec3, start: Vec3, direction: Vec3): Vec3 {
+  const param = getPerpendicularParamToLine(point, start, direction)
+  return getPointByParamAndDirection3D(start, param, direction)
 }
 
 export function getPerpendicularDistance({ x, y }: Position, { a, b, c }: GeneralFormLine): number {

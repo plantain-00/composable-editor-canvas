@@ -1,8 +1,8 @@
 import { calculateEquation2 } from "./equation-calculater"
 import { equals, isBetween, isZero } from "./math"
 import { v3 } from "./matrix"
-import { getPerpendicularParam3D, getPerpendicularPoint3D } from "./perpendicular"
-import { getPlaneByPointAndNormal, getPointAndDirectionLineAndPlaneIntersectionPoint, getPointAndTwoDirectionsPlane, rotateDirectionByRadianOnPlane } from "./plane"
+import { getPerpendicularParamToLine, getPerpendicularPointToLine3D } from "./perpendicular"
+import { getPlaneByPointAndNormal, getPlaneNormal, getPointAndDirectionLineAndPlaneIntersectionPoint, getPointAndTwoDirectionsPlane, rotateDirectionByRadianOnPlane } from "./plane"
 import { getPointByLengthAndDirection3D, getPointByParamAndDirection3D } from "./position"
 import { Vec3 } from "./types"
 import { number, Validator } from "./validators"
@@ -26,7 +26,7 @@ export function getLineAndConeIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [
   const e1 = x2 - x1, e2 = y2 - y1, e3 = z2 - z1
   // (x,y,z) = u (e1,e2,e3) + (x1,y1,z1)
   /**
-   * @see getPerpendicularPoint3D
+   * @see getPerpendicularPointToLine3D
    */
   // t = (a(x - x0) + b(y - y0) + c(z - z0))/(a a + b b + c c)
   const f1 = 1 / (a * a + b * b + c * c)
@@ -70,7 +70,7 @@ export function getLineAndConeIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [
 }
 
 export function pointIsOnCone(p: Vec3, cone: Cone) {
-  const param = getPerpendicularParam3D(p, cone.base, cone.direction)
+  const param = getPerpendicularParamToLine(p, cone.base, cone.direction)
   const length = v3.length(cone.direction)
   const minParam = cone.height1 / length
   const maxParam = cone.height2 / length
@@ -85,8 +85,17 @@ export function getPerpendicularPointsToCone(p: Vec3, cone: Cone): Vec3[] | unde
   const plane = getPointAndTwoDirectionsPlane(cone.base, cone.direction, v3.substract(p, cone.base))
   if (!plane) return
   const radian = Math.atan(cone.radiusHeightRate)
-  const directions = rotateDirectionByRadianOnPlane(cone.direction, radian, plane)
-  return directions.map(d => getPerpendicularPoint3D(p, cone.base, d))
+  const normal = getPlaneNormal(plane)
+  const result: Vec3[] = []
+  const direction1 = rotateDirectionByRadianOnPlane(cone.direction, radian, normal)
+  if (direction1) {
+    result.push(getPerpendicularPointToLine3D(p, cone.base, direction1))
+  }
+  const direction2 = rotateDirectionByRadianOnPlane(cone.direction, -radian, normal)
+  if (direction2) {
+    result.push(getPerpendicularPointToLine3D(p, cone.base, direction2))
+  }
+  return result
 }
 
 export function getParallelConesByDistance(cone: Cone, distance: number): [Cone, Cone] {

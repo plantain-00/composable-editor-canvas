@@ -3,6 +3,8 @@ import { Position, rotatePosition } from "./position"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Size, TwoPointsFormRegion, getTwoPointsFormRegionSize } from "./region"
 import { getTwoPointCenter } from "./position"
+import { slice3, Tuple4, Vec3 } from "./types"
+import { matrix, v3 } from "./matrix"
 
 /**
  * @public
@@ -109,4 +111,37 @@ export interface RenderTransform {
   y: number
   scale: number
   rotate?: number
+}
+
+export function transformPointToCoordinate(p: Vec3, [start, ...axis]: Tuple4<Vec3>): Vec3 {
+  /**
+   * @see getPerpendicularParamToLine
+   */
+  // (axis[0],axis[1],axis[2])(p - start))
+  return slice3(matrix.multiplyVec(axis, v3.substract(p, start)))
+}
+
+export function transformPointFromCoordinate(p: Vec3, coordinate: Tuple4<Vec3>): Vec3 | undefined {
+  const vec = getCoordinateVec(p, coordinate)
+  // (a1,b1,c1)(x) = (vec0)
+  // (a2,b2,c2)(y) = (vec1)
+  // (a3,b3,c3)(z) = (vec2)
+  const m = getCoordinateMatrix(coordinate)
+  if (!m) return
+  return slice3(matrix.multiplyVec(m, vec))
+}
+
+export function getCoordinateVec(p: Vec3, [start, ...axis]: Tuple4<Vec3>): Vec3 {
+  // a x + b y + c z = (a,b,c)(x,y,z)
+  // d1 = axis[0] * (start + axis[0] * p[0])
+  // d2 = axis[1] * (start + axis[1] * p[1])
+  // d3 = axis[2] * (start + axis[2] * p[2])
+  return v3.dots(
+    axis,
+    v3.addToVecs(start, v3.multiplyScalars(axis, p))
+  )
+}
+
+export function getCoordinateMatrix(coordinate: Tuple4<Vec3>): number[][] | undefined {
+  return matrix.inverse(slice3(coordinate, 1))
 }

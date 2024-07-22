@@ -1,6 +1,6 @@
 import React from "react"
 import { produce } from "immer"
-import { Button, CanvasDraw, Position, getDirectionByRadian, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, isZero, multipleDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize, lessThan } from "../src";
+import { Button, CanvasDraw, Position, getDirectionByRadian, getPointByLengthAndRadian, getPointByLengthAndDirection, getTwoNumberCenter, getTwoPointsRadian, getTwoPointsDistance, isZero, multiplyDirection, reactCanvasRenderTarget, useEvent, useGlobalKeyDown, useLineClickCreate, useRefState, useWindowSize, lessThan } from "../src";
 
 export function Combination6() {
   const { width, height } = useWindowSize()
@@ -195,7 +195,7 @@ function lineToContent([p1, p2]: Position[], radius: number, type?: CreateType) 
     p2 = { x: p2.x, y: radius }
   } else if (type === 'shoot down') {
     const angle = getTwoPointsRadian(p2, p1)
-    const speed = multipleDirection(getDirectionByRadian(angle), launchSpeed)
+    const speed = multiplyDirection(getDirectionByRadian(angle), launchSpeed)
     return {
       type: 'shoot down' as const,
       ...p1,
