@@ -2,7 +2,7 @@ import { calculateEquationSet } from "./equation-calculater";
 import { isZero } from "./math";
 import { Position } from "./position";
 import { angleToRadian, radianToAngle } from "./radian";
-import { Tuple4, Vec2, Vec3 } from "./types";
+import { Tuple3, Tuple4, Vec2, Vec3 } from "./types";
 
 /**
  * @public
@@ -228,7 +228,7 @@ export const m2 = {
     const b3 = a0 / c
     return [b0, b1, b2, b3]
   },
-  multipleVec2([a0, a1, a2, a3]: Matrix2, [b0, b1]: Vec2): Vec2 {
+  multiplyVec2([a0, a1, a2, a3]: Matrix2, [b0, b1]: Vec2): Vec2 {
     // a0 a1  b0
     // a2 a3  b1
     return [a0 * b0 + a1 * b1, a2 * b0 + a3 * b1]
@@ -255,11 +255,31 @@ export const v3 = {
   dot(a: Vec3, b: Vec3): number {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
   },
+  dots(a: Tuple3<Vec3>, b: Tuple3<Vec3>): Vec3 {
+    return [v3.dot(a[0], b[0]), v3.dot(a[1], b[1]), v3.dot(a[2], b[2])]
+  },
   add(a: Vec3, b: Vec3): Vec3 {
     return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
   },
+  addToVecs(a: Vec3, b: Tuple3<Vec3>): Tuple3<Vec3> {
+    return [v3.add(a, b[0]), v3.add(a, b[1]), v3.add(a, b[2])]
+  },
   substract(a: Vec3, b: Vec3): Vec3 {
     return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+  },
+  addMultiple(...array: Vec3[]): Vec3 {
+    if (array.length === 0) {
+      return [0, 0, 0]
+    }
+    if (array.length === 1) {
+      return array[0]
+    }
+    const [item0, item1, ...rest] = array
+    const result = v3.add(item0, item1)
+    if (array.length === 2) {
+      return result
+    }
+    return v3.addMultiple(result, ...rest)
   },
   length(a: Vec3): number {
     return Math.sqrt(v3.lengthSquare(a))
@@ -267,11 +287,17 @@ export const v3 = {
   lengthSquare(a: Vec3): number {
     return a[0] ** 2 + a[1] ** 2 + a[2] ** 2
   },
-  multipleScalar(a: Vec3, b: number): Vec3 {
+  multiplyScalar(a: Vec3, b: number): Vec3 {
+    return [a[0] * b, a[1] * b, a[2] * b]
+  },
+  multiplyScalars(a: Tuple3<Vec3>, b: Tuple3<number>): Tuple3<Vec3> {
+    return [v3.multiplyScalar(a[0], b[0]), v3.multiplyScalar(a[1], b[1]), v3.multiplyScalar(a[2], b[2])]
+  },
+  addScalar(a: Vec3, b: number): Vec3 {
     return [a[0] + b, a[1] + b, a[2] + b]
   },
   normalize(a: Vec3): Vec3 {
-    return v3.multipleScalar(a, 1 / v3.length(a))
+    return v3.multiplyScalar(a, 1 / v3.length(a))
   },
 }
 
@@ -293,7 +319,7 @@ export const matrix = {
     }
     return result
   },
-  multipleVec(m: number[][], vec: number[]): number[] {
+  multiplyVec(m: number[][], vec: number[]): number[] {
     // a[0,0] a[0,1]  b[0]
     // a[1,0] a[1,1]  b[1]
     const result: number[] = []

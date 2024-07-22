@@ -1,7 +1,7 @@
 import { calculateEquation2 } from "./equation-calculater";
 import { equals, isBetween, isZero } from "./math";
 import { v3 } from "./matrix";
-import { getPerpendicularParam3D, getPerpendicularPoint3D } from "./perpendicular";
+import { getPerpendicularParamToLine, getPerpendicularPointToLine3D } from "./perpendicular";
 import { getPointByLengthAndDirection3D, getPointByParamAndDirection3D } from "./position";
 import { Vec3 } from "./types";
 import { Validator, number } from "./validators";
@@ -25,7 +25,7 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
   const e1 = x2 - x1, e2 = y2 - y1, e3 = z2 - z1
   // (x,y,z) = u (e1,e2,e3) + (x1,y1,z1)
   /**
-   * @see getPerpendicularPoint3D
+   * @see getPerpendicularPointToLine3D
    */
   // t = (a(x - x0) + b(y - y0) + c(z - z0))/(a a + b b + c c)
   const f1 = 1 / (a * a + b * b + c * c)
@@ -64,7 +64,7 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
 }
 
 export function pointIsOnCylinder(p: Vec3, cylinder: Cylinder) {
-  const param = getPerpendicularParam3D(p, cylinder.base, cylinder.direction)
+  const param = getPerpendicularParamToLine(p, cylinder.base, cylinder.direction)
   const length = v3.length(cylinder.direction)
   const minParam = cylinder.height1 / length
   const maxParam = cylinder.height2 / length
@@ -74,7 +74,7 @@ export function pointIsOnCylinder(p: Vec3, cylinder: Cylinder) {
 }
 
 export function getPerpendicularPointsToCylinder(p: Vec3, cylinder: Cylinder): [Vec3, Vec3] {
-  const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
+  const point = getPerpendicularPointToLine3D(p, cylinder.base, cylinder.direction)
   const direction = v3.substract(point, p)
   return [
     getPointByLengthAndDirection3D(point, cylinder.radius, direction),
@@ -93,6 +93,6 @@ export function getParallelCylindersByDistance(cylinder: Cylinder, distance: num
 }
 
 export function getCylinderNormalAtPoint(cylinder: Cylinder, p: Vec3): Vec3 {
-  const point = getPerpendicularPoint3D(p, cylinder.base, cylinder.direction)
+  const point = getPerpendicularPointToLine3D(p, cylinder.base, cylinder.direction)
   return v3.substract(p, point)
 }

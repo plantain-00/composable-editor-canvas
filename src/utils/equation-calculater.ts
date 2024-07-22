@@ -299,7 +299,7 @@ export function newtonIterate2(
     }
     const m = m2.inverse(f2(x))
     if (!m) return
-    x = v2.substract(x, m2.multipleVec2(m, g))
+    x = v2.substract(x, m2.multiplyVec2(m, g))
     count++
   }
   return x
@@ -322,7 +322,7 @@ export function newtonIterates(
     }
     const m = matrix.inverse(f2(x))
     if (!m) return
-    x = vector.substract(x, matrix.multipleVec(m, g))
+    x = vector.substract(x, matrix.multiplyVec(m, g))
     count++
   }
   return x

@@ -86,14 +86,14 @@ export function getPointByLengthAndRadian(
   length: number,
   radian: number
 ) {
-  const direction = multipleDirection(getDirectionByRadian(radian), length)
+  const direction = multiplyDirection(getDirectionByRadian(radian), length)
   return {
     x: startPoint.x + direction.x,
     y: startPoint.y + direction.y,
   }
 }
 
-export function multipleDirection(direction: Position, scalar: number): Position {
+export function multiplyDirection(direction: Position, scalar: number): Position {
   return {
     x: direction.x * scalar,
     y: direction.y * scalar,
@@ -166,5 +166,5 @@ export function getPointByLengthAndDirection3D(startPoint: Vec3, length: number,
 }
 
 export function getPointByParamAndDirection3D(startPoint: Vec3, param: number, direction: Vec3): Vec3 {
-  return v3.add(startPoint, v3.multipleScalar(direction, param))
+  return v3.add(startPoint, v3.multiplyScalar(direction, param))
 }
