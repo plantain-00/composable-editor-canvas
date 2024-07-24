@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -115,6 +115,15 @@ export default () => {
         color: s.color,
         position: [0, 0, 0],
       }
+    } else if (s.geometry.type === 'line strip') {
+      return {
+        geometry: {
+          type: 'line strip',
+          points: s.geometry.points.flat(),
+        },
+        color: s.color,
+        position: [0, 0, 0],
+      }
     }
     return {
       geometry: s.geometry,
@@ -159,6 +168,15 @@ export default () => {
           },
           color: [0, 1, 0, 1],
           position: [0, 0, 0.5],
+        })
+      } else if (g.geometry.type === 'line strip') {
+        graphics.push({
+          geometry: {
+            type: 'line strip',
+            points: g.geometry.points.map(p => [p[0], p[1], p[2] + 0.5]).flat(),
+          },
+          color: [0, 1, 0, 1],
+          position: [0, 0, 0],
         })
       }
       if (radius) {
@@ -349,6 +367,7 @@ export default () => {
               const target1 = getGraphic(state1)
               const target2 = getGraphic(state2)
               let points: Vec3[] | undefined
+              let lines: Vec3[] | undefined
               if (target1.geometry.type === 'lines') {
                 if (target2.geometry.type === 'lines') {
                   const p1 = slice3(target1.geometry.points)
@@ -415,6 +434,18 @@ export default () => {
                       ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
                     }
                   )
+                } else if (state2.geometry.type === 'triangle') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state2.position),
+                    position3DToVec3(state2.geometry.p1),
+                    position3DToVec3(state2.geometry.p2),
+                  )
+                  if (plane) {
+                    lines = getPlaneSphereIntersection(plane, {
+                      radius: target1.geometry.radius,
+                      ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
+                    })
+                  }
                 }
               } else if (target1.geometry.type === 'cylinder') {
                 if (target2.geometry.type === 'lines') {
@@ -455,6 +486,18 @@ export default () => {
                       points = [p]
                     }
                   }
+                } else if (target2.geometry.type === 'sphere') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state1.position),
+                    position3DToVec3(state1.geometry.p1),
+                    position3DToVec3(state1.geometry.p2),
+                  )
+                  if (plane) {
+                    lines = getPlaneSphereIntersection(plane, {
+                      radius: target2.geometry.radius,
+                      ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
+                    })
+                  }
                 }
               } else if (target1.geometry.type === 'cube') {
                 if (target2.geometry.type === 'lines') {
@@ -472,6 +515,19 @@ export default () => {
                     color: [0, 1, 0, 1],
                     position: vec3ToPosition3D(p),
                   } as State)))
+                })
+                setStatus(undefined)
+              }
+              if (lines && lines.length > 0) {
+                setState(draft => {
+                  draft.push({
+                    geometry: {
+                      type: 'line strip',
+                      points: lines,
+                    },
+                    color: [0, 1, 0, 1],
+                    position: { x: 0, y: 0, z: 0 },
+                  })
                 })
                 setStatus(undefined)
               }
@@ -820,6 +876,9 @@ interface State {
     type: 'triangle'
     p1: Position3D
     p2: Position3D
+  } | {
+    type: 'line strip'
+    points: Vec3[]
   }
   color: Vec4
   position: Position3D
