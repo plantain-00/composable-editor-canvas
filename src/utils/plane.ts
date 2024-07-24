@@ -159,3 +159,11 @@ export function rotateDirectionByRadianOnPlane(direction: Vec3, radian: number, 
   if (!p1) return
   return v3.normalize(p1)
 }
+
+export function getCoordinate(direction: Vec3): Tuple3<Vec3> {
+  direction = v3.normalize(direction)
+  const d1: Vec3 = isZero(direction[0]) && isZero(direction[1]) ? [1, 0, 0] : [0, 0, 1]
+  const d2 = v3.normalize(v3.cross(direction, d1))
+  const d3 = v3.cross(direction, d2)
+  return [d2, d3, direction]
+}
