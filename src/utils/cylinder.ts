@@ -1,9 +1,12 @@
+import { ellipseArcToPolyline, ellipseToEllipseArc } from "./ellipse";
 import { calculateEquation2 } from "./equation-calculater";
 import { equals, isBetween, isZero } from "./math";
-import { v3 } from "./matrix";
+import { matrix, v3 } from "./matrix";
 import { getPerpendicularParamToLine, getPerpendicularPointToLine3D } from "./perpendicular";
+import { GeneralFormPlane, getPlaneNormal, getPointAndDirectionLineAndPlaneIntersectionPoint } from "./plane";
 import { getPointByLengthAndDirection3D, getPointByParamAndDirection3D } from "./position";
-import { Vec3 } from "./types";
+import { getCoordinateMatrix, getCoordinateVec } from "./transform";
+import { slice3, Tuple4, Vec3 } from "./types";
 import { Validator, number } from "./validators";
 
 export interface Cylinder {
@@ -18,6 +21,8 @@ export const Cylinder: Validator = {
   base: Vec3,
   direction: Vec3,
   radius: number,
+  height1: number,
+  height2: number,
 }
 
 export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]]: [Vec3, Vec3], { base: [x0, y0, z0], direction: [a, b, c], radius, height1, height2 }: Cylinder, extend?: boolean): Vec3[] {
@@ -95,4 +100,22 @@ export function getParallelCylindersByDistance(cylinder: Cylinder, distance: num
 export function getCylinderNormalAtPoint(cylinder: Cylinder, p: Vec3): Vec3 {
   const point = getPerpendicularPointToLine3D(p, cylinder.base, cylinder.direction)
   return v3.substract(p, point)
+}
+
+export function getPlaneCylinderIntersection(plane: GeneralFormPlane, cylinder: Cylinder): Vec3[] | undefined {
+  const p = getPointAndDirectionLineAndPlaneIntersectionPoint(cylinder.base, cylinder.direction, plane)
+  if (!p) return
+  const rx = cylinder.radius
+  const zAxis = v3.normalize(getPlaneNormal(plane))
+  const cos = v3.dot(cylinder.direction, zAxis) / v3.length(cylinder.direction)
+  const ry = rx / cos
+  const xAxis = v3.normalize(v3.cross(cylinder.direction, zAxis))
+  // x = r1 cos(t)
+  // y = r2 sin(t)
+  // z = 0
+  const yAxis = v3.normalize(v3.cross(xAxis, zAxis))
+  const coordinate: Tuple4<Vec3> = [p, xAxis, yAxis, zAxis]
+  const m = getCoordinateMatrix(coordinate)
+  if (!m) return
+  return ellipseArcToPolyline(ellipseToEllipseArc({ cx: 0, cy: 0, rx, ry }), 5).map(n => slice3(matrix.multiplyVec(m, getCoordinateVec([n.x, n.y, 0], coordinate))))
 }

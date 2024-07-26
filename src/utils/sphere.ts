@@ -73,11 +73,31 @@ export function getSphereNormalAtPoint(sphere: Sphere, point: Vec3): Vec3 {
   return v3.substract(point, position3DToVec3(sphere))
 }
 
-export function getPlaneSphereIntersection(plane: GeneralFormPlane, sphere: Sphere) {
-  const center = position3DToVec3(sphere)
-  const p = getPerpendicularPointToPlane(center, plane)
-  const direction = v3.substract(p, center)
+export function getPlaneSphereIntersection(plane: GeneralFormPlane, sphere: Sphere): Vec3[] | undefined {
+  const start = position3DToVec3(sphere)
+  const p = getPerpendicularPointToPlane(start, plane)
+  const direction = v3.substract(p, start)
   const r = Math.sqrt(sphere.radius ** 2 - v3.lengthSquare(direction))
+  if (isNaN(r)) return
+  // x = r cos(t)
+  // y = r sin(t)
+  // z = 0
+  const coordinate: Tuple4<Vec3> = [p, ...getCoordinate(direction)]
+  const m = getCoordinateMatrix(coordinate)
+  if (!m) return
+  return arcToPolyline(circleToArc({ x: 0, y: 0, r }), 5).map(n => slice3(matrix.multiplyVec(m, getCoordinateVec([n.x, n.y, 0], coordinate))))
+}
+
+export function getTwoSpheresIntersection(sphere1: Sphere, sphere2: Sphere): Vec3[] | undefined {
+  const start = position3DToVec3(sphere1)
+  const direction = v3.substract(position3DToVec3(sphere2), start)
+  const distanceSquare = v3.lengthSquare(direction)
+  const distance = Math.sqrt(distanceSquare)
+  const cos = (sphere1.radius ** 2 + distanceSquare - sphere2.radius ** 2) / 2 / sphere1.radius / distance
+  if (cos < -1 || cos > 1) return
+  const d = sphere1.radius * cos
+  const p = getPointByLengthAndDirection3D(start, d, direction)
+  const r = Math.sqrt(sphere1.radius ** 2 - d ** 2)
   if (isNaN(r)) return
   // x = r cos(t)
   // y = r sin(t)

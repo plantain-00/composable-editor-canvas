@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection } from "../src"
 
 export default () => {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -446,6 +446,17 @@ export default () => {
                       ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
                     })
                   }
+                } else if (target2.geometry.type === 'sphere') {
+                  lines = getTwoSpheresIntersection(
+                    {
+                      radius: target1.geometry.radius,
+                      ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
+                    },
+                    {
+                      radius: target2.geometry.radius,
+                      ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
+                    },
+                  )
                 }
               } else if (target1.geometry.type === 'cylinder') {
                 if (target2.geometry.type === 'lines') {
@@ -459,6 +470,21 @@ export default () => {
                       height2: target1.geometry.height / 2,
                     }
                   )
+                } else if (state2.geometry.type === 'triangle') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state2.position),
+                    position3DToVec3(state2.geometry.p1),
+                    position3DToVec3(state2.geometry.p2),
+                  )
+                  if (plane) {
+                    lines = getPlaneCylinderIntersection(plane, {
+                      base: target1.position || [0, 0, 0],
+                      radius: target1.geometry.radius,
+                      direction: [0, 1, 0],
+                      height1: -target1.geometry.height / 2,
+                      height2: target1.geometry.height / 2,
+                    })
+                  }
                 }
               } else if (state1.geometry.type === 'cone') {
                 if (target2.geometry.type === 'lines') {
@@ -496,6 +522,21 @@ export default () => {
                     lines = getPlaneSphereIntersection(plane, {
                       radius: target2.geometry.radius,
                       ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
+                    })
+                  }
+                } else if (target2.geometry.type === 'cylinder') {
+                  const plane = getThreePointPlane(
+                    position3DToVec3(state1.position),
+                    position3DToVec3(state1.geometry.p1),
+                    position3DToVec3(state1.geometry.p2),
+                  )
+                  if (plane) {
+                    lines = getPlaneCylinderIntersection(plane, {
+                      base: target2.position || [0, 0, 0],
+                      radius: target2.geometry.radius,
+                      direction: [0, 1, 0],
+                      height1: -target2.geometry.height / 2,
+                      height2: target2.geometry.height / 2,
                     })
                   }
                 }
