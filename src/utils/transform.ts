@@ -145,3 +145,16 @@ export function getCoordinateVec(p: Vec3, [start, ...axis]: Tuple4<Vec3>): Vec3 
 export function getCoordinateMatrix(coordinate: Tuple4<Vec3>): number[][] | undefined {
   return matrix.inverse(slice3(coordinate, 1))
 }
+
+export function rotateToDirection(direction: Vec3, from: Vec3 = [0, 1, 0]) {
+  direction = v3.normalize(direction)
+  const axis = v3.cross(from, direction)
+  if (v3.lengthSquare(axis) > 0) {
+    const radian = Math.acos(v3.dot(from, direction))
+    return {
+      axis,
+      radian,
+    }
+  }
+  return
+}

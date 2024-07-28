@@ -1,28 +1,22 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera } from "../src"
 
-export default () => {
+export function Combination8() {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
   const renderer = React.useRef<ReturnType<typeof createWebgl3DRenderer>>()
+  const { x, y, setX, setY, ref: wheelScrollRef } = useWheelScroll<HTMLDivElement>()
+  const { scale, setScale, ref: wheelZoomRef } = useWheelZoom<HTMLDivElement>()
   const size = useWindowSize()
-  const width = size.width / 2
+  const width = size.width
   const height = size.height
-  const eye: Vec3 = [0, -90, 90]
   const [status, setStatus] = React.useState<Status>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
-  const land = React.useRef<Graphic3d>(
-    {
-      geometry: {
-        type: 'triangle strip',
-        points: [-50, -50, 0, -50, 50, 0, 50, -50, 0, 50, 50, 0],
-      },
-      color: [0.6, 0.6, 0.6, 0.5],
-      position: [0, 0, 0],
-    },
+  const axis = React.useRef<Graphic3d[]>(
+    getAxesGraphics(),
   )
-  const [, onChange, initialState] = useLocalStorageState<readonly State[]>('webgl-3d-put-data', [])
+  const [, onChange, initialState] = useLocalStorageState<readonly State[]>('composable-editor-canvas-combination8-data', [])
   const { state, setState, undo, redo } = useUndoRedo<readonly State[]>(initialState, {
     onChange: (({ newState }) => {
       onChange(newState)
@@ -52,6 +46,11 @@ export default () => {
         } else {
           undo(e)
         }
+      } else if (e.code === 'Digit0' && !e.shiftKey) {
+        setScale(1)
+        setX(0)
+        setY(0)
+        e.preventDefault()
       }
     } else if (e.key === 'Escape') {
       setStatus(undefined)
@@ -68,19 +67,21 @@ export default () => {
       }
     }
   })
+  const { position, up } = updateCamera(0, 0, 200 / scale, -0.3 * x, -0.3 * y)
+  const eye: Vec3 = position3DToVec3(position)
   const render = (g: Nullable<Graphic3d>[]) => {
     renderer.current?.render?.(
       g,
       {
         eye,
-        up: [0, 1, 0],
+        up: position3DToVec3(up),
         target: [0, 0, 0],
         fov: angleToRadian(60),
         near: 0.1,
-        far: 1000,
+        far: 20000,
       },
       {
-        position: [1000, -500, 800],
+        position: [1000, 1000, 1000],
         color: [1, 1, 1, 1],
         specular: [1, 1, 1, 1],
         shininess: 50,
@@ -133,7 +134,8 @@ export default () => {
   })
 
   React.useEffect(() => {
-    const graphics = [land.current, ...state.map(s => getGraphic(s))]
+    const graphics = [...state.map(s => getGraphic(s))]
+    graphics.push(...axis.current)
     if (preview) {
       graphics.push(getGraphic(preview))
     }
@@ -196,10 +198,11 @@ export default () => {
       }
     }
     render(graphics)
-  }, [state, preview, hovering, selected])
+  }, [state, preview, hovering, selected, x, y, scale])
 
   return (
     <div
+      ref={bindMultipleRefs(wheelScrollRef, wheelZoomRef)}
       style={{
         position: 'absolute',
         inset: '0px',
@@ -212,7 +215,7 @@ export default () => {
         onMouseMove={e => {
           if (!status || status === 'intersect') {
             const index = renderer.current?.pick(e.clientX, e.clientY)
-            setHovering(index ? index - 1 : undefined)
+            setHovering(index)
             return
           }
           if (renderer.current) {
@@ -585,23 +588,6 @@ export default () => {
           const items: MenuItem[] = []
           let size: number | undefined
           if (selected !== undefined) {
-            items.push({
-              title: 'delete',
-              onClick() {
-                setState(draft => {
-                  draft.splice(selected, 1)
-                })
-                setSelected(undefined)
-                setContextMenu(undefined)
-              },
-            })
-            items.push({
-              title: 'intersect',
-              onClick() {
-                setStatus('intersect')
-                setContextMenu(undefined)
-              },
-            })
             const geometry = state[selected].geometry
             if (geometry.type === 'cube') {
               size = geometry.size
@@ -743,64 +729,6 @@ export default () => {
               items={[
                 ...items,
                 {
-                  title: (
-                    <>
-                      z
-                      <NumberEditor
-                        value={zRef.current}
-                        style={{ width: '50px' }}
-                        setValue={v => {
-                          zRef.current = v
-                          setContextMenu(undefined)
-                        }}
-                      />
-                    </>
-                  ),
-                  height: 33,
-                },
-                {
-                  title: (
-                    <>
-                      <NumberEditor
-                        value={selected !== undefined ? vecToColorNumber(state[selected].color) : colorRef.current}
-                        type='color'
-                        style={{ width: '50px' }}
-                        setValue={v => {
-                          if (selected !== undefined) {
-                            const color = state[selected].color
-                            setState(draft => {
-                              draft[selected].color = colorNumberToVec(v, color[3])
-                            })
-                            setContextMenu(undefined)
-                          }
-                          colorRef.current = v
-                        }}
-                      />
-                    </>
-                  ),
-                  height: 33,
-                },
-                {
-                  title: (
-                    <>
-                      <NumberEditor
-                        value={(selected !== undefined ? state[selected].color[3] : opacityRef.current) * 100}
-                        style={{ width: '50px' }}
-                        setValue={v => {
-                          if (selected !== undefined) {
-                            setState(draft => {
-                              draft[selected].color[3] = v * 0.01
-                            })
-                            setContextMenu(undefined)
-                          }
-                          opacityRef.current = v * 0.01
-                        }}
-                      />
-                    </>
-                  ),
-                  height: 41,
-                },
-                {
                   title: <>
                     <NumberEditor
                       value={size ?? sizeRef.current}
@@ -823,53 +751,10 @@ export default () => {
                           })
                           setContextMenu(undefined)
                         }
-                        sizeRef.current = v
                       }}
                     />
                   </>,
                   height: 41,
-                },
-                {
-                  title: 'cube',
-                  onClick() {
-                    setStatus('cube')
-                    setContextMenu(undefined)
-                  },
-                },
-                {
-                  title: 'sphere',
-                  onClick() {
-                    setStatus('sphere')
-                    setContextMenu(undefined)
-                  },
-                },
-                {
-                  title: 'cylinder',
-                  onClick() {
-                    setStatus('cylinder')
-                    setContextMenu(undefined)
-                  },
-                },
-                {
-                  title: 'cone',
-                  onClick() {
-                    setStatus('cone')
-                    setContextMenu(undefined)
-                  },
-                },
-                {
-                  title: 'line',
-                  onClick() {
-                    setStatus({ type: 'line start' })
-                    setContextMenu(undefined)
-                  },
-                },
-                {
-                  title: 'plane',
-                  onClick() {
-                    setStatus({ type: 'plane 1st point' })
-                    setContextMenu(undefined)
-                  },
                 },
               ]}
               y={viewportPosition.y}
@@ -881,6 +766,60 @@ export default () => {
           )
         }}
       />
+      <div style={{ position: 'absolute', top: '0px' }}>
+        {(['cube', 'sphere', 'cylinder', 'cone'] as const).map(s => <Button key={s} style={{ color: status === s ? 'red' : undefined }} onClick={() => setStatus(s)}>{s}</Button>)}
+        <Button style={{ color: typeof status !== 'string' && status?.type === 'line start' ? 'red' : undefined }} onClick={() => setStatus({ type: 'line start' })}>line</Button>
+        <Button style={{ color: typeof status !== 'string' && status?.type === 'plane 1st point' ? 'red' : undefined }} onClick={() => setStatus({ type: 'plane 1st point' })}>plane</Button>
+        {selected !== undefined && <Button onClick={() => {
+          setState(draft => {
+            draft.splice(selected, 1)
+          })
+          setSelected(undefined)
+        }}>delete</Button>}
+        {selected !== undefined && <Button onClick={() => setStatus('intersect')}>intersect</Button>}
+        <NumberEditor
+          value={zRef.current}
+          style={{ width: '50px', position: 'relative' }}
+          setValue={v => {
+            zRef.current = v
+          }}
+        />
+        <NumberEditor
+          value={sizeRef.current}
+          style={{ width: '40px', position: 'relative' }}
+          setValue={v => {
+            sizeRef.current = v
+          }}
+        />
+        <NumberEditor
+          value={(selected !== undefined ? state[selected].color[3] : opacityRef.current) * 100}
+          style={{ width: '50px', position: 'relative' }}
+          setValue={v => {
+            if (selected !== undefined) {
+              setState(draft => {
+                draft[selected].color[3] = v * 0.01
+              })
+              setContextMenu(undefined)
+            }
+            opacityRef.current = v * 0.01
+          }}
+        />
+        <NumberEditor
+          value={selected !== undefined ? vecToColorNumber(state[selected].color) : colorRef.current}
+          type='color'
+          style={{ width: '50px', position: 'relative' }}
+          setValue={v => {
+            if (selected !== undefined) {
+              const color = state[selected].color
+              setState(draft => {
+                draft[selected].color = colorNumberToVec(v, color[3])
+              })
+              setContextMenu(undefined)
+            }
+            colorRef.current = v
+          }}
+        />
+      </div>
       {contextMenu}
     </div>
   )

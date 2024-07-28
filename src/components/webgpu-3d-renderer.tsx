@@ -7,6 +7,7 @@ import { Lazy } from '../utils/lazy'
 import { createUniformsBuffer } from './react-render-target'
 import { colorNumberToVec, pixelColorToColorNumber } from '../utils/color'
 import { GeneralFormPlane, getLineAndPlaneIntersectionPoint, getLineAndZPlaneIntersectionPoint } from '../utils/plane'
+import { rotateToDirection } from '../utils/transform'
 
 export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   if (!navigator.gpu) return
@@ -242,8 +243,20 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
         return
       }
       let world = m4.identity()
+      if (g.rotateX) {
+        world = m4.rotateX(world, g.rotateX)
+      }
       if (g.rotateY) {
         world = m4.rotateY(world, g.rotateY)
+      }
+      if (g.rotateZ) {
+        world = m4.rotateZ(world, g.rotateZ)
+      }
+      if (g.direction) {
+        const axisAndRadian = rotateToDirection(g.direction)
+        if (axisAndRadian) {
+          world = m4.axisRotate(world, axisAndRadian.axis, axisAndRadian.radian)
+        }
       }
       if (g.position) {
         world = m4.translate(world, g.position)
