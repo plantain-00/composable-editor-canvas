@@ -8,6 +8,7 @@ import { Nullable, slice3, Tuple3, Vec3, Vec4 } from '../utils/types'
 import { Lazy } from '../utils/lazy'
 import { maximumBy } from '../utils/math'
 import { GeneralFormPlane, getLineAndPlaneIntersectionPoint, getLineAndZPlaneIntersectionPoint } from '../utils/plane'
+import { rotateToDirection } from '../utils/transform'
 
 export interface Camera {
   eye: Vec3
@@ -29,7 +30,10 @@ export interface Light {
 export interface Material {
   color: Vec4
   position?: Vec3
+  rotateX?: number
   rotateY?: number
+  rotateZ?: number
+  direction?: Vec3
 }
 
 export interface LinesGeometry {
@@ -242,8 +246,20 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
         return
       }
       let world = m4.identity()
+      if (g.rotateX) {
+        world = m4.rotateX(world, g.rotateX)
+      }
       if (g.rotateY) {
         world = m4.rotateY(world, g.rotateY)
+      }
+      if (g.rotateZ) {
+        world = m4.rotateZ(world, g.rotateZ)
+      }
+      if (g.direction) {
+        const axisAndRadian = rotateToDirection(g.direction)
+        if (axisAndRadian) {
+          world = m4.axisRotate(world, axisAndRadian.axis, axisAndRadian.radian)
+        }
       }
       if (g.position) {
         world = m4.translate(world, g.position)
