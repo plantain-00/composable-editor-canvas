@@ -119,6 +119,19 @@ export function getPerpendicularPointToPlane([x1, y1, z1]: Vec3, { a, b, c, d }:
   ]
 }
 
+export function getPerpendicularDistanceToPlane([x1, y1, z1]: Vec3, { a, b, c, d }: GeneralFormPlane): number {
+  // t = -(a x1 + b y1 + c z1 + d) / (a a + b b + c c)
+  // x = x1 + a t
+  // y = y1 + b t
+  // z = z1 + c t
+  // distance = sqrt((x - x1)^2 + (y - y1)^2 + (z - z1)^2)
+  // distance = sqrt(a a t t + b b t t + c c t t)
+  // distance = sqrt(a a + b b + c c) abs(t)
+  // distance = sqrt(a a + b b + c c) abs(a x1 + b y1 + c z1 + d) / (a a + b b + c c)
+  // distance = abs(a x1 + b y1 + c z1 + d) / sqrt(a a + b b + c c)
+  return Math.abs(a * x1 + b * y1 + c * z1 + d) / Math.sqrt(a * a + b * b + c * c)
+}
+
 export function getParallelPlanesByDistance({ a, b, c, d }: GeneralFormPlane, distance: number): [GeneralFormPlane, GeneralFormPlane] {
   // a x + b y + c z + d = 0
   // a x + b y + c z + e = 0
