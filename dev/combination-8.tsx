@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, Menu, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, MenuItem, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal } from "../src"
 
 export function Combination8() {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -22,12 +22,11 @@ export function Combination8() {
       onChange(newState)
     })
   })
-  const [contextMenu, setContextMenu] = React.useState<JSX.Element>()
   const [preview, setPreview] = React.useState<State>()
   const colorRef = React.useRef(0xff0000)
   const opacityRef = React.useRef(1)
   const sizeRef = React.useRef(5)
-  const zRef = React.useRef(0)
+  const distanceRef = React.useRef(0)
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
 
@@ -54,7 +53,6 @@ export function Combination8() {
       }
     } else if (e.key === 'Escape') {
       setStatus(undefined)
-      setContextMenu(undefined)
       setPreview(undefined)
       setHovering(undefined)
       setSelected(undefined)
@@ -69,13 +67,181 @@ export function Combination8() {
   })
   const { position, up } = updateCamera(0, 0, 200 / scale, -0.3 * x, -0.3 * y)
   const eye: Vec3 = position3DToVec3(position)
+  const targetPosition: Vec3 = [0, 0, 0]
+  const getCurrentPositionPlane = (point?: Vec3): GeneralFormPlane => {
+    const normal = v3.substract(eye, targetPosition)
+    if (point) {
+      return getPlaneByPointAndNormal(point, normal)
+    }
+    return { a: normal[0], b: normal[1], c: normal[2], d: -distanceRef.current * v3.length(normal) }
+  }
+  let panel: JSX.Element | undefined
+  if (selected !== undefined) {
+    const propertyPanels: Record<string, JSX.Element> = {}
+    const geometry = state[selected].geometry
+    if (geometry.type === 'cube') {
+      propertyPanels.size = <NumberEditor
+        value={geometry.size}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cube') {
+              draft[selected].geometry.size = v
+            }
+          })
+        }}
+      />
+    } else if (geometry.type === 'sphere') {
+      propertyPanels.radius = <NumberEditor
+        value={geometry.radius}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'sphere') {
+              draft[selected].geometry.radius = v
+            }
+          })
+        }}
+      />
+    } else if (geometry.type === 'cylinder') {
+      propertyPanels.radius = <NumberEditor
+        value={geometry.radius}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cylinder') {
+              draft[selected].geometry.radius = v
+            }
+          })
+        }}
+      />
+      propertyPanels.height = <NumberEditor
+        value={geometry.height}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cylinder') {
+              draft[selected].geometry.height = v
+            }
+          })
+        }}
+      />
+    } else if (geometry.type === 'cone') {
+      propertyPanels.topRadius = <NumberEditor
+        value={geometry.topRadius}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cone') {
+              draft[selected].geometry.topRadius = v
+            }
+          })
+        }}
+      />
+      propertyPanels.bottomRadius = <NumberEditor
+        value={geometry.bottomRadius}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cone') {
+              draft[selected].geometry.bottomRadius = v
+            }
+          })
+        }}
+      />
+      propertyPanels.height = <NumberEditor
+        value={geometry.height}
+        setValue={v => {
+          setState(draft => {
+            if (draft[selected].geometry.type === 'cone') {
+              draft[selected].geometry.height = v
+            }
+          })
+        }}
+      />
+    } else if (geometry.type === 'point') {
+      for (const f of ['x', 'y', 'z'] as const) {
+        propertyPanels[`point ${f}`] = <NumberEditor
+          value={geometry.position[f]}
+          setValue={v => {
+            setState(draft => {
+              if (draft[selected].geometry.type === 'point') {
+                draft[selected].geometry.position[f] = v
+              }
+            })
+          }}
+        />
+      }
+      propertyPanels.point = <Button onClick={() => {
+        setStatus({
+          type: 'update point',
+          plane: getCurrentPositionPlane(position3DToVec3(geometry.position)),
+          updatePoint(p) {
+            setPreview(produce(state[selected], draft => {
+              if (draft.geometry.type === 'point') {
+                draft.geometry.position = p
+              }
+            }))
+          },
+        })
+      }}>update</Button>
+    } else if (geometry.type === 'triangle') {
+      for (const e of ['p1', 'p2'] as const) {
+        for (const f of ['x', 'y', 'z'] as const) {
+          propertyPanels[`${e} ${f}`] = <NumberEditor
+            value={geometry[e][f]}
+            setValue={v => {
+              setState(draft => {
+                if (draft[selected].geometry.type === 'triangle') {
+                  draft[selected].geometry[e][f] = v
+                }
+              })
+            }}
+          />
+        }
+        propertyPanels[e] = <Button onClick={() => {
+          setStatus({
+            type: 'update point',
+            plane: getCurrentPositionPlane(position3DToVec3(geometry[e])),
+            updatePoint(p) {
+              setPreview(produce(state[selected], draft => {
+                if (draft.geometry.type === 'triangle') {
+                  draft.geometry[e] = p
+                }
+              }))
+            },
+          })
+        }}>update</Button>
+      }
+    }
+    for (const f of ['x', 'y', 'z'] as const) {
+      propertyPanels[`position ${f}`] = <NumberEditor
+        value={state[selected].position[f]}
+        setValue={v => {
+          setState(draft => {
+            draft[selected].position[f] = v
+          })
+        }}
+      />
+    }
+    propertyPanels.position = <Button onClick={() => {
+      setStatus({
+        type: 'update point',
+        plane: getCurrentPositionPlane(position3DToVec3(state[selected].position)),
+        updatePoint(p) {
+          setPreview(produce(state[selected], draft => {
+            draft.position = p
+          }))
+        },
+      })
+    }}>update</Button>
+    panel = (
+      <div style={{ position: 'absolute', right: '0px', top: '40px', bottom: '0px', width: '360px', overflowY: 'auto', background: 'white' }}>
+        <ObjectEditor inline properties={propertyPanels} />
+      </div>
+    )
+  }
   const render = (g: Nullable<Graphic3d>[]) => {
     renderer.current?.render?.(
       g,
       {
         eye,
         up: position3DToVec3(up),
-        target: [0, 0, 0],
+        target: targetPosition,
         fov: angleToRadian(60),
         near: 0.1,
         far: 20000,
@@ -185,7 +351,7 @@ export function Combination8() {
         const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: radius }), 5)
         const result: number[] = []
         for (let i = 1; i < points.length; i++) {
-          result.push(points[i - 1].x, points[i - 1].y, zRef.current, points[i].x, points[i].y, zRef.current)
+          result.push(points[i - 1].x, points[i - 1].y, distanceRef.current, points[i].x, points[i].y, distanceRef.current)
         }
         graphics.push({
           geometry: {
@@ -230,7 +396,7 @@ export function Combination8() {
                   return
                 }
               }
-              const target = renderer.current.getTarget(e.clientX, e.clientY, eye, zRef.current, info.reversedProjection)
+              const target = renderer.current.getTarget(e.clientX, e.clientY, eye, getCurrentPositionPlane(), info.reversedProjection)
               if (!target) return
               const color = colorNumberToVec(colorRef.current, opacityRef.current)
               const position = vec3ToPosition3D(target)
@@ -578,193 +744,6 @@ export function Combination8() {
             }
           }
         }}
-        onContextMenu={e => {
-          e.preventDefault()
-          const viewportPosition = { x: e.clientX, y: e.clientY }
-          if (contextMenu) {
-            setContextMenu(undefined)
-            return
-          }
-          const items: MenuItem[] = []
-          let size: number | undefined
-          if (selected !== undefined) {
-            const geometry = state[selected].geometry
-            if (geometry.type === 'cube') {
-              size = geometry.size
-            } else if (geometry.type === 'sphere') {
-              size = geometry.radius
-            } else if (geometry.type === 'cylinder') {
-              size = geometry.radius
-            } else if (geometry.type === 'cone') {
-              size = geometry.bottomRadius
-            } else if (geometry.type === 'point') {
-              items.push(
-                ...(['x', 'y', 'z'] as const).map(f => ({
-                  title: (
-                    <>
-                      start {f}
-                      <NumberEditor
-                        value={geometry.position[f]}
-                        style={{ width: '100px' }}
-                        setValue={v => {
-                          setState(draft => {
-                            const g = draft[selected].geometry
-                            if (g.type === 'point') {
-                              g.position[f] = v
-                            }
-                          })
-                          setContextMenu(undefined)
-                        }}
-                      />
-                      <Button onClick={() => {
-                        setStatus({
-                          type: 'update point',
-                          plane: {
-                            a: f === 'x' ? 1 : 0,
-                            b: f === 'y' ? 1 : 0,
-                            c: f === 'z' ? 1 : 0,
-                            d: -geometry.position[f],
-                          },
-                          updatePoint(p) {
-                            setPreview(produce(state[selected], draft => {
-                              if (draft.geometry.type === 'point') {
-                                draft.geometry.position = p
-                              }
-                            }))
-                          },
-                        })
-                        setContextMenu(undefined)
-                      }}>update</Button>
-                    </>
-                  ),
-                  height: 33,
-                })),
-              )
-            } else if (geometry.type === 'triangle') {
-              for (const e of ['p1', 'p2'] as const) {
-                items.push(
-                  ...(['x', 'y', 'z'] as const).map(f => ({
-                    title: (
-                      <>
-                        {e} {f}
-                        <NumberEditor
-                          value={geometry[e][f]}
-                          style={{ width: '100px' }}
-                          setValue={v => {
-                            setState(draft => {
-                              const g = draft[selected].geometry
-                              if (g.type === 'triangle') {
-                                g[e][f] = v
-                              }
-                            })
-                            setContextMenu(undefined)
-                          }}
-                        />
-                        <Button onClick={() => {
-                          setStatus({
-                            type: 'update point',
-                            plane: {
-                              a: f === 'x' ? 1 : 0,
-                              b: f === 'y' ? 1 : 0,
-                              c: f === 'z' ? 1 : 0,
-                              d: -geometry[e][f],
-                            },
-                            updatePoint(p) {
-                              setPreview(produce(state[selected], draft => {
-                                if (draft.geometry.type === 'triangle') {
-                                  draft.geometry[e] = p
-                                }
-                              }))
-                            },
-                          })
-                          setContextMenu(undefined)
-                        }}>update</Button>
-                      </>
-                    ),
-                    height: 33,
-                  })),
-                )
-              }
-            }
-            items.push(
-              ...(['x', 'y', 'z'] as const).map(f => ({
-                title: (
-                  <>
-                    {f}
-                    <NumberEditor
-                      value={state[selected].position[f]}
-                      style={{ width: '100px' }}
-                      setValue={v => {
-                        setState(draft => {
-                          draft[selected].position[f] = v
-                        })
-                        setContextMenu(undefined)
-                      }}
-                    />
-                    <Button onClick={() => {
-                      setStatus({
-                        type: 'update point',
-                        plane: {
-                          a: f === 'x' ? 1 : 0,
-                          b: f === 'y' ? 1 : 0,
-                          c: f === 'z' ? 1 : 0,
-                          d: -state[selected].position[f],
-                        },
-                        updatePoint(p) {
-                          setPreview(produce(state[selected], draft => {
-                            draft.position = p
-                          }))
-                        },
-                      })
-                      setContextMenu(undefined)
-                    }}>update</Button>
-                  </>
-                ),
-                height: 33,
-              })),
-            )
-          }
-          setContextMenu(
-            <Menu
-              items={[
-                ...items,
-                {
-                  title: <>
-                    <NumberEditor
-                      value={size ?? sizeRef.current}
-                      style={{ width: '40px' }}
-                      setValue={v => {
-                        if (selected !== undefined) {
-                          setState(draft => {
-                            const graphic = draft[selected]
-                            if (graphic.geometry.type === 'cube') {
-                              graphic.geometry.size = v
-                            } else if (graphic.geometry.type === 'sphere') {
-                              graphic.geometry.radius = v
-                            } else if (graphic.geometry.type === 'cylinder') {
-                              graphic.geometry.radius = v
-                              graphic.geometry.height = v
-                            } else if (graphic.geometry.type === 'cone') {
-                              graphic.geometry.bottomRadius = v
-                              graphic.geometry.height = v * 2
-                            }
-                          })
-                          setContextMenu(undefined)
-                        }
-                      }}
-                    />
-                  </>,
-                  height: 41,
-                },
-              ]}
-              y={viewportPosition.y}
-              height={height}
-              style={{
-                left: viewportPosition.x + 'px',
-              }}
-            />
-          )
-        }}
       />
       <div style={{ position: 'absolute', top: '0px' }}>
         {(['cube', 'sphere', 'cylinder', 'cone'] as const).map(s => <Button key={s} style={{ color: status === s ? 'red' : undefined }} onClick={() => setStatus(s)}>{s}</Button>)}
@@ -778,10 +757,10 @@ export function Combination8() {
         }}>delete</Button>}
         {selected !== undefined && <Button onClick={() => setStatus('intersect')}>intersect</Button>}
         <NumberEditor
-          value={zRef.current}
+          value={distanceRef.current}
           style={{ width: '50px', position: 'relative' }}
           setValue={v => {
-            zRef.current = v
+            distanceRef.current = v
           }}
         />
         <NumberEditor
@@ -799,7 +778,6 @@ export function Combination8() {
               setState(draft => {
                 draft[selected].color[3] = v * 0.01
               })
-              setContextMenu(undefined)
             }
             opacityRef.current = v * 0.01
           }}
@@ -814,13 +792,12 @@ export function Combination8() {
               setState(draft => {
                 draft[selected].color = colorNumberToVec(v, color[3])
               })
-              setContextMenu(undefined)
             }
             colorRef.current = v
           }}
         />
       </div>
-      {contextMenu}
+      {panel}
     </div>
   )
 }
