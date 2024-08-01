@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, arcToPolyline, circleToArc, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, slice3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal, Cylinder, Sphere, Cone, Tuple3 } from "../src"
 
 export function Combination8() {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -13,6 +13,7 @@ export function Combination8() {
   const height = size.height
   const [status, setStatus] = React.useState<Status>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
+  const hoveringContentCache = React.useRef(new WeakmapCache<State, State>())
   const axis = React.useRef<Graphic3d[]>(
     getAxesGraphics(),
   )
@@ -257,114 +258,57 @@ export function Combination8() {
     )
   }
   const getGraphic = (s: State): Graphic3d => graphicCache.current.get(s, () => {
-    let z = s.position.z
-    if (s.geometry.type === 'cube') {
-      z += s.geometry.size / 2
-    } else if (s.geometry.type === 'sphere') {
-      z += s.geometry.radius
-    } else if (s.geometry.type === 'cylinder') {
-      z += s.geometry.radius
-    } else if (s.geometry.type === 'point') {
+    if (s.geometry.type === 'point') {
       return {
         geometry: {
           type: 'lines',
           points: [...position3DToVec3(s.position), ...position3DToVec3(s.geometry.position)],
         },
         color: s.color,
-        position: [0, 0, 0],
       }
-    } else if (s.geometry.type === 'triangle') {
+    }
+    if (s.geometry.type === 'triangle') {
       return {
         geometry: {
           type: 'triangles',
           points: [...position3DToVec3(s.position), ...position3DToVec3(s.geometry.p1), ...position3DToVec3(s.geometry.p2)],
         },
         color: s.color,
-        position: [0, 0, 0],
       }
-    } else if (s.geometry.type === 'line strip') {
+    }
+    if (s.geometry.type === 'line strip') {
       return {
         geometry: {
           type: 'line strip',
           points: s.geometry.points.flat(),
         },
         color: s.color,
-        position: [0, 0, 0],
       }
     }
     return {
       geometry: s.geometry,
       color: s.color,
-      position: [s.position.x, s.position.y, z],
+      position: [s.position.x, s.position.y, s.position.z],
     }
   })
 
   React.useEffect(() => {
-    const graphics = [...state.map(s => getGraphic(s))]
+    const graphics = [...state.map((s, i) => {
+      if (hovering === i || selected === i) {
+        s = hoveringContentCache.current.get(s, () => {
+          return produce(s, draft => {
+            draft.color[3] *= 0.5
+          })
+        })
+      }
+      return getGraphic(s)
+    })]
     graphics.push(...axis.current)
     if (preview) {
       graphics.push(getGraphic(preview))
     }
-    const items = new Set([hovering, selected])
-    for (const item of items) {
-      if (item === undefined) continue
-      const g = state[item]
-      if (!g) continue
-      let radius: number | undefined
-      if (g.geometry.type === 'sphere') {
-        radius = g.geometry.radius
-      } else if (g.geometry.type === 'cube') {
-        radius = g.geometry.size * Math.SQRT1_2
-      } else if (g.geometry.type === 'cylinder') {
-        radius = g.geometry.radius
-      } else if (g.geometry.type === 'cone') {
-        radius = g.geometry.bottomRadius
-      } else if (g.geometry.type === 'point') {
-        graphics.push({
-          geometry: {
-            type: 'lines',
-            points: [...position3DToVec3(g.position), ...position3DToVec3(g.geometry.position)],
-          },
-          color: [0, 1, 0, 1],
-          position: [0, 0, 0.5],
-        })
-      } else if (g.geometry.type === 'triangle') {
-        graphics.push({
-          geometry: {
-            type: 'line strip',
-            points: [...position3DToVec3(g.position), ...position3DToVec3(g.geometry.p1), ...position3DToVec3(g.geometry.p2), ...position3DToVec3(g.position)],
-          },
-          color: [0, 1, 0, 1],
-          position: [0, 0, 0.5],
-        })
-      } else if (g.geometry.type === 'line strip') {
-        graphics.push({
-          geometry: {
-            type: 'line strip',
-            points: g.geometry.points.map(p => [p[0], p[1], p[2] + 0.5]).flat(),
-          },
-          color: [0, 1, 0, 1],
-          position: [0, 0, 0],
-        })
-      }
-      if (radius) {
-        const points = arcToPolyline(circleToArc({ x: 0, y: 0, r: radius }), 5)
-        const result: number[] = []
-        for (let i = 1; i < points.length; i++) {
-          result.push(points[i - 1].x, points[i - 1].y, distanceRef.current, points[i].x, points[i].y, distanceRef.current)
-        }
-        graphics.push({
-          geometry: {
-            type: 'lines',
-            points: result,
-          },
-          color: [0, 1, 0, 1],
-          position: [g.position.x, g.position.y, 1],
-        })
-      }
-    }
     render(graphics)
-  }, [state, preview, hovering, selected, x, y, scale])
+  }, [state, preview, hovering, selected, x, y, scale, width, height])
 
   return (
     <div
@@ -533,186 +477,104 @@ export function Combination8() {
             ) {
               const state1 = state[hovering]
               const state2 = state[selected]
-              const target1 = getGraphic(state1)
-              const target2 = getGraphic(state2)
               let points: Vec3[] | undefined
               let lines: Vec3[] | undefined
-              if (target1.geometry.type === 'lines') {
-                if (target2.geometry.type === 'lines') {
-                  const p1 = slice3(target1.geometry.points)
-                  const p2 = slice3(target2.geometry.points)
+              if (state1.geometry.type === 'point') {
+                if (state2.geometry.type === 'point') {
                   const p = getTwoLine3DIntersectionPoint(
-                    p1, v3.substract(slice3(target1.geometry.points, 3), p1),
-                    p2, v3.substract(slice3(target2.geometry.points, 3), p2),
+                    ...getLine(state1.geometry, state1.position),
+                    ...getLine(state2.geometry, state2.position),
                   )
                   if (p) {
                     points = [p]
                   }
-                } else if (target2.geometry.type === 'sphere') {
+                } else if (state2.geometry.type === 'sphere') {
                   points = getLineAndSphereIntersectionPoints(
-                    [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
-                    {
-                      radius: target2.geometry.radius,
-                      ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
-                    }
+                    getLine(state1.geometry, state1.position),
+                    getSphere(state2.geometry, state2.position),
                   )
-                } else if (target2.geometry.type === 'cylinder') {
+                } else if (state2.geometry.type === 'cylinder') {
                   points = getLineAndCylinderIntersectionPoints(
-                    [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
-                    {
-                      base: target2.position || [0, 0, 0],
-                      radius: target2.geometry.radius,
-                      direction: [0, 1, 0],
-                      height1: -target2.geometry.height / 2,
-                      height2: target2.geometry.height / 2,
-                    }
+                    getLine(state1.geometry, state1.position),
+                    getCylinder(state2.geometry, state2.position)
                   )
                 } else if (state2.geometry.type === 'cone') {
                   points = getLineAndConeIntersectionPoints(
-                    [slice3(target1.geometry.points), slice3(target1.geometry.points, 3)],
-                    {
-                      base: [state2.position.x, state2.position.y + state2.geometry.height / 2, state2.position.z],
-                      radiusHeightRate: state2.geometry.bottomRadius / state2.geometry.height,
-                      direction: [0, 1, 0],
-                      height1: 0,
-                      height2: state2.geometry.height,
-                    }
+                    getLine(state1.geometry, state1.position),
+                    getCone(state2.geometry, state2.position),
                   )
                 } else if (state2.geometry.type === 'triangle') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state2.position),
-                    position3DToVec3(state2.geometry.p1),
-                    position3DToVec3(state2.geometry.p2),
-                  )
+                  const plane = getPlane(state2.geometry, state2.position)
                   if (plane) {
-                    const p = getLineAndPlaneIntersectionPoint([slice3(target1.geometry.points), slice3(target1.geometry.points, 3)], plane)
+                    const p = getLineAndPlaneIntersectionPoint(getLine(state1.geometry, state1.position), plane)
                     if (p) {
                       points = [p]
                     }
                   }
-                } else if (target2.geometry.type === 'cube') {
-                  const triangles = getVerticesTriangles(twgl.primitives.createCubeVertices(target2.geometry.size), target2.position)
-                  points = getLineAndTrianglesIntersectionPoint([slice3(target1.geometry.points), slice3(target1.geometry.points, 3)], triangles)
+                } else if (state2.geometry.type === 'cube') {
+                  const triangles = getCube(state2.geometry, state2.position)
+                  points = getLineAndTrianglesIntersectionPoint(getLine(state1.geometry, state1.position), triangles)
                 }
-              } else if (target1.geometry.type === 'sphere') {
-                if (target2.geometry.type === 'lines') {
+              } else if (state1.geometry.type === 'sphere') {
+                if (state2.geometry.type === 'point') {
                   points = getLineAndSphereIntersectionPoints(
-                    [slice3(target2.geometry.points), slice3(target2.geometry.points, 3)],
-                    {
-                      radius: target1.geometry.radius,
-                      ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
-                    }
+                    getLine(state2.geometry, state2.position),
+                    getSphere(state1.geometry, state1.position),
                   )
                 } else if (state2.geometry.type === 'triangle') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state2.position),
-                    position3DToVec3(state2.geometry.p1),
-                    position3DToVec3(state2.geometry.p2),
-                  )
+                  const plane = getPlane(state2.geometry, state2.position)
                   if (plane) {
-                    lines = getPlaneSphereIntersection(plane, {
-                      radius: target1.geometry.radius,
-                      ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
-                    })
+                    lines = getPlaneSphereIntersection(plane, getSphere(state1.geometry, state1.position))
                   }
-                } else if (target2.geometry.type === 'sphere') {
+                } else if (state2.geometry.type === 'sphere') {
                   lines = getTwoSpheresIntersection(
-                    {
-                      radius: target1.geometry.radius,
-                      ...(vec3ToPosition3D(target1.position || [0, 0, 0])),
-                    },
-                    {
-                      radius: target2.geometry.radius,
-                      ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
-                    },
+                    getSphere(state1.geometry, state1.position),
+                    getSphere(state2.geometry, state2.position),
                   )
                 }
-              } else if (target1.geometry.type === 'cylinder') {
-                if (target2.geometry.type === 'lines') {
+              } else if (state1.geometry.type === 'cylinder') {
+                if (state2.geometry.type === 'point') {
                   points = getLineAndCylinderIntersectionPoints(
-                    [slice3(target2.geometry.points), slice3(target2.geometry.points, 3)],
-                    {
-                      base: target1.position || [0, 0, 0],
-                      radius: target1.geometry.radius,
-                      direction: [0, 1, 0],
-                      height1: -target1.geometry.height / 2,
-                      height2: target1.geometry.height / 2,
-                    }
+                    getLine(state2.geometry, state2.position),
+                    getCylinder(state1.geometry, state1.position),
                   )
                 } else if (state2.geometry.type === 'triangle') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state2.position),
-                    position3DToVec3(state2.geometry.p1),
-                    position3DToVec3(state2.geometry.p2),
-                  )
+                  const plane = getPlane(state2.geometry, state2.position)
                   if (plane) {
-                    lines = getPlaneCylinderIntersection(plane, {
-                      base: target1.position || [0, 0, 0],
-                      radius: target1.geometry.radius,
-                      direction: [0, 1, 0],
-                      height1: -target1.geometry.height / 2,
-                      height2: target1.geometry.height / 2,
-                    })
+                    lines = getPlaneCylinderIntersection(plane, getCylinder(state1.geometry, state1.position))
                   }
                 }
               } else if (state1.geometry.type === 'cone') {
-                if (target2.geometry.type === 'lines') {
+                if (state2.geometry.type === 'point') {
                   points = getLineAndConeIntersectionPoints(
-                    [slice3(target2.geometry.points), slice3(target2.geometry.points, 3)],
-                    {
-                      base: [state1.position.x, state1.position.y + state1.geometry.height / 2, state1.position.z],
-                      radiusHeightRate: state1.geometry.bottomRadius / state1.geometry.height,
-                      direction: [0, 1, 0],
-                      height1: 0,
-                      height2: state1.geometry.height,
-                    }
+                    getLine(state2.geometry, state2.position),
+                    getCone(state1.geometry, state1.position),
                   )
                 }
               } else if (state1.geometry.type === 'triangle') {
-                if (target2.geometry.type === 'lines') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state1.position),
-                    position3DToVec3(state1.geometry.p1),
-                    position3DToVec3(state1.geometry.p2),
-                  )
+                if (state2.geometry.type === 'point') {
+                  const plane = getPlane(state1.geometry, state1.position)
                   if (plane) {
-                    const p = getLineAndPlaneIntersectionPoint([slice3(target2.geometry.points), slice3(target2.geometry.points, 3)], plane)
+                    const p = getLineAndPlaneIntersectionPoint(getLine(state2.geometry, state2.position), plane)
                     if (p) {
                       points = [p]
                     }
                   }
-                } else if (target2.geometry.type === 'sphere') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state1.position),
-                    position3DToVec3(state1.geometry.p1),
-                    position3DToVec3(state1.geometry.p2),
-                  )
+                } else if (state2.geometry.type === 'sphere') {
+                  const plane = getPlane(state1.geometry, state1.position)
                   if (plane) {
-                    lines = getPlaneSphereIntersection(plane, {
-                      radius: target2.geometry.radius,
-                      ...(vec3ToPosition3D(target2.position || [0, 0, 0])),
-                    })
+                    lines = getPlaneSphereIntersection(plane, getSphere(state2.geometry, state2.position))
                   }
-                } else if (target2.geometry.type === 'cylinder') {
-                  const plane = getThreePointPlane(
-                    position3DToVec3(state1.position),
-                    position3DToVec3(state1.geometry.p1),
-                    position3DToVec3(state1.geometry.p2),
-                  )
+                } else if (state2.geometry.type === 'cylinder') {
+                  const plane = getPlane(state1.geometry, state1.position)
                   if (plane) {
-                    lines = getPlaneCylinderIntersection(plane, {
-                      base: target2.position || [0, 0, 0],
-                      radius: target2.geometry.radius,
-                      direction: [0, 1, 0],
-                      height1: -target2.geometry.height / 2,
-                      height2: target2.geometry.height / 2,
-                    })
+                    lines = getPlaneCylinderIntersection(plane, getCylinder(state2.geometry, state2.position))
                   }
                 }
-              } else if (target1.geometry.type === 'cube') {
-                if (target2.geometry.type === 'lines') {
-                  const triangles = getVerticesTriangles(twgl.primitives.createCubeVertices(target1.geometry.size), target1.position)
-                  points = getLineAndTrianglesIntersectionPoint([slice3(target2.geometry.points), slice3(target2.geometry.points, 3)], triangles)
+              } else if (state1.geometry.type === 'cube') {
+                if (state2.geometry.type === 'point') {
+                  const triangles = getCube(state1.geometry, state1.position)
+                  points = getLineAndTrianglesIntersectionPoint(getLine(state2.geometry, state2.position), triangles)
                 }
               }
               if (points && points.length > 0) {
@@ -839,4 +701,48 @@ interface State {
   }
   color: Vec4
   position: Position3D
+}
+
+function getCube(geometry: CubeGeometry, position: Position3D): Tuple3<Vec3>[] {
+  return getVerticesTriangles(twgl.primitives.createCubeVertices(geometry.size), position3DToVec3(position))
+}
+
+function getLine(geometry: { position: Position3D }, position: Position3D): [Vec3, Vec3] {
+  const p = position3DToVec3(position)
+  return [p, v3.substract(position3DToVec3(geometry.position), p)]
+}
+
+function getPlane(geometry: { p1: Position3D, p2: Position3D }, position: Position3D): GeneralFormPlane | undefined {
+  return getThreePointPlane(
+    position3DToVec3(position),
+    position3DToVec3(geometry.p1),
+    position3DToVec3(geometry.p2),
+  )
+}
+
+function getCylinder(geometry: CylinderGeometry, position: Position3D): Cylinder {
+  return {
+    base: position3DToVec3(position),
+    radius: geometry.radius,
+    direction: [0, 1, 0],
+    height1: -geometry.height / 2,
+    height2: geometry.height / 2,
+  }
+}
+
+function getSphere(geometry: SphereGeometry, position: Position3D): Sphere {
+  return {
+    radius: geometry.radius,
+    ...position,
+  }
+}
+
+function getCone(geometry: ConeGeometry, position: Position3D): Cone {
+  return {
+    base: [position.x, position.y + geometry.height / 2, position.z],
+    radiusHeightRate: geometry.bottomRadius / geometry.height,
+    direction: [0, 1, 0],
+    height1: 0,
+    height2: geometry.height,
+  }
 }
