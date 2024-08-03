@@ -385,6 +385,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     pick,
     pickPoint,
     getTarget,
+    canvas,
     get pickingDrawObjectsInfo() {
       return pickingDrawObjectsInfo
     },

@@ -142,6 +142,11 @@ export function getPerpendicularPointToLine3D(point: Vec3, start: Vec3, directio
   return getPointByParamAndDirection3D(start, param, direction)
 }
 
+export function getPerpendicularDistanceToLine3D(point: Vec3, start: Vec3, direction: Vec3): number {
+  const p = getPerpendicularPointToLine3D(point, start, direction)
+  return v3.length(v3.substract(p, point))
+}
+
 export function getPerpendicularDistance({ x, y }: Position, { a, b, c }: GeneralFormLine): number {
   // parallel line: a x + b y + c - d sqrt(a a + b b) = 0
   // a x + b y + c + d sqrt(a a + b b) = 0

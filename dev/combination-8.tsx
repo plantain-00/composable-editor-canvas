@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal, Cylinder, Sphere, Cone, Tuple3 } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal, Cylinder, Sphere, Cone, Tuple3, getPerpendicularDistanceToLine3D, reverse3dPosition } from "../src"
 
 export function Combination8() {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -30,6 +30,7 @@ export function Combination8() {
   const distanceRef = React.useRef(0)
   const [hovering, setHovering] = React.useState<number>()
   const [selected, setSelected] = React.useState<number>()
+  const [hoveringGridPoint, setHoveringGripPoint] = React.useState<{ point: Position3D, updatePoint: (draft: State, p: Position3D) => void }>()
 
   React.useEffect(() => {
     if (!ref.current || renderer.current) {
@@ -57,6 +58,7 @@ export function Combination8() {
       setPreview(undefined)
       setHovering(undefined)
       setSelected(undefined)
+      setHoveringGripPoint(undefined)
     } else if (e.key === 'Delete' || e.key === 'Backspace' || e.code === 'KeyE') {
       if (selected !== undefined) {
         setState(draft => {
@@ -80,6 +82,23 @@ export function Combination8() {
   if (selected !== undefined) {
     const propertyPanels: Record<string, JSX.Element> = {}
     const geometry = state[selected].geometry
+    propertyPanels.color = <NumberEditor
+      value={vecToColorNumber(state[selected].color)}
+      type='color'
+      setValue={v => {
+        setState(draft => {
+          draft[selected].color = colorNumberToVec(v, state[selected].color[3])
+        })
+      }}
+    />
+    propertyPanels.opacity = <NumberEditor
+      value={state[selected].color[3] * 100}
+      setValue={v => {
+        setState(draft => {
+          draft[selected].color[3] = v * 0.01
+        })
+      }}
+    />
     if (geometry.type === 'cube') {
       propertyPanels.size = <NumberEditor
         value={geometry.size}
@@ -288,7 +307,7 @@ export function Combination8() {
     return {
       geometry: s.geometry,
       color: s.color,
-      position: [s.position.x, s.position.y, s.position.z],
+      position: position3DToVec3(s.position),
     }
   })
 
@@ -316,6 +335,7 @@ export function Combination8() {
       style={{
         position: 'absolute',
         inset: '0px',
+        cursor: hoveringGridPoint ? 'pointer' : undefined,
       }}
     >
       <canvas
@@ -323,6 +343,56 @@ export function Combination8() {
         width={width}
         height={height}
         onMouseMove={e => {
+          if (!status && selected !== undefined && renderer.current) {
+            const info = renderer.current.pickingDrawObjectsInfo[selected]
+            const content = state[selected]
+            if (info && content) {
+              const p = reverse3dPosition(e.clientX, e.clientY, renderer.current.canvas, info.reversedProjection)
+              const points = [{
+                point: content.position,
+                updatePoint(draft: State, p: Position3D) {
+                  draft.position = p
+                },
+              }]
+              if (content.geometry.type === 'point') {
+                points.push({
+                  point: content.geometry.position,
+                  updatePoint(draft: State, p: Position3D) {
+                    if (draft.geometry.type === 'point') {
+                      draft.geometry.position = p
+                    }
+                  },
+                })
+              } else if (content.geometry.type === 'triangle') {
+                points.push(
+                  {
+                    point: content.geometry.p1,
+                    updatePoint(draft: State, p: Position3D) {
+                      if (draft.geometry.type === 'triangle') {
+                        draft.geometry.p1 = p
+                      }
+                    },
+                  },
+                  {
+                    point: content.geometry.p2,
+                    updatePoint(draft: State, p: Position3D) {
+                      if (draft.geometry.type === 'triangle') {
+                        draft.geometry.p2 = p
+                      }
+                    },
+                  },
+                )
+              }
+              for (const point of points) {
+                const distance = getPerpendicularDistanceToLine3D(position3DToVec3(point.point), p, v3.substract(eye, p))
+                if (distance < 3) {
+                  setHoveringGripPoint(point)
+                  return
+                }
+              }
+              setHoveringGripPoint(undefined)
+            }
+          }
           if (!status || status === 'intersect') {
             const index = renderer.current?.pick(e.clientX, e.clientY)
             setHovering(index)
@@ -428,6 +498,21 @@ export function Combination8() {
         }}
         onMouseDown={() => {
           if (!status) {
+            if (selected !== undefined && hoveringGridPoint) {
+              const content = state[selected]
+              if (content) {
+                setStatus({
+                  type: 'update point',
+                  plane: getCurrentPositionPlane(position3DToVec3(hoveringGridPoint.point)),
+                  updatePoint(p) {
+                    setPreview(produce(content, draft => {
+                      hoveringGridPoint.updatePoint(draft, p)
+                    }))
+                  },
+                })
+                return
+              }
+            }
             if (hovering !== undefined) {
               setSelected(hovering)
             }
@@ -633,28 +718,17 @@ export function Combination8() {
           }}
         />
         <NumberEditor
-          value={(selected !== undefined ? state[selected].color[3] : opacityRef.current) * 100}
+          value={opacityRef.current * 100}
           style={{ width: '50px', position: 'relative' }}
           setValue={v => {
-            if (selected !== undefined) {
-              setState(draft => {
-                draft[selected].color[3] = v * 0.01
-              })
-            }
             opacityRef.current = v * 0.01
           }}
         />
         <NumberEditor
-          value={selected !== undefined ? vecToColorNumber(state[selected].color) : colorRef.current}
+          value={colorRef.current}
           type='color'
           style={{ width: '50px', position: 'relative' }}
           setValue={v => {
-            if (selected !== undefined) {
-              const color = state[selected].color
-              setState(draft => {
-                draft[selected].color = colorNumberToVec(v, color[3])
-              })
-            }
             colorRef.current = v
           }}
         />
