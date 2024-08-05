@@ -56,10 +56,7 @@ export function getLineAndCylinderIntersectionPoints([[x1, y1, z1], [x2, y2, z2]
     j2 * j2 + j4 * j4 + j6 * j6 - radius * radius,
   )
   if (!extend && us.length > 0) {
-    const length = v3.length([e1, e2, e3])
-    const minT = height1 / length
-    const maxT = height2 / length
-    us = us.filter(u => isBetween(h1 * u + h2, minT, maxT))
+    us = us.filter(u => isBetween(h1 * u + h2, height1, height2))
   }
   return us.map(u => [
     u * e1 + x1,

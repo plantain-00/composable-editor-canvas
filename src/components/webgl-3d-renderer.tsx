@@ -214,6 +214,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
   const bufferInfoCache = new WeakmapCache<Graphic3d['geometry'], twgl.BufferInfo>()
   const pickingFBI = twgl.createFramebufferInfo(gl)
   let pickingDrawObjectsInfo: Nullable<PickingObjectInfo>[] = []
+  let reversedProjection: m4.Mat4 | undefined
 
   const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: Vec4) => {
     twgl.resizeCanvasToDisplaySize(canvas);
@@ -237,6 +238,7 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       u_viewInverse: camera,
       u_threshhold: 0.1,
     }
+    reversedProjection = m4.inverse(viewProjection)
 
     const drawObjects: twgl.DrawObject[] = []
     pickingDrawObjectsInfo = []
@@ -255,14 +257,14 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
       if (g.rotateZ) {
         world = m4.rotateZ(world, g.rotateZ)
       }
+      if (g.position) {
+        world = m4.translate(world, g.position)
+      }
       if (g.direction) {
         const axisAndRadian = rotateToDirection(g.direction)
         if (axisAndRadian) {
           world = m4.axisRotate(world, axisAndRadian.axis, axisAndRadian.radian)
         }
-      }
-      if (g.position) {
-        world = m4.translate(world, g.position)
       }
       let programInfo: twgl.ProgramInfo
       if (g.geometry.type === 'lines' || g.geometry.type === 'line strip' || g.geometry.type === 'triangles' || g.geometry.type === 'triangle strip' || g.geometry.type === 'polygon') {
@@ -386,8 +388,8 @@ export function createWebgl3DRenderer(canvas: HTMLCanvasElement) {
     pickPoint,
     getTarget,
     canvas,
-    get pickingDrawObjectsInfo() {
-      return pickingDrawObjectsInfo
+    get reversedProjection() {
+      return reversedProjection
     },
   }
 }
