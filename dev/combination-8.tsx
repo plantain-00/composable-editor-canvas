@@ -1,7 +1,7 @@
 import * as React from "react"
 import { produce } from 'immer'
 import * as twgl from 'twgl.js'
-import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal, Cylinder, Sphere, Cone, Tuple3, getPerpendicularDistanceToLine3D, reverse3dPosition } from "../src"
+import { createWebgl3DRenderer, Graphic3d, useWindowSize, angleToRadian, Vec3, useGlobalKeyDown, Nullable, useUndoRedo, metaKeyIfMacElseCtrlKey, colorNumberToVec, NumberEditor, vecToColorNumber, SphereGeometry, CubeGeometry, Vec4, WeakmapCache, useLocalStorageState, Position3D, getLineAndSphereIntersectionPoints, position3DToVec3, vec3ToPosition3D, Button, GeneralFormPlane, CylinderGeometry, getLineAndPlaneIntersectionPoint, getThreePointPlane, getLineAndCylinderIntersectionPoints, getTwoLine3DIntersectionPoint, v3, getVerticesTriangles, getLineAndTrianglesIntersectionPoint, ConeGeometry, getLineAndConeIntersectionPoints, getPlaneSphereIntersection, getTwoSpheresIntersection, getPlaneCylinderIntersection, getAxesGraphics, useWheelScroll, useWheelZoom, bindMultipleRefs, updateCamera, ObjectEditor, getPlaneByPointAndNormal, Cylinder, Sphere, Cone, Tuple3, getPerpendicularDistanceToLine3D, reverse3dPosition, equals, getPointByLengthAndDirection3D } from "../src"
 
 export function Combination8() {
   const ref = React.useRef<HTMLCanvasElement | null>(null)
@@ -14,9 +14,7 @@ export function Combination8() {
   const [status, setStatus] = React.useState<Status>()
   const graphicCache = React.useRef(new WeakmapCache<State, Graphic3d>())
   const hoveringContentCache = React.useRef(new WeakmapCache<State, State>())
-  const axis = React.useRef<Graphic3d[]>(
-    getAxesGraphics(),
-  )
+  const axis = React.useRef<Graphic3d[]>(getAxesGraphics())
   const [, onChange, initialState] = useLocalStorageState<readonly State[]>('composable-editor-canvas-combination8-data', [])
   const { state, setState, undo, redo } = useUndoRedo<readonly State[]>(initialState, {
     onChange: (({ newState }) => {
@@ -249,6 +247,32 @@ export function Combination8() {
         },
       })
     }}>update</Button>
+    if (geometry.type === 'cylinder' || geometry.type === 'cone') {
+      for (const f of ['x', 'y', 'z'] as const) {
+        propertyPanels[`direction ${f}`] = <NumberEditor
+          value={(state[selected].direction || { x: 0, y: 1, z: 0 })[f]}
+          setValue={v => {
+            setState(draft => {
+              if (!draft[selected].direction) {
+                draft[selected].direction = { x: 0, y: 1, z: 0 }
+              }
+              draft[selected].direction[f] = v
+            })
+          }}
+        />
+      }
+      propertyPanels.direction = <Button onClick={() => {
+        setStatus({
+          type: 'update point',
+          plane: getCurrentPositionPlane(position3DToVec3(state[selected].position)),
+          updatePoint(p) {
+            setPreview(produce(state[selected], draft => {
+              draft.direction = vec3ToPosition3D(v3.substract(position3DToVec3(p), position3DToVec3(draft.position)))
+            }))
+          },
+        })
+      }}>update</Button>
+    }
     panel = (
       <div style={{ position: 'absolute', right: '0px', top: '40px', bottom: '0px', width: '360px', overflowY: 'auto', background: 'white' }}>
         <ObjectEditor inline properties={propertyPanels} />
@@ -308,6 +332,7 @@ export function Combination8() {
       geometry: s.geometry,
       color: s.color,
       position: position3DToVec3(s.position),
+      direction: s.direction ? position3DToVec3(s.direction) : undefined,
     }
   })
 
@@ -344,10 +369,10 @@ export function Combination8() {
         height={height}
         onMouseMove={e => {
           if (!status && selected !== undefined && renderer.current) {
-            const info = renderer.current.pickingDrawObjectsInfo[selected]
+            const reversedProjection = renderer.current.reversedProjection
             const content = state[selected]
-            if (info && content) {
-              const p = reverse3dPosition(e.clientX, e.clientY, renderer.current.canvas, info.reversedProjection)
+            if (reversedProjection && content) {
+              const p = reverse3dPosition(e.clientX, e.clientY, renderer.current.canvas, reversedProjection)
               const points = [{
                 point: content.position,
                 updatePoint(draft: State, p: Position3D) {
@@ -382,6 +407,14 @@ export function Combination8() {
                     },
                   },
                 )
+              } else if (content.geometry.type === 'cylinder' || content.geometry.type === 'cone') {
+                const base = position3DToVec3(content.position)
+                points.push({
+                  point: vec3ToPosition3D(getPointByLengthAndDirection3D(base, content.geometry.height / 2, position3DToVec3(content.direction || { x: 0, y: 1, z: 0 }))),
+                  updatePoint(draft: State, p: Position3D) {
+                    draft.direction = vec3ToPosition3D(v3.substract(position3DToVec3(p), base))
+                  },
+                })
               }
               for (const point of points) {
                 const distance = getPerpendicularDistanceToLine3D(position3DToVec3(point.point), p, v3.substract(eye, p))
@@ -399,18 +432,18 @@ export function Combination8() {
             return
           }
           if (renderer.current) {
-            const info = renderer.current.pickingDrawObjectsInfo[0]
-            if (info) {
-              if (typeof status !== 'string') {
+            const reversedProjection = renderer.current.reversedProjection
+            if (reversedProjection) {
+              if (typeof status !== 'string' && selected !== undefined) {
                 if (status.type === 'update point') {
-                  const target = renderer.current.getTarget(e.clientX, e.clientY, eye, status.plane, info.reversedProjection)
+                  const target = renderer.current.getTarget(e.clientX, e.clientY, eye, status.plane, reversedProjection)
                   if (target) {
                     status.updatePoint(vec3ToPosition3D(target))
                   }
                   return
                 }
               }
-              const target = renderer.current.getTarget(e.clientX, e.clientY, eye, getCurrentPositionPlane(), info.reversedProjection)
+              const target = renderer.current.getTarget(e.clientX, e.clientY, eye, getCurrentPositionPlane(), reversedProjection)
               if (!target) return
               const color = colorNumberToVec(colorRef.current, opacityRef.current)
               const position = vec3ToPosition3D(target)
@@ -566,9 +599,11 @@ export function Combination8() {
               let lines: Vec3[] | undefined
               if (state1.geometry.type === 'point') {
                 if (state2.geometry.type === 'point') {
+                  const line1 = getLine(state1.geometry, state1.position)
+                  const line2 = getLine(state2.geometry, state2.position)
                   const p = getTwoLine3DIntersectionPoint(
-                    ...getLine(state1.geometry, state1.position),
-                    ...getLine(state2.geometry, state2.position),
+                    line1[0], v3.substract(...line1),
+                    line2[0], v3.substract(...line2),
                   )
                   if (p) {
                     points = [p]
@@ -581,13 +616,20 @@ export function Combination8() {
                 } else if (state2.geometry.type === 'cylinder') {
                   points = getLineAndCylinderIntersectionPoints(
                     getLine(state1.geometry, state1.position),
-                    getCylinder(state2.geometry, state2.position)
+                    getCylinder(state2.geometry, state2.position, state2.direction)
                   )
                 } else if (state2.geometry.type === 'cone') {
-                  points = getLineAndConeIntersectionPoints(
-                    getLine(state1.geometry, state1.position),
-                    getCone(state2.geometry, state2.position),
-                  )
+                  if (equals(state2.geometry.topRadius, state2.geometry.bottomRadius)) {
+                    points = getLineAndCylinderIntersectionPoints(
+                      getLine(state1.geometry, state1.position),
+                      getCylinder({ type: 'cylinder', height: state2.geometry.height, radius: state2.geometry.bottomRadius }, state2.position, state2.direction)
+                    )
+                  } else {
+                    points = getLineAndConeIntersectionPoints(
+                      getLine(state1.geometry, state1.position),
+                      getCone(state2.geometry, state2.position, state2.direction),
+                    )
+                  }
                 } else if (state2.geometry.type === 'triangle') {
                   const plane = getPlane(state2.geometry, state2.position)
                   if (plane) {
@@ -621,20 +663,27 @@ export function Combination8() {
                 if (state2.geometry.type === 'point') {
                   points = getLineAndCylinderIntersectionPoints(
                     getLine(state2.geometry, state2.position),
-                    getCylinder(state1.geometry, state1.position),
+                    getCylinder(state1.geometry, state1.position, state1.direction),
                   )
                 } else if (state2.geometry.type === 'triangle') {
                   const plane = getPlane(state2.geometry, state2.position)
                   if (plane) {
-                    lines = getPlaneCylinderIntersection(plane, getCylinder(state1.geometry, state1.position))
+                    lines = getPlaneCylinderIntersection(plane, getCylinder(state1.geometry, state1.position, state1.direction))
                   }
                 }
               } else if (state1.geometry.type === 'cone') {
                 if (state2.geometry.type === 'point') {
-                  points = getLineAndConeIntersectionPoints(
-                    getLine(state2.geometry, state2.position),
-                    getCone(state1.geometry, state1.position),
-                  )
+                  if (equals(state1.geometry.topRadius, state1.geometry.bottomRadius)) {
+                    points = getLineAndCylinderIntersectionPoints(
+                      getLine(state2.geometry, state2.position),
+                      getCylinder({ type: 'cylinder', height: state1.geometry.height, radius: state1.geometry.bottomRadius }, state1.position, state1.direction),
+                    )
+                  } else {
+                    points = getLineAndConeIntersectionPoints(
+                      getLine(state2.geometry, state2.position),
+                      getCone(state1.geometry, state1.position, state1.direction),
+                    )
+                  }
                 }
               } else if (state1.geometry.type === 'triangle') {
                 if (state2.geometry.type === 'point') {
@@ -653,7 +702,7 @@ export function Combination8() {
                 } else if (state2.geometry.type === 'cylinder') {
                   const plane = getPlane(state1.geometry, state1.position)
                   if (plane) {
-                    lines = getPlaneCylinderIntersection(plane, getCylinder(state2.geometry, state2.position))
+                    lines = getPlaneCylinderIntersection(plane, getCylinder(state2.geometry, state2.position, state2.direction))
                   }
                 }
               } else if (state1.geometry.type === 'cube') {
@@ -667,9 +716,9 @@ export function Combination8() {
                   draft.push(...points.map(p => ({
                     geometry: {
                       type: 'sphere',
-                      radius: 0.5,
+                      radius: sizeRef.current,
                     },
-                    color: [0, 1, 0, 1],
+                    color: colorNumberToVec(colorRef.current, opacityRef.current),
                     position: vec3ToPosition3D(p),
                   } as State)))
                 })
@@ -682,7 +731,7 @@ export function Combination8() {
                       type: 'line strip',
                       points: lines,
                     },
-                    color: [0, 1, 0, 1],
+                    color: colorNumberToVec(colorRef.current, opacityRef.current),
                     position: { x: 0, y: 0, z: 0 },
                   })
                 })
@@ -775,6 +824,7 @@ interface State {
   }
   color: Vec4
   position: Position3D
+  direction?: Position3D
 }
 
 function getCube(geometry: CubeGeometry, position: Position3D): Tuple3<Vec3>[] {
@@ -782,8 +832,7 @@ function getCube(geometry: CubeGeometry, position: Position3D): Tuple3<Vec3>[] {
 }
 
 function getLine(geometry: { position: Position3D }, position: Position3D): [Vec3, Vec3] {
-  const p = position3DToVec3(position)
-  return [p, v3.substract(position3DToVec3(geometry.position), p)]
+  return [position3DToVec3(position), position3DToVec3(geometry.position)]
 }
 
 function getPlane(geometry: { p1: Position3D, p2: Position3D }, position: Position3D): GeneralFormPlane | undefined {
@@ -794,11 +843,11 @@ function getPlane(geometry: { p1: Position3D, p2: Position3D }, position: Positi
   )
 }
 
-function getCylinder(geometry: CylinderGeometry, position: Position3D): Cylinder {
+function getCylinder(geometry: CylinderGeometry, position: Position3D, direction: Position3D = { x: 0, y: 1, z: 0 }): Cylinder {
   return {
     base: position3DToVec3(position),
     radius: geometry.radius,
-    direction: [0, 1, 0],
+    direction: position3DToVec3(direction),
     height1: -geometry.height / 2,
     height2: geometry.height / 2,
   }
@@ -811,12 +860,15 @@ function getSphere(geometry: SphereGeometry, position: Position3D): Sphere {
   }
 }
 
-function getCone(geometry: ConeGeometry, position: Position3D): Cone {
+function getCone(geometry: ConeGeometry, position: Position3D, dir: Position3D = { x: 0, y: 1, z: 0 }): Cone {
+  const direction = position3DToVec3(dir)
+  const distance = geometry.height / 2 * (geometry.topRadius + geometry.bottomRadius) / (geometry.bottomRadius - geometry.topRadius)
+  const base = getPointByLengthAndDirection3D(position3DToVec3(position), distance, direction)
   return {
-    base: [position.x, position.y + geometry.height / 2, position.z],
-    radiusHeightRate: geometry.bottomRadius / geometry.height,
-    direction: [0, 1, 0],
-    height1: 0,
-    height2: geometry.height,
+    base,
+    radiusHeightRate: Math.abs(geometry.bottomRadius - geometry.topRadius) / geometry.height,
+    direction,
+    height1: -distance - geometry.height / 2,
+    height2: -distance + geometry.height / 2,
   }
 }

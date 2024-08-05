@@ -208,6 +208,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
   const pickingPipelineCache = new MapCache<Graphic3d['geometry']['type'], GPURenderPipeline>()
   const bufferCache = new WeakmapCache<Graphic3d['geometry'], OptionalField<ReturnType<typeof createBuffers>, 'primaryBuffers'>>()
   let pickingDrawObjectsInfo: Nullable<PickingObjectInfo>[] = []
+  let reversedProjection: m4.Mat4 | undefined
 
   const render = (graphics: (Nullable<Graphic3d>)[], { eye, up, fov, near, far, target }: Camera, light: Light, backgroundColor: Vec4) => {
     if (canvas.width !== sampleTexture.instance.width || canvas.height !== sampleTexture.instance.height) {
@@ -237,6 +238,7 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     const camera = m4.lookAt(eye, target, up);
     const viewProjection = m4.multiply(projection, m4.inverse(camera))
     pickingDrawObjectsInfo = []
+    reversedProjection = m4.inverse(viewProjection)
     graphics.forEach((g, i) => {
       if (!g) {
         pickingDrawObjectsInfo.push(undefined)
@@ -252,14 +254,14 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
       if (g.rotateZ) {
         world = m4.rotateZ(world, g.rotateZ)
       }
+      if (g.position) {
+        world = m4.translate(world, g.position)
+      }
       if (g.direction) {
         const axisAndRadian = rotateToDirection(g.direction)
         if (axisAndRadian) {
           world = m4.axisRotate(world, axisAndRadian.axis, axisAndRadian.radian)
         }
-      }
-      if (g.position) {
-        world = m4.translate(world, g.position)
       }
       const pipeline = basicPipelineCache.get(g.geometry.type, () => {
         let shaderModule: GPUShaderModule
@@ -489,8 +491,9 @@ export async function createWebgpu3DRenderer(canvas: HTMLCanvasElement) {
     render,
     pick,
     getTarget,
-    get pickingDrawObjectsInfo() {
-      return pickingDrawObjectsInfo
+    canvas,
+    get reversedProjection() {
+      return reversedProjection
     },
   }
 }
