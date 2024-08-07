@@ -122,6 +122,23 @@ export function getPerpendicularPoint(p: Position, { a, b, c }: GeneralFormLine)
   }
 }
 
+export function getPerpendicularParamToLine2D(p: Position, start: Position, directionRadian: number): number {
+  // let e1 = Math.sin(directionRadian), e2 = Math.cos(directionRadian)
+  // let { x: x0, y: y0 } = start
+  // let { x: x1, y: y1 } = p
+  // x = x0 + e2 t
+  // y = y0 + e1 t
+  // (y - y1)/(x - x1)(y - y0)/(x - x0) = -1
+  // (y - y1)(y - y0) + (x - x1)(x - x0) = 0
+  // (y0 + e1 t - y1)(y0 + e1 t - y0) + (x0 + e2 t - x1)(x0 + e2 t - x0) = 0
+  // (y0 + e1 t - y1)e1 t + (x0 + e2 t - x1)e2 t = 0
+  // let f1 = y1 - y0, f2 = x1 - x0
+  // (e1 t - f1)e1 + (e2 t - f2)e2 = 0
+  // (e1 e1 + e2 e2) t - e1 f1 - e2 f2 = 0
+  // t = e1 f1 + e2 f2
+  return Math.sin(directionRadian) * (p.y - start.y) + Math.cos(directionRadian) * (p.x - start.x)
+}
+
 export function getPerpendicularParamToLine(p: Vec3, start: Vec3, direction: Vec3): number {
   // let [x0, y0, z0] = p
   // let [x1, y1, z1] = start

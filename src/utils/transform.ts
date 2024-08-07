@@ -158,3 +158,38 @@ export function rotateToDirection(direction: Vec3, from: Vec3 = [0, 1, 0]) {
   }
   return
 }
+
+export function transformPointFromCoordinate2D(p: Position, coordinateBase: Position, xAxisRadian: number): Position {
+  // let { x: x0, y: y0 } = coordinateBase
+  const { x: x1, y: y1 } = p
+  /**
+   * @see getPerpendicularParamToLine2D
+   */
+  // x1 = sin(xAxisRadian) (y - y0) + cos(xAxisRadian) (x - x0)
+  // y1 = sin(xAxisRadian + PI / 2) (y - y0) + cos(xAxisRadian + PI / 2) (x - x0)
+  // y1 = cos(xAxisRadian) (y - y0) - sin(xAxisRadian) (x - x0)
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // let u = x - x0, v = y - y0
+  // F1: e1 v + e2 u - x1 = 0
+  // F2: e2 v - e1 u - y1 = 0
+  // F1 e2 - F2 e1: (e1 e1 + e2 e2) u + -e2 x1 + e1 y1 = 0
+  // u = e2 x1 - e1 y1
+  // F1 e1 + F2 e2: (e1 e1 + e2 e2) v + -e1 x1 + -e2 y1 = 0
+  // v = e1 x1 + e2 y1
+  return {
+    x: coordinateBase.x + e2 * x1 - e1 * y1,
+    y: coordinateBase.y + e1 * x1 + e2 * y1,
+  }
+}
+
+export function getCoordinateVec2D(p: Position): Vec3 {
+  return [p.x, p.y, 1]
+}
+
+export function getCoordinateMatrix2D(coordinateBase: Position, xAxisRadian: number): number[][] {
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  return [
+    [e2, -e1, coordinateBase.x],
+    [e1, e2, coordinateBase.y],
+  ]
+}
