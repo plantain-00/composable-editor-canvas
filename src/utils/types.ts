@@ -39,6 +39,10 @@ export type Tuple3<T> = [T, T, T]
 export type Tuple4<T> = [T, T, T, T]
 export type Tuple5<T> = [T, T, T, T, T]
 
+export function slice2<T>(array: { [index: number]: T }, start = 0): Tuple2<T> {
+  return [array[start], array[start + 1]]
+}
+
 export function slice3<T>(array: { [index: number]: T }, start = 0): Tuple3<T> {
   return [array[start], array[start + 1], array[start + 2]]
 }
