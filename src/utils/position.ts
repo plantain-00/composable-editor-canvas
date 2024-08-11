@@ -4,7 +4,7 @@ import { isSameNumber } from "./math";
 import { isZero } from "./math";
 import { v3 } from "./matrix";
 import { angleToRadian, getDirectionByRadian } from "./radian";
-import { Vec3 } from "./types";
+import { Vec2, Vec3 } from "./types";
 import { and, number } from "./validators";
 
 export interface Position {
@@ -35,6 +35,17 @@ export function vec3ToPosition3D(vec: Vec3): Position3D {
     x: vec[0],
     y: vec[1],
     z: vec[2],
+  }
+}
+
+export function positionToVec2(p: Position): Vec2 {
+  return [p.x, p.y]
+}
+
+export function vec2ToPosition(vec: Vec2): Position {
+  return {
+    x: vec[0],
+    y: vec[1],
   }
 }
 

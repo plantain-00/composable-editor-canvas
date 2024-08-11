@@ -1,4 +1,4 @@
-import { getPointByLengthAndRadian, rotatePositionByCenter } from "./position";
+import { getPointByLengthAndRadian, rotatePositionByCenter, vec2ToPosition } from "./position";
 import { AngleRange } from "./angle";
 import { rotatePosition } from "./position";
 import { getDirectionByRadian } from "./radian";
@@ -11,7 +11,9 @@ import { number, minimum, optional, and } from "./validators";
 import { calculateEquation2 } from "./equation-calculater";
 import { getPointSideOfLine, twoPointLineToGeneralFormLine } from "./line";
 import { Arc } from "./circle";
-import { Tuple5 } from "./types";
+import { slice2, Tuple5, Vec3 } from "./types";
+import { getCoordinateMatrix2D } from "./transform";
+import { matrix } from "./matrix";
 
 export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc, extend: ExtendType = { body: true }) {
   if (extend.head && extend.body && extend.tail) return true
@@ -100,15 +102,28 @@ export function getEllipsePointAtRadian(content: Ellipse, radian: number) {
 export function ellipseToPolygon(content: Ellipse, angleDelta: number) {
   const lineSegmentCount = 360 / angleDelta
   const points: Position[] = []
+  const m = getCoordinateMatrix2D(getEllipseCenter(content), angleToRadian(content.angle))
   for (let i = 0; i < lineSegmentCount; i++) {
     const radian = angleToRadian(angleDelta * i)
-    points.push(getEllipsePointAtRadian(content, radian))
+    const vec = getEllipseCoordinateVec2DAtRadian(content, radian)
+    const p = matrix.multiplyVec(m, vec)
+    points.push(vec2ToPosition(slice2(p)))
   }
   return points
 }
 
-export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number) {
-  return getAngleRange(content, angleDelta).map(i => getEllipseArcPointAtAngle(content, i))
+export function ellipseArcToPolyline(content: EllipseArc, angleDelta: number): Position[] {
+  const m = getCoordinateMatrix2D(getEllipseCenter(content), angleToRadian(content.angle))
+  return getAngleRange(content, angleDelta).map(i => {
+    const vec = getEllipseCoordinateVec2DAtRadian(content, angleToRadian(i))
+    const p = matrix.multiplyVec(m, vec)
+    return vec2ToPosition(slice2(p))
+  })
+}
+
+export function getEllipseCoordinateVec2DAtRadian(content: Ellipse, radian: number): Vec3 {
+  const direction = getDirectionByRadian(radian)
+  return [content.rx * direction.x, content.ry * direction.y, 1]
 }
 
 export function getEllipseArcPointAtAngle(content: EllipseArc, angle: number) {

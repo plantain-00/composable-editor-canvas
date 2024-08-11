@@ -7,7 +7,30 @@ export type ParabolaContent = model.BaseContent<'parabola'> & model.StrokeFields
 
 export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
   const ParabolaContent = ctx.and(ctx.BaseContent('parabola'), ctx.StrokeFields, ctx.ParabolaSegment, ctx.SegmentCountFields)
-  const getRefIds = (content: Omit<ParabolaContent, "type">): model.RefId[] => ctx.getStrokeRefIds(content)
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<ParabolaContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
+  function getParabolaGeometries(content: Omit<ParabolaContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
+    const refs = new Set(ctx.iterateRefContents(ctx.getStrokeRefIds(content), contents, [content]))
+    return geometriesCache.get(content, refs, () => {
+      const segmentCount = content.segmentCount ?? ctx.defaultSegmentCount
+      const rate = (content.t2 - content.t1) / segmentCount
+      const points: core.Position[] = []
+      const matrix = ctx.getCoordinateMatrix2D(content, ctx.getParabolaXAxisRadian(content))
+      for (let i = 0; i <= segmentCount; i++) {
+        const vec = ctx.getCoordinateVec2D(ctx.getParabolaCoordinatePointAtParam(content, content.t1 + i * rate))
+        const p = ctx.matrix.multiplyVec(matrix, vec)
+        points.push(ctx.vec2ToPosition(ctx.slice2(p)))
+      }
+      const lines: core.GeometryLine[] = [
+        // { type: 'parabola curve', curve: content },
+      ]
+      return {
+        lines,
+        points,
+        bounding: ctx.getGeometryLinesBounding(lines),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
+      }
+    })
+  }
   return {
     type: 'parabola',
     ...ctx.strokeModel,
@@ -16,21 +39,12 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
     },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
-      const segmentCount = content.segmentCount ?? ctx.defaultSegmentCount
-      const rate = (content.t2 - content.t1) / segmentCount
-      const points: core.Position[] = []
-      const matrix = ctx.getCoordinateMatrix2D(content, ctx.angleToRadian(content.angle - 90))
-      for (let i = 0; i <= segmentCount; i++) {
-        const x = content.t1 + i * rate
-        const y = 2 * content.p * x ** 2
-        const vec = ctx.getCoordinateVec2D({ x, y })
-        const p = ctx.matrix.multiplyVec(matrix, vec)
-        points.push({ x: p[0], y: p[1] })
-      }
+      const { points } = getParabolaGeometries(content, renderCtx.contents)
       return target.renderPolyline(points, options)
     },
+    getGeometries: getParabolaGeometries,
     isValid: (c, p) => ctx.validate(c, ParabolaContent, p),
-    getRefIds,
+    getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     deleteRefId: ctx.deleteStrokeRefIds,
   }
@@ -103,7 +117,7 @@ export function getCommand(ctx: PluginContext): Command {
               angle: ctx.radianToAngle(ctx.getTwoPointsRadian(p, content)),
             })
           } else if (status === 't1') {
-            const x = ctx.getPerpendicularParamToLine2D(p, content, ctx.angleToRadian(content.angle - 90))
+            const x = ctx.getPerpendicularParamToLine2D(p, content, ctx.getParabolaXAxisRadian(content))
             const y = ctx.getPerpendicularParamToLine2D(p, content, ctx.angleToRadian(content.angle))
             setContent({
               ...content,
@@ -113,7 +127,7 @@ export function getCommand(ctx: PluginContext): Command {
           } else if (status === 't2') {
             setContent({
               ...content,
-              t2: ctx.getPerpendicularParamToLine2D(p, content, ctx.angleToRadian(content.angle - 90)),
+              t2: ctx.minimumBy(ctx.getPerpendicularParamsToParabola(p, content), t => ctx.getTwoPointsDistanceSquare(p, ctx.getParabolaPointAtParam(content, t))),
             })
           }
         },
