@@ -8,7 +8,7 @@ import { ellipseToEllipseArc } from "./ellipse"
 import { EllipseArc } from "./ellipse"
 import { Arc, Circle } from "./circle"
 import { Ellipse } from "./ellipse"
-import { GeometryLine, getGeometryLinePointAndTangentRadianAtParam } from "./geometry-line"
+import { GeometryLine, getGeometryLinePointAndTangentRadianAtParam, getPercentAtAngle } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { getNurbsCurveLength, getNurbsCurveParamByLength, getNurbsMaxParam } from "./nurbs"
@@ -161,13 +161,13 @@ export function getGeometryLineParamByLength(line: GeometryLine, length: number)
   }
   if (line.type === 'arc') {
     const angle = radianToAngle(getArcRadianByLength(line.curve, length))
-    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+    return getPercentAtAngle(angle, line.curve)
   }
   if (line.type === 'ellipse arc') {
     const radian = getEllipseArcRadianByLength(line.curve, length)
     if (radian === undefined) return
-    const angle = radianToAngle()
-    return (angle - line.curve.startAngle) / (line.curve.endAngle - line.curve.startAngle)
+    const angle = radianToAngle(radian)
+    return getPercentAtAngle(angle, line.curve)
   }
   if (line.type === 'quadratic curve') {
     return getQuadraticCurvePercentByLength(line.curve, length)

@@ -1,6 +1,7 @@
 import { getPointsBoundingUnsafe } from "./bounding"
-import { calculateEquation3 } from "./equation-calculater"
-import { delta2, isBetween, isZero, minimumBy } from "./math"
+import { calculateEquation2, calculateEquation3, newtonIterate } from "./equation-calculater"
+import { rombergIntegral } from "./length"
+import { delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy } from "./math"
 import { getTwoPointsDistance, Position } from "./position"
 import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
@@ -55,6 +56,18 @@ export function getParabolaPointAtParam(parabola: Parabola, param: number): Posi
   return transformPointFromCoordinate2D(getParabolaCoordinatePointAtParam(parabola, param), parabola, getParabolaXAxisRadian(parabola))
 }
 
+export function getParabolaParamAtPoint({ angle, x: x1, y: y1 }: Parabola, point: Position): number {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 t - 2 e1 p t^2
+  // y = y1 + e1 t + 2 e2 p t^2
+  // e2 x = e2 x1 + e2 e2 t - 2 e1 e2 p t^2
+  // e1 y = e1 y1 + e1 e1 t + 2 e1 e2 p t^2
+  // e2 x + e1 y = e2 x1 + e1 y1 + t
+  // t = e2(x - x1) + e1(y - y1)
+  return e2 * (point.x - x1) + e1 * (point.y - y1)
+}
+
 export function getParabolaCoordinatePointAtParam(parabola: Parabola, param: number): Position {
   return { x: param, y: 2 * parabola.p * param ** 2 }
 }
@@ -106,4 +119,61 @@ export function getParabolaBounding(curve: ParabolaSegment): TwoPointsFormRegion
     }
   }
   return getPointsBoundingUnsafe(points)
+}
+
+export function getParabolaLength(curve: ParabolaSegment, delta?: number): number {
+  const { p, t1, t2 } = curve
+  // let xAxisRadian = getParabolaXAxisRadian({ curve.angle })
+  // let e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 t - 2 e1 p t^2
+  // y = y1 + e1 t + 2 e2 p t^2
+  // x' = e2 - 4 e1 p t = dx/dt
+  // y' = 4 e2 p t + e1 = dy/dt
+  // dz = sqrt(dx^2 + dy^2)
+  // dz/dt = sqrt((e2 - 4 e1 p t)^2 + (4 e2 p t + e1)^2)
+  // dz/dt = sqrt((16 e1 e1 p p + 16 e2 e2 p p) t t + e2 e2 + e1 e1)
+  // dz/dt = sqrt(16 p p t t + 1)
+  const a = 16 * p * p
+  return rombergIntegral(t1, t2, t => Math.sqrt(a * t * t + 1), delta)
+}
+
+export function getParabolaParamByLength(curve: ParabolaSegment, length: number, delta = delta2): number | undefined {
+  const f1 = (t: number) => getParabolaLength({ ...curve, t2: t }) - length
+  // dz/dt = sqrt(16 p p t t + 1)
+  const a = 16 * curve.p * curve.p
+  const f2 = (t: number) => Math.sqrt(a * t * t + 1)
+  return newtonIterate(getTwoNumberCenter(curve.t1, curve.t2), f1, f2, delta)
+}
+
+export function getParabolaSegmentStartAndEnd(curve: ParabolaSegment) {
+  return {
+    start: getParabolaPointAtParam(curve, curve.t1),
+    end: getParabolaPointAtParam(curve, curve.t2),
+  }
+}
+
+export function pointIsOnParabola(point: Position, { angle, p, x: x1, y: y1 }: Parabola): boolean {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 t - 2 e1 p t^2
+  // y = y1 + e1 t + 2 e2 p t^2
+  return calculateEquation2(- 2 * e1 * p, e2, x1 - point.x)
+    .filter(t => isSameNumber(2 * e2 * p * t * t + e1 * t + y1, point.y, delta3)).length > 0
+}
+
+export function pointIsOnParabolaSegment(point: Position, curve: ParabolaSegment, extend: ExtendType = { body: true }): boolean {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
+  const t = getParabolaParamAtPoint(curve, point)
+  return isBetween(t, curve.t1, curve.t2, extend)
+}
+
+export function getParabolaTangentRadianAtParam({ angle, p }: ParabolaSegment, t: number): number {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 t - 2 e1 p t^2
+  // y = y1 + e1 t + 2 e2 p t^2
+  // x' = e2 - 4 e1 p t
+  // y' = 4 e2 p t + e1
+  return Math.atan2(4 * e2 * p * t + e1, e2 - 4 * e1 * p * t)
 }
