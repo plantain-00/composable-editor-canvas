@@ -282,7 +282,19 @@ export function getGeometryLinesPointAtParam(param: number, lines: GeometryLine[
 }
 
 function getAngleAtParam(param: number, range: AngleRange) {
-  return param * (range.endAngle - range.startAngle) + range.startAngle
+  return getParamAtPercent(param, range.startAngle, range.endAngle)
+}
+
+export function getParamAtPercent(percent: number, start: number, end: number) {
+  return percent * (end - start) + start
+}
+
+export function getPercentAtParam(param: number, start: number, end: number) {
+  return (param - start) / (end - start)
+}
+
+export function getPercentAtAngle(angle: number, range: AngleRange) {
+  return getPercentAtParam(angle, range.startAngle, range.endAngle)
 }
 
 export function getPartOfGeometryLine(param1: number, param2: number, line: GeometryLine, closed = false): GeometryLine {
