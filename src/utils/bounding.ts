@@ -16,6 +16,7 @@ import { BezierCurve } from "./bezier"
 import { getNurbsPoints } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
 import { number } from "./validators"
+import { getParabolaBounding } from "./parabola"
 
 export interface Bounding {
   xMin: number;
@@ -212,6 +213,9 @@ export function getGeometryLineBounding(line: GeometryLine, segmentCount = 100):
   }
   if (line.type === 'bezier curve') {
     return getBezierCurveBounding(line.curve)
+  }
+  if (line.type === 'parabola curve') {
+    return getParabolaBounding(line.curve)
   }
   if (line.type === 'ray') {
     return

@@ -25,6 +25,7 @@ import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointA
 import { angleToRadian, radianToAngle } from "./radian"
 import { Vec3 } from "./types"
 import { v3 } from "./matrix"
+import { getPointAndParabolaNearestPointAndDistance } from "./parabola"
 
 export function getPerpendicularLine(point: Position, line: GeneralFormLine): GeneralFormLine {
   return {
@@ -338,6 +339,9 @@ export function getPointAndGeometryLineNearestPointAndDistance(p: Position, line
   if (line.type === 'bezier curve') {
     return getPointAndBezierCurveNearestPointAndDistance(p, line.curve)
   }
+  if (line.type === 'parabola curve') {
+    return getPointAndParabolaNearestPointAndDistance(p, line.curve)
+  }
   if (line.type === 'ray') {
     return getPointAndRayNearestPointAndDistance(p, line.line)
   }
@@ -415,6 +419,9 @@ export function getPointAndGeometryLineMinimumDistance(p: Position, line: Geomet
   }
   if (line.type === 'bezier curve') {
     return getPointAndBezierCurveNearestPointAndDistance(p, line.curve, extend).distance
+  }
+  if (line.type === 'parabola curve') {
+    return getPointAndParabolaNearestPointAndDistance(p, line.curve, extend).distance
   }
   if (line.type === 'ray') {
     return getPointAndRayNearestPointAndDistance(p, line.line, extend).distance

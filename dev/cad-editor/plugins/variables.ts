@@ -7501,7 +7501,7 @@ function getModel(ctx) {
         points.push(ctx.vec2ToPosition(ctx.slice2(p)));
       }
       const lines = [
-        // { type: 'parabola curve', curve: content },
+        { type: "parabola curve", curve: content }
       ];
       return {
         lines,

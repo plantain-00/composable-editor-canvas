@@ -1,11 +1,13 @@
 import { getPointsBoundingUnsafe } from "./bounding"
 import { calculateEquation2, calculateEquation3, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
+import { getPointSideOfLine, pointAndDirectionToGeneralFormLine } from "./line"
 import { delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy } from "./math"
-import { getTwoPointsDistance, Position } from "./position"
+import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
 import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
 import { transformPointFromCoordinate2D } from "./transform"
+import { Tuple3 } from "./types"
 import { and, number } from "./validators"
 
 export interface Parabola extends Position {
@@ -87,7 +89,7 @@ export function getPointAndParabolaNearestPointAndDistance(position: Position, c
     p: getParabolaPointAtParam(curve, u),
   }))
   const results = points.map(p => ({
-    percent: p.u,
+    param: p.u,
     point: p.p,
     distance: getTwoPointsDistance(position, p.p)
   }))
@@ -168,7 +170,7 @@ export function pointIsOnParabolaSegment(point: Position, curve: ParabolaSegment
   return isBetween(t, curve.t1, curve.t2, extend)
 }
 
-export function getParabolaTangentRadianAtParam({ angle, p }: ParabolaSegment, t: number): number {
+export function getParabolaTangentRadianAtParam({ angle, p }: Parabola, t: number): number {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   // x = x1 + e2 t - 2 e1 p t^2
@@ -176,4 +178,69 @@ export function getParabolaTangentRadianAtParam({ angle, p }: ParabolaSegment, t
   // x' = e2 - 4 e1 p t
   // y' = 4 e2 p t + e1
   return Math.atan2(4 * e2 * p * t + e1, e2 - 4 * e1 * p * t)
+}
+
+export function getParabolaDerivatives({ angle, p, x: x1, y: y1 }: Parabola): Tuple3<(t: number) => Position> {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 t - 2 e1 p t^2
+  // y = y1 + e1 t + 2 e2 p t^2
+  const a = -2 * e1 * p, b = 2 * e2 * p
+  return [
+    t => ({
+      x: x1 + e2 * t + a * t ** 2,
+      y: y1 + e1 * t + b * t ** 2,
+    }),
+    t => ({
+      x: e2 + 2 * a * t,
+      y: e1 + 2 * b * t,
+    }),
+    () => ({
+      x: 2 * a,
+      y: 2 * b,
+    }),
+  ]
+}
+
+export function getParabolaCurvatureAtParam(curve: Parabola, param: number): number {
+  const derivatives = getParabolaDerivatives(curve)
+  const { x: x1, y: y1 } = derivatives[1](param)
+  const { x: x2, y: y2 } = derivatives[2](param)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}
+
+export function reverseParabola(curve: ParabolaSegment): ParabolaSegment {
+  return {
+    ...curve,
+    t1: curve.t2,
+    t2: curve.t1,
+  }
+}
+
+export function getParallelParabolaSegmentsByDistance<T extends ParabolaSegment>(curve: T, distance: number): [T, T] {
+  if (isZero(distance)) {
+    return [curve, curve]
+  }
+  if (curve.t1 > curve.t2) {
+    distance = -distance
+  }
+  const p1 = getPointByLengthAndRadian(curve, distance, angleToRadian(curve.angle))
+  const p2 = getPointByLengthAndRadian(curve, -distance, angleToRadian(curve.angle))
+  return [
+    { ...curve, x: p1.x, y: p1.y }, // on right side of parabola segment
+    { ...curve, x: p2.x, y: p2.y }, // on left side of parabola segment
+  ]
+}
+
+/**
+ * 0: point on parabola
+ * 1: point on left side of parabola
+ * -1: point on right side of parabola
+ */
+export function getPointSideOfParabolaSegment(point: Position, curve: ParabolaSegment): number {
+  const p = getPointAndParabolaNearestPointAndDistance(point, curve, true)
+  const radian = getParabolaTangentRadianAtParam(curve, p.param)
+  const line = pointAndDirectionToGeneralFormLine(p.point, radian)
+  return getPointSideOfLine(point, line) * (curve.t1 > curve.t2 ? -1 : 1)
 }
