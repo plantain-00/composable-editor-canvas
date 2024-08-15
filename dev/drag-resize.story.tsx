@@ -14,6 +14,19 @@ export default () => {
     {
       centeredScaling: (e) => e.shiftKey,
       keepRatio: (e) => metaKeyIfMacElseCtrlKey(e) ? content.width / content.height : undefined,
+      transformOffset: (f, e) => {
+        // keep width >= 0
+        if (f.width + content.width < 0) {
+          f.width = -content.width
+          // keep x < content right border(or content center if centeredScaling is true)
+          f.x = Math.min(f.x, content.width * (e?.shiftKey ? 0.5 : 1))
+        }
+        if (f.height + content.height < 0) {
+          f.height = -content.height
+          f.y = Math.min(f.y, content.height * (e?.shiftKey ? 0.5 : 1))
+        }
+        return f
+      },
     },
   )
   useGlobalKeyDown(e => {
