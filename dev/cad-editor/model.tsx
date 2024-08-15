@@ -10,6 +10,7 @@ import type { PathContent } from './plugins/path.plugin'
 import type { NurbsContent } from './plugins/nurbs.plugin'
 import type { RayContent } from './plugins/ray.plugin'
 import type { PlineContent } from './plugins/pline.plugin'
+import type { ParabolaContent } from './plugins/parabola.plugin'
 export { math } from '../expression/math'
 
 export interface BaseContent<T extends string = string> {
@@ -421,6 +422,9 @@ export function geometryLineToContent(line: GeometryLine): BaseContent {
   }
   if (line.type === 'ray') {
     return { type: 'ray', ...line.line } as RayContent
+  }
+  if (line.type === 'parabola curve') {
+    return { type: 'parabola', ...line.curve } as ParabolaContent
   }
   return { type: 'nurbs', ...line.curve } as NurbsContent
 }

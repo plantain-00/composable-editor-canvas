@@ -21,7 +21,7 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
         points.push(ctx.vec2ToPosition(ctx.slice2(p)))
       }
       const lines: core.GeometryLine[] = [
-        // { type: 'parabola curve', curve: content },
+        { type: 'parabola curve', curve: content },
       ]
       return {
         lines,

@@ -121,6 +121,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
+    if (line2.type === 'parabola curve') {
+      return []
+    }
     return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
   if (Array.isArray(line2)) return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
@@ -141,6 +144,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineCircleIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, delta)
       return points.filter(p => pointIsOnArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
+    if (line2.type === 'parabola curve') {
+      return []
+    }
     return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
   if (line2.type === 'arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
@@ -158,6 +164,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineEllipseIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve)
       return points.filter(p => pointIsOnEllipseArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
+    if (line2.type === 'parabola curve') {
+      return []
+    }
     return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
   if (line2.type === 'ellipse arc') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
@@ -172,6 +181,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineQuadraticCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
       return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
+    if (line2.type === 'parabola curve') {
+      return []
+    }
     return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
   if (line2.type === 'quadratic curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
@@ -182,6 +194,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     if (line2.type === 'ray') {
       const points = getLineBezierCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
       return points.filter(p => pointIsOnRay(p, line2.line, extend2))
+    }
+    if (line2.type === 'parabola curve') {
+      return []
     }
     return getBezierCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
@@ -194,6 +209,9 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
+    if (line2.type === 'parabola curve') {
+      return []
+    }
     const bounding = getGeometryLineBounding(line2)
     if (bounding) {
       const line = rayToLineSegment(line1.line, getPolygonFromTwoPointsFormRegion(bounding))
@@ -204,6 +222,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     return []
   }
   if (line2.type === 'ray') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
+  if (line1.type === 'parabola curve') {
+    if (line2.type === 'parabola curve') {
+      return []
+    }
+    return []
+  }
+  if (line2.type === 'parabola curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   return getTwoNurbsCurveIntersectionPoints(line1.curve, line2.curve)
 }
 

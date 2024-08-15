@@ -7,6 +7,7 @@ import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { NurbsCurve } from "./nurbs"
 import { Ray } from "./line"
+import { ParabolaSegment } from "./parabola"
 
 /**
  * @public
@@ -62,6 +63,10 @@ export function printBezierCurve(curve: BezierCurve) {
   return `${printPoint(curve.from)}->${printPoint(curve.cp1)}->${printPoint(curve.cp2)}->${printPoint(curve.to)}`
 }
 
+export function printParabolaParabola(curve: ParabolaSegment) {
+  return `${printPoint(curve)} A${Math.round(curve.angle)} ${Math.round(curve.t1)}->${Math.round(curve.t2)}`
+}
+
 export function printNurbsCurve(curve: NurbsCurve) {
   return curve.points.map(p => printPoint(p)).join('->')
 }
@@ -88,6 +93,9 @@ export function printGeometryLine(line: GeometryLine) {
   }
   if (line.type === 'ray') {
     return printRay(line.line)
+  }
+  if (line.type === 'parabola curve') {
+    return printParabolaParabola(line.curve)
   }
   return printNurbsCurve(line.curve)
 }

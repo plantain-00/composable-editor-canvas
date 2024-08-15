@@ -8,11 +8,12 @@ import { ellipseToEllipseArc } from "./ellipse"
 import { EllipseArc } from "./ellipse"
 import { Arc, Circle } from "./circle"
 import { Ellipse } from "./ellipse"
-import { GeometryLine, getGeometryLinePointAndTangentRadianAtParam, getPercentAtAngle } from "./geometry-line"
+import { GeometryLine, getGeometryLinePointAndTangentRadianAtParam, getPercentAtAngle, getPercentAtParam } from "./geometry-line"
 import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { getNurbsCurveLength, getNurbsCurveParamByLength, getNurbsMaxParam } from "./nurbs"
 import { angleToRadian, radianToAngle } from "./radian"
+import { getParabolaLength, getParabolaParamByLength } from "./parabola"
 
 export function getCircleLength(circle: Circle) {
   return 2 * Math.PI * circle.r
@@ -175,6 +176,11 @@ export function getGeometryLineParamByLength(line: GeometryLine, length: number)
   if (line.type === 'bezier curve') {
     return getBezierCurvePercentByLength(line.curve, length)
   }
+  if (line.type === 'parabola curve') {
+    const t = getParabolaParamByLength(line.curve, length)
+    if (t === undefined) return
+    return getPercentAtParam(t, line.curve.t1, line.curve.t2)
+  }
   if (line.type === 'nurbs curve') {
     return getNurbsCurveParamByLength(line.curve, length) / getNurbsMaxParam(line.curve)
   }
@@ -196,6 +202,9 @@ export function getGeometryLineLength(line: GeometryLine): number | undefined {
   }
   if (line.type === 'bezier curve') {
     return getBezierCurveLength(line.curve)
+  }
+  if (line.type === 'parabola curve') {
+    return getParabolaLength(line.curve)
   }
   if (line.type === 'ray') {
     return

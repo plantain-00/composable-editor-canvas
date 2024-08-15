@@ -8,6 +8,7 @@ import { Nurbs, reverseNurbsCurve } from "./nurbs";
 import { Ray, getPolygonArea } from "./line";
 import { normalizeAngle, normalizeRadian } from "./angle";
 import { getGeometryLinesPoints } from "./hatch";
+import { reverseParabola } from "./parabola";
 
 export function reverseLineSegment(line: [Position, Position]): [Position, Position] {
   return [line[1], line[0]]
@@ -67,6 +68,9 @@ export function reverseGeometryLine(geometryLine: GeometryLine): GeometryLine {
   }
   if (geometryLine.type === 'ray') {
     return { ...geometryLine, line: reverseRay(geometryLine.line) }
+  }
+  if (geometryLine.type === 'parabola curve') {
+    return { ...geometryLine, curve: reverseParabola(geometryLine.curve) }
   }
   return { ...geometryLine, curve: reverseNurbsCurve(geometryLine.curve) }
 }
