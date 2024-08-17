@@ -6,7 +6,7 @@ import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lin
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
-import { deduplicate, deepEquals, delta2, isBetween, isSameNumber, isZero, minimumBy } from "./math"
+import { deduplicate, deepEquals, delta2, isSameNumber, isValidPercent, isZero, minimumBy } from "./math"
 import { Matrix2 } from "./matrix"
 import { getBezierCurveAndNurbsCurveExtremumPoints, getCircleAndNurbsCurveExtremumPoints, getEllipseAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints, getQuadraticCurveAndNurbsCurveExtremumPoints, getTwoNurbsCurveExtremumPoints } from "./nurbs"
 import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
@@ -326,7 +326,7 @@ export function getEllipseQuadraticCurveExtremumPoints(ellipse: Ellipse, curve: 
     }
   }
   ts = deduplicate(ts, deepEquals)
-  return ts.filter(v => isBetween(v[1], 0, 1)).map(t => [p1(t[0]), p2(t[1])])
+  return ts.filter(v => isValidPercent(v[1])).map(t => [p1(t[0]), p2(t[1])])
 }
 
 export function getEllipseBezierCurveExtremumPoints(ellipse: Ellipse, curve: BezierCurve): Tuple2<Position>[] {
@@ -370,7 +370,7 @@ export function getEllipseBezierCurveExtremumPoints(ellipse: Ellipse, curve: Bez
     }
   }
   ts = deduplicate(ts, deepEquals)
-  return ts.filter(v => isBetween(v[1], 0, 1)).map(t => [p1(t[0]), p2(t[1])])
+  return ts.filter(v => isValidPercent(v[1])).map(t => [p1(t[0]), p2(t[1])])
 }
 
 export function getTwoQuadraticCurveExtremumPoints(curve1: QuadraticCurve, curve2: QuadraticCurve): Tuple2<Position>[] {
@@ -410,11 +410,11 @@ export function getTwoQuadraticCurveExtremumPoints(curve1: QuadraticCurve, curve
     3 * f8 * h1 * h2 * h2 + f7 * h2 * h2 * h2 - f5 * h2 * h2 * h3 - 2 * f5 * h1 * h2 * h4 - f4 * h2 * h2 * h4 + 2 * f2 * h2 * h3 * h4 + f2 * h1 * h4 * h4 - 3 * f1 * h3 * h4 * h4,
     f8 * h2 * h2 * h2 - f5 * h2 * h2 * h4 + f2 * h2 * h4 * h4 - f1 * h4 * h4 * h4,
   ], 0.5)
-  vs = vs.filter(v => isBetween(v, 0, 1))
+  vs = vs.filter(v => isValidPercent(v))
   const result: Tuple2<Position>[] = []
   for (const v of vs) {
     const u = -(h3 * v + h4) / (h1 * v + h2)
-    if (isBetween(u, 0, 1)) {
+    if (isValidPercent(u)) {
       result.push([
         getQuadraticCurvePointAtPercent(curve1.from, curve1.cp, curve1.to, u),
         getQuadraticCurvePointAtPercent(curve2.from, curve2.cp, curve2.to, v),
@@ -468,11 +468,11 @@ export function getQuadraticCurveAndBezierCurveExtremumPoints(curve1: QuadraticC
     3 * e2 * e3 * e3 * f0 + 3 * e5 * e6 * e6 * f1 + 2 * e3 * e5 * e6 * f2 + e2 * e6 * e6 * f2 + e3 * e3 * e6 * f5 + e3 * e3 * e5 * f6 + 2 * e2 * e3 * e6 * f6 + e3 * e3 * e3 * f9,
     e3 * e3 * e3 * f0 + e6 * e6 * e6 * f1 + e3 * e6 * e6 * f2 + e3 * e3 * e6 * f6,
   ], 0.5)
-  vs = vs.filter(v => isBetween(v, 0, 1))
+  vs = vs.filter(v => isValidPercent(v))
   const result: Tuple2<Position>[] = []
   for (const v of vs) {
     const u = (e4 * v * v + e5 * v + e6) / (e1 * v * v + e2 * v + e3)
-    if (isBetween(u, 0, 1)) {
+    if (isValidPercent(u)) {
       result.push([
         getQuadraticCurvePointAtPercent(curve1.from, curve1.cp, curve1.to, u),
         getBezierCurvePointAtPercent(curve2.from, curve2.cp1, curve2.cp2, curve2.to, v),
@@ -523,7 +523,7 @@ export function getTwoBezierCurveExtremumPoints(curve1: BezierCurve, curve2: Bez
     }
   }
   ts = deduplicate(ts, deepEquals)
-  return ts.filter(v => isBetween(v[0], 0, 1) && isBetween(v[1], 0, 1)).map(t => {
+  return ts.filter(v => isValidPercent(v[0]) && isValidPercent(v[1])).map(t => {
     return [p1(t[0]), p2(t[1])]
   })
 }
