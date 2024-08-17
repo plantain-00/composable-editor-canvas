@@ -21,7 +21,7 @@ export function useEllipseArcClickCreate(
   if (ellipseArc) {
     message = startAngle === undefined ? 'specify start angle by click or input angle' : 'specify end angle by click or input angle'
   }
-  const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition, clearText, setInputPosition } = useEllipseClickCreate(
+  const { ellipse, onClick, onMove, input, startPosition, middlePosition, cursorPosition, setCursorPosition, clearText, setInputPosition, reset: resetEllipse } = useEllipseClickCreate(
     type,
     (c) => setEllipseArc(c ? { ...c, startAngle: 0, endAngle: 0 } : undefined),
     {
@@ -54,6 +54,7 @@ export function useEllipseArcClickCreate(
     setStartAngle(undefined)
     setCursorPosition(undefined)
     clearText()
+    resetEllipse()
   }
 
   return {

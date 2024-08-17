@@ -331,15 +331,16 @@ export function newtonIterates(
 export function equationParamsToExpression(params: number[], variableName = 'x'): string {
   let result = ''
   for (let i = 0; i < params.length; i++) {
+    if (params[i] === 0) continue
     if (i !== 0) {
       result += ' + '
     }
-    result += params[i] + ' '
+    result += params[i]
     const power = params.length - i - 1
     if (power === 1) {
-      result += variableName
+      result += ' ' + variableName
     } else if (power > 1) {
-      result += variableName + '^' + power
+      result += ' ' + variableName + '^' + power
     }
   }
   return result

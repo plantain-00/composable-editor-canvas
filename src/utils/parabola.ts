@@ -1,7 +1,9 @@
 import { getPointsBoundingUnsafe } from "./bounding"
-import { calculateEquation2, calculateEquation3, newtonIterate } from "./equation-calculater"
+import { Arc, Circle, pointIsOnArc } from "./circle"
+import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
+import { calculateEquation2, calculateEquation3, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
-import { getPointSideOfLine, pointAndDirectionToGeneralFormLine } from "./line"
+import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
 import { delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy } from "./math"
 import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
 import { angleToRadian } from "./radian"
@@ -243,4 +245,100 @@ export function getPointSideOfParabolaSegment(point: Position, curve: ParabolaSe
   const radian = getParabolaTangentRadianAtParam(curve, p.param)
   const line = pointAndDirectionToGeneralFormLine(p.point, radian)
   return getPointSideOfLine(point, line) * (curve.t1 > curve.t2 ? -1 : 1)
+}
+
+export function getLineSegmentParabolaSegmentIntersectionPoints(start: Position, end: Position, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getLineParabolaSegmentIntersectionPoints(start, end, curve, extend2)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
+}
+
+export function getLineParabolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x0 + e2 t - 2 e1 p t^2
+  // y = y0 + e1 t + 2 e2 p t^2
+
+  // (x - x1) / (x2 - x1) = (y - y1) / (y2 - y1)
+  const d1 = x2 - x1, d2 = y2 - y1
+  // (x - x1) d2 - (y - y1) d1 = 0
+  // replace x, y: (x0 + e2 t - 2 e1 p t^2 - x1) d2 - (y0 + e1 t + 2 e2 p t^2 - y1) d1 = 0
+  const f1 = x0 - x1, f2 = y0 - y1
+  // (f1 + e2 t - 2 e1 p t^2) d2 - (f2 + e1 t + 2 e2 p t^2) d1 = 0
+  // (-2 d2 e1 p + -2 d1 e2 p) t t + (-d1 e1 + d2 e2) t + d2 f1 + -d1 f2 = 0
+  let ts = calculateEquation2(
+    -2 * d2 * e1 * p + -2 * d1 * e2 * p,
+    -d1 * e1 + d2 * e2,
+    d2 * f1 + -d1 * f2,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => ({
+    x: x0 + e2 * t - 2 * e1 * p * t ** 2,
+    y: y0 + e1 * t + 2 * e2 * p * t ** 2,
+  }))
+}
+
+export function getArcParabolaSegmentIntersectionPoints(arc: Arc, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getCircleParabolaSegmentIntersectionPoints(arc, curve, extend2)
+  return result.filter((p) => pointIsOnArc(p, arc, extend1))
+}
+
+export function getCircleParabolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x0 + e2 t - 2 e1 p t^2
+  // y = y0 + e1 t + 2 e2 p t^2
+
+  // (x - x1)^2 + (y - y1)^2 = r1^2
+  // replace x, y: (x0 + e2 t - 2 e1 p t^2 - x1)^2 + (y0 + e1 t + 2 e2 p t^2 - y1)^2 - r1^2 = 0
+  const f1 = x0 - x1, f2 = y0 - y1
+  // (f1 + e2 t - 2 e1 p t^2)^2 + (f2 + e1 t + 2 e2 p t^2)^2 - r1^2 = 0
+  // group by t: (4 e1 e1 p p + 4 e2 e2 p p) t t t t + (-4 e1 f1 p + 4 e2 f2 p + e1 e1 + e2 e2) t t + (2 e2 f1 + 2 e1 f2) t + f1 f1 + f2 f2 + -r1 r1 = 0
+  // 4 p p t t t t + (1 - 4 (e1 f1 - e2 f2)p) t t + 2(e2 f1 + e1 f2) t + f1 f1 + f2 f2 - r1 r1 = 0
+  let ts = calculateEquation4(
+    4 * p * p,
+    0,
+    1 - 4 * (e1 * f1 - e2 * f2) * p,
+    2 * (e2 * f1 + e1 * f2),
+    f1 * f1 + f2 * f2 - r1 * r1,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => ({
+    x: x0 + e2 * t - 2 * e1 * p * t ** 2,
+    y: y0 + e1 * t + 2 * e2 * p * t ** 2,
+  }))
+}
+
+export function getEllipseArcParabolaSegmentIntersectionPoints(arc: EllipseArc, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getEllipseParabolaSegmentIntersectionPoints(arc, curve, extend2)
+  return result.filter((p) => pointIsOnEllipseArc(p, arc, extend1))
+}
+
+export function getEllipseParabolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x0 + e2 t - 2 e1 p t^2
+  // y = y0 + e1 t + 2 e2 p t^2
+
+  const radian1 = angleToRadian(angle1)
+  const d1 = Math.sin(radian1), d2 = Math.cos(radian1), d3 = 1 / rx1 / rx1, d4 = 1 / ry1 / ry1
+  // (d2(x - cx1) + d1(y - cy1))^2 d3 + (-d1(x - cx1) + d2(y - cy1))^2 d4 = 1
+  // replace x, y: (d2(x0 + e2 t - 2 e1 p t^2 - cx1) + d1(y0 + e1 t + 2 e2 p t^2 - cy1))^2 d3 + (-d1(x0 + e2 t - 2 e1 p t^2 - cx1) + d2(y0 + e1 t + 2 e2 p t^2 - cy1))^2 d4 - 1 = 0
+  const f1 = x0 - cx1, f2 = y0 - cy1
+  // (d2(f1 + e2 t - 2 e1 p t^2) + d1(f2 + e1 t + 2 e2 p t^2))^2 d3 + (-d1(f1 + e2 t - 2 e1 p t^2) + d2(f2 + e1 t + 2 e2 p t^2))^2 d4 - 1 = 0
+  // ((-2 d2 e1 p + 2 d1 e2 p) t t + (d1 e1 + d2 e2) t + d2 f1 + d1 f2)^2 d3 + ((2 d1 e1 p + 2 d2 e2 p) t t + (d2 e1 + -d1 e2) t + -d1 f1 + d2 f2)^2 d4 - 1 = 0
+  const g1 = -d2 * e1 + d1 * e2, g2 = d1 * e1 + d2 * e2, g3 = d2 * f1 + d1 * f2, g4 = -d1 * f1 + d2 * f2
+  // (2 p g1 t t + g2 t + g3)^2 d3 + (2 p g2 t t - g1 t + g4)^2 d4 - 1 = 0
+  // group by t: (4 d3 g1 g1 p p + 4 d4 g2 g2 p p) t t t t + (4 d3 g1 g2 p + -4 d4 g1 g2 p) t t t + (4 d3 g1 g3 p + 4 d4 g2 g4 p + d4 g1 g1 + d3 g2 g2) t t + (2 d3 g2 g3 + -2 d4 g1 g4) t + d3 g3 g3 + d4 g4 g4 + -1 = 0
+  let ts = calculateEquation4(
+    4 * (d3 * g1 * g1 + d4 * g2 * g2) * p * p,
+    4 * (d3 - d4) * g1 * g2 * p,
+    4 * (d3 * g1 * g3 + d4 * g2 * g4) * p + d4 * g1 * g1 + d3 * g2 * g2,
+    2 * (d3 * g2 * g3 - d4 * g1 * g4),
+    d3 * g3 * g3 + d4 * g4 * g4 - 1,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => ({
+    x: x0 + e2 * t - 2 * e1 * p * t ** 2,
+    y: y0 + e1 * t + 2 * e2 * p * t ** 2,
+  }))
 }

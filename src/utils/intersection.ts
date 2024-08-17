@@ -21,6 +21,7 @@ import { Nullable } from "./types"
 import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 import { getAngleRangesIntersections, twoAnglesSameDirection } from "./angle"
+import { getArcParabolaSegmentIntersectionPoints, getEllipseArcParabolaSegmentIntersectionPoints, getLineSegmentParabolaSegmentIntersectionPoints } from "./parabola"
 
 /**
  * @public
@@ -122,7 +123,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return []
     }
     if (line2.type === 'parabola curve') {
-      return []
+      return getLineSegmentParabolaSegmentIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
@@ -145,7 +146,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return points.filter(p => pointIsOnArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
     if (line2.type === 'parabola curve') {
-      return []
+      return getArcParabolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
@@ -165,7 +166,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return points.filter(p => pointIsOnEllipseArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
     if (line2.type === 'parabola curve') {
-      return []
+      return getEllipseArcParabolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
@@ -489,6 +490,10 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
       }
       const p = getTwoGeneralFormLinesIntersectionPoint(generalFormLine, pointAndDirectionToGeneralFormLine(g.line, angleToRadian(g.line.angle)))
       if (p && pointIsOnRay(p, g.line) && pointIsOnLineSegment(p, ...line)) {
+        return true
+      }
+    } else if (g.type === 'parabola curve') {
+      if (getLineSegmentParabolaSegmentIntersectionPoints(...line, g.curve).length > 0) {
         return true
       }
     }
