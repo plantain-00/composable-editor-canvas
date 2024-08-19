@@ -7492,19 +7492,17 @@ function getModel(ctx) {
     return geometriesCache.get(content, refs, () => {
       var _a;
       const segmentCount = (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount;
-      const rate = (content.t2 - content.t1) / segmentCount;
-      const points = [];
-      const matrix = ctx.getCoordinateMatrix2D(content, ctx.getParabolaXAxisRadian(content));
-      for (let i = 0; i <= segmentCount; i++) {
-        const vec = ctx.getCoordinateVec2D(ctx.getParabolaCoordinatePointAtParam(content, content.t1 + i * rate));
-        const p = ctx.matrix.multiplyVec(matrix, vec);
-        points.push(ctx.vec2ToPosition(ctx.slice2(p)));
-      }
+      const curve = ctx.parabolaSegmentToQuadraticCurve(content);
+      const points = ctx.getQuadraticCurvePoints(curve.from, curve.cp, curve.to, segmentCount);
       const lines = [
-        { type: "parabola curve", curve: content }
+        { type: "quadratic curve", curve }
       ];
       return {
         lines,
+        start: curve.from,
+        end: curve.to,
+        startAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t1)),
+        endAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t2)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
@@ -7515,6 +7513,7 @@ function getModel(ctx) {
   return {
     type: "parabola",
     ...ctx.strokeModel,
+    ...ctx.segmentCountModel,
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
@@ -7522,6 +7521,54 @@ function getModel(ctx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
       const { points } = getParabolaGeometries(content, renderCtx.contents);
       return target.renderPolyline(points, options);
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { start, end, startAngle, endAngle } = getParabolaGeometries(content, contents);
+        return {
+          editPoints: [
+            {
+              x: content.x,
+              y: content.y,
+              cursor: "move",
+              type: "move",
+              update(c, { cursor, start: start2, scale }) {
+                if (!isParabolaContent(c)) {
+                  return;
+                }
+                c.x += cursor.x - start2.x;
+                c.y += cursor.y - start2.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            },
+            {
+              x: start.x,
+              y: start.y,
+              cursor: ctx.getResizeCursor(startAngle, "left"),
+              update(c, { cursor, scale }) {
+                if (!isParabolaContent(c)) {
+                  return;
+                }
+                c.t1 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            },
+            {
+              x: end.x,
+              y: end.y,
+              cursor: ctx.getResizeCursor(endAngle, "right"),
+              update(c, { cursor, scale }) {
+                if (!isParabolaContent(c)) {
+                  return;
+                }
+                c.t2 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            }
+          ],
+          angleSnapStartPoint: content
+        };
+      });
     },
     getGeometries: getParabolaGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
