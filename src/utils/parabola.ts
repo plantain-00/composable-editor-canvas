@@ -1,3 +1,4 @@
+import { QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Arc, Circle, pointIsOnArc } from "./circle"
 import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
@@ -6,7 +7,7 @@ import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
 import { delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy } from "./math"
 import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
-import { angleToRadian } from "./radian"
+import { angleToRadian, radianToAngle } from "./radian"
 import { TwoPointsFormRegion } from "./region"
 import { transformPointFromCoordinate2D } from "./transform"
 import { Tuple3 } from "./types"
@@ -341,4 +342,61 @@ export function getEllipseParabolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, 
     x: x0 + e2 * t - 2 * e1 * p * t ** 2,
     y: y0 + e1 * t + 2 * e2 * p * t ** 2,
   }))
+}
+
+export function parabolaSegmentToQuadraticCurve({ angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment): QuadraticCurve {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x0 + e2 t - 2 e1 p t^2
+  // y = y0 + e1 t + 2 e2 p t^2
+  const d1 = t2 - t1
+  // let t = t1 + u(t2 - t1) =  d1 u + t1
+  // x = x0 + e2(d1 u + t1) - 2 e1 p (d1 u + t1)^2 = -2 d1 d1 e1 p u u + (d1 e2 + -4 d1 e1 p t1) u + x0 + e2 t1 + -2 e1 p t1 t1
+  // y = y0 + e1(d1 u + t1) + 2 e2 p (d1 u + t1)^2 = 2 d1 d1 e2 p u u + (d1 e1 + 4 d1 e2 p t1) u + y0 + e1 t1 + 2 e2 p t1 t1
+
+  // x = (a1 + a3 - 2 a2) t t + 2 (a2 - a1) t + a1
+  // y = (b1 + b3 - 2 b2) t t + 2 (b2 - b1) t + b1
+
+  const a1 = x0 + e2 * t1 - 2 * e1 * p * t1 * t1
+  // 2 (a2 - a1) = d1 e2 + -4 d1 e1 p t1
+  const a2 = a1 + (d1 * e2 - 4 * d1 * e1 * p * t1) / 2
+  // a1 + a3 - 2 a2 = -2 d1 d1 e1 p
+  const a3 = 2 * a2 - 2 * d1 * d1 * e1 * p - a1
+
+  const b1 = y0 + e1 * t1 + 2 * e2 * p * t1 * t1
+  // 2 (b2 - b1) = d1 e1 + 4 d1 e2 p t1
+  const b2 = b1 + (d1 * e1 + 4 * d1 * e2 * p * t1) / 2
+  // b1 + b3 - 2 b2 = 2 d1 d1 e2 p
+  const b3 = 2 * b2 + 2 * d1 * d1 * e2 * p - b1
+  return { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }
+}
+
+export function quadraticCurveToParabolaSegment({ from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve): ParabolaSegment {
+  const f1 = a1 + a3 - 2 * a2, f2 = b1 + b3 - 2 * b2
+  // f1 = -2 d1 d1 e1 p
+  // f2 = 2 d1 d1 e2 p
+  // tan(xAxisRadian) = e1/e2 = -f1/f2
+  const xAxisRadian = Math.atan2(-f1, f2)
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const angle = radianToAngle(xAxisRadian) + 90
+  const f5 = !isZero(e1) ? -f1 / 2 / e1 : f2 / 2 / e2
+  // d1 d1 p = f5
+
+  const f3 = 2 * (a2 - a1), f4 = 2 * (b2 - b1)
+  // f3 = d1 e2 + -4 d1 e1 p t1
+  // f4 = d1 e1 + 4 d1 e2 p t1
+  // f3 e2 = d1 e2 e2 + -4 d1 e1 e2 p t1
+  // f4 e1 = d1 e1 e1 + 4 d1 e1 e2 p t1
+  // f3 e2 + f4 e1 = d1
+  const d1 = f3 * e2 + f4 * e1
+  const p = f5 / d1 / d1
+  const t1 = !isZero(e1) ? (d1 * e2 - f3) / (4 * d1 * e1 * p) : (f4 - d1 * e1) / (4 * d1 * e2 * p)
+
+  // a1 = x0 + e2 t1 + -2 e1 p t1 t1
+  // b1 = y0 + e1 t1 + 2 e2 p t1 t1
+  const x0 = a1 - e2 * t1 + 2 * e1 * p * t1 * t1
+  const y0 = b1 - e1 * t1 - 2 * e2 * p * t1 * t1
+  const t2 = d1 + t1
+
+  return { angle, x: x0, y: y0, p, t1, t2 }
 }
