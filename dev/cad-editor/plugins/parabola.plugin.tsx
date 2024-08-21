@@ -38,6 +38,28 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
     move(content, offset) {
       ctx.movePoint(content, offset)
     },
+    rotate(content, center, angle) {
+      ctx.rotateParabola(content, center, angle)
+    },
+    scale(content, center, sx, sy) {
+      const curve = ctx.parabolaSegmentToQuadraticCurve(content)
+      const line: core.GeometryLine = { type: 'quadratic curve', curve }
+      ctx.scaleGeometryLine(line, center, sx, sy)
+      return ctx.geometryLineToContent(line)
+    },
+    skew(content, center, sx, sy) {
+      const curve = ctx.parabolaSegmentToQuadraticCurve(content)
+      const line: core.GeometryLine = { type: 'quadratic curve', curve }
+      ctx.skewGeometryLine(line, center, sx, sy)
+      return ctx.geometryLineToContent(line)
+    },
+    mirror(content, line, angle) {
+      ctx.mirrorParabola(content, line, angle)
+    },
+    break(content, intersectionPoints, contents) {
+      const lines = getParabolaGeometries(content, contents).lines
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { points } = getParabolaGeometries(content, renderCtx.contents)
@@ -91,6 +113,16 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
         }
       })
     },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { start, end } = getParabolaGeometries(content, contents)
+        return [
+          { ...start, type: 'endpoint' as const },
+          { ...end, type: 'endpoint' as const },
+          { ...content, type: 'center' as const },
+        ]
+      })
+    },
     getGeometries: getParabolaGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
@@ -109,6 +141,11 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     deleteRefId: ctx.deleteStrokeRefIds,
+    reverse: (content) => ({
+      ...content,
+      t1: content.t2,
+      t2: content.t1,
+    }),
   }
 }
 

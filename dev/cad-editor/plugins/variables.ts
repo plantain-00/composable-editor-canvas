@@ -3552,7 +3552,9 @@ function getModel(ctx) {
       skew(content, center, sx, sy) {
         ctx.skewEllipseArc(content, center, sx, sy);
       },
-      mirror: ellipseModel.mirror,
+      mirror(content, line, angle) {
+        ctx.mirrorEllipseArc(content, line, angle);
+      },
       break(content, points) {
         if (points.length === 0) {
           return;
@@ -7517,6 +7519,28 @@ function getModel(ctx) {
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
+    rotate(content, center, angle) {
+      ctx.rotateParabola(content, center, angle);
+    },
+    scale(content, center, sx, sy) {
+      const curve = ctx.parabolaSegmentToQuadraticCurve(content);
+      const line = { type: "quadratic curve", curve };
+      ctx.scaleGeometryLine(line, center, sx, sy);
+      return ctx.geometryLineToContent(line);
+    },
+    skew(content, center, sx, sy) {
+      const curve = ctx.parabolaSegmentToQuadraticCurve(content);
+      const line = { type: "quadratic curve", curve };
+      ctx.skewGeometryLine(line, center, sx, sy);
+      return ctx.geometryLineToContent(line);
+    },
+    mirror(content, line, angle) {
+      ctx.mirrorParabola(content, line, angle);
+    },
+    break(content, intersectionPoints, contents) {
+      const lines = getParabolaGeometries(content, contents).lines;
+      return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
       const { points } = getParabolaGeometries(content, renderCtx.contents);
@@ -7570,6 +7594,16 @@ function getModel(ctx) {
         };
       });
     },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { start, end } = getParabolaGeometries(content, contents);
+        return [
+          { ...start, type: "endpoint" },
+          { ...end, type: "endpoint" },
+          { ...content, type: "center" }
+        ];
+      });
+    },
     getGeometries: getParabolaGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
@@ -7615,7 +7649,12 @@ function getModel(ctx) {
     isValid: (c, p) => ctx.validate(c, ParabolaContent, p),
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
-    deleteRefId: ctx.deleteStrokeRefIds
+    deleteRefId: ctx.deleteStrokeRefIds,
+    reverse: (content) => ({
+      ...content,
+      t1: content.t2,
+      t2: content.t1
+    })
   };
 }
 function isParabolaContent(content) {

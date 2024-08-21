@@ -9,6 +9,7 @@ import { angleToRadian, getTwoPointsRadian, radianToAngle } from "./radian"
 import { equals, isZero, mirrorNumber } from "./math"
 import { calculateEquation2 } from "./equation-calculater"
 import { pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
+import { Parabola, ParabolaSegment } from "./parabola"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x
@@ -64,6 +65,11 @@ export function rotateEllipse(ellipse: Ellipse, center: Position, angle: number)
   ellipse.angle = (ellipse.angle ?? 0) + angle
 }
 
+export function rotateParabola(curve: Parabola, center: Position, angle: number) {
+  rotatePoint(curve, center, angle)
+  curve.angle += angle
+}
+
 export function rotateGeometryLine(line: GeometryLine, center: Position, angle: number) {
   if (Array.isArray(line)) {
     rotatePoint(line[0], center, angle)
@@ -108,6 +114,26 @@ export function mirrorEllipse(ellipse: Ellipse, line: GeneralFormLine, angle: nu
   ellipse.cx = p.x
   ellipse.cy = p.y
   ellipse.angle = mirrorNumber(ellipse.angle ?? 0, angle)
+}
+
+export function mirrorEllipseArc(ellipseArc: EllipseArc, line: GeneralFormLine, angle: number) {
+  const p = mirrorPoint(getEllipseCenter(ellipseArc), line)
+  ellipseArc.cx = p.x
+  ellipseArc.cy = p.y
+  const oldAngle = ellipseArc.angle ?? 0
+  const newAngle = mirrorNumber(oldAngle, angle)
+  ellipseArc.angle = newAngle
+  const startAngle = mirrorNumber(ellipseArc.endAngle + oldAngle, angle)
+  const endAngle = mirrorNumber(ellipseArc.startAngle + oldAngle, angle)
+  ellipseArc.startAngle = startAngle - newAngle
+  ellipseArc.endAngle = endAngle - newAngle
+}
+
+export function mirrorParabola(curve: ParabolaSegment, line: GeneralFormLine, angle: number) {
+  mirrorPoint(curve, line)
+  curve.angle = mirrorNumber(curve.angle, angle)
+  curve.t1 *= -1
+  curve.t2 *= -1
 }
 
 export function mirrorGeometryLine(content: GeometryLine, line: GeneralFormLine, angle: number) {

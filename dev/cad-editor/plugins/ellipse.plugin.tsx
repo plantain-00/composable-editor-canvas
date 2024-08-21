@@ -250,7 +250,9 @@ export function getModel(ctx: PluginContext) {
       skew(content, center, sx, sy) {
         ctx.skewEllipseArc(content, center, sx, sy)
       },
-      mirror: ellipseModel.mirror,
+      mirror(content, line, angle) {
+        ctx.mirrorEllipseArc(content, line, angle)
+      },
       break(content, points) {
         if (points.length === 0) {
           return
