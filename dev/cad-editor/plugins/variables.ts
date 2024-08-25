@@ -4358,7 +4358,7 @@ function getCommand(ctx) {
                     } else if (!end) {
                       direction = "head";
                     } else {
-                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, start) ? "head" : "tail";
+                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, end) ? "head" : "tail";
                     }
                   } else {
                     direction = "head";
@@ -7505,6 +7505,7 @@ function getModel(ctx) {
         end: curve.to,
         startAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t1)),
         endAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t2)),
+        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocalParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
@@ -7541,14 +7542,44 @@ function getModel(ctx) {
       const lines = getParabolaGeometries(content, contents).lines;
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints);
     },
+    offset(content, point, distance, contents) {
+      if (!distance) {
+        distance = Math.min(...getParabolaGeometries(content, contents).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
+      }
+      return ctx.getParallelParabolaSegmentsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfParabolaSegment(point, content))];
+    },
+    join(content, target, contents) {
+      var _a, _b, _c;
+      const { lines } = getParabolaGeometries(content, contents);
+      const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target, contents)) == null ? void 0 : _c.lines;
+      if (!line2) return;
+      const newLines = ctx.mergeGeometryLines(lines, line2);
+      if (!newLines) return;
+      return {
+        ...content,
+        type: "path",
+        commands: ctx.geometryLineToPathCommands(newLines)
+      };
+    },
+    extend(content, point) {
+      const t = ctx.getParabolaParamAtPoint(content, point);
+      if (ctx.isBefore(t, content.t1, content.t2)) {
+        content.t1 = t;
+      } else {
+        content.t2 = t;
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
       const { points } = getParabolaGeometries(content, renderCtx.contents);
       return target.renderPolyline(points, options);
     },
+    renderIfSelected(content, { color, target, strokeWidth }) {
+      return target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth });
+    },
     getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { start, end, startAngle, endAngle } = getParabolaGeometries(content, contents);
+        const { start, end, startAngle, endAngle, focus } = getParabolaGeometries(content, contents);
         return {
           editPoints: [
             {
@@ -7569,38 +7600,51 @@ function getModel(ctx) {
               x: start.x,
               y: start.y,
               cursor: ctx.getResizeCursor(startAngle, "left"),
-              update(c, { cursor, scale }) {
+              update(c, { cursor, start: start2, scale }) {
                 if (!isParabolaContent(c)) {
                   return;
                 }
                 c.t1 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)));
-                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start2, cursor] }] };
               }
             },
             {
               x: end.x,
               y: end.y,
               cursor: ctx.getResizeCursor(endAngle, "right"),
-              update(c, { cursor, scale }) {
+              update(c, { cursor, start: start2, scale }) {
                 if (!isParabolaContent(c)) {
                   return;
                 }
                 c.t2 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start2, cursor] }] };
+              }
+            },
+            {
+              x: focus.x,
+              y: focus.y,
+              cursor: "move",
+              update(c, { cursor, scale }) {
+                if (!isParabolaContent(c)) {
+                  return;
+                }
+                c.p = ctx.getParabolaFocalParameter(ctx.getTwoPointsDistance(content, cursor) * 2);
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content));
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
               }
             }
-          ],
-          angleSnapStartPoint: content
+          ]
         };
       });
     },
     getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { start, end } = getParabolaGeometries(content, contents);
+        const { start, end, focus } = getParabolaGeometries(content, contents);
         return [
           { ...start, type: "endpoint" },
           { ...end, type: "endpoint" },
-          { ...content, type: "center" }
+          { ...content, type: "center" },
+          { ...focus, type: "center" }
         ];
       });
     },
@@ -7650,11 +7694,7 @@ function getModel(ctx) {
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     deleteRefId: ctx.deleteStrokeRefIds,
-    reverse: (content) => ({
-      ...content,
-      t1: content.t2,
-      t2: content.t1
-    })
+    reverse: ctx.reverseParabola
   };
 }
 function isParabolaContent(content) {
