@@ -14,6 +14,7 @@ import { Tuple3 } from "./types"
 import { and, number } from "./validators"
 
 export interface Parabola extends Position {
+  // y = 2 p x^2
   p: number
   angle: number
 }
@@ -33,7 +34,11 @@ export const ParabolaSegment = /* @__PURE__ */ and(Parabola, {
   t2: number,
 })
 
-export function getPerpendicularParamsToParabola({ x: x0, y: y0 }: Position, { p, angle, x: x1, y: y1 }: Parabola, delta = delta2): number[] {
+export function getParabolaFocalParameter(p: number) {
+  return 1 / 4 / p
+}
+
+export function getPerpendicularParamsToParabola({ x: x0, y: y0 }: Position, { p, angle, x: x1, y: y1 }: Parabola, delta?: number): number[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   // x = x1 + e2 t - 2 e1 p t^2
@@ -213,7 +218,7 @@ export function getParabolaCurvatureAtParam(curve: Parabola, param: number): num
   return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
 }
 
-export function reverseParabola(curve: ParabolaSegment): ParabolaSegment {
+export function reverseParabola<T extends ParabolaSegment>(curve: T): T {
   return {
     ...curve,
     t1: curve.t2,

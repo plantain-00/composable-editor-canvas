@@ -103,7 +103,7 @@ export function getCommand(ctx: PluginContext): Command {
                     } else if (!end) {
                       direction = 'head'
                     } else {
-                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, start) ? 'head' : 'tail'
+                      direction = ctx.getTwoPointsDistanceSquare(p, start) < ctx.getTwoPointsDistanceSquare(p, end) ? 'head' : 'tail'
                     }
                   } else {
                     direction = 'head'

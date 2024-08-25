@@ -3,12 +3,13 @@ import type * as core from '../../../src'
 import type { Command } from '../command'
 import type * as model from '../model'
 import type { LineContent } from './line-polyline.plugin'
+import type { PathContent } from './path.plugin'
 
 export type ParabolaContent = model.BaseContent<'parabola'> & model.StrokeFields & core.ParabolaSegment & model.SegmentCountFields
 
 export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
   const ParabolaContent = ctx.and(ctx.BaseContent('parabola'), ctx.StrokeFields, ctx.ParabolaSegment, ctx.SegmentCountFields)
-  const geometriesCache = new ctx.WeakmapValuesCache<Omit<ParabolaContent, "type">, model.BaseContent, model.Geometries<{ start: core.Position, end: core.Position, startAngle: number, endAngle: number, points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<ParabolaContent, "type">, model.BaseContent, model.Geometries<{ start: core.Position, end: core.Position, focus: core.Position, startAngle: number, endAngle: number, points: core.Position[] }>>()
   function getParabolaGeometries(content: Omit<ParabolaContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(ctx.getStrokeRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
@@ -24,6 +25,7 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
         end: curve.to,
         startAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t1)),
         endAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t2)),
+        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocalParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
@@ -60,14 +62,43 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
       const lines = getParabolaGeometries(content, contents).lines
       return ctx.breakGeometryLinesToPathCommands(lines, intersectionPoints)
     },
+    offset(content, point, distance, contents) {
+      if (!distance) {
+        distance = Math.min(...getParabolaGeometries(content, contents).lines.map(line => ctx.getPointAndGeometryLineMinimumDistance(point, line)))
+      }
+      return ctx.getParallelParabolaSegmentsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfParabolaSegment(point, content))]
+    },
+    join(content, target, contents) {
+      const { lines } = getParabolaGeometries(content, contents)
+      const line2 = ctx.getContentModel(target)?.getGeometries?.(target, contents)?.lines
+      if (!line2) return
+      const newLines = ctx.mergeGeometryLines(lines, line2)
+      if (!newLines) return
+      return {
+        ...content,
+        type: 'path',
+        commands: ctx.geometryLineToPathCommands(newLines),
+      } as PathContent
+    },
+    extend(content, point) {
+      const t = ctx.getParabolaParamAtPoint(content, point)
+      if (ctx.isBefore(t, content.t1, content.t2)) {
+        content.t1 = t
+      } else {
+        content.t2 = t
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx)
       const { points } = getParabolaGeometries(content, renderCtx.contents)
       return target.renderPolyline(points, options)
     },
+    renderIfSelected(content, { color, target, strokeWidth }) {
+      return target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth })
+    },
     getEditPoints(content, contents) {
       return ctx.getEditPointsFromCache(content, () => {
-        const { start, end, startAngle, endAngle } = getParabolaGeometries(content, contents)
+        const { start, end, startAngle, endAngle, focus } = getParabolaGeometries(content, contents)
         return {
           editPoints: [
             {
@@ -88,38 +119,51 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
               x: start.x,
               y: start.y,
               cursor: ctx.getResizeCursor(startAngle, 'left'),
-              update(c, { cursor, scale }) {
+              update(c, { cursor, start, scale }) {
                 if (!isParabolaContent(c)) {
                   return
                 }
                 c.t1 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), t => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)))
-                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
               },
             },
             {
               x: end.x,
               y: end.y,
               cursor: ctx.getResizeCursor(endAngle, 'right'),
-              update(c, { cursor, scale }) {
+              update(c, { cursor, start, scale }) {
                 if (!isParabolaContent(c)) {
                   return
                 }
                 c.t2 = ctx.minimumBy(ctx.getPerpendicularParamsToParabola(cursor, content), t => ctx.getTwoPointsDistanceSquare(cursor, ctx.getParabolaPointAtParam(content, t)))
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: focus.x,
+              y: focus.y,
+              cursor: 'move',
+              update(c, { cursor, scale }) {
+                if (!isParabolaContent(c)) {
+                  return
+                }
+                c.p = ctx.getParabolaFocalParameter(ctx.getTwoPointsDistance(content, cursor) * 2)
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content))
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
               },
             },
           ],
-          angleSnapStartPoint: content,
         }
       })
     },
     getSnapPoints(content, contents) {
       return ctx.getSnapPointsFromCache(content, () => {
-        const { start, end } = getParabolaGeometries(content, contents)
+        const { start, end, focus } = getParabolaGeometries(content, contents)
         return [
           { ...start, type: 'endpoint' as const },
           { ...end, type: 'endpoint' as const },
           { ...content, type: 'center' as const },
+          { ...focus, type: 'center' as const },
         ]
       })
     },
@@ -141,11 +185,7 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
     getRefIds: ctx.getStrokeRefIds,
     updateRefId: ctx.updateStrokeRefIds,
     deleteRefId: ctx.deleteStrokeRefIds,
-    reverse: (content) => ({
-      ...content,
-      t1: content.t2,
-      t2: content.t1,
-    }),
+    reverse: ctx.reverseParabola,
   }
 }
 
