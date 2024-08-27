@@ -214,7 +214,7 @@ export function getModel(ctx: PluginContext) {
     getGeometries: getEllipseGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isEllipseContent(c)) { c.cx = p.x, c.cy = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isEllipseContent(c)) { c.cx = p.x; c.cy = p.y } }))}>canvas</ctx.Button>,
         cx: <ctx.NumberEditor value={content.cx} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.cx = v } })} />,
         cy: <ctx.NumberEditor value={content.cy} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.cy = v } })} />,
         rx: <ctx.NumberEditor value={content.rx} setValue={(v) => update(c => { if (isEllipseContent(c)) { c.rx = v } })} />,
@@ -389,7 +389,7 @@ export function getModel(ctx: PluginContext) {
       getGeometries: getEllipseArcGeometries,
       propertyPanel(content, update, contents, { acquirePoint }) {
         return {
-          from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isEllipseArcContent(c)) { c.cx = p.x, c.cy = p.y } }))}>canvas</ctx.Button>,
+          from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isEllipseArcContent(c)) { c.cx = p.x; c.cy = p.y } }))}>canvas</ctx.Button>,
           cx: <ctx.NumberEditor value={content.cx} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.cx = v } })} />,
           cy: <ctx.NumberEditor value={content.cy} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.cy = v } })} />,
           rx: <ctx.NumberEditor value={content.rx} setValue={(v) => update(c => { if (isEllipseArcContent(c)) { c.rx = v } })} />,

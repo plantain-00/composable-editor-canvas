@@ -114,7 +114,7 @@ export function getModel(ctx: PluginContext): model.Model<PolygonContent> {
           items={content.points.map((f, i) => <ctx.ObjectEditor
             inline
             properties={{
-              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolygonContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
+              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolygonContent(c)) { c.points[i].x = p.x; c.points[i].y = p.y } }))}>canvas</ctx.Button>,
               x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isPolygonContent(c)) { c.points[i].x = v } })} />,
               y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isPolygonContent(c)) { c.points[i].y = v } })} />,
             }}

@@ -27,7 +27,7 @@ export function getModelResult(model: Model) {
     cooldown: model.attackCooldown,
     base: unit.attack,
   } : undefined
-  const bonusMagicResistance = 1
+  let bonusMagicResistance = 1
   if (model.items) {
     for (const i of model.items) {
       const item = items[i]
@@ -36,7 +36,7 @@ export function getModelResult(model: Model) {
         if (item.health) health.total += item.health
         if (item.heathRegeneration) health.regeneration += item.heathRegeneration
         if (item.armor) health.armor += item.armor
-        if (item.magicResistance) bonusMagicResistance * 1 - item.magicResistance
+        if (item.magicResistance) bonusMagicResistance *= 1 - item.magicResistance
       }
       if (mana) {
         if (item.mana) mana.total += item.mana

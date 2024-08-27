@@ -168,7 +168,7 @@ export function getModel(ctx: PluginContext): model.Model<LinearDimensionContent
         position: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.position.x = p.x, c.position.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLinearDimensionContent(c)) { c.position.x = p.x; c.position.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.position.x} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.x = v } })} />,
             y: <ctx.NumberEditor value={content.position.y} setValue={(v) => update(c => { if (isLinearDimensionContent(c)) { c.position.y = v } })} />,
           }}

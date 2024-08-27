@@ -1278,9 +1278,9 @@ export function getContentsGeometries<T extends ContainerFields>(
         if (r.renderingLines) {
           renderingLines.push(...r.renderingLines)
         }
-        if (r.regions) [
+        if (r.regions) {
           regions.push(...r.regions)
-        ]
+        }
       }
     })
     return {

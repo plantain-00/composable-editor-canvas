@@ -104,7 +104,7 @@ export function getModel(ctx: PluginContext): model.Model<CoordinateAxisContent>
     getGeometries: getGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isCoordinateAxisContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isCoordinateAxisContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isCoordinateAxisContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isCoordinateAxisContent(c)) { c.y = v } })} />,
         xMin: <ctx.NumberEditor value={content.xMin} setValue={(v) => update(c => { if (isCoordinateAxisContent(c)) { c.xMin = v } })} />,

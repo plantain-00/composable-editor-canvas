@@ -204,7 +204,7 @@ export function getModel(ctx: PluginContext): model.Model<TextContent> {
     propertyPanel(content, update, contents, { acquirePoint }) {
       const scale = ctx.getScaleOptionsScale(content)
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTextContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isTextContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isTextContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isTextContent(c)) { c.y = v } })} />,
         ...ctx.getTextContentPropertyPanel(content, update, contents),

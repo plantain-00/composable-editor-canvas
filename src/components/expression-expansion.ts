@@ -524,7 +524,7 @@ export function deriveExpressionWith(e: Expression2, by: string): Expression2 {
     if (e.callee.type === 'Identifier') {
       functionName = e.callee.name
     } else if (e.callee.type === 'MemberExpression' && e.callee.object.type === 'Identifier' && e.callee.object.name === 'Math' && e.callee.property.type === 'Identifier') {
-      functionName === e.callee.property.name
+      functionName = e.callee.property.name
     }
     const a = e.arguments[0]
     if (functionName && a && a.type !== 'SpreadElement' && expressionHasVariable(a, by)) {

@@ -140,7 +140,7 @@ export function getModel(ctx: PluginContext) {
           items={content.points.map((f, i) => <ctx.ObjectEditor
             inline
             properties={{
-              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLineContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
+              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isLineContent(c)) { c.points[i].x = p.x; c.points[i].y = p.y } }))}>canvas</ctx.Button>,
               x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isLineContent(c)) { c.points[i].x = v } })} />,
               y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isLineContent(c)) { c.points[i].y = v } })} />,
             }}
@@ -184,7 +184,7 @@ export function getModel(ctx: PluginContext) {
             items={content.points.map((f, i) => <ctx.ObjectEditor
               inline
               properties={{
-                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolyLineContent(c)) { c.points[i].x = p.x, c.points[i].y = p.y } }))}>canvas</ctx.Button>,
+                from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolyLineContent(c)) { c.points[i].x = p.x; c.points[i].y = p.y } }))}>canvas</ctx.Button>,
                 x: <ctx.NumberEditor value={f.x} setValue={(v) => update(c => { if (isPolyLineContent(c)) { c.points[i].x = v } })} />,
                 y: <ctx.NumberEditor value={f.y} setValue={(v) => update(c => { if (isPolyLineContent(c)) { c.points[i].y = v } })} />,
               }}

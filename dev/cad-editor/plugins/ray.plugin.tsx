@@ -76,7 +76,7 @@ export function getModel(ctx: PluginContext) {
     getGeometries: getRayGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isRayContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isRayContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRayContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRayContent(c)) { c.y = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isRayContent(c)) { c.angle = v } })} />,
