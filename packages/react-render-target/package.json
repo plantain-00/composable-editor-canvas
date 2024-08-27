@@ -10,7 +10,7 @@
   "author": "York Yao",
   "license": "MIT",
   "dependencies": {
-    "earcut": "2",
+    "earcut": "2 || 3",
     "equation-calculater": "^1.11.0",
     "twgl.js": "4 || 5"
   },

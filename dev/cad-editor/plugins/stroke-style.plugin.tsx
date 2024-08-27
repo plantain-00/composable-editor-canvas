@@ -84,7 +84,7 @@ export function getModel(ctx: PluginContext): model.Model<model.StrokeStyleConte
             c.isCurrent = v ? true : undefined
           }
         })} />,
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (ctx.isStrokeStyleContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (ctx.isStrokeStyleContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isStrokeStyleContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isStrokeStyleContent(c)) { c.y = v } })} />,
         width: <ctx.NumberEditor value={content.width} setValue={(v) => update(c => { if (ctx.isStrokeStyleContent(c)) { c.width = v } })} />,

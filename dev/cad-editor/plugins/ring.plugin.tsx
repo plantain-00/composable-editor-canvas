@@ -86,7 +86,7 @@ export function getModel(ctx: PluginContext): model.Model<RingContent> {
     getGeometries: getRingGeometriesFromCache,
     propertyPanel(content, update, contents, { acquirePoint }) {
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isRingContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isRingContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isRingContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isRingContent(c)) { c.y = v } })} />,
         outerRadius: <ctx.NumberEditor value={content.outerRadius} setValue={(v) => update(c => { if (isRingContent(c)) { c.outerRadius = v } })} />,

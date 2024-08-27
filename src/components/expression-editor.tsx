@@ -79,7 +79,11 @@ export function ExpressionEditor(props: JsonEditorProps<string> & {
       e.stopPropagation()
       if (metaKeyIfMacElseCtrlKey(e)) {
         if (e.key === 'z') {
-          e.shiftKey ? redo(e) : undo(e)
+          if (e.shiftKey) {
+            redo(e)
+          } else {
+            undo(e)
+          }
           return true
         }
       }

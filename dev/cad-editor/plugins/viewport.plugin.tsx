@@ -93,7 +93,7 @@ export function getModel(ctx: PluginContext): model.Model<model.ViewportContent>
         })
       }, contents, options)
       const result: Record<string, JSX.Element | (JSX.Element | undefined)[]> = {
-        from: <ctx.Button onClick={() => options.acquirePoint(p => update(c => { if (ctx.isViewportContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => options.acquirePoint(p => update(c => { if (ctx.isViewportContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.y = v } })} />,
         scale: <ctx.NumberEditor value={content.scale} setValue={(v) => update(c => { if (ctx.isViewportContent(c)) { c.scale = v } })} />,

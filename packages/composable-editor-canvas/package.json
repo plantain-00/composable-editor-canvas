@@ -14,7 +14,7 @@
     "url": "https://github.com/plantain-00/composable-editor-canvas/issues"
   },
   "dependencies": {
-    "earcut": "2",
+    "earcut": "2 || 3",
     "expression-engine": "1",
     "immer": "9 || 10",
     "twgl.js": "4 || 5",

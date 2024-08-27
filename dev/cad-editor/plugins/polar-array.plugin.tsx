@@ -212,7 +212,7 @@ export function getModel(ctx: PluginContext): model.Model<PolarArrayContent> {
         center: <ctx.ObjectEditor
           inline
           properties={{
-            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolarArrayContent(c)) { c.center.x = p.x, c.center.y = p.y } }))}>canvas</ctx.Button>,
+            from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPolarArrayContent(c)) { c.center.x = p.x; c.center.y = p.y } }))}>canvas</ctx.Button>,
             x: <ctx.NumberEditor value={content.center.x} setValue={(v) => update(c => { if (isPolarArrayContent(c)) { c.center.x = v } })} />,
             y: <ctx.NumberEditor value={content.center.y} setValue={(v) => update(c => { if (isPolarArrayContent(c)) { c.center.y = v } })} />,
           }}

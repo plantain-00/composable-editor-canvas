@@ -79,7 +79,7 @@ export function getModel(ctx: PluginContext): model.Model<model.TextStyleContent
             c.isCurrent = v ? true : undefined
           }
         })} />,
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (ctx.isTextStyleContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (ctx.isTextStyleContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (ctx.isTextStyleContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (ctx.isTextStyleContent(c)) { c.y = v } })} />,
         ...ctx.getTextContentPropertyPanel(content, update),

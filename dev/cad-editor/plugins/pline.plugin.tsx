@@ -267,7 +267,7 @@ export function getModel(ctx: PluginContext) {
           items={content.points.map((f, i) => <ctx.ObjectEditor
             inline
             properties={{
-              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPlineContent(c)) { c.points[i].point.x = p.x, c.points[i].point.y = p.y } }))}>canvas</ctx.Button>,
+              from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPlineContent(c)) { c.points[i].point.x = p.x; c.points[i].point.y = p.y } }))}>canvas</ctx.Button>,
               x: <ctx.NumberEditor value={f.point.x} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].point.x = v } })} />,
               y: <ctx.NumberEditor value={f.point.y} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].point.y = v } })} />,
               bulge: <ctx.NumberEditor value={f.bulge} setValue={(v) => update(c => { if (isPlineContent(c)) { c.points[i].bulge = v } })} />,

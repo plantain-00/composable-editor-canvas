@@ -83,7 +83,7 @@ export function getModel(ctx: PluginContext): model.Model<PointContent> {
     getGeometries: getPointGeometries,
     propertyPanel(content, update, _, { acquirePoint }) {
       return {
-        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPointContent(c)) { c.x = p.x, c.y = p.y } }))}>canvas</ctx.Button>,
+        from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isPointContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isPointContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isPointContent(c)) { c.y = v } })} />,
       }
