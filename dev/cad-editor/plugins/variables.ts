@@ -5280,6 +5280,103 @@ export {
   isHatchContent
 };
 `,
+`// dev/cad-editor/plugins/hyperbola.plugin.tsx
+function getModel(ctx) {
+  const HyperbolaContent = ctx.and(ctx.BaseContent("hyperbola"), ctx.StrokeFields, ctx.HyperbolaSegment, ctx.SegmentCountFields);
+  const geometriesCache = new ctx.WeakmapValuesCache();
+  function getHyperbolaGeometries(content, contents) {
+    const refs = new Set(ctx.iterateRefContents(ctx.getStrokeRefIds(content), contents, [content]));
+    return geometriesCache.get(content, refs, () => {
+      var _a;
+      const points = ctx.getHyperbolaPoints(content, (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount);
+      const lines = [];
+      return {
+        lines,
+        points,
+        bounding: ctx.getGeometryLinesBounding(lines),
+        renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
+      };
+    });
+  }
+  const React = ctx.React;
+  return {
+    type: "hyperbola",
+    ...ctx.strokeModel,
+    ...ctx.segmentCountModel,
+    move(content, offset) {
+      ctx.movePoint(content, offset);
+    },
+    render(content, renderCtx) {
+      const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
+      const { points } = getHyperbolaGeometries(content, renderCtx.contents);
+      return target.renderPolyline(points, options);
+    },
+    renderIfSelected(content, { color, target, strokeWidth }) {
+      return target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth });
+    },
+    getGeometries: getHyperbolaGeometries,
+    propertyPanel(content, update, contents, { acquirePoint }) {
+      return {
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.x = p.x;
+            c.y = p.y;
+          }
+        })) }, "canvas"),
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.x = v;
+          }
+        }) }),
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.y = v;
+          }
+        }) }),
+        a: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.a, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c) && v > 0) {
+            c.a = v;
+          }
+        }) }),
+        b: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.b, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c) && v > 0) {
+            c.b = v;
+          }
+        }) }),
+        t1: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t1, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.t1 = v;
+          }
+        }) }),
+        t2: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t2, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.t2 = v;
+          }
+        }) }),
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
+          if (isHyperbolaContent(c)) {
+            c.angle = v;
+          }
+        }) }),
+        ...ctx.getStrokeContentPropertyPanel(content, update, contents),
+        ...ctx.getSegmentCountContentPropertyPanel(content, update)
+      };
+    },
+    isValid: (c, p) => ctx.validate(c, HyperbolaContent, p),
+    getRefIds: ctx.getStrokeRefIds,
+    updateRefId: ctx.updateStrokeRefIds,
+    deleteRefId: ctx.deleteStrokeRefIds,
+    reverse: ctx.reverseHyperbola
+  };
+}
+function isHyperbolaContent(content) {
+  return content.type === "hyperbola";
+}
+export {
+  getModel,
+  isHyperbolaContent
+};
+`,
 `// dev/cad-editor/plugins/image.plugin.tsx
 function getModel(ctx) {
   const ImageContent = ctx.and(ctx.BaseContent("image"), ctx.Image, ctx.ClipFields);
