@@ -1,8 +1,9 @@
 import { calculateEquation4 } from "./equation-calculater"
 import { deduplicate, isBetween, isSameNumber } from "./math"
+import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
 import { Position } from "./position"
-import { transformPointFromCoordinate2D } from "./transform"
+import { getCoordinateMatrix2D, getCoordinateVec2D, transformPointFromCoordinate2D } from "./transform"
 import { and, number } from "./validators"
 
 export interface Hyperbola extends Position {
@@ -85,5 +86,25 @@ export function getHyperbolaCoordinatePointAtParam({ a, b }: Hyperbola, param: n
   return {
     x: b * param,
     y: a * (Math.sqrt(param ** 2 + 1) - 1),
+  }
+}
+
+export function getHyperbolaPoints(hyperbola: HyperbolaSegment, segmentCount: number): Position[] {
+  const rate = (hyperbola.t2 - hyperbola.t1) / segmentCount
+  const points: Position[] = []
+  const m = getCoordinateMatrix2D(hyperbola, getParabolaXAxisRadian(hyperbola))
+  for (let i = 0; i <= segmentCount; i++) {
+    const vec = getCoordinateVec2D(getHyperbolaCoordinatePointAtParam(hyperbola, hyperbola.t1 + i * rate))
+    const p = matrix.multiplyVec(m, vec)
+    points.push({ x: p[0], y: p[1] })
+  }
+  return points
+}
+
+export function reverseHyperbola<T extends HyperbolaSegment>(curve: T): T {
+  return {
+    ...curve,
+    t1: curve.t2,
+    t2: curve.t1,
   }
 }
