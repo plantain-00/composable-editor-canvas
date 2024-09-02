@@ -72,7 +72,7 @@ export function getPerpendicularParamsToHyperbola({ x: x0, y: y0 }: Position, { 
     delta,
   )
   vs = vs.filter(v => isBetween(v, -1, 1))
-  const ts = vs.map(v => Math.atan(Math.asin(v)))
+  const ts = vs.map(v => Math.tan(Math.asin(v)))
   return deduplicate(ts, isSameNumber)
 }
 
