@@ -270,6 +270,7 @@ export function newtonIterate(
   let count = 0
   for (; ;) {
     const g = f1(x)
+    if (isNaN(g)) break
     if (Math.abs(g) < delta) break
     if (count > maxIteratorCount) {
       return

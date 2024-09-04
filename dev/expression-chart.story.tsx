@@ -29,6 +29,7 @@ export default () => {
         cos: Math.cos,
         tan: Math.tan,
         ln: Math.log,
+        sqrt: Math.sqrt,
       }
       const newEquationResult: number[] = []
       for (const v of value) {
@@ -45,11 +46,19 @@ export default () => {
         }
         const g = parseInputExpression(printExpression(optimizeExpression(deriveExpressionWith(e, 'x'), v => expressionHasVariable(v, 'x'))))
         const r1 = newtonIterate(x0, x => {
-          const y = evaluateExpression(e, { ...ctx, x })
-          return typeof y === 'number' ? y : NaN
+          try {
+            const y = evaluateExpression(e, { ...ctx, x })
+            return typeof y === 'number' ? y : NaN
+          } catch {
+            return NaN
+          }
         }, x => {
-          const y = evaluateExpression(g, { ...ctx, x })
-          return typeof y === 'number' ? y : NaN
+          try {
+            const y = evaluateExpression(g, { ...ctx, x })
+            return typeof y === 'number' ? y : NaN
+          } catch {
+            return NaN
+          }
         }, delta1)
         if (r1 !== undefined && newEquationResult.every(n => !isSameNumber(n, r1))) {
           newEquationResult.push(r1)
