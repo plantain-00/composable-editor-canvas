@@ -1,6 +1,7 @@
 import { getPointsBoundingUnsafe } from "./bounding"
-import { calculateEquation4 } from "./equation-calculater"
-import { deduplicate, isBetween, isSameNumber, largerThan, minimumBy } from "./math"
+import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
+import { rombergIntegral } from "./length"
+import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, largerThan, minimumBy } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
 import { getTwoPointsDistance, Position } from "./position"
@@ -189,6 +190,78 @@ export function getHyperbolaBounding(curve: HyperbolaSegment): TwoPointsFormRegi
     }
   }
   return getPointsBoundingUnsafe(points)
+}
+
+export function getHyperbolaLength(curve: HyperbolaSegment, delta?: number): number {
+  const { a, b, t1, t2 } = curve
+  // x = b t
+  // y = a((t^2 + 1)^0.5 - 1)
+  // x' = b
+  // y' = a t (t^2 + 1)^-0.5
+  // dz = sqrt(dx^2 + dy^2)
+  // dz/dt = sqrt(b^2 + (a t (t^2 + 1)^-0.5)^2)
+  // dz/dt = sqrt(b^2 + a^2 t^2/(t^2 + 1))
+  const a2 = a ** 2, b2 = b ** 2
+  return rombergIntegral(t1, t2, t => {
+    const c = t ** 2
+    return Math.sqrt(b2 + a2 * c / (c + 1))
+  }, delta)
+}
+
+export function getHyperbolaParamByLength(curve: HyperbolaSegment, length: number, delta = delta2): number | undefined {
+  const f1 = (t: number) => getHyperbolaLength({ ...curve, t2: t }) - length
+  // dz/dt = sqrt(b^2 + a^2 t^2/(t^2 + 1))
+  const a2 = curve.a ** 2, b2 = curve.b ** 2
+  const f2 = (t: number) => {
+    const c = t ** 2
+    return Math.sqrt(b2 + a2 * c / (c + 1))
+  }
+  return newtonIterate(getTwoNumberCenter(curve.t1, curve.t2), f1, f2, delta)
+}
+
+export function getHyperbolaSegmentStartAndEnd(curve: HyperbolaSegment) {
+  return {
+    start: getHyperbolaPointAtParam(curve, curve.t1),
+    end: getHyperbolaPointAtParam(curve, curve.t2),
+  }
+}
+
+export function pointIsOnHyperbola(point: Position, { angle, a, b, x: x1, y: y1 }: Hyperbola): boolean {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x1 - b2, c2 = y1 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+
+  // c1 + b1 t + b2(t^2 + 1)^0.5 = x
+  // b2(t^2 + 1)^0.5 = x - c1 - b1 t
+  // b2 b2(t^2 + 1) = (x - c1 - b1 t)^2
+  const d1 = point.x - c1
+  // b2 b2(t^2 + 1) - (d1 - b1 t)^2 = 0
+  // (b2 b2 - b1 b1) t t + 2 b1 d1 t + b2 b2 - d1 d1 = 0
+  return calculateEquation2(b2 * b2 - b1 * b1, 2 * b1 * d1, b2 * b2 - d1 * d1)
+    .filter(t => isSameNumber(c2 + b3 * t + b4 * Math.sqrt(t ** 2 + 1), point.y, delta3)).length > 0
+}
+
+export function pointIsOnHyperbolaSegment(point: Position, curve: HyperbolaSegment, extend: ExtendType = { body: true }): boolean {
+  if (extend.head && extend.body && extend.tail) return true
+  if (!extend.head && !extend.body && !extend.tail) return false
+  const t = getHyperbolaParamAtPoint(curve, point)
+  return isBetween(t, curve.t1, curve.t2, extend)
+}
+
+export function getHyperbolaTangentRadianAtParam({ angle, a, b }: Hyperbola, t: number): number {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  // const c1 = x1 - b2, c2 = y1 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // x' = b2 t (t^2 + 1)^-0.5 + b1
+  // y' = b4 t (t^2 + 1)^-0.5 + b3
+  const d1 = Math.sqrt(t ** 2 + 1)
+  return Math.atan2(b4 * t / d1 + b3, b2 * t / d1 + b1)
 }
 
 export function reverseHyperbola<T extends HyperbolaSegment>(curve: T): T {
