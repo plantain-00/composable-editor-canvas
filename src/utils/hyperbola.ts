@@ -1,12 +1,14 @@
 import { getPointsBoundingUnsafe } from "./bounding"
 import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
-import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, largerThan, minimumBy } from "./math"
+import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, largerThan, minimumBy } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
-import { getTwoPointsDistance, Position } from "./position"
+import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
+import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
 import { getCoordinateMatrix2D, getCoordinateVec2D, transformPointFromCoordinate2D } from "./transform"
+import { Tuple3 } from "./types"
 import { and, number } from "./validators"
 
 export interface Hyperbola extends Position {
@@ -264,10 +266,70 @@ export function getHyperbolaTangentRadianAtParam({ angle, a, b }: Hyperbola, t: 
   return Math.atan2(b4 * t / d1 + b3, b2 * t / d1 + b1)
 }
 
+export function getHyperbolaDerivatives({ angle, a, b, x: x1, y: y1 }: Hyperbola): Tuple3<(t: number) => Position> {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x1 - b2, c2 = y1 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // x' = b2 t (t^2 + 1)^-0.5 + b1
+  // y' = b4 t (t^2 + 1)^-0.5 + b3
+  // x' = b2 (t^2 + 1)^-0.5 - b2 t t (t^2 + 1)^-1.5
+  // y' = b4 (t^2 + 1)^-0.5 - b4 t t (t^2 + 1)^-1.5
+  return [
+    t => {
+      const d = Math.sqrt(t ** 2 + 1)
+      return {
+        x: c1 + b1 * t + b2 * d,
+        y: c2 + b3 * t + b4 * d,
+      }
+    },
+    t => {
+      const d = t / Math.sqrt(t ** 2 + 1)
+      return {
+        x: b2 * d + b1,
+        y: b4 * d + b3,
+      }
+    },
+    (t) => {
+      const d0 = t ** 2, d1 = d0 + 1, d2 = Math.sqrt(d1)
+      const d = 1 / d2 - d0 / d1 / d2
+      return {
+        x: b2 * d,
+        y: b4 * d,
+      }
+    },
+  ]
+}
+
+export function getHyperbolaCurvatureAtParam(curve: Hyperbola, param: number): number {
+  const derivatives = getHyperbolaDerivatives(curve)
+  const { x: x1, y: y1 } = derivatives[1](param)
+  const { x: x2, y: y2 } = derivatives[2](param)
+  // (x1 y2 - y1 x2)/(x1 ** 2 + y1 ** 2)**1.5
+  return (x1 * y2 - y1 * x2) / (x1 ** 2 + y1 ** 2) ** 1.5
+}
+
 export function reverseHyperbola<T extends HyperbolaSegment>(curve: T): T {
   return {
     ...curve,
     t1: curve.t2,
     t2: curve.t1,
   }
+}
+
+export function getParallelHyperbolaSegmentsByDistance<T extends HyperbolaSegment>(curve: T, distance: number): [T, T] {
+  if (isZero(distance)) {
+    return [curve, curve]
+  }
+  if (curve.t1 > curve.t2) {
+    distance = -distance
+  }
+  const p1 = getPointByLengthAndRadian(curve, distance, angleToRadian(curve.angle))
+  const p2 = getPointByLengthAndRadian(curve, -distance, angleToRadian(curve.angle))
+  return [
+    { ...curve, x: p1.x, y: p1.y }, // on right side of hyperbola segment
+    { ...curve, x: p2.x, y: p2.y }, // on left side of hyperbola segment
+  ]
 }
