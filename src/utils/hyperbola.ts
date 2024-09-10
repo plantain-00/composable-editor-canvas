@@ -1,6 +1,7 @@
 import { getPointsBoundingUnsafe } from "./bounding"
 import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
+import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
 import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, largerThan, minimumBy } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
@@ -332,4 +333,55 @@ export function getParallelHyperbolaSegmentsByDistance<T extends HyperbolaSegmen
     { ...curve, x: p1.x, y: p1.y }, // on right side of hyperbola segment
     { ...curve, x: p2.x, y: p2.y }, // on left side of hyperbola segment
   ]
+}
+
+/**
+ * 0: point on hyperbola
+ * 1: point on left side of hyperbola
+ * -1: point on right side of hyperbola
+ */
+export function getPointSideOfHyperbolaSegment(point: Position, curve: HyperbolaSegment): number {
+  const p = getPointAndHyperbolaNearestPointAndDistance(point, curve, true)
+  const radian = getHyperbolaTangentRadianAtParam(curve, p.param)
+  const line = pointAndDirectionToGeneralFormLine(p.point, radian)
+  return getPointSideOfLine(point, line) * (curve.t1 > curve.t2 ? -1 : 1)
+}
+
+export function getLineSegmentHyperbolaSegmentIntersectionPoints(start: Position, end: Position, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getLineHyperbolaSegmentIntersectionPoints(start, end, curve, extend2)
+  return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
+}
+
+export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x0 - b2, c2 = y0 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+
+  // (x - x1) / (x2 - x1) = (y - y1) / (y2 - y1)
+  const d1 = x2 - x1, d2 = y2 - y1
+  // (x - x1) d2 - (y - y1) d1 = 0
+  // replace x, y: (c1 + b1 t + b2(t^2 + 1)^0.5 - x1) d2 - (c2 + b3 t + b4(t^2 + 1)^0.5 - y1) d1 = 0
+  const f1 = c1 - x1, f2 = c2 - y1
+  // (f1 + b1 t + b2(t^2 + 1)^0.5) d2 - (f2 + b3 t + b4(t^2 + 1)^0.5) d1 = 0
+  // (f1 d2 - f2 d1) + (b1 d2 - b3 d1) t + (b2 d2 - b4 d1)(t^2 + 1)^0.5 = 0
+  const g1 = f1 * d2 - f2 * d1, g2 = b1 * d2 - b3 * d1, g3 = b2 * d2 - b4 * d1
+  // g1 + g2 t + g3(t^2 + 1)^0.5 = 0
+  // (g1 + g2 t)^2 = g3 g3(t^2 + 1)
+  // (g2 g2 - g3 g3) t t + 2 g1 g2 t + g1 g1 - g3 g3 = 0
+  let ts = calculateEquation2(
+    g2 * g2 - g3 * g3,
+    2 * g1 * g2,
+    g1 * g1 - g3 * g3,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
 }
