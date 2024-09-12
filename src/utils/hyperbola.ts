@@ -1,4 +1,5 @@
 import { getPointsBoundingUnsafe } from "./bounding"
+import { Arc, Circle, pointIsOnArc } from "./circle"
 import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
@@ -63,7 +64,8 @@ export function getPerpendicularParamsToHyperbola({ x: x0, y: y0 }: Position, { 
   // v = sin(u), w = cos(u)
   // (b2 v + b1)(a1 w + b1 v + b2) + (b4 v + b3)(a2 w + b3 v + b4) = 0
   // ((a1 b2 + a2 b4) v + a1 b1 + a2 b3) w + (b1 b2 + b3 b4) v v + (b1 b1 + b2 b2 + b4 b4 + b3 b3) v + b3 b4 + b1 b2 = 0
-  const d1 = a1 * b2 + a2 * b4, d2 = a1 * b1 + a2 * b3, d3 = b1 * b2 + b3 * b4, d4 = b1 * b1 + b2 * b2 + b4 * b4 + b3 * b3
+  // ((a1 b2 + a2 b4) v + a1 b1 + a2 b3) w + (b1 b2 + b3 b4) v v + (a a + b b) v + b3 b4 + b1 b2 = 0
+  const d1 = a1 * b2 + a2 * b4, d2 = a1 * b1 + a2 * b3, d3 = b1 * b2 + b3 * b4, d4 = a * a + b * b
   // (d1 v + d2) w + d3 v v + d4 v + d3 = 0
   // v^2 + w^2 = 1
   // (d1 v + d2)^2 v^2 + (d1 v + d2)^2 w^2 = (d1 v + d2)^2
@@ -375,6 +377,49 @@ export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Posi
     g2 * g2 - g3 * g3,
     2 * g1 * g2,
     g1 * g1 - g3 * g3,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
+}
+
+export function getArcHyperbolaSegmentIntersectionPoints(arc: Arc, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getCircleHyperbolaSegmentIntersectionPoints(arc, curve, extend2)
+  return result.filter((p) => pointIsOnArc(p, arc, extend1))
+}
+
+export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x0 - b2, c2 = y0 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+
+  // (x - x1)^2 + (y - y1)^2 = r1^2
+  // replace x, y: (c1 + b1 t + b2(t^2 + 1)^0.5 - x1)^2 + (c2 + b3 t + b4(t^2 + 1)^0.5 - y1)^2 - r1^2 = 0
+  const f1 = c1 - x1, f2 = c2 - y1
+  // (f1 + b1 t + b2(t^2 + 1)^0.5)^2 + (f2 + b3 t + b4(t^2 + 1)^0.5)^2 - r1^2 = 0
+  // (b1 b1 + b3 b3) t t + (2 b1 b2 (t t + 1)^0.5 + 2 b3 b4 (t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + b2 b2 (t t + 1)^0.5 (t t + 1)^0.5 + 2 b2 f1 (t t + 1)^0.5 + f2 f2 + b4 b4 (t t + 1)^0.5 (t t + 1)^0.5 + 2 b4 f2 (t t + 1)^0.5 - r1 r1 = 0
+  // b b t t + (2 (b1 b2 + b3 b4)(t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + b2 b2 (t t + 1) + 2 b2 f1 (t t + 1)^0.5 + f2 f2 + b4 b4 (t t + 1) + 2 b4 f2 (t t + 1)^0.5 - r1 r1 = 0
+  // b b t t + (2 (-e2 b e1 a + e1 b e2 a)(t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + (b2 b2 + b4 b4) (t t + 1) + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + f2 f2 - r1 r1 = 0
+  // b b t t + (2 b1 f1 + 2 b3 f2) t + f1 f1 + a a(t t + 1) + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + f2 f2 - r1 r1 = 0
+  // (a a + b b) t t + 2 (b1 f1 + b3 f2) t + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + a a + f1 f1 + f2 f2 - r1 r1 = 0
+  const d1 = a * a + b * b, d2 = 2 * (b1 * f1 + b3 * f2), d3 = 2 * (b2 * f1 + b4 * f2), d4 = a * a + f1 * f1 + f2 * f2 - r1 * r1
+  // d1 t t + d2 t + d3(t t + 1)^0.5 + d4 = 0
+  // (d1 t t + d2 t + d4)^2 = d3 d3(t t + 1)
+  // d1 d1 t t t t + 2 d1 d2 t t t + (d2 d2 + 2 d1 d4 - d3 d3) t t + 2 d2 d4 t + d4 d4 - d3 d3 = 0
+  let ts = calculateEquation4(
+    d1 * d1,
+    2 * d1 * d2,
+    d2 * d2 + 2 * d1 * d4 - d3 * d3,
+    2 * d2 * d4,
+    d4 * d4 - d3 * d3,
   )
   ts = ts.filter(t => isBetween(t, t1, t2, extend))
   return ts.map(t => {
