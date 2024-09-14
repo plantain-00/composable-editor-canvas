@@ -21,7 +21,7 @@ import { Nullable } from "./types"
 import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 import { getAngleRangesIntersections, twoAnglesSameDirection } from "./angle"
-import { getArcParabolaSegmentIntersectionPoints, getEllipseArcParabolaSegmentIntersectionPoints, getLineSegmentParabolaSegmentIntersectionPoints } from "./parabola"
+import { getArcHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints } from "./hyperbola"
 
 /**
  * @public
@@ -122,8 +122,8 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
-    if (line2.type === 'parabola curve') {
-      return getLineSegmentParabolaSegmentIntersectionPoints(...line1, line2.curve, extend1, extend2)
+    if (line2.type === 'hyperbola curve') {
+      return getLineSegmentHyperbolaSegmentIntersectionPoints(...line1, line2.curve, extend1, extend2)
     }
     return getLineSegmentNurbsCurveIntersectionPoints(...line1, line2.curve)
   }
@@ -145,8 +145,8 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineCircleIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, delta)
       return points.filter(p => pointIsOnArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
-    if (line2.type === 'parabola curve') {
-      return getArcParabolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
+    if (line2.type === 'hyperbola curve') {
+      return getArcHyperbolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     return getArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
@@ -165,8 +165,8 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineEllipseIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve)
       return points.filter(p => pointIsOnEllipseArc(p, line1.curve, extend1) && pointIsOnRay(p, line2.line, extend2))
     }
-    if (line2.type === 'parabola curve') {
-      return getEllipseArcParabolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
+    if (line2.type === 'hyperbola curve') {
+      return getEllipseArcHyperbolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     return getEllipseArcNurbsCurveIntersectionPoints(line1.curve, line2.curve, extend1)
   }
@@ -182,7 +182,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineQuadraticCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
       return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
-    if (line2.type === 'parabola curve') {
+    if (line2.type === 'hyperbola curve') {
       return []
     }
     return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
@@ -196,7 +196,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       const points = getLineBezierCurveIntersectionPoints(line2.line, getRayPointAtDistance(line2.line, 1), line1.curve, extend1)
       return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
-    if (line2.type === 'parabola curve') {
+    if (line2.type === 'hyperbola curve') {
       return []
     }
     return getBezierCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
@@ -210,7 +210,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       }
       return []
     }
-    if (line2.type === 'parabola curve') {
+    if (line2.type === 'hyperbola curve') {
       return []
     }
     const bounding = getGeometryLineBounding(line2)
@@ -223,13 +223,13 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
     return []
   }
   if (line2.type === 'ray') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
-  if (line1.type === 'parabola curve') {
-    if (line2.type === 'parabola curve') {
+  if (line1.type === 'hyperbola curve') {
+    if (line2.type === 'hyperbola curve') {
       return []
     }
     return []
   }
-  if (line2.type === 'parabola curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
+  if (line2.type === 'hyperbola curve') return getTwoGeometryLinesIntersectionPoint(line2, line1, [extend2, extend1], delta)
   return getTwoNurbsCurveIntersectionPoints(line1.curve, line2.curve)
 }
 
@@ -492,8 +492,8 @@ export function geometryLineIntersectWithPolygon(g: GeometryLine, polygon: Posit
       if (p && pointIsOnRay(p, g.line) && pointIsOnLineSegment(p, ...line)) {
         return true
       }
-    } else if (g.type === 'parabola curve') {
-      if (getLineSegmentParabolaSegmentIntersectionPoints(...line, g.curve).length > 0) {
+    } else if (g.type === 'hyperbola curve') {
+      if (getLineSegmentHyperbolaSegmentIntersectionPoints(...line, g.curve).length > 0) {
         return true
       }
     }

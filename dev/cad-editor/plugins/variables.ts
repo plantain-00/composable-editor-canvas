@@ -5289,7 +5289,7 @@ function getModel(ctx) {
     return geometriesCache.get(content, refs, () => {
       var _a;
       const points = ctx.getHyperbolaPoints(content, (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount);
-      const lines = [];
+      const lines = [{ type: "hyperbola curve", curve: content }];
       return {
         lines,
         points,

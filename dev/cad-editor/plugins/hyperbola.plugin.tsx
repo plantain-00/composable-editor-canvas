@@ -12,7 +12,7 @@ export function getModel(ctx: PluginContext): model.Model<HyperbolaContent> {
     const refs = new Set(ctx.iterateRefContents(ctx.getStrokeRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const points = ctx.getHyperbolaPoints(content, content.segmentCount ?? ctx.defaultSegmentCount)
-      const lines: core.GeometryLine[] = []
+      const lines: core.GeometryLine[] = [{ type: 'hyperbola curve', curve: content }]
       return {
         lines,
         points,

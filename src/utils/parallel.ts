@@ -24,7 +24,7 @@ import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineM
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 import { LineJoin, defaultLineJoin } from "./triangles"
-import { getParallelParabolaSegmentsByDistance, getPointSideOfParabolaSegment } from "./parabola"
+import { getParallelHyperbolaSegmentsByDistance, getPointSideOfHyperbolaSegment } from "./hyperbola"
 
 export function getParallelCirclesByDistance<T extends Circle>(circle: T, distance: number): [T, T] {
   if (isZero(distance)) {
@@ -186,8 +186,8 @@ export function getPointSideOfGeometryLine(point: Position, line: GeometryLine):
   if (line.type === 'ray') {
     return getPointSideOfLine(point, pointAndDirectionToGeneralFormLine(line.line, angleToRadian(line.line.angle)))
   }
-  if (line.type === 'parabola curve') {
-    return getPointSideOfParabolaSegment(point, line.curve)
+  if (line.type === 'hyperbola curve') {
+    return getPointSideOfHyperbolaSegment(point, line.curve)
   }
   return getPointSideOfNurbsCurve(point, line.curve)
 }
@@ -236,9 +236,9 @@ export function getParallelGeometryLinesByDistance(line: GeometryLine, distance:
     const curves = getParallelRaysByDistance(line.line, distance)
     return [{ type: 'ray', line: curves[0] }, { type: 'ray', line: curves[1] }]
   }
-  if (line.type === 'parabola curve') {
-    const curves = getParallelParabolaSegmentsByDistance(line.curve, distance)
-    return [{ type: 'parabola curve', curve: curves[0] }, { type: 'parabola curve', curve: curves[1] }]
+  if (line.type === 'hyperbola curve') {
+    const curves = getParallelHyperbolaSegmentsByDistance(line.curve, distance)
+    return [{ type: 'hyperbola curve', curve: curves[0] }, { type: 'hyperbola curve', curve: curves[1] }]
   }
   const curves = getParallelNurbsCurvesByDistance(line.curve, distance)
   return [{ type: 'nurbs curve', curve: curves[0] }, { type: 'nurbs curve', curve: curves[1] }]

@@ -1,5 +1,6 @@
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Arc, Circle, pointIsOnArc } from "./circle"
+import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
@@ -420,6 +421,57 @@ export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r
     d2 * d2 + 2 * d1 * d4 - d3 * d3,
     2 * d2 * d4,
     d4 * d4 - d3 * d3,
+  )
+  ts = ts.filter(t => isBetween(t, t1, t2, extend))
+  return ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
+}
+
+export function getEllipseArcHyperbolaSegmentIntersectionPoints(arc: EllipseArc, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+  const result = getEllipseHyperbolaSegmentIntersectionPoints(arc, curve, extend2)
+  return result.filter((p) => pointIsOnEllipseArc(p, arc, extend1))
+}
+
+export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x0 - b2, c2 = y0 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+
+  const radian1 = angleToRadian(angle1)
+  const d1 = Math.sin(radian1), d2 = Math.cos(radian1), d3 = 1 / rx1 / rx1, d4 = 1 / ry1 / ry1
+  // (d2(x - cx1) + d1(y - cy1))^2 d3 + (-d1(x - cx1) + d2(y - cy1))^2 d4 = 1
+  // replace x, y: (d2(c1 + b1 t + b2(t^2 + 1)^0.5 - cx1) + d1(c2 + b3 t + b4(t^2 + 1)^0.5 - cy1))^2 d3 + (-d1(c1 + b1 t + b2(t^2 + 1)^0.5 - cx1) + d2(c2 + b3 t + b4(t^2 + 1)^0.5 - cy1))^2 d4 - 1 = 0
+  const f1 = c1 - cx1, f2 = c2 - cy1
+  // (d2(f1 + b1 t + b2(t^2 + 1)^0.5) + d1(f2 + b3 t + b4(t^2 + 1)^0.5))^2 d3 + (-d1(f1 + b1 t + b2(t^2 + 1)^0.5) + d2(f2 + b3 t + b4(t^2 + 1)^0.5))^2 d4 - 1 = 0
+  // (d2 f1 + d2 b1 t + d2 b2(t^2 + 1)^0.5 + d1 f2 + d1 b3 t + d1 b4(t^2 + 1)^0.5)^2 d3 + (-d1 f1 - d1 b1 t - d1 b2(t^2 + 1)^0.5 + d2 f2 + d2 b3 t + d2 b4(t^2 + 1)^0.5)^2 d4 - 1 = 0
+  // ((d2 f1 + d1 f2) + (d2 b1 + d1 b3) t + (d2 b2 + d1 b4)(t^2 + 1)^0.5)^2 d3 + ((d2 f2 - d1 f1) + (d2 b3 - d1 b1) t + (d2 b4 - d1 b2)(t^2 + 1)^0.5)^2 d4 - 1 = 0
+  const g1 = d2 * f1 + d1 * f2, g2 = d2 * b1 + d1 * b3, g3 = d2 * b2 + d1 * b4
+  const g4 = d2 * f2 - d1 * f1, g5 = d2 * b3 - d1 * b1, g6 = d2 * b4 - d1 * b2
+  // (g1 + g2 t + g3(t^2 + 1)^0.5)^2 d3 + (g4 + g5 t + g6(t^2 + 1)^0.5)^2 d4 - 1 = 0
+  // d3 g1 g1 + 2 d3 g1 g2 t + d3 g2 g2 t t + 2 d3 g1 g3 (t t + 1)^0.5 + 2 d3 g2 g3 t (t t + 1)^0.5 + d3 g3 g3 (t t + 1)^0.5 (t t + 1)^0.5 + d4 g4 g4 + 2 d4 g4 g5 t + d4 g5 g5 t t + 2 d4 g4 g6 (t t + 1)^0.5 + 2 d4 g5 g6 t (t t + 1)^0.5 + d4 g6 g6 (t t + 1)^0.5 (t t + 1)^0.5 + -1 = 0
+  // d3 g1 g1 + 2 (d3 g1 g2 + d4 g4 g5) t + (d3 g2 g2 + d4 g5 g5) t t + 2(d3 g1 g3 + d4 g4 g6) (t t + 1)^0.5 + 2 (d3 g2 g3 + d4 g5 g6) t (t t + 1)^0.5 + d3 g3 g3 (t t + 1) + d4 g4 g4 + d4 g6 g6 (t t + 1) + -1 = 0
+  // (d3 g1 g1 + d3 g3 g3 + d4 g6 g6 + d4 g4 g4 - 1) + 2 (d3 g1 g2 + d4 g4 g5) t + (d3 g2 g2 + d4 g5 g5 + d3 g3 g3 + d4 g6 g6) t t + 2(d3 g1 g3 + d4 g4 g6) (t t + 1)^0.5 + 2 (d3 g2 g3 + d4 g5 g6) t (t t + 1)^0.5 = 0
+  const h1 = d3 * g1 * g1 + d3 * g3 * g3 + d4 * g6 * g6 + d4 * g4 * g4 - 1, h2 = 2 * (d3 * g1 * g2 + d4 * g4 * g5)
+  const h3 = d3 * g2 * g2 + d4 * g5 * g5 + d3 * g3 * g3 + d4 * g6 * g6, h4 = 2 * (d3 * g1 * g3 + d4 * g4 * g6)
+  const h5 = 2 * (d3 * g2 * g3 + d4 * g5 * g6)
+  // h1 + h2 t + h3 t t + h4 (t t + 1)^0.5 + h5 t (t t + 1)^0.5 = 0
+  // (h1 + h2 t + h3 t t)^2 = (h4 (t t + 1)^0.5 + h5 t (t t + 1)^0.5)^2
+  // (h1 + h2 t + h3 t t)^2 - (h4 + h5 t)^2(t t + 1) = 0
+  // (h3 h3 + -h5 h5) t t t t + (2 h2 h3 + -2 h4 h5) t t t + (h2 h2 + 2 h1 h3 + -h4 h4 + -h5 h5) t t + (2 h1 h2 + -2 h4 h5) t + h1 h1 + -h4 h4 = 0
+  let ts = calculateEquation4(
+    h3 * h3 - h5 * h5,
+    2 * (h2 * h3 - h4 * h5),
+    h2 * h2 + 2 * h1 * h3 - h4 * h4 - h5 * h5,
+    2 * (h1 * h2 - h4 * h5),
+    h1 * h1 - h4 * h4,
   )
   ts = ts.filter(t => isBetween(t, t1, t2, extend))
   return ts.map(t => {
