@@ -17,7 +17,7 @@ import { getGeometryLinesPoints } from "./hatch";
 import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
 import { getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular";
 import { breakGeometryLines, mergeGeometryLines } from "./break";
-import { getParabolaCurvatureAtParam, getParabolaParamAtPoint, getParabolaPointAtParam, getParabolaSegmentStartAndEnd, getParabolaTangentRadianAtParam, ParabolaSegment, pointIsOnParabola, pointIsOnParabolaSegment } from "./parabola";
+import { getHyperbolaCurvatureAtParam, getHyperbolaParamAtPoint, getHyperbolaPointAtParam, getHyperbolaSegmentStartAndEnd, getHyperbolaTangentRadianAtParam, HyperbolaSegment, pointIsOnHyperbola, pointIsOnHyperbolaSegment } from "./hyperbola";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -25,7 +25,7 @@ export type GeometryLine = [Position, Position] |
 { type: 'quadratic curve'; curve: QuadraticCurve } |
 { type: 'bezier curve'; curve: BezierCurve } |
 { type: 'nurbs curve'; curve: NurbsCurve } |
-{ type: 'parabola curve', curve: ParabolaSegment } |
+{ type: 'hyperbola curve', curve: HyperbolaSegment } |
 { type: 'ray', line: Ray }
 
 export const GeometryLine = (v: unknown, path: Path): ValidationResult => {
@@ -36,9 +36,9 @@ export const GeometryLine = (v: unknown, path: Path): ValidationResult => {
   if (v.type === 'quadratic curve') return validate(v, { type: 'quadratic curve', curve: QuadraticCurve }, path)
   if (v.type === 'bezier curve') return validate(v, { type: 'bezier curve', curve: BezierCurve }, path)
   if (v.type === 'nurbs curve') return validate(v, { type: 'nurbs curve', curve: NurbsCurve }, path)
-  if (v.type === 'parabola curve') return validate(v, { type: 'nurbs curve', curve: ParabolaSegment }, path)
+  if (v.type === 'hyperbola curve') return validate(v, { type: 'hyperbola curve', curve: HyperbolaSegment }, path)
   if (v.type === 'ray') return validate(v, { type: 'ray', line: Ray }, path)
-  return { path: [...path, 'type'], expect: 'or', args: ['arc', 'ellipse arc', 'quadratic curve', 'bezier curve', 'nurbs curve', 'parabola curve', 'ray'] }
+  return { path: [...path, 'type'], expect: 'or', args: ['arc', 'ellipse arc', 'quadratic curve', 'bezier curve', 'nurbs curve', 'hyperbola curve', 'ray'] }
 }
 
 export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
@@ -52,8 +52,8 @@ export function geometryLineInPolygon(line: GeometryLine, polygon: Position[]) {
     points = getEllipseArcStartAndEnd(line.curve)
   } else if (line.type === 'nurbs curve') {
     points = getNurbsCurveStartAndEnd(line.curve)
-  } else if (line.type === 'parabola curve') {
-    points = getParabolaSegmentStartAndEnd(line.curve)
+  } else if (line.type === 'hyperbola curve') {
+    points = getHyperbolaSegmentStartAndEnd(line.curve)
   } else if (line.type === 'ray') {
     return false
   } else {
@@ -90,8 +90,8 @@ export function getGeometryLineStartAndEnd(line: GeometryLine) {
   if (line.type === 'nurbs curve') {
     return getNurbsCurveStartAndEnd(line.curve)
   }
-  if (line.type === 'parabola curve') {
-    return getParabolaSegmentStartAndEnd(line.curve)
+  if (line.type === 'hyperbola curve') {
+    return getHyperbolaSegmentStartAndEnd(line.curve)
   }
   if (line.type === 'ray') {
     return getRayStartAndEnd(line.line)
@@ -132,8 +132,8 @@ export function pointIsOnGeometryLine(p: Position, line: GeometryLine) {
   if (line.type === 'bezier curve') {
     return pointIsOnBezierCurve(p, line.curve)
   }
-  if (line.type === 'parabola curve') {
-    return pointIsOnParabola(p, line.curve) && pointIsOnParabolaSegment(p, line.curve)
+  if (line.type === 'hyperbola curve') {
+    return pointIsOnHyperbola(p, line.curve) && pointIsOnHyperbolaSegment(p, line.curve)
   }
   if (line.type === 'ray') {
     return pointIsOnRay(p, line.line)
@@ -169,8 +169,8 @@ export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine,
   if (line.type === 'bezier curve') {
     return getBezierCurvePercentAtPoint(line.curve, point)
   }
-  if (line.type === 'parabola curve') {
-    return getParabolaParamAtPoint(line.curve, point)
+  if (line.type === 'hyperbola curve') {
+    return getHyperbolaParamAtPoint(line.curve, point)
   }
   if (line.type === 'ray') {
     return getRayParamAtPoint(line.line, point)
@@ -208,8 +208,8 @@ export function getGeometryLinePointAtParam(param: number, line: GeometryLine) {
   if (line.type === 'bezier curve') {
     return getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, param)
   }
-  if (line.type === 'parabola curve') {
-    return getParabolaPointAtParam(line.curve, getParamAtPercent(param, line.curve.t1, line.curve.t2))
+  if (line.type === 'hyperbola curve') {
+    return getHyperbolaPointAtParam(line.curve, getParamAtPercent(param, line.curve.t1, line.curve.t2))
   }
   if (line.type === 'ray') {
     return getRayPointAtDistance(line.line, param)
@@ -235,8 +235,8 @@ export function getGeometryLineTangentRadianAtParam(param: number, line: Geometr
   if (line.type === 'bezier curve') {
     return getBezierCurveTangentRadianAtPercent(line.curve, param)
   }
-  if (line.type === 'parabola curve') {
-    return getParabolaTangentRadianAtParam(line.curve, getParamAtPercent(param, line.curve.t1, line.curve.t2))
+  if (line.type === 'hyperbola curve') {
+    return getHyperbolaTangentRadianAtParam(line.curve, getParamAtPercent(param, line.curve.t1, line.curve.t2))
   }
   if (line.type === 'ray') {
     return angleToRadian(line.line.reversed ? reverseAngle(line.line.angle) : line.line.angle)
@@ -266,11 +266,11 @@ export function getGeometryLinePointAndTangentRadianAtParam(param: number, line:
       radian: getEllipseArcTangentRadianAtRadian(line.curve, radian),
     }
   }
-  if (line.type === 'parabola curve') {
+  if (line.type === 'hyperbola curve') {
     const t = getParamAtPercent(param, line.curve.t1, line.curve.t2)
     return {
-      point: getParabolaPointAtParam(line.curve, t),
-      radian: getParabolaTangentRadianAtParam(line.curve, t),
+      point: getHyperbolaPointAtParam(line.curve, t),
+      radian: getHyperbolaTangentRadianAtParam(line.curve, t),
     }
   }
   const [point, point1] = getNurbsCurveDerivatives(line.curve, param * getNurbsMaxParam(line.curve))
@@ -370,7 +370,7 @@ export function getPartOfGeometryLine(param1: number, param2: number, line: Geom
   if (line.type === 'ray') {
     return [getRayPointAtDistance(line.line, param1), getRayPointAtDistance(line.line, param2)]
   }
-  if (line.type === 'parabola curve') {
+  if (line.type === 'hyperbola curve') {
     return {
       ...line,
       curve: {
@@ -592,9 +592,9 @@ export function getGeometryLineCurvatureAtParam(line: GeometryLine, param: numbe
   if (line.type === 'bezier curve') {
     return getBezierCurveCurvatureAtParam(line.curve, param)
   }
-  if (line.type === 'parabola curve') {
+  if (line.type === 'hyperbola curve') {
     const t = getParamAtPercent(param, line.curve.t1, line.curve.t2)
-    return getParabolaCurvatureAtParam(line.curve, t)
+    return getHyperbolaCurvatureAtParam(line.curve, t)
   }
   return getNurbsCurveCurvatureAtParam(line.curve, param * getNurbsMaxParam(line.curve))
 }
