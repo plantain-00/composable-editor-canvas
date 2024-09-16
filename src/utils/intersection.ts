@@ -21,7 +21,7 @@ import { Nullable } from "./types"
 import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 import { getAngleRangesIntersections, twoAnglesSameDirection } from "./angle"
-import { getArcHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints } from "./hyperbola"
+import { getArcHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints, getQuadraticCurveHyperbolaSegmentIntersectionPoints } from "./hyperbola"
 
 /**
  * @public
@@ -183,7 +183,7 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return points.filter(p => pointIsOnRay(p, line2.line, extend2))
     }
     if (line2.type === 'hyperbola curve') {
-      return []
+      return getQuadraticCurveHyperbolaSegmentIntersectionPoints(line1.curve, line2.curve, extend1, extend2)
     }
     return getQuadraticCurveNurbsCurveIntersectionPoints(line1.curve, line2.curve)
   }
