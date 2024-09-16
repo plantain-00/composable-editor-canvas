@@ -1,10 +1,11 @@
+import { getQuadraticCurvePercentAtPoint, QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Arc, Circle, pointIsOnArc } from "./circle"
 import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
-import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, largerThan, minimumBy } from "./math"
+import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, minimumBy } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
 import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
@@ -481,4 +482,79 @@ export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1,
       y: c2 + b3 * t + b4 * d,
     }
   })
+}
+
+export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
+  curve1: QuadraticCurve,
+  { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment,
+  extend1: ExtendType = { body: true },
+  extend2 = extend1,
+): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x0 - b2, c2 = y0 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+
+  const { from: { x: d1, y: d2 }, cp: { x: d3, y: d4 }, to: { x: d5, y: d6 } } = curve1
+  const f1 = d3 - d1, f2 = d5 - d3 - f1, f3 = d4 - d2, f4 = d6 - d4 - f3
+  // x = f2 u u + 2 f1 u + d1
+  // y = f4 u u + 2 f3 u + d2
+  // f4 x = f2 f4 u u + 2 f1 f4 u + d1 f4
+  // f2 y = f2 f4 u u + 2 f2 f3 u + d2 f2
+  // f4 x - f2 y = 2(f1 f4 - f2 f3)u + d1 f4 - d2 f2
+  const g1 = 2 * (f1 * f4 - f2 * f3), g2 = d1 * f4 - d2 * f2
+  // f4 x - f2 y = g1 u + g2
+  let ts: number[]
+  if (isZero(g1)) {
+    // f4 x - f2 y - g2 = 0
+    // f4(c1 + b1 t + b2(t^2 + 1)^0.5) - f2(c2 + b3 t + b4(t^2 + 1)^0.5) - g2 = 0
+    // (-b3 f2 + b1 f4) t + (b2 f4 - b4 f2) (t t + 1)^0.5 + -c2 f2 + c1 f4 + -g2 = 0
+    const g3 = -b3 * f2 + b1 * f4, g4 = b2 * f4 - b4 * f2, g5 = -c2 * f2 + c1 * f4 - g2
+    // g3 t + g4(t t + 1)^0.5 + g5 = 0
+    // g4 g4(t t + 1) = (g3 t + g5)^2
+    // (g4 g4 + -g3 g3) t t + -2 g3 g5 t + g4 g4 + -g5 g5 = 0
+    ts = calculateEquation2(
+      g4 * g4 - g3 * g3,
+      -2 * g3 * g5,
+      g4 * g4 - g5 * g5,
+    )
+  } else {
+    // f4 x - f2 y - g2 = g1 u
+    // g1 g1 x = f2 g1 g1 u u + 2 f1 g1 g1 u + d1 g1 g1
+    // g1 g1 x = f2(f4 x - f2 y - g2)^2 + 2 f1 g1(f4 x - f2 y - g2) + d1 g1 g1
+    // f2 f4 f4 x x + (-2 f2 f2 f4 y + 2 f1 f4 g1 + -2 f2 f4 g2 + -g1 g1) x + f2 f2 f2 y y + (-2 f1 f2 g1 + 2 f2 f2 g2) y + d1 g1 g1 + -2 f1 g1 g2 + f2 g2 g2 = 0
+    const g3 = 2 * f1 * f4 * g1 - 2 * f2 * f4 * g2 - g1 * g1, g4 = -2 * f1 * f2 * g1 + 2 * f2 * f2 * g2, g5 = d1 * g1 * g1 + -2 * f1 * g1 * g2 + f2 * g2 * g2
+    const g6 = f2 * f4 * f4, g7 = -2 * f2 * f2 * f4, g8 = f2 * f2 * f2
+    // g6 x x + (g7 y + g3) x + g8 y y + g4 y + g5 = 0
+    // g6(c1 + b1 t + b2(t^2 + 1)^0.5)^2 + (g7(c2 + b3 t + b4(t^2 + 1)^0.5) + g3)(c1 + b1 t + b2(t^2 + 1)^0.5) + g8(c2 + b3 t + b4(t^2 + 1)^0.5)^2 + g4(c2 + b3 t + b4(t^2 + 1)^0.5) + g5 = 0
+    // c1 c1 g6 + b1 b1 g6 t t + 2 b1 b2 g6 t (t t + 1)^0.5 + b2 b2 g6 (t t + 1) + 2 b1 c1 g6 t + 2 b2 c1 g6 (t t + 1)^0.5 + b2 b3 g7 t (t t + 1)^0.5 + b1 b4 g7 t (t t + 1)^0.5 + b2 b4 g7 (t t + 1) + b3 c1 g7 t + b4 c1 g7 (t t + 1)^0.5 + c1 c2 g7 + c1 g3 + b1 b3 g7 t t + b1 c2 g7 t + b2 c2 g7 (t t + 1)^0.5 + c2 c2 g8 + b3 b3 g8 t t + 2 b3 b4 g8 t (t t + 1)^0.5 + b4 b4 g8 (t t + 1) + 2 b3 c2 g8 t + 2 b4 c2 g8 (t t + 1)^0.5 + b1 g3 t + b2 g3 (t t + 1)^0.5 + c2 g4 + b3 g4 t + b4 g4 (t t + 1)^0.5 + g5 = 0
+    // (b1 b1 g6 + b2 b2 g6 + b2 b4 g7 + b1 b3 g7 + b3 b3 g8 + b4 b4 g8) t t + ((2 b1 b2 g6 + b2 b3 g7 + b1 b4 g7 + 2 b3 b4 g8)(t t + 1)^0.5 + 2 b1 c1 g6 + b3 c1 g7 + b1 c2 g7 + 2 b3 c2 g8 + b1 g3 + b3 g4) t + c1 c1 g6 + b2 b2 g6 + (2 b2 c1 g6 + b4 c1 g7 + b2 c2 g7 + 2 b4 c2 g8 + b2 g3 + b4 g4)(t t + 1)^0.5 + b2 b4 g7 + c1 c2 g7 + c1 g3 + c2 c2 g8 + b4 b4 g8 + c2 g4 + g5 = 0
+    const h1 = b1 * b1 * g6 + b2 * b2 * g6 + b2 * b4 * g7 + b1 * b3 * g7 + b3 * b3 * g8 + b4 * b4 * g8, h2 = 2 * b1 * b2 * g6 + b2 * b3 * g7 + b1 * b4 * g7 + 2 * b3 * b4 * g8
+    const h3 = 2 * b1 * c1 * g6 + b3 * c1 * g7 + b1 * c2 * g7 + 2 * b3 * c2 * g8 + b1 * g3 + b3 * g4, h4 = 2 * b2 * c1 * g6 + b4 * c1 * g7 + b2 * c2 * g7 + 2 * b4 * c2 * g8 + b2 * g3 + b4 * g4
+    const h5 = c1 * c1 * g6 + b2 * b2 * g6 + b2 * b4 * g7 + c1 * c2 * g7 + c1 * g3 + c2 * c2 * g8 + b4 * b4 * g8 + c2 * g4 + g5
+    // h1 t t + (h2(t t + 1)^0.5 + h3) t + h4(t t + 1)^0.5 + h5 = 0
+    // h1 t t + h2 t(t t + 1)^0.5 + h3 t + h4(t t + 1)^0.5 + h5 = 0
+    // (h2 t + h4)(t t + 1)^0.5 + h1 t t + h3 t + h5 = 0
+    // (h2 t + h4)^2(t t + 1) = (h1 t t + h3 t + h5)^2
+    // (h2 h2 + -h1 h1) t t t t + (2 h2 h4 + -2 h1 h3) t t t + (h2 h2 + -h3 h3 + h4 h4 + -2 h1 h5) t t + (2 h2 h4 + -2 h3 h5) t + h4 h4 + -h5 h5 = 0
+    ts = calculateEquation4(
+      h2 * h2 - h1 * h1,
+      2 * (h2 * h4 - h1 * h3),
+      h2 * h2 - h3 * h3 + h4 * h4 - 2 * h1 * h5,
+      2 * (h2 * h4 - h3 * h5),
+      h4 * h4 - h5 * h5,
+    )
+  }
+  ts = ts.filter(t => isBetween(t, t1, t2, extend2))
+  let result = ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
+  result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
+  return result
 }
