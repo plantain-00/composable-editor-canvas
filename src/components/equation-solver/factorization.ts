@@ -1,5 +1,6 @@
 import { Expression2 } from "expression-engine"
 import { printMathStyleExpression } from "../../utils/expression"
+import { deepEquals } from "../../utils/math"
 
 export interface Factor {
   constant?: number
@@ -190,7 +191,9 @@ function divideFactor(f1: Factor, f2: Factor): Factor | undefined {
           continue
         }
         if (f.power < 0) continue
-        const r = divideFactors(f.value, [{ variables: new Array<string>(1 / f.power).fill(v) }])
+        const length = 1 / f.power
+        if (!Number.isInteger(length)) continue
+        const r = divideFactors(f.value, [{ variables: new Array<string>(length).fill(v) }])
         if (r) {
           index = i
           variables[i] = {
@@ -271,7 +274,7 @@ function expressionToFactor(e: Expression2): Factor | void {
       return left
     }
     if (e.operator === '**') {
-      if (e.right.type === 'NumericLiteral' && e.right.value < 1) {
+      if (e.right.type === 'NumericLiteral' && (e.right.value < 1 || !Number.isInteger(e.right.value))) {
         const left = expressionToFactors(e.left)
         if (!left) return
         return {
@@ -449,7 +452,21 @@ export function optimizeFactor(factor: Factor): Factor {
         }
         continue
       }
-      variables.push(variable)
+      let used = false
+      for (const f of variable.value) {
+        const v = variables.find(v => typeof v !== 'string' && deepEquals(variable.value, v.value))
+        if (v && typeof v !== 'string') {
+          if (f.constant) {
+            constant *= f.constant ** variable.power
+          }
+          v.power += variable.power
+          used = true
+          break
+        }
+      }
+      if (!used) {
+        variables.push(variable)
+      }
     }
   }
   return {

@@ -1,8 +1,8 @@
-import { getQuadraticCurvePercentAtPoint, QuadraticCurve } from "./bezier"
+import { BezierCurve, getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint, QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Arc, Circle, pointIsOnArc } from "./circle"
 import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
-import { calculateEquation2, calculateEquation4, newtonIterate } from "./equation-calculater"
+import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
 import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, minimumBy } from "./math"
@@ -556,5 +556,155 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
     }
   })
   result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
+  return result
+}
+
+export function getBezierCurveHyperbolaSegmentIntersectionPoints(
+  curve1: BezierCurve,
+  { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment,
+  extend1: ExtendType = { body: true },
+  extend2 = extend1,
+): Position[] {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x0 - b2, c2 = y0 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
+
+  const { from: { x: d1, y: d2 }, cp1: { x: d3, y: d4 }, cp2: { x: d5, y: d6 }, to: { x: d7, y: d8 } } = curve1
+  const f1 = -d1 + 3 * d3 + -3 * d5 + d7, f2 = 3 * (d1 - 2 * d3 + d5), f3 = 3 * (d3 - d1)
+  const f4 = -d2 + 3 * d4 + -3 * d6 + d8, f5 = 3 * (d2 - 2 * d4 + d6), f6 = 3 * (d4 - d2)
+  // x = f1 u u u + f2 u u + f3 u + d1
+  // y = f4 u u u + f5 u u + f6 u + d2
+  // f4 x = f1 f4 u u u + f2 f4 u u + f3 f4 u + d1 f4
+  // f1 y = f1 f4 u u u + f1 f5 u u + f1 f6 u + d2 f1
+  // f4 x - f1 y = (f2 f4 - f1 f5) u u + (f3 f4 - f1 f6) u + d1 f4 - d2 f1
+  const g1 = f2 * f4 - f1 * f5, g2 = f3 * f4 - f1 * f6
+  // f4 x - f1 y = g1 u u + g2 u + d1 f4 - d2 f1
+  let ts: number[]
+  if (isZero(g1)) {
+    const g3 = d1 * f4 - d2 * f1
+    // f4 x - f1 y = g2 u + g3
+    if (isZero(g2)) {
+      // f4 x - f1 y = g3
+      // replace x,y: (-b4 f1 + b2 f4) w + (-b3 f1 + b1 f4) t + -c2 f1 + c1 f4 + -g3 = 0
+      const g4 = -b4 * f1 + b2 * f4, g5 = -b3 * f1 + b1 * f4, g6 = c2 * f1 + c1 * f4 + -g3
+      // g4 w + g5 t + g6 = 0
+      // w^2 - t^2 - 1 = 0
+      // g4 g4 w^2 - g4 g4 t^2 - g4 g4 = 0
+      // (g5 t + g6)^2 - g4 g4 t^2 - g4 g4 = 0
+      // (g5 g5 + -g4 g4) t t + 2 g5 g6 t + g6 g6 + -g4 g4 = 0
+      ts = calculateEquation2(
+        g5 * g5 + -g4 * g4,
+        2 * g5 * g6,
+        g6 * g6 + -g4 * g4,
+      )
+    } else {
+      // g2 u = f4 x - f1 y - g3
+      // g2 g2 g2 x = f1 g2 g2 g2 u u u + f2 g2 g2 g2 u u + f3 g2 g2 g2 u + d1 g2 g2 g2
+      // g2 g2 g2 x = f1 (f4 x - f1 y - g3)^3 + f2 g2 (f4 x - f1 y - g3)^2 + f3 g2 g2 (f4 x - f1 y - g3) + d1 g2 g2 g2
+      // f1 f4 f4 f4 x x x + (-3 f1 f1 f4 f4 y + f2 f4 f4 g2 + -3 f1 f4 f4 g3) x x + (3 f1 f1 f1 f4 y y + (-2 f1 f2 f4 g2 + 6 f1 f1 f4 g3) y + f3 f4 g2 g2 + -2 f2 f4 g2 g3 + 3 f1 f4 g3 g3 + -g2 g2 g2) x + -f1 f1 f1 f1 y y y + (f1 f1 f2 g2 + -3 f1 f1 f1 g3) y y + (-f1 f3 g2 g2 + 2 f1 f2 g2 g3 + -3 f1 f1 g3 g3) y + d1 g2 g2 g2 + -f3 g2 g2 g3 + f2 g2 g3 g3 + -f1 g3 g3 g3 = 0
+      const g4 = f1 * f4 * f4 * f4, g5 = -3 * f1 * f1 * f4 * f4, g6 = f2 * f4 * f4 * g2 + -3 * f1 * f4 * f4 * g3
+      const g7 = 3 * f1 * f1 * f1 * f4, g8 = -2 * f1 * f2 * f4 * g2 + 6 * f1 * f1 * f4 * g3, g9 = f3 * f4 * g2 * g2 + -2 * f2 * f4 * g2 * g3 + 3 * f1 * f4 * g3 * g3 + -g2 * g2 * g2
+      const h1 = -f1 * f1 * f1 * f1, h2 = f1 * f1 * f2 * g2 + -3 * f1 * f1 * f1 * g3, h3 = -f1 * f3 * g2 * g2 + 2 * f1 * f2 * g2 * g3 + -3 * f1 * f1 * g3 * g3
+      const h4 = d1 * g2 * g2 * g2 + -f3 * g2 * g2 * g3 + f2 * g2 * g3 * g3 + -f1 * g3 * g3 * g3
+      // g4 x x x + (g5 y + g6) x x + (g7 y y + g8 y + g9) x + h1 y y y + h2 y y + h3 y + h4 = 0
+      // replace x,y: (b2 b2 b2 g4 + b2 b2 b4 g5 + b2 b4 b4 g7 + b4 b4 b4 h1) w w w + ((3 b1 b2 b2 g4 + b2 b2 b3 g5 + 2 b1 b2 b4 g5 + 2 b2 b3 b4 g7 + b1 b4 b4 g7 + 3 b3 b4 b4 h1) t + 3 b2 b2 c1 g4 + 2 b2 b4 c1 g5 + b2 b2 c2 g5 + b4 b4 c1 g7 + 2 b2 b4 c2 g7 + 3 b4 b4 c2 h1 + b2 b2 g6 + b2 b4 g8 + b4 b4 h2) w w + ((3 b1 b1 b2 g4 + 2 b1 b2 b3 g5 + b1 b1 b4 g5 + b2 b3 b3 g7 + 2 b1 b3 b4 g7 + 3 b3 b3 b4 h1) t t + (6 b1 b2 c1 g4 + 2 b2 b3 c1 g5 + 2 b1 b4 c1 g5 + 2 b1 b2 c2 g5 + 2 b3 b4 c1 g7 + 2 b2 b3 c2 g7 + 2 b1 b4 c2 g7 + 6 b3 b4 c2 h1 + 2 b1 b2 g6 + b2 b3 g8 + b1 b4 g8 + 2 b3 b4 h2) t + 3 b2 c1 c1 g4 + b4 c1 c1 g5 + 2 b2 c1 c2 g5 + 2 b4 c1 c2 g7 + b2 c2 c2 g7 + 3 b4 c2 c2 h1 + 2 b2 c1 g6 + b4 c1 g8 + 2 b4 c2 h2 + b2 c2 g8 + b2 g9 + b4 h3) w + (b1 b1 b1 g4 + b1 b1 b3 g5 + b1 b3 b3 g7 + b3 b3 b3 h1) t t t + (3 b1 b1 c1 g4 + 2 b1 b3 c1 g5 + b1 b1 c2 g5 + b3 b3 c1 g7 + 2 b1 b3 c2 g7 + 3 b3 b3 c2 h1 + b1 b1 g6 + b1 b3 g8 + b3 b3 h2) t t + (3 b1 c1 c1 g4 + b3 c1 c1 g5 + 2 b1 c1 c2 g5 + 2 b3 c1 c2 g7 + b1 c2 c2 g7 + 3 b3 c2 c2 h1 + 2 b1 c1 g6 + b3 c1 g8 + b1 c2 g8 + 2 b3 c2 h2 + b1 g9 + b3 h3) t + c1 c1 c1 g4 + c1 c1 c2 g5 + c1 c2 c2 g7 + c2 c2 c2 h1 + c1 c1 g6 + c1 c2 g8 + c2 c2 h2 + c1 g9 + c2 h3 + h4 = 0
+      const h5 = b2 * b2 * b2 * g4 + b2 * b2 * b4 * g5 + b2 * b4 * b4 * g7 + b4 * b4 * b4 * h1
+      const h6 = 3 * b1 * b2 * b2 * g4 + b2 * b2 * b3 * g5 + 2 * b1 * b2 * b4 * g5 + 2 * b2 * b3 * b4 * g7 + b1 * b4 * b4 * g7 + 3 * b3 * b4 * b4 * h1
+      const h7 = 3 * b2 * b2 * c1 * g4 + 2 * b2 * b4 * c1 * g5 + b2 * b2 * c2 * g5 + b4 * b4 * c1 * g7 + 2 * b2 * b4 * c2 * g7 + 3 * b4 * b4 * c2 * h1 + b2 * b2 * g6 + b2 * b4 * g8 + b4 * b4 * h2
+      const h8 = 3 * b1 * b1 * b2 * g4 + 2 * b1 * b2 * b3 * g5 + b1 * b1 * b4 * g5 + b2 * b3 * b3 * g7 + 2 * b1 * b3 * b4 * g7 + 3 * b3 * b3 * b4 * h1
+      const h9 = 6 * b1 * b2 * c1 * g4 + 2 * b2 * b3 * c1 * g5 + 2 * b1 * b4 * c1 * g5 + 2 * b1 * b2 * c2 * g5 + 2 * b3 * b4 * c1 * g7 + 2 * b2 * b3 * c2 * g7 + 2 * b1 * b4 * c2 * g7 + 6 * b3 * b4 * c2 * h1 + 2 * b1 * b2 * g6 + b2 * b3 * g8 + b1 * b4 * g8 + 2 * b3 * b4 * h2
+      const j1 = 3 * b2 * c1 * c1 * g4 + b4 * c1 * c1 * g5 + 2 * b2 * c1 * c2 * g5 + 2 * b4 * c1 * c2 * g7 + b2 * c2 * c2 * g7 + 3 * b4 * c2 * c2 * h1 + 2 * b2 * c1 * g6 + b4 * c1 * g8 + 2 * b4 * c2 * h2 + b2 * c2 * g8 + b2 * g9 + b4 * h3
+      const j2 = b1 * b1 * b1 * g4 + b1 * b1 * b3 * g5 + b1 * b3 * b3 * g7 + b3 * b3 * b3 * h1
+      const j3 = 3 * b1 * b1 * c1 * g4 + 2 * b1 * b3 * c1 * g5 + b1 * b1 * c2 * g5 + b3 * b3 * c1 * g7 + 2 * b1 * b3 * c2 * g7 + 3 * b3 * b3 * c2 * h1 + b1 * b1 * g6 + b1 * b3 * g8 + b3 * b3 * h2
+      const j4 = 3 * b1 * c1 * c1 * g4 + b3 * c1 * c1 * g5 + 2 * b1 * c1 * c2 * g5 + 2 * b3 * c1 * c2 * g7 + b1 * c2 * c2 * g7 + 3 * b3 * c2 * c2 * h1 + 2 * b1 * c1 * g6 + b3 * c1 * g8 + b1 * c2 * g8 + 2 * b3 * c2 * h2 + b1 * g9 + b3 * h3
+      const j5 = c1 * c1 * c1 * g4 + c1 * c1 * c2 * g5 + c1 * c2 * c2 * g7 + c2 * c2 * c2 * h1 + c1 * c1 * g6 + c1 * c2 * g8 + c2 * c2 * h2 + c1 * g9 + c2 * h3 + h4
+      // h5 w w w + (h6 t + h7) w w + (h8 t t + h9 t + j1) w + j2 t t t + j3 t t + j4 t + j5 = 0
+      // replace w w with t^2 + 1: h5 w (t^2 + 1) + (h6 t + h7) (t^2 + 1) + (h8 t t + h9 t + j1) w + j2 t t t + j3 t t + j4 t + j5 = 0
+      // ((h5 + h8) t t + h9 t + h5 + j1) w + (h6 + j2) t t t + (h7 + j3) t t + (h6 + j4) t + h7 + j5 = 0
+      const j6 = h5 + h8, j7 = h5 + j1, j8 = h6 + j2, j9 = h7 + j3, k1 = h6 + j4, k2 = h7 + j5
+      // (j6 t t + h9 t + j7) w + j8 t t t + j9 t t + k1 t + k2 = 0
+      // w^2 - t^2 - 1 = 0
+      // (j6 t t + h9 t + j7)^2 w^2 - (j6 t t + h9 t + j7)^2 t^2 - (j6 t t + h9 t + j7)^2 = 0
+      // (j8 t t t + j9 t t + k1 t + k2)^2 - (j6 t t + h9 t + j7)^2 t^2 - (j6 t t + h9 t + j7)^2 = 0
+      // (j8 j8 + -j6 j6) t t t t t t + (2 j8 j9 + -2 h9 j6) t t t t t + (-h9 h9 + j9 j9 + 2 j8 k1 + -j6 j6 + -2 j6 j7) t t t t + (-2 h9 j6 + -2 h9 j7 + 2 j9 k1 + 2 j8 k2) t t t + (-h9 h9 + -2 j6 j7 + -j7 j7 + k1 k1 + 2 j9 k2) t t + (-2 h9 j7 + 2 k1 k2) t + -j7 j7 + k2 k2 = 0
+      ts = calculateEquation5([
+        j8 * j8 + -j6 * j6,
+        2 * j8 * j9 + -2 * h9 * j6,
+        -h9 * h9 + j9 * j9 + 2 * j8 * k1 + -j6 * j6 + -2 * j6 * j7,
+        -2 * h9 * j6 + -2 * h9 * j7 + 2 * j9 * k1 + 2 * j8 * k2,
+        -h9 * h9 + -2 * j6 * j7 + -j7 * j7 + k1 * k1 + 2 * j9 * k2,
+        -2 * h9 * j7 + 2 * k1 * k2,
+        -j7 * j7 + k2 * k2,
+      ], 0)
+    }
+  } else {
+    const g3 = g2 / g1 / 2
+    // f4 x - f1 y = g1 u u + 2 g1 g3 u + d1 f4 - d2 f1
+    // f4 x - f1 y = g1 u u + 2 g1 g3 u + g1 g3 g3 + d1 f4 - d2 f1 - g1 g3 g3
+    // f4 x - f1 y = g1 (u + g3)^2 + d1 f4 - d2 f1 - g2 g3 / 2
+    const g4 = (d1 * f4 - d2 * f1 - g2 * g3 / 2) / g1, g5 = f4 / g1, g6 = f1 / g1
+    // g5 x - g6 y = (u + g3)^2 + g4
+    // let v = u + g3
+    // v^2 = g5 x - g6 y - g4
+    // replace u with v - g3: f1 v v v + (-3 f1 g3 + f2) v v + (3 f1 g3 g3 + -2 f2 g3 + f3) v + d1 + -f1 g3 g3 g3 + f2 g3 g3 + -f3 g3 + -x = 0
+    // replace v^2: f1 (g5 x - g6 y - g4) v + (-3 f1 g3 + f2)(g5 x - g6 y - g4) + (3 f1 g3 g3 + -2 f2 g3 + f3) v + d1 + -f1 g3 g3 g3 + f2 g3 g3 + -f3 g3 + -x = 0
+    // (3 f1 g3 g3 + -f1 g4 + f1 g5 x + -2 f2 g3 + -f1 g6 y + f3) v + d1 + -f1 g3 g3 g3 + f2 g3 g3 + 3 f1 g3 g4 + -3 f1 g3 g5 x + -f3 g3 + 3 f1 g3 g6 y + -f2 g4 + f2 g5 x + -f2 g6 y + -x = 0
+    const h1 = 3 * f1 * g3 * g3 - f1 * g4 - 2 * f2 * g3 + f3, h2 = d1 - f1 * g3 * g3 * g3 + f2 * g3 * g3 + 3 * f1 * g3 * g4 - f3 * g3 - f2 * g4
+    // (f1 g5 x + -f1 g6 y + h1) v + h2 + (3 f1 g3 g6 - f2 g6) y + (f2 g5 - 3 f1 g3 g5 - 1) x = 0
+    const h3 = 3 * f1 * g3 * g6 - f2 * g6, h4 = f2 * g5 - 3 * f1 * g3 * g5 - 1, h5 = f1 * g5, h6 = f1 * g6
+    // (h5 x - h6 y + h1) v + h2 + h3 y + h4 x = 0
+    // (h5 x - h6 y + h1)^2 v^2 = (h2 + h3 y + h4 x)^2
+    // (h5 x - h6 y + h1)^2(g5 x - g6 y - g4) - (h2 + h3 y + h4 x)^2 = 0
+    // g5 h5 h5 x x x + ((-g6 h5 h5 + -2 g5 h5 h6) y + 2 g5 h1 h5 + -g4 h5 h5 + -h4 h4) x x + ((2 g6 h5 h6 + g5 h6 h6) y y + (-2 g6 h1 h5 + -2 g5 h1 h6 + 2 g4 h5 h6 + -2 h3 h4) y + g5 h1 h1 + -2 g4 h1 h5 + -2 h2 h4) x + -g6 h6 h6 y y y + (2 g6 h1 h6 + -g4 h6 h6 + -h3 h3) y y + (-g6 h1 h1 + 2 g4 h1 h6 + -2 h2 h3) y + -g4 h1 h1 + -h2 h2 = 0
+    const j1 = -g6 * h5 * h5 + -2 * g5 * h5 * h6, j2 = 2 * g5 * h1 * h5 - g4 * h5 * h5 - h4 * h4, j3 = 2 * g6 * h5 * h6 + g5 * h6 * h6
+    const j4 = -2 * g6 * h1 * h5 - 2 * g5 * h1 * h6 + 2 * g4 * h5 * h6 - 2 * h3 * h4, j7 = g5 * h1 * h1 - 2 * g4 * h1 * h5 - 2 * h2 * h4
+    const j8 = 2 * g6 * h1 * h6 - g4 * h6 * h6 - h3 * h3, j9 = -g6 * h1 * h1 + 2 * g4 * h1 * h6 - 2 * h2 * h3, j0 = -g4 * h1 * h1 - h2 * h2
+    const h7 = g5 * h5 * h5, h8 = -g6 * h6 * h6
+    // h7 x x x + (j1 y + j2) x x + (j3 y y + j4 y + j7) x + h8 y y y + j8 y y + j9 y + j0 = 0
+    // replace x,y: (b2 b2 b2 h7 + b2 b2 b4 j1 + b4 b4 b4 h8 + b2 b4 b4 j3) w w w + ((3 b1 b2 b2 h7 + b2 b2 b3 j1 + 2 b1 b2 b4 j1 + 3 b3 b4 b4 h8 + 2 b2 b3 b4 j3 + b1 b4 b4 j3) t + 3 b2 b2 c1 h7 + 2 b2 b4 c1 j1 + b2 b2 c2 j1 + b4 b4 c1 j3 + b2 b2 j2 + 3 b4 b4 c2 h8 + 2 b2 b4 c2 j3 + b2 b4 j4 + b4 b4 j8) w w + ((3 b1 b1 b2 h7 + 2 b1 b2 b3 j1 + b1 b1 b4 j1 + 3 b3 b3 b4 h8 + b2 b3 b3 j3 + 2 b1 b3 b4 j3) t t + (6 b1 b2 c1 h7 + 2 b2 b3 c1 j1 + 2 b1 b4 c1 j1 + 2 b1 b2 c2 j1 + 2 b3 b4 c1 j3 + 2 b1 b2 j2 + 6 b3 b4 c2 h8 + 2 b2 b3 c2 j3 + 2 b1 b4 c2 j3 + b2 b3 j4 + b1 b4 j4 + 2 b3 b4 j8) t + 3 b2 c1 c1 h7 + b4 c1 c1 j1 + 2 b2 c1 c2 j1 + 2 b4 c1 c2 j3 + 2 b2 c1 j2 + b4 c1 j4 + 3 b4 c2 c2 h8 + b2 c2 c2 j3 + b2 c2 j4 + 2 b4 c2 j8 + b2 j7 + b4 j9) w + (b1 b1 b1 h7 + b1 b1 b3 j1 + b3 b3 b3 h8 + b1 b3 b3 j3) t t t + (3 b1 b1 c1 h7 + 2 b1 b3 c1 j1 + b1 b1 c2 j1 + b3 b3 c1 j3 + b1 b1 j2 + 3 b3 b3 c2 h8 + 2 b1 b3 c2 j3 + b1 b3 j4 + b3 b3 j8) t t + (3 b1 c1 c1 h7 + b3 c1 c1 j1 + 2 b1 c1 c2 j1 + 2 b3 c1 c2 j3 + 2 b1 c1 j2 + b3 c1 j4 + 3 b3 c2 c2 h8 + b1 c2 c2 j3 + b1 c2 j4 + 2 b3 c2 j8 + b1 j7 + b3 j9) t + c1 c1 c1 h7 + c1 c1 c2 j1 + c1 c2 c2 j3 + c1 c1 j2 + c1 j7 + c2 c2 c2 h8 + c1 c2 j4 + c2 c2 j8 + c2 j9 + j0 = 0
+    const k1 = b2 * b2 * b2 * h7 + b2 * b2 * b4 * j1 + b4 * b4 * b4 * h8 + b2 * b4 * b4 * j3
+    const k2 = 3 * b1 * b2 * b2 * h7 + b2 * b2 * b3 * j1 + 2 * b1 * b2 * b4 * j1 + 3 * b3 * b4 * b4 * h8 + 2 * b2 * b3 * b4 * j3 + b1 * b4 * b4 * j3
+    const k3 = 3 * b2 * b2 * c1 * h7 + 2 * b2 * b4 * c1 * j1 + b2 * b2 * c2 * j1 + b4 * b4 * c1 * j3 + b2 * b2 * j2 + 3 * b4 * b4 * c2 * h8 + 2 * b2 * b4 * c2 * j3 + b2 * b4 * j4 + b4 * b4 * j8
+    const k4 = 3 * b1 * b1 * b2 * h7 + 2 * b1 * b2 * b3 * j1 + b1 * b1 * b4 * j1 + 3 * b3 * b3 * b4 * h8 + b2 * b3 * b3 * j3 + 2 * b1 * b3 * b4 * j3
+    const k5 = 6 * b1 * b2 * c1 * h7 + 2 * b2 * b3 * c1 * j1 + 2 * b1 * b4 * c1 * j1 + 2 * b1 * b2 * c2 * j1 + 2 * b3 * b4 * c1 * j3 + 2 * b1 * b2 * j2 + 6 * b3 * b4 * c2 * h8 + 2 * b2 * b3 * c2 * j3 + 2 * b1 * b4 * c2 * j3 + b2 * b3 * j4 + b1 * b4 * j4 + 2 * b3 * b4 * j8
+    const k6 = 3 * b2 * c1 * c1 * h7 + b4 * c1 * c1 * j1 + 2 * b2 * c1 * c2 * j1 + 2 * b4 * c1 * c2 * j3 + 2 * b2 * c1 * j2 + b4 * c1 * j4 + 3 * b4 * c2 * c2 * h8 + b2 * c2 * c2 * j3 + b2 * c2 * j4 + 2 * b4 * c2 * j8 + b2 * j7 + b4 * j9
+    const k7 = b1 * b1 * b1 * h7 + b1 * b1 * b3 * j1 + b3 * b3 * b3 * h8 + b1 * b3 * b3 * j3
+    const k8 = 3 * b1 * b1 * c1 * h7 + 2 * b1 * b3 * c1 * j1 + b1 * b1 * c2 * j1 + b3 * b3 * c1 * j3 + b1 * b1 * j2 + 3 * b3 * b3 * c2 * h8 + 2 * b1 * b3 * c2 * j3 + b1 * b3 * j4 + b3 * b3 * j8
+    const k9 = 3 * b1 * c1 * c1 * h7 + b3 * c1 * c1 * j1 + 2 * b1 * c1 * c2 * j1 + 2 * b3 * c1 * c2 * j3 + 2 * b1 * c1 * j2 + b3 * c1 * j4 + 3 * b3 * c2 * c2 * h8 + b1 * c2 * c2 * j3 + b1 * c2 * j4 + 2 * b3 * c2 * j8 + b1 * j7 + b3 * j9
+    const k0 = c1 * c1 * c1 * h7 + c1 * c1 * c2 * j1 + c1 * c2 * c2 * j3 + c1 * c1 * j2 + c1 * j7 + c2 * c2 * c2 * h8 + c1 * c2 * j4 + c2 * c2 * j8 + c2 * j9 + j0
+    // k1 w w w + (k2 t + k3) w w + (k4 t t + k5 t + k6) w + k7 t t t + k8 t t + k9 t + k0 = 0
+    // replace w w with t^2 + 1: k1 w (t^2 + 1) + (k2 t + k3)(t^2 + 1) + (k4 t t + k5 t + k6) w + k7 t t t + k8 t t + k9 t + k0 = 0
+    // ((k1 + k4) t t + k5 t + k1 + k6) w + (k2 + k7) t t t + (k3 + k8) t t + (k2 + k9) t + k0 + k3 = 0
+    const m1 = k1 + k4, m2 = k1 + k6, m3 = k2 + k7, m4 = k3 + k8, m5 = k2 + k9, m6 = k0 + k3
+    // (m1 t t + k5 t + m2) w + m3 t t t + m4 t t + m5 t + m6 = 0
+    // w^2 - t^2 - 1 = 0
+    // ((m1 t t + k5 t + m2)w)^2 - (m1 t t + k5 t + m2)^2 t^2 - (m1 t t + k5 t + m2)^2 = 0
+    // (m3 t t t + m4 t t + m5 t + m6)^2 - (m1 t t + k5 t + m2)^2 t^2 - (m1 t t + k5 t + m2)^2 = 0
+    // (m3 m3 + -m1 m1) t t t t t t + (2 m3 m4 + -2 k5 m1) t t t t t + (-k5 k5 + m4 m4 + 2 m3 m5 + -m1 m1 + -2 m1 m2) t t t t + (-2 k5 m1 + -2 k5 m2 + 2 m4 m5 + 2 m3 m6) t t t + (-k5 k5 + -2 m1 m2 + -m2 m2 + m5 m5 + 2 m4 m6) t t + (-2 k5 m2 + 2 m5 m6) t + -m2 m2 + m6 m6 = 0
+    ts = calculateEquation5([
+      m3 * m3 - m1 * m1,
+      2 * (m3 * m4 - k5 * m1),
+      -k5 * k5 + m4 * m4 + 2 * m3 * m5 - m1 * m1 - 2 * m1 * m2,
+      -2 * k5 * m1 - 2 * k5 * m2 + 2 * m4 * m5 + 2 * m3 * m6,
+      -k5 * k5 - 2 * m1 * m2 - m2 * m2 + m5 * m5 + 2 * m4 * m6,
+      -2 * k5 * m2 + 2 * m5 * m6,
+      -m2 * m2 + m6 * m6,
+    ], 0)
+  }
+  ts = ts.filter(t => isBetween(t, t1, t2, extend2))
+  let result = ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
+  result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
