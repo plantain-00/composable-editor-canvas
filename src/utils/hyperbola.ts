@@ -402,15 +402,17 @@ export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r
   const c1 = x0 - b2, c2 = y0 - b4
   // x = c1 + b1 t + b2(t^2 + 1)^0.5
   // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
 
   // (x - x1)^2 + (y - y1)^2 = r1^2
-  // replace x, y: (c1 + b1 t + b2(t^2 + 1)^0.5 - x1)^2 + (c2 + b3 t + b4(t^2 + 1)^0.5 - y1)^2 - r1^2 = 0
+  // replace x, y: (c1 + b1 t + b2 w - x1)^2 + (c2 + b3 t + b4 w - y1)^2 - r1^2 = 0
   const f1 = c1 - x1, f2 = c2 - y1
-  // (f1 + b1 t + b2(t^2 + 1)^0.5)^2 + (f2 + b3 t + b4(t^2 + 1)^0.5)^2 - r1^2 = 0
-  // (b1 b1 + b3 b3) t t + (2 b1 b2 (t t + 1)^0.5 + 2 b3 b4 (t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + b2 b2 (t t + 1)^0.5 (t t + 1)^0.5 + 2 b2 f1 (t t + 1)^0.5 + f2 f2 + b4 b4 (t t + 1)^0.5 (t t + 1)^0.5 + 2 b4 f2 (t t + 1)^0.5 - r1 r1 = 0
-  // b b t t + (2 (b1 b2 + b3 b4)(t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + b2 b2 (t t + 1) + 2 b2 f1 (t t + 1)^0.5 + f2 f2 + b4 b4 (t t + 1) + 2 b4 f2 (t t + 1)^0.5 - r1 r1 = 0
-  // b b t t + (2 (-e2 b e1 a + e1 b e2 a)(t t + 1)^0.5 + 2 b1 f1 + 2 b3 f2) t + f1 f1 + (b2 b2 + b4 b4) (t t + 1) + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + f2 f2 - r1 r1 = 0
-  // b b t t + (2 b1 f1 + 2 b3 f2) t + f1 f1 + a a(t t + 1) + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + f2 f2 - r1 r1 = 0
+  // (f1 + b1 t + b2 w)^2 + (f2 + b3 t + b4 w)^2 - r1^2 = 0
+  // (b2 b2 + b4 b4) w w + ((2 b1 b2 + 2 b3 b4) t + 2 b2 f1 + 2 b4 f2) w + (b1 b1 + b3 b3) t t + (2 b1 f1 + 2 b3 f2) t + f1 f1 + f2 f2 + -r1 r1 = 0
+  // replace w w with t^2 + 1: (b2 b2 + b4 b4)(t^2 + 1) + ((2 b1 b2 + 2 b3 b4) t + 2 b2 f1 + 2 b4 f2) w + (b1 b1 + b3 b3) t t + (2 b1 f1 + 2 b3 f2) t + f1 f1 + f2 f2 + -r1 r1 = 0
+  // (b2 b2 + b1 b1 + b4 b4 + b3 b3) t t + ((2 b1 b2 + 2 b3 b4) w + 2 b1 f1 + 2 b3 f2) t + (2 b2 f1 + 2 b4 f2) w + b2 b2 + b4 b4 + f1 f1 + f2 f2 + -r1 r1 = 0
   // (a a + b b) t t + 2 (b1 f1 + b3 f2) t + 2 (b2 f1 + b4 f2) (t t + 1)^0.5 + a a + f1 f1 + f2 f2 - r1 r1 = 0
   const d1 = a * a + b * b, d2 = 2 * (b1 * f1 + b3 * f2), d3 = 2 * (b2 * f1 + b4 * f2), d4 = a * a + f1 * f1 + f2 * f2 - r1 * r1
   // d1 t t + d2 t + d3(t t + 1)^0.5 + d4 = 0
@@ -445,27 +447,29 @@ export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1,
   const c1 = x0 - b2, c2 = y0 - b4
   // x = c1 + b1 t + b2(t^2 + 1)^0.5
   // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
 
   const radian1 = angleToRadian(angle1)
   const d1 = Math.sin(radian1), d2 = Math.cos(radian1), d3 = 1 / rx1 / rx1, d4 = 1 / ry1 / ry1
   // (d2(x - cx1) + d1(y - cy1))^2 d3 + (-d1(x - cx1) + d2(y - cy1))^2 d4 = 1
-  // replace x, y: (d2(c1 + b1 t + b2(t^2 + 1)^0.5 - cx1) + d1(c2 + b3 t + b4(t^2 + 1)^0.5 - cy1))^2 d3 + (-d1(c1 + b1 t + b2(t^2 + 1)^0.5 - cx1) + d2(c2 + b3 t + b4(t^2 + 1)^0.5 - cy1))^2 d4 - 1 = 0
+  // replace x, y: (d2(c1 + b1 t + b2 w - cx1) + d1(c2 + b3 t + b4 w - cy1))^2 d3 + (-d1(c1 + b1 t + b2 w - cx1) + d2(c2 + b3 t + b4 w - cy1))^2 d4 - 1 = 0
   const f1 = c1 - cx1, f2 = c2 - cy1
-  // (d2(f1 + b1 t + b2(t^2 + 1)^0.5) + d1(f2 + b3 t + b4(t^2 + 1)^0.5))^2 d3 + (-d1(f1 + b1 t + b2(t^2 + 1)^0.5) + d2(f2 + b3 t + b4(t^2 + 1)^0.5))^2 d4 - 1 = 0
-  // (d2 f1 + d2 b1 t + d2 b2(t^2 + 1)^0.5 + d1 f2 + d1 b3 t + d1 b4(t^2 + 1)^0.5)^2 d3 + (-d1 f1 - d1 b1 t - d1 b2(t^2 + 1)^0.5 + d2 f2 + d2 b3 t + d2 b4(t^2 + 1)^0.5)^2 d4 - 1 = 0
-  // ((d2 f1 + d1 f2) + (d2 b1 + d1 b3) t + (d2 b2 + d1 b4)(t^2 + 1)^0.5)^2 d3 + ((d2 f2 - d1 f1) + (d2 b3 - d1 b1) t + (d2 b4 - d1 b2)(t^2 + 1)^0.5)^2 d4 - 1 = 0
+  // (d2(f1 + b1 t + b2 w) + d1(f2 + b3 t + b4 w))^2 d3 + (-d1(f1 + b1 t + b2 w) + d2(f2 + b3 t + b4 w))^2 d4 - 1 = 0
+  // ((b4 d1 + b2 d2) w + (b3 d1 + b1 d2) t + d2 f1 + d1 f2)^2 d3 + ((-b2 d1 + b4 d2) w + (-b1 d1 + b3 d2) t + -d1 f1 + d2 f2)^2 d4 - 1 = 0
   const g1 = d2 * f1 + d1 * f2, g2 = d2 * b1 + d1 * b3, g3 = d2 * b2 + d1 * b4
   const g4 = d2 * f2 - d1 * f1, g5 = d2 * b3 - d1 * b1, g6 = d2 * b4 - d1 * b2
-  // (g1 + g2 t + g3(t^2 + 1)^0.5)^2 d3 + (g4 + g5 t + g6(t^2 + 1)^0.5)^2 d4 - 1 = 0
-  // d3 g1 g1 + 2 d3 g1 g2 t + d3 g2 g2 t t + 2 d3 g1 g3 (t t + 1)^0.5 + 2 d3 g2 g3 t (t t + 1)^0.5 + d3 g3 g3 (t t + 1)^0.5 (t t + 1)^0.5 + d4 g4 g4 + 2 d4 g4 g5 t + d4 g5 g5 t t + 2 d4 g4 g6 (t t + 1)^0.5 + 2 d4 g5 g6 t (t t + 1)^0.5 + d4 g6 g6 (t t + 1)^0.5 (t t + 1)^0.5 + -1 = 0
-  // d3 g1 g1 + 2 (d3 g1 g2 + d4 g4 g5) t + (d3 g2 g2 + d4 g5 g5) t t + 2(d3 g1 g3 + d4 g4 g6) (t t + 1)^0.5 + 2 (d3 g2 g3 + d4 g5 g6) t (t t + 1)^0.5 + d3 g3 g3 (t t + 1) + d4 g4 g4 + d4 g6 g6 (t t + 1) + -1 = 0
-  // (d3 g1 g1 + d3 g3 g3 + d4 g6 g6 + d4 g4 g4 - 1) + 2 (d3 g1 g2 + d4 g4 g5) t + (d3 g2 g2 + d4 g5 g5 + d3 g3 g3 + d4 g6 g6) t t + 2(d3 g1 g3 + d4 g4 g6) (t t + 1)^0.5 + 2 (d3 g2 g3 + d4 g5 g6) t (t t + 1)^0.5 = 0
+  // (g1 + g2 t + g3 w)^2 d3 + (g4 + g5 t + g6 w)^2 d4 - 1 = 0
+  // (d3 g3 g3 + d4 g6 g6) w w + ((2 d3 g2 g3 + 2 d4 g5 g6) t + 2 d3 g1 g3 + 2 d4 g4 g6) w + (d3 g2 g2 + d4 g5 g5) t t + (2 d3 g1 g2 + 2 d4 g4 g5) t + d3 g1 g1 + d4 g4 g4 + -1 = 0
+  // replace w w with t^2 + 1: (d3 g3 g3 + d4 g6 g6)(t^2 + 1) + ((2 d3 g2 g3 + 2 d4 g5 g6) t + 2 d3 g1 g3 + 2 d4 g4 g6) w + (d3 g2 g2 + d4 g5 g5) t t + (2 d3 g1 g2 + 2 d4 g4 g5) t + d3 g1 g1 + d4 g4 g4 + -1 = 0
+  // ((2 d3 g2 g3 + 2 d4 g5 g6) t + 2 d3 g1 g3 + 2 d4 g4 g6) w + (d3 g2 g2 + d3 g3 g3 + d4 g5 g5 + d4 g6 g6) t t + (2 d3 g1 g2 + 2 d4 g4 g5) t + d3 g1 g1 + d3 g3 g3 + d4 g4 g4 + d4 g6 g6 + -1 = 0
   const h1 = d3 * g1 * g1 + d3 * g3 * g3 + d4 * g6 * g6 + d4 * g4 * g4 - 1, h2 = 2 * (d3 * g1 * g2 + d4 * g4 * g5)
   const h3 = d3 * g2 * g2 + d4 * g5 * g5 + d3 * g3 * g3 + d4 * g6 * g6, h4 = 2 * (d3 * g1 * g3 + d4 * g4 * g6)
   const h5 = 2 * (d3 * g2 * g3 + d4 * g5 * g6)
-  // h1 + h2 t + h3 t t + h4 (t t + 1)^0.5 + h5 t (t t + 1)^0.5 = 0
-  // (h1 + h2 t + h3 t t)^2 = (h4 (t t + 1)^0.5 + h5 t (t t + 1)^0.5)^2
-  // (h1 + h2 t + h3 t t)^2 - (h4 + h5 t)^2(t t + 1) = 0
+  // h1 + h2 t + h3 t t + (h4 + h5 t) w = 0
+  // (h1 + h2 t + h3 t t)^2 = (h4 + h5 t)^2 w^2
+  // (h1 + h2 t + h3 t t)^2 - (h4 + h5 t)^2 (t^2 + 1) = 0
   // (h3 h3 + -h5 h5) t t t t + (2 h2 h3 + -2 h4 h5) t t t + (h2 h2 + 2 h1 h3 + -h4 h4 + -h5 h5) t t + (2 h1 h2 + -2 h4 h5) t + h1 h1 + -h4 h4 = 0
   let ts = calculateEquation4(
     h3 * h3 - h5 * h5,
@@ -496,6 +500,9 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
   const c1 = x0 - b2, c2 = y0 - b4
   // x = c1 + b1 t + b2(t^2 + 1)^0.5
   // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
 
   const { from: { x: d1, y: d2 }, cp: { x: d3, y: d4 }, to: { x: d5, y: d6 } } = curve1
   const f1 = d3 - d1, f2 = d5 - d3 - f1, f3 = d4 - d2, f4 = d6 - d4 - f3
@@ -509,10 +516,10 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
   let ts: number[]
   if (isZero(g1)) {
     // f4 x - f2 y - g2 = 0
-    // f4(c1 + b1 t + b2(t^2 + 1)^0.5) - f2(c2 + b3 t + b4(t^2 + 1)^0.5) - g2 = 0
-    // (-b3 f2 + b1 f4) t + (b2 f4 - b4 f2) (t t + 1)^0.5 + -c2 f2 + c1 f4 + -g2 = 0
+    // f4(c1 + b1 t + b2 w) - f2(c2 + b3 t + b4 w) - g2 = 0
+    // (-b3 f2 + b1 f4) t + (b2 f4 - b4 f2) w + -c2 f2 + c1 f4 + -g2 = 0
     const g3 = -b3 * f2 + b1 * f4, g4 = b2 * f4 - b4 * f2, g5 = -c2 * f2 + c1 * f4 - g2
-    // g3 t + g4(t t + 1)^0.5 + g5 = 0
+    // g3 t + g4 w + g5 = 0
     // g4 g4(t t + 1) = (g3 t + g5)^2
     // (g4 g4 + -g3 g3) t t + -2 g3 g5 t + g4 g4 + -g5 g5 = 0
     ts = calculateEquation2(
@@ -528,15 +535,14 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
     const g3 = 2 * f1 * f4 * g1 - 2 * f2 * f4 * g2 - g1 * g1, g4 = -2 * f1 * f2 * g1 + 2 * f2 * f2 * g2, g5 = d1 * g1 * g1 + -2 * f1 * g1 * g2 + f2 * g2 * g2
     const g6 = f2 * f4 * f4, g7 = -2 * f2 * f2 * f4, g8 = f2 * f2 * f2
     // g6 x x + (g7 y + g3) x + g8 y y + g4 y + g5 = 0
-    // g6(c1 + b1 t + b2(t^2 + 1)^0.5)^2 + (g7(c2 + b3 t + b4(t^2 + 1)^0.5) + g3)(c1 + b1 t + b2(t^2 + 1)^0.5) + g8(c2 + b3 t + b4(t^2 + 1)^0.5)^2 + g4(c2 + b3 t + b4(t^2 + 1)^0.5) + g5 = 0
-    // c1 c1 g6 + b1 b1 g6 t t + 2 b1 b2 g6 t (t t + 1)^0.5 + b2 b2 g6 (t t + 1) + 2 b1 c1 g6 t + 2 b2 c1 g6 (t t + 1)^0.5 + b2 b3 g7 t (t t + 1)^0.5 + b1 b4 g7 t (t t + 1)^0.5 + b2 b4 g7 (t t + 1) + b3 c1 g7 t + b4 c1 g7 (t t + 1)^0.5 + c1 c2 g7 + c1 g3 + b1 b3 g7 t t + b1 c2 g7 t + b2 c2 g7 (t t + 1)^0.5 + c2 c2 g8 + b3 b3 g8 t t + 2 b3 b4 g8 t (t t + 1)^0.5 + b4 b4 g8 (t t + 1) + 2 b3 c2 g8 t + 2 b4 c2 g8 (t t + 1)^0.5 + b1 g3 t + b2 g3 (t t + 1)^0.5 + c2 g4 + b3 g4 t + b4 g4 (t t + 1)^0.5 + g5 = 0
-    // (b1 b1 g6 + b2 b2 g6 + b2 b4 g7 + b1 b3 g7 + b3 b3 g8 + b4 b4 g8) t t + ((2 b1 b2 g6 + b2 b3 g7 + b1 b4 g7 + 2 b3 b4 g8)(t t + 1)^0.5 + 2 b1 c1 g6 + b3 c1 g7 + b1 c2 g7 + 2 b3 c2 g8 + b1 g3 + b3 g4) t + c1 c1 g6 + b2 b2 g6 + (2 b2 c1 g6 + b4 c1 g7 + b2 c2 g7 + 2 b4 c2 g8 + b2 g3 + b4 g4)(t t + 1)^0.5 + b2 b4 g7 + c1 c2 g7 + c1 g3 + c2 c2 g8 + b4 b4 g8 + c2 g4 + g5 = 0
+    // g6(c1 + b1 t + b2 w)^2 + (g7(c2 + b3 t + b4 w) + g3)(c1 + b1 t + b2 w) + g8(c2 + b3 t + b4 w)^2 + g4(c2 + b3 t + b4 w) + g5 = 0
+    // (b2 b2 g6 + b2 b4 g7 + b4 b4 g8) w w + ((2 b1 b2 g6 + b2 b3 g7 + b1 b4 g7 + 2 b3 b4 g8) t + 2 b2 c1 g6 + b4 c1 g7 + b2 c2 g7 + 2 b4 c2 g8 + b2 g3 + b4 g4) w + (b1 b1 g6 + b1 b3 g7 + b3 b3 g8) t t + (2 b1 c1 g6 + b3 c1 g7 + b1 c2 g7 + 2 b3 c2 g8 + b1 g3 + b3 g4) t + c1 c1 g6 + c1 c2 g7 + c1 g3 + c2 c2 g8 + c2 g4 + g5 = 0
+    // replace w w with t^2 + 1: (b2 b2 g6 + b2 b4 g7 + b4 b4 g8)(t^2 + 1) + ((2 b1 b2 g6 + b2 b3 g7 + b1 b4 g7 + 2 b3 b4 g8) t + 2 b2 c1 g6 + b4 c1 g7 + b2 c2 g7 + 2 b4 c2 g8 + b2 g3 + b4 g4) w + (b1 b1 g6 + b1 b3 g7 + b3 b3 g8) t t + (2 b1 c1 g6 + b3 c1 g7 + b1 c2 g7 + 2 b3 c2 g8 + b1 g3 + b3 g4) t + c1 c1 g6 + c1 c2 g7 + c1 g3 + c2 c2 g8 + c2 g4 + g5 = 0
+    // ((2 b1 b2 g6 + b2 b3 g7 + b1 b4 g7 + 2 b3 b4 g8) t + 2 b2 c1 g6 + b2 c2 g7 + b4 c1 g7 + 2 b4 c2 g8 + b2 g3 + b4 g4) w + (b2 b2 g6 + b1 b1 g6 + b1 b3 g7 + b2 b4 g7 + b3 b3 g8 + b4 b4 g8) t t + (2 b1 c1 g6 + b3 c1 g7 + b1 c2 g7 + 2 b3 c2 g8 + b1 g3 + b3 g4) t + b2 b2 g6 + c1 c1 g6 + b2 b4 g7 + b4 b4 g8 + c1 c2 g7 + c2 c2 g8 + c1 g3 + c2 g4 + g5 = 0
     const h1 = b1 * b1 * g6 + b2 * b2 * g6 + b2 * b4 * g7 + b1 * b3 * g7 + b3 * b3 * g8 + b4 * b4 * g8, h2 = 2 * b1 * b2 * g6 + b2 * b3 * g7 + b1 * b4 * g7 + 2 * b3 * b4 * g8
     const h3 = 2 * b1 * c1 * g6 + b3 * c1 * g7 + b1 * c2 * g7 + 2 * b3 * c2 * g8 + b1 * g3 + b3 * g4, h4 = 2 * b2 * c1 * g6 + b4 * c1 * g7 + b2 * c2 * g7 + 2 * b4 * c2 * g8 + b2 * g3 + b4 * g4
     const h5 = c1 * c1 * g6 + b2 * b2 * g6 + b2 * b4 * g7 + c1 * c2 * g7 + c1 * g3 + c2 * c2 * g8 + b4 * b4 * g8 + c2 * g4 + g5
-    // h1 t t + (h2(t t + 1)^0.5 + h3) t + h4(t t + 1)^0.5 + h5 = 0
-    // h1 t t + h2 t(t t + 1)^0.5 + h3 t + h4(t t + 1)^0.5 + h5 = 0
-    // (h2 t + h4)(t t + 1)^0.5 + h1 t t + h3 t + h5 = 0
+    // (h2 t + h4) w + h1 t t + h3 t + h5 = 0
     // (h2 t + h4)^2(t t + 1) = (h1 t t + h3 t + h5)^2
     // (h2 h2 + -h1 h1) t t t t + (2 h2 h4 + -2 h1 h3) t t t + (h2 h2 + -h3 h3 + h4 h4 + -2 h1 h5) t t + (2 h2 h4 + -2 h3 h5) t + h4 h4 + -h5 h5 = 0
     ts = calculateEquation4(

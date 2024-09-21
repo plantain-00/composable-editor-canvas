@@ -5306,6 +5306,47 @@ function getModel(ctx) {
     move(content, offset) {
       ctx.movePoint(content, offset);
     },
+    rotate(content, center, angle) {
+      ctx.rotateHyperbola(content, center, angle);
+    },
+    scale(content, center, sx, sy, contents) {
+      const lines = getHyperbolaGeometries(content, contents).lines;
+      ctx.scaleGeometryLines(lines, center, sx, sy);
+    },
+    skew(content, center, sx, sy, contents) {
+      const lines = getHyperbolaGeometries(content, contents).lines;
+      ctx.skewGeometryLines(lines, center, sx, sy);
+    },
+    mirror(content, line, angle) {
+      ctx.mirrorHyperbola(content, line, angle);
+    },
+    break(content, intersectionPoints, contents) {
+      const lines = getHyperbolaGeometries(content, contents).lines;
+      return ctx.breakGeometryLines(lines, intersectionPoints).map((lines2) => ({ ...content, type: "geometry lines", lines: lines2 }));
+    },
+    offset(content, point, distance, contents) {
+      if (!distance) {
+        distance = Math.min(...getHyperbolaGeometries(content, contents).lines.map((line) => ctx.getPointAndGeometryLineMinimumDistance(point, line)));
+      }
+      return ctx.getParallelHyperbolaSegmentsByDistance(content, distance)[ctx.pointSideToIndex(ctx.getPointSideOfHyperbolaSegment(point, content))];
+    },
+    join(content, target, contents) {
+      var _a, _b, _c;
+      const line2 = (_c = (_b = (_a = ctx.getContentModel(target)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, target, contents)) == null ? void 0 : _c.lines;
+      if (!line2) return;
+      const lines = getHyperbolaGeometries(content, contents).lines;
+      const newLines = ctx.mergeGeometryLines(lines, line2);
+      if (!newLines) return;
+      return { ...content, type: "geometry lines", lines: newLines };
+    },
+    extend(content, point) {
+      const t = ctx.getHyperbolaParamAtPoint(content, point);
+      if (ctx.isBefore(t, content.t1, content.t2)) {
+        content.t1 = t;
+      } else {
+        content.t2 = t;
+      }
+    },
     render(content, renderCtx) {
       const { options, target } = ctx.getStrokeRenderOptionsFromRenderContext(content, renderCtx);
       const { points } = getHyperbolaGeometries(content, renderCtx.contents);
@@ -5374,7 +5415,7 @@ function isHyperbolaContent(content) {
 }
 function getCommand(ctx) {
   const React = ctx.React;
-  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "99,3 98,7 97,10 96,14 95,18 94,21 93,25 92,28 91,31 90,34 89,38 88,41 87,44 86,46 85,49 84,52 83,55 82,57 81,60 80,62 79,64 78,67 77,69 76,71 75,73 75,75 74,77 73,79 72,80 71,82 70,84 69,85 68,87 67,88 66,89 65,90 64,91 63,93 62,93 61,94 60,95 59,96 58,97 57,97 56,98 55,98 54,98 53,99 52,99 51,99 50,99 49,99 48,99 47,99 46,98 45,98 44,98 43,97 42,97 41,96 40,95 39,94 38,93 37,93 36,91 35,90 34,89 33,88 32,87 31,85 30,84 29,82 28,80 27,79 26,77 26,75 25,73 24,71 23,69 22,67 21,64 20,62 19,60 18,57 17,55 16,52 15,49 14,46 13,44 12,41 11,38 10,34 9,31 8,28 7,25 6,21 5,18 4,14 3,10 2,7 1,3", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("polyline", { points: "100,93 99,92 99,92 98,91 97,90 96,89 96,88 95,87 94,86 93,86 93,85 92,84 91,83 91,82 90,81 89,80 89,79 88,79 87,78 87,77 86,76 85,75 85,74 84,73 84,73 83,72 83,71 82,70 81,69 81,68 80,67 80,66 79,66 79,65 79,64 78,63 78,62 77,61 77,60 77,60 76,59 76,58 76,57 76,56 76,55 75,54 75,53 75,53 75,52 75,51 75,50 75,49 75,48 75,47 75,47 75,46 76,45 76,44 76,43 76,42 76,41 77,40 77,40 77,39 78,38 78,37 79,36 79,35 79,34 80,34 80,33 81,32 81,31 82,30 83,29 83,28 84,27 84,27 85,26 85,25 86,24 87,23 87,22 88,21 89,21 89,20 90,19 91,18 91,17 92,16 93,15 93,14 94,14 95,13 96,12 96,11 97,10 98,9 99,8 99,8 100,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,93 1,92 1,92 2,91 3,90 4,89 4,88 5,87 6,86 7,86 7,85 8,84 9,83 9,82 10,81 11,80 11,79 12,79 13,78 13,77 14,76 15,75 15,74 16,73 16,73 17,72 17,71 18,70 19,69 19,68 20,67 20,66 21,66 21,65 21,64 22,63 22,62 23,61 23,60 23,60 24,59 24,58 24,57 24,56 24,55 25,54 25,53 25,53 25,52 25,51 25,50 25,49 25,48 25,47 25,47 25,46 24,45 24,44 24,43 24,42 24,41 23,40 23,40 23,39 22,38 22,37 21,36 21,35 21,34 20,34 20,33 19,32 19,31 18,30 17,29 17,28 16,27 16,27 15,26 15,25 14,24 13,23 13,22 12,21 11,21 11,20 10,19 9,18 9,17 8,16 7,15 7,14 6,14 5,13 4,12 4,11 3,10 2,9 1,8 1,8 0,7", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "100,0 0,100", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("polyline", { points: "0,0 100,100", strokeWidth: "5", strokeDasharray: "10", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
   return {
     name: "create hyperbola",
     icon,

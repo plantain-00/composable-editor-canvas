@@ -21,7 +21,7 @@ import { Nullable } from "./types"
 import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 import { getAngleRangesIntersections, twoAnglesSameDirection } from "./angle"
-import { getArcHyperbolaSegmentIntersectionPoints, getBezierCurveHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints, getQuadraticCurveHyperbolaSegmentIntersectionPoints } from "./hyperbola"
+import { getArcHyperbolaSegmentIntersectionPoints, getBezierCurveHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints, getQuadraticCurveHyperbolaSegmentIntersectionPoints } from "./hyperbola"
 
 /**
  * @public
@@ -211,7 +211,8 @@ export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2:
       return []
     }
     if (line2.type === 'hyperbola curve') {
-      return []
+      const points = getLineHyperbolaSegmentIntersectionPoints(line1.line, getRayPointAtDistance(line1.line, 1), line2.curve, extend1)
+      return points.filter(p => pointIsOnRay(p, line1.line, extend2))
     }
     const bounding = getGeometryLineBounding(line2)
     if (bounding) {
