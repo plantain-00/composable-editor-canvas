@@ -10,6 +10,7 @@ import { equals, isZero, mirrorNumber } from "./math"
 import { calculateEquation2 } from "./equation-calculater"
 import { pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
 import { Parabola, ParabolaSegment } from "./parabola"
+import { Hyperbola, HyperbolaSegment } from "./hyperbola"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x
@@ -66,6 +67,11 @@ export function rotateEllipse(ellipse: Ellipse, center: Position, angle: number)
 }
 
 export function rotateParabola(curve: Parabola, center: Position, angle: number) {
+  rotatePoint(curve, center, angle)
+  curve.angle += angle
+}
+
+export function rotateHyperbola(curve: Hyperbola, center: Position, angle: number) {
   rotatePoint(curve, center, angle)
   curve.angle += angle
 }
@@ -130,6 +136,13 @@ export function mirrorEllipseArc(ellipseArc: EllipseArc, line: GeneralFormLine, 
 }
 
 export function mirrorParabola(curve: ParabolaSegment, line: GeneralFormLine, angle: number) {
+  mirrorPoint(curve, line)
+  curve.angle = mirrorNumber(curve.angle, angle)
+  curve.t1 *= -1
+  curve.t2 *= -1
+}
+
+export function mirrorHyperbola(curve: HyperbolaSegment, line: GeneralFormLine, angle: number) {
   mirrorPoint(curve, line)
   curve.angle = mirrorNumber(curve.angle, angle)
   curve.t1 *= -1
