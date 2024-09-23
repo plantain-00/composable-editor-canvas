@@ -34,7 +34,7 @@ export const ParabolaSegment = /* @__PURE__ */ and(Parabola, {
   t2: number,
 })
 
-export function getParabolaFocalParameter(p: number) {
+export function getParabolaFocusParameter(p: number) {
   return 1 / 4 / p
 }
 
