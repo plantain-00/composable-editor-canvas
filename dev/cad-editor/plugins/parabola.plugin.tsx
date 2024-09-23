@@ -25,7 +25,7 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
         end: curve.to,
         startAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t1)),
         endAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t2)),
-        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocalParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
+        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocusParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
@@ -147,7 +147,7 @@ export function getModel(ctx: PluginContext): model.Model<ParabolaContent> {
                 if (!isParabolaContent(c)) {
                   return
                 }
-                c.p = ctx.getParabolaFocalParameter(ctx.getTwoPointsDistance(content, cursor) * 2)
+                c.p = ctx.getParabolaFocusParameter(ctx.getTwoPointsDistance(content, cursor) * 2)
                 c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content))
                 return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
               },

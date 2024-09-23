@@ -5290,8 +5290,17 @@ function getModel(ctx) {
       var _a;
       const points = ctx.getHyperbolaPoints(content, (_a = content.segmentCount) != null ? _a : ctx.defaultSegmentCount);
       const lines = [{ type: "hyperbola curve", curve: content }];
+      const c = Math.sqrt(content.a ** 2 + content.b ** 2);
       return {
         lines,
+        c,
+        angle: ctx.radianToAngle(Math.atan2(content.b, content.a)),
+        start: ctx.getHyperbolaPointAtParam(content, content.t1),
+        end: ctx.getHyperbolaPointAtParam(content, content.t2),
+        startAngle: ctx.radianToAngle(ctx.getHyperbolaTangentRadianAtParam(content, content.t1)),
+        endAngle: ctx.radianToAngle(ctx.getHyperbolaTangentRadianAtParam(content, content.t2)),
+        origin: ctx.getPointByLengthAndRadian(content, -content.a, ctx.angleToRadian(content.angle)),
+        focus: ctx.getPointByLengthAndRadian(content, c - content.a, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
@@ -5352,51 +5361,143 @@ function getModel(ctx) {
       const { points } = getHyperbolaGeometries(content, renderCtx.contents);
       return target.renderPolyline(points, options);
     },
-    renderIfSelected(content, { color, target, strokeWidth }) {
-      return target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth });
+    renderIfSelected(content, { color, target, strokeWidth, contents }) {
+      const { origin, angle } = getHyperbolaGeometries(content, contents);
+      return target.renderGroup([
+        target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth }),
+        target.renderRay(origin.x, origin.y, content.angle + angle, { strokeColor: color, dashArray: [4], strokeWidth }),
+        target.renderRay(origin.x, origin.y, content.angle - angle, { strokeColor: color, dashArray: [4], strokeWidth })
+      ]);
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { start, end, startAngle, endAngle, focus, origin } = getHyperbolaGeometries(content, contents);
+        return {
+          editPoints: [
+            {
+              x: content.x,
+              y: content.y,
+              cursor: "move",
+              type: "move",
+              update(c, { cursor, start: start2, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return;
+                }
+                c.x += cursor.x - start2.x;
+                c.y += cursor.y - start2.y;
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            },
+            {
+              x: start.x,
+              y: start.y,
+              cursor: ctx.getResizeCursor(startAngle, "left"),
+              update(c, { cursor, start: start2, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return;
+                }
+                c.t1 = ctx.minimumBy(ctx.getPerpendicularParamsToHyperbola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getHyperbolaPointAtParam(content, t)));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start2, cursor] }] };
+              }
+            },
+            {
+              x: end.x,
+              y: end.y,
+              cursor: ctx.getResizeCursor(endAngle, "right"),
+              update(c, { cursor, start: start2, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return;
+                }
+                c.t2 = ctx.minimumBy(ctx.getPerpendicularParamsToHyperbola(cursor, content), (t) => ctx.getTwoPointsDistanceSquare(cursor, ctx.getHyperbolaPointAtParam(content, t)));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [start2, cursor] }] };
+              }
+            },
+            {
+              x: focus.x,
+              y: focus.y,
+              cursor: "move",
+              update(c, { cursor, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return;
+                }
+                const d = ctx.getTwoPointsDistance(content, cursor);
+                c.b = Math.sqrt((content.a + d) ** 2 - content.a ** 2);
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            },
+            {
+              x: origin.x,
+              y: origin.y,
+              cursor: "move",
+              update(c, { cursor, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return;
+                }
+                c.a = ctx.getTwoPointsDistance(content, cursor);
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(content, cursor));
+                return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
+              }
+            }
+          ]
+        };
+      });
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { start, end, focus } = getHyperbolaGeometries(content, contents);
+        return [
+          { ...start, type: "endpoint" },
+          { ...end, type: "endpoint" },
+          { ...content, type: "center" },
+          { ...focus, type: "center" }
+        ];
+      });
     },
     getGeometries: getHyperbolaGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      const { c } = getHyperbolaGeometries(content, contents);
       return {
-        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.x = p.x;
-            c.y = p.y;
+        from: /* @__PURE__ */ React.createElement(ctx.Button, { onClick: () => acquirePoint((p) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.x = p.x;
+            c2.y = p.y;
           }
         })) }, "canvas"),
-        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.x = v;
+        x: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.x, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.x = v;
           }
         }) }),
-        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.y = v;
+        y: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.y, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.y = v;
           }
         }) }),
-        a: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.a, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c) && v > 0) {
-            c.a = v;
+        a: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.a, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2) && v > 0) {
+            c2.a = v;
           }
         }) }),
-        b: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.b, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c) && v > 0) {
-            c.b = v;
+        b: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.b, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2) && v > 0) {
+            c2.b = v;
           }
         }) }),
-        t1: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t1, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.t1 = v;
+        c: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: c }),
+        t1: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t1, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.t1 = v;
           }
         }) }),
-        t2: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t2, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.t2 = v;
+        t2: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.t2, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.t2 = v;
           }
         }) }),
-        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c) => {
-          if (isHyperbolaContent(c)) {
-            c.angle = v;
+        angle: /* @__PURE__ */ React.createElement(ctx.NumberEditor, { value: content.angle, setValue: (v) => update((c2) => {
+          if (isHyperbolaContent(c2)) {
+            c2.angle = v;
           }
         }) }),
         ...ctx.getStrokeContentPropertyPanel(content, update, contents),
@@ -7741,7 +7842,7 @@ function getModel(ctx) {
         end: curve.to,
         startAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t1)),
         endAngle: ctx.radianToAngle(ctx.getParabolaTangentRadianAtParam(content, content.t2)),
-        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocalParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
+        focus: ctx.getPointByLengthAndRadian(content, ctx.getParabolaFocusParameter(content.p) / 2, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray)
@@ -7864,7 +7965,7 @@ function getModel(ctx) {
                 if (!isParabolaContent(c)) {
                   return;
                 }
-                c.p = ctx.getParabolaFocalParameter(ctx.getTwoPointsDistance(content, cursor) * 2);
+                c.p = ctx.getParabolaFocusParameter(ctx.getTwoPointsDistance(content, cursor) * 2);
                 c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content));
                 return { assistentContents: [{ type: "line", dashArray: [4 / scale], points: [content, cursor] }] };
               }

@@ -3,19 +3,29 @@ import type * as core from '../../../src'
 import type * as model from '../model'
 import type { Command } from '../command'
 import type { GeometryLinesContent } from './geometry-lines.plugin'
+import type { LineContent } from './line-polyline.plugin'
 
 export type HyperbolaContent = model.BaseContent<'hyperbola'> & model.StrokeFields & core.HyperbolaSegment & model.SegmentCountFields
 
 export function getModel(ctx: PluginContext): model.Model<HyperbolaContent> {
   const HyperbolaContent = ctx.and(ctx.BaseContent('hyperbola'), ctx.StrokeFields, ctx.HyperbolaSegment, ctx.SegmentCountFields)
-  const geometriesCache = new ctx.WeakmapValuesCache<Omit<HyperbolaContent, "type">, model.BaseContent, model.Geometries<{ points: core.Position[] }>>()
+  const geometriesCache = new ctx.WeakmapValuesCache<Omit<HyperbolaContent, "type">, model.BaseContent, model.Geometries<{ start: core.Position, end: core.Position, focus: core.Position, origin: core.Position, c: number, angle: number, startAngle: number, endAngle: number, points: core.Position[] }>>()
   function getHyperbolaGeometries(content: Omit<HyperbolaContent, "type">, contents: readonly core.Nullable<model.BaseContent>[]) {
     const refs = new Set(ctx.iterateRefContents(ctx.getStrokeRefIds(content), contents, [content]))
     return geometriesCache.get(content, refs, () => {
       const points = ctx.getHyperbolaPoints(content, content.segmentCount ?? ctx.defaultSegmentCount)
       const lines: core.GeometryLine[] = [{ type: 'hyperbola curve', curve: content }]
+      const c = Math.sqrt(content.a ** 2 + content.b ** 2)
       return {
         lines,
+        c,
+        angle: ctx.radianToAngle(Math.atan2(content.b, content.a)),
+        start: ctx.getHyperbolaPointAtParam(content, content.t1),
+        end: ctx.getHyperbolaPointAtParam(content, content.t2),
+        startAngle: ctx.radianToAngle(ctx.getHyperbolaTangentRadianAtParam(content, content.t1)),
+        endAngle: ctx.radianToAngle(ctx.getHyperbolaTangentRadianAtParam(content, content.t2)),
+        origin: ctx.getPointByLengthAndRadian(content, -content.a, ctx.angleToRadian(content.angle)),
+        focus: ctx.getPointByLengthAndRadian(content, c - content.a, ctx.angleToRadian(content.angle)),
         points,
         bounding: ctx.getGeometryLinesBounding(lines),
         renderingLines: ctx.dashedPolylineToLines(points, content.dashArray),
@@ -75,17 +85,109 @@ export function getModel(ctx: PluginContext): model.Model<HyperbolaContent> {
       const { points } = getHyperbolaGeometries(content, renderCtx.contents)
       return target.renderPolyline(points, options)
     },
-    renderIfSelected(content, { color, target, strokeWidth }) {
-      return target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth })
+    renderIfSelected(content, { color, target, strokeWidth, contents }) {
+      const { origin, angle } = getHyperbolaGeometries(content, contents)
+      return target.renderGroup([
+        target.renderRay(content.x, content.y, content.angle, { strokeColor: color, dashArray: [4], strokeWidth }),
+        target.renderRay(origin.x, origin.y, content.angle + angle, { strokeColor: color, dashArray: [4], strokeWidth }),
+        target.renderRay(origin.x, origin.y, content.angle - angle, { strokeColor: color, dashArray: [4], strokeWidth }),
+      ])
+    },
+    getEditPoints(content, contents) {
+      return ctx.getEditPointsFromCache(content, () => {
+        const { start, end, startAngle, endAngle, focus, origin } = getHyperbolaGeometries(content, contents)
+        return {
+          editPoints: [
+            {
+              x: content.x,
+              y: content.y,
+              cursor: 'move',
+              type: 'move',
+              update(c, { cursor, start, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return
+                }
+                c.x += cursor.x - start.x
+                c.y += cursor.y - start.y
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: start.x,
+              y: start.y,
+              cursor: ctx.getResizeCursor(startAngle, 'left'),
+              update(c, { cursor, start, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return
+                }
+                c.t1 = ctx.minimumBy(ctx.getPerpendicularParamsToHyperbola(cursor, content), t => ctx.getTwoPointsDistanceSquare(cursor, ctx.getHyperbolaPointAtParam(content, t)))
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: end.x,
+              y: end.y,
+              cursor: ctx.getResizeCursor(endAngle, 'right'),
+              update(c, { cursor, start, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return
+                }
+                c.t2 = ctx.minimumBy(ctx.getPerpendicularParamsToHyperbola(cursor, content), t => ctx.getTwoPointsDistanceSquare(cursor, ctx.getHyperbolaPointAtParam(content, t)))
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [start, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: focus.x,
+              y: focus.y,
+              cursor: 'move',
+              update(c, { cursor, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return
+                }
+                const d = ctx.getTwoPointsDistance(content, cursor)
+                c.b = Math.sqrt((content.a + d) ** 2 - content.a ** 2)
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(cursor, content))
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              },
+            },
+            {
+              x: origin.x,
+              y: origin.y,
+              cursor: 'move',
+              update(c, { cursor, scale }) {
+                if (!isHyperbolaContent(c)) {
+                  return
+                }
+                c.a = ctx.getTwoPointsDistance(content, cursor)
+                c.angle = ctx.radianToAngle(ctx.getTwoPointsRadian(content, cursor))
+                return { assistentContents: [{ type: 'line', dashArray: [4 / scale], points: [content, cursor] } as LineContent] }
+              },
+            },
+          ],
+        }
+      })
+    },
+    getSnapPoints(content, contents) {
+      return ctx.getSnapPointsFromCache(content, () => {
+        const { start, end, focus } = getHyperbolaGeometries(content, contents)
+        return [
+          { ...start, type: 'endpoint' as const },
+          { ...end, type: 'endpoint' as const },
+          { ...content, type: 'center' as const },
+          { ...focus, type: 'center' as const },
+        ]
+      })
     },
     getGeometries: getHyperbolaGeometries,
     propertyPanel(content, update, contents, { acquirePoint }) {
+      const { c } = getHyperbolaGeometries(content, contents)
       return {
         from: <ctx.Button onClick={() => acquirePoint(p => update(c => { if (isHyperbolaContent(c)) { c.x = p.x; c.y = p.y } }))}>canvas</ctx.Button>,
         x: <ctx.NumberEditor value={content.x} setValue={(v) => update(c => { if (isHyperbolaContent(c)) { c.x = v } })} />,
         y: <ctx.NumberEditor value={content.y} setValue={(v) => update(c => { if (isHyperbolaContent(c)) { c.y = v } })} />,
         a: <ctx.NumberEditor value={content.a} setValue={(v) => update(c => { if (isHyperbolaContent(c) && v > 0) { c.a = v } })} />,
         b: <ctx.NumberEditor value={content.b} setValue={(v) => update(c => { if (isHyperbolaContent(c) && v > 0) { c.b = v } })} />,
+        c: <ctx.NumberEditor value={c} />,
         t1: <ctx.NumberEditor value={content.t1} setValue={(v) => update(c => { if (isHyperbolaContent(c)) { c.t1 = v } })} />,
         t2: <ctx.NumberEditor value={content.t2} setValue={(v) => update(c => { if (isHyperbolaContent(c)) { c.t2 = v } })} />,
         angle: <ctx.NumberEditor value={content.angle} setValue={(v) => update(c => { if (isHyperbolaContent(c)) { c.angle = v } })} />,
