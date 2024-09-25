@@ -13,6 +13,7 @@ import { angleInRange } from "../utils/angle"
 import { angleToRadian, getTwoPointsRadian, radianToAngle } from "../utils/radian"
 import { getEllipseRadian } from "../utils/ellipse"
 import { getTangencyPointToBezierCurve, getTangencyPointToCircle, getTangencyPointToEllipse, getTangencyPointToQuadraticCurve } from "../utils/tangency"
+import { getHyperbolaPointAtParam, getPerpendicularParamsToHyperbola, getTangencyPointToHyperbola } from "../utils/hyperbola"
 
 /**
  * @public
@@ -344,6 +345,18 @@ export function usePointSnap<T>(
                         })
                       }
                     }
+                  } else if (line.type === 'hyperbola curve') {
+                    const params = getPerpendicularParamsToHyperbola(lastPosition, line.curve)
+                    for (const param of params) {
+                      const point = getHyperbolaPointAtParam(line.curve, param)
+                      if (getTwoPointsDistance(p, point) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...point, type: 'perpendicular' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(point),
+                          ...getSnapTarget(model, content, point, contents),
+                        })
+                      }
+                    }
                   } else if (line.type === 'nurbs curve') {
                     const param = getPerpendicularParamToNurbsCurve(lastPosition, line.curve, p)
                     if (param !== undefined) {
@@ -401,7 +414,7 @@ export function usePointSnap<T>(
                 )
               ) {
                 for (const line of lines) {
-                  if (Array.isArray(line)) {
+                  if (Array.isArray(line) || line.type === 'ray') {
                     continue
                   } else if (line.type === 'arc') {
                     const tangencyPoints = getTangencyPointToCircle(lastPosition, line.curve)
@@ -438,6 +451,17 @@ export function usePointSnap<T>(
                     }
                   } else if (line.type === 'bezier curve') {
                     const tangencyPoints = getTangencyPointToBezierCurve(lastPosition, line.curve)
+                    for (const tangencyPoint of tangencyPoints) {
+                      if (getTwoPointsDistance(p, tangencyPoint) <= delta) {
+                        saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })
+                        return transformResult(transformSnapPosition, {
+                          ...getOffsetSnapPoint(tangencyPoint),
+                          ...getSnapTarget(model, content, tangencyPoint, contents),
+                        })
+                      }
+                    }
+                  } else if (line.type === 'hyperbola curve') {
+                    const tangencyPoints = getTangencyPointToHyperbola(lastPosition, line.curve)
                     for (const tangencyPoint of tangencyPoints) {
                       if (getTwoPointsDistance(p, tangencyPoint) <= delta) {
                         saveSnapPoint(transformSnapPosition, { ...tangencyPoint, type: 'tangency' })

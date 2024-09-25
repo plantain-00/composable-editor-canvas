@@ -714,3 +714,51 @@ export function getBezierCurveHyperbolaSegmentIntersectionPoints(
   result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
+
+export function getTangencyPointToHyperbola({ x: a0, y: b0 }: Position, { a, b, angle, x: x1, y: y1 }: Hyperbola, delta = delta2) {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 b t - e1 a((t^2 + 1)^0.5 - 1)
+  // y = y1 + e1 b t + e2 a((t^2 + 1)^0.5 - 1)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x1 - b2, c2 = y1 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // x' = b2 t (t^2 + 1)^-0.5 + b1
+  // y' = b4 t (t^2 + 1)^-0.5 + b3
+
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
+  // x' = b2 t / w + b1
+  // y' = b4 t / w + b3
+
+  // k1 = dy/dx = dy/dt/(dx/dt) = (b4 t / w + b3)/(b2 t / w + b1)
+  // k2 = (y - b0)/(x - a0) = (c2 + b3 t + b4 w - b0)/(c1 + b1 t + b2 w - a0)
+  // k1 = k2
+  const d1 = c2 - b0, d2 = c1 - a0
+  // (d1 + b3 t + b4 w)/(d2 + b1 t + b2 w) = (b4 t / w + b3)/(b2 t / w + b1)
+  // (d1 + b3 t + b4 w)(b2 t / w + b1) = (b4 t / w + b3)(d2 + b1 t + b2 w)
+  // (d1 + b3 t + b4 w)(b2 t + b1 w) - (b4 t + b3 w)(d2 + b1 t + b2 w) = 0
+  // (-b2 b3 + b1 b4) w w + (b1 d1 + -b3 d2) w + (b2 b3 + -b1 b4) t t + (b2 d1 + -b4 d2) t = 0
+  const f1 = -b2 * b3 + b1 * b4, f2 = b1 * d1 - b3 * d2, f3 = b2 * d1 - b4 * d2
+  // f1 w w + f2 w - f1 t t + f3 t = 0
+  // replace w w with t^2 + 1: f1(t^2 + 1) + f2 w - f1 t t + f3 t = 0
+  // f3 t + f1 + f2 w = 0
+  // f2^2 w w = (f3 t + f1)^2
+  // f2^2(t^2 + 1) - (f3 t + f1)^2 = 0
+  // (f2 f2 + -f3 f3) t t + -2 f1 f3 t + -f1 f1 + f2 f2 = 0
+  const ts = calculateEquation2(
+    f2 * f2 - f3 * f3,
+    -2 * f1 * f3,
+    -f1 * f1 + f2 * f2,
+    delta,
+  )
+  return ts.map(t => {
+    const d = Math.sqrt(t ** 2 + 1)
+    return {
+      x: c1 + b1 * t + b2 * d,
+      y: c2 + b3 * t + b4 * d,
+    }
+  })
+}
