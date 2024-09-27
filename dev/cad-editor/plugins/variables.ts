@@ -4396,7 +4396,7 @@ function getCommand(ctx) {
                   const lines2 = (_i = (_h = (_g = ctx.getContentModel(c.content)) == null ? void 0 : _g.getGeometries) == null ? void 0 : _h.call(_g, c.content, contents)) == null ? void 0 : _i.lines;
                   if (lines2) {
                     for (const line of lines2) {
-                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, { body: true }]));
+                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, ctx.NOT_EXTENDED]));
                     }
                   }
                 }

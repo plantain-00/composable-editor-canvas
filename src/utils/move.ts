@@ -6,11 +6,11 @@ import { Arc, getCircleRadian, pointIsOnCircle } from "./circle"
 import { Ellipse } from "./ellipse"
 import { GeometryLine } from "./geometry-line"
 import { angleToRadian, getTwoPointsRadian, radianToAngle } from "./radian"
-import { equals, isZero, mirrorNumber } from "./math"
+import { equals, EXTENDED, isZero, mirrorNumber } from "./math"
 import { calculateEquation2 } from "./equation-calculater"
 import { pointIsOnBezierCurve, pointIsOnQuadraticCurve } from "./bezier"
 import { Parabola, ParabolaSegment } from "./parabola"
-import { Hyperbola, HyperbolaSegment } from "./hyperbola"
+import { getHyperbolaParamAtPoint, Hyperbola, HyperbolaSegment, pointIsOnHyperbola } from "./hyperbola"
 
 export function movePoint(point: Position, offset: Position) {
   point.x += offset.x
@@ -39,6 +39,8 @@ export function moveGeometryLine(line: GeometryLine, offset: Position) {
     movePoint(line.curve.cp1, offset)
     movePoint(line.curve.cp2, offset)
     movePoint(line.curve.to, offset)
+  } else if (line.type === 'hyperbola curve') {
+    movePoint(line.curve, offset)
   } else if (line.type === 'nurbs curve') {
     for (const point of line.curve.points) {
       movePoint(point, offset)
@@ -93,6 +95,8 @@ export function rotateGeometryLine(line: GeometryLine, center: Position, angle: 
     rotatePoint(line.curve.cp1, center, angle)
     rotatePoint(line.curve.cp2, center, angle)
     rotatePoint(line.curve.to, center, angle)
+  } else if (line.type === 'hyperbola curve') {
+    rotateHyperbola(line.curve, center, angle)
   } else if (line.type === 'nurbs curve') {
     for (const point of line.curve.points) {
       rotatePoint(point, center, angle)
@@ -166,6 +170,8 @@ export function mirrorGeometryLine(content: GeometryLine, line: GeneralFormLine,
     mirrorPoint(content.curve.cp1, line)
     mirrorPoint(content.curve.cp2, line)
     mirrorPoint(content.curve.to, line)
+  } else if (content.type === 'hyperbola curve') {
+    mirrorHyperbola(content.curve, line, angle)
   } else if (content.type === 'nurbs curve') {
     for (const point of content.curve.points) {
       mirrorPoint(point, line)
@@ -269,6 +275,8 @@ export function scaleGeometryLine(line: GeometryLine, center: Position, sx: numb
     scalePoint(line.curve.cp1, center, sx, sy)
     scalePoint(line.curve.cp2, center, sx, sy)
     scalePoint(line.curve.to, center, sx, sy)
+  } else if (line.type === 'hyperbola curve') {
+    scalePoint(line.curve, center, sx, sy)
   } else if (line.type === 'nurbs curve') {
     for (const point of line.curve.points) {
       scalePoint(point, center, sx, sy)
@@ -370,6 +378,8 @@ export function skewGeometryLine(line: GeometryLine, center: Position, sx: numbe
     skewPoint(line.curve.cp1, center, sx, sy)
     skewPoint(line.curve.cp2, center, sx, sy)
     skewPoint(line.curve.to, center, sx, sy)
+  } else if (line.type === 'hyperbola curve') {
+    skewPoint(line.curve, center, sx, sy)
   } else if (line.type === 'nurbs curve') {
     for (const point of line.curve.points) {
       skewPoint(point, center, sx, sy)
@@ -401,12 +411,16 @@ export function extendGeometryLines(lines: GeometryLine[], point: Position) {
       first.curve.startAngle = getEllipseAngle(point, first.curve)
     }
   } else if (first.type === 'quadratic curve') {
-    if (pointIsOnQuadraticCurve(point, first.curve)) {
+    if (pointIsOnQuadraticCurve(point, first.curve, EXTENDED)) {
       first.curve.from = point
     }
   } else if (first.type === 'bezier curve') {
-    if (pointIsOnBezierCurve(point, first.curve)) {
+    if (pointIsOnBezierCurve(point, first.curve, EXTENDED)) {
       first.curve.from = point
+    }
+  } else if (first.type === 'hyperbola curve') {
+    if (pointIsOnHyperbola(point, first.curve)) {
+      first.curve.t1 = getHyperbolaParamAtPoint(first.curve, point)
     }
   }
   if (Array.isArray(last)) {
@@ -422,12 +436,16 @@ export function extendGeometryLines(lines: GeometryLine[], point: Position) {
       last.curve.endAngle = getEllipseAngle(point, last.curve)
     }
   } else if (last.type === 'quadratic curve') {
-    if (pointIsOnQuadraticCurve(point, last.curve)) {
+    if (pointIsOnQuadraticCurve(point, last.curve, EXTENDED)) {
       last.curve.to = point
     }
   } else if (last.type === 'bezier curve') {
-    if (pointIsOnBezierCurve(point, last.curve)) {
+    if (pointIsOnBezierCurve(point, last.curve, EXTENDED)) {
       last.curve.to = point
+    }
+  } else if (last.type === 'hyperbola curve') {
+    if (pointIsOnHyperbola(point, last.curve)) {
+      last.curve.t2 = getHyperbolaParamAtPoint(last.curve, point)
     }
   }
 }

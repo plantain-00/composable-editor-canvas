@@ -2,7 +2,7 @@ import { BezierCurve, getBezierCurvePercentsAtBezierCurve, getQuadraticCurvePerc
 import { QuadraticCurve } from "./bezier"
 import { getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint } from "./bezier"
 import { calculateEquation2, calculateEquation3, calculateEquation4, calculateEquation5 } from "./equation-calculater"
-import { ExtendType, delta2, getNumberRangeIntersection, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
+import { EXTENDED, ExtendType, NOT_EXTENDED, delta2, getNumberRangeIntersection, isSameNumber, isValidPercent, isZero, lessOrEqual, lessThan } from "./math"
 import { Position, isSamePoint } from "./position"
 import { getPolygonFromTwoPointsFormRegion } from "./region"
 import { TwoPointsFormRegion } from "./region"
@@ -78,7 +78,7 @@ export function* iterateGeometryLinesSelfIntersectionPoints(lines: GeometryLine[
 /**
  * @public
  */
-export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Position, p2Start: Position, p2End: Position, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getTwoLinesIntersectionPoint(p1Start, p1End, p2Start, p2End)
   if (result && pointIsOnLineSegment(result, p1Start, p1End, extend1) && pointIsOnLineSegment(result, p2Start, p2End, extend2)) {
     return result
@@ -91,8 +91,8 @@ export function getTwoLineSegmentsIntersectionPoint(p1Start: Position, p1End: Po
 }
 
 export function getTwoGeometryLinesIntersectionPoint(line1: GeometryLine, line2: GeometryLine, extend: boolean | [ExtendType, ExtendType] = false, delta = delta2): Position[] {
-  const extend1 = extend === true ? { head: true, body: true, tail: true } : extend === false ? { body: true } : extend[0]
-  const extend2 = extend === true ? { head: true, body: true, tail: true } : extend === false ? { body: true } : extend[1]
+  const extend1 = extend === true ? EXTENDED : extend === false ? NOT_EXTENDED : extend[0]
+  const extend2 = extend === true ? EXTENDED : extend === false ? NOT_EXTENDED : extend[1]
   if (Array.isArray(line1)) {
     if (Array.isArray(line2)) {
       const point = getTwoLineSegmentsIntersectionPoint(...line1, ...line2, extend1, extend2)
@@ -358,17 +358,17 @@ export function getTwoCircleIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, 
 /**
  * @public
  */
-export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle, extend: ExtendType = { body: true }) {
+export function getLineSegmentCircleIntersectionPoints(start: Position, end: Position, circle: Circle, extend = NOT_EXTENDED) {
   const result = getLineCircleIntersectionPoints(start, end, circle)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend))
 }
 
-export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getLineSegmentArcIntersectionPoints(start: Position, end: Position, arc: Arc, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getLineSegmentCircleIntersectionPoints(start, end, arc, extend1)
   return result.filter((p) => pointIsOnArc(p, arc, extend2))
 }
 
-export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getTwoArcIntersectionPoints(arc1: Arc, arc2: Arc, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   return getTwoCircleIntersectionPoints(arc1, arc2).filter((p) => pointIsOnArc(p, arc1, extend1) && pointIsOnArc(p, arc2, extend2))
 }
 
@@ -602,12 +602,12 @@ export function getLineEllipseIntersectionPoints({ x: x1, y: y1 }: Position, { x
   ]
 }
 
-export function getLineSegmentEllipseIntersectionPoints(start: Position, end: Position, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+export function getLineSegmentEllipseIntersectionPoints(start: Position, end: Position, ellipse: Ellipse, extend = NOT_EXTENDED) {
   const result = getLineEllipseIntersectionPoints(start, end, ellipse)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend))
 }
 
-export function getLineSegmentEllipseArcIntersectionPoints(start: Position, end: Position, ellipseArc: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getLineSegmentEllipseArcIntersectionPoints(start: Position, end: Position, ellipseArc: EllipseArc, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getLineSegmentEllipseIntersectionPoints(start, end, ellipseArc, extend1)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend2))
 }
@@ -660,12 +660,12 @@ export function getCircleEllipseIntersectionPoints({ x: x1, y: y1, r: r1 }: Circ
   })
 }
 
-export function getArcEllipseIntersectionPoints(arc: Arc, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+export function getArcEllipseIntersectionPoints(arc: Arc, ellipse: Ellipse, extend = NOT_EXTENDED) {
   const result = getCircleEllipseIntersectionPoints(arc, ellipse)
   return result.filter((p) => pointIsOnArc(p, arc, extend))
 }
 
-export function getArcEllipseArcIntersectionPoints(arc: Arc, ellipseArc: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getArcEllipseArcIntersectionPoints(arc: Arc, ellipseArc: EllipseArc, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getArcEllipseIntersectionPoints(arc, ellipseArc, extend1)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend2))
 }
@@ -721,12 +721,12 @@ export function getTwoEllipseIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy:
   })
 }
 
-export function getEllipseArcEllipseIntersectionPoints(ellipseArc: EllipseArc, ellipse: Ellipse, extend: ExtendType = { body: true }) {
+export function getEllipseArcEllipseIntersectionPoints(ellipseArc: EllipseArc, ellipse: Ellipse, extend = NOT_EXTENDED) {
   const result = getTwoEllipseIntersectionPoints(ellipseArc, ellipse)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend))
 }
 
-export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, ellipseArc2: EllipseArc, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getTwoEllipseArcIntersectionPoints(ellipseArc1: EllipseArc, ellipseArc2: EllipseArc, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getEllipseArcEllipseIntersectionPoints(ellipseArc1, ellipseArc2, extend1)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc2, extend2))
 }
@@ -735,7 +735,7 @@ export function getLineQuadraticCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -753,7 +753,7 @@ export function getLineQuadraticCurveIntersectionPoints(
   }))
 }
 
-export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, end: Position, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, end: Position, curve: QuadraticCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getLineQuadraticCurveIntersectionPoints(start, end, curve, extend2)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
@@ -761,7 +761,7 @@ export function getLineSegmentQuadraticCurveIntersectionPoints(start: Position, 
 export function getCircleQuadraticCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -783,7 +783,7 @@ export function getCircleQuadraticCurveIntersectionPoints(
   }))
 }
 
-export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: QuadraticCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getCircleQuadraticCurveIntersectionPoints(arc, curve, extend2)
   return result.filter((p) => pointIsOnArc(p, arc, extend1))
 }
@@ -791,7 +791,7 @@ export function getArcQuadraticCurveIntersectionPoints(arc: Arc, curve: Quadrati
 export function getEllipseQuadraticCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
@@ -819,7 +819,7 @@ export function getEllipseQuadraticCurveIntersectionPoints(
   }))
 }
 
-export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: EllipseArc, curve: QuadraticCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: EllipseArc, curve: QuadraticCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getEllipseQuadraticCurveIntersectionPoints(ellipseArc, curve, extend2)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend1))
 }
@@ -827,7 +827,7 @@ export function getEllipseArcQuadraticCurveIntersectionPoints(ellipseArc: Ellips
 export function getTwoQuadraticCurveIntersectionPoints(
   curve1: QuadraticCurve,
   { from: { x: a4, y: b4 }, cp: { x: a5, y: b5 }, to: { x: a6, y: b6 } }: QuadraticCurve,
-  extend1: ExtendType = { body: true },
+  extend1 = NOT_EXTENDED,
   extend2 = extend1,
 ) {
   const { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } } = curve1
@@ -872,7 +872,7 @@ export function getLineBezierCurveIntersectionPoints(
   { x: x1, y: y1 }: Position,
   { x: x2, y: y2 }: Position,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -891,7 +891,7 @@ export function getLineBezierCurveIntersectionPoints(
   }))
 }
 
-export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end: Position, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getLineSegmentBezierCurveIntersectionPoints(start: Position, end: Position, curve: BezierCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getLineBezierCurveIntersectionPoints(start, end, curve, extend2)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
@@ -900,7 +900,7 @@ export function getCircleBezierCurveIntersectionPoints(
   { x: x1, y: y1, r: r1 }: Circle,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const d1 = -b1 + 3 * b2 + -3 * b3 + b4, d2 = 3 * (b1 - 2 * b2 + b3), d3 = 3 * (b2 - b1)
@@ -921,7 +921,7 @@ export function getCircleBezierCurveIntersectionPoints(
   }))
 }
 
-export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getArcBezierCurveIntersectionPoints(arc: Arc, curve: BezierCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   let result = getCircleBezierCurveIntersectionPoints(arc, curve, undefined, extend2)
   result = result.filter((p) => pointIsOnArc(p, arc, extend1))
   return result
@@ -931,7 +931,7 @@ export function getEllipseBezierCurveIntersectionPoints(
   { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend: ExtendType = { body: true },
+  extend = NOT_EXTENDED,
 ) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
@@ -965,7 +965,7 @@ export function getEllipseBezierCurveIntersectionPoints(
   }))
 }
 
-export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseArc, curve: BezierCurve, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }) {
+export function getEllipseArcBezierCurveIntersectionPoints(ellipseArc: EllipseArc, curve: BezierCurve, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED) {
   const result = getEllipseBezierCurveIntersectionPoints(ellipseArc, curve, undefined, extend2)
   return result.filter((p) => pointIsOnEllipseArc(p, ellipseArc, extend1))
 }
@@ -974,7 +974,7 @@ export function getQuadraticCurveBezierCurveIntersectionPoints(
   curve1: QuadraticCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend1: ExtendType = { body: true },
+  extend1 = NOT_EXTENDED,
   extend2 = extend1,
 ) {
   const { from: { x: a5, y: b5 }, cp: { x: a6, y: b6 }, to: { x: a7, y: b7 } } = curve1
@@ -1025,7 +1025,7 @@ export function getTwoBezierCurveIntersectionPoints(
   curve1: BezierCurve,
   { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve,
   delta?: number,
-  extend1: ExtendType = { body: true },
+  extend1 = NOT_EXTENDED,
   extend2 = extend1,
 ) {
   const { from: { x: a5, y: b5 }, cp1: { x: a6, y: b6 }, cp2: { x: a7, y: b7 }, to: { x: a8, y: b8 } } = curve1

@@ -5,7 +5,7 @@ import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
-import { deduplicate, delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, minimumBy } from "./math"
+import { deduplicate, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, minimumBy, NOT_EXTENDED } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
 import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
@@ -251,7 +251,7 @@ export function pointIsOnHyperbola(point: Position, { angle, a, b, x: x1, y: y1 
     .filter(t => isSameNumber(c2 + b3 * t + b4 * Math.sqrt(t ** 2 + 1), point.y, delta3)).length > 0
 }
 
-export function pointIsOnHyperbolaSegment(point: Position, curve: HyperbolaSegment, extend: ExtendType = { body: true }): boolean {
+export function pointIsOnHyperbolaSegment(point: Position, curve: HyperbolaSegment, extend = NOT_EXTENDED): boolean {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   const t = getHyperbolaParamAtPoint(curve, point)
@@ -351,12 +351,12 @@ export function getPointSideOfHyperbolaSegment(point: Position, curve: Hyperbola
   return getPointSideOfLine(point, line) * (curve.t1 > curve.t2 ? -1 : 1)
 }
 
-export function getLineSegmentHyperbolaSegmentIntersectionPoints(start: Position, end: Position, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getLineSegmentHyperbolaSegmentIntersectionPoints(start: Position, end: Position, curve: HyperbolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getLineHyperbolaSegmentIntersectionPoints(start, end, curve, extend2)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
 
-export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -390,12 +390,12 @@ export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Posi
   })
 }
 
-export function getArcHyperbolaSegmentIntersectionPoints(arc: Arc, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getArcHyperbolaSegmentIntersectionPoints(arc: Arc, curve: HyperbolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getCircleHyperbolaSegmentIntersectionPoints(arc, curve, extend2)
   return result.filter((p) => pointIsOnArc(p, arc, extend1))
 }
 
-export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -435,12 +435,12 @@ export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r
   })
 }
 
-export function getEllipseArcHyperbolaSegmentIntersectionPoints(arc: EllipseArc, curve: HyperbolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getEllipseArcHyperbolaSegmentIntersectionPoints(arc: EllipseArc, curve: HyperbolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getEllipseHyperbolaSegmentIntersectionPoints(arc, curve, extend2)
   return result.filter((p) => pointIsOnEllipseArc(p, arc, extend1))
 }
 
-export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -491,7 +491,7 @@ export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1,
 export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
   curve1: QuadraticCurve,
   { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment,
-  extend1: ExtendType = { body: true },
+  extend1 = NOT_EXTENDED,
   extend2 = extend1,
 ): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
@@ -568,7 +568,7 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
 export function getBezierCurveHyperbolaSegmentIntersectionPoints(
   curve1: BezierCurve,
   { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment,
-  extend1: ExtendType = { body: true },
+  extend1 = NOT_EXTENDED,
   extend2 = extend1,
 ): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })

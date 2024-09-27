@@ -1,6 +1,6 @@
 import { getPointByLengthAndRadian, isSameDirection3D } from "./position";
 import { angleToRadian, getTwoPointsRadian } from "./radian";
-import { ExtendType, deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
+import { NOT_EXTENDED, deduplicate, equals, largerThan, lessOrEqual, lessThan } from "./math";
 import { isSamePoint } from "./position";
 import { getTwoPointsDistance } from "./position";
 import { getPointByLengthAndDirection } from "./position";
@@ -39,7 +39,7 @@ export const Ray = /* @__PURE__ */ and(Position, {
   reversed: /* @__PURE__ */ optional(boolean),
 })
 
-export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position, extend: ExtendType = { body: true }) {
+export function pointIsOnLineSegment(p: Position, point1: Position, point2: Position, extend = NOT_EXTENDED) {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   if (!isSameNumber(point1.x, point2.x)) {
@@ -61,7 +61,7 @@ export function pointIsOnGeneralFormLine(p: Position, { a, b, c }: GeneralFormLi
   return isZero(a * p.x + b * p.y + c)
 }
 
-export function pointIsOnRay(p: Position, ray: Ray, extend: ExtendType = { body: true }): boolean {
+export function pointIsOnRay(p: Position, ray: Ray, extend = NOT_EXTENDED): boolean {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   const radian = angleToRadian(ray.angle)

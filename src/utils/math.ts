@@ -24,7 +24,7 @@ export function lessOrEqual(value1: number, value2: number, delta?: number) {
   return value1 < value2 || isSameNumber(value1, value2, delta)
 }
 
-export function isValidPercent(t: number, extend: ExtendType = { body: true }) {
+export function isValidPercent(t: number, extend = NOT_EXTENDED) {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   if (extend.body && largerOrEqual(t, 0) && lessOrEqual(t, 1)) return true
@@ -93,7 +93,10 @@ export interface ExtendType {
   tail?: boolean
 }
 
-export function isBetween(target: number, a: number, b: number, extend: ExtendType = { body: true }) {
+export const EXTENDED: ExtendType = { head: true, body: true, tail: true }
+export const NOT_EXTENDED: ExtendType = { body: true }
+
+export function isBetween(target: number, a: number, b: number, extend = NOT_EXTENDED) {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   if (extend.body && lessOrEqual(target, Math.max(a, b)) && largerOrEqual(target, Math.min(a, b))) return true

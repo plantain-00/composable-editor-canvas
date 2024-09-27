@@ -13,6 +13,7 @@ import { radianToAngle } from "./radian"
 import { getGeometryLineStartAndEnd } from "./geometry-line"
 import { pointIsOnGeometryLine } from "./geometry-line"
 import { reverseGeometryLines, reverseRay } from "./reverse"
+import { getHyperbolaParamAtPoint } from "./hyperbola"
 
 /**
  * @public
@@ -186,6 +187,29 @@ export function breakGeometryLines(lines: GeometryLine[], intersectionPoints: Po
               curve: getPartOfBezierCurve(line.curve, percents[i - 1], percents[i]),
             })
             if (i !== percents.length - 1) save()
+          }
+        },
+      }
+    } else if (line.type === 'hyperbola curve') {
+      data = {
+        breakLine(points) {
+          const params = points.map(p => getHyperbolaParamAtPoint(line.curve, p))
+          params.push(line.curve.t1, line.curve.t2)
+          if (line.curve.t1 < line.curve.t2) {
+            params.sort((a, b) => a - b)
+          } else {
+            params.sort((a, b) => b - a)
+          }
+          for (let i = 1; i < params.length; i++) {
+            current.push({
+              type: 'hyperbola curve',
+              curve: {
+                ...line.curve,
+                t1: params[i - 1],
+                t2: params[i],
+              },
+            })
+            if (i !== params.length - 1) save()
           }
         },
       }
