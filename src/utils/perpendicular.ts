@@ -25,7 +25,7 @@ import { getNurbsCurvePointAtParam, getPerpendicularParamToNurbsCurve, getPointA
 import { angleToRadian, radianToAngle } from "./radian"
 import { Vec3 } from "./types"
 import { v3 } from "./matrix"
-import { getPointAndHyperbolaNearestPointAndDistance } from "./hyperbola"
+import { getHyperbolaPointAtParam, getPerpendicularParamsToHyperbola, getPointAndHyperbolaNearestPointAndDistance } from "./hyperbola"
 
 export function getPerpendicularLine(point: Position, line: GeneralFormLine): GeneralFormLine {
   return {
@@ -66,6 +66,11 @@ export function getPerpendicularPointToGeometryLine(point: Position, line: Geome
     const percent = getPerpendicularPercentToBezierCurve(point, line.curve)[0]
     if (percent !== undefined) {
       p = getBezierCurvePointAtPercent(line.curve.from, line.curve.cp1, line.curve.cp2, line.curve.to, percent)
+    }
+  } else if (line.type === 'hyperbola curve') {
+    const param = getPerpendicularParamsToHyperbola(point, line.curve)[0]
+    if (param !== undefined) {
+      p = getHyperbolaPointAtParam(line.curve, param)
     }
   } else if (line.type === 'nurbs curve') {
     const param = getPerpendicularParamToNurbsCurve(point, line.curve)

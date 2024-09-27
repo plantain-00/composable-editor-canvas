@@ -5,7 +5,7 @@ import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation3, calculateEquation4, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
-import { delta2, delta3, ExtendType, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy } from "./math"
+import { delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isZero, minimumBy, NOT_EXTENDED } from "./math"
 import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
 import { angleToRadian, radianToAngle } from "./radian"
 import { TwoPointsFormRegion } from "./region"
@@ -171,7 +171,7 @@ export function pointIsOnParabola(point: Position, { angle, p, x: x1, y: y1 }: P
     .filter(t => isSameNumber(2 * e2 * p * t * t + e1 * t + y1, point.y, delta3)).length > 0
 }
 
-export function pointIsOnParabolaSegment(point: Position, curve: ParabolaSegment, extend: ExtendType = { body: true }): boolean {
+export function pointIsOnParabolaSegment(point: Position, curve: ParabolaSegment, extend = NOT_EXTENDED): boolean {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   const t = getParabolaParamAtPoint(curve, point)
@@ -253,12 +253,12 @@ export function getPointSideOfParabolaSegment(point: Position, curve: ParabolaSe
   return getPointSideOfLine(point, line) * (curve.t1 > curve.t2 ? -1 : 1)
 }
 
-export function getLineSegmentParabolaSegmentIntersectionPoints(start: Position, end: Position, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getLineSegmentParabolaSegmentIntersectionPoints(start: Position, end: Position, curve: ParabolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getLineParabolaSegmentIntersectionPoints(start, end, curve, extend2)
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
 
-export function getLineParabolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getLineParabolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   // x = x0 + e2 t - 2 e1 p t^2
@@ -283,12 +283,12 @@ export function getLineParabolaSegmentIntersectionPoints({ x: x1, y: y1 }: Posit
   }))
 }
 
-export function getArcParabolaSegmentIntersectionPoints(arc: Arc, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getArcParabolaSegmentIntersectionPoints(arc: Arc, curve: ParabolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getCircleParabolaSegmentIntersectionPoints(arc, curve, extend2)
   return result.filter((p) => pointIsOnArc(p, arc, extend1))
 }
 
-export function getCircleParabolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getCircleParabolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   // x = x0 + e2 t - 2 e1 p t^2
@@ -314,12 +314,12 @@ export function getCircleParabolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1
   }))
 }
 
-export function getEllipseArcParabolaSegmentIntersectionPoints(arc: EllipseArc, curve: ParabolaSegment, extend1: ExtendType = { body: true }, extend2: ExtendType = { body: true }): Position[] {
+export function getEllipseArcParabolaSegmentIntersectionPoints(arc: EllipseArc, curve: ParabolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
   const result = getEllipseParabolaSegmentIntersectionPoints(arc, curve, extend2)
   return result.filter((p) => pointIsOnEllipseArc(p, arc, extend1))
 }
 
-export function getEllipseParabolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend: ExtendType = { body: true }): Position[] {
+export function getEllipseParabolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, p, t1, t2 }: ParabolaSegment, extend = NOT_EXTENDED): Position[] {
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   // x = x0 + e2 t - 2 e1 p t^2

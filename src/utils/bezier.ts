@@ -1,5 +1,5 @@
 import { calculateEquation2, calculateEquation3 } from "./equation-calculater"
-import { isSameNumber, delta3, isValidPercent, isZero } from "./math"
+import { isSameNumber, delta3, isValidPercent, isZero, ExtendType } from "./math"
 import { Position } from "./position"
 import { getTwoPointCenter } from "./position"
 import { toBezierCurves } from "./nurbs"
@@ -82,21 +82,21 @@ export function getQuadraticCurvePoints(p1: Position, p2: Position, p3: Position
   return points
 }
 
-export function pointIsOnQuadraticCurve(point: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve) {
+export function pointIsOnQuadraticCurve(point: Position, { from: { x: a1, y: b1 }, cp: { x: a2, y: b2 }, to: { x: a3, y: b3 } }: QuadraticCurve, extend?: ExtendType) {
   const c1 = a2 - a1, c2 = a3 - a2 - c1, c3 = b2 - b1, c4 = b3 - b2 - c3
   // x = c2 t t + 2 c1 t + a1
   // y = c4 t t + 2 c3 t + b1
   return calculateEquation2(c2, 2 * c1, a1 - point.x)
-    .filter(t => isValidPercent(t) && isSameNumber(c4 * t * t + 2 * c3 * t + b1, point.y, delta3)).length > 0
+    .filter(t => isValidPercent(t, extend) && isSameNumber(c4 * t * t + 2 * c3 * t + b1, point.y, delta3)).length > 0
 }
 
-export function pointIsOnBezierCurve(point: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve) {
+export function pointIsOnBezierCurve(point: Position, { from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, extend?: ExtendType) {
   const c1 = -a1 + 3 * a2 + -3 * a3 + a4, c2 = 3 * (a1 - 2 * a2 + a3), c3 = 3 * (a2 - a1)
   const c4 = -b1 + 3 * b2 + -3 * b3 + b4, c5 = 3 * (b1 - 2 * b2 + b3), c6 = 3 * (b2 - b1)
   // px = c1 t t t + c2 t t + c3 t + a1
   // py = c4 t t t + c5 t t + c6 t + b1
   return calculateEquation3(c1, c2, c3, a1 - point.x)
-    .filter(t => isValidPercent(t) && isSameNumber(c4 * t * t * t + c5 * t * t + c6 * t + b1, point.y, delta3)).length > 0
+    .filter(t => isValidPercent(t, extend) && isSameNumber(c4 * t * t * t + c5 * t * t + c6 * t + b1, point.y, delta3)).length > 0
 }
 
 export function getBezierCurvePercentAtPoint({ from: { x: a1, y: b1 }, cp1: { x: a2, y: b2 }, cp2: { x: a3, y: b3 }, to: { x: a4, y: b4 } }: BezierCurve, point: Position) {

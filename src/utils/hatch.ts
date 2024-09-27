@@ -19,6 +19,7 @@ import { getNurbsPoints } from "./nurbs"
 import { getParallelGeometryLinesByDistanceDirectionIndex, getRadianSideOfRadian } from "./parallel"
 import { reverseClosedGeometryLinesIfAreaIsNegative, reverseGeometryLine, reverseGeometryLines, reverseRadian } from "./reverse"
 import { isSameGeometrylines } from "./difference"
+import { getHyperbolaPoints } from "./hyperbola"
 
 export function getHatchByPosition(
   position: Position,
@@ -254,6 +255,8 @@ export function getGeometryLinesPoints(lines: GeometryLine[], segmentCount = 100
       points.push(...getBezierCurvePoints(n.curve.from, n.curve.cp1, n.curve.cp2, n.curve.to, segmentCount))
     } else if (n.type === 'nurbs curve') {
       points.push(...getNurbsPoints(n.curve.degree, n.curve.points, n.curve.knots, n.curve.weights, segmentCount))
+    } else if (n.type === 'hyperbola curve') {
+      points.push(...getHyperbolaPoints(n.curve, segmentCount))
     }
   }
   return points

@@ -24,7 +24,7 @@ import { getPointAndBezierCurveNearestPointAndDistance, getPointAndGeometryLineM
 import { angleToRadian, radianToAngle } from "./radian"
 import { getBezierCurveTangentRadianAtPercent, getQuadraticCurveTangentRadianAtPercent } from "./tangency"
 import { LineJoin, defaultLineJoin } from "./triangles"
-import { getParallelHyperbolaSegmentsByDistance, getPointSideOfHyperbolaSegment } from "./hyperbola"
+import { getHyperbolaParamAtPoint, getParallelHyperbolaSegmentsByDistance, getPointSideOfHyperbolaSegment } from "./hyperbola"
 
 export function getParallelCirclesByDistance<T extends Circle>(circle: T, distance: number): [T, T] {
   if (isZero(distance)) {
@@ -364,6 +364,15 @@ export function getParallelGeometryLinesByDistanceDirectionIndex(
         result.push({
           type: 'bezier curve',
           curve: getPartOfBezierCurve(line.curve, getBezierCurvePercentAtPoint(line.curve, previous), getBezierCurvePercentAtPoint(line.curve, current)),
+        })
+      } else if (line.type === 'hyperbola curve') {
+        result.push({
+          type: 'hyperbola curve',
+          curve: {
+            ...line.curve,
+            t1: getHyperbolaParamAtPoint(line.curve, previous),
+            t2: getHyperbolaParamAtPoint(line.curve, current),
+          },
         })
       } else if (line.type === 'nurbs curve') {
         result.push({

@@ -133,7 +133,7 @@ export function getCommand(ctx: PluginContext): Command {
                   const lines2 = ctx.getContentModel(c.content)?.getGeometries?.(c.content, contents)?.lines
                   if (lines2) {
                     for (const line of lines2) {
-                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, { body: true }]))
+                      points.push(...ctx.getTwoGeometryLinesIntersectionPoint(lines[lineIndex], line, [{ [direction]: true }, ctx.NOT_EXTENDED]))
                     }
                   }
                 }

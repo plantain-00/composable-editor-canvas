@@ -3,7 +3,7 @@ import { AngleRange } from "./angle";
 import { rotatePosition } from "./position";
 import { getDirectionByRadian } from "./radian";
 import { getAngleRange } from "./angle";
-import { ExtendType, equals, isSameNumber } from "./math";
+import { NOT_EXTENDED, equals, isSameNumber } from "./math";
 import { Position } from "./position";
 import { angleInRange } from "./angle";
 import { angleToRadian, radianToAngle } from "./radian";
@@ -15,7 +15,7 @@ import { slice2, Tuple5, Vec3 } from "./types";
 import { getCoordinateMatrix2D } from "./transform";
 import { matrix } from "./matrix";
 
-export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc, extend: ExtendType = { body: true }) {
+export function pointIsOnEllipseArc(p: Position, ellipseArc: EllipseArc, extend = NOT_EXTENDED) {
   if (extend.head && extend.body && extend.tail) return true
   if (!extend.head && !extend.body && !extend.tail) return false
   const angle = getEllipseAngle(p, ellipseArc)

@@ -1,6 +1,6 @@
 import * as verb from 'verb-nurbs-web'
 import * as twgl from 'twgl.js'
-import { ExtendType, deduplicate, deepEquals, delta2, delta3, isBetween, isSameNumber, isZero } from "./math"
+import { NOT_EXTENDED, deduplicate, deepEquals, delta2, delta3, isBetween, isSameNumber, isZero } from "./math"
 import { Position } from "./position"
 import { getTwoPointsDistance } from "./position"
 import { GeneralFormLine, pointAndDirectionToGeneralFormLine } from "./line"
@@ -435,7 +435,7 @@ export function getLineSegmentNurbsCurveIntersectionPoints(start: Position, end:
   return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0))
 }
 
-export function getArcNurbsCurveIntersectionPoints(arc: Arc, curve: NurbsCurve, extend: ExtendType = { body: true }) {
+export function getArcNurbsCurveIntersectionPoints(arc: Arc, curve: NurbsCurve, extend = NOT_EXTENDED) {
   let line: verb.geom.Arc
   if (extend.head || extend.tail) {
     line = new verb.geom.Circle(toVerbPoint(arc), [1, 0], [0, 1], arc.r)
@@ -448,7 +448,7 @@ export function getArcNurbsCurveIntersectionPoints(arc: Arc, curve: NurbsCurve, 
   return verb.geom.Intersect.curves(line, nurbs).map(s => fromVerbPoint(s.point0)).filter(s => pointIsOnArc(s, arc, extend))
 }
 
-export function getEllipseArcNurbsCurveIntersectionPoints(arc: EllipseArc, curve: NurbsCurve, extend: ExtendType = { body: true }) {
+export function getEllipseArcNurbsCurveIntersectionPoints(arc: EllipseArc, curve: NurbsCurve, extend = NOT_EXTENDED) {
   const radian = angleToRadian(arc.angle)
   const cos = Math.cos(radian), sin = Math.sin(radian)
   const line = new verb.geom.Ellipse([arc.cx, arc.cy], [arc.rx * cos, arc.rx * sin], [-arc.ry * sin, arc.ry * cos])
