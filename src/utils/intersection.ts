@@ -21,7 +21,7 @@ import { Nullable } from "./types"
 import { GeometryLine, getGeometryLineParamAtPoint, getGeometryLineStartAndEnd, getPartOfGeometryLine, isGeometryLinesClosed } from "./geometry-line"
 import { getGeometryLineBounding } from "./bounding"
 import { getAngleRangesIntersections, twoAnglesSameDirection } from "./angle"
-import { getArcHyperbolaSegmentIntersectionPoints, getBezierCurveHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints, getQuadraticCurveHyperbolaSegmentIntersectionPoints } from "./hyperbola"
+import { getArcHyperbolaSegmentIntersectionPoints, getBezierCurveHyperbolaSegmentIntersectionPoints, getEllipseArcHyperbolaSegmentIntersectionPoints, getLineHyperbolaSegmentIntersectionPoints, getLineSegmentHyperbolaSegmentIntersectionPoints, getQuadraticCurveHyperbolaSegmentIntersectionPoints, isSameHyperbola } from "./hyperbola"
 
 /**
  * @public
@@ -1161,6 +1161,16 @@ export function getTwoGeometryLinesIntersectionLine(line1: GeometryLine, line2: 
     return
   }
   if (line2.type === 'bezier curve') return getTwoGeometryLinesIntersectionLine(line2, line1)
+  if (line1.type === 'hyperbola curve') {
+    if (line2.type === 'hyperbola curve') {
+      if (!isSameHyperbola(line1.curve, line2.curve)) return
+      const params = getNumberRangeIntersection([line1.curve.t1, line1.curve.t2], [line2.curve.t1, line2.curve.t2])
+      if (!params) return
+      return [{ type: 'hyperbola curve', curve: { ...line1.curve, t1: params[0], t2: params[1] } }]
+    }
+    return
+  }
+  if (line2.type === 'hyperbola curve') return getTwoGeometryLinesIntersectionLine(line2, line1)
   if (line1.type === 'ray') {
     if (line2.type === 'ray') {
       const generalFormLine1 = pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle))

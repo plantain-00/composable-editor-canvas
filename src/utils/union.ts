@@ -3,6 +3,7 @@ import { getBezierCurvePercentsAtBezierCurve, getQuadraticCurvePercentsAtQuadrat
 import { isSameCircle } from "./circle"
 import { isSameEllipse } from "./ellipse"
 import { GeometryLine, getGeometryLineParamAtPoint, getPartOfGeometryLine } from "./geometry-line"
+import { isSameHyperbola } from "./hyperbola"
 import { getRayAngle, isSameLine, pointAndDirectionToGeneralFormLine, pointIsOnRay, twoPointLineToGeneralFormLine } from "./line"
 import { getNumberRangeUnion, mergeItems } from "./math"
 import { mergeArc, mergeEllipseArc } from "./merge"
@@ -85,6 +86,16 @@ export function getTwoGeometryLinesUnionLine(line1: GeometryLine, line2: Geometr
     return
   }
   if (line2.type === 'bezier curve') return getTwoGeometryLinesUnionLine(line2, line1)
+  if (line1.type === 'hyperbola curve') {
+    if (line2.type === 'hyperbola curve') {
+      if (!isSameHyperbola(line1.curve, line2.curve)) return
+      const params = getNumberRangeUnion([line1.curve.t1, line1.curve.t2], [line2.curve.t1, line2.curve.t2])
+      if (!params) return
+      return { type: 'hyperbola curve', curve: { ...line1.curve, t1: params[0], t2: params[1] } }
+    }
+    return
+  }
+  if (line2.type === 'hyperbola curve') return getTwoGeometryLinesUnionLine(line2, line1)
   if (line1.type === 'ray') {
     if (line2.type === 'ray') {
       const generalFormLine1 = pointAndDirectionToGeneralFormLine(line1.line, angleToRadian(line1.line.angle))
