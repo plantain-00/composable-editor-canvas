@@ -327,6 +327,16 @@ export function applyToItems<T>(item1: T, items2: T[], operate: (item1: T, item2
   return result
 }
 
+export function mergeNumberRange(range1: [number, number], range2: [number, number]): [number, number] | undefined {
+  if (equals(range1[1], range2[0])) {
+    return [range1[0], range2[1]]
+  }
+  if (equals(range1[0], range2[1])) {
+    return [range1[1], range2[0]]
+  }
+  return
+}
+
 export function mirrorNumber(value: number, by: number) {
   return 2 * by - value
 }

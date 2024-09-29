@@ -3,6 +3,7 @@ import { getBezierCurvePercentsAtBezierCurve, getQuadraticCurvePercentsAtQuadrat
 import { isSameCircle } from "./circle"
 import { isSameEllipse } from "./ellipse"
 import { GeometryLine, getGeometryLineParamAtPoint, getPartOfGeometryLine } from "./geometry-line"
+import { isSameHyperbola } from "./hyperbola"
 import { getRayAngle, isSameLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "./line"
 import { applyToItems, getNumberRangeDifference, mergeItems } from "./math"
 import { mergeArc, mergeEllipseArc } from "./merge"
@@ -73,6 +74,15 @@ export function getTwoGeometryLinesDifferenceLine(line1: GeometryLine, line2: Ge
       if (!percents) return [line1]
       const params = getNumberRangeDifference([0, 1], percents)
       return params.map(p => getPartOfGeometryLine(...p, line1))
+    }
+    return [line1]
+  }
+  if (line1.type === 'hyperbola curve') {
+    if (Array.isArray(line2)) return [line1]
+    if (line2.type === 'hyperbola curve') {
+      if (!isSameHyperbola(line1.curve, line2.curve)) return [line1]
+      const params = getNumberRangeDifference([line1.curve.t1, line1.curve.t2], [line2.curve.t1, line2.curve.t2])
+      return params.map(p => ({ type: 'hyperbola curve', curve: { ...line1.curve, t1: p[0], t2: p[1] } }))
     }
     return [line1]
   }

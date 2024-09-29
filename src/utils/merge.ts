@@ -11,6 +11,7 @@ import { QuadraticCurve } from "./bezier"
 import { BezierCurve } from "./bezier"
 import { reverseArc, reverseEllipseArc } from "./reverse"
 import { AngleRange, normalizeAngle } from "./angle"
+import { mergeHyperbolaSegments } from "./hyperbola"
 
 export function mergeLineSegment(line1: [Position, Position], line2: [Position, Position]): [Position, Position] | undefined {
   if (!isSamePoint(line1[1], line2[0])) {
@@ -188,6 +189,11 @@ export function mergeGeometryLine(line1: GeometryLine, line2: GeometryLine): Geo
     const curve = mergeBezierCurve(line1.curve, line2.curve)
     if (!curve) return
     return { type: 'bezier curve', curve }
+  }
+  if (line1.type === 'hyperbola curve' && line2.type === 'hyperbola curve') {
+    const curve = mergeHyperbolaSegments(line1.curve, line2.curve)
+    if (!curve) return
+    return { type: 'hyperbola curve', curve }
   }
   return
 }

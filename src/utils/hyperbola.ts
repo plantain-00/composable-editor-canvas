@@ -5,10 +5,10 @@ import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
 import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
-import { deduplicate, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, minimumBy, NOT_EXTENDED } from "./math"
+import { deduplicate, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, mergeNumberRange, minimumBy, NOT_EXTENDED } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
-import { getPointByLengthAndRadian, getTwoPointsDistance, Position } from "./position"
+import { getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint, Position } from "./position"
 import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
 import { getCoordinateMatrix2D, getCoordinateVec2D, transformPointFromCoordinate2D } from "./transform"
@@ -761,4 +761,22 @@ export function getTangencyPointToHyperbola({ x: a0, y: b0 }: Position, { a, b, 
       y: c2 + b3 * t + b4 * d,
     }
   })
+}
+
+export function isSameHyperbola(hyperbola1: Hyperbola, hyperbola2: Hyperbola): boolean {
+  return isSamePoint(hyperbola1, hyperbola2) &&
+    isSameNumber(hyperbola1.a, hyperbola1.a) &&
+    isSameNumber(hyperbola1.b, hyperbola1.b) &&
+    isSameNumber(hyperbola1.angle, hyperbola1.angle)
+}
+
+export function mergeHyperbolaSegments(curve1: HyperbolaSegment, curve2: HyperbolaSegment): HyperbolaSegment | undefined {
+  if (!isSameHyperbola(curve1, curve2)) return
+  const range = mergeNumberRange([curve1.t1, curve1.t2], [curve2.t1, curve2.t2])
+  if (!range) return
+  return {
+    ...curve1,
+    t1: range[0],
+    t2: range[1],
+  }
 }
