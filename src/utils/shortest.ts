@@ -3,6 +3,7 @@ import { Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
 import { Ellipse, getEllipseDerivatives, getEllipsePointAtRadian } from "./ellipse"
 import { calculateEquation2, calculateEquation5, newtonIterate2 } from "./equation-calculater"
 import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lineSegmentOrRayToGeneralFormLine, pointIsOnGeometryLine } from "./geometry-line"
+import { getCircleAndHyperbolaExtremumPoints, getLineAndHyperbolaExtremumPoint } from "./hyperbola"
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
@@ -42,6 +43,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = [{ points: p, distance: getTwoPointsDistance(...p) }]
     } else if (line2.type === 'bezier curve') {
       results = getLineAndBezierCurveExtremumPoints(line, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'hyperbola curve') {
+      results = getLineAndHyperbolaExtremumPoint(line, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'nurbs curve') {
       results = getLineAndNurbsCurveExtremumPoints(line, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
@@ -56,6 +59,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getCircleAndQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'bezier curve') {
       results = getCircleAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'hyperbola curve') {
+      results = getCircleAndHyperbolaExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'nurbs curve') {
       results = getCircleAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }

@@ -1,18 +1,20 @@
 import { BezierCurve, getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint, QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
-import { Arc, Circle, pointIsOnArc } from "./circle"
+import { Arc, Circle, getCirclePointAtRadian, getCircleRadian, pointIsOnArc } from "./circle"
 import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
 import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
 import { rombergIntegral } from "./length"
-import { getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
+import { GeneralFormLine, getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
 import { deduplicate, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, mergeNumberRange, minimumBy, NOT_EXTENDED } from "./math"
 import { matrix } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
+import { getPerpendicularPoint } from "./perpendicular"
 import { getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint, Position } from "./position"
 import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
+import { reverseRadian } from "./reverse"
 import { getCoordinateMatrix2D, getCoordinateVec2D, transformPointFromCoordinate2D } from "./transform"
-import { Tuple3 } from "./types"
+import { Tuple2, Tuple3 } from "./types"
 import { and, number } from "./validators"
 
 export interface Hyperbola extends Position {
@@ -779,4 +781,54 @@ export function mergeHyperbolaSegments(curve1: HyperbolaSegment, curve2: Hyperbo
     t1: range[0],
     t2: range[1],
   }
+}
+
+export function getLineAndHyperbolaExtremumPoint(line: GeneralFormLine, curve: Hyperbola): Tuple2<Position>[] {
+  const { a, b, angle } = curve
+  const { a: a0, b: b0 } = line
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  // x = x1 + e2 b t - e1 a((t^2 + 1)^0.5 - 1)
+  // y = y1 + e1 b t + e2 a((t^2 + 1)^0.5 - 1)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  // const c1 = x1 - b2, c2 = y1 - b4
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // x' = b2 t (t^2 + 1)^-0.5 + b1
+  // y' = b4 t (t^2 + 1)^-0.5 + b3
+
+  // let w = (t^2 + 1)^0.5
+  // x = c1 + b1 t + b2 w
+  // y = c2 + b3 t + b4 w
+  // x' = b2 t / w + b1
+  // y' = b4 t / w + b3
+
+  // a0 x + b0 y + c0 = 0
+  // dy / dx = -a0 / b0
+  // a0 dx + b0 dy = 0
+  // a0(b2 t / w + b1) + b0(b4 t / w + b3) = 0
+  // a0(b2 t + b1 w) + b0(b4 t + b3 w) = 0
+  // (a0 b1 + b0 b3) w + (a0 b2 + b0 b4) t = 0
+  const d1 = a0 * b1 + b0 * b3, d2 = a0 * b2 + b0 * b4
+  // d1 w + d2 t = 0
+  // d1 d1 w w = d2 d2 t t
+  // replace w w with t^2 + 1: d1 d1(t^2 + 1) = d2 d2 t t
+  // (d1 d1 - d2 d2) t^2 + d1 d1 = 0
+  const d3 = d1 * d1 - d2 * d2
+  if (isZero(d3)) return []
+  const tSquare = -d1 * d1 / d3
+  if (tSquare < 0) return []
+  const t = Math.sqrt(tSquare) * Math.sign(d1) * Math.sign(d2) * -1
+  const p2 = getHyperbolaPointAtParam(curve, t)
+  const p1 = getPerpendicularPoint(p2, line)
+  return [[p1, p2]]
+}
+
+export function getCircleAndHyperbolaExtremumPoints(circle: Circle, curve: Hyperbola): Tuple2<Position>[] {
+  const ts = getPerpendicularParamsToHyperbola(circle, curve)
+  return ts.map(t => {
+    const p = getHyperbolaPointAtParam(curve, t)
+    const t1 = getCircleRadian(p, circle)
+    return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
+  }).flat()
 }
