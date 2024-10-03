@@ -3,7 +3,7 @@ import { Circle, getCirclePointAtRadian, getCircleRadian } from "./circle"
 import { Ellipse, getEllipseDerivatives, getEllipsePointAtRadian } from "./ellipse"
 import { calculateEquation2, calculateEquation5, newtonIterate2 } from "./equation-calculater"
 import { GeometryLine, getGeometryLineStartAndEnd, getLineSegmentOrRayPoint, lineSegmentOrRayToGeneralFormLine, pointIsOnGeometryLine } from "./geometry-line"
-import { getCircleAndHyperbolaExtremumPoints, getLineAndHyperbolaExtremumPoint } from "./hyperbola"
+import { getCircleAndHyperbolaExtremumPoints, getEllipseAndHyperbolaExtremumPoints, getLineAndHyperbolaExtremumPoint, getQuadraticCurveAndHyperbolaExtremumPoints } from "./hyperbola"
 import { getTwoGeometryLinesIntersectionPoint } from "./intersection"
 import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
@@ -73,6 +73,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getEllipseQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'bezier curve') {
       results = getEllipseBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'hyperbola curve') {
+      results = getEllipseAndHyperbolaExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'nurbs curve') {
       results = getEllipseAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
@@ -83,6 +85,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getTwoQuadraticCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'bezier curve') {
       results = getQuadraticCurveAndBezierCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'hyperbola curve') {
+      results = getQuadraticCurveAndHyperbolaExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     } else if (line2.type === 'nurbs curve') {
       results = getQuadraticCurveAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
@@ -95,6 +99,10 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
       results = getBezierCurveAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'bezier curve') {
+    return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
+  } else if (line1.type === 'hyperbola curve') {
+    //
+  } else if (line2.type === 'hyperbola curve') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)
   } else if (line1.type === 'nurbs curve') {
     if (line2.type === 'nurbs curve') {

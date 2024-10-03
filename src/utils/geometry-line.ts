@@ -170,7 +170,7 @@ export function getGeometryLineParamAtPoint(point: Position, line: GeometryLine,
     return getBezierCurvePercentAtPoint(line.curve, point)
   }
   if (line.type === 'hyperbola curve') {
-    return getHyperbolaParamAtPoint(line.curve, point)
+    return getPercentAtParam(getHyperbolaParamAtPoint(line.curve, point), line.curve.t1, line.curve.t2)
   }
   if (line.type === 'ray') {
     return getRayParamAtPoint(line.line, point)
