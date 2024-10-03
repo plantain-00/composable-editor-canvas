@@ -1,12 +1,12 @@
-import { BezierCurve, getBezierCurvePercentAtPoint, getQuadraticCurvePercentAtPoint, QuadraticCurve } from "./bezier"
+import { BezierCurve, getBezierCurvePercentAtPoint, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve, QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
-import { Arc, Circle, getCirclePointAtRadian, getCircleRadian, pointIsOnArc } from "./circle"
-import { Ellipse, EllipseArc, pointIsOnEllipseArc } from "./ellipse"
-import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate } from "./equation-calculater"
+import { Arc, Circle, getCirclePointAtRadian, getCircleRadian, pointIsOnArc, pointIsOnCircle } from "./circle"
+import { Ellipse, EllipseArc, getEllipseDerivatives, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse"
+import { calculateEquation2, calculateEquation4, calculateEquation5, newtonIterate, newtonIterate2 } from "./equation-calculater"
 import { rombergIntegral } from "./length"
-import { GeneralFormLine, getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLineSegment } from "./line"
-import { deduplicate, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, mergeNumberRange, minimumBy, NOT_EXTENDED } from "./math"
-import { matrix } from "./matrix"
+import { GeneralFormLine, getPointSideOfLine, pointAndDirectionToGeneralFormLine, pointIsOnLine, pointIsOnLineSegment } from "./line"
+import { deduplicate, deepEquals, delta2, delta3, getTwoNumberCenter, isBetween, isSameNumber, isValidPercent, isZero, largerThan, mergeNumberRange, minimumBy, NOT_EXTENDED } from "./math"
+import { matrix, Matrix2 } from "./matrix"
 import { getParabolaXAxisRadian } from "./parabola"
 import { getPerpendicularPoint } from "./perpendicular"
 import { getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint, Position } from "./position"
@@ -14,7 +14,7 @@ import { angleToRadian } from "./radian"
 import { TwoPointsFormRegion } from "./region"
 import { reverseRadian } from "./reverse"
 import { getCoordinateMatrix2D, getCoordinateVec2D, transformPointFromCoordinate2D } from "./transform"
-import { Tuple2, Tuple3 } from "./types"
+import { Tuple2, Tuple3, Vec2 } from "./types"
 import { and, number } from "./validators"
 
 export interface Hyperbola extends Position {
@@ -358,7 +358,9 @@ export function getLineSegmentHyperbolaSegmentIntersectionPoints(start: Position
   return result.filter((p) => pointIsOnLineSegment(p, start, end, extend1))
 }
 
-export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Position, { x: x2, y: y2 }: Position, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+export function getLineHyperbolaSegmentIntersectionPoints(start: Position, end: Position, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+  const { x: x1, y: y1 } = start
+  const { x: x2, y: y2 } = end
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -383,13 +385,15 @@ export function getLineHyperbolaSegmentIntersectionPoints({ x: x1, y: y1 }: Posi
     g1 * g1 - g3 * g3,
   )
   ts = ts.filter(t => isBetween(t, t1, t2, extend))
-  return ts.map(t => {
+  let result = ts.map(t => {
     const d = Math.sqrt(t ** 2 + 1)
     return {
       x: c1 + b1 * t + b2 * d,
       y: c2 + b3 * t + b4 * d,
     }
   })
+  result = result.filter(p => pointIsOnLine(p, start, end))
+  return result
 }
 
 export function getArcHyperbolaSegmentIntersectionPoints(arc: Arc, curve: HyperbolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
@@ -397,7 +401,8 @@ export function getArcHyperbolaSegmentIntersectionPoints(arc: Arc, curve: Hyperb
   return result.filter((p) => pointIsOnArc(p, arc, extend1))
 }
 
-export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r1 }: Circle, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+export function getCircleHyperbolaSegmentIntersectionPoints(circle: Circle, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+  const { x: x1, y: y1, r: r1 } = circle
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -428,13 +433,15 @@ export function getCircleHyperbolaSegmentIntersectionPoints({ x: x1, y: y1, r: r
     d4 * d4 - d3 * d3,
   )
   ts = ts.filter(t => isBetween(t, t1, t2, extend))
-  return ts.map(t => {
+  let result = ts.map(t => {
     const d = Math.sqrt(t ** 2 + 1)
     return {
       x: c1 + b1 * t + b2 * d,
       y: c2 + b3 * t + b4 * d,
     }
   })
+  result = result.filter(p => pointIsOnCircle(p, circle))
+  return result
 }
 
 export function getEllipseArcHyperbolaSegmentIntersectionPoints(arc: EllipseArc, curve: HyperbolaSegment, extend1 = NOT_EXTENDED, extend2 = NOT_EXTENDED): Position[] {
@@ -442,7 +449,8 @@ export function getEllipseArcHyperbolaSegmentIntersectionPoints(arc: EllipseArc,
   return result.filter((p) => pointIsOnEllipseArc(p, arc, extend1))
 }
 
-export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 }: Ellipse, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+export function getEllipseHyperbolaSegmentIntersectionPoints(ellipse: Ellipse, { angle, x: x0, y: y0, a, b, t1, t2 }: HyperbolaSegment, extend = NOT_EXTENDED): Position[] {
+  const { rx: rx1, ry: ry1, cx: cx1, cy: cy1, angle: angle1 } = ellipse
   const xAxisRadian = getParabolaXAxisRadian({ angle })
   const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
   const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
@@ -481,13 +489,15 @@ export function getEllipseHyperbolaSegmentIntersectionPoints({ rx: rx1, ry: ry1,
     h1 * h1 - h4 * h4,
   )
   ts = ts.filter(t => isBetween(t, t1, t2, extend))
-  return ts.map(t => {
+  let result = ts.map(t => {
     const d = Math.sqrt(t ** 2 + 1)
     return {
       x: c1 + b1 * t + b2 * d,
       y: c2 + b3 * t + b4 * d,
     }
   })
+  result = result.filter(p => pointIsOnEllipse(p, ellipse))
+  return result
 }
 
 export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
@@ -563,7 +573,7 @@ export function getQuadraticCurveHyperbolaSegmentIntersectionPoints(
       y: c2 + b3 * t + b4 * d,
     }
   })
-  result = result.filter(p => isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
+  result = result.filter(p => pointIsOnQuadraticCurve(p, curve1) && isValidPercent(getQuadraticCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
 
@@ -713,7 +723,7 @@ export function getBezierCurveHyperbolaSegmentIntersectionPoints(
       y: c2 + b3 * t + b4 * d,
     }
   })
-  result = result.filter(p => isValidPercent(getBezierCurvePercentAtPoint(curve1, p), extend1))
+  result = result.filter(p => pointIsOnBezierCurve(p, curve1) && isValidPercent(getBezierCurvePercentAtPoint(curve1, p), extend1))
   return result
 }
 
@@ -831,4 +841,89 @@ export function getCircleAndHyperbolaExtremumPoints(circle: Circle, curve: Hyper
     const t1 = getCircleRadian(p, circle)
     return [[getCirclePointAtRadian(circle, t1), p], [getCirclePointAtRadian(circle, reverseRadian(t1)), p]] as Tuple2<Position>[]
   }).flat()
+}
+
+export function getEllipseAndHyperbolaExtremumPoints(curve1: Ellipse, curve2: HyperbolaSegment): Tuple2<Position>[] {
+  const [p1, d1, d2] = getEllipseDerivatives(curve1)
+  const [p2, e1, e2] = getHyperbolaDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    const t = newtonIterate2([t1, 0.5], f1, f2, delta2)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getQuadraticCurveAndHyperbolaExtremumPoints(curve1: QuadraticCurve, curve2: HyperbolaSegment): Tuple2<Position>[] {
+  const [p1, d1, d2] = getQuadraticCurveDerivatives(curve1)
+  const [p2, e1, e2] = getHyperbolaDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  const ts: Vec2[] = []
+  const t = newtonIterate2([0.5, 0.5], f1, f2, delta2)
+  if (t !== undefined) {
+    ts.push(t)
+  }
+  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
 }
