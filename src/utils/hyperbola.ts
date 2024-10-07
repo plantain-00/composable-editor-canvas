@@ -1,4 +1,4 @@
-import { BezierCurve, getBezierCurvePercentAtPoint, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve, QuadraticCurve } from "./bezier"
+import { BezierCurve, getBezierCurveDerivatives, getBezierCurvePercentAtPoint, getQuadraticCurveDerivatives, getQuadraticCurvePercentAtPoint, pointIsOnBezierCurve, pointIsOnQuadraticCurve, QuadraticCurve } from "./bezier"
 import { getPointsBoundingUnsafe } from "./bounding"
 import { Arc, Circle, getCirclePointAtRadian, getCircleRadian, pointIsOnArc, pointIsOnCircle } from "./circle"
 import { Ellipse, EllipseArc, getEllipseDerivatives, pointIsOnEllipse, pointIsOnEllipseArc } from "./ellipse"
@@ -876,7 +876,7 @@ export function getEllipseAndHyperbolaExtremumPoints(curve1: Ellipse, curve2: Hy
   }
   let ts: Vec2[] = []
   for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
-    const t = newtonIterate2([t1, 0.5], f1, f2, delta2)
+    const t = newtonIterate2([t1, 0], f1, f2, delta2)
     if (t !== undefined) {
       ts.push(t)
     }
@@ -919,7 +919,92 @@ export function getQuadraticCurveAndHyperbolaExtremumPoints(curve1: QuadraticCur
     ]
   }
   const ts: Vec2[] = []
-  const t = newtonIterate2([0.5, 0.5], f1, f2, delta2)
+  const t = newtonIterate2([0.5, 0], f1, f2, delta2)
+  if (t !== undefined) {
+    ts.push(t)
+  }
+  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getBezierCurveAndHyperbolaExtremumPoints(curve1: BezierCurve, curve2: HyperbolaSegment): Tuple2<Position>[] {
+  const [p1, d1, d2] = getBezierCurveDerivatives(curve1)
+  const [p2, e1, e2] = getHyperbolaDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [0.25, 0.75]) {
+    const t = newtonIterate2([t1, 0], f1, f2, delta2)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getTwoHyperbolaExtremumPoints(curve1: HyperbolaSegment, curve2: HyperbolaSegment): Tuple2<Position>[] {
+  const [p1, d1, d2] = getHyperbolaDerivatives(curve1)
+  const [p2, e1, e2] = getHyperbolaDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // z = (x1 - x2)^2 + (y1 - y2)^2
+    // dz/dt1/2: z1 = (x1 - x2)x1' + (y1 - y2)y1'
+    // dz/dt2/2: z2 = (x2 - x1)x2' + (y2 - y1)y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(x1 - x2) * x11 + (y1 - y2) * y11, (x2 - x1) * x21 + (y2 - y1) * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = x1'x1' + (x1 - x2)x1'' + y1'y1' + (y1 - y2)y1''
+    // dz1/dt2 = -x2' x1' - y2' y1'
+    // dz2/dt1 = -x1' x2' - y1' y2'
+    // dz2/dt2 = x2'x2' + (x2 - x1)x2'' + y2'y2' + (y2 - y1)y2''
+    return [
+      x11 * x11 + (x1 - x2) * x12 + y11 * y11 + (y1 - y2) * y12,
+      -x21 * x11 - y21 * y11,
+      -x11 * x21 - y11 * y21,
+      x21 * x21 + (x2 - x1) * x22 + y21 * y21 + (y2 - y1) * y22,
+    ]
+  }
+  const ts: Vec2[] = []
+  const t = newtonIterate2([0, 0], f1, f2, delta2)
   if (t !== undefined) {
     ts.push(t)
   }
