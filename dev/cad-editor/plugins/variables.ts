@@ -2565,11 +2565,11 @@ function isArcContent(content) {
 
 // dev/cad-editor/plugins/create-tangent-tangent-line.plugin.tsx
 function getCommand(ctx) {
-  function getTangentTangentLines(content1, content2) {
-    const content1IsCircle = isCircleContent(content1) || isArcContent(content1);
-    const content2IsCircle = isCircleContent(content2) || isArcContent(content2);
-    if (content1IsCircle && content2IsCircle) {
-      return ctx.getLinesTangentTo2Circles(content1, content2);
+  function getTangentTangentLines(line1, line2) {
+    if (line1 && line2) {
+      if (!Array.isArray(line1) && !Array.isArray(line2) && line1.type === "arc" && line2.type === "arc") {
+        return ctx.getLinesTangentTo2Circles(line1.curve, line2.curve);
+      }
     }
     return [];
   }
@@ -2586,8 +2586,9 @@ function getCommand(ctx) {
         dashArray: c === result ? void 0 : [4 / scale]
       }));
       React.useEffect(() => {
+        var _a, _b;
         if (type && !candidates) {
-          setCandidates(getTangentTangentLines(selected[0].content, selected[1].content));
+          setCandidates(getTangentTangentLines((_a = selected[0].lines) == null ? void 0 : _a[0], (_b = selected[1].lines) == null ? void 0 : _b[0]));
         }
       }, [type, selected]);
       const reset = () => {

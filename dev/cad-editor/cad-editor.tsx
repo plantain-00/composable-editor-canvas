@@ -362,19 +362,20 @@ export const CADEditor = React.forwardRef((props: {
   const searchResult = new Set(getContentsInRange(bounding))
   const contentVisible = (c: BaseContent) => searchResult.has(c) || assistentContents.includes(c)
 
-  const selectedContents: { content: BaseContent, path: ContentPath }[] = []
+  const selectedContents: { content: BaseContent, path: ContentPath, lines?: core.GeometryLine[] }[] = []
   editingContent.forEach((s, i) => {
     if (!s || !searchResult.has(s)) {
       return
     }
     if (isSelected([i])) {
-      selectedContents.push({ content: s, path: [i] })
+      const lines = getContentModel(s)?.getGeometries?.(s, editingContent)?.lines
+      selectedContents.push({ content: s, path: [i], lines })
     } else {
       for (const f of selected) {
         if (f.length === 2 && f[0] === i) {
           const line = getContentModel(s)?.getGeometries?.(s, editingContent)?.lines?.[f[1]]
           if (line) {
-            selectedContents.push({ content: model.geometryLineToContent(line), path: f })
+            selectedContents.push({ content: model.geometryLineToContent(line), path: f, lines: [line] })
           }
         }
       }
