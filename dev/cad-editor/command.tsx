@@ -1,6 +1,6 @@
 import { Patch, produce } from "immer"
 import React from "react"
-import { ContentPath, Nullable, Position, prependPatchPath, SelectPath, Size, Transform, TwoPointsFormRegion } from "../../src"
+import { ContentPath, GeometryLine, Nullable, Position, prependPatchPath, SelectPath, Size, Transform, TwoPointsFormRegion } from "../../src"
 import { BaseContent, fixedButtomStyle, fixedInputStyle, getContentModel, PartRef, Select, SnapTarget } from "./model"
 
 export interface Command extends CommandType {
@@ -33,7 +33,7 @@ interface CommandProps {
   onEnd: (options?: Partial<CommandEndOptions>) => void,
   transform: (p: Position) => Position,
   type: string | undefined,
-  selected: { content: BaseContent, path: ContentPath }[],
+  selected: { content: BaseContent, path: ContentPath, lines?: GeometryLine[] }[],
   setSelected: (...value: readonly Nullable<ContentPath>[]) => void
   width: number,
   height: number,

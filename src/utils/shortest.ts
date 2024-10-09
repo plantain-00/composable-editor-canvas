@@ -9,7 +9,7 @@ import { iterateItemOrArray } from "./iterator"
 import { GeneralFormLine, getGeneralFormLineRadian } from "./line"
 import { deduplicate, deepEquals, delta2, isSameNumber, isValidPercent, isZero, minimumBy } from "./math"
 import { Matrix2 } from "./matrix"
-import { getBezierCurveAndNurbsCurveExtremumPoints, getCircleAndNurbsCurveExtremumPoints, getEllipseAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints, getQuadraticCurveAndNurbsCurveExtremumPoints, getTwoNurbsCurveExtremumPoints } from "./nurbs"
+import { getBezierCurveAndNurbsCurveExtremumPoints, getCircleAndNurbsCurveExtremumPoints, getEllipseAndNurbsCurveExtremumPoints, getHyperbolaAndNurbsCurveExtremumPoints, getLineAndNurbsCurveExtremumPoints, getQuadraticCurveAndNurbsCurveExtremumPoints, getTwoNurbsCurveExtremumPoints } from "./nurbs"
 import { getPerpendicularPercentToBezierCurve, getPerpendicularPercentToQuadraticCurve, getPerpendicularPoint, getPerpendicularPointRadiansToEllipse, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular"
 import { Position, getPointByLengthAndDirection, getPointByLengthAndRadian, getTwoPointsDistance, isSamePoint } from "./position"
 import { angleToRadian } from "./radian"
@@ -105,6 +105,8 @@ export function getShortestDistanceOfTwoDisjointGeometryLine(line1: GeometryLine
   } else if (line1.type === 'hyperbola curve') {
     if (line2.type === 'hyperbola curve') {
       results = getTwoHyperbolaExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
+    } else if (line2.type === 'nurbs curve') {
+      results = getHyperbolaAndNurbsCurveExtremumPoints(line1.curve, line2.curve).map(p => ({ points: p, distance: getTwoPointsDistance(...p) }))
     }
   } else if (line2.type === 'hyperbola curve') {
     return getShortestDistanceOfTwoDisjointGeometryLine(line2, line1)

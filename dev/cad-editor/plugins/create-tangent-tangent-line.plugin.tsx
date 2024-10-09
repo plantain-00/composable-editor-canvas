@@ -1,16 +1,15 @@
 import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
-import type * as model from '../model'
 import { isArcContent, isCircleContent } from './circle-arc.plugin'
 import type { LineContent } from './line-polyline.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
-  function getTangentTangentLines(content1: model.BaseContent, content2: model.BaseContent) {
-    const content1IsCircle = isCircleContent(content1) || isArcContent(content1)
-    const content2IsCircle = isCircleContent(content2) || isArcContent(content2)
-    if (content1IsCircle && content2IsCircle) {
-      return ctx.getLinesTangentTo2Circles(content1, content2)
+  function getTangentTangentLines(line1?: core.GeometryLine, line2?: core.GeometryLine) {
+    if (line1 && line2) {
+      if (!Array.isArray(line1) && !Array.isArray(line2) && line1.type === 'arc' && line2.type === 'arc') {
+        return ctx.getLinesTangentTo2Circles(line1.curve, line2.curve)
+      }
     }
     return []
   }
@@ -34,7 +33,7 @@ export function getCommand(ctx: PluginContext): Command {
       }))
       React.useEffect(() => {
         if (type && !candidates) {
-          setCandidates(getTangentTangentLines(selected[0].content, selected[1].content))
+          setCandidates(getTangentTangentLines(selected[0].lines?.[0], selected[1].lines?.[0]))
         }
       }, [type, selected])
       const reset = () => {

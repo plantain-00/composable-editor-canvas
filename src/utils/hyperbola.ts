@@ -1008,7 +1008,7 @@ export function getTwoHyperbolaExtremumPoints(curve1: HyperbolaSegment, curve2: 
   if (t !== undefined) {
     ts.push(t)
   }
-  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+  return ts.filter(v => isBetween(v[0], curve1.t1, curve1.t2) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
     return [p1(t[0]), p2(t[1])]
   })
 }
