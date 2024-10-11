@@ -1,15 +1,12 @@
 import type { PluginContext } from './types'
 import type * as core from '../../../src'
 import type { Command } from '../command'
-import { isArcContent, isCircleContent } from './circle-arc.plugin'
 import type { LineContent } from './line-polyline.plugin'
 
 export function getCommand(ctx: PluginContext): Command {
   function getTangentTangentLines(line1?: core.GeometryLine, line2?: core.GeometryLine) {
     if (line1 && line2) {
-      if (!Array.isArray(line1) && !Array.isArray(line2) && line1.type === 'arc' && line2.type === 'arc') {
-        return ctx.getLinesTangentTo2Circles(line1.curve, line2.curve)
-      }
+      return ctx.getLinesTangentTo2GeometryLines(line1, line2)
     }
     return []
   }
@@ -60,7 +57,6 @@ export function getCommand(ctx: PluginContext): Command {
       }
     },
     selectCount: 2,
-    contentSelectable: (c) => isCircleContent(c) || isArcContent(c),
     selectType: 'select part',
     icon,
   }
