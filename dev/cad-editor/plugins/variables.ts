@@ -2555,21 +2555,11 @@ export {
   getCommand
 };
 `,
-`// dev/cad-editor/plugins/circle-arc.plugin.tsx
-function isCircleContent(content) {
-  return content.type === "circle";
-}
-function isArcContent(content) {
-  return content.type === "arc";
-}
-
-// dev/cad-editor/plugins/create-tangent-tangent-line.plugin.tsx
+`// dev/cad-editor/plugins/create-tangent-tangent-line.plugin.tsx
 function getCommand(ctx) {
   function getTangentTangentLines(line1, line2) {
     if (line1 && line2) {
-      if (!Array.isArray(line1) && !Array.isArray(line2) && line1.type === "arc" && line2.type === "arc") {
-        return ctx.getLinesTangentTo2Circles(line1.curve, line2.curve);
-      }
+      return ctx.getLinesTangentTo2GeometryLines(line1, line2);
     }
     return [];
   }
@@ -2614,7 +2604,6 @@ function getCommand(ctx) {
       };
     },
     selectCount: 2,
-    contentSelectable: (c) => isCircleContent(c) || isArcContent(c),
     selectType: "select part",
     icon
   };
