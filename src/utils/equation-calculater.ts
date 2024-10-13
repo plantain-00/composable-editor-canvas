@@ -1,4 +1,4 @@
-import { delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./math"
+import { delta1, delta2, isSameNumber, isZero, largerThan, lessThan, sqrt3 } from "./math"
 import { Matrix2, m2, matrix, v2, vector } from "./matrix"
 import { Vec2 } from "./types"
 
@@ -277,7 +277,9 @@ export function newtonIterate(
     }
     const m = f2(x)
     if (isZero(m)) return
-    x = x - g / m
+    const d = g / m
+    if (Math.abs(d) < delta1) break
+    x = x - d
     count++
   }
   return x
