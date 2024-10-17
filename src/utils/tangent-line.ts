@@ -1,16 +1,19 @@
-import { BezierCurve, getBezierCurvePointAtPercent, getQuadraticCurvePointAtPercent, QuadraticCurve } from "./bezier";
-import { calculateEquation4, calculateEquation5 } from "./equation-calculater";
+import { BezierCurve, getBezierCurvePointAtPercent, getQuadraticCurveDerivatives, getQuadraticCurvePointAtPercent, QuadraticCurve } from "./bezier";
+import { calculateEquation4, calculateEquation5, newtonIterate2 } from "./equation-calculater";
 import { GeometryLine } from "./geometry-line";
-import { isValidPercent } from "./math";
+import { getHyperbolaDerivatives, HyperbolaSegment } from "./hyperbola";
+import { deduplicate, deepEquals, delta2, isBetween, isValidPercent } from "./math";
+import { Matrix2 } from "./matrix";
+import { fromVerbPoint, getNurbsMaxParam, NurbsCurve, toVerbNurbsCurve } from "./nurbs";
 import { Position } from "./position";
 import { getLinesTangentTo2Circles } from "./tangency";
-import { Tuple2 } from "./types";
+import { Tuple2, Vec2 } from "./types";
 
 export function getLinesTangentTo2GeometryLines(line1: GeometryLine, line2: GeometryLine): Tuple2<Position>[] {
-  if (Array.isArray(line1)) {
+  if (Array.isArray(line1) || line1.type === 'ray') {
     return []
   }
-  if (Array.isArray(line2)) return []
+  if (Array.isArray(line2) || line2.type === 'ray') return []
   if (line1.type === 'arc') {
     if (line2.type === 'arc') {
       return getLinesTangentTo2Circles(line1.curve, line2.curve)
@@ -18,12 +21,19 @@ export function getLinesTangentTo2GeometryLines(line1: GeometryLine, line2: Geom
     return []
   }
   if (line2.type === 'arc') return getLinesTangentTo2GeometryLines(line2, line1)
+  if (line1.type === 'ellipse arc') {
+    return []
+  }
+  if (line2.type === 'ellipse arc') return getLinesTangentTo2GeometryLines(line2, line1)
   if (line1.type === 'quadratic curve') {
     if (line2.type === 'quadratic curve') {
       return getLinesTangentTo2QuadraticCurves(line1.curve, line2.curve)
     }
     if (line2.type === 'bezier curve') {
       return getLinesTangentToQuadraticCurveAndBezierCurve(line1.curve, line2.curve)
+    }
+    if (line2.type === 'hyperbola curve') {
+      return getLinesTangentToQuadraticCurveAndHyperbola(line1.curve, line2.curve)
     }
     return []
   }
@@ -32,6 +42,10 @@ export function getLinesTangentTo2GeometryLines(line1: GeometryLine, line2: Geom
     return []
   }
   if (line2.type === 'bezier curve') return getLinesTangentTo2GeometryLines(line2, line1)
+  if (line1.type === 'hyperbola curve') {
+    return []
+  }
+  if (line2.type === 'hyperbola curve') return getLinesTangentTo2GeometryLines(line2, line1)
   return []
 }
 
@@ -146,4 +160,90 @@ export function getLinesTangentToQuadraticCurveAndBezierCurve(curve1: QuadraticC
     }
   }
   return result
+}
+
+export function getLinesTangentToQuadraticCurveAndHyperbola(curve1: QuadraticCurve, curve2: HyperbolaSegment): Tuple2<Position>[] {
+  const [p1, d1, d2] = getQuadraticCurveDerivatives(curve1)
+  const [p2, e1, e2] = getHyperbolaDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // (y1 - y2)/(x1 - x2) = y1'/x1' = y2'/x2'
+    // z1 = (y1 - y2)x1' - (x1 - x2)y1'
+    // z2 = y1'x2' - x1'y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(y1 - y2) * x11 - (x1 - x2) * y11, y11 * x21 - x11 * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = y1'x1' + (y1 - y2)x1'' - (x1'y1' + (x1 - x2)y1'')
+    // dz1/dt2 = -y2'x1' + x2'y1'
+    // dz2/dt1 = y1''x2' - x1''y2'
+    // dz2/dt2 = y1'x2'' - x1'y2''
+    return [
+      y11 * x11 + (y1 - y2) * x12 - (x11 * y11 + (x1 - x2) * y12),
+      -y21 * x11 + x21 * y11,
+      y12 * x21 - x12 * y21,
+      y11 * x22 - x11 * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [0.25, 0.75]) {
+    const t = newtonIterate2([t1, 0], f1, f2, delta2)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], curve2.t1, curve2.t2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getLinesTangentToQuadraticCurveAndNurbsCurve(curve1: QuadraticCurve, curve2: NurbsCurve): Tuple2<Position>[] {
+  const [p1, d1, d2] = getQuadraticCurveDerivatives(curve1)
+  const nurbs2 = toVerbNurbsCurve(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // (y1 - y2)/(x1 - x2) = y1'/x1' = y2'/x2'
+    // z1 = (y1 - y2)x1' - (x1 - x2)y1'
+    // z2 = y1'x2' - x1'y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const [[x2, y2], [x21, y21]] = nurbs2.derivatives(t[1])
+    return [(y1 - y2) * x11 - (x1 - x2) * y11, y11 * x21 - x11 * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const [[x2, y2], [x21, y21], [x22, y22]] = nurbs2.derivatives(t[1], 2)
+    // dz1/dt1 = y1'x1' + (y1 - y2)x1'' - (x1'y1' + (x1 - x2)y1'')
+    // dz1/dt2 = -y2'x1' + x2'y1'
+    // dz2/dt1 = y1''x2' - x1''y2'
+    // dz2/dt2 = y1'x2'' - x1'y2''
+    return [
+      y11 * x11 + (y1 - y2) * x12 - (x11 * y11 + (x1 - x2) * y12),
+      -y21 * x11 + x21 * y11,
+      y12 * x21 - x12 * y21,
+      y11 * x22 - x11 * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  const maxParam2 = getNurbsMaxParam(curve2)
+  for (let t2 = 0.5; t2 < maxParam2; t2++) {
+    const t = newtonIterate2([0.5, t2], f1, f2, delta2)
+    if (t !== undefined) {
+      ts.push(t)
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => isValidPercent(v[0]) && isBetween(v[1], 0, maxParam2)).map(t => {
+    return [p1(t[0]), fromVerbPoint(nurbs2.point(t[1]))]
+  })
 }

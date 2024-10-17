@@ -304,11 +304,11 @@ function fromVerbNurbsCurve(curve: verb.geom.NurbsCurve): NurbsCurve {
   }
 }
 
-function toVerbNurbsCurve(curve: NurbsCurve) {
+export function toVerbNurbsCurve(curve: NurbsCurve) {
   return verb.geom.NurbsCurve.byKnotsControlPointsWeights(curve.degree, curve.knots, curve.points.map(p => toVerbPoint(p)), curve.weights)
 }
 
-function fromVerbPoint(point: verb.core.Data.Point) {
+export function fromVerbPoint(point: verb.core.Data.Point) {
   return { x: point[0], y: point[1] }
 }
 
