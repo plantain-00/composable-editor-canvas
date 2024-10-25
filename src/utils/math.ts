@@ -239,7 +239,7 @@ export function maximumsBy<T>(values: T[], by: (value: T) => number): T[] {
   return result.map(r => r.value)
 }
 
-export function first<T>(generator: IterableIterator<T>) {
+export function first<T>(generator: IterableIterator<T, unknown, unknown>) {
   for (const item of generator) {
     return item
   }
