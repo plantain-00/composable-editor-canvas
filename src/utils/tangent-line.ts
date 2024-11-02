@@ -24,6 +24,12 @@ export function getLinesTangentTo2GeometryLines(line1: GeometryLine, line2: Geom
     if (line2.type === 'ellipse arc') {
       return getLinesTangentToArcAndEllipseArc(line1.curve, line2.curve)
     }
+    if (line2.type === 'quadratic curve') {
+      return getLinesTangentToArcAndQuadraticCurve(line1.curve, line2.curve)
+    }
+    if (line2.type === 'bezier curve') {
+      return getLinesTangentToArcAndBezierCurve(line1.curve, line2.curve)
+    }
     return []
   }
   if (line2.type === 'arc') return getLinesTangentTo2GeometryLines(line2, line1)
@@ -118,6 +124,98 @@ export function getLinesTangentToArcAndEllipseArc(curve1: Arc, curve2: EllipseAr
   }
   ts = deduplicate(ts, deepEquals)
   return ts.filter(v => angleInRange(v[0], curve1) && angleInRange(v[1], curve2)).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getLinesTangentToArcAndQuadraticCurve(curve1: Arc, curve2: QuadraticCurve): Tuple2<Position>[] {
+  const [p1, d1, d2] = getCircleDerivatives(curve1)
+  const [p2, e1, e2] = getQuadraticCurveDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // (y1 - y2)/(x1 - x2) = y1'/x1' = y2'/x2'
+    // z1 = (y1 - y2)x1' - (x1 - x2)y1'
+    // z2 = y1'x2' - x1'y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(y1 - y2) * x11 - (x1 - x2) * y11, y11 * x21 - x11 * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = y1'x1' + (y1 - y2)x1'' - (x1'y1' + (x1 - x2)y1'')
+    // dz1/dt2 = -y2'x1' + x2'y1'
+    // dz2/dt1 = y1''x2' - x1''y2'
+    // dz2/dt2 = y1'x2'' - x1'y2''
+    return [
+      y11 * x11 + (y1 - y2) * x12 - (x11 * y11 + (x1 - x2) * y12),
+      -y21 * x11 + x21 * y11,
+      y12 * x21 - x12 * y21,
+      y11 * x22 - x11 * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    for (const t2 of [0.25, 0.75]) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta2)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => angleInRange(v[0], curve1) && isValidPercent(v[1])).map(t => {
+    return [p1(t[0]), p2(t[1])]
+  })
+}
+
+export function getLinesTangentToArcAndBezierCurve(curve1: Arc, curve2: BezierCurve): Tuple2<Position>[] {
+  const [p1, d1, d2] = getCircleDerivatives(curve1)
+  const [p2, e1, e2] = getBezierCurveDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // (y1 - y2)/(x1 - x2) = y1'/x1' = y2'/x2'
+    // z1 = (y1 - y2)x1' - (x1 - x2)y1'
+    // z2 = y1'x2' - x1'y2'
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    return [(y1 - y2) * x11 - (x1 - x2) * y11, y11 * x21 - x11 * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const { x: x1, y: y1 } = p1(t[0])
+    const { x: x11, y: y11 } = d1(t[0])
+    const { x: x12, y: y12 } = d2(t[0])
+    const { x: x2, y: y2 } = p2(t[1])
+    const { x: x21, y: y21 } = e1(t[1])
+    const { x: x22, y: y22 } = e2(t[1])
+    // dz1/dt1 = y1'x1' + (y1 - y2)x1'' - (x1'y1' + (x1 - x2)y1'')
+    // dz1/dt2 = -y2'x1' + x2'y1'
+    // dz2/dt1 = y1''x2' - x1''y2'
+    // dz2/dt2 = y1'x2'' - x1'y2''
+    return [
+      y11 * x11 + (y1 - y2) * x12 - (x11 * y11 + (x1 - x2) * y12),
+      -y21 * x11 + x21 * y11,
+      y12 * x21 - x12 * y21,
+      y11 * x22 - x11 * y22,
+    ]
+  }
+  let ts: Vec2[] = []
+  for (const t1 of [-Math.PI / 2, Math.PI / 2]) {
+    for (const t2 of [0, 0.5, 1]) {
+      const t = newtonIterate2([t1, t2], f1, f2, delta2)
+      if (t !== undefined) {
+        ts.push(t)
+      }
+    }
+  }
+  ts = deduplicate(ts, deepEquals)
+  return ts.filter(v => angleInRange(v[0], curve1) && isValidPercent(v[1])).map(t => {
     return [p1(t[0]), p2(t[1])]
   })
 }
