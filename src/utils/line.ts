@@ -469,6 +469,17 @@ export function getLineParamAtPoint(p1: Position, p2: Position, point: Position)
   return (point.x - p1.x) / (p2.x - p1.x)
 }
 
+export function getLinePointAtParam({ x: x0, y: y0 }: Position, { x: x1, y: y1 }: Position, param: number): Position {
+  // x = x0 + (x1 - x0)t
+  // y = y0 + (y1 - y0)t
+  const dx = x1 - x0
+  const dy = y1 - y0
+  return {
+    x: x0 + dx * param,
+    y: y0 + dy * param,
+  }
+}
+
 export function getRayParamAtPoint(ray: Ray, point: Position) {
   const d = getTwoPointsDistance(ray, point)
   if (isZero(d)) return 0

@@ -54,11 +54,11 @@ export function getPointByLengthAndDirection(
   length: number,
   directionPoint: Position
 ) {
-  let dx = directionPoint.x - startPoint.x
-  let dy = directionPoint.y - startPoint.y
   if (isZero(length)) {
     return startPoint
   }
+  let dx = directionPoint.x - startPoint.x
+  let dy = directionPoint.y - startPoint.y
   if (length < 0) {
     length = -length
     dx = -dx
