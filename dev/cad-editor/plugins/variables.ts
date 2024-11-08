@@ -2555,6 +2555,86 @@ export {
   getCommand
 };
 `,
+`// dev/cad-editor/plugins/create-tangent-tangent-line-at-points.plugin.tsx
+function getCommand(ctx) {
+  const React = ctx.React;
+  const icon = /* @__PURE__ */ React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 100 100" }, /* @__PURE__ */ React.createElement("circle", { cx: "78", cy: "80", r: "18", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "29", cy: "29", r: "27", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", fillOpacity: "1", strokeOpacity: "1", fill: "none", stroke: "currentColor" }), /* @__PURE__ */ React.createElement("circle", { cx: "92", cy: "70", r: "8", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "none" }), /* @__PURE__ */ React.createElement("circle", { cx: "51", cy: "13", r: "8", fillOpacity: "1", strokeOpacity: "1", fill: "currentColor", stroke: "none" }), /* @__PURE__ */ React.createElement("polyline", { points: "92,70 51,13", strokeWidth: "5", strokeMiterlimit: "10", strokeLinejoin: "miter", strokeLinecap: "butt", strokeOpacity: "1", fill: "none", stroke: "currentColor" }));
+  return {
+    name: "create tangent tangent line at points",
+    useCommand({ onEnd, type, scale, contents }) {
+      const [start, setStart] = React.useState();
+      const [cursor, setCursor] = React.useState();
+      const [result, setResult] = React.useState();
+      const assistentContents = [];
+      if (start && cursor && type) {
+        assistentContents.push({
+          points: [start.point, cursor],
+          type: "line",
+          dashArray: [4 / scale]
+        });
+      }
+      if (result) {
+        assistentContents.push({
+          points: result,
+          type: "line"
+        });
+      }
+      const reset = () => {
+        setStart(void 0);
+        setResult(void 0);
+        setCursor(void 0);
+      };
+      const getTarget = (point, id, param) => {
+        var _a, _b, _c;
+        const content = contents[id];
+        if (!content) return;
+        const lines = (_c = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents)) == null ? void 0 : _c.lines;
+        if (!lines) return;
+        const index = Math.floor(param);
+        return { point, line: lines[index], param: param - index };
+      };
+      return {
+        onStart(p, target) {
+          if (!type) return;
+          if (!target) return;
+          if (target.param === void 0) return;
+          if (!start) {
+            setStart(getTarget(p, target.id, target.param));
+          } else if (result) {
+            onEnd({
+              updateContents: (contents2) => {
+                contents2.push({ type: "line", points: result });
+              }
+            });
+            reset();
+          }
+        },
+        onMove(p, _, target) {
+          if (!type) return;
+          setCursor(p);
+          setResult(void 0);
+          if (!target) return;
+          if (target.param === void 0) return;
+          if (!start) return;
+          const end = getTarget(p, target.id, target.param);
+          if (!end) return;
+          const params = ctx.getLineTangentToTwoGeometryLinesNearParam(start.line, end.line, start.param, end.param);
+          if (params) {
+            setResult([ctx.getGeometryLinePointAtParam(params[0], start.line), ctx.getGeometryLinePointAtParam(params[1], end.line)]);
+          }
+        },
+        assistentContents,
+        reset
+      };
+    },
+    selectCount: 0,
+    icon
+  };
+}
+export {
+  getCommand
+};
+`,
 `// dev/cad-editor/plugins/create-tangent-tangent-line.plugin.tsx
 function getCommand(ctx) {
   function getTangentTangentLines(line1, line2) {
