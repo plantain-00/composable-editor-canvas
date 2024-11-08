@@ -3,7 +3,7 @@ import { BezierCurve, getBezierCurveDerivatives, getBezierCurvePointAtPercent, g
 import { Arc, getCircleDerivatives } from "./circle";
 import { EllipseArc, getEllipseDerivatives } from "./ellipse";
 import { calculateEquation4, calculateEquation5, newtonIterate2 } from "./equation-calculater";
-import { GeometryLine } from "./geometry-line";
+import { GeometryLine, getGeometryLineDerivatives } from "./geometry-line";
 import { getHyperbolaDerivatives, HyperbolaSegment } from "./hyperbola";
 import { deduplicate, deepEquals, delta2, isBetween, isValidPercent } from "./math";
 import { Matrix2 } from "./matrix";
@@ -83,6 +83,34 @@ export function getLinesTangentTo2GeometryLines(line1: GeometryLine, line2: Geom
   }
   if (line2.type === 'hyperbola curve') return getLinesTangentTo2GeometryLines(line2, line1)
   return getLinesTangentToTwoNurbsCurves(line1.curve, line2.curve)
+}
+
+export function getLineTangentToTwoGeometryLinesNearParam(curve1: GeometryLine, curve2: GeometryLine, t1: number, t2: number): Vec2 | undefined {
+  const derivative1 = getGeometryLineDerivatives(curve1)
+  const derivative2 = getGeometryLineDerivatives(curve2)
+  const f1 = (t: Vec2): Vec2 => {
+    // (y1 - y2)/(x1 - x2) = y1'/x1' = y2'/x2'
+    // z1 = (y1 - y2)x1' - (x1 - x2)y1'
+    // z2 = y1'x2' - x1'y2'
+    const [{ x: x1, y: y1 }, { x: x11, y: y11 }] = derivative1[0](t[0])
+    const [{ x: x2, y: y2 }, { x: x21, y: y21 }] = derivative2[0](t[1])
+    return [(y1 - y2) * x11 - (x1 - x2) * y11, y11 * x21 - x11 * y21]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const [{ x: x1, y: y1 }, { x: x11, y: y11 }, { x: x12, y: y12 }] = derivative1[1](t[0])
+    const [{ x: x2, y: y2 }, { x: x21, y: y21 }, { x: x22, y: y22 }] = derivative2[1](t[1])
+    // dz1/dt1 = y1'x1' + (y1 - y2)x1'' - (x1'y1' + (x1 - x2)y1'')
+    // dz1/dt2 = -y2'x1' + x2'y1'
+    // dz2/dt1 = y1''x2' - x1''y2'
+    // dz2/dt2 = y1'x2'' - x1'y2''
+    return [
+      y11 * x11 + (y1 - y2) * x12 - (x11 * y11 + (x1 - x2) * y12),
+      -y21 * x11 + x21 * y11,
+      y12 * x21 - x12 * y21,
+      y11 * x22 - x11 * y22,
+    ]
+  }
+  return newtonIterate2([t1, t2], f1, f2, delta2)
 }
 
 export function getLinesTangentToArcAndEllipseArc(curve1: Arc, curve2: EllipseArc): Tuple2<Position>[] {

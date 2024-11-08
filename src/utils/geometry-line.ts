@@ -726,12 +726,12 @@ export function getGeometryLineDerivatives(line: GeometryLine): [(t: number) => 
     const derivatives = getHyperbolaDerivatives(line.curve)
     return [
       t => {
-        const angle = getParamAtPercent(t, line.curve.t1, line.curve.t2)
-        return [derivatives[0](angle), derivatives[1](angle)]
+        const param = getParamAtPercent(t, line.curve.t1, line.curve.t2)
+        return [derivatives[0](param), derivatives[1](param)]
       },
       t => {
-        const angle = getParamAtPercent(t, line.curve.t1, line.curve.t2)
-        return [derivatives[0](angle), derivatives[1](angle), derivatives[2](angle)]
+        const param = getParamAtPercent(t, line.curve.t1, line.curve.t2)
+        return [derivatives[0](param), derivatives[1](param), derivatives[2](param)]
       },
     ]
   }

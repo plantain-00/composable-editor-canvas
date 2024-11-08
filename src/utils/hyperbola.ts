@@ -282,8 +282,8 @@ export function getHyperbolaDerivatives({ angle, a, b, x: x1, y: y1 }: Hyperbola
   // y = c2 + b3 t + b4(t^2 + 1)^0.5
   // x' = b2 t (t^2 + 1)^-0.5 + b1
   // y' = b4 t (t^2 + 1)^-0.5 + b3
-  // x' = b2 (t^2 + 1)^-0.5 - b2 t t (t^2 + 1)^-1.5
-  // y' = b4 (t^2 + 1)^-0.5 - b4 t t (t^2 + 1)^-1.5
+  // x'' = b2 (t^2 + 1)^-0.5 - b2 t t (t^2 + 1)^-1.5
+  // y'' = b4 (t^2 + 1)^-0.5 - b4 t t (t^2 + 1)^-1.5
   return [
     t => {
       const d = Math.sqrt(t ** 2 + 1)
@@ -299,7 +299,7 @@ export function getHyperbolaDerivatives({ angle, a, b, x: x1, y: y1 }: Hyperbola
         y: b4 * d + b3,
       }
     },
-    (t) => {
+    t => {
       const d0 = t ** 2, d1 = d0 + 1, d2 = Math.sqrt(d1)
       const d = 1 / d2 - d0 / d1 / d2
       return {
