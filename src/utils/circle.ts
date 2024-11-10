@@ -13,7 +13,7 @@ import { and, minimum, number } from "./validators";
 import { getTwoGeneralFormLinesIntersectionPoint } from "./intersection";
 import { twoPointLineToGeneralFormLine } from "./line";
 import { getPerpendicularLine } from "./perpendicular";
-import { Tuple5 } from "./types";
+import { Tuple3, Tuple5 } from "./types";
 
 export function pointIsOnArc(p: Position, arc: Arc, extend = NOT_EXTENDED) {
   if (extend.head && extend.body && extend.tail) return true
@@ -204,6 +204,32 @@ export function getCircleDerivatives({ x, y, r }: Circle): Tuple5<(t: number) =>
     t => ({ x: -r * Math.cos(t), y: -r * Math.sin(t) }),
     t => ({ x: r * Math.sin(t), y: -r * Math.cos(t) }),
     t => ({ x: r * Math.cos(t), y: r * Math.sin(t) }),
+  ]
+}
+
+export function getArcDerivatives({ x, y, r, startAngle, endAngle }: Arc): Tuple3<(t: number) => Position> {
+  const e3 = angleToRadian(endAngle - startAngle), t1 = angleToRadian(startAngle)
+  // t = e3 u + t1
+  // x = cx + r cos(t)
+  // x' = -r sin(t) e3
+  // x'' = -r cos(t) e3 e3
+
+  // y = cy + r sin(t)
+  // y' = r cos(t) e3
+  // y'' = -r sin(t) e3 e3
+  return [
+    u => {
+      const t = e3 * u + t1
+      return { x: x + r * Math.cos(t), y: y + r * Math.sin(t) }
+    },
+    u => {
+      const t = e3 * u + t1, d = r * e3
+      return { x: -d * Math.sin(t), y: d * Math.cos(t) }
+    },
+    u => {
+      const t = e3 * u + t1, d = r * e3 * e3
+      return { x: -d * Math.cos(t), y: -d * Math.sin(t) }
+    },
   ]
 }
 

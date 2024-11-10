@@ -310,6 +310,48 @@ export function getHyperbolaDerivatives({ angle, a, b, x: x1, y: y1 }: Hyperbola
   ]
 }
 
+export function getHyperbolaSegmentDerivatives({ angle, a, b, x: x1, y: y1, t1, t2 }: HyperbolaSegment): Tuple3<(t: number) => Position> {
+  const xAxisRadian = getParabolaXAxisRadian({ angle })
+  const e1 = Math.sin(xAxisRadian), e2 = Math.cos(xAxisRadian)
+  const b1 = e2 * b, b2 = -e1 * a, b3 = e1 * b, b4 = e2 * a
+  const c1 = x1 - b2, c2 = y1 - b4
+  const e3 = t2 - t1
+  // t = e3 u + t1
+  // x = c1 + b1 t + b2(t^2 + 1)^0.5
+  // y = c2 + b3 t + b4(t^2 + 1)^0.5
+  // x' = (b2 t (t^2 + 1)^-0.5 + b1)e3
+  // y' = (b4 t (t^2 + 1)^-0.5 + b3)e3
+  // x'' = (b2 (t^2 + 1)^-0.5 - b2 t t (t^2 + 1)^-1.5)e3 e3
+  // y'' = (b4 (t^2 + 1)^-0.5 - b4 t t (t^2 + 1)^-1.5)e3 e3
+  return [
+    u => {
+      const t = e3 * u + t1
+      const d = Math.sqrt(t ** 2 + 1)
+      return {
+        x: c1 + b1 * t + b2 * d,
+        y: c2 + b3 * t + b4 * d,
+      }
+    },
+    u => {
+      const t = e3 * u + t1
+      const d = t / Math.sqrt(t ** 2 + 1)
+      return {
+        x: (b2 * d + b1) * e3,
+        y: (b4 * d + b3) * e3,
+      }
+    },
+    u => {
+      const t = e3 * u + t1
+      const d0 = t ** 2, d1 = d0 + 1, d2 = Math.sqrt(d1)
+      const d = (1 / d2 - d0 / d1 / d2) * e3 * e3
+      return {
+        x: b2 * d,
+        y: b4 * d,
+      }
+    },
+  ]
+}
+
 export function getHyperbolaCurvatureAtParam(curve: Hyperbola, param: number): number {
   const derivatives = getHyperbolaDerivatives(curve)
   const { x: x1, y: y1 } = derivatives[1](param)
