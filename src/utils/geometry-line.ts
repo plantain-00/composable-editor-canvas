@@ -1,7 +1,7 @@
 import { geometryLineIntersectWithPolygon, iterateGeometryLinesSelfIntersectionPoints } from "./intersection";
 import { QuadraticCurve, BezierCurve, getBezierCurvePercentAtPoint, getBezierCurvePointAtPercent, getPartOfBezierCurve, getPartOfQuadraticCurve, getQuadraticCurvePercentAtPoint, getQuadraticCurvePointAtPercent, pointIsOnBezierCurve, pointIsOnQuadraticCurve, getQuadraticCurveCurvatureAtParam, getBezierCurveCurvatureAtParam, getQuadraticCurveDerivatives, getBezierCurveDerivatives } from "./bezier";
-import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge, getArcCurvature, getCircleDerivatives } from "./circle";
-import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc, getEllipseArcCurvatureAtRadian, getEllipseDerivatives } from "./ellipse";
+import { getArcStartAndEnd, Arc, getArcPointAtAngle, getCirclePointAtRadian, pointIsOnArc, pointIsOnCircle, getArcByStartEndBulge, getArcCurvature, getArcDerivatives } from "./circle";
+import { getEllipseArcStartAndEnd, EllipseArc, getEllipseAngle, getEllipseArcPointAtAngle, getEllipsePointAtRadian, pointIsOnEllipse, pointIsOnEllipseArc, getEllipseArcCurvatureAtRadian, getEllipseArcDerivatives } from "./ellipse";
 import { isArray } from "./is-array";
 import { isRecord } from "./is-record";
 import { GeneralFormLine, Ray, getLineParamAtPoint, getPolygonArea, getRayParamAtPoint, getRayPointAtDistance, getRayStartAndEnd, pointAndDirectionToGeneralFormLine, pointInPolygon, pointIsOnLine, pointIsOnLineSegment, pointIsOnRay, twoPointLineToGeneralFormLine } from "./line";
@@ -17,8 +17,8 @@ import { getGeometryLinesPoints } from "./hatch";
 import { getParallelGeometryLinesByDistanceDirectionIndex, pointSideToIndex } from "./parallel";
 import { getPointAndGeometryLineMinimumDistance, getPointAndGeometryLineNearestPointAndDistance } from "./perpendicular";
 import { breakGeometryLines, mergeGeometryLines } from "./break";
-import { getHyperbolaCurvatureAtParam, getHyperbolaDerivatives, getHyperbolaParamAtPoint, getHyperbolaPointAtParam, getHyperbolaSegmentStartAndEnd, getHyperbolaTangentRadianAtParam, HyperbolaSegment, pointIsOnHyperbola, pointIsOnHyperbolaSegment } from "./hyperbola";
-import { Tuple2, Tuple3 } from "./types";
+import { getHyperbolaCurvatureAtParam, getHyperbolaSegmentDerivatives, getHyperbolaParamAtPoint, getHyperbolaPointAtParam, getHyperbolaSegmentStartAndEnd, getHyperbolaTangentRadianAtParam, HyperbolaSegment, pointIsOnHyperbola, pointIsOnHyperbolaSegment } from "./hyperbola";
+import { Tuple2, Tuple3, Tuple4 } from "./types";
 
 export type GeometryLine = [Position, Position] |
 { type: 'arc'; curve: Arc } |
@@ -682,56 +682,25 @@ export function getGeometryLineDerivatives(line: GeometryLine): [(t: number) => 
       t => [f0(t), { x: dx, y: dy }, { x: 0, y: 0 }],
     ]
   }
-  if (line.type === 'arc') {
-    const derivatives = getCircleDerivatives(line.curve)
+  if (line.type === 'arc' || line.type === 'ellipse arc' || line.type === 'quadratic curve' || line.type === 'bezier curve' || line.type === 'hyperbola curve') {
+    let derivatives: Tuple3<(t: number) => Position> | Tuple4<(t: number) => Position>
+    if (line.type === 'arc') {
+      derivatives = getArcDerivatives(line.curve)
+    } else if (line.type === 'ellipse arc') {
+      derivatives = getEllipseArcDerivatives(line.curve)
+    } else if (line.type === 'quadratic curve') {
+      derivatives = getQuadraticCurveDerivatives(line.curve)
+    } else if (line.type === 'bezier curve') {
+      derivatives = getBezierCurveDerivatives(line.curve)
+    } else if (line.type === 'hyperbola curve') {
+      derivatives = getHyperbolaSegmentDerivatives(line.curve)
+    }
     return [
       t => {
-        const angle = getAngleAtParam(t, line.curve)
-        return [derivatives[0](angle), derivatives[1](angle)]
+        return [derivatives[0](t), derivatives[1](t)]
       },
       t => {
-        const angle = getAngleAtParam(t, line.curve)
-        return [derivatives[0](angle), derivatives[1](angle), derivatives[2](angle)]
-      },
-    ]
-  }
-  if (line.type === 'ellipse arc') {
-    const derivatives = getEllipseDerivatives(line.curve)
-    return [
-      t => {
-        const angle = getAngleAtParam(t, line.curve)
-        return [derivatives[0](angle), derivatives[1](angle)]
-      },
-      t => {
-        const angle = getAngleAtParam(t, line.curve)
-        return [derivatives[0](angle), derivatives[1](angle), derivatives[2](angle)]
-      },
-    ]
-  }
-  if (line.type === 'quadratic curve') {
-    const derivatives = getQuadraticCurveDerivatives(line.curve)
-    return [
-      t => [derivatives[0](t), derivatives[1](t)],
-      t => [derivatives[0](t), derivatives[1](t), derivatives[2](t)],
-    ]
-  }
-  if (line.type === 'bezier curve') {
-    const derivatives = getBezierCurveDerivatives(line.curve)
-    return [
-      t => [derivatives[0](t), derivatives[1](t)],
-      t => [derivatives[0](t), derivatives[1](t), derivatives[2](t)],
-    ]
-  }
-  if (line.type === 'hyperbola curve') {
-    const derivatives = getHyperbolaDerivatives(line.curve)
-    return [
-      t => {
-        const param = getParamAtPercent(t, line.curve.t1, line.curve.t2)
-        return [derivatives[0](param), derivatives[1](param)]
-      },
-      t => {
-        const param = getParamAtPercent(t, line.curve.t1, line.curve.t2)
-        return [derivatives[0](param), derivatives[1](param), derivatives[2](param)]
+        return [derivatives[0](t), derivatives[1](t), derivatives[2](t)]
       },
     ]
   }

@@ -11,7 +11,7 @@ import { number, minimum, optional, and } from "./validators";
 import { calculateEquation2 } from "./equation-calculater";
 import { getPointSideOfLine, twoPointLineToGeneralFormLine } from "./line";
 import { Arc } from "./circle";
-import { slice2, Tuple5, Vec3 } from "./types";
+import { slice2, Tuple3, Tuple5, Vec3 } from "./types";
 import { getCoordinateMatrix2D } from "./transform";
 import { matrix } from "./matrix";
 
@@ -230,6 +230,34 @@ export function getEllipseDerivatives({ rx, ry, cx, cy, angle }: Ellipse): Tuple
     t => ({ x: d1 * ry * Math.sin(t) + -(d2 * rx * Math.cos(t)), y: -(d1 * rx * Math.cos(t)) + -(d2 * ry * Math.sin(t)) }),
     t => ({ x: d1 * ry * Math.cos(t) + d2 * rx * Math.sin(t), y: d1 * rx * Math.sin(t) + -(d2 * ry * Math.cos(t)) }),
     t => ({ x: d2 * rx * Math.cos(t) - d1 * ry * Math.sin(t), y: d1 * rx * Math.cos(t) + d2 * ry * Math.sin(t) }),
+  ]
+}
+
+export function getEllipseArcDerivatives({ rx, ry, cx, cy, angle, startAngle, endAngle }: EllipseArc): Tuple3<(t: number) => Position> {
+  const radian = angleToRadian(angle)
+  const d1 = Math.sin(radian), d2 = Math.cos(radian)
+  const e3 = angleToRadian(endAngle - startAngle), t1 = angleToRadian(startAngle)
+  // t = e3 u + t1
+  // x = d2 rx cos(t) - d1 ry sin(t) + cx
+  // x' = ((-(d2 rx sin(t))) - d1 ry cos(t)) e3
+  // x'' = (d1 ry sin(t) + (-(d2 rx cos(t)))) e3 e3
+
+  // y = d1 rx cos(t) + d2 ry sin(t) + cy
+  // y' = ((-(d1 rx sin(t))) + d2 ry cos(t)) e3
+  // y'' = ((-(d1 rx cos(t))) + (-(d2 ry sin(t)))) e3 e3
+  return [
+    u => {
+      const t = e3 * u + t1
+      return { x: d2 * rx * Math.cos(t) - d1 * ry * Math.sin(t) + cx, y: d1 * rx * Math.cos(t) + d2 * ry * Math.sin(t) + cy }
+    },
+    u => {
+      const t = e3 * u + t1
+      return { x: (-(d2 * rx * Math.sin(t)) - d1 * ry * Math.cos(t)) * e3, y: (-(d1 * rx * Math.sin(t)) + d2 * ry * Math.cos(t)) * e3 }
+    },
+    u => {
+      const t = e3 * u + t1
+      return { x: (d1 * ry * Math.sin(t) + -(d2 * rx * Math.cos(t))) * e3 * e3, y: (-(d1 * rx * Math.cos(t)) + -(d2 * ry * Math.sin(t))) * e3 * e3 }
+    },
   ]
 }
 
