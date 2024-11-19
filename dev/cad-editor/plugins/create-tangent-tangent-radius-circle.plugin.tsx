@@ -299,18 +299,7 @@ export function getCommand(ctx: PluginContext): Command[] {
             if (!start) return
             const end = getTarget(p, target.id, target.param)
             if (!end) return
-            const center = ctx.getTwoGeneralFormLinesIntersectionPoint(
-              ctx.pointAndDirectionToGeneralFormLine(
-                start.point,
-                ctx.getGeometryLineTangentRadianAtParam(start.param, start.line),
-              ),
-              ctx.pointAndDirectionToGeneralFormLine(
-                end.point,
-                ctx.getGeometryLineTangentRadianAtParam(end.param, end.line),
-              ),
-            )
-            if (!center) return
-            const circle = ctx.getCircleTangentTo2GeometryLinesNearParam(start.line, end.line, radius, start.param, end.param, center)
+            const circle = ctx.getCircleTangentToTwoGeometryLinesNearParam(start.line, end.line, radius, start.param, end.param)
             if (!circle) return
             setResult({ ...circle, r: radius })
           },
