@@ -3043,24 +3043,25 @@ function getCommand(ctx) {
         setResult(void 0);
         setCursor(void 0);
       };
-      const getTarget = (point, id, param) => {
+      const getTarget = (point, target) => {
         var _a, _b, _c;
-        const content = contents[id];
+        if (!target || target.param === void 0) {
+          return { point };
+        }
+        const content = contents[target.id];
         if (!content) return;
         const lines = (_c = (_b = (_a = ctx.getContentModel(content)) == null ? void 0 : _a.getGeometries) == null ? void 0 : _b.call(_a, content, contents)) == null ? void 0 : _c.lines;
         if (!lines) return;
-        const index = Math.floor(param);
-        return { point, line: lines[index], param: param - index };
+        const index = Math.floor(target.param);
+        return { point, on: { line: lines[index], param: target.param - index } };
       };
       return {
         onStart(p, target) {
           if (!type) return;
-          if (!target) return;
-          if (target.param === void 0) return;
           if (!start) {
-            setStart(getTarget(p, target.id, target.param));
+            setStart(getTarget(p, target));
           } else if (!second) {
-            setSecond(getTarget(p, target.id, target.param));
+            setSecond(getTarget(p, target));
           } else if (result) {
             onEnd({
               updateContents: (contents2) => {
@@ -3074,13 +3075,11 @@ function getCommand(ctx) {
           if (!type) return;
           setCursor(p);
           setResult(void 0);
-          if (!target) return;
-          if (target.param === void 0) return;
           if (!start) return;
           if (!second) return;
-          const end = getTarget(p, target.id, target.param);
+          const end = getTarget(p, target);
           if (!end) return;
-          const circle = ctx.getCircleTangentToThreeGeometryLinesNearParam(start.line, second.line, end.line, start.param, second.param, end.param);
+          const circle = ctx.getCircleTangentToThreeGeometryLinesOrPoints(start, second, end);
           if (circle) {
             setResult(circle);
           }

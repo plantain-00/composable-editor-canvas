@@ -1,4 +1,4 @@
-import { Circle } from "./circle";
+import { Circle, getThreePointsCircle } from "./circle";
 import { newtonIterate2, newtonIterates } from "./equation-calculater";
 import { GeometryLine, getGeometryLineDerivatives } from "./geometry-line";
 import { delta2 } from "./math";
@@ -322,6 +322,149 @@ export function getCircleTangentToThreeGeometryLinesNearParam(curve1: GeometryLi
   const p2 = derivative2[0](result[1])
   const p3 = derivative3[0](result[2])
   const v = getVariables(p1, p2, p3)
+  return {
+    ...v,
+    r: getTwoPointsDistance(v, { x: v.x1, y: v.y1 }),
+  }
+}
+
+export type GeometryLinePoint = {
+  point: Position
+  on?: {
+    param: number,
+    line: GeometryLine
+  }
+}
+
+export function getCircleTangentToThreeGeometryLinesOrPoints(p1: GeometryLinePoint, p2: GeometryLinePoint, p3: GeometryLinePoint): Circle | undefined {
+  if (p1.on) {
+    if (p2.on) {
+      if (p3.on) {
+        return getCircleTangentToThreeGeometryLinesNearParam(p1.on.line, p2.on.line, p3.on.line, p1.on.param, p2.on.param, p3.on.param)
+      }
+      return getCircleTangentToTwoGeometryLinesAndPointNearParam(p1.on.line, p2.on.line, p3.point, p1.on.param, p2.on.param)
+    }
+    if (p3.on) {
+      return getCircleTangentToTwoGeometryLinesAndPointNearParam(p1.on.line, p3.on.line, p2.point, p1.on.param, p3.on.param)
+    }
+    return
+  }
+  if (p2.on) {
+    if (p3.on) {
+      return getCircleTangentToTwoGeometryLinesAndPointNearParam(p2.on.line, p3.on.line, p1.point, p2.on.param, p3.on.param)
+    }
+    return
+  }
+  if (p3.on) {
+    return
+  }
+  return getThreePointsCircle(p1.point, p2.point, p3.point)
+}
+
+export function getCircleTangentToTwoGeometryLinesAndPointNearParam(curve1: GeometryLine, curve2: GeometryLine, { x: x3, y: y3 }: Position, t1: number, t2: number): Circle | undefined {
+  const derivative1 = getGeometryLineDerivatives(curve1)
+  const derivative2 = getGeometryLineDerivatives(curve2)
+  // (y - y1)/(x - x1)y1'/x1' = -1
+  // (y - y2)/(x - x2)y2'/x2' = -1
+  // (x - x1)x1' + (y - y1)y1' = 0
+  // (x - x2)x2' + (y - y2)y2' = 0
+  // x x1' - x1 x1' + y y1' - y1 y1' = 0
+  // x x2' - x2 x2' + y y2' - y2 y2' = 0
+  // let a1 = x1 x1' + y1 y1', a2 = x2 x2' + y2 y2'
+  // x x1' + y y1' = a1
+  // x x2' + y y2' = a2
+  // x x1' x2' + y y1' x2' = a1 x2'
+  // x x1' x2' + y y2' x1' = a2 x1'
+  // y(y1' x2' - y2' x1') = a1 x2' - a2 x1'
+  // let a5 = a1 x2' - a2 x1', a6 = y1' x2' - y2' x1'
+  // y = a5 / a6
+  // x x1' y2' + y y1' y2' = a1 y2'
+  // x x2' y1' + y y1' y2' = a2 y1'
+  // x(x1' y2' - x2' y1') = a1 y2' - a2 y1'
+  // let a3 = a1 y2' - a2 y1', a4 = x1' y2' - x2' y1'
+  // x = a3 / a4
+
+  // (x - x1)^2 + (y - y1)^2 = (x - x2)^2 + (y - y2)^2 = (x - x3)^2 + (y - y3)^2
+  // z1 = (x - x1)^2 + (y - y1)^2 - (x - x3)^2 - (y - y3)^2
+  // z2 = (x - x2)^2 + (y - y2)^2 - (x - x3)^2 - (y - y3)^2
+
+  const getVariables = (p1: Tuple2<Position>, p2: Tuple2<Position>) => {
+    const [{ x: x1, y: y1 }, { x: x11, y: y11 }] = p1
+    const [{ x: x2, y: y2 }, { x: x21, y: y21 }] = p2
+    const a1 = x1 * x11 + y1 * y11, a2 = x2 * x21 + y2 * y21
+    const a3 = a1 * y21 - a2 * y11, a4 = x11 * y21 - x21 * y11
+    const a5 = a1 * x21 - a2 * x11, a6 = y11 * x21 - y21 * x11
+    const x = a3 / a4
+    const y = a5 / a6
+    return { x, y, a1, a2, a3, a4, a5, a6, x1, y1, x2, y2, x11, y11, x21, y21 }
+  }
+
+  const f1 = (t: Vec2): Vec2 => {
+    const p1 = derivative1[0](t[0])
+    const p2 = derivative2[0](t[1])
+    const { x, y, x1, y1, x2, y2 } = getVariables(p1, p2)
+    return [
+      (x - x1) ** 2 + (y - y1) ** 2 - (x - x3) ** 2 - (y - y3) ** 2,
+      (x - x2) ** 2 + (y - y2) ** 2 - (x - x3) ** 2 - (y - y3) ** 2,
+    ]
+  }
+  const f2 = (t: Vec2): Matrix2 => {
+    const [p10, p11, { x: x12, y: y12 }] = derivative1[1](t[0])
+    const [p20, p21, { x: x22, y: y22 }] = derivative2[1](t[1])
+    const { x, y, a1, a2, a3, a4, a5, a6, x1, y1, x2, y2, x11, y11, x21, y21 } = getVariables([p10, p11], [p20, p21])
+
+    // a1' = (x1 x1' + y1 y1')'
+    // a1' = x1'^2 + x1 x1'' + y1'^2 + y1 y1''
+    // a2' = (x2 x2' + y2 y2')'
+    // a2' = x2'^2 + x2 x2'' + y2'^2 + y2 y2''
+    const a11 = x11 ** 2 + x1 * x12 + y11 ** 2 + y1 * y12
+    const a21 = x21 ** 2 + x2 * x22 + y21 ** 2 + y2 * y22
+
+    // da3/dt1 = a1' y2' - a2 y1''
+    // da3/dt2 = a1 y2'' - a2' y1'
+    // da4/dt1 = x1'' y2' - x2' y1''
+    // da4/dt2 = x1' y2'' - x2'' y1'
+    const a31 = a11 * y21 - a2 * y12
+    const a32 = a1 * y22 - a21 * y11
+    const a41 = x12 * y21 - x21 * y12
+    const a42 = x11 * y22 - x22 * y11
+
+    // da5/dt1 = a1' x2' - a2 x1''
+    // da5/dt2 = a1 x2'' - a2' x1'
+    // da6/dt1 = y1'' x2' - y2' x1''
+    // da6/dt2 = y1' x2'' - y2'' x1'
+    const a51 = a11 * x21 - a2 * x12
+    const a52 = a1 * x22 - a21 * x11
+    const a61 = y12 * x21 - y21 * x12
+    const a62 = y11 * x22 - y22 * x11
+
+    // x' = (a3/a4)'
+    // dx/dt1 = (a4 da3/dt1 - a3 da4/dt1)/a4/a4
+    // dx/dt2 = (a4 da3/dt2 - a3 da4/dt2)/a4/a4
+    // y' = (a5/a6)'
+    // dy/dt1 = (a6 da5/dt1 - a5 da6/dt1)/a6/a6
+    // dy/dt2 = (a6 da5/dt2 - a5 da6/dt2)/a6/a6
+    const xt1 = (a4 * a31 - a3 * a41) / a4 / a4
+    const xt2 = (a4 * a32 - a3 * a42) / a4 / a4
+    const yt1 = (a6 * a51 - a5 * a61) / a6 / a6
+    const yt2 = (a6 * a52 - a5 * a62) / a6 / a6
+
+    // dz1/dt1 = 2(x - x1)(dx/dt1 - x1') + 2(y - y1)dy/dt1
+    // dz1/dt2 = 2(x - x1)dx/dt2 + 2(y - y1)(dy/dt2 - y1')
+    // dz2/dt1 = 2(x - x2)dx/dt1 + 2(y - y2)dy/dt1
+    // dz2/dt2 = 2(x - x2)(dx/dt2 - x2') + 2(y - y2)(dy/dt2 - y2')
+    return [
+      2 * (x - x1) * (xt1 - x11) + 2 * (y - y1) * yt1,
+      2 * (x - x1) * xt2 + 2 * (y - y1) * (yt2 - y11),
+      2 * (x - x2) * xt1 + 2 * (y - y2) * yt1,
+      2 * (x - x2) * (xt2 - x21) + 2 * (y - y2) * (yt2 - y21),
+    ]
+  }
+  const result = newtonIterate2([t1, t2], f1, f2, delta2)
+  if (!result) return
+  const p1 = derivative1[0](result[0])
+  const p2 = derivative2[0](result[1])
+  const v = getVariables(p1, p2)
   return {
     ...v,
     r: getTwoPointsDistance(v, { x: v.x1, y: v.y1 }),

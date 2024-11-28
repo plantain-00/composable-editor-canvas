@@ -1,5 +1,6 @@
 import type { PluginContext } from './types'
 import type * as core from '../../../src'
+import type * as model from '../model'
 import type { Command } from '../command'
 import type { LineContent } from './line-polyline.plugin'
 import type { CircleContent } from './circle-arc.plugin'
@@ -20,8 +21,8 @@ export function getCommand(ctx: PluginContext): Command {
   return {
     name: 'create tangent tangent tangent circle at points',
     useCommand({ onEnd, type, scale, contents }) {
-      const [start, setStart] = React.useState<{ point: core.Position, param: number, line: core.GeometryLine }>()
-      const [second, setSecond] = React.useState<{ point: core.Position, param: number, line: core.GeometryLine }>()
+      const [start, setStart] = React.useState<core.GeometryLinePoint>()
+      const [second, setSecond] = React.useState<core.GeometryLinePoint>()
       const [cursor, setCursor] = React.useState<core.Position>()
       const [result, setResult] = React.useState<core.Circle>()
       const assistentContents: (LineContent | CircleContent)[] = []
@@ -52,23 +53,24 @@ export function getCommand(ctx: PluginContext): Command {
         setResult(undefined)
         setCursor(undefined)
       }
-      const getTarget = (point: core.Position, id: number, param: number) => {
-        const content = contents[id]
+      const getTarget = (point: core.Position, target?: model.SnapTarget): core.GeometryLinePoint | undefined => {
+        if (!target || target.param === undefined) {
+          return { point }
+        }
+        const content = contents[target.id]
         if (!content) return
         const lines = ctx.getContentModel(content)?.getGeometries?.(content, contents)?.lines
         if (!lines) return
-        const index = Math.floor(param)
-        return { point, line: lines[index], param: param - index }
+        const index = Math.floor(target.param)
+        return { point, on: { line: lines[index], param: target.param - index } }
       }
       return {
         onStart(p, target) {
           if (!type) return
-          if (!target) return
-          if (target.param === undefined) return
           if (!start) {
-            setStart(getTarget(p, target.id, target.param))
+            setStart(getTarget(p, target))
           } else if (!second) {
-            setSecond(getTarget(p, target.id, target.param))
+            setSecond(getTarget(p, target))
           } else if (result) {
             onEnd({
               updateContents: (contents) => {
@@ -82,13 +84,11 @@ export function getCommand(ctx: PluginContext): Command {
           if (!type) return
           setCursor(p)
           setResult(undefined)
-          if (!target) return
-          if (target.param === undefined) return
           if (!start) return
           if (!second) return
-          const end = getTarget(p, target.id, target.param)
+          const end = getTarget(p, target)
           if (!end) return
-          const circle = ctx.getCircleTangentToThreeGeometryLinesNearParam(start.line, second.line, end.line, start.param, second.param, end.param)
+          const circle = ctx.getCircleTangentToThreeGeometryLinesOrPoints(start, second, end)
           if (circle) {
             setResult(circle)
           }
