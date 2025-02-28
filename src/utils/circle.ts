@@ -29,16 +29,15 @@ export function pointIsOnCircle(p: Position, circle: Circle) {
   return isSameNumber(getTwoPointsDistance(p, circle), circle.r)
 }
 
-export function getThreePointsCircle(startPosition: Position, middlePosition: Position, endPosition: Position) {
-  const x1 = middlePosition.x - startPosition.x
-  const y1 = middlePosition.y - startPosition.y
-  const x2 = endPosition.x - middlePosition.x
-  const y2 = endPosition.y - middlePosition.y
-  const t1 = middlePosition.x ** 2 - startPosition.x ** 2 + middlePosition.y ** 2 - startPosition.y ** 2
-  const t2 = endPosition.x ** 2 - middlePosition.x ** 2 + endPosition.y ** 2 - middlePosition.y ** 2
+export function getThreePointsCircle(startPosition: Position, { x: x2, y: y2 }: Position, { x: x3, y: y3 }: Position) {
+  const { x: x1, y: y1 } = startPosition
+  const a = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+  const b = x1 ** 2 + y1 ** 2
+  const c = x2 ** 2 + y2 ** 2
+  const d = x3 ** 2 + y3 ** 2
   const center = {
-    x: (t1 * y2 - t2 * y1) / (x1 * y2 - x2 * y1) / 2,
-    y: (x2 * t1 - t2 * x1) / (x2 * y1 - y2 * x1) / 2,
+    x: (b * (y2 - y3) + c * (y3 - y1) + d * (y1 - y2)) / a,
+    y: (b * (x3 - x2) + c * (x1 - x3) + d * (x2 - x1)) / a,
   }
   return {
     ...center,
